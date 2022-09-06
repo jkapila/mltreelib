@@ -1,0 +1,9 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - 00_data.ipynb
+      - 01_basetree.ipynb
+      - 03_utils.ipynb
+      - 04_trees.ipynb
+      - 99_core.ipynb
