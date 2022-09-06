@@ -2,8 +2,13 @@ website:
   sidebar:
     contents:
       - index.ipynb
-      - 00_data.ipynb
-      - 01_basetree.ipynb
-      - 03_utils.ipynb
-      - 04_trees.ipynb
-      - 99_core.ipynb
+      - section: Examples
+        contents:
+          - 00_Examples/00_dataset.ipynb
+          - 00_Examples/99_core.ipynb
+      - section: APIS
+        contents:
+          - 01_APIS/00_data.ipynb
+          - 01_APIS/01_basetree.ipynb
+          - 01_APIS/03_utils.ipynb
+          - 01_APIS/04_trees.ipynb

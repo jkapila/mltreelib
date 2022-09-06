@@ -9,9 +9,7 @@ project:
 
 format:
   html:
-    theme: 
-      light: spacelab
-      dark: superhero
+    theme: cosmo
     css: styles.css
     toc: true
     toc-depth: 4

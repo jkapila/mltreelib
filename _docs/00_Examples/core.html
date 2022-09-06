@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="More on this soon">
+<meta name="description" content="Fill in a module description here">
 
-<title>mltreelib - BaseTree</title>
+<title>mltreelib - core</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -24,22 +24,22 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -61,12 +61,12 @@ ul.task-list li input[type="checkbox"] {
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="mltreelib - BaseTree">
-<meta property="og:description" content="More on this soon">
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="mltreelib - core">
+<meta property="og:description" content="Fill in a module description here">
 <meta property="og:site-name" content="mltreelib">
-<meta name="twitter:title" content="mltreelib - BaseTree">
-<meta name="twitter:description" content="More on this soon">
+<meta name="twitter:title" content="mltreelib - core">
+<meta name="twitter:description" content="Fill in a module description here">
 <meta name="twitter:card" content="summary">
 </head>
 
@@ -77,7 +77,7 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg navbar-dark ">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">mltreelib</span>
     </a>
   </div>
@@ -98,7 +98,7 @@ ul.task-list li input[type="checkbox"] {
     </nav>
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">BaseTree</h1>
+      <h1 class="quarto-secondary-nav-title">core</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -113,34 +113,59 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">mltree</a>
+  <a href="../index.html" class="sidebar-item-text sidebar-link">mltree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Examples</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./data.html" class="sidebar-item-text sidebar-link">Dataset</a>
+  <a href="../00_Examples/00_dataset.html" class="sidebar-item-text sidebar-link">How to work with Datasets</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./basetree.html" class="sidebar-item-text sidebar-link active">BaseTree</a>
+  <a href="../00_Examples/core.html" class="sidebar-item-text sidebar-link active">core</a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">APIS</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
+  <a href="../01_APIS/data.html" class="sidebar-item-text sidebar-link">Dataset</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  <a href="../01_APIS/basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./core.html" class="sidebar-item-text sidebar-link">core</a>
+  <a href="../01_APIS/utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  </div>
+</li>
+      </ul>
+  </li>
     </ul>
     </div>
 </nav>
@@ -150,10 +175,7 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basedecisiontree" id="toc-basedecisiontree" class="nav-link active" data-scroll-target="#basedecisiontree">BaseDecisionTree</a></li>
-  <li><a href="#decisionnode" id="toc-decisionnode" class="nav-link" data-scroll-target="#decisionnode">DecisionNode</a></li>
-  <li><a href="#get_sorted_cats" id="toc-get_sorted_cats" class="nav-link" data-scroll-target="#get_sorted_cats">get_sorted_cats</a></li>
-  <li><a href="#divide_on_feature" id="toc-divide_on_feature" class="nav-link" data-scroll-target="#divide_on_feature">divide_on_feature</a></li>
+  <li><a href="#foo" id="toc-foo" class="nav-link active" data-scroll-target="#foo">foo</a></li>
   </ul>
 <div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jkapila/mltreelib/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
     </div>
@@ -162,12 +184,12 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">BaseTree</h1>
+<h1 class="title d-none d-lg-block">core</h1>
 </div>
 
 <div>
   <div class="description">
-    More on this soon
+    Fill in a module description here
   </div>
 </div>
 
@@ -183,42 +205,12 @@ ul.task-list li input[type="checkbox"] {
 
 <!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
 <hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/basetree.py#L76" target="_blank" style="float:right; font-size:smaller">source</a></p>
-<section id="basedecisiontree" class="level3">
-<h3 class="anchored" data-anchor-id="basedecisiontree">BaseDecisionTree</h3>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/core.py#L7" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="foo" class="level3">
+<h3 class="anchored" data-anchor-id="foo">foo</h3>
 <blockquote class="blockquote">
-<pre><code> BaseDecisionTree (min_samples_split=2, min_impurity=1e-07, max_depth=inf,
-                   loss=None, verbose=False, round_float=True,
-                   round_digit=4)</code></pre>
+<pre><code> foo ()</code></pre>
 </blockquote>
-<p>Super class of RegressionTree and ClassificationTree. Parameters: ———– min_samples_split: int The minimum number of samples needed to make a split when building a tree. min_impurity: float The minimum impurity required to split the tree further. max_depth: int The maximum depth of a tree. loss: function Loss function that is used for Gradient Boosting models to calculate impurity.</p>
-<hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/basetree.py#L40" target="_blank" style="float:right; font-size:smaller">source</a></p>
-</section>
-<section id="decisionnode" class="level3">
-<h3 class="anchored" data-anchor-id="decisionnode">DecisionNode</h3>
-<blockquote class="blockquote">
-<pre><code> DecisionNode (feature_i=None, threshold=None, value=None,
-               true_branch=None, false_branch=None, depth=None)</code></pre>
-</blockquote>
-<p>Class that represents a decision node or leaf in the decision tree Parameters: ———– feature_i: int Feature index which we want to use as the threshold measure. threshold: float The value that we will compare feature values at feature_i against to determine the prediction. value: float The class prediction if classification tree, or float value if regression tree. true_branch: DecisionNode Next decision node for samples where features value met the threshold. false_branch: DecisionNode Next decision node for samples where features value did not meet the threshold.</p>
-<hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/basetree.py#L32" target="_blank" style="float:right; font-size:smaller">source</a></p>
-</section>
-<section id="get_sorted_cats" class="level3">
-<h3 class="anchored" data-anchor-id="get_sorted_cats">get_sorted_cats</h3>
-<blockquote class="blockquote">
-<pre><code> get_sorted_cats (x, ascending=True)</code></pre>
-</blockquote>
-<hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/basetree.py#L12" target="_blank" style="float:right; font-size:smaller">source</a></p>
-</section>
-<section id="divide_on_feature" class="level3">
-<h3 class="anchored" data-anchor-id="divide_on_feature">divide_on_feature</h3>
-<blockquote class="blockquote">
-<pre><code> divide_on_feature (X, feature_i, threshold)</code></pre>
-</blockquote>
-<p>Divide dataset based on if sample value on feature index is larger than the given threshold</p>
 
 
 </section>

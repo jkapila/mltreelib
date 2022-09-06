@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
+<meta name="description" content="A clear examples to work with dat sets.">
 
-<title>mltreelib - Dataset</title>
+<title>mltreelib - How to work with Datasets</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -87,22 +87,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -127,12 +127,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
-<link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="mltreelib - Dataset">
-<meta property="og:description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="mltreelib - How to work with Datasets">
+<meta property="og:description" content="A clear examples to work with dat sets.">
 <meta property="og:site-name" content="mltreelib">
-<meta name="twitter:title" content="mltreelib - Dataset">
-<meta name="twitter:description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
+<meta name="twitter:title" content="mltreelib - How to work with Datasets">
+<meta name="twitter:description" content="A clear examples to work with dat sets.">
 <meta name="twitter:card" content="summary">
 </head>
 
@@ -143,7 +143,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <nav class="navbar navbar-expand-lg navbar-dark ">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">mltreelib</span>
     </a>
   </div>
@@ -164,7 +164,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     </nav>
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">Dataset</h1>
+      <h1 class="quarto-secondary-nav-title">How to work with Datasets</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -179,34 +179,59 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">mltree</a>
+  <a href="../index.html" class="sidebar-item-text sidebar-link">mltree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Examples</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./data.html" class="sidebar-item-text sidebar-link active">Dataset</a>
+  <a href="../00_Examples/00_dataset.html" class="sidebar-item-text sidebar-link active">How to work with Datasets</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
+  <a href="../00_Examples/core.html" class="sidebar-item-text sidebar-link">core</a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">APIS</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
+  <a href="../01_APIS/data.html" class="sidebar-item-text sidebar-link">Dataset</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  <a href="../01_APIS/basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./core.html" class="sidebar-item-text sidebar-link">core</a>
+  <a href="../01_APIS/utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  </div>
+</li>
+      </ul>
+  </li>
     </ul>
     </div>
 </nav>
@@ -216,9 +241,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#dataset" id="toc-dataset" class="nav-link active" data-scroll-target="#dataset">Dataset</a></li>
-  <li><a href="#how-to-work-on-data" id="toc-how-to-work-on-data" class="nav-link" data-scroll-target="#how-to-work-on-data">How to work on data</a></li>
-  <li><a href="#further-reduction-in-data-size" id="toc-further-reduction-in-data-size" class="nav-link" data-scroll-target="#further-reduction-in-data-size">Further reduction in data size</a></li>
+  <li><a href="#further-reduction-in-data-size" id="toc-further-reduction-in-data-size" class="nav-link active" data-scroll-target="#further-reduction-in-data-size">Further reduction in data size</a></li>
   </ul>
 <div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jkapila/mltreelib/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
     </div>
@@ -227,12 +250,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">Dataset</h1>
+<h1 class="title d-none d-lg-block">How to work with Datasets</h1>
 </div>
 
 <div>
   <div class="description">
-    A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.
+    A clear examples to work with dat sets.
   </div>
 </div>
 
@@ -247,94 +270,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </header>
 
 <!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
-<hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/data.py#L13" target="_blank" style="float:right; font-size:smaller">source</a></p>
-<section id="dataset" class="level3">
-<h3 class="anchored" data-anchor-id="dataset">Dataset</h3>
-<blockquote class="blockquote">
-<pre><code> Dataset (df:pandas.core.frame.DataFrame, reduce_datatype:bool=True,
-          encode_category:str=None, add_intercept:bool=False,
-          na_treatment:str='allow', copy_data:bool=False, digits:int=None,
-          n_category:Union[int,float,NoneType]=None)</code></pre>
-</blockquote>
-<p>Dataset Adaptor Class</p>
-<p>This class is meant to make dataset possible which would be consumed by models further</p>
-<table class="table">
-<colgroup>
-<col style="width: 6%">
-<col style="width: 25%">
-<col style="width: 34%">
-<col style="width: 34%">
-</colgroup>
-<thead>
-<tr class="header">
-<th></th>
-<th><strong>Type</strong></th>
-<th><strong>Default</strong></th>
-<th><strong>Details</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>df</td>
-<td>DataFrame</td>
-<td></td>
-<td>Dataframe that needs to be converted</td>
-</tr>
-<tr class="even">
-<td>reduce_datatype</td>
-<td>bool</td>
-<td>True</td>
-<td>Shall we try to reduce datatype to make is smaller</td>
-</tr>
-<tr class="odd">
-<td>encode_category</td>
-<td>str</td>
-<td>None</td>
-<td>Do encoding of categories default to None as no encoding</td>
-</tr>
-<tr class="even">
-<td>add_intercept</td>
-<td>bool</td>
-<td>False</td>
-<td>Add a constant value intercept to data. This might be needed for Model based Trees.</td>
-</tr>
-<tr class="odd">
-<td>na_treatment</td>
-<td>str</td>
-<td>allow</td>
-<td>How to work with nas. Default: ‘allow’</td>
-</tr>
-<tr class="even">
-<td>copy_data</td>
-<td>bool</td>
-<td>False</td>
-<td>Keep a self copy of original data</td>
-</tr>
-<tr class="odd">
-<td>digits</td>
-<td>int</td>
-<td>None</td>
-<td>To round float to certain digits or not, Default: None means no rounding</td>
-</tr>
-<tr class="even">
-<td>n_category</td>
-<td>typing.Union[int, float, NoneType]</td>
-<td>None</td>
-<td>How many different level shoud be treated as category. If a value less than one the number of levels is defined aas % oft total rows</td>
-</tr>
-<tr class="odd">
-<td><strong>Returns</strong></td>
-<td><strong>None</strong></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="how-to-work-on-data" class="level1">
-<h1>How to work on data</h1>
-<p>Creating random sample data:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mltreelib.data <span class="im">import</span> Dataset</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>n_size <span class="op">=</span> <span class="dv">1000000</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>rnd <span class="op">=</span> np.random.RandomState(<span class="dv">1234</span>)</span>
@@ -412,7 +352,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 </div>
-<p>Pass it to <a href="https://jkapila.github.io/mltreelib/data.html#dataset"><code>Dataset</code></a> and let it do its magic</p>
+<p>Pass it to <a href="https://jkapila.github.io/mltreelib/01_APIS/data.html#dataset"><code>Dataset</code></a> and let it do its magic</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> Dataset(df<span class="op">=</span>dummy_data)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>dataset</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -461,7 +401,6 @@ memory usage: 141.1 MB
 None</code></pre>
 </div>
 </div>
-</section>
 <section id="further-reduction-in-data-size" class="level1">
 <h1>Further reduction in data size</h1>
 <p>We can even further reduce data by using following parameters:</p>
@@ -482,14 +421,6 @@ Dataset Structured Array :  27.0 MB</code></pre>
        (205,  9, 0.26, 16.69, 'a', 'l')],
       dtype=[('numericfull', '&lt;u2'), ('unitint', 'u1'), ('floatfull', '&lt;f4'), ('floatsmall', '&lt;f4'), ('categoryobj', 'O'), ('stringobj', 'O')])</code></pre>
 </div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># data.features_</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># dummy_data.to_dict?</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># data._dtypes = data.df.dtypes.to_dict()</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># data._dtypes</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># dummy_data.rename?</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># {k:v==object for k,v in data._dtypes.items()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

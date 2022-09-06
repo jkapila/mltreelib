@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="More on this soon">
+<meta name="description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
 
-<title>mltreelib - Tree Implementations</title>
+<title>mltreelib - Dataset</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -24,22 +24,22 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -61,12 +61,12 @@ ul.task-list li input[type="checkbox"] {
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="mltreelib - Tree Implementations">
-<meta property="og:description" content="More on this soon">
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="mltreelib - Dataset">
+<meta property="og:description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
 <meta property="og:site-name" content="mltreelib">
-<meta name="twitter:title" content="mltreelib - Tree Implementations">
-<meta name="twitter:description" content="More on this soon">
+<meta name="twitter:title" content="mltreelib - Dataset">
+<meta name="twitter:description" content="A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.">
 <meta name="twitter:card" content="summary">
 </head>
 
@@ -77,7 +77,7 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg navbar-dark ">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">mltreelib</span>
     </a>
   </div>
@@ -98,7 +98,7 @@ ul.task-list li input[type="checkbox"] {
     </nav>
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">Tree Implementations</h1>
+      <h1 class="quarto-secondary-nav-title">Dataset</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -113,34 +113,59 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">mltree</a>
+  <a href="../index.html" class="sidebar-item-text sidebar-link">mltree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Examples</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./data.html" class="sidebar-item-text sidebar-link">Dataset</a>
+  <a href="../00_Examples/00_dataset.html" class="sidebar-item-text sidebar-link">How to work with Datasets</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
+  <a href="../00_Examples/core.html" class="sidebar-item-text sidebar-link">core</a>
   </div>
 </li>
-        <li class="sidebar-item">
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">APIS</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
+  <a href="../01_APIS/data.html" class="sidebar-item-text sidebar-link active">Dataset</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./tree.html" class="sidebar-item-text sidebar-link active">Tree Implementations</a>
+  <a href="../01_APIS/basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
   </div>
 </li>
-        <li class="sidebar-item">
+          <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./core.html" class="sidebar-item-text sidebar-link">core</a>
+  <a href="../01_APIS/utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  </div>
+</li>
+      </ul>
+  </li>
     </ul>
     </div>
 </nav>
@@ -150,8 +175,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#tree" id="toc-tree" class="nav-link active" data-scroll-target="#tree">Tree</a></li>
-  <li><a href="#cartregressiontree" id="toc-cartregressiontree" class="nav-link" data-scroll-target="#cartregressiontree">CARTRegressionTree</a></li>
+  <li><a href="#dataset" id="toc-dataset" class="nav-link active" data-scroll-target="#dataset">Dataset</a></li>
+  <li><a href="#how-to-work-on-data" id="toc-how-to-work-on-data" class="nav-link" data-scroll-target="#how-to-work-on-data">How to work on data</a></li>
   </ul>
 <div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jkapila/mltreelib/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
     </div>
@@ -160,12 +185,12 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">Tree Implementations</h1>
+<h1 class="title d-none d-lg-block">Dataset</h1>
 </div>
 
 <div>
   <div class="description">
-    More on this soon
+    A simple adaptor class to make the data in required format that can be easily consumed and processd by the models.
   </div>
 </div>
 
@@ -181,24 +206,93 @@ ul.task-list li input[type="checkbox"] {
 
 <!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
 <hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree.py#L18" target="_blank" style="float:right; font-size:smaller">source</a></p>
-<section id="tree" class="level3">
-<h3 class="anchored" data-anchor-id="tree">Tree</h3>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/data.py#L13" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="dataset" class="level3">
+<h3 class="anchored" data-anchor-id="dataset">Dataset</h3>
 <blockquote class="blockquote">
-<pre><code> Tree ()</code></pre>
+<pre><code> Dataset (df:pandas.core.frame.DataFrame, reduce_datatype:bool=True,
+          encode_category:str=None, add_intercept:bool=False,
+          na_treatment:str='allow', copy_data:bool=False, digits:int=None,
+          n_category:Union[int,float,NoneType]=None)</code></pre>
 </blockquote>
-<p>Tree class enable building all simpe single tree models</p>
-<hr>
-<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree.py#L72" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<p>Dataset Adaptor Class</p>
+<p>This class is meant to make dataset possible which would be consumed by models further</p>
+<table class="table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 25%">
+<col style="width: 34%">
+<col style="width: 34%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Default</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>df</td>
+<td>DataFrame</td>
+<td></td>
+<td>Dataframe that needs to be converted</td>
+</tr>
+<tr class="even">
+<td>reduce_datatype</td>
+<td>bool</td>
+<td>True</td>
+<td>Shall we try to reduce datatype to make is smaller</td>
+</tr>
+<tr class="odd">
+<td>encode_category</td>
+<td>str</td>
+<td>None</td>
+<td>Do encoding of categories default to None as no encoding</td>
+</tr>
+<tr class="even">
+<td>add_intercept</td>
+<td>bool</td>
+<td>False</td>
+<td>Add a constant value intercept to data. This might be needed for Model based Trees.</td>
+</tr>
+<tr class="odd">
+<td>na_treatment</td>
+<td>str</td>
+<td>allow</td>
+<td>How to work with nas. Default: ‘allow’</td>
+</tr>
+<tr class="even">
+<td>copy_data</td>
+<td>bool</td>
+<td>False</td>
+<td>Keep a self copy of original data</td>
+</tr>
+<tr class="odd">
+<td>digits</td>
+<td>int</td>
+<td>None</td>
+<td>To round float to certain digits or not, Default: None means no rounding</td>
+</tr>
+<tr class="even">
+<td>n_category</td>
+<td>typing.Union[int, float, NoneType]</td>
+<td>None</td>
+<td>How many different level shoud be treated as category. If a value less than one the number of levels is defined aas % oft total rows</td>
+</tr>
+<tr class="odd">
+<td><strong>Returns</strong></td>
+<td><strong>None</strong></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 </section>
-<section id="cartregressiontree" class="level3">
-<h3 class="anchored" data-anchor-id="cartregressiontree">CARTRegressionTree</h3>
-<blockquote class="blockquote">
-<pre><code> CARTRegressionTree (min_samples_split=2, min_impurity=1e-07,
-                     max_depth=inf, loss=None, verbose=False,
-                     round_float=True, round_digit=4)</code></pre>
-</blockquote>
-<p>Super class of RegressionTree and ClassificationTree. Parameters: ———– min_samples_split: int The minimum number of samples needed to make a split when building a tree. min_impurity: float The minimum impurity required to split the tree further. max_depth: int The maximum depth of a tree. loss: function Loss function that is used for Gradient Boosting models to calculate impurity.</p>
+<section id="how-to-work-on-data" class="level1">
+<h1>How to work on data</h1>
+<p>Please refer <code>Examples</code></p>
 
 
 </section>
