@@ -70,6 +70,7 @@ class Tree:
 
 # %% ../nbs/01_APIS/04_trees.ipynb 6
 class CARTRegressionTree(BaseDecisionTree):
+    
     def _calculate_variance_reduction(self, y, y1, y2):
         var_tot = calculate_variance(y)
         var_1 = calculate_variance(y1)
