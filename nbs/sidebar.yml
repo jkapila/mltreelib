@@ -10,5 +10,7 @@ website:
         contents:
           - 01_APIS/00_data.ipynb
           - 01_APIS/01_basetree.ipynb
-          - 01_APIS/03_utils.ipynb
+          - 01_APIS/03a_util_functions.ipynb
+          - 01_APIS/03b_util_metrics.ipynb
+          - 01_APIS/03c_util_extras.ipynb
           - 01_APIS/04_trees.ipynb

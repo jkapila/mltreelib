@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 import gc
 import numba
-from .basetree import DecisionNode, BaseDecisionTree
-from .utils import *
+from .base.tree import DecisionNode, BaseDecisionTree
+from .utils.functions import *
 
 
 

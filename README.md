@@ -20,7 +20,7 @@ Create a sample data
 ``` python
 import numpy as np
 import pandas as pd
-from mltreelib.data import Dataset
+from mltreelib.base.data import Dataset
 from mltreelib.tree import Tree
 ```
 
