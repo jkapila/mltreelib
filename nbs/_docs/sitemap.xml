@@ -2,38 +2,42 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jkapila.github.io/mltreelib/00_Examples/core.html</loc>
-    <lastmod>2022-09-10T23:50:23.693Z</lastmod>
+    <lastmod>2022-09-12T15:16:25.564Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/00_Examples/00_dataset.html</loc>
-    <lastmod>2022-09-10T23:50:23.979Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/01_APIS/base.tree.html</loc>
-    <lastmod>2022-09-10T23:50:24.319Z</lastmod>
+    <lastmod>2022-09-12T15:16:25.904Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/01_APIS/utils.metrics.html</loc>
-    <lastmod>2022-09-10T23:50:24.549Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/01_APIS/utils.extras.html</loc>
-    <lastmod>2022-09-10T23:50:24.799Z</lastmod>
+    <lastmod>2022-09-12T15:16:26.178Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/01_APIS/utils.functions.html</loc>
-    <lastmod>2022-09-10T23:50:25.029Z</lastmod>
+    <lastmod>2022-09-12T15:16:26.504Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/01_APIS/tree.html</loc>
-    <lastmod>2022-09-10T23:50:25.286Z</lastmod>
+    <lastmod>2022-09-12T15:16:26.841Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jkapila.github.io/mltreelib/01_APIS/base.tree.html</loc>
+    <lastmod>2022-09-12T15:16:27.211Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jkapila.github.io/mltreelib/01_APIS/utils.extras.html</loc>
+    <lastmod>2022-09-12T15:16:27.528Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jkapila.github.io/mltreelib/01_APIS/dataset.utility.html</loc>
+    <lastmod>2022-09-12T15:16:27.807Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/01_APIS/base.data.html</loc>
-    <lastmod>2022-09-10T23:50:25.546Z</lastmod>
+    <lastmod>2022-09-12T15:16:28.041Z</lastmod>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/index.html</loc>
-    <lastmod>2022-09-10T23:50:26.026Z</lastmod>
+    <lastmod>2022-09-12T15:16:28.627Z</lastmod>
   </url>
 </urlset>

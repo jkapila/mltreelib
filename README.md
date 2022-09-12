@@ -27,12 +27,14 @@ from mltreelib.tree import Tree
 ``` python
 n_size = 1000
 rnd = np.random.RandomState(1234)
-dummy_data = pd.DataFrame({'numericfull':rnd.randint(1,500,size=n_size),
-                            'unitint':rnd.randint(1,25,size=n_size),
-                            'floatfull':rnd.random_sample(size=n_size),
-                            'floatsmall':np.round(rnd.random_sample(size=n_size)+rnd.randint(1,25,size=n_size),2),
-                            'categoryobj':rnd.choice(['a','b','c','d'],size=n_size),
-                            'stringobj':rnd.choice(["{:c}".format(k) for k in range(97, 123)],size=n_size)})
+dummy_data = pd.DataFrame({
+    'numericfull':rnd.randint(1,500,size=n_size),
+    'unitint':rnd.randint(1,25,size=n_size),
+    'floatfull':rnd.random_sample(size=n_size),
+    'floatsmall':np.round(rnd.random_sample(size=n_size)+rnd.randint(1,25,size=n_size),2),
+    'categoryobj':rnd.choice(['a','b','c','d'],size=n_size),
+    'stringobj':rnd.choice(["{:c}".format(k) for k in range(97, 123)],size=n_size)})
+    
 dummy_data.head()
 ```
 
