@@ -20,7 +20,7 @@ Create a sample data
 ``` python
 import numpy as np
 import pandas as pd
-from mltreelib.base.data import Dataset
+from mltreelib.data import Data
 from mltreelib.tree import Tree
 ```
 
@@ -117,7 +117,7 @@ dummy_data.head()
 Create a Dataset
 
 ``` python
-dataset = Dataset(df=dummy_data)
+dataset = Data(df=dummy_data)
 print(dataset)
 print('Pandas Data Frame        : ',np.round(dummy_data.memory_usage(deep=True).sum()*1e-6,2),'MB')
 print('Dataset Structured Array : ',np.round(dataset.data.nbytes*1e-6/ 1024 * 1024,2),'MB')

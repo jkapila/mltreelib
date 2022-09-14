@@ -8,6 +8,7 @@ from fastcore.utils import *
 import numpy as np
 import pandas as pd
 from ..utils.functions import *
+from ..data import Data
 
 # %% ../../nbs/01_APIS/02_basetree.ipynb 6
 class Node:
@@ -298,7 +299,7 @@ _losses = {'gini':calculate_gini,
            'mae':calculate_mae,'friedman_mse':calculate_mse}
 
 
-# %% ../../nbs/01_APIS/02_basetree.ipynb 9
+# %% ../../nbs/01_APIS/02_basetree.ipynb 8
 class CART(BaseDecisionTree):
     
     def _calculate_impurity(self, y, y_l, y_r):
@@ -363,7 +364,7 @@ class CART(BaseDecisionTree):
         super(CARTRegressionTree, self).fit(X, y)
 
 
-# %% ../../nbs/01_APIS/02_basetree.ipynb 10
+# %% ../../nbs/01_APIS/02_basetree.ipynb 9
 class C45(BaseDecisionTree):
     def _calculate_information_gain(self, y, y1, y2):
         # Calculate information gain

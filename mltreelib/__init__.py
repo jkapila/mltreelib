@@ -1,3 +1,1 @@
-__version__ = "0.0.2"
-
-from .base.data import Dataset
+__version__ = "0.0.3"
