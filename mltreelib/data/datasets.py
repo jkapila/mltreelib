@@ -22,6 +22,7 @@ from urllib.request import urlopen
 # %% ../../nbs/01_APIS/01a_datasets.ipynb 6
 _datasets = ['adult','palmerpenguins-raw','palmerpenguins','california','titanic']
 
+# %% ../../nbs/01_APIS/01a_datasets.ipynb 7
 def get_dataset(task='regression', # define the need of task
                 data_of='palmerpenguins',  # express which data is needed
                 description=True, # weather pass description as and added output

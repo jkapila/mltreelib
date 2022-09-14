@@ -8,7 +8,7 @@
 
 <meta name="description" content="More on this soon">
 
-<title>mltreelib - BaseTree</title>
+<title>mltreelib - Tree Implementations</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -36,10 +36,12 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -62,10 +64,10 @@ ul.task-list li input[type="checkbox"] {
 
 
 <link rel="stylesheet" href="../styles.css">
-<meta property="og:title" content="mltreelib - BaseTree">
+<meta property="og:title" content="mltreelib - Tree Implementations">
 <meta property="og:description" content="More on this soon">
 <meta property="og:site-name" content="mltreelib">
-<meta name="twitter:title" content="mltreelib - BaseTree">
+<meta name="twitter:title" content="mltreelib - Tree Implementations">
 <meta name="twitter:description" content="More on this soon">
 <meta name="twitter:card" content="summary">
 </head>
@@ -92,13 +94,16 @@ ul.task-list li input[type="checkbox"] {
  </a>
   </li>  
 </ul>
+              <div class="quarto-toggle-container">
+                  <a href="" class="quarto-color-scheme-toggle nav-link" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+              </div>
               <div id="quarto-search" class="" title="Search"></div>
           </div> <!-- /navcollapse -->
       </div> <!-- /container-fluid -->
     </nav>
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">BaseTree</h1>
+      <h1 class="quarto-secondary-nav-title">Tree Implementations</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -151,17 +156,22 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/data.utility.html" class="sidebar-item-text sidebar-link">Machine Learning Data Sets</a>
+  <a href="../01_APIS/data.datasets.html" class="sidebar-item-text sidebar-link">Machine Learning Data Sets</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/base.tree.html" class="sidebar-item-text sidebar-link active">BaseTree</a>
+  <a href="../01_APIS/data.utility.html" class="sidebar-item-text sidebar-link">Some classes to make life bit easy</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  <a href="../01_APIS/02_basetree.html" class="sidebar-item-text sidebar-link">skip_showdoc: true</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/tree.models.html" class="sidebar-item-text sidebar-link active">Tree Implementations</a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -190,9 +200,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basedecisiontree" id="toc-basedecisiontree" class="nav-link active" data-scroll-target="#basedecisiontree">BaseDecisionTree</a></li>
-  <li><a href="#decisionnode" id="toc-decisionnode" class="nav-link" data-scroll-target="#decisionnode">DecisionNode</a></li>
-  <li><a href="#node" id="toc-node" class="nav-link" data-scroll-target="#node">Node</a></li>
+  <li><a href="#tree" id="toc-tree" class="nav-link active" data-scroll-target="#tree">Tree</a></li>
+  <li><a href="#cartregressiontree" id="toc-cartregressiontree" class="nav-link" data-scroll-target="#cartregressiontree">CARTRegressionTree</a></li>
   <li><a href="#cart" id="toc-cart" class="nav-link" data-scroll-target="#cart">CART</a></li>
   <li><a href="#c45" id="toc-c45" class="nav-link" data-scroll-target="#c45">C45</a></li>
   </ul>
@@ -203,7 +212,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">BaseTree</h1>
+<h1 class="title d-none d-lg-block">Tree Implementations</h1>
 </div>
 
 <div>
@@ -224,18 +233,28 @@ ul.task-list li input[type="checkbox"] {
 
 <!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
 <hr>
-<section id="basedecisiontree" class="level3">
-<h3 class="anchored" data-anchor-id="basedecisiontree">BaseDecisionTree</h3>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree/models.py#L18" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="tree" class="level3">
+<h3 class="anchored" data-anchor-id="tree">Tree</h3>
 <blockquote class="blockquote">
-<pre><code> BaseDecisionTree (objective:str='class', min_samples_split:int=20,
-                   min_sample_leaf:int=10, max_compete:int=4,
-                   min_impurity:float=0.01, max_depth:int=inf,
-                   max_surrogates:int=2, surrogate_style:int=2,
-                   parallelize:str='feature', tree_growth:str='cart',
-                   feature_weights:Union[float,int,list]=None,
-                   loss:Union[str,float]=None,
-                   verbose:Union[bool,int]=False,
-                   digits:Union[int,NoneType]=2)</code></pre>
+<pre><code> Tree ()</code></pre>
+</blockquote>
+<p>Tree class enable building all simpe single tree models</p>
+<hr>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree/models.py#L72" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="cartregressiontree" class="level3">
+<h3 class="anchored" data-anchor-id="cartregressiontree">CARTRegressionTree</h3>
+<blockquote class="blockquote">
+<pre><code> CARTRegressionTree (objective:str='class', min_samples_split:int=20,
+                     min_sample_leaf:int=10, max_compete:int=4,
+                     min_impurity:float=0.01, max_depth:int=inf,
+                     max_surrogates:int=2, surrogate_style:int=2,
+                     parallelize:str='feature', tree_growth:str='cart',
+                     feature_weights:Union[float,int,list]=None,
+                     loss:Union[str,float]=None,
+                     verbose:Union[bool,int]=False,
+                     digits:Union[int,NoneType]=2)</code></pre>
 </blockquote>
 <p>Super class of all kinds of tree.</p>
 <table class="table">
@@ -341,140 +360,7 @@ ul.task-list li input[type="checkbox"] {
 </tbody>
 </table>
 <hr>
-</section>
-<section id="decisionnode" class="level3">
-<h3 class="anchored" data-anchor-id="decisionnode">DecisionNode</h3>
-<blockquote class="blockquote">
-<pre><code> DecisionNode (feature_i:Union[str,int]=None, threshold:float=None,
-               value=None, true_branch=None, false_branch=None)</code></pre>
-</blockquote>
-<p>Class that represents a decision node or leaf in the decision tree</p>
-<table class="table">
-<colgroup>
-<col style="width: 6%">
-<col style="width: 25%">
-<col style="width: 34%">
-<col style="width: 34%">
-</colgroup>
-<thead>
-<tr class="header">
-<th></th>
-<th><strong>Type</strong></th>
-<th><strong>Default</strong></th>
-<th><strong>Details</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>feature_i</td>
-<td>typing.Union[str, int]</td>
-<td>None</td>
-<td>Feature index which we want to use as the threshold measure.</td>
-</tr>
-<tr class="even">
-<td>threshold</td>
-<td>float</td>
-<td>None</td>
-<td>The value that we will compare feature values at feature_i against to determine the prediction.</td>
-</tr>
-<tr class="odd">
-<td>value</td>
-<td>NoneType</td>
-<td>None</td>
-<td>The class prediction if classification tree, or float value if regression tree.</td>
-</tr>
-<tr class="even">
-<td>true_branch</td>
-<td>NoneType</td>
-<td>None</td>
-<td>Next decision node for samples where features value met the threshold.</td>
-</tr>
-<tr class="odd">
-<td>false_branch</td>
-<td>NoneType</td>
-<td>None</td>
-<td>Next decision node for samples where features value did not meet the threshold.</td>
-</tr>
-</tbody>
-</table>
-<hr>
-</section>
-<section id="node" class="level3">
-<h3 class="anchored" data-anchor-id="node">Node</h3>
-<blockquote class="blockquote">
-<pre><code> Node (nodeid:int=None, depth:int=None, split:Union[str,int,list]=None,
-       kids:Union[NoneType,list]=None,
-       surrogates:Union[NoneType,list]=None, n_subnodes:int=2,
-       info:str=None)</code></pre>
-</blockquote>
-<p>A generics node for all tress</p>
-<table class="table">
-<colgroup>
-<col style="width: 6%">
-<col style="width: 25%">
-<col style="width: 34%">
-<col style="width: 34%">
-</colgroup>
-<thead>
-<tr class="header">
-<th></th>
-<th><strong>Type</strong></th>
-<th><strong>Default</strong></th>
-<th><strong>Details</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>nodeid</td>
-<td>int</td>
-<td>None</td>
-<td>As simple id of the node</td>
-</tr>
-<tr class="even">
-<td>depth</td>
-<td>int</td>
-<td>None</td>
-<td>depth of current node</td>
-</tr>
-<tr class="odd">
-<td>split</td>
-<td>typing.Union[str, int, list]</td>
-<td>None</td>
-<td>Split definitions, New implementation coming</td>
-</tr>
-<tr class="even">
-<td>kids</td>
-<td>typing.Union[NoneType, list]</td>
-<td>None</td>
-<td>New implementation coming</td>
-</tr>
-<tr class="odd">
-<td>surrogates</td>
-<td>typing.Union[NoneType, list]</td>
-<td>None</td>
-<td>New implementation coming</td>
-</tr>
-<tr class="even">
-<td>n_subnodes</td>
-<td>int</td>
-<td>2</td>
-<td>Default for CART behaviors, if None then would assume C4.5 / ID3 behavior</td>
-</tr>
-<tr class="odd">
-<td>info</td>
-<td>str</td>
-<td>None</td>
-<td>just a generic info about the node</td>
-</tr>
-<tr class="even">
-<td><strong>Returns</strong></td>
-<td><strong>None</strong></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<hr>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree/models.py#L114" target="_blank" style="float:right; font-size:smaller">source</a></p>
 </section>
 <section id="cart" class="level3">
 <h3 class="anchored" data-anchor-id="cart">CART</h3>
@@ -591,6 +477,7 @@ ul.task-list li input[type="checkbox"] {
 </tbody>
 </table>
 <hr>
+<p><a href="https://github.com/jkapila/mltreelib/blob/main/mltreelib/tree/models.py#L179" target="_blank" style="float:right; font-size:smaller">source</a></p>
 </section>
 <section id="c45" class="level3">
 <h3 class="anchored" data-anchor-id="c45">C45</h3>
@@ -731,6 +618,119 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
   toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } 
   const icon = "";
   const anchorJS = new window.AnchorJS();
   anchorJS.options = {

@@ -9,7 +9,8 @@ website:
       - section: APIS
         contents:
           - 01_APIS/00_data.ipynb
-          - 01_APIS/01a_dataset_utils.ipynb
+          - 01_APIS/01a_datasets.ipynb
+          - 01_APIS/01b_dataset_utils.ipynb
           - 01_APIS/02_basetree.ipynb
           - 01_APIS/03_trees_impl.ipynb
           - 01_APIS/04a_util_functions.ipynb
