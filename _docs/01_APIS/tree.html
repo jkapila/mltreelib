@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.1.179">
+<meta name="generator" content="quarto-1.1.189">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -113,7 +113,7 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../index.html" class="sidebar-item-text sidebar-link">mltree</a>
+  <a href="../index.html" class="sidebar-item-text sidebar-link">mltreelib : Machine Learnign with Tree Based Library</a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -146,22 +146,37 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/data.html" class="sidebar-item-text sidebar-link">Dataset</a>
+  <a href="../01_APIS/data.data.html" class="sidebar-item-text sidebar-link">Dataset</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
+  <a href="../01_APIS/data.utility.html" class="sidebar-item-text sidebar-link">Machine Learning Data Sets</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../01_APIS/utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
+  <a href="../01_APIS/base.tree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../01_APIS/tree.html" class="sidebar-item-text sidebar-link active">Tree Implementations</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/utils.functions.html" class="sidebar-item-text sidebar-link">Utility Functions</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/utils.metrics.html" class="sidebar-item-text sidebar-link">Metrics</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../01_APIS/utils.extras.html" class="sidebar-item-text sidebar-link">Extras</a>
   </div>
 </li>
       </ul>
@@ -219,12 +234,17 @@ ul.task-list li input[type="checkbox"] {
 <section id="cartregressiontree" class="level3">
 <h3 class="anchored" data-anchor-id="cartregressiontree">CARTRegressionTree</h3>
 <blockquote class="blockquote">
-<pre><code> CARTRegressionTree (min_samples_split:int=20, min_impurity:float=1e-07,
-                     min_sample_leaf:int=10, max_depth:int=inf,
-                     loss:str=None, verbose:Union[bool,int]=False,
+<pre><code> CARTRegressionTree (objective:str='class', min_samples_split:int=20,
+                     min_sample_leaf:int=10, max_compete:int=4,
+                     min_impurity:float=0.01, max_depth:int=inf,
+                     max_surrogates:int=2, surrogate_style:int=2,
+                     parallelize:str='feature', tree_growth:str='cart',
+                     feature_weights:Union[float,int,list]=None,
+                     loss:Union[str,float]=None,
+                     verbose:Union[bool,int]=False,
                      digits:Union[int,NoneType]=2)</code></pre>
 </blockquote>
-<p>Super class of RegressionTree and ClassificationTree.</p>
+<p>Super class of all kinds of tree.</p>
 <table class="table">
 <colgroup>
 <col style="width: 6%">
@@ -242,16 +262,16 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
+<td>objective</td>
+<td>str</td>
+<td>class</td>
+<td>defining objective of the whole tree building.</td>
+</tr>
+<tr class="even">
 <td>min_samples_split</td>
 <td>int</td>
 <td>20</td>
 <td>The minimum number of samples needed to make a split when building a tree.</td>
-</tr>
-<tr class="even">
-<td>min_impurity</td>
-<td>float</td>
-<td>1e-07</td>
-<td>The minimum impurity required to split the tree further.</td>
 </tr>
 <tr class="odd">
 <td>min_sample_leaf</td>
@@ -260,24 +280,66 @@ ul.task-list li input[type="checkbox"] {
 <td>Minimum sample required to have a leaf node</td>
 </tr>
 <tr class="even">
+<td>max_compete</td>
+<td>int</td>
+<td>4</td>
+<td>the number of competitor splits retained in the output. It is useful to know not just which split was chosen, but which variable came in second, third, etc.</td>
+</tr>
+<tr class="odd">
+<td>min_impurity</td>
+<td>float</td>
+<td>0.01</td>
+<td>The minimum impurity required to split the tree further. this is equivalent to complexity in CART</td>
+</tr>
+<tr class="even">
 <td>max_depth</td>
 <td>int</td>
 <td>inf</td>
 <td>The maximum depth of a tree.</td>
 </tr>
 <tr class="odd">
-<td>loss</td>
-<td>str</td>
-<td>None</td>
-<td>String of loss or funciton which defines the loss. This amounts to Loss function that is used for Gradient Boosting models to calculate impurity.</td>
+<td>max_surrogates</td>
+<td>int</td>
+<td>2</td>
+<td>more on this to make it generalized and not CART Specific</td>
 </tr>
 <tr class="even">
+<td>surrogate_style</td>
+<td>int</td>
+<td>2</td>
+<td>more on this to make it generalized and not CART Specific</td>
+</tr>
+<tr class="odd">
+<td>parallelize</td>
+<td>str</td>
+<td>feature</td>
+<td>follow form LightGBMs behavior</td>
+</tr>
+<tr class="even">
+<td>tree_growth</td>
+<td>str</td>
+<td>cart</td>
+<td>follow binary structure if cart else follow multiple structure as C4.5</td>
+</tr>
+<tr class="odd">
+<td>feature_weights</td>
+<td>typing.Union[float, int, list]</td>
+<td>None</td>
+<td>weight of each feature in the split. Default is set to 1 for all features</td>
+</tr>
+<tr class="even">
+<td>loss</td>
+<td>typing.Union[str, float]</td>
+<td>None</td>
+<td>String of loss or function which defines the loss. This amounts to Loss function that is used for Gradient Boosting models to calculate impurity.</td>
+</tr>
+<tr class="odd">
 <td>verbose</td>
 <td>typing.Union[bool, int]</td>
 <td>False</td>
-<td>Verbosity for tree builidng</td>
+<td>Verbosity for tree building</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>digits</td>
 <td>typing.Union[int, NoneType]</td>
 <td>2</td>

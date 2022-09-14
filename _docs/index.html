@@ -2,13 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.1.179">
+<meta name="generator" content="quarto-1.1.189">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="description" content="A real tree based ML package">
 
-<title>mltreelib - mltree</title>
+<title>mltreelib - mltreelib : Machine Learnign with Tree Based Library</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -128,10 +128,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 <link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="mltreelib - mltree">
+<meta property="og:title" content="mltreelib - mltreelib : Machine Learnign with Tree Based Library">
 <meta property="og:description" content="A real tree based ML package">
 <meta property="og:site-name" content="mltreelib">
-<meta name="twitter:title" content="mltreelib - mltree">
+<meta name="twitter:title" content="mltreelib - mltreelib : Machine Learnign with Tree Based Library">
 <meta name="twitter:description" content="A real tree based ML package">
 <meta name="twitter:card" content="summary">
 </head>
@@ -164,7 +164,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     </nav>
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">mltree</h1>
+      <h1 class="quarto-secondary-nav-title">mltreelib : Machine Learnign with Tree Based Library</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -179,7 +179,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">mltree</a>
+  <a href="./index.html" class="sidebar-item-text sidebar-link active">mltreelib : Machine Learnign with Tree Based Library</a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -212,22 +212,37 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./01_APIS/data.html" class="sidebar-item-text sidebar-link">Dataset</a>
+  <a href="./01_APIS/data.data.html" class="sidebar-item-text sidebar-link">Dataset</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./01_APIS/basetree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
+  <a href="./01_APIS/data.utility.html" class="sidebar-item-text sidebar-link">Machine Learning Data Sets</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./01_APIS/utils.html" class="sidebar-item-text sidebar-link">Utility functions</a>
+  <a href="./01_APIS/base.tree.html" class="sidebar-item-text sidebar-link">BaseTree</a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01_APIS/tree.html" class="sidebar-item-text sidebar-link">Tree Implementations</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_APIS/utils.functions.html" class="sidebar-item-text sidebar-link">Utility Functions</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_APIS/utils.metrics.html" class="sidebar-item-text sidebar-link">Metrics</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_APIS/utils.extras.html" class="sidebar-item-text sidebar-link">Extras</a>
   </div>
 </li>
       </ul>
@@ -251,7 +266,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">mltree</h1>
+<h1 class="title d-none d-lg-block">mltreelib : Machine Learnign with Tree Based Library</h1>
 </div>
 
 <div>
@@ -279,23 +294,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="how-to-use" class="level2">
 <h2 class="anchored" data-anchor-id="how-to-use">How to use</h2>
 <p>Create a sample data</p>
-<div class="cell" data-execution_count="2">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mltreelib.data <span class="im">import</span> Dataset</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mltreelib.data <span class="im">import</span> Data</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mltreelib.tree <span class="im">import</span> Tree</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="3">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>n_size <span class="op">=</span> <span class="dv">1000</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>rnd <span class="op">=</span> np.random.RandomState(<span class="dv">1234</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>dummy_data <span class="op">=</span> pd.DataFrame({<span class="st">'numericfull'</span>:rnd.randint(<span class="dv">1</span>,<span class="dv">500</span>,size<span class="op">=</span>n_size),</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                            <span class="st">'unitint'</span>:rnd.randint(<span class="dv">1</span>,<span class="dv">25</span>,size<span class="op">=</span>n_size),</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                            <span class="st">'floatfull'</span>:rnd.random_sample(size<span class="op">=</span>n_size),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                            <span class="st">'floatsmall'</span>:np.<span class="bu">round</span>(rnd.random_sample(size<span class="op">=</span>n_size)<span class="op">+</span>rnd.randint(<span class="dv">1</span>,<span class="dv">25</span>,size<span class="op">=</span>n_size),<span class="dv">2</span>),</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                            <span class="st">'categoryobj'</span>:rnd.choice([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>,<span class="st">'d'</span>],size<span class="op">=</span>n_size),</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                            <span class="st">'stringobj'</span>:rnd.choice([<span class="st">"</span><span class="sc">{:c}</span><span class="st">"</span>.<span class="bu">format</span>(k) <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">97</span>, <span class="dv">123</span>)],size<span class="op">=</span>n_size)})</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>dummy_data.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="3">
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>dummy_data <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'numericfull'</span>:rnd.randint(<span class="dv">1</span>,<span class="dv">500</span>,size<span class="op">=</span>n_size),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'unitint'</span>:rnd.randint(<span class="dv">1</span>,<span class="dv">25</span>,size<span class="op">=</span>n_size),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">'floatfull'</span>:rnd.random_sample(size<span class="op">=</span>n_size),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'floatsmall'</span>:np.<span class="bu">round</span>(rnd.random_sample(size<span class="op">=</span>n_size)<span class="op">+</span>rnd.randint(<span class="dv">1</span>,<span class="dv">25</span>,size<span class="op">=</span>n_size),<span class="dv">2</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'categoryobj'</span>:rnd.choice([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>,<span class="st">'d'</span>],size<span class="op">=</span>n_size),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'stringobj'</span>:rnd.choice([<span class="st">"</span><span class="sc">{:c}</span><span class="st">"</span>.<span class="bu">format</span>(k) <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">97</span>, <span class="dv">123</span>)],size<span class="op">=</span>n_size)})</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dummy_data.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
 
 <div>
 
@@ -363,8 +380,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 <p>Create a Dataset</p>
-<div class="cell" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> Dataset(df<span class="op">=</span>dummy_data)</span>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> Data(df<span class="op">=</span>dummy_data)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dataset)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Pandas Data Frame        : '</span>,np.<span class="bu">round</span>(dummy_data.memory_usage(deep<span class="op">=</span><span class="va">True</span>).<span class="bu">sum</span>()<span class="op">*</span><span class="fl">1e-6</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Dataset Structured Array : '</span>,np.<span class="bu">round</span>(dataset.data.nbytes<span class="op">*</span><span class="fl">1e-6</span><span class="op">/</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
@@ -374,7 +391,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 Pandas Data Frame        :  0.15 MB
 Dataset Structured Array :  0.03 MB</code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="4">
+<div class="cell-output cell-output-display">
 <pre><code>array([(304, 18, 0.9089594 ,  8.56, 'a', 'c'),
        (212, 24, 0.34858167, 14.35, 'a', 'g'),
        (295, 15, 0.39297667, 21.98, 'a', 'y'),
