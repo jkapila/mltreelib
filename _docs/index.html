@@ -124,9 +124,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     "search-submit-button-title": "Submit"
   }
 }</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
-<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
 <link rel="stylesheet" href="styles.css">
@@ -155,7 +152,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/jkapila/mltreelib"><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/jkapila/mltreelib/tree/main/"><i class="bi bi-github" role="img">
 </i> 
  </a>
   </li>  
@@ -252,7 +249,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./01_APIS/utils.extras.html" class="sidebar-item-text sidebar-link">Extras</a>
+  <a href="./01_APIS/04c_util_extras.html" class="sidebar-item-text sidebar-link">04c_util_extras.html</a>
   </div>
 </li>
       </ul>
@@ -269,7 +266,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <li><a href="#install" id="toc-install" class="nav-link active" data-scroll-target="#install">Install</a></li>
   <li><a href="#how-to-use" id="toc-how-to-use" class="nav-link" data-scroll-target="#how-to-use">How to use</a></li>
   </ul>
-<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jkapila/mltreelib/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jkapila/mltreelib/tree/main/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -321,81 +318,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'categoryobj'</span>:rnd.choice([<span class="st">'a'</span>,<span class="st">'b'</span>,<span class="st">'c'</span>,<span class="st">'d'</span>],size<span class="op">=</span>n_size),</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'stringobj'</span>:rnd.choice([<span class="st">"</span><span class="sc">{:c}</span><span class="st">"</span>.<span class="bu">format</span>(k) <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">97</span>, <span class="dv">123</span>)],size<span class="op">=</span>n_size)})</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dummy_data.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display">
-
-<div>
-
-<table class="dataframe table table-sm table-striped">
-  <thead>
-    <tr>
-      <th></th>
-      <th>numericfull</th>
-      <th>unitint</th>
-      <th>floatfull</th>
-      <th>floatsmall</th>
-      <th>categoryobj</th>
-      <th>stringobj</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>304</td>
-      <td>18</td>
-      <td>0.908959</td>
-      <td>8.56</td>
-      <td>a</td>
-      <td>c</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>212</td>
-      <td>24</td>
-      <td>0.348582</td>
-      <td>14.35</td>
-      <td>a</td>
-      <td>g</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>295</td>
-      <td>15</td>
-      <td>0.392977</td>
-      <td>21.98</td>
-      <td>a</td>
-      <td>y</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>54</td>
-      <td>20</td>
-      <td>0.720856</td>
-      <td>5.33</td>
-      <td>a</td>
-      <td>q</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>205</td>
-      <td>21</td>
-      <td>0.897588</td>
-      <td>23.03</td>
-      <td>c</td>
-      <td>k</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dummy_data.head().to_markdown()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|    |   numericfull |   unitint |   floatfull |   floatsmall | categoryobj   | stringobj   |
+|---:|--------------:|----------:|------------:|-------------:|:--------------|:------------|
+|  0 |           304 |        18 |    0.908959 |         8.56 | a             | c           |
+|  1 |           212 |        24 |    0.348582 |        14.35 | a             | g           |
+|  2 |           295 |        15 |    0.392977 |        21.98 | a             | y           |
+|  3 |            54 |        20 |    0.720856 |         5.33 | a             | q           |
+|  4 |           205 |        21 |    0.897588 |        23.03 | c             | k           |</code></pre>
 </div>
 </div>
 <p>Create a Dataset</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> Data(df<span class="op">=</span>dummy_data)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dataset)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Pandas Data Frame        : '</span>,np.<span class="bu">round</span>(dummy_data.memory_usage(deep<span class="op">=</span><span class="va">True</span>).<span class="bu">sum</span>()<span class="op">*</span><span class="fl">1e-6</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Dataset Structured Array : '</span>,np.<span class="bu">round</span>(dataset.data.nbytes<span class="op">*</span><span class="fl">1e-6</span><span class="op">/</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>dataset.data[:<span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> Data(df<span class="op">=</span>dummy_data)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dataset)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Pandas Data Frame        : '</span>,np.<span class="bu">round</span>(dummy_data.memory_usage(deep<span class="op">=</span><span class="va">True</span>).<span class="bu">sum</span>()<span class="op">*</span><span class="fl">1e-6</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Dataset Structured Array : '</span>,np.<span class="bu">round</span>(dataset.data.nbytes<span class="op">*</span><span class="fl">1e-6</span><span class="op">/</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>,<span class="dv">2</span>),<span class="st">'MB'</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>dataset.data[:<span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Dataset(df=Shape((1000, 6), reduce_datatype=True, encode_category=None, add_intercept=False, na_treatment=allow, copy=False, digits=None, n_category=None, split_ratio=None)
 Pandas Data Frame        :  0.15 MB

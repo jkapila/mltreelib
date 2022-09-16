@@ -15,4 +15,3 @@ website:
           - 01_APIS/03_trees_impl.ipynb
           - 01_APIS/04a_util_functions.ipynb
           - 01_APIS/04b_util_metrics.ipynb
-          - 01_APIS/04c_util_extras.ipynb

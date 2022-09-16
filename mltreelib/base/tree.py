@@ -3,14 +3,14 @@
 # %% auto 0
 __all__ = []
 
-# %% ../../nbs/01_APIS/02_basetree.ipynb 2
+# %% ../../nbs/01_APIS/02_basetree.ipynb 3
 from fastcore.utils import *
 import numpy as np
 import pandas as pd
 from mltreelib.utils.functions import *
 from mltreelib.data import Data
 
-# %% ../../nbs/01_APIS/02_basetree.ipynb 5
+# %% ../../nbs/01_APIS/02_basetree.ipynb 6
 class Node:
     """ A generics node for all tress"""
 

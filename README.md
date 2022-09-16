@@ -35,84 +35,16 @@ dummy_data = pd.DataFrame({
     'categoryobj':rnd.choice(['a','b','c','d'],size=n_size),
     'stringobj':rnd.choice(["{:c}".format(k) for k in range(97, 123)],size=n_size)})
     
-dummy_data.head()
+dummy_data.head().to_markdown()
 ```
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>numericfull</th>
-      <th>unitint</th>
-      <th>floatfull</th>
-      <th>floatsmall</th>
-      <th>categoryobj</th>
-      <th>stringobj</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>304</td>
-      <td>18</td>
-      <td>0.908959</td>
-      <td>8.56</td>
-      <td>a</td>
-      <td>c</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>212</td>
-      <td>24</td>
-      <td>0.348582</td>
-      <td>14.35</td>
-      <td>a</td>
-      <td>g</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>295</td>
-      <td>15</td>
-      <td>0.392977</td>
-      <td>21.98</td>
-      <td>a</td>
-      <td>y</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>54</td>
-      <td>20</td>
-      <td>0.720856</td>
-      <td>5.33</td>
-      <td>a</td>
-      <td>q</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>205</td>
-      <td>21</td>
-      <td>0.897588</td>
-      <td>23.03</td>
-      <td>c</td>
-      <td>k</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+    |    |   numericfull |   unitint |   floatfull |   floatsmall | categoryobj   | stringobj   |
+    |---:|--------------:|----------:|------------:|-------------:|:--------------|:------------|
+    |  0 |           304 |        18 |    0.908959 |         8.56 | a             | c           |
+    |  1 |           212 |        24 |    0.348582 |        14.35 | a             | g           |
+    |  2 |           295 |        15 |    0.392977 |        21.98 | a             | y           |
+    |  3 |            54 |        20 |    0.720856 |         5.33 | a             | q           |
+    |  4 |           205 |        21 |    0.897588 |        23.03 | c             | k           |
 
 Create a Dataset
 

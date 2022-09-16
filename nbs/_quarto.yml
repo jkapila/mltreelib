@@ -16,19 +16,19 @@ format:
 
 website:
   title: "mltreelib"
-  site-url: "https://jkapila.github.io/mltreelib"
+  site-url: "https://jkapila.github.io/mltreelib/"
   description: "A real tree based ML package"
   twitter-card: true
   open-graph: true
   repo-branch: main
-  repo-url: "https://github.com/jkapila/mltreelib"
+  repo-url: "https://github.com/jkapila/mltreelib/tree/main/"
   repo-actions: [issue]
   navbar:
     background: primary
     search: true
     right:
       - icon: github
-        href: "https://github.com/jkapila/mltreelib"
+        href: "https://github.com/jkapila/mltreelib/tree/main/"
   sidebar:
     style: "floating"
 
