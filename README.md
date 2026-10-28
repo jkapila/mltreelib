@@ -95,6 +95,20 @@ Order matters: foundations first, then honest replication, then novelty.
 
 ### 2. Tree learners in Rust (replicate the giants first)
 
+Research is consolidated — build order below (see
+`references/research/tree-research-consolidation.md` for the evidence):
+
+1. [ ] **Simple model tree v1** — leaf-local linear models, split gain = SSE
+   reduction from fitting leaf models on both sides (linear-tree recipe);
+   leaf OLS via faer; native missing values + native categorical splits in the
+   first cut; per-leaf `Metrics` reports from day one
+2. [ ] CART + C4.5 with constant leaves (oracle: `legacy/mltreelib/tree/models.py`)
+3. [ ] **Cubist**: model trees + committees + kNN corrections
+4. [ ] C5.0 rulesets + committees; GritBot surprising-subgroup mining
+5. [ ] Second split criterion: MOB instability tests (partykit lineage);
+   third: gradient improvement (TAO path)
+6. [ ] Mixing: LinearForest-style ensembles, sparse leaves (TRUST), uncertainty (BART-style)
+
 Design requirements for every learner (the sklearn pipeline is the anti-pattern:
 no forced imputation, no forced numeric encoding):
 - [ ] **Native missing values** — missing-aware split search + learned default
