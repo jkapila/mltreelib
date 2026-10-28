@@ -42,6 +42,8 @@ uv sync                      # venv + build the Rust extension (maturin backend)
 cargo test                   # Rust tests (crates/mltreelib-core/tests/)
 uv run maturin develop       # rebuild the extension after Rust changes
 uv run pytest tests/ -q      # Python behavior tests
+uv run zensical build        # docs site (docs/ -> site/)
+uv run python scripts/gen_api_docs.py   # regenerate docs/reference/api.md after API changes
 ```
 
 ## Rules

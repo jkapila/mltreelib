@@ -1,4 +1,5 @@
 site_name: mltreelib
+site_url: https://jkapila.github.io/mltreelib/
 site_description: Tree-based machine learning with a Rust core
 theme:
   variant: modern
@@ -37,18 +38,16 @@ nav:
   - Quickstart: quickstart.md
   - Demo walkthrough: demo.md
   - Benchmark datasets: datasets.md
-  - API reference: api.md
+  - API reference: reference/api.md
 plugins:
   - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [python]
-          options:
-            force_inspection: true
-            docstring_style: google
-            show_root_heading: true
-            show_source: true
-            members_order: source
-            separate_signature: true
-            show_signature_annotations: true
+  - minify:
+      minify_html: true
+  - llmstxt:
+      sections:
+        Documentation:
+          - index.md
+          - quickstart.md
+          - demo.md
+          - datasets.md
+          - reference/api.md

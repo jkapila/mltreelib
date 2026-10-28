@@ -143,7 +143,8 @@ uv run zensical build     # static site in site/
 ```
 
 - **Docs site** — quickstart, demo walkthrough (with figures), datasets, API reference
-  (auto-generated via mkdocstrings from the real docstrings)
+  (generated from the live docstrings by `scripts/gen_api_docs.py`; Zensical natives:
+  `minify`, `llmstxt` → `llms.txt` for LLM consumption)
 - **[AGENTS.md](AGENTS.md)** — project rules and conventions (also [CLAUDE.md](CLAUDE.md))
 - **Rust API**: `cargo doc -p mltreelib-core --no-deps --open` (doc-comments are the reference)
 - **Runnable walkthrough**: `uv run python examples/data_layer_demo.py [dataset ...]`
