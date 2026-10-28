@@ -41,6 +41,7 @@ nav:
   - API reference: reference/api.md
 plugins:
   - search
+  - include-markdown
   - minify:
       minify_html: true
   - llmstxt:

@@ -23,3 +23,10 @@ straight back into the data layer.
     The beyond-IID extension (temporal/grouped splits) ships via the separate
     `data-foundry` package and is intentionally not vendored; see the manifest
     for notes.
+
+## All datasets in the suite
+
+Included verbatim from `datasets/MANIFEST.md` (single source — the table below
+always matches what ships in `datasets/`):
+
+{% include-markdown "../datasets/MANIFEST.md" %}
