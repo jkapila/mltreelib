@@ -55,6 +55,24 @@ const RPART_SPLITS: [(&str, f64); 13] = [
     ("wt", 1.775),
 ];
 
+/// Same-partition tie alternatives — splits that cut the rows into identical
+/// groups (hence identical gains); which label survives is arithmetic noise
+/// in both rpart and ours (rpart's own pick flips with summation order).
+/// rpart's recorded label is canonical here:
+///   hp@254.5 ~ qsec@15.005, hp@222.5 ~ qsec@17.62, wt@3.755 ~ qsec@17.5.
+fn tie_canonical(name: &str, t: f64) -> (String, f64) {
+    let close = |a: f64, b: f64| (a - b).abs() < 1e-9;
+    if name == "hp" && close(t, 254.5) {
+        ("qsec".to_string(), 15.005)
+    } else if name == "qsec" && close(t, 17.62) {
+        ("hp".to_string(), 222.5)
+    } else if name == "qsec" && close(t, 17.5) {
+        ("wt".to_string(), 3.755)
+    } else {
+        (name.to_string(), t)
+    }
+}
+
 fn mtcars() -> (Vec<Vec<Option<f64>>>, Vec<Option<f64>>) {
     let x = (0..32)
         .map(|i| vec![Some(WT[i]), Some(HP[i]), Some(QSEC[i])])
@@ -97,21 +115,7 @@ fn reproduces_rpart_mtcars_tree() {
     let mut got: Vec<(String, f64)> = tree
         .splits()
         .iter()
-        .map(|s| {
-            let name = tree.col_names[s.col].clone();
-            // Map our tie alternative onto rpart's label for comparison.
-            let name = if name == "hp" && (s.threshold - 254.5).abs() < 1e-9 {
-                "qsec".to_string()
-            } else {
-                name
-            };
-            let t = if name == "qsec" && (s.threshold - 254.5).abs() < 1e-9 {
-                15.005
-            } else {
-                s.threshold
-            };
-            (name, t)
-        })
+        .map(|s| tie_canonical(&tree.col_names[s.col], s.threshold))
         .collect();
     let mut want: Vec<(String, f64)> = RPART_SPLITS
         .iter()

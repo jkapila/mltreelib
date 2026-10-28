@@ -1574,24 +1574,64 @@ impl PyModelTree {
         Ok(self.tree()?.predict(&x))
     }
 
-    /// Fitted leaf models. Task: regression.
+    /// Fitted leaf models with their distribution stats. Task: regression.
     ///
     /// Args: none.
     ///
-    /// Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `fill`,
-    /// `intercept`, `n`.
+    /// Returns: one dict per leaf with `cols`, `coef`, `na_coef`,
+    /// `intercept`, `n`, `mean`, `std`, `min`, `max`, `quantiles`.
     fn leaves(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
         let t = self.tree()?;
         let mut out = Vec::new();
-        for (m, n) in t.leaves() {
+        for (leaf, n) in t.leaves() {
             let d = PyDict::new(py);
-            let cols: Vec<String> = m.cols.iter().map(|&j| t.col_names[j].clone()).collect();
+            let (cols, coef, na_coef, intercept) = match &leaf.linear {
+                Some(m) => (
+                    m.cols.iter().map(|&j| t.col_names[j].clone()).collect::<Vec<_>>(),
+                    m.coef.clone(),
+                    m.na_coef.clone(),
+                    m.intercept,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new(), leaf.stats.mean),
+            };
             d.set_item("cols", cols)?;
-            d.set_item("coef", m.coef.clone())?;
-            d.set_item("na_coef", m.na_coef.clone())?;
-            d.set_item("fill", m.fill.clone())?;
-            d.set_item("intercept", m.intercept)?;
+            d.set_item("coef", coef)?;
+            d.set_item("na_coef", na_coef)?;
+            d.set_item("intercept", intercept)?;
             d.set_item("n", n)?;
+            d.set_item("mean", leaf.stats.mean)?;
+            d.set_item("std", leaf.stats.std)?;
+            d.set_item("min", leaf.stats.min)?;
+            d.set_item("max", leaf.stats.max)?;
+            let qs: Vec<Option<f64>> = [0.1, 0.25, 0.5, 0.75, 0.9]
+                .iter()
+                .map(|&q| leaf.stats.quantile(q))
+                .collect();
+            d.set_item("quantiles", qs)?;
+            out.push(d.into_any().unbind());
+        }
+        Ok(out)
+    }
+
+    /// Per-level timing profile (group/sort, scan, leaf fit). Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: one dict per depth level with `depth`, `nodes`, `rows`,
+    /// `cols`, `candidates`, `group_ns`, `scan_ns`, `leaf_ns`.
+    fn profile(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
+        let t = self.tree()?;
+        let mut out = Vec::new();
+        for p in t.profile() {
+            let d = PyDict::new(py);
+            d.set_item("depth", p.depth)?;
+            d.set_item("nodes", p.nodes)?;
+            d.set_item("rows", p.rows)?;
+            d.set_item("cols", p.cols)?;
+            d.set_item("candidates", p.candidates)?;
+            d.set_item("group_ns", p.group_ns)?;
+            d.set_item("scan_ns", p.scan_ns)?;
+            d.set_item("leaf_ns", p.leaf_ns)?;
             out.push(d.into_any().unbind());
         }
         Ok(out)

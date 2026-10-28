@@ -23,7 +23,8 @@ fn stump_is_global_ols() {
     let tree = ModelTree::fit(&x, &y, p).unwrap();
     assert_eq!(tree.n_leaves(), 1);
     assert!(tree.splits().is_empty());
-    let (m, n) = tree.leaves()[0].clone();
+    let (leaf, n) = tree.leaves()[0].clone();
+    let m = leaf.linear.as_ref().unwrap();
     assert_eq!(n, 200);
     assert_eq!(m.cols, vec![0, 1]);
     assert!(m.na_coef.is_empty(), "no NAs -> no indicator terms");
@@ -67,8 +68,16 @@ fn recovers_planted_split_and_leaf_models() {
     // Leaf models recover the planted coefficients (z-coef ~ 0 inside leaves).
     assert_eq!(tree.n_leaves(), 2);
     let mut leaves = tree.leaves();
-    leaves.sort_by(|a, b| a.0.intercept.partial_cmp(&b.0.intercept).unwrap());
-    let (lo, hi) = (leaves[0].0, leaves[1].0);
+    leaves.sort_by(|a, b| {
+        a.0.linear
+            .as_ref()
+            .unwrap()
+            .intercept
+            .partial_cmp(&b.0.linear.as_ref().unwrap().intercept)
+            .unwrap()
+    });
+    let lo = leaves[0].0.linear.as_ref().unwrap();
+    let hi = leaves[1].0.linear.as_ref().unwrap();
     assert!((lo.intercept - 1.0).abs() < 1e-6, "{}", lo.intercept);
     assert!((lo.coef[0] - 2.0).abs() < 1e-6, "{:?}", lo.coef);
     assert!((hi.intercept - 5.0).abs() < 1e-6, "{}", hi.intercept);
@@ -101,8 +110,16 @@ fn path_used_leaves_are_piecewise_linear() {
     let tree = ModelTree::fit(&x, &y, p).unwrap();
     assert_eq!(tree.splits().len(), 1);
     let mut leaves = tree.leaves();
-    leaves.sort_by(|a, b| a.0.intercept.partial_cmp(&b.0.intercept).unwrap());
-    let (lo, hi) = (leaves[0].0, leaves[1].0);
+    leaves.sort_by(|a, b| {
+        a.0.linear
+            .as_ref()
+            .unwrap()
+            .intercept
+            .partial_cmp(&b.0.linear.as_ref().unwrap().intercept)
+            .unwrap()
+    });
+    let lo = leaves[0].0.linear.as_ref().unwrap();
+    let hi = leaves[1].0.linear.as_ref().unwrap();
     assert_eq!(lo.cols, vec![0]); // the split column is the leaf regressor
     assert_eq!(hi.cols, vec![0]);
     assert!((lo.intercept).abs() < 1e-6, "{}", lo.intercept);
@@ -167,7 +184,8 @@ fn na_indicator_makes_missingness_predictive() {
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
-    let (m, n) = tree.leaves()[0].clone();
+    let (leaf, n) = tree.leaves()[0].clone();
+    let m = leaf.linear.as_ref().unwrap();
     assert_eq!(n, 130, "NA rows train; only missing-y rows drop");
     assert_eq!(m.na_coef.len(), 1, "missingness is a learned term");
     let preds = tree.predict(&[vec![None], vec![Some(0.25)]]);

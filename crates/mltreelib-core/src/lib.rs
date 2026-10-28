@@ -8,6 +8,7 @@ pub mod frame;
 pub mod generator;
 pub mod metrics;
 pub mod model_tree;
+pub mod node_stats;
 pub mod nn;
 pub mod index;
 pub mod schema;

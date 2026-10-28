@@ -1056,12 +1056,12 @@ Returns: nothing; the fitted tree replaces the inner model.
 leaves(self, /)
 ```
 
-Fitted leaf models. Task: regression.
+Fitted leaf models with their distribution stats. Task: regression.
 
 Args: none.
 
-Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `fill`,
-`intercept`, `n`.
+Returns: one dict per leaf with `cols`, `coef`, `na_coef`,
+`intercept`, `n`, `mean`, `std`, `min`, `max`, `quantiles`.
 
 #### ModelTree.n_leaves
 
@@ -1087,6 +1087,19 @@ Args:
     x: rows of predictors; `None` entries are missing.
 
 Returns: one predicted value per row.
+
+#### ModelTree.profile
+
+```python
+profile(self, /)
+```
+
+Per-level timing profile (group/sort, scan, leaf fit). Task: regression.
+
+Args: none.
+
+Returns: one dict per depth level with `depth`, `nodes`, `rows`,
+`cols`, `candidates`, `group_ns`, `scan_ns`, `leaf_ns`.
 
 #### ModelTree.splits
 
