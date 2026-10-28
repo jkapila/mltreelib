@@ -3,7 +3,7 @@
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyModule, PyModuleMethods};
+use pyo3::types::{PyDict, PyList, PyModule, PyModuleMethods};
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
 use mltreelib_core::encode::{
@@ -12,6 +12,10 @@ use mltreelib_core::encode::{
     SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
 };
 use mltreelib_core::frame::{Column, Dataset};
+use mltreelib_core::metrics::{
+    classification_report, grouped_regression_report, regression_report, ClassificationReport,
+    RegressionReport,
+};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
 use mltreelib_core::schema::NCategoryRule;
@@ -1330,6 +1334,154 @@ impl PyJamesSteinEncoder {
     }
 }
 
+fn regression_to_dict<'py>(py: Python<'py>, r: &RegressionReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n", r.n)?;
+    d.set_item("n_missing", r.n_missing)?;
+    d.set_item("mean_error", r.mean_error)?;
+    d.set_item("bias", r.bias)?;
+    d.set_item("mae", r.mae)?;
+    d.set_item("mad", r.mad)?;
+    d.set_item("mape", r.mape)?;
+    d.set_item("rmse", r.rmse)?;
+    d.set_item("r2", r.r2)?;
+    d.set_item("max_error", r.max_error)?;
+    d.set_item("explained_variance", r.explained_variance)?;
+    let decs = PyList::empty(py);
+    for ds in &r.deciles {
+        let dd = PyDict::new(py);
+        dd.set_item("decile", ds.decile)?;
+        dd.set_item("n", ds.n)?;
+        dd.set_item("mean_error", ds.mean_error)?;
+        dd.set_item("mae", ds.mae)?;
+        dd.set_item("mape", ds.mape)?;
+        decs.append(dd)?;
+    }
+    d.set_item("deciles", decs)?;
+    Ok(d)
+}
+
+fn classification_to_dict<'py>(
+    py: Python<'py>,
+    c: &ClassificationReport,
+) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n", c.n)?;
+    d.set_item("n_missing", c.n_missing)?;
+    d.set_item("n_classes", c.n_classes)?;
+    d.set_item("accuracy", c.accuracy)?;
+    d.set_item("macro_precision", c.macro_precision)?;
+    d.set_item("macro_recall", c.macro_recall)?;
+    d.set_item("macro_f1", c.macro_f1)?;
+    let pcs = PyList::empty(py);
+    for pc in &c.per_class {
+        let pd = PyDict::new(py);
+        pd.set_item("class", pc.class)?;
+        pd.set_item("precision", pc.precision)?;
+        pd.set_item("recall", pc.recall)?;
+        pd.set_item("f1", pc.f1)?;
+        pd.set_item("support", pc.support)?;
+        pcs.append(pd)?;
+    }
+    d.set_item("per_class", pcs)?;
+    d.set_item("confusion", c.confusion.clone())?;
+    d.set_item("logloss", c.logloss)?;
+    d.set_item("brier", c.brier)?;
+    d.set_item("auc", c.auc)?;
+    Ok(d)
+}
+
+/// One metrics class computing complete reports at once — the yardstick every
+/// learner is measured with. Task: **both**. Pairs with a missing/NaN side are
+/// dropped from the math and reported in `n_missing`, never hidden.
+#[pyclass(name = "Metrics")]
+struct PyMetrics;
+
+#[pymethods]
+impl PyMetrics {
+    #[new]
+    fn new() -> Self {
+        PyMetrics
+    }
+
+    /// Complete regression report: `n`, `n_missing`, `mean_error` (actual -
+    /// fitted), `bias` (mean_pred / mean_true), `mae`, `mad`, `mape` (non-zero
+    /// targets), `rmse`, `r2`, `max_error`, `explained_variance` and
+    /// `deciles` — the DAR per-target-decile error profile (the bathtub view).
+    ///
+    /// Args:
+    ///     y_true: actual values (None/NaN = missing).
+    ///     y_pred: fitted values (None/NaN = missing).
+    ///
+    /// Returns: the full report as a dict.
+    ///
+    /// Raises:
+    ///     ValueError: mismatched lengths or no observed pairs.
+    fn regression(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<Option<f64>>,
+        y_pred: Vec<Option<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let r = regression_report(&y_true, &y_pred).map_err(PyValueError::new_err)?;
+        Ok(regression_to_dict(py, &r)?.unbind())
+    }
+
+    /// Complete classification report: accuracy, macro averages, per-class
+    /// precision/recall/f1/support, confusion matrix — and with
+    /// `probabilities` (P(class 1)) also logloss, brier and ROC-AUC.
+    ///
+    /// Args:
+    ///     y_true: integer class labels (None/NaN = missing).
+    ///     y_pred: predicted labels (None/NaN = missing).
+    ///     probabilities: P(class 1) per row; enables the probabilistic metrics.
+    ///
+    /// Returns: the full report as a dict.
+    ///
+    /// Raises:
+    ///     ValueError: mismatched lengths, non-integer labels or no observed pairs.
+    #[pyo3(signature = (y_true, y_pred, probabilities=None))]
+    fn classification(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<Option<f64>>,
+        y_pred: Vec<Option<f64>>,
+        probabilities: Option<Vec<Option<f64>>>,
+    ) -> PyResult<Py<PyDict>> {
+        let c = classification_report(&y_true, &y_pred, probabilities.as_deref())
+            .map_err(PyValueError::new_err)?;
+        Ok(classification_to_dict(py, &c)?.unbind())
+    }
+
+    /// Regression report per group (keys: dates, categories, ...) — the
+    /// legacy per-key summary lineage. Rows with a missing key are ignored.
+    ///
+    /// Args:
+    ///     keys: group label per row (None = ignored).
+    ///     y_true: actual values (None/NaN = missing).
+    ///     y_pred: fitted values (None/NaN = missing).
+    ///
+    /// Returns: {group: regression report}, sorted by group.
+    ///
+    /// Raises:
+    ///     ValueError: mismatched lengths or a group with no observed pairs.
+    fn regression_by_group(
+        &self,
+        py: Python<'_>,
+        keys: Vec<Option<String>>,
+        y_true: Vec<Option<f64>>,
+        y_pred: Vec<Option<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let groups = grouped_regression_report(&keys, &y_true, &y_pred)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        for (k, r) in groups {
+            d.set_item(k, regression_to_dict(py, &r)?)?;
+        }
+        Ok(d.unbind())
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyBaseNEncoder>()?;
@@ -1343,6 +1495,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyJamesSteinEncoder>()?;
     m.add_class::<PyLeaveOneOutEncoder>()?;
     m.add_class::<PyMEstimatorEncoder>()?;
+    m.add_class::<PyMetrics>()?;
     m.add_class::<PyOneHotEncoder>()?;
     m.add_class::<PyQuantileEncoder>()?;
     m.add_class::<PySumEncoder>()?;

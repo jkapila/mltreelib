@@ -954,3 +954,74 @@ Load one dataset as ``name``/``columns``/``dtypes``/``n_rows``/``n_cols``.
 
 ``columns`` maps column name to a list with ``None`` for missing values;
 ``dtypes`` is "numeric" or "categorical" (strings/dictionaries).
+
+## Other
+
+### Metrics
+
+```python
+class Metrics()
+```
+
+One metrics class computing complete reports at once — the yardstick every
+learner is measured with. Task: **both**. Pairs with a missing/NaN side are
+dropped from the math and reported in `n_missing`, never hidden.
+
+#### Metrics.classification
+
+```python
+classification(self, /, y_true, y_pred, probabilities=None)
+```
+
+Complete classification report: accuracy, macro averages, per-class
+precision/recall/f1/support, confusion matrix — and with
+`probabilities` (P(class 1)) also logloss, brier and ROC-AUC.
+
+Args:
+    y_true: integer class labels (None/NaN = missing).
+    y_pred: predicted labels (None/NaN = missing).
+    probabilities: P(class 1) per row; enables the probabilistic metrics.
+
+Returns: the full report as a dict.
+
+Raises:
+    ValueError: mismatched lengths, non-integer labels or no observed pairs.
+
+#### Metrics.regression
+
+```python
+regression(self, /, y_true, y_pred)
+```
+
+Complete regression report: `n`, `n_missing`, `mean_error` (actual -
+fitted), `bias` (mean_pred / mean_true), `mae`, `mad`, `mape` (non-zero
+targets), `rmse`, `r2`, `max_error`, `explained_variance` and
+`deciles` — the DAR per-target-decile error profile (the bathtub view).
+
+Args:
+    y_true: actual values (None/NaN = missing).
+    y_pred: fitted values (None/NaN = missing).
+
+Returns: the full report as a dict.
+
+Raises:
+    ValueError: mismatched lengths or no observed pairs.
+
+#### Metrics.regression_by_group
+
+```python
+regression_by_group(self, /, keys, y_true, y_pred)
+```
+
+Regression report per group (keys: dates, categories, ...) — the
+legacy per-key summary lineage. Rows with a missing key are ignored.
+
+Args:
+    keys: group label per row (None = ignored).
+    y_true: actual values (None/NaN = missing).
+    y_pred: fitted values (None/NaN = missing).
+
+Returns: {group: regression report}, sorted by group.
+
+Raises:
+    ValueError: mismatched lengths or a group with no observed pairs.

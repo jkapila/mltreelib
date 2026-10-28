@@ -408,6 +408,36 @@ def test_encoding_demo_runs():
     assert "REGRESSION FAMILY" in proc.stdout
 
 
+def test_metrics_single_class_computes_all():
+    from mltreelib import Metrics
+
+    m = Metrics()
+
+    r = m.regression([1.0, 2.0, 3.0], [1.0, 2.0, 3.0])
+    assert r["mae"] == 0.0 and r["r2"] == 1.0 and r["n"] == 3
+    assert len(r["deciles"]) == 10  # DAR bathtub profile included
+
+    r = m.regression([1.0, 2.0, 3.0], [2.0, 3.0, 4.0])
+    assert r["mean_error"] == -1.0  # actual - fitted
+    assert r["bias"] == 1.5 and r["rmse"] == 1.0 and r["mad"] == 0.0
+
+    c = m.classification(
+        [0.0, 0.0, 1.0, 1.0],
+        [0.0, 1.0, 1.0, 1.0],
+        probabilities=[0.1, 0.6, 0.7, 0.9],
+    )
+    assert c["accuracy"] == 0.75
+    assert c["auc"] == 1.0
+    assert len(c["confusion"]) == 2 and len(c["per_class"]) == 2
+    assert c["brier"] > 0
+
+    g = m.regression_by_group(["a", "a", "b"], [1.0, 3.0, 10.0], [2.0, 2.0, 12.0])
+    assert g["a"]["mae"] == 1.0 and g["b"]["mae"] == 2.0
+
+    r = m.regression([1.0, None, 3.0], [1.0, 2.0, 5.0])
+    assert r["n"] == 2 and r["n_missing"] == 1  # missing shown, not hidden
+
+
 def test_decomposed_transform():
     dates = [(date(2026, 1, 5) + timedelta(days=i)).isoformat() for i in range(14)]
     vals = [0.4 if i % 7 < 5 else -1.0 for i in range(14)]

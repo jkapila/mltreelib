@@ -6,6 +6,7 @@ pub mod builder;
 pub mod encode;
 pub mod frame;
 pub mod generator;
+pub mod metrics;
 pub mod nn;
 pub mod index;
 pub mod schema;
