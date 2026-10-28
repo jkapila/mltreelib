@@ -133,13 +133,18 @@ plus TabArena-v0.1 real data.
 
 ## Documentation
 
-- **This README** — usage, dependency policy, roadmap/TODO
+Built with **mkdocs-material** (browse locally or publish `site/` anywhere):
+
+```sh
+uv run mkdocs serve        # live docs at http://127.0.0.1:8000
+uv run mkdocs build        # static site in site/
+```
+
+- **Docs site** — quickstart, demo walkthrough (with figures), datasets, API reference
+  (auto-generated via mkdocstrings from the real docstrings)
 - **[AGENTS.md](AGENTS.md)** — project rules and conventions (also [CLAUDE.md](CLAUDE.md))
 - **Rust API**: `cargo doc -p mltreelib-core --no-deps --open` (doc-comments are the reference)
-- **Python API**: `uv run --with pdoc pdoc -o docs/api python/mltreelib`, then open `docs/api/index.html`; or `uv run python -c "help(mltreelib)"`
-- **Runnable walkthrough**: `uv run python examples/data_layer_demo.py [dataset ...]` —
-  prints ingest, missingness, encodings, grouped/trended/windowed/decomposed features
-  and generator ground truth over real data
+- **Runnable walkthrough**: `uv run python examples/data_layer_demo.py [dataset ...]`
 
 ## License
 
