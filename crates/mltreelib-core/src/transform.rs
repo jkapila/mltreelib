@@ -162,3 +162,181 @@ impl GroupedTransform {
         &self.stats
     }
 }
+
+/// Distributional group-normalization strategies, ported from featuregen's
+/// `GroupedVariableTransformation`. Two families: centered/scaled
+/// `(x - center) / scale` and ratio `x / divisor`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GroupedStrategy {
+    Zscore,
+    MinMax,
+    MedianIqr,
+    MeanIqr,
+    MedianQd,
+    MedianStd,
+    MedianRange,
+    MeanRange,
+    MinQd,
+    MinIqr,
+    MinRatio,
+    MaxRatio,
+    MeanRatio,
+    MedianRatio,
+    IqrRatio,
+    QdRatio,
+    StdRatio,
+    RangeRatio,
+}
+
+impl GroupedStrategy {
+    /// Parse featuregen strategy names: "zscore", "min-max", "median-iqr",
+    /// "mean-iqr", "median-qd", "median-std", "median-range", "mean-range",
+    /// "min-qd", "min-iqr", and the ratio names "min", "max", "mean",
+    /// "median", "iqr", "qd", "std", "range".
+    pub fn parse(s: &str) -> Result<Self, String> {
+        Ok(match s.to_ascii_lowercase().as_str() {
+            "zscore" => GroupedStrategy::Zscore,
+            "min-max" => GroupedStrategy::MinMax,
+            "median-iqr" => GroupedStrategy::MedianIqr,
+            "mean-iqr" => GroupedStrategy::MeanIqr,
+            "median-qd" => GroupedStrategy::MedianQd,
+            "median-std" => GroupedStrategy::MedianStd,
+            "median-range" => GroupedStrategy::MedianRange,
+            "mean-range" => GroupedStrategy::MeanRange,
+            "min-qd" => GroupedStrategy::MinQd,
+            "min-iqr" => GroupedStrategy::MinIqr,
+            "min" => GroupedStrategy::MinRatio,
+            "max" => GroupedStrategy::MaxRatio,
+            "mean" => GroupedStrategy::MeanRatio,
+            "median" => GroupedStrategy::MedianRatio,
+            "iqr" => GroupedStrategy::IqrRatio,
+            "qd" => GroupedStrategy::QdRatio,
+            "std" => GroupedStrategy::StdRatio,
+            "range" => GroupedStrategy::RangeRatio,
+            other => return Err(format!("unknown grouped strategy '{other}'")),
+        })
+    }
+
+    /// (center, scale, is_ratio) for a group summary.
+    fn params(self, s: &Summary) -> (f64, f64, bool) {
+        let iqr = s.q3 - s.q1;
+        let qd = iqr / 2.0;
+        let range = s.max - s.min;
+        match self {
+            GroupedStrategy::Zscore => (s.mean, s.std, false),
+            GroupedStrategy::MinMax => (s.min, range, false),
+            GroupedStrategy::MedianIqr => (s.median, iqr, false),
+            GroupedStrategy::MeanIqr => (s.mean, iqr, false),
+            GroupedStrategy::MedianQd => (s.median, qd, false),
+            GroupedStrategy::MedianStd => (s.median, s.std, false),
+            GroupedStrategy::MedianRange => (s.median, range, false),
+            GroupedStrategy::MeanRange => (s.mean, range, false),
+            GroupedStrategy::MinQd => (s.min, qd, false),
+            GroupedStrategy::MinIqr => (s.min, iqr, false),
+            GroupedStrategy::MinRatio => (0.0, s.min, true),
+            GroupedStrategy::MaxRatio => (0.0, s.max, true),
+            GroupedStrategy::MeanRatio => (0.0, s.mean, true),
+            GroupedStrategy::MedianRatio => (0.0, s.median, true),
+            GroupedStrategy::IqrRatio => (0.0, iqr, true),
+            GroupedStrategy::QdRatio => (0.0, qd, true),
+            GroupedStrategy::StdRatio => (0.0, s.std, true),
+            GroupedStrategy::RangeRatio => (0.0, range, true),
+        }
+    }
+}
+
+/// Fit/transform group-level distributional scaling with exact inverse.
+/// Rows with a missing key/value or an unseen group give `None`; a degenerate
+/// scale (zero) gives `None` instead of inf.
+#[derive(Clone, Debug, Default)]
+pub struct GroupedScaler {
+    strategy: Option<GroupedStrategy>,
+    stats: HashMap<String, Summary>,
+}
+
+impl GroupedScaler {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn fit(
+        &mut self,
+        keys: &[Option<String>],
+        values: &[Option<f64>],
+        strategy: GroupedStrategy,
+    ) -> Result<&mut Self, String> {
+        if keys.len() != values.len() {
+            return Err("keys and values length mismatch".into());
+        }
+        let mut groups: HashMap<String, Vec<f64>> = HashMap::new();
+        for (k, v) in keys.iter().zip(values) {
+            if let (Some(k), Some(v)) = (k, v) {
+                groups.entry(k.clone()).or_default().push(*v);
+            }
+        }
+        self.stats = groups
+            .into_iter()
+            .map(|(k, vals)| (k, summarize_owned(vals)))
+            .collect();
+        self.strategy = Some(strategy);
+        Ok(self)
+    }
+
+    pub fn transform(
+        &self,
+        keys: &[Option<String>],
+        values: &[Option<f64>],
+    ) -> Result<Vec<Option<f64>>, String> {
+        self.apply(keys, values, false)
+    }
+
+    pub fn inverse_transform(
+        &self,
+        keys: &[Option<String>],
+        values: &[Option<f64>],
+    ) -> Result<Vec<Option<f64>>, String> {
+        self.apply(keys, values, true)
+    }
+
+    fn apply(
+        &self,
+        keys: &[Option<String>],
+        values: &[Option<f64>],
+        inverse: bool,
+    ) -> Result<Vec<Option<f64>>, String> {
+        let strategy = self
+            .strategy
+            .ok_or_else(|| "GroupedScaler is not fitted".to_string())?;
+        if keys.len() != values.len() {
+            return Err("keys and values length mismatch".into());
+        }
+        Ok(keys
+            .iter()
+            .zip(values)
+            .map(|(k, v)| {
+                let k = k.as_ref()?;
+                let v = v.as_ref()?;
+                let s = self.stats.get(k)?;
+                let (center, scale, is_ratio) = strategy.params(s);
+                if !scale.is_finite() || scale == 0.0 {
+                    return None;
+                }
+                Some(if is_ratio {
+                    if inverse {
+                        v * scale
+                    } else {
+                        v / scale
+                    }
+                } else if inverse {
+                    v * scale + center
+                } else {
+                    (v - center) / scale
+                })
+            })
+            .collect())
+    }
+
+    pub fn groups(&self) -> &HashMap<String, Summary> {
+        &self.stats
+    }
+}

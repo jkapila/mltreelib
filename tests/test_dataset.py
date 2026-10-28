@@ -2,7 +2,14 @@
 
 import pytest
 
-from mltreelib import IndexMapper, generate, grouped_transform, summarize
+from mltreelib import (
+    DatasetBuilder,
+    IndexMapper,
+    generate,
+    grouped_scale,
+    grouped_transform,
+    summarize,
+)
 
 
 def test_generate_is_deterministic_per_seed():
@@ -106,3 +113,57 @@ def test_summarize():
     assert s["median"] == 2.0
     assert s["min"] == 1.0
     assert s["max"] == 3.0
+
+
+def test_dataset_builder_ingest():
+    b = DatasetBuilder(n_category=10, na_policy="impute", digits=2, add_intercept=True)
+    b.add_numeric("price", [1.234, None, 2.356])
+    b.add_numeric("code", [1.0, 2.0, 1.0])
+    b.add_categorical("grp", ["x", "x", None])
+    ds = b.build()
+    assert ds["n_rows"] == 3
+    assert set(ds["columns"]) == {"price", "code", "grp", "intercept"}
+    assert ds["dtypes"]["code"] == "categorical"  # n_category inference
+    assert ds["dtypes"]["price"] == "numeric"
+    assert ds["columns"]["price"][0] == 1.23  # digits rounding
+    assert abs(ds["columns"]["price"][1] - 1.795) < 1e-9  # imputed mean of rounded
+    assert ds["columns"]["intercept"] == [1.0, 1.0, 1.0]
+
+
+def test_dataset_builder_drop_rows():
+    b = DatasetBuilder(na_policy="drop")
+    b.add_numeric("a", [1.0, None, 3.0])
+    b.add_categorical("b", ["x", "y", "z"])
+    ds = b.build()
+    assert ds["n_rows"] == 2
+    assert ds["columns"]["a"] == [1.0, 3.0]
+    assert ds["columns"]["b"] == ["x", "z"]
+
+    with pytest.raises(ValueError):
+        bad = DatasetBuilder(na_policy="drop")
+        bad.add_numeric("a", [None, None])
+        bad.build()
+
+
+def test_grouped_scale_and_inverse():
+    from mltreelib import GroupedScaler
+
+    keys = ["g", "g", "g"]
+    vals = [1.0, 3.0, 5.0]
+    out = grouped_scale(keys, vals, strategy="zscore")
+    assert out[1] == 0.0
+    assert abs(out[0] + out[2]) < 1e-9
+
+    scaler = GroupedScaler()
+    scaler.fit(keys, vals, "zscore")
+    out = scaler.transform(keys, vals)
+    back = scaler.inverse_transform(keys, out)
+    for b, v in zip(back, vals):
+        assert abs(b - v) < 1e-9
+
+    out = grouped_scale(keys, vals, strategy="mean")
+    assert abs(out[0] - 1.0 / 3.0) < 1e-9
+    assert grouped_scale(["g"], [1.0], strategy="zscore") == [None]  # zero scale
+
+    with pytest.raises(ValueError):
+        grouped_scale(keys, vals, strategy="nope")

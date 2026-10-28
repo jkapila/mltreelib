@@ -5,10 +5,14 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyModule, PyModuleMethods};
 
-use mltreelib_core::frame::Column;
+use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
+use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
-use mltreelib_core::transform::{summarize as summarize_stats, GroupedTransform, SummaryKind};
+use mltreelib_core::schema::NCategoryRule;
+use mltreelib_core::transform::{
+    summarize as summarize_stats, GroupedScaler, GroupedStrategy, GroupedTransform, SummaryKind,
+};
 
 fn generated_to_dict<'py>(py: Python<'py>, gd: &GeneratedData) -> PyResult<Bound<'py, PyDict>> {
     let out = PyDict::new(py);
@@ -201,10 +205,140 @@ impl PyIndexMapper {
     }
 }
 
+fn dataset_to_dict<'py>(py: Python<'py>, ds: &Dataset) -> PyResult<Bound<'py, PyDict>> {
+    let out = PyDict::new(py);
+    let cols = PyDict::new(py);
+    let dtypes = PyDict::new(py);
+    for c in ds.columns() {
+        match c {
+            Column::Numeric { name, values } => {
+                cols.set_item(name, values.clone())?;
+                dtypes.set_item(name, "numeric")?;
+            }
+            Column::Categorical { name, codes, vocab } => {
+                let strs: Vec<Option<String>> = codes
+                    .iter()
+                    .map(|code| code.map(|i| vocab[i as usize].clone()))
+                    .collect();
+                cols.set_item(name, strs)?;
+                dtypes.set_item(name, "categorical")?;
+            }
+        }
+    }
+    out.set_item("columns", cols)?;
+    out.set_item("dtypes", dtypes)?;
+    out.set_item("n_rows", ds.n_rows())?;
+    out.set_item("n_cols", ds.n_cols())?;
+    Ok(out)
+}
+
+/// Ingest any data into the typed dataset: `n_category` category inference,
+/// NA policy (allow/drop/impute), digit rounding, optional intercept column.
+#[pyclass(name = "DatasetBuilder")]
+struct PyDatasetBuilder {
+    inner: DatasetBuilder,
+}
+
+#[pymethods]
+impl PyDatasetBuilder {
+    #[new]
+    #[pyo3(signature = (n_category=None, na_policy="allow", digits=None, add_intercept=false))]
+    fn new(
+        n_category: Option<f64>,
+        na_policy: &str,
+        digits: Option<u32>,
+        add_intercept: bool,
+    ) -> PyResult<Self> {
+        Ok(Self {
+            inner: DatasetBuilder::new()
+                .n_category(n_category.map(NCategoryRule::parse))
+                .na_policy(NaPolicy::parse(na_policy).map_err(PyValueError::new_err)?)
+                .digits(digits)
+                .add_intercept(add_intercept),
+        })
+    }
+
+    fn add_numeric(&mut self, name: &str, values: Vec<Option<f64>>) {
+        let inner = std::mem::take(&mut self.inner);
+        self.inner = inner.add_numeric(name, values);
+    }
+
+    fn add_categorical(&mut self, name: &str, values: Vec<Option<String>>) {
+        let inner = std::mem::take(&mut self.inner);
+        self.inner = inner.add_categorical(name, values);
+    }
+
+    /// Build the typed dataset; returns `columns`, `dtypes`, `n_rows`, `n_cols`.
+    fn build(&mut self, py: Python<'_>) -> PyResult<Py<PyDict>> {
+        let inner = std::mem::take(&mut self.inner);
+        let ds = inner.build().map_err(PyValueError::new_err)?;
+        Ok(dataset_to_dict(py, &ds)?.unbind())
+    }
+}
+
+/// One-shot group scaling: fit on (keys, values) and transform the same rows.
+#[pyfunction]
+#[pyo3(signature = (keys, values, strategy="zscore"))]
+fn grouped_scale(
+    keys: Vec<Option<String>>,
+    values: Vec<Option<f64>>,
+    strategy: &str,
+) -> PyResult<Vec<Option<f64>>> {
+    let s = GroupedStrategy::parse(strategy).map_err(PyValueError::new_err)?;
+    let mut gs = GroupedScaler::new();
+    gs.fit(&keys, &values, s).map_err(PyValueError::new_err)?;
+    gs.transform(&keys, &values).map_err(PyValueError::new_err)
+}
+
+/// Fit/transform group distributional scaling with exact inverse
+/// (sklearn-shaped: fit once, then transform / inverse_transform).
+#[pyclass(name = "GroupedScaler")]
+struct PyGroupedScaler {
+    inner: GroupedScaler,
+}
+
+#[pymethods]
+impl PyGroupedScaler {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: GroupedScaler::new(),
+        }
+    }
+
+    /// Fit group statistics of `values` under the given strategy.
+    fn fit(&mut self, keys: Vec<Option<String>>, values: Vec<Option<f64>>, strategy: &str) -> PyResult<()> {
+        let s = GroupedStrategy::parse(strategy).map_err(PyValueError::new_err)?;
+        self.inner
+            .fit(&keys, &values, s)
+            .map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    fn transform(&self, keys: Vec<Option<String>>, values: Vec<Option<f64>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .transform(&keys, &values)
+            .map_err(PyValueError::new_err)
+    }
+
+    fn inverse_transform(
+        &self,
+        keys: Vec<Option<String>>,
+        values: Vec<Option<f64>>,
+    ) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .inverse_transform(&keys, &values)
+            .map_err(PyValueError::new_err)
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyDatasetBuilder>()?;
+    m.add_class::<PyGroupedScaler>()?;
     m.add_class::<PyIndexMapper>()?;
     m.add_function(wrap_pyfunction!(generate, m)?)?;
+    m.add_function(wrap_pyfunction!(grouped_scale, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_transform, m)?)?;
     m.add_function(wrap_pyfunction!(summarize, m)?)?;
     Ok(())

@@ -76,6 +76,13 @@ impl Column {
             Column::Categorical { codes, .. } => codes.iter().filter(|c| c.is_none()).count(),
         }
     }
+
+    pub fn is_na(&self, row: usize) -> bool {
+        match self {
+            Column::Numeric { values, .. } => values.get(row).is_none_or(|v| v.is_none()),
+            Column::Categorical { codes, .. } => codes.get(row).is_none_or(|c| c.is_none()),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
