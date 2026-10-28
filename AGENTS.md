@@ -31,8 +31,10 @@ Design docs and research live in `references/` (start with
 - `tests/` — Python behavior tests (pytest).
 - `datasets/` — TabArena-v0.1 benchmark suite (51 parquet files + `MANIFEST.md`;
   parquet files are NOT tracked in git, re-download from the OpenML IDs listed).
-- `references/` — `research/` notes, `docs/` vendor manuals, `data/` benchmark CSVs
-  (tracked in git); `sources/` archives and `repos/` clones (not tracked).
+- `references/` — `research/` notes, `algorithms/` pseudocode set (the learn-everything
+  reference), `docs/` vendor manuals, `data/` benchmark CSVs
+  (tracked in git); `sources/` archives (+ `sources/extracted/`) and `repos/` clones
+  (not tracked).
 - `legacy/` — previous Python/nbdev implementation. **Read-only reference oracle**
   (e.g. `legacy/mltreelib/tree/models.py` is the Python oracle for the Rust tree
   port). Do not modify or extend it.
