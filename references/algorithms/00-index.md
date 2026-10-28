@@ -48,6 +48,8 @@ files; this index is the map.
 | 39 | mlxtend LinearRegression (+ Stacking regressors) | mlxtend classics | mlxtend.regressor | 07-mlxtend.md |
 | 40 | Rust implementations: forust, perpetual, gbdt, bosk, smartcore, linfa, miniboosts, sooboost, biosphere, sklears-tree, treeboost, affinitree, gbt-quantile, rpart | Rust | crates + `repos/` | 08-rust-implementations.md |
 | 41 | TabArena field: ChimeraBoost, CTBoost, xRFM, PrismBoost, APLR (+ PerpetualBooster, Elo snapshot) | benchmark field | `data/tabarena-leaderboard.csv` + repos | 09-tabarena-field.md |
+| 42 | CTW, Bayesian Context Trees, Parsimonious Context Trees; applied: news rec (Garcin, RecSys 2013) | context trees | Willems 1995 / Kontoyiannis / Eggeling / Garcin | 10-context-trees-tries.md |
+| 43 | Trie family (trie, radix, suffix tree, TST; TrieKNN, context-tree-as-trie) | data structure | `repos/` + literature | 10-context-trees-tries.md |
 
 Legend for the entry template: **Source · Idea · Pseudocode · Knobs · Note**.
 Pseudocode is the algorithm's core loop in plain steps — faithful in

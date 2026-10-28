@@ -94,6 +94,17 @@ this environment.
       generator's truth; foundation-model comparisons per
       `tree-vs-foundation-tabular.md`
 
+## Resolved thread: the news-recommendation paper
+
+Found (2026-10-28): **"Personalized News Recommendation with Context Trees"** —
+Florent Garcin, Christos Dimitrakakis, Boi Faltings (EPFL), **RecSys 2013**,
+pp. 105–112 (arXiv:1303.0665). Context tree (VMM) over browsing steps;
+experts per node mixing **standard / popularity / freshness** local models;
+every recommendation comes from the stop-weight mixture along the active
+path — the popularity + freshness + user-steps hybrid in question.
+Pseudocode in `references/algorithms/10-context-trees-tries.md`
+("Applied" section).
+
 ## Open questions for Jitin
 
 1. Model tree v1 leaves: full OLS first, or sparse (TRUST-style) from the start?

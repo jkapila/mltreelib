@@ -110,28 +110,52 @@ grow(rows):
 **Knobs:** alpha (split), min_split/min_bucket sizes, max_depth, Bonferroni.
 **Note:** statistical-test splitting (like ctree/MOB) rather than impurity.
 
-## ctree — conditional inference trees (Hothorn et al.)
+## ctree — conditional inference trees (Hothorn, Hornik, Zeileis)
 
-**Source:** `extracted/party_1.3-23/` (R `party`), `extracted/partykit_1.3-1/`.
-**Idea:** stop splitting when **no** predictor shows a significant association
-with the response (permutation test); among significant ones, split where the
-linear statistic is maximized. Removes CART's bias toward high-cardinality
-features.
+**Source:** `extracted/party_1.3-23/` (R `party`), `extracted/partykit_1.3-1/`;
+the paper: Hothorn, Hornik & Zeileis, "Unbiased Recursive Partitioning"
+(JCGS 2006). **Naming note:** this "ctree" ≠ the *context trees* of
+`10-context-trees-tries.md` — different families, shared abbreviation.
+**Idea:** statistical hypothesis testing drives growth — split only while
+some predictor is significantly associated with the response, and choose the
+variable by test strength, not impurity. Removes CART's bias toward
+high-cardinality features (C4.5's gain-ratio is a partial patch; ctree is the
+principled fix).
 
 ```text
 grow(rows):
-    for each z: statistic = max over splits of linear statistic
-                (e.g. standardized mean differences for numeric y)
-                p(z) = permutation test p-value, multiplicity-adjusted
-    if min p(z) > alpha: return Leaf(conditional mean / distribution)
-    z* = argmin p; break at split maximizing z*'s linear statistic
-    recurse on both sides
+    # 1. one global null per covariate: "no association with y"
+    for each covariate z:
+        linear statistic T_z  (standardized mean differences for numeric y;
+                               quadratic statistic for nominal z x y)
+        stat_z = standardized T_z (asymptotic multivariate normal, or
+                  permutation from the conditional distribution given z)
+        p(z) = p-value of stat_z, **multiplicity-adjusted across all z**
+               (max-type / Bonferroni — the global null is one family)
+    # 2. stop when nothing is significant
+    if min_z p(z) > mincriterion (= 1 - alpha):     # default alpha = 0.05
+        return Leaf: conditional distribution (mean / class probabilities)
+    # 3. only the winner splits
+    z* = argmin p(z)
+    # 4. best binary split within z*: maximize the linear statistic
+    #    (ordered z: best cutpoint; unordered: best partition)
+    split at (z*, c*) maximizing T_{z*}; recurse on both sides
 ```
 
-**Knobs:** teststat ("max"/"quadratic"), splitstat, splittest, alpha, minsplit,
-minbucket, stump.
-**Note:** p-values gate growth — the reference for "honest" splitting; our
-"native categorical" requirement benefits from its unbiased treatment.
+**Knobs:** `teststat` ("max"/"quadratic"), `mincriterion` (1-alpha),
+`splitstat`, `splittest` (MonteCarlo permutation vs asymptotic),
+`minsplit`/`minbucket`, `stump`.
+**Notes:**
+- Unbiasedness theorem: under the null every covariate is equally likely to
+  be chosen regardless of scale or category count — the reference for
+  "honest" splitting and exactly why test-based choice fits our
+  native-categorical requirement (no bias against 51-level states).
+- partykit's per-node API (`fit`/`predict`/`split`/`split_summary`) is a
+  design reference for our `NodeModel` + `split_objectives`: the
+  model-agnostic node contract, in the wild.
+- CTBoost (`09-tabarena-field.md`) runs this feature selection *inside*
+  gradient boosting. MOB (below) is the sibling: same testing scaffold,
+  but the split targets instability of a parametric leaf model.
 
 ## MOB — model-based recursive partitioning (Zeileis, Hothorn, Hornik)
 
