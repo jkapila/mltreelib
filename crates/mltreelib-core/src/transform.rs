@@ -6,6 +6,7 @@ use std::collections::HashMap;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SummaryKind {
     Mean,
+    Sum,
     Std,
     Count,
     Min,
@@ -19,6 +20,7 @@ impl SummaryKind {
     pub fn parse(s: &str) -> Result<Self, String> {
         Ok(match s.to_ascii_lowercase().as_str() {
             "mean" => SummaryKind::Mean,
+            "sum" => SummaryKind::Sum,
             "std" => SummaryKind::Std,
             "count" => SummaryKind::Count,
             "min" => SummaryKind::Min,
@@ -34,6 +36,7 @@ impl SummaryKind {
 #[derive(Clone, Copy, Debug)]
 pub struct Summary {
     pub count: usize,
+    pub sum: f64,
     pub mean: f64,
     pub std: f64,
     pub min: f64,
@@ -48,6 +51,7 @@ impl Summary {
         let nan = f64::NAN;
         Summary {
             count: 0,
+            sum: 0.0,
             mean: nan,
             std: nan,
             min: nan,
@@ -61,6 +65,7 @@ impl Summary {
     fn value(&self, kind: SummaryKind) -> f64 {
         match kind {
             SummaryKind::Mean => self.mean,
+            SummaryKind::Sum => self.sum,
             SummaryKind::Std => self.std,
             SummaryKind::Count => self.count as f64,
             SummaryKind::Min => self.min,
@@ -78,7 +83,8 @@ fn summarize_owned(mut xs: Vec<f64>) -> Summary {
     }
     xs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let n = xs.len();
-    let mean = xs.iter().sum::<f64>() / n as f64;
+    let sum = xs.iter().sum::<f64>();
+    let mean = sum / n as f64;
     let var = xs.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n as f64;
     // linear-interpolated quantiles over the sorted sample
     let q = |p: f64| -> f64 {
@@ -93,6 +99,7 @@ fn summarize_owned(mut xs: Vec<f64>) -> Summary {
     };
     Summary {
         count: n,
+        sum,
         mean,
         std: var.sqrt(),
         min: xs[0],

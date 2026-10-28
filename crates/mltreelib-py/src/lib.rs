@@ -10,7 +10,7 @@ use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
 use mltreelib_core::schema::NCategoryRule;
-use mltreelib_core::timefeat::{calendar_parts, lag_by_days as lag_core, parse_ymd};
+use mltreelib_core::timefeat::{calendar_parts, lag_by_days as lag_core, parse_ymd, trended_transform as trend_core};
 use mltreelib_core::transform::{
     summarize as summarize_stats, GroupedScaler, GroupedStrategy, GroupedTransform, SummaryKind,
 };
@@ -388,6 +388,28 @@ fn lag_by_days(
     lag_core(&keys, &dates, &values, lag_days).map_err(PyValueError::new_err)
 }
 
+/// Grouped summary trended at a time granularity (e.g. "year_month",
+/// "year_week", "month_weekday"): each row gets the summary of its
+/// (key x time-bucket) cell.
+#[pyfunction]
+#[pyo3(signature = (keys, dates, values, granularity="year_month", kind="mean", hemisphere="north"))]
+fn trended_transform(
+    keys: Vec<Option<String>>,
+    dates: Vec<Option<String>>,
+    values: Vec<Option<f64>>,
+    granularity: &str,
+    kind: &str,
+    hemisphere: &str,
+) -> PyResult<Vec<Option<f64>>> {
+    let k = SummaryKind::parse(kind).map_err(PyValueError::new_err)?;
+    let southern = match hemisphere {
+        "north" => false,
+        "south" => true,
+        other => return Err(PyValueError::new_err(format!("unknown hemisphere '{other}'"))),
+    };
+    trend_core(&keys, &dates, &values, granularity, k, southern).map_err(PyValueError::new_err)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDatasetBuilder>()?;
@@ -399,5 +421,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(grouped_transform, m)?)?;
     m.add_function(wrap_pyfunction!(lag_by_days, m)?)?;
     m.add_function(wrap_pyfunction!(summarize, m)?)?;
+    m.add_function(wrap_pyfunction!(trended_transform, m)?)?;
     Ok(())
 }

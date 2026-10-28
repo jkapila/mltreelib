@@ -1,7 +1,8 @@
 use mltreelib_core::timefeat::{
     calendar_parts, civil_from_days, day_of_year, days_from_civil, iso_week, lag_by_days,
-    parse_ymd, season, weekday,
+    parse_ymd, season, time_bucket, trended_transform, weekday,
 };
+use mltreelib_core::transform::SummaryKind;
 
 #[test]
 fn civil_date_math_roundtrips_and_known_days() {
@@ -109,4 +110,53 @@ fn lag_by_days_within_key() {
     // a 4-day lag reaches across the gap: row 3 (01-05) gets 01-01 value
     let out = lag_by_days(&keys, &dates, &vals, 4).unwrap();
     assert_eq!(out[2], Some(10.0));
+}
+
+#[test]
+fn time_bucket_labels_and_errors() {
+    assert_eq!(time_bucket(2026, 10, 28, "year", false).unwrap(), "2026");
+    assert_eq!(
+        time_bucket(2026, 10, 28, "year_month", false).unwrap(),
+        "2026-10"
+    );
+    assert_eq!(
+        time_bucket(2026, 10, 28, "month_weekday", false).unwrap(),
+        "10-D2"
+    );
+    assert_eq!(time_bucket(2026, 10, 28, "quarter", false).unwrap(), "Q4");
+    assert_eq!(time_bucket(2026, 10, 28, "halfyear", false).unwrap(), "H2");
+    assert_eq!(time_bucket(2026, 10, 28, "season", false).unwrap(), "S2");
+    assert!(time_bucket(2026, 10, 28, "year_nothing", false).is_err());
+}
+
+#[test]
+fn trended_transform_by_month_and_year() {
+    let keys = vec![
+        Some("a".into()),
+        Some("a".into()),
+        Some("a".into()),
+        Some("b".into()),
+    ];
+    let dates = vec![
+        Some("2026-01-05".into()),
+        Some("2026-01-20".into()),
+        Some("2026-02-03".into()),
+        Some("2026-01-05".into()),
+    ];
+    let vals = vec![Some(1.0), Some(3.0), Some(10.0), Some(100.0)];
+
+    let out = trended_transform(&keys, &dates, &vals, "year_month", SummaryKind::Mean, false)
+        .unwrap();
+    assert_eq!(out, vec![Some(2.0), Some(2.0), Some(10.0), Some(100.0)]);
+
+    let out =
+        trended_transform(&keys, &dates, &vals, "year", SummaryKind::Mean, false).unwrap();
+    assert_eq!(out[0], Some(14.0 / 3.0));
+    assert_eq!(out[3], Some(100.0));
+
+    // missing date -> None
+    let dates2 = vec![None, Some("2026-01-20".into()), Some("2026-02-03".into()), Some("2026-01-05".into())];
+    let out = trended_transform(&keys, &dates2, &vals, "year_month", SummaryKind::Mean, false)
+        .unwrap();
+    assert_eq!(out[0], None);
 }

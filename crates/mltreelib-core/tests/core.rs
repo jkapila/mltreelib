@@ -213,6 +213,10 @@ fn grouped_transform_matches_manual_mean() {
     gt.fit(&keys, &vals, SummaryKind::Count).unwrap();
     let out = gt.transform(&keys).unwrap();
     assert_eq!(out, vec![Some(2.0), Some(2.0), Some(1.0), None]);
+
+    gt.fit(&keys, &vals, SummaryKind::Sum).unwrap();
+    let out = gt.transform(&keys).unwrap();
+    assert_eq!(out, vec![Some(4.0), Some(4.0), Some(10.0), None]);
 }
 
 #[test]

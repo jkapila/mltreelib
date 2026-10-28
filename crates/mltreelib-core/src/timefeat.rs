@@ -5,6 +5,8 @@
 //! flow straight into tree learners; names/casing of featuregen's string
 //! versions (month names, "week_N") are presentation and stay in Python.
 
+use crate::transform::{GroupedTransform, SummaryKind};
+
 /// Season encoding: 0 spring, 1 summer, 2 fall, 3 winter (northern calendar
 /// windows from featuregen: spring 3/21–6/20, summer 6/21–9/22, fall 9/23–12/22).
 ///
@@ -144,4 +146,68 @@ pub fn lag_by_days(
         });
     }
     Ok(out)
+}
+
+/// Time bucket label for a date under a granularity spec. Components are
+/// joined with `-` and come from {year, halfyear, season, quarter, month,
+/// week (ISO), weekday, day}; composites like "year_month" or "month_weekday"
+/// work (legacy `VariableTransformation` TODO: "trend at level of granularity
+/// of time (year, year-month, year-week, ...) given by user").
+pub fn time_bucket(
+    y: i32,
+    m: u32,
+    d: u32,
+    granularity: &str,
+    southern: bool,
+) -> Result<String, String> {
+    let days = days_from_civil(y, m, d);
+    let dow = weekday(days);
+    let (_, iso_w) = iso_week(y, m, d);
+    let mut parts = Vec::new();
+    for comp in granularity.split('_') {
+        parts.push(match comp {
+            "year" => format!("{y:04}"),
+            "halfyear" => format!("H{}", if m > 6 { 2 } else { 1 }),
+            "season" => format!("S{}", season(m, d, southern)),
+            "quarter" => format!("Q{}", (m - 1) / 3 + 1),
+            "month" => format!("{m:02}"),
+            "week" => format!("W{iso_w:02}"),
+            "weekday" => format!("D{dow}"),
+            "day" => format!("{d:02}"),
+            other => return Err(format!("unknown time granularity component '{other}'")),
+        });
+    }
+    Ok(parts.join("-"))
+}
+
+/// Grouped summary trended at a time granularity: each row gets the summary of
+/// its (key x time-bucket) cell. Rows with a missing key/date/value or unseen
+/// cell give `None`.
+pub fn trended_transform(
+    keys: &[Option<String>],
+    dates: &[Option<String>],
+    values: &[Option<f64>],
+    granularity: &str,
+    kind: SummaryKind,
+    southern: bool,
+) -> Result<Vec<Option<f64>>, String> {
+    if keys.len() != dates.len() || keys.len() != values.len() {
+        return Err("keys, dates and values length mismatch".into());
+    }
+    let mut composite = Vec::with_capacity(keys.len());
+    for (k, dt) in keys.iter().zip(dates) {
+        composite.push(match (k, dt) {
+            (Some(k), Some(dt)) => {
+                let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
+                Some(format!(
+                    "{k}|{}",
+                    time_bucket(y, m, d, granularity, southern)?
+                ))
+            }
+            _ => None,
+        });
+    }
+    let mut gt = GroupedTransform::new();
+    gt.fit(&composite, values, kind)?;
+    gt.transform(&composite)
 }

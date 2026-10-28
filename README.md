@@ -26,6 +26,15 @@ uv sync                  # creates .venv and builds the Rust extension (maturin)
 uv run pytest tests/ -q  # behavior tests
 ```
 
+## Dependency policy
+
+Lean but **pragmatic — no wheel reinvention**: the goal is fast data handling and
+fast tree algorithms, with research on top. Scikit-learn stays out (API shape
+only, never import it); established core packages are welcome where they replace
+real complexity — `pyarrow` for parquet (used by `mltreelib.datasets`), and
+arrow-rs (`arrow`/`parquet`) or Polars in Rust when frames/IO grow beyond the
+in-house `frame` module. Every other dependency must earn its place.
+
 ## Dataset component
 
 The dataset component is the heart of the library: an adjustable benchmark
@@ -64,10 +73,13 @@ Order matters: foundations first, then honest replication, then novelty.
 - [x] `DatasetBuilder` ingest of any data: NA policy (allow/drop/impute), digit rounding, intercept column, dtype reduction
 - [x] Calendar/time features (year, halfyear, quarter, month, ISO week, weekday, day-of-year, season, weekend)
 - [x] Lag features by whole days within a key (featuregen `LagFeatures` lineage)
-- [ ] Trended transforms at user granularity (year-month, year-week, …) — featuregen lineage
+- [x] Trended transforms at user granularity (`year_month`, `year_week`, `month_weekday`, …) — featuregen lineage
 - [ ] Decomposed transforms (series − trend − seasonality)
 - [ ] Aggregation features (grouped sums/means/counts over windows)
-- [ ] Wire `datasets/` real-data suite into the test/harness loaders
+- [ ] Built-in categorical encoders (one-hot, ordinal, target, James-Stein, hashing) — *later by design: keep the tool surface in one package, no encoder-library sprawl*
+- [ ] Featuretools-style automated features (Cartesian products, sub-level %-by-class, deep feature synthesis lite) — *later, same reason*
+- [x] `mltreelib.datasets` loader (pyarrow) — suite loads into `DatasetBuilder`-shaped dicts
+- [ ] Harness integration of `datasets/` + generator sweeps
 
 ### 2. Tree learners in Rust (replicate the giants first)
 - [ ] CART (regression + classification) — oracle: `legacy/mltreelib/tree/models.py`
@@ -92,6 +104,21 @@ Order matters: foundations first, then honest replication, then novelty.
 - [ ] R bindings (extendr over `mltreelib-core`)
 - [ ] Python API parity with the sklearn shape (`fit`/`predict`/`transform`), still no sklearn dependency
 - [ ] Docs + reproducible experiment reports
+
+### 6. Research & publication (the end goal)
+A research-backed package **and a published paper**: the claim is that tree/ensemble
+methods with structural awareness of categorical/group/hierarchical signal recover
+what flat learners lose — measured as structure recovery on generated ground truth
+plus TabArena-v0.1 real data.
+- [ ] Reproducible experiment reports (fixed seeds, uv lockfile, per-dataset win/loss)
+- [ ] Figures/tables generated from the harness, not hand-made
+- [ ] Paper draft — **stack chosen at paper time, no pre-commitment** (survey 2026-10):
+      Typst for modern typesetting; reproducible-manuscript pipelines (Quarto-style)
+      can emit Typst/LaTeX; LaTeX where venues demand it; Rχiv-Maker-style
+      automation is the pattern to evaluate when we get there
+- [ ] Research speed tooling: `autogluon/tabarena` harness, OpenML (`datasets/`),
+      uv for envs, arXiv workflow; agent skills for artifacts (hallmark for pages,
+      docx/pptx/pdf for documents, research skills for sources)
 
 ## License
 

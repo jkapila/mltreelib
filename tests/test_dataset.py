@@ -11,6 +11,7 @@ from mltreelib import (
     grouped_transform,
     lag_by_days,
     summarize,
+    trended_transform,
 )
 
 
@@ -195,3 +196,48 @@ def test_lag_by_days():
     assert lag_by_days(keys, dates, vals, 1) == [None, 10.0, None]
     assert lag_by_days(keys, dates, vals, 4) == [None, None, 10.0]
     assert lag_by_days(keys, dates, vals, 0) == [10.0, 20.0, 30.0]
+
+
+def test_trended_transform():
+    keys = ["a", "a", "a", "b"]
+    dates = ["2026-01-05", "2026-01-20", "2026-02-03", "2026-01-05"]
+    vals = [1.0, 3.0, 10.0, 100.0]
+    out = trended_transform(keys, dates, vals, granularity="year_month")
+    assert out == [2.0, 2.0, 10.0, 100.0]  # per (key, month) means
+
+    out = trended_transform(keys, dates, vals, granularity="year", kind="sum")
+    assert out == [14.0, 14.0, 14.0, 100.0]
+
+    with pytest.raises(ValueError):
+        trended_transform(keys, dates, vals, granularity="nope")
+    with pytest.raises(ValueError):
+        trended_transform(keys, ["bad-date"] + dates[1:], vals)
+
+
+def test_datasets_loader_feeds_builder():
+    from mltreelib import list_datasets, load_dataset
+
+    names = list_datasets()
+    if not names:
+        pytest.skip("datasets/ suite not present (see datasets/MANIFEST.md)")
+
+    assert "blood-transfusion-service-center" in names
+    ds = load_dataset("blood-transfusion-service-center")
+    assert ds["n_rows"] == 748
+    assert ds["n_cols"] == 5
+    assert "DonatedBloodInMarch2007" in ds["columns"]
+    assert ds["dtypes"]["DonatedBloodInMarch2007"] == "categorical"  # target Yes/No
+    assert ds["dtypes"]["MonthsSinceLastDonation"] == "numeric"
+
+    # loader output feeds straight into the data layer
+    b = DatasetBuilder(n_category=10)
+    for col, values in ds["columns"].items():
+        if ds["dtypes"][col] == "categorical":
+            b.add_categorical(col, values)
+        else:
+            b.add_numeric(col, values)
+    built = b.build()
+    assert built["n_rows"] == 748
+
+    with pytest.raises(ValueError):
+        load_dataset("does-not-exist")

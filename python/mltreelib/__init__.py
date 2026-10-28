@@ -14,7 +14,9 @@ from mltreelib._core import (
     grouped_transform,
     lag_by_days,
     summarize,
+    trended_transform,
 )
+from mltreelib.datasets import list_datasets, load_dataset
 
 __all__ = [
     "DatasetBuilder",
@@ -25,6 +27,9 @@ __all__ = [
     "grouped_scale",
     "grouped_transform",
     "lag_by_days",
+    "list_datasets",
+    "load_dataset",
     "summarize",
+    "trended_transform",
 ]
 __version__ = "0.1.0"
