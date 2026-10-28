@@ -133,3 +133,6 @@ dmypy.json
 
 # references
 references/
+
+# benchmark data (re-downloadable; MANIFEST.md is tracked)
+datasets/*.parquet
