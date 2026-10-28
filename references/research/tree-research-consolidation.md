@@ -107,6 +107,11 @@ Pseudocode in `references/algorithms/10-context-trees-tries.md`
 
 ## Open questions for Jitin
 
+The phase frame (variable pre-selection + expert-mixture thesis, classical
+trees only) lives in `preselection-and-expert-thesis.md` — it re-anchors the
+build TODO below on its two starting points: a single tree with
+linear/logistic leaves, and the pre-selection layer.
+
 1. Model tree v1 leaves: full OLS first, or sparse (TRUST-style) from the start?
 2. Leaf reporting: match trust-free's `explain()`/`compare()` UX, or keep v1
    as the per-leaf `Metrics` tables?

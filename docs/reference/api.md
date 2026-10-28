@@ -1025,3 +1025,77 @@ Returns: {group: regression report}, sorted by group.
 
 Raises:
     ValueError: mismatched lengths or a group with no observed pairs.
+
+### ModelTree
+
+```python
+class ModelTree(max_depth=8, min_rows=20, min_gain=1e-09, leaf_cols='all', leaf='linear')
+```
+
+Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
+leaves, NA-aware (learned split directions + NA-indicator leaf terms).
+Task: regression.
+
+#### ModelTree.fit
+
+```python
+fit(self, /, x, y)
+```
+
+Fit the tree on row-major data. Task: regression.
+
+Args:
+    x: rows of predictors; `None` entries are missing (NA rows train).
+    y: targets; `None` drops that row.
+
+Returns: nothing; the fitted tree replaces the inner model.
+
+#### ModelTree.leaves
+
+```python
+leaves(self, /)
+```
+
+Fitted leaf models. Task: regression.
+
+Args: none.
+
+Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `fill`,
+`intercept`, `n`.
+
+#### ModelTree.n_leaves
+
+```python
+n_leaves(self, /)
+```
+
+Number of leaves. Task: regression.
+
+Args: none.
+
+Returns: leaf count.
+
+#### ModelTree.predict
+
+```python
+predict(self, /, x)
+```
+
+Predict for row-major data; NAs never block a prediction. Task: regression.
+
+Args:
+    x: rows of predictors; `None` entries are missing.
+
+Returns: one predicted value per row.
+
+#### ModelTree.splits
+
+```python
+splits(self, /)
+```
+
+Learned splits. Task: regression.
+
+Args: none.
+
+Returns: one dict per split with `col`, `threshold`, `missing_left`.
