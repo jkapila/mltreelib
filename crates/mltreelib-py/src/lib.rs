@@ -224,6 +224,7 @@ fn summarize<'py>(py: Python<'py>, values: Vec<Option<f64>>) -> PyResult<Bound<'
     let d = PyDict::new(py);
     d.set_item("count", s.count)?;
     d.set_item("n_missing", s.n_missing)?;
+    d.set_item("sum", s.sum)?;
     d.set_item("mean", s.mean)?;
     d.set_item("std", s.std)?;
     d.set_item("min", s.min)?;

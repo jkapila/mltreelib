@@ -153,17 +153,20 @@ fn embedding_classifier_learns_and_is_deterministic() {
 
 #[test]
 fn embedding_regressor_activation_follows_target_sign() {
-    // all-positive targets -> ReLU output: predictions stay non-negative
+    // all-positive targets -> ReLU output: predictions stay non-negative and
+    // actually fit the level means
     let vals = vec![s("a"), s("b"), s("a"), s("b")];
     let y = vec![Some(5.0), Some(0.0), Some(5.0), Some(0.0)];
-    let mut e = EmbeddingEncoder::new(3, 0.1, 300, 11, EmbeddingTask::Regression).unwrap();
+    let mut e = EmbeddingEncoder::new(3, 0.5, 200, 11, EmbeddingTask::Regression).unwrap();
     e.fit(&vals, &y, None).unwrap();
     let preds = e.predict(&vals).unwrap();
     assert!(preds.iter().all(|p| p.unwrap() >= 0.0), "relu output");
+    assert!((preds[0].unwrap() - 5.0).abs() < 1.0, "fits level a: {:?}", preds);
+    assert!(preds[1].unwrap() < 1.0, "fits level b: {:?}", preds);
 
     // a negative target present -> linear output may go negative
     let y2 = vec![Some(-5.0), Some(0.0), Some(-5.0), Some(0.0)];
-    let mut e2 = EmbeddingEncoder::new(3, 0.1, 300, 11, EmbeddingTask::Regression).unwrap();
+    let mut e2 = EmbeddingEncoder::new(3, 0.5, 200, 11, EmbeddingTask::Regression).unwrap();
     e2.fit(&vals, &y2, None).unwrap();
     let preds = e2.predict(&vals).unwrap();
     assert!(preds.iter().any(|p| p.unwrap() < 0.0), "linear output");

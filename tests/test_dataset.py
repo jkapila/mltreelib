@@ -387,6 +387,27 @@ def test_quick_win_encoders():
     assert js.transform(["a", "b"]) == [5.0, 5.0]  # <3 levels -> grand mean
 
 
+def test_encoding_demo_runs():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from mltreelib import list_datasets
+
+    if not list_datasets():
+        pytest.skip("datasets/ suite not present (see datasets/MANIFEST.md)")
+    script = Path(__file__).resolve().parents[1] / "examples" / "encoding_demo.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "churn"],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "UNSUPERVISED ENCODERS" in proc.stdout
+    assert "REGRESSION FAMILY" in proc.stdout
+
+
 def test_decomposed_transform():
     dates = [(date(2026, 1, 5) + timedelta(days=i)).isoformat() for i in range(14)]
     vals = [0.4 if i % 7 < 5 else -1.0 for i in range(14)]

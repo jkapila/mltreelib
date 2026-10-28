@@ -109,17 +109,38 @@ impl EmbeddingNet {
                 }
             }
             Head::Regression => {
-                self.relu_out = y.iter().flatten().filter(|t| !t.is_nan()).all(|t| *t >= 0.0);
+                let observed: Vec<f64> = y
+                    .iter()
+                    .flatten()
+                    .filter(|t| !t.is_nan())
+                    .copied()
+                    .collect();
+                self.relu_out = observed.iter().all(|t| *t >= 0.0);
+                // bias starts at the target mean so a ReLU head is not dead
+                // on arrival (z ~ 0 would gate every gradient off)
+                if !observed.is_empty() {
+                    self.b[0] = observed.iter().sum::<f64>() / observed.len() as f64;
+                }
             }
         }
 
         for _ in 0..self.epochs {
+            // full-batch gradients: one averaged update per epoch keeps
+            // training stable regardless of row count (per-row SGD diverges
+            // on larger data at ordinary learning rates)
+            let mut grad_w = vec![0.0; self.w.len()];
+            let mut grad_b = vec![0.0; self.out_dim];
+            let mut grad_e = vec![vec![0.0; self.dim]; self.emb.len()];
+            let mut n_obs = 0.0;
+
             for (row, t) in level_ids.iter().zip(y) {
                 let t = match t {
                     Some(t) if !t.is_nan() => *t,
                     _ => continue,
                 };
-                let e = &mut self.emb[*row];
+                n_obs += 1.0;
+                let row = *row;
+                let e = &self.emb[row];
                 match self.head {
                     Head::Classification => {
                         let mut z = self.b.clone();
@@ -135,12 +156,11 @@ impl EmbeddingNet {
                             *pj /= sum;
                         }
                         p[t as usize] -= 1.0;
-                        let e_old = e.clone();
                         for j in 0..self.out_dim {
-                            self.b[j] -= self.lr * p[j];
+                            grad_b[j] += p[j];
                             for d in 0..self.dim {
-                                self.w[j * self.dim + d] -= self.lr * p[j] * e_old[d];
-                                e[d] -= self.lr * p[j] * self.w[j * self.dim + d];
+                                grad_w[j * self.dim + d] += p[j] * e[d];
+                                grad_e[row][d] += p[j] * self.w[j * self.dim + d];
                             }
                         }
                     }
@@ -152,13 +172,27 @@ impl EmbeddingNet {
                         let pred = if self.relu_out { z.max(0.0) } else { z };
                         let gate = if self.relu_out && z <= 0.0 { 0.0 } else { 1.0 };
                         let g = (pred - t) * gate;
-                        let e_old = e.clone();
-                        self.b[0] -= self.lr * g;
+                        grad_b[0] += g;
                         for d in 0..self.dim {
-                            self.w[d] -= self.lr * g * e_old[d];
-                            e[d] -= self.lr * g * self.w[d];
+                            grad_w[d] += g * e[d];
+                            grad_e[row][d] += g * self.w[d];
                         }
                     }
+                }
+            }
+
+            if n_obs == 0.0 {
+                break;
+            }
+            for j in 0..self.out_dim {
+                self.b[j] -= self.lr * grad_b[j] / n_obs;
+            }
+            for (i, wj) in self.w.iter_mut().enumerate() {
+                *wj -= self.lr * grad_w[i] / n_obs;
+            }
+            for (e, ge) in self.emb.iter_mut().zip(grad_e.iter()) {
+                for (d, g) in ge.iter().enumerate() {
+                    e[d] -= self.lr * g / n_obs;
                 }
             }
         }

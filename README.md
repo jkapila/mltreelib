@@ -155,7 +155,9 @@ uv run zensical build     # static site in site/
   `minify`, `llmstxt` → `llms.txt` for LLM consumption)
 - **[AGENTS.md](AGENTS.md)** — project rules and conventions (also [CLAUDE.md](CLAUDE.md))
 - **Rust API**: `cargo doc -p mltreelib-core --no-deps --open` (doc-comments are the reference)
-- **Runnable walkthrough**: `uv run python examples/data_layer_demo.py [dataset ...]`
+- **Runnable walkthroughs**: `uv run python examples/data_layer_demo.py [dataset ...]` (data &
+  feature layer) and `uv run python examples/encoding_demo.py [dataset ...]` (every encoder
+  on real data)
 
 ## License
 
