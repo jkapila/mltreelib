@@ -34,6 +34,20 @@ fit_predict <- function(model, train, test, ycol, xs) {
       fit <- grf::regression_forest(as.matrix(train[, xs]), train[[ycol]])
       as.numeric(predict(fit, as.matrix(test[, xs]))$predictions)
     },
+    ctree = {
+      fit <- partykit::ctree(as.formula(paste(ycol, "~ .")), data = train)
+      predict(fit, test)
+    },
+    glmtree = {
+      f <- as.formula(paste(ycol, "~", paste(xs, collapse = " + "), "|",
+                            paste(xs, collapse = " + ")))
+      fit <- partykit::glmtree(f, data = train)
+      predict(fit, test, type = "response")
+    },
+    earth = {
+      fit <- earth::earth(x = train[, xs, drop = FALSE], y = train[[ycol]])
+      predict(fit, test[, xs, drop = FALSE])
+    },
     stop(paste("unknown model:", model))
   )
 }
@@ -56,7 +70,8 @@ for (ds in datasets) {
   test <- read.csv(file.path(data_dir, paste0(ds, "_test.csv")), check.names = FALSE)
   ycol <- "y"
   xs <- setdiff(names(train), ycol)
-  for (model in c("rpart", "cubist", "lmtree", "grf_llf", "grf_rf")) {
+  for (model in c("rpart", "cubist", "lmtree", "grf_llf", "grf_rf",
+                  "ctree", "glmtree", "earth")) {
     t0 <- proc.time()[["elapsed"]]
     res <- tryCatch({
       pred <- as.numeric(fit_predict(model, train, test, ycol, xs))

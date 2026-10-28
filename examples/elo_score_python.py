@@ -56,6 +56,7 @@ def append_row(ds, model, rmse, mae, fit):
 
 def make_models():
     import numpy as np
+    import pandas as pd
 
     ms = {
         "ModelTree(all)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "linear", "all"),
@@ -90,15 +91,14 @@ def make_models():
         return run
 
     def catb():
-        import catboost as cb
+        from catboost import CatBoostRegressor
 
         def run(xtr, ytr, xte):
+            # The native Pool path trips a numpy-2 `Pool.copy` bug in this
+            # build; the sklearn-style regressor is the working surface.
+            m = CatBoostRegressor(iterations=200, verbose=0, allow_writing_files=False)
             t0 = time.perf_counter()
-            m = cb.train(
-                {"iterations": 200, "loss_function": "RMSE", "verbose": 0},
-                cb.Pool(np.asarray(xtr, dtype=np.float64),
-                        label=np.asarray(ytr, dtype=np.float64)),
-            )
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
             return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
 
         return run
@@ -131,10 +131,29 @@ def make_models():
 
         return run
 
+    def mtrees():
+        import sys
+
+        sys.path.insert(0, "references/repos/modeltrees/src")
+        from modeltrees import lmtree as mt_lmtree
+
+        def run(xtr, ytr, xte):
+            cols = [f"x{i}" for i in range(len(xtr[0]))]
+            f = "y ~ " + " + ".join(cols) + " | " + " + ".join(cols)
+            df = pd.DataFrame(np.asarray(xtr, dtype=float), columns=cols)
+            df["y"] = np.asarray(ytr, dtype=float)
+            dte = pd.DataFrame(np.asarray(xte, dtype=float), columns=cols)
+            t0 = time.perf_counter()
+            m = mt_lmtree(f, data=df)
+            return np.asarray(m.predict(newdata=dte), dtype=float), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
     attempt("sklearn tree", skl_tree)
+    attempt("modeltrees lmtree", mtrees)
     return ms
 
 
@@ -156,7 +175,10 @@ def main():
         for name, fn in models.items():
             try:
                 pred, fit = fn(xtr, ytr, xte)
-                rmse, mae = scores([float(p) for p in pred], yte)
+                pairs = [(float(p), t) for p, t in zip(pred, yte) if p == p]
+                if not pairs:
+                    raise RuntimeError("no finite predictions")
+                rmse, mae = scores([p for p, _ in pairs], [t for _, t in pairs])
                 append_row(ds, name, rmse, mae, fit)
                 print(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
             except Exception as exc:

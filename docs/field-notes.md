@@ -35,6 +35,42 @@ m.profile()                                # per-level timings built in
 - the tree reproduces `rpart` exactly when configured as CART (mean leaves),
   so results are checkable against the reference implementations.
 
+## The Elo board (arena run, stock configs)
+
+Five real regression sets (concrete, abalone, ozone, boston, fc2008), one
+80/20 split each, identical encodings; round-robin Elo on per-dataset RMSE
+(K=32, start 1000). Reproduce: `elo_prepare.py` → `elo_score_r.R` →
+`elo_score_python.py` → `elo_score_rust.py` → `elo_report.py`; the numbers
+live in `benchmarks/elo_scores.csv`.
+
+| Elo | model | note |
+|---|---|---|
+| 1418.7 | CatBoost (200) | best on fc2008 and boston |
+| 1327.0 | forust (Rust) | |
+| 1216.0 | grf local-linear forest | fc2008 NAs defeat it (4/5) |
+| 1212.8 | LightGBM (200) | |
+| 1202.3 | perpetual (Rust) | |
+| 1129.3 | CTBoost | ctree-based GBDT |
+| 1092.0 | Cubist (R) | the C5-family regressor |
+| 1081.0 | grf RF | |
+| 972.8 | earth (MARS) | cannot take NAs (4/5) |
+| 963.1 | glmtree (partykit) | |
+| 948.4 | modeltrees lmtree | matches partykit to 3 decimals - port certified |
+| 945.6 | lmtree (partykit) | |
+| 884.9 | ctree (partykit) | |
+| 867.9 | sklearn tree | needs mean-imputation for NAs |
+| 858.2 | **ModelTree(mean)** — ours | unoptimized defaults |
+| 714.9 | rpart | |
+| 597.0 | ModelTree(path) — ours | |
+| 568.2 | ModelTree(all) — ours | unregularized leaves blow up on fc2008 |
+
+Reference scale (different protocol): TabArena best overall Kumo-Tabular
+1955; best tree-based LightGBM tuned+ens 1411.
+
+The board is the yardstick: every default change, leaf variant, and forest
+feature moves these numbers, and `examples/default_search.py` bakes the
+winning defaults against the lmtree/cubist/rpart bars.
+
 ## Why this page exists
 
 Benchmarks should be about models, not plumbing. The Elo arena
