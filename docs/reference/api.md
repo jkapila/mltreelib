@@ -3,6 +3,98 @@
 
 # API reference
 
+## BaseNEncoder
+
+```python
+class BaseNEncoder(base)
+```
+
+**Base-N / binary** encoding: each level becomes its base-`base` digits as
+indicator columns (`base = 2` is the classic Binary encoder). Task:
+**both** (unsupervised). Unseen and missing rows are all-zero.
+
+### BaseNEncoder.fit
+
+```python
+fit(self, /, values)
+```
+
+Fit the level vocabulary on `values`.
+
+### BaseNEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Returns {digit name: indicator list}.
+
+## CatBoostEncoder
+
+```python
+class CatBoostEncoder(prior, permutations, seed)
+```
+
+CatBoost-style ordered target statistics — the leakage-safe flavour.
+
+`fit_transform` gives each row the running statistic of its level using
+only rows earlier in a shuffled order: `(sum_y_prefix + prior * global) /
+(n_prefix + 1)`, averaged over `permutations` seeded passes. The same level
+gets different values in different rows — that row-dependence is the
+anti-leakage mechanism. `transform` (new data) uses prior-smoothed fitted
+level means.
+
+### CatBoostEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit prior-smoothed level means (used by `transform` on new data).
+
+### CatBoostEncoder.fit_transform
+
+```python
+fit_transform(self, /, values, y)
+```
+
+Leakage-safe ordered encodings of the training rows themselves.
+
+### CatBoostEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Encode new rows from the fitted level means; unseen -> global mean,
+missing -> None.
+
+## CountEncoder
+
+```python
+class CountEncoder(normalize)
+```
+
+**Count / frequency** encoding: occurrence count per category (`normalize`
+gives the share of rows). Task: **both** (unsupervised). Unseen levels give
+0.0; missing stays missing.
+
+### CountEncoder.fit
+
+```python
+fit(self, /, values)
+```
+
+Fit counts on `values`.
+
+### CountEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Count (or share) per row; unseen -> 0.0, missing -> None.
+
 ## DatasetBuilder
 
 ```python
@@ -64,6 +156,44 @@ Returns: dict with `columns` (name -> values), `dtypes` ("numeric" or
 Raises:
     ValueError: inconsistent column lengths, duplicate names, invalid
         policy usage (e.g. "drop" removing every row).
+
+## EmbeddingEncoder
+
+```python
+class EmbeddingEncoder(dim, lr, epochs, seed, task)
+```
+
+NN-style **learned embeddings** per category: a small embedding table and a
+linear head trained by SGD, one table per categorical feature. Task:
+**both** — softmax head for classification; for regression a ReLU output
+when all fitted targets are non-negative, linear otherwise. `transform`
+returns the embeddings, `predict` the trained head. Unseen levels give
+zeros; missing stays missing.
+
+### EmbeddingEncoder.fit
+
+```python
+fit(self, /, values, y, n_classes=None)
+```
+
+Train on (values, y); `n_classes` is inferred for classification when
+omitted, ignored for regression.
+
+### EmbeddingEncoder.predict
+
+```python
+predict(self, /, values)
+```
+
+Predictions of the trained head (class label or activated value).
+
+### EmbeddingEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Learned embedding per row (None = missing, zeros = unseen).
 
 ## GroupedScaler
 
@@ -131,6 +261,23 @@ Returns: scaled values; None for missing key/value, unseen groups and
 
 Raises:
     ValueError: not fitted or mismatched lengths.
+
+## HashingEncoder
+
+```python
+class HashingEncoder(n_buckets)
+```
+
+Hashed one-hot: levels are hashed into `n_buckets` indicator columns, so
+unseen levels still land somewhere. Deterministic.
+
+### HashingEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Returns {bucket name: indicator list}.
 
 ## IndexMapper
 
@@ -206,6 +353,246 @@ transform(self, /, name, values)
 
 Codes for `values`; unseen levels map to None (missing).
 
+## JamesSteinEncoder
+
+```python
+class JamesSteinEncoder()
+```
+
+**James-Stein** encoding: level means shrunk toward the grand mean with
+`B = max(0, 1 - ((L - 3) * sigma2) / sum((mean_i - global)^2))`; fewer than
+three levels collapse to the grand mean. Task: **both**. Unseen -> global;
+missing -> None.
+
+### JamesSteinEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit shrunk means on (values, y).
+
+### JamesSteinEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Shrunk mean per row; unseen -> global, missing -> None.
+
+## LeaveOneOutEncoder
+
+```python
+class LeaveOneOutEncoder()
+```
+
+**Leave-one-out** encoding: `fit_transform` gives each row its level's mean
+target **without that row** (leakage-aware); `transform` on new data uses
+the full fitted level mean. Task: **both**. Unseen -> global mean;
+missing -> None.
+
+### LeaveOneOutEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit level means on (values, y).
+
+### LeaveOneOutEncoder.fit_transform
+
+```python
+fit_transform(self, /, values, y)
+```
+
+Row-level means excluding each row's own target.
+
+### LeaveOneOutEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Full fitted level means for new rows.
+
+## MEstimatorEncoder
+
+```python
+class MEstimatorEncoder(m)
+```
+
+**M-estimate** encoding: `(sum_y + m * global) / (n_level + m)` — target
+smoothing with fixed strength `m`. Task: **both** (leaky on training data;
+prefer `CatBoostEncoder` or `LeaveOneOutEncoder` there). Unseen -> global;
+missing -> None.
+
+### MEstimatorEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit smoothed level means on (values, y).
+
+### MEstimatorEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Smoothed mean per row; unseen -> global, missing -> None.
+
+## OneHotEncoder
+
+```python
+class OneHotEncoder()
+```
+
+One-hot expansion: one indicator column per fitted level (first-seen
+order). Missing values and levels unseen at fit produce an all-zero row.
+
+### OneHotEncoder.fit
+
+```python
+fit(self, /, values)
+```
+
+Learn the levels (first-seen order). Re-fitting resets them.
+
+### OneHotEncoder.levels
+
+```python
+levels(self, /)
+```
+
+Fitted levels, in column order.
+
+### OneHotEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Returns {level: indicator list}; unseen/missing rows are all-zero.
+
+## QuantileEncoder
+
+```python
+class QuantileEncoder(q, smoothing)
+```
+
+**Quantile** encoding: each level becomes its smoothed target quantile
+(default median), `w * level_quantile + (1 - w) * global_quantile` with
+`w = n / (n + smoothing)`. Task: **regression**. Unseen -> global
+quantile; missing -> None.
+
+### QuantileEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit quantiles on (values, y).
+
+### QuantileEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Smoothed quantile per row; unseen -> global, missing -> None.
+
+## SumEncoder
+
+```python
+class SumEncoder()
+```
+
+**Sum contrast** coding: `k-1` columns; level `i < k-1` gets +1 in column
+`i`, the last level gets -1 across all columns. Task: **both**
+(unsupervised). Unseen rows give zeros; missing stays missing.
+
+### SumEncoder.fit
+
+```python
+fit(self, /, values)
+```
+
+Fit the level vocabulary on `values`.
+
+### SumEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Contrast row per row (None = missing).
+
+## TargetEncoder
+
+```python
+class TargetEncoder(smoothing)
+```
+
+Smoothed target encoding (fitted-mean flavour).
+
+`w * level_mean + (1 - w) * global_mean` with `w = n / (n + smoothing)`.
+**Leaky on training data** (the row's own target is in its level mean) —
+prefer `CatBoostEncoder.fit_transform` for training features. Unseen levels
+fall back to the global mean; missing stays missing.
+
+### TargetEncoder.fit
+
+```python
+fit(self, /, values, y)
+```
+
+Fit level means on (values, y).
+
+### TargetEncoder.prior
+
+```python
+prior(self, /)
+```
+
+The global mean used as the unseen-level fallback.
+
+### TargetEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+Encode values; unseen -> global mean, missing -> None.
+
+## TfidfEncoder
+
+```python
+class TfidfEncoder(normalize)
+```
+
+Class-level **TF-IDF**: each category becomes a vector over the target
+classes — `tf(v,j) = count(v,j)/count(v)` times
+`idf(j) = ln(1 + n/(1 + count(j))) + 1`; `normalize` scales each level
+vector to unit L2 norm. Task: **classification**. Unseen levels fall back
+to the global class shares; missing stays missing.
+
+### TfidfEncoder.fit
+
+```python
+fit(self, /, values, y, n_classes)
+```
+
+Fit class counts on (values, y, n_classes).
+
+### TfidfEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+One class-space vector per row (None = missing).
+
 ## VariableScaler
 
 ```python
@@ -268,6 +655,34 @@ Returns: scaled values; None for missing inputs and degenerate scales.
 
 Raises:
     ValueError: not fitted or unknown column.
+
+## WoEEncoder
+
+```python
+class WoEEncoder(prior)
+```
+
+**Weight of Evidence** (credit-risk classic): one-vs-rest
+`ln(distr_j(v) / distr_not_j(v))` per category, smoothed with additive
+`prior`. Task: **classification**. Positive = over-representation of the
+class in that level. Unseen levels give neutral zeros; missing stays
+missing.
+
+### WoEEncoder.fit
+
+```python
+fit(self, /, values, y, n_classes)
+```
+
+Fit class counts on (values, y, n_classes).
+
+### WoEEncoder.transform
+
+```python
+transform(self, /, values)
+```
+
+One WoE vector per row (None = missing).
 
 ## calendar_features
 

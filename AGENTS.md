@@ -15,8 +15,9 @@ the TabArena-v0.1 suite in `datasets/`), then mix and extend. End goal: a
 production-grade package **and a research paper**.
 
 Design docs and research live in `references/` (start with
-`tree-vs-foundation-tabular.md`, `jkapila-methods-map.md`,
-`dataset-component-design.md`).
+`references/research/tree-vs-foundation-tabular.md`,
+`references/research/jkapila-methods-map.md`,
+`references/research/dataset-component-design.md`).
 
 ## Layout
 
@@ -30,7 +31,8 @@ Design docs and research live in `references/` (start with
 - `tests/` — Python behavior tests (pytest).
 - `datasets/` — TabArena-v0.1 benchmark suite (51 parquet files + `MANIFEST.md`;
   parquet files are NOT tracked in git, re-download from the OpenML IDs listed).
-- `references/` — research material and vendor docs (not tracked in git).
+- `references/` — `research/` notes, `docs/` vendor manuals, `data/` benchmark CSVs
+  (tracked in git); `sources/` archives and `repos/` clones (not tracked).
 - `legacy/` — previous Python/nbdev implementation. **Read-only reference oracle**
   (e.g. `legacy/mltreelib/tree/models.py` is the Python oracle for the Rust tree
   port). Do not modify or extend it.
@@ -70,14 +72,18 @@ uv run python scripts/gen_api_docs.py   # regenerate docs/reference/api.md after
 - **Commits**: small, imperative subject + short body listing the behavior added
   and the test counts. Binary data (`datasets/*.parquet`, wheels, models) is not
   committed.
+- **Research compounds.** Every research finding, survey or external analysis
+  is saved to `references/research/` as a dated, cited markdown note (companion to the
+  chat answer, never instead of it). New session? Check `references/research/` first.
 - **Roadmap lives in README.md** ("Roadmap / TODO"). Update its checkboxes when
   items land; add future work there rather than building speculative features.
-  Currently parked for later on purpose: categorical encoders and
+  Currently parked for later on purpose:
   featuretools-style automated features (keep the tool surface in one package).
 
 ## Research context
 
-- Benchmarks: TabArena leaderboard CSVs and analysis in `references/`; datasets in
+- Benchmarks: TabArena leaderboard CSVs in `references/data/` and analysis in
+  `references/research/`; datasets in
   `datasets/` (OpenML suite 457). BeyondArena needs the `data-foundry` package —
   intentionally not vendored.
 - Comparison discipline: give trees the same tuning/ensembling budget as any

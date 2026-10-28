@@ -131,14 +131,15 @@ dmypy.json
 /.quarto/
 
 
-# references
-references/
+# references: research notes/docs/data are tracked; bulky material is not
+references/repos/
+references/sources/
 
 # benchmark data (re-downloadable; MANIFEST.md is tracked)
 datasets/*.parquet
 
 # generated documentation
-docs/
+site/
 
 # demo output (figures)
 examples/out/

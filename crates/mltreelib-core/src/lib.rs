@@ -3,8 +3,10 @@
 //! bindings stay thin shells around this crate.
 
 pub mod builder;
+pub mod encode;
 pub mod frame;
 pub mod generator;
+pub mod nn;
 pub mod index;
 pub mod schema;
 pub mod timefeat;

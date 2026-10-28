@@ -293,6 +293,100 @@ def test_ts_transforms_drop_na_rows_and_warn():
     assert out == [1.0, None, None]
 
 
+def test_categorical_encoders():
+    from mltreelib import (
+        CatBoostEncoder,
+        HashingEncoder,
+        OneHotEncoder,
+        TargetEncoder,
+    )
+
+    ohe = OneHotEncoder()
+    ohe.fit(["a", "b", "a"])
+    assert ohe.levels() == ["a", "b"]
+    assert ohe.transform(["a", "zz", None]) == {"a": [1.0, 0.0, 0.0], "b": [0.0, 0.0, 0.0]}
+
+    he = HashingEncoder(4)
+    cols = he.transform(["x", "y", "x"])
+    assert len(cols) == 4
+    assert sum(sum(v) for v in cols.values()) == 3.0
+
+    te = TargetEncoder(2.0)
+    te.fit(["a", "a", "b", "b"], [0.0, 0.0, 10.0, 10.0])
+    assert te.transform(["a"]) == [2.5]
+    assert te.transform(["zz", None]) == [5.0, None]
+    assert te.prior() == 5.0
+
+    cb = CatBoostEncoder(1.0, 4, 42)
+    enc = cb.fit_transform(["a", "a", "a", "a"], [1.0, 3.0, 5.0, 7.0])
+    assert len(set(enc)) > 1  # row-dependent values = leakage guard
+    assert cb.transform(["a", "zz", None]) == [4.0, 4.0, None]
+
+
+def test_class_space_encoders():
+    from mltreelib import EmbeddingEncoder, TfidfEncoder, WoEEncoder
+
+    tf = TfidfEncoder(normalize=False)
+    tf.fit(["a", "a", "b", "b"], [0.0, 1.0, 0.0, 1.0], 2)
+    out = tf.transform(["a", None])
+    assert out[1] is None
+    assert len(out[0]) == 2  # one weight per class
+
+    woe = WoEEncoder(1.0)
+    woe.fit(["a", "a", "b"], [1.0, 1.0, 0.0], 2)
+    v = woe.transform(["a"])[0]
+    assert v[1] > 0 > v[0]  # over-represented in class 1
+
+    emb = EmbeddingEncoder(4, 0.5, 50, 7, "classification")
+    emb.fit(["a", "a", "b", "b"], [0.0, 0.0, 1.0, 1.0], 2)
+    assert emb.predict(["a", "b"]) == [0.0, 1.0]
+    assert emb.transform(["zz"])[0] == [0.0, 0.0, 0.0, 0.0]
+
+    reg = EmbeddingEncoder(3, 0.1, 300, 11, "regression")
+    reg.fit(["a", "b", "a", "b"], [5.0, 0.0, 5.0, 0.0])
+    assert all(p >= 0 for p in reg.predict(["a", "b"]))  # relu on all-positive targets
+
+
+def test_quick_win_encoders():
+    from mltreelib import (
+        BaseNEncoder,
+        CountEncoder,
+        JamesSteinEncoder,
+        LeaveOneOutEncoder,
+        MEstimatorEncoder,
+        QuantileEncoder,
+        SumEncoder,
+    )
+
+    c = CountEncoder(False)
+    c.fit(["a", "a", "b"])
+    assert c.transform(["a", "zz", None]) == [2.0, 0.0, None]
+
+    loo = LeaveOneOutEncoder()
+    out = loo.fit_transform(["a", "a", "b"], [0.0, 10.0, 4.0])
+    assert out == [10.0, 0.0, 14.0 / 3.0]  # own row excluded; single-obs -> global
+
+    m = MEstimatorEncoder(2.0)
+    m.fit(["a", "a"], [0.0, 10.0])
+    assert m.transform(["a"]) == [5.0]  # (10 + 2*5) / (2+2)
+
+    b = BaseNEncoder(2)
+    b.fit(["a", "b", "c", "d"])
+    assert b.transform(["d", "zz"]) == {"d0": [1.0, 0.0], "d1": [1.0, 0.0]}
+
+    s = SumEncoder()
+    s.fit(["a", "b", "c"])
+    assert s.transform(["a", "c", None]) == [[1.0, 0.0], [-1.0, -1.0], None]
+
+    q = QuantileEncoder(0.5, 0.0)
+    q.fit(["a", "a", "b"], [0.0, 10.0, 100.0])
+    assert q.transform(["a"]) == [5.0]  # median of [0, 10]
+
+    js = JamesSteinEncoder()
+    js.fit(["a", "b"], [0.0, 10.0])
+    assert js.transform(["a", "b"]) == [5.0, 5.0]  # <3 levels -> grand mean
+
+
 def test_decomposed_transform():
     dates = [(date(2026, 1, 5) + timedelta(days=i)).isoformat() for i in range(14)]
     vals = [0.4 if i % 7 < 5 else -1.0 for i in range(14)]

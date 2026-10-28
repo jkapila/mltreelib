@@ -6,6 +6,11 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyModule, PyModuleMethods};
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
+use mltreelib_core::encode::{
+    BaseNEncoder, CatBoostEncoder, CountEncoder, EmbeddingEncoder, EmbeddingTask, HashingEncoder,
+    JamesSteinEncoder, LeaveOneOutEncoder, MEstimatorEncoder, OneHotEncoder, QuantileEncoder,
+    SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
+};
 use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
@@ -825,12 +830,525 @@ fn windowed_transform(
         .map_err(PyValueError::new_err)
 }
 
+/// One-hot expansion: one indicator column per fitted level (first-seen
+/// order). Missing values and levels unseen at fit produce an all-zero row.
+#[pyclass(name = "OneHotEncoder")]
+struct PyOneHotEncoder {
+    inner: OneHotEncoder,
+}
+
+#[pymethods]
+impl PyOneHotEncoder {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: OneHotEncoder::new(),
+        }
+    }
+
+    /// Learn the levels (first-seen order). Re-fitting resets them.
+    fn fit(&mut self, values: Vec<Option<String>>) {
+        self.inner.fit(&values);
+    }
+
+    /// Fitted levels, in column order.
+    fn levels(&self) -> PyResult<Vec<String>> {
+        self.inner
+            .levels()
+            .map(|v| v.to_vec())
+            .map_err(PyValueError::new_err)
+    }
+
+    /// Returns {level: indicator list}; unseen/missing rows are all-zero.
+    fn transform(&self, py: Python<'_>, values: Vec<Option<String>>) -> PyResult<Py<PyDict>> {
+        let cols = self.inner.transform(&values).map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        for (name, col) in cols {
+            d.set_item(name, col)?;
+        }
+        Ok(d.unbind())
+    }
+}
+
+/// Hashed one-hot: levels are hashed into `n_buckets` indicator columns, so
+/// unseen levels still land somewhere. Deterministic.
+#[pyclass(name = "HashingEncoder")]
+struct PyHashingEncoder {
+    inner: HashingEncoder,
+}
+
+#[pymethods]
+impl PyHashingEncoder {
+    #[new]
+    fn new(n_buckets: usize) -> PyResult<Self> {
+        Ok(Self {
+            inner: HashingEncoder::new(n_buckets).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Returns {bucket name: indicator list}.
+    fn transform(&self, py: Python<'_>, values: Vec<Option<String>>) -> PyResult<Py<PyDict>> {
+        let d = PyDict::new(py);
+        for (name, col) in self.inner.transform(&values) {
+            d.set_item(name, col)?;
+        }
+        Ok(d.unbind())
+    }
+}
+
+/// Smoothed target encoding (fitted-mean flavour).
+///
+/// `w * level_mean + (1 - w) * global_mean` with `w = n / (n + smoothing)`.
+/// **Leaky on training data** (the row's own target is in its level mean) —
+/// prefer `CatBoostEncoder.fit_transform` for training features. Unseen levels
+/// fall back to the global mean; missing stays missing.
+#[pyclass(name = "TargetEncoder")]
+struct PyTargetEncoder {
+    inner: TargetEncoder,
+}
+
+#[pymethods]
+impl PyTargetEncoder {
+    #[new]
+    fn new(smoothing: f64) -> PyResult<Self> {
+        Ok(Self {
+            inner: TargetEncoder::new(smoothing).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit level means on (values, y).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Encode values; unseen -> global mean, missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+
+    /// The global mean used as the unseen-level fallback.
+    fn prior(&self) -> PyResult<f64> {
+        self.inner.prior().map_err(PyValueError::new_err)
+    }
+}
+
+/// CatBoost-style ordered target statistics — the leakage-safe flavour.
+///
+/// `fit_transform` gives each row the running statistic of its level using
+/// only rows earlier in a shuffled order: `(sum_y_prefix + prior * global) /
+/// (n_prefix + 1)`, averaged over `permutations` seeded passes. The same level
+/// gets different values in different rows — that row-dependence is the
+/// anti-leakage mechanism. `transform` (new data) uses prior-smoothed fitted
+/// level means.
+#[pyclass(name = "CatBoostEncoder")]
+struct PyCatBoostEncoder {
+    inner: CatBoostEncoder,
+}
+
+#[pymethods]
+impl PyCatBoostEncoder {
+    #[new]
+    fn new(prior: f64, permutations: usize, seed: u64) -> PyResult<Self> {
+        Ok(Self {
+            inner: CatBoostEncoder::new(prior, permutations, seed)
+                .map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit prior-smoothed level means (used by `transform` on new data).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Leakage-safe ordered encodings of the training rows themselves.
+    fn fit_transform(
+        &mut self,
+        values: Vec<Option<String>>,
+        y: Vec<Option<f64>>,
+    ) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .fit_transform(&values, &y)
+            .map_err(PyValueError::new_err)
+    }
+
+    /// Encode new rows from the fitted level means; unseen -> global mean,
+    /// missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// Class-level **TF-IDF**: each category becomes a vector over the target
+/// classes — `tf(v,j) = count(v,j)/count(v)` times
+/// `idf(j) = ln(1 + n/(1 + count(j))) + 1`; `normalize` scales each level
+/// vector to unit L2 norm. Task: **classification**. Unseen levels fall back
+/// to the global class shares; missing stays missing.
+#[pyclass(name = "TfidfEncoder")]
+struct PyTfidfEncoder {
+    inner: TfidfEncoder,
+}
+
+#[pymethods]
+impl PyTfidfEncoder {
+    #[new]
+    fn new(normalize: bool) -> Self {
+        Self {
+            inner: TfidfEncoder::new(normalize),
+        }
+    }
+
+    /// Fit class counts on (values, y, n_classes).
+    fn fit(
+        &mut self,
+        values: Vec<Option<String>>,
+        y: Vec<Option<f64>>,
+        n_classes: usize,
+    ) -> PyResult<()> {
+        self.inner
+            .fit(&values, &y, n_classes)
+            .map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// One class-space vector per row (None = missing).
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<Vec<f64>>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **Weight of Evidence** (credit-risk classic): one-vs-rest
+/// `ln(distr_j(v) / distr_not_j(v))` per category, smoothed with additive
+/// `prior`. Task: **classification**. Positive = over-representation of the
+/// class in that level. Unseen levels give neutral zeros; missing stays
+/// missing.
+#[pyclass(name = "WoEEncoder")]
+struct PyWoEEncoder {
+    inner: WoEEncoder,
+}
+
+#[pymethods]
+impl PyWoEEncoder {
+    #[new]
+    fn new(prior: f64) -> PyResult<Self> {
+        Ok(Self {
+            inner: WoEEncoder::new(prior).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit class counts on (values, y, n_classes).
+    fn fit(
+        &mut self,
+        values: Vec<Option<String>>,
+        y: Vec<Option<f64>>,
+        n_classes: usize,
+    ) -> PyResult<()> {
+        self.inner
+            .fit(&values, &y, n_classes)
+            .map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// One WoE vector per row (None = missing).
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<Vec<f64>>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// NN-style **learned embeddings** per category: a small embedding table and a
+/// linear head trained by SGD, one table per categorical feature. Task:
+/// **both** — softmax head for classification; for regression a ReLU output
+/// when all fitted targets are non-negative, linear otherwise. `transform`
+/// returns the embeddings, `predict` the trained head. Unseen levels give
+/// zeros; missing stays missing.
+#[pyclass(name = "EmbeddingEncoder")]
+struct PyEmbeddingEncoder {
+    inner: EmbeddingEncoder,
+}
+
+#[pymethods]
+impl PyEmbeddingEncoder {
+    #[new]
+    fn new(dim: usize, lr: f64, epochs: usize, seed: u64, task: &str) -> PyResult<Self> {
+        Ok(Self {
+            inner: EmbeddingEncoder::new(
+                dim,
+                lr,
+                epochs,
+                seed,
+                EmbeddingTask::parse(task).map_err(PyValueError::new_err)?,
+            )
+            .map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Train on (values, y); `n_classes` is inferred for classification when
+    /// omitted, ignored for regression.
+    #[pyo3(signature = (values, y, n_classes=None))]
+    fn fit(
+        &mut self,
+        values: Vec<Option<String>>,
+        y: Vec<Option<f64>>,
+        n_classes: Option<usize>,
+    ) -> PyResult<()> {
+        self.inner
+            .fit(&values, &y, n_classes)
+            .map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Learned embedding per row (None = missing, zeros = unseen).
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<Vec<f64>>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+
+    /// Predictions of the trained head (class label or activated value).
+    fn predict(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.predict(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **Count / frequency** encoding: occurrence count per category (`normalize`
+/// gives the share of rows). Task: **both** (unsupervised). Unseen levels give
+/// 0.0; missing stays missing.
+#[pyclass(name = "CountEncoder")]
+struct PyCountEncoder {
+    inner: CountEncoder,
+}
+
+#[pymethods]
+impl PyCountEncoder {
+    #[new]
+    fn new(normalize: bool) -> Self {
+        Self {
+            inner: CountEncoder::new(normalize),
+        }
+    }
+
+    /// Fit counts on `values`.
+    fn fit(&mut self, values: Vec<Option<String>>) {
+        self.inner.fit(&values);
+    }
+
+    /// Count (or share) per row; unseen -> 0.0, missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **Leave-one-out** encoding: `fit_transform` gives each row its level's mean
+/// target **without that row** (leakage-aware); `transform` on new data uses
+/// the full fitted level mean. Task: **both**. Unseen -> global mean;
+/// missing -> None.
+#[pyclass(name = "LeaveOneOutEncoder")]
+struct PyLeaveOneOutEncoder {
+    inner: LeaveOneOutEncoder,
+}
+
+#[pymethods]
+impl PyLeaveOneOutEncoder {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: LeaveOneOutEncoder::new(),
+        }
+    }
+
+    /// Fit level means on (values, y).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Row-level means excluding each row's own target.
+    fn fit_transform(
+        &mut self,
+        values: Vec<Option<String>>,
+        y: Vec<Option<f64>>,
+    ) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .fit_transform(&values, &y)
+            .map_err(PyValueError::new_err)
+    }
+
+    /// Full fitted level means for new rows.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **M-estimate** encoding: `(sum_y + m * global) / (n_level + m)` — target
+/// smoothing with fixed strength `m`. Task: **both** (leaky on training data;
+/// prefer `CatBoostEncoder` or `LeaveOneOutEncoder` there). Unseen -> global;
+/// missing -> None.
+#[pyclass(name = "MEstimatorEncoder")]
+struct PyMEstimatorEncoder {
+    inner: MEstimatorEncoder,
+}
+
+#[pymethods]
+impl PyMEstimatorEncoder {
+    #[new]
+    fn new(m: f64) -> PyResult<Self> {
+        Ok(Self {
+            inner: MEstimatorEncoder::new(m).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit smoothed level means on (values, y).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Smoothed mean per row; unseen -> global, missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **Base-N / binary** encoding: each level becomes its base-`base` digits as
+/// indicator columns (`base = 2` is the classic Binary encoder). Task:
+/// **both** (unsupervised). Unseen and missing rows are all-zero.
+#[pyclass(name = "BaseNEncoder")]
+struct PyBaseNEncoder {
+    inner: BaseNEncoder,
+}
+
+#[pymethods]
+impl PyBaseNEncoder {
+    #[new]
+    fn new(base: usize) -> PyResult<Self> {
+        Ok(Self {
+            inner: BaseNEncoder::new(base).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit the level vocabulary on `values`.
+    fn fit(&mut self, values: Vec<Option<String>>) {
+        self.inner.fit(&values);
+    }
+
+    /// Returns {digit name: indicator list}.
+    fn transform(&self, py: Python<'_>, values: Vec<Option<String>>) -> PyResult<Py<PyDict>> {
+        let cols = self.inner.transform(&values).map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        for (name, col) in cols {
+            d.set_item(name, col)?;
+        }
+        Ok(d.unbind())
+    }
+}
+
+/// **Sum contrast** coding: `k-1` columns; level `i < k-1` gets +1 in column
+/// `i`, the last level gets -1 across all columns. Task: **both**
+/// (unsupervised). Unseen rows give zeros; missing stays missing.
+#[pyclass(name = "SumEncoder")]
+struct PySumEncoder {
+    inner: SumEncoder,
+}
+
+#[pymethods]
+impl PySumEncoder {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: SumEncoder::new(),
+        }
+    }
+
+    /// Fit the level vocabulary on `values`.
+    fn fit(&mut self, values: Vec<Option<String>>) {
+        self.inner.fit(&values);
+    }
+
+    /// Contrast row per row (None = missing).
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<Vec<f64>>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **Quantile** encoding: each level becomes its smoothed target quantile
+/// (default median), `w * level_quantile + (1 - w) * global_quantile` with
+/// `w = n / (n + smoothing)`. Task: **regression**. Unseen -> global
+/// quantile; missing -> None.
+#[pyclass(name = "QuantileEncoder")]
+struct PyQuantileEncoder {
+    inner: QuantileEncoder,
+}
+
+#[pymethods]
+impl PyQuantileEncoder {
+    #[new]
+    fn new(q: f64, smoothing: f64) -> PyResult<Self> {
+        Ok(Self {
+            inner: QuantileEncoder::new(q, smoothing).map_err(PyValueError::new_err)?,
+        })
+    }
+
+    /// Fit quantiles on (values, y).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Smoothed quantile per row; unseen -> global, missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
+/// **James-Stein** encoding: level means shrunk toward the grand mean with
+/// `B = max(0, 1 - ((L - 3) * sigma2) / sum((mean_i - global)^2))`; fewer than
+/// three levels collapse to the grand mean. Task: **both**. Unseen -> global;
+/// missing -> None.
+#[pyclass(name = "JamesSteinEncoder")]
+struct PyJamesSteinEncoder {
+    inner: JamesSteinEncoder,
+}
+
+#[pymethods]
+impl PyJamesSteinEncoder {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: JamesSteinEncoder::new(),
+        }
+    }
+
+    /// Fit shrunk means on (values, y).
+    fn fit(&mut self, values: Vec<Option<String>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.fit(&values, &y).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    /// Shrunk mean per row; unseen -> global, missing -> None.
+    fn transform(&self, values: Vec<Option<String>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner.transform(&values).map_err(PyValueError::new_err)
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyBaseNEncoder>()?;
+    m.add_class::<PyCatBoostEncoder>()?;
+    m.add_class::<PyCountEncoder>()?;
     m.add_class::<PyDatasetBuilder>()?;
+    m.add_class::<PyEmbeddingEncoder>()?;
     m.add_class::<PyGroupedScaler>()?;
+    m.add_class::<PyHashingEncoder>()?;
     m.add_class::<PyIndexMapper>()?;
+    m.add_class::<PyJamesSteinEncoder>()?;
+    m.add_class::<PyLeaveOneOutEncoder>()?;
+    m.add_class::<PyMEstimatorEncoder>()?;
+    m.add_class::<PyOneHotEncoder>()?;
+    m.add_class::<PyQuantileEncoder>()?;
+    m.add_class::<PySumEncoder>()?;
+    m.add_class::<PyTargetEncoder>()?;
+    m.add_class::<PyTfidfEncoder>()?;
     m.add_class::<PyVariableScaler>()?;
+    m.add_class::<PyWoEEncoder>()?;
     m.add_function(wrap_pyfunction!(calendar_features, m)?)?;
     m.add_function(wrap_pyfunction!(decomposed_transform, m)?)?;
     m.add_function(wrap_pyfunction!(generate, m)?)?;

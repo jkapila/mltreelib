@@ -2,7 +2,7 @@
 
 Tree-based machine learning with a **Rust core** and thin **Python** (and, next, **R**) frontends. Evolved from the attempt to make the *right* kind of **Decision Trees**, after Hastie, Tibshirani, Friedman, Quinlan, Loh, Chaudhari.
 
-The bet: tree/ensemble methods are under-studied relative to tabular foundation models, and the information hidden in **categorical, grouped and hierarchical structure** is exactly what flat learners lose. We build the classics properly in Rust (CART → C4.5 → C5.0 → Cubist → GritBot), measure them honestly on data where that structure matters, and only then mix and extend. Research grounding lives in [`references/`](references/) (TabArena analysis, methods map, dataset component design).
+The bet: tree/ensemble methods are under-studied relative to tabular foundation models, and the information hidden in **categorical, grouped and hierarchical structure** is exactly what flat learners lose. We build the classics properly in Rust (CART → C4.5 → C5.0 → Cubist → GritBot), measure them honestly on data where that structure matters, and only then mix and extend. Research grounding lives in [`references/research/`](references/research/) (TabArena analysis, methods map, dataset component design).
 
 ## Layout
 
@@ -13,7 +13,8 @@ crates/mltreelib-py/    PyO3 bindings, exposed as mltreelib._core
 python/mltreelib/       Python package — scikit-learn-shaped API, no sklearn dependency
 tests/                  Python behavior tests
 datasets/               real benchmark datasets + MANIFEST (sourced, size-capped)
-references/             research notes, benchmarks, source material
+references/             research/ notes · docs/ vendor manuals · data/ benchmarks ·
+                        sources/ archives · repos/ cloned projects
 legacy/                 previous Python/nbdev implementation (kept as reference oracle)
 ```
 
@@ -80,7 +81,14 @@ Order matters: foundations first, then honest replication, then novelty.
 - [x] Missing data is first-class: NA **and NaN** = missing end-to-end (missing in → missing out);
       `summarize` shows `n_missing` by default; imputation is optional (allow/drop/impute);
       time-series transforms drop incomplete rows and warn
-- [ ] Built-in categorical encoders (one-hot, ordinal, target, James-Stein, hashing) — *later by design: keep the tool surface in one package, no encoder-library sprawl*
+- [x] Built-in categorical encoders: ordinal (`IndexMapper`), one-hot, hashing, base-N/binary,
+      count, sum contrast, smoothed target + M-estimate, leave-one-out, CatBoost-style
+      **ordered target statistics** (`fit_transform` leakage-safe), quantile, James-Stein,
+      class-level `TfidfEncoder`, `WoEEncoder`, `EmbeddingEncoder` (reusable `nn` trainer;
+      ReLU/linear output by target sign) — *research in
+      `references/research/categorical-encoding-research.md`*
+- [ ] cat×cat combinations (inside the tree split search); deferred encoders: GLMM,
+      Helmert/Polynomial/BackwardDifference contrasts, Gray, MultiHot/RankHot, CountTarget
 - [ ] Featuretools-style automated features (Cartesian products, sub-level %-by-class, deep feature synthesis lite) — *later, same reason*
 - [x] `mltreelib.datasets` loader (pyarrow) — suite loads into `DatasetBuilder`-shaped dicts
 - [ ] Harness integration of `datasets/` + generator sweeps
@@ -95,13 +103,13 @@ no forced imputation, no forced numeric encoding):
 - [ ] **Native categorical splits** — high-cardinality aware, no one-hot tax
 - [ ] CART (regression + classification) — oracle: `legacy/mltreelib/tree/models.py`
 - [ ] C4.5 (information gain, gain ratio)
-- [ ] C5.0: rule sets, boosting committees, winnowing — `references/see5-unix.md`
-- [ ] Cubist: model trees + committees + neighbor correction — `references/cubist-unix.md`
-- [ ] GritBot: surprising-subgroup mining — `references/gritbot-unix.md`
+- [ ] C5.0: rule sets, boosting committees, winnowing — `references/docs/see5-unix.md`
+- [ ] Cubist: model trees + committees + neighbor correction — `references/docs/cubist-unix.md`
+- [ ] GritBot: surprising-subgroup mining — `references/docs/gritbot-unix.md`
 
 ### 3. Honest comparisons (proof-driven, not blind experimentation)
 - [ ] Harness vs LightGBM / XGBoost / CatBoost / EBM on `datasets/` + generator sweeps
-- [ ] Vs tabular foundation models (TabPFN-class) on the same splits — see `references/tree-vs-foundation-tabular.md`
+- [ ] Vs tabular foundation models (TabPFN-class) on the same splits — see `references/research/tree-vs-foundation-tabular.md`
 - [ ] Structure-recovery scoring: does each method capture the known group/hierarchy signal?
 - [ ] Equal tuning budgets for trees (the classic weak-baseline trap)
 
