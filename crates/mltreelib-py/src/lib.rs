@@ -1682,6 +1682,13 @@ impl PyModelTree {
         Ok(format!("{}", self.tree()?))
     }
 
+    /// Self-contained SVG diagram of the tree (boxes with node stats, edges
+    /// labeled with split thresholds). Write the returned string to a .svg
+    /// file or display it inline.
+    fn to_svg(&self) -> PyResult<String> {
+        Ok(self.tree()?.to_svg())
+    }
+
     /// Split columns along each root-to-leaf path. Task: regression.
     ///
     /// Args: none.

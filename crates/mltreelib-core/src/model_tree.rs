@@ -330,6 +330,107 @@ impl ModelTree {
         self.nodes.iter().filter_map(|n| n.split).collect()
     }
 
+    /// Self-contained SVG diagram of the tree: one box per node (split
+    /// condition, `n`, `yval`, deviance), edges labeled with thresholds.
+    /// Leaves occupy equal horizontal slots; a parent centers over its
+    /// children. Static and dependency-free - open the string in any viewer.
+    pub fn to_svg(&self) -> String {
+        const BOX_W: f64 = 190.0;
+        const BOX_H: f64 = 62.0;
+        const GAP_X: f64 = 24.0;
+        const GAP_Y: f64 = 34.0;
+        const MARGIN: f64 = 12.0;
+
+        fn esc(s: &str) -> String {
+            s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+        }
+        fn layout(
+            t: &ModelTree,
+            i: usize,
+            depth: usize,
+            slot: &mut f64,
+            pos: &mut Vec<(f64, f64)>,
+        ) -> f64 {
+            let nd = &t.nodes[i];
+            match (nd.split, nd.left, nd.right) {
+                (Some(_), Some(l), Some(r)) => {
+                    let xl = layout(t, l, depth + 1, slot, pos);
+                    let xr = layout(t, r, depth + 1, slot, pos);
+                    let x = (xl + xr) / 2.0;
+                    pos[i] = (x, depth as f64);
+                    x
+                }
+                _ => {
+                    let x = *slot;
+                    *slot += 1.0;
+                    pos[i] = (x, depth as f64);
+                    x
+                }
+            }
+        }
+
+        let mut pos = vec![(0.0, 0.0); self.nodes.len()];
+        let mut slot = 0.0;
+        layout(self, self.root, 0, &mut slot, &mut pos);
+        let slots = slot.max(1.0);
+        let width = MARGIN * 2.0 + slots * BOX_W + (slots - 1.0) * GAP_X;
+        let depth = pos.iter().map(|p| p.1).fold(0.0f64, f64::max) + 1.0;
+        let height = MARGIN * 2.0 + depth * BOX_H + (depth - 1.0) * GAP_Y;
+
+        let cx = |p: (f64, f64)| (MARGIN + p.0 * (BOX_W + GAP_X) + BOX_W / 2.0, MARGIN + p.1 * (BOX_H + GAP_Y));
+        let mut s = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.0} {height:.0}" font-family="monospace" font-size="12">
+<rect x="0" y="0" width="{width:.0}" height="{height:.0}" fill="white"/>
+"#
+        );
+        // Edges first (boxes paint over the ends).
+        for (i, nd) in self.nodes.iter().enumerate() {
+            if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {
+                let (px, py) = cx(pos[i]);
+                for (child, side) in [(l, "<"), (r, ">=")] {
+                    let (cxx, cyy) = cx(pos[child]);
+                    let (ex, ey) = (cxx, cyy - BOX_H / 2.0);
+                    let (sx, sy) = (px, py + BOX_H / 2.0);
+                    let lbl = esc(&format!("{side} {}", fmt_cut(sp.threshold)));
+                    s += &format!(
+                        r##"<line x1="{sx:.1}" y1="{sy:.1}" x2="{ex:.1}" y2="{ey:.1}" stroke="#888" stroke-width="1.5"/>
+<text x="{mx:.1}" y="{my:.1}" fill="#444" text-anchor="middle">{lbl}</text>
+"##,
+                        mx = (sx + ex) / 2.0,
+                        my = (sy + ey) / 2.0 - 4.0,
+                    );
+                }
+            }
+        }
+        for (i, nd) in self.nodes.iter().enumerate() {
+            let (x, y) = cx(pos[i]);
+            let (bx, by) = (x - BOX_W / 2.0, y - BOX_H / 2.0);
+            let (l1, l2) = match nd.split {
+                Some(sp) => (
+                    format!("{} < {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
+                    format!("n={}  dev={:.3}", nd.stats.n, nd.stats.sse),
+                ),
+                None => (
+                    "leaf".to_string(),
+                    format!("n={}  yval={:.3}", nd.stats.n, nd.stats.mean),
+                ),
+            };
+            let stroke = if nd.split.is_some() { "#333" } else { "#2a7" };
+            s += &format!(
+                r##"<rect x="{bx:.1}" y="{by:.1}" width="{BOX_W:.0}" height="{BOX_H:.0}" rx="6" fill="#fafafa" stroke="{stroke}" stroke-width="1.5"/>
+<text x="{x:.1}" y="{ty1:.1}" text-anchor="middle" fill="#111">{}</text>
+<text x="{x:.1}" y="{ty2:.1}" text-anchor="middle" fill="#444">{}</text>
+"##,
+                esc(&l1),
+                esc(&l2),
+                ty1 = y - 8.0,
+                ty2 = y + 12.0,
+            );
+        }
+        s += "</svg>\n";
+        s
+    }
+
     /// Split columns along each root→leaf path — introspection for
     /// constraint checking (interaction groups: every path must stay within
     /// one group) and structure recovery.
