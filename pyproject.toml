@@ -1,0 +1,21 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "mltreelib"
+version = "0.1.0"
+description = "Tree-based machine learning: Rust core with Python and R frontends"
+requires-python = ">=3.10"
+authors = [{ name = "Jitin Kapila" }]
+readme = "README.md"
+license = "Apache-2.0"
+
+[dependency-groups]
+dev = ["maturin>=1.5,<2.0", "pytest>=8"]
+
+[tool.maturin]
+manifest-path = "crates/mltreelib-py/Cargo.toml"
+module-name = "mltreelib._core"
+python-source = "python"
+features = ["extension-module"]

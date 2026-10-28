@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 
 /.quarto/
+
+
+# references
+references/
