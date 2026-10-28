@@ -2,7 +2,7 @@
 //! the two leaf-column policies, and NA-first behavior (learnable missing
 //! direction + NA-indicator leaf terms).
 
-use mltreelib_core::model_tree::{LeafCols, ModelTree, ModelTreeParams};
+use mltreelib_core::model_tree::{LeafCols, LeafKind, ModelTree, ModelTreeParams};
 
 #[test]
 fn stump_is_global_ols() {
@@ -18,6 +18,8 @@ fn stump_is_global_ols() {
     let p = ModelTreeParams {
         max_depth: 0,
         min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -55,6 +57,8 @@ fn recovers_planted_split_and_leaf_models() {
     let p = ModelTreeParams {
         max_depth: 3,
         min_rows: 20,
+        l1: 0.0,
+        l2: 0.0,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -104,6 +108,8 @@ fn path_used_leaves_are_piecewise_linear() {
     let p = ModelTreeParams {
         max_depth: 2,
         min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
         leaf_cols: LeafCols::PathUsed,
         ..Default::default()
     };
@@ -181,6 +187,8 @@ fn na_indicator_makes_missingness_predictive() {
     let p = ModelTreeParams {
         max_depth: 0,
         min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -207,6 +215,264 @@ fn predict_missing_on_no_na_leaf_does_not_panic() {
     let tree = ModelTree::fit(&x, &y, p).unwrap();
     let preds = tree.predict(&[vec![None]]);
     assert!(preds[0].is_finite(), "missing must never panic or vanish");
+}
+
+#[test]
+fn weights_ignore_zero_weight_rows() {
+    // A zero-weight row is an absent row: the fit and predictions must match
+    // the unweighted data exactly.
+    let x: Vec<Vec<Option<f64>>> = (0..100).map(|i| vec![Some(i as f64 / 100.0)]).collect();
+    let y: Vec<Option<f64>> = (0..100).map(|i| Some(3.0 * i as f64 / 100.0)).collect();
+    let mut xw = x.clone();
+    xw.push(vec![Some(0.5)]);
+    let mut yw = y.clone();
+    yw.push(Some(1e6));
+    let mut w = vec![1.0; 100];
+    w.push(0.0);
+    let p = ModelTreeParams {
+        max_depth: 0,
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let t1 = ModelTree::fit(&x, &y, p.clone()).unwrap();
+    let t2 = ModelTree::fit_weighted(&xw, &yw, &w, p).unwrap();
+    let probe = vec![vec![Some(0.25)], vec![Some(0.75)]];
+    for (a, b) in t1.predict(&probe).iter().zip(t2.predict(&probe).iter()) {
+        assert!((a - b).abs() < 1e-9, "zero-weight row leaked: {a} vs {b}");
+    }
+}
+
+#[test]
+fn weights_shift_the_fit() {
+    // Down-weighting the high-x half must change the fitted slope.
+    let x: Vec<Vec<Option<f64>>> = (0..100).map(|i| vec![Some(i as f64 / 100.0)]).collect();
+    let y: Vec<Option<f64>> = (0..100).map(|i| Some(i as f64 / 100.0)).collect();
+    let w: Vec<f64> = (0..100)
+        .map(|i| if i < 50 { 1.0 } else { 0.01 })
+        .collect();
+    let p = ModelTreeParams {
+        max_depth: 0,
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let t = ModelTree::fit_weighted(&x, &y, &w, p).unwrap();
+    let m = t.leaves()[0].0.linear.as_ref().unwrap().clone();
+    // Slope pulled toward the low-x region's relation.
+    assert!(m.coef[0] < 1.5, "weights did not influence the fit: {:?}", m.coef);
+}
+
+#[test]
+fn monotone_constraint_orders_predictions() {
+    // y = x0 + noise-like extras; with mono +1 on x0, predictions must be
+    // non-decreasing along x0 no matter the noise.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..200 {
+        let x0 = (i % 20) as f64 / 20.0;
+        let jitter = (((i * 37) % 11) as f64 - 5.0) / 5.0;
+        x.push(vec![Some(x0), Some(jitter)]);
+        y.push(Some(2.0 * x0 + jitter));
+    }
+    let p = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        monotone: vec![1, 0],
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let mut last = f64::NEG_INFINITY;
+    for i in 0..21 {
+        let x0 = i as f64 / 20.0;
+        let pred = tree.predict(&[vec![Some(x0), Some(0.0)]])[0];
+        assert!(pred >= last - 1e-9, "monotone +1 violated at x0={x0}: {pred} < {last}");
+        last = pred;
+    }
+}
+
+#[test]
+fn monotone_constraint_orders_children() {
+    // y increases in x0 but is noisy; monotone +1 on x0 must produce
+    // non-decreasing predictions along x0.
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| {
+            let t = (i % 20) as f64 / 20.0;
+            vec![Some(t), Some(((i * 31) % 17) as f64 / 17.0)]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(2.0 * (i % 20) as f64 / 20.0))
+        .collect();
+    let mut p = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        leaf: LeafKind::Mean,
+        ..Default::default()
+    };
+    p.monotone = vec![1, 0];
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+
+    let grid: Vec<Vec<Option<f64>>> = (0..21)
+        .map(|i| vec![Some(i as f64 / 20.0), Some(0.5)])
+        .collect();
+    let preds: Vec<f64> = tree.predict(&grid);
+    for w in preds.windows(2) {
+        assert!(w[1] >= w[0] - 1e-9, "monotone +1 violated: {w:?}");
+    }
+}
+
+#[test]
+fn monotone_constrains_linear_leaf_coefficients() {
+    // Linear leaves carry the feature effect in their COEFFICIENTS, not in
+    // splits - a decreasing signal with mono=+1 must produce a flat (not
+    // negative-slope) response along x0. Regression for the projection fix:
+    // before it, split-time ordering never fired because there were no
+    // splits at all.
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| vec![Some((i % 20) as f64 / 20.0), Some(((i * 31) % 17) as f64 / 17.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(-5.0 * (i % 20) as f64 / 20.0))
+        .collect();
+    let mut p = ModelTreeParams {
+        max_depth: 0, // single linear leaf: the whole effect lives in coefs
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        leaf: LeafKind::Linear,
+        ..Default::default()
+    };
+    p.monotone = vec![1, 0];
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+
+    let grid: Vec<Vec<Option<f64>>> = (0..21)
+        .map(|i| vec![Some(i as f64 / 20.0), Some(0.5)])
+        .collect();
+    let preds: Vec<f64> = tree.predict(&grid);
+    for w in preds.windows(2) {
+        assert!(w[1] >= w[0] - 1e-9, "linear leaf leaked a decreasing x0 effect: {w:?}");
+    }
+}
+
+#[test]
+fn interaction_groups_respected() {
+    // x2 matters as a STEP deep in the tree (x0 > 0.75 region) - a linear
+    // leaf cannot absorb it, so the unconstrained tree must mix groups along
+    // some path (x0 group, then x2 group). The constraint: every root-to-leaf
+    // path stays within one group.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..300 {
+        let x0 = (i % 30) as f64 / 30.0;
+        let x2 = ((i * 13) % 17) as f64 / 17.0;
+        x.push(vec![Some(x0), Some(((i * 7) % 11) as f64 / 11.0), Some(x2)]);
+        y.push(Some(
+            5.0 * x0 + if x0 > 0.75 && x2 > 0.5 { 8.0 } else { 0.0 },
+        ));
+    }
+    let base = ModelTreeParams {
+        max_depth: 4,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let tree_c = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            interaction_groups: vec![vec![0, 1], vec![2]],
+            ..base.clone()
+        },
+    )
+    .unwrap();
+    let tree_u = ModelTree::fit(&x, &y, base).unwrap();
+
+    let group_of = |c: usize| if c < 2 { 0 } else { 1 };
+    for path in tree_c.split_paths() {
+        let mut it = path.iter().map(|&c| group_of(c));
+        if let Some(g) = it.next() {
+            assert!(it.all(|x| x == g), "constrained path mixes groups: {path:?}");
+        }
+    }
+    assert!(
+        tree_u
+            .split_paths()
+            .iter()
+            .any(|p| {
+                let mut it = p.iter().map(|&c| group_of(c));
+                match it.next() {
+                    Some(g) => it.any(|x| x != g),
+                    None => false,
+                }
+            }),
+        "unconstrained tree never mixed groups - constraint not exercised"
+    );
+}
+
+#[test]
+fn preselect_drops_junk_columns() {
+    // Column 0 = signal, column 1 = pure noise; pre-selection keeps only 0.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..200 {
+        let signal = ((i * 29) % 20) as f64 / 20.0;
+        let noise = ((i * 43) % 17) as f64 / 17.0;
+        x.push(vec![Some(signal), Some(noise)]);
+        y.push(Some(4.0 * signal));
+    }
+    let p = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        min_relevance: Some(0.2),
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    assert_eq!(tree.active_cols, vec![0], "pre-selection kept the junk column");
+    for s in tree.splits() {
+        assert_eq!(s.col, 0, "junk column split the tree");
+    }
+}
+
+#[test]
+fn parallel_scan_is_deterministic() {
+    // Wide enough to cross the parallel threshold; two fits must agree
+    // exactly (tie-breaks are by scan order, never thread order).
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..300 {
+        let mut row = Vec::new();
+        for j in 0..120 {
+            row.push(Some((((i * 31 + j * 17) % 97) as f64) / 97.0));
+        }
+        x.push(row);
+        y.push(Some((((i * 13) % 23) as f64) / 23.0));
+    }
+    let p = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let t1 = ModelTree::fit(&x, &y, p.clone()).unwrap();
+    let t2 = ModelTree::fit(&x, &y, p).unwrap();
+    let s1 = t1.splits();
+    let s2 = t2.splits();
+    assert_eq!(s1.len(), s2.len());
+    for (a, b) in s1.iter().zip(s2.iter()) {
+        assert_eq!((a.col, a.missing_left), (b.col, b.missing_left));
+        assert!((a.threshold - b.threshold).abs() == 0.0);
+    }
 }
 
 #[test]

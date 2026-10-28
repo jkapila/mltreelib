@@ -35,6 +35,40 @@ m.profile()                                # per-level timings built in
 - the tree reproduces `rpart` exactly when configured as CART (mean leaves),
   so results are checkable against the reference implementations.
 
+## How the Elo works (our protocol)
+
+Elo comes from chess: every model carries a rating; when two models "play",
+the winner takes points from the loser **proportionally to how surprising the
+result was**.
+
+- Expected score of A against B:
+  `E_A = 1 / (1 + 10^((R_B - R_A) / 400))`
+  (equal ratings → 50%; a 200-point underdog still expects ~24%).
+- After a game with actual score `S_A` (1 win, 0.5 draw, 0 loss):
+  `R_A += K * (S_A - E_A)`, `R_B += K * (S_B - E_B)`, with K = 32 here.
+
+**What counts as a game:** on each dataset, every unordered pair of models
+plays once — lower RMSE wins (equal RMSE = draw). So 16 datasets ×
+n·(n-1)/2 games per full field. The order is deterministic (datasets sorted,
+pairs lexicographic), so the whole board is reproducible from the score file.
+
+**How to read it:**
+
+- Ratings are *relative* — the zero point moves when models enter or leave
+  (the same tree scored 901 with 13 models and 858 with 18). Watch the
+  **ordering and the gaps**, not the absolute numbers.
+- One model with several *flavors* (our three leaf kinds) splits its own
+  wins — treat them as separate competitors, which is intended.
+- K = 32 keeps the board responsive to real differences; over 5 datasets a
+  genuinely better model climbs fast.
+- TabArena's numbers are **not comparable** — different protocol (their own
+  tournament + bootstrapping on 51 datasets incl. classification). They are
+  a scale anchor only.
+
+Reproduce: `elo_prepare.py` (data, once) → `elo_score_r.R` →
+`elo_score_python.py` → `elo_score_rust.py` (each environment, incremental
+upsert) → `elo_report.py` (this Elo computation).
+
 ## The Elo board (arena run, stock configs)
 
 Five real regression sets (concrete, abalone, ozone, boston, fc2008), one

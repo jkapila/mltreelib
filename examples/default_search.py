@@ -18,7 +18,9 @@ from mltreelib import ModelTree
 
 DATA_DIR = Path("benchmarks/elo_data")
 SCORES = Path("benchmarks/elo_scores.csv")
-DATASETS = ["concrete", "abalone", "ozone", "boston", "fc2008"]
+# Datasets are discovered from the prepared files - add data without
+# touching the scorers.
+DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
 BARS = ["lmtree", "cubist", "rpart"]
 
 
@@ -26,11 +28,13 @@ def read_xy(path):
     x, y = [], []
     width = [0]
     with open(path) as fh:
-        for row in csv.reader(fh):
-            if row and row[0] == "x0":
-                width[0] = len(row)
+        reader = csv.reader(fh)
+        header = next(reader, None)  # first row is the header, always
+        width[0] = len(header) if header else 0
+        for row in reader:
+            if not row:
                 continue
-            if row and len(row) != width[0]:
+            if len(row) != width[0]:
                 raise ValueError(f"{path}: row width {len(row)} != {width[0]}")
             x.append([None if v == "" else float(v) for v in row[:-1]])
             y.append(float(row[-1]))

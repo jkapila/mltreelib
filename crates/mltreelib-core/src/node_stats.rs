@@ -2,17 +2,22 @@
 //! `model_tree.rs` routes rows and scans split candidates; everything about
 //! what a node *stores* (moments, t-digest, linear model) and the small
 //! numerics of split scoring live here, one concern per function.
+//!
+//! Everything is **row-weighted**: sample weights flow through the Gram
+//! statistics, the leaf moments, and the gains, so boosting/forest
+//! reweighting and case weights work without touching the tree.
 
 use tdigest::TDigest;
 
 /// Target summary stored at every leaf — mean nodes and model nodes alike.
-/// `std` is the sample standard deviation (ddof = 1), kept because quantile
-/// work downstream needs the spread, not just the mean. The t-digest (Cam
-/// Davidson-Pilon semantics via the `tdigest` crate) keeps the node's
-/// quantiles queryable without storing every target.
+/// Weighted by sample weights (`w`); `std` is the weighted sample standard
+/// deviation. The t-digest (Cam Davidson-Pilon semantics via the `tdigest`
+/// crate) keeps quantiles queryable without storing every target.
 #[derive(Clone, Debug)]
 pub struct LeafStats {
     pub n: usize,
+    /// Sum of the sample weights.
+    pub wsum: f64,
     pub mean: f64,
     pub std: f64,
     pub min: f64,
@@ -21,25 +26,29 @@ pub struct LeafStats {
 }
 
 impl LeafStats {
-    /// Moments + t-digest of one leaf's target values.
-    pub fn from_targets(y: &[f64]) -> Self {
-        let n = y.len();
-        assert!(n > 0, "leaf must have rows");
-        let mean = y.iter().sum::<f64>() / n as f64;
-        let var = if n > 1 {
-            y.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (n - 1) as f64
-        } else {
-            0.0
-        };
+    /// Weighted moments + t-digest of one leaf's targets. Rows with weight 0
+    /// are ignored entirely (a zero-weight row is an absent row).
+    pub fn from_targets(y: &[f64], w: &[f64]) -> Self {
+        let mut idx: Vec<usize> = (0..y.len()).filter(|&i| w[i] > 0.0).collect();
+        assert!(!idx.is_empty(), "leaf must have positive-weight rows");
+        let wsum: f64 = idx.iter().map(|&i| w[i]).sum();
+        let mean = idx.iter().map(|&i| w[i] * y[i]).sum::<f64>() / wsum;
+        let var = idx
+            .iter()
+            .map(|&i| w[i] * (y[i] - mean) * (y[i] - mean))
+            .sum::<f64>()
+            / wsum;
+        idx.sort_by(|&a, &b| y[a].partial_cmp(&y[b]).expect("NaN in target"));
         let mut digest = TDigest::new_with_size(100);
-        digest.extend_values(y.iter().copied());
+        digest.extend_values(idx.iter().map(|&i| y[i]));
         digest.flush();
         Self {
-            n,
+            n: idx.len(),
+            wsum,
             mean,
             std: var.sqrt(),
-            min: y.iter().copied().fold(f64::INFINITY, f64::min),
-            max: y.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+            min: y[idx[0]],
+            max: y[*idx.last().unwrap()],
             digest,
         }
     }
@@ -98,16 +107,19 @@ impl LeafModel {
     }
 }
 
-/// Sufficient statistics of a least-squares design: `xtx` (dim×dim row
-/// major), `xty`, `yty`, `n`. Additive per row or per value group — the
-/// split scan keeps running left/right aggregates and scores candidates
-/// without ever refitting (the rpart/LightGBM loop shape).
+/// Weighted sufficient statistics of a least-squares design: `xtx`
+/// (dim×dim row major), `xty`, `yty`, `n` (rows), `ws` (weight sum).
+/// Additive per row or per value group — the split scan keeps running
+/// left/right aggregates and scores candidates without refitting.
 #[derive(Clone, Debug)]
 pub struct Gram {
     pub xtx: Vec<f64>,
     pub xty: Vec<f64>,
     pub yty: f64,
     pub n: usize,
+    pub ws: f64,
+    /// Σ w·y (available as xty[0] too; kept for cheap leaf means).
+    pub wy: f64,
     dim: usize,
 }
 
@@ -118,24 +130,29 @@ impl Gram {
             xty: vec![0.0; dim],
             yty: 0.0,
             n: 0,
+            ws: 0.0,
+            wy: 0.0,
             dim,
         }
     }
 
-    /// Rank-1 update: add one design row with target `y`. Allocation-free.
-    pub fn add_row(&mut self, x: &[f64], y: f64) {
+    /// Rank-1 update: add one design row with target `y` and weight `w`.
+    /// Allocation-free.
+    pub fn add_row(&mut self, x: &[f64], y: f64, w: f64) {
         let d = self.dim;
         for i in 0..d {
             let xi = x[i];
             if xi != 0.0 {
-                self.xty[i] += xi * y;
+                self.xty[i] += w * xi * y;
                 let row = i * d;
                 for j in 0..d {
-                    self.xtx[row + j] += xi * x[j];
+                    self.xtx[row + j] += w * xi * x[j];
                 }
             }
         }
-        self.yty += y * y;
+        self.yty += w * y * y;
+        self.wy += w * y;
+        self.ws += w;
         self.n += 1;
     }
 
@@ -148,6 +165,8 @@ impl Gram {
             *a += b;
         }
         self.yty += other.yty;
+        self.wy += other.wy;
+        self.ws += other.ws;
         self.n += other.n;
     }
 
@@ -160,7 +179,18 @@ impl Gram {
             *a -= b;
         }
         self.yty -= other.yty;
+        self.wy -= other.wy;
+        self.ws -= other.ws;
         self.n -= other.n;
+    }
+
+    /// Weighted mean of the target over this aggregate.
+    pub fn mean(&self) -> f64 {
+        if self.ws > 0.0 {
+            self.wy / self.ws
+        } else {
+            0.0
+        }
     }
 }
 
@@ -184,11 +214,11 @@ impl SolveScratch {
 }
 
 /// Residual SSE of `xtx·b = xty` (least squares over the design), solved by
-/// Gaussian elimination with partial pivoting into `scratch`. `l2` adds ridge
-/// penalty to every non-intercept diagonal entry (LightGBM's `linear_lambda`
-/// shape) — the ridge objective keeps the `yty - b·xty` identity, so this
-/// stays exact for the penalized fit. Rank-deficient directions are dropped
-/// (coefficient 0). The solution is left in `scratch.b`.
+/// Gaussian elimination with partial pivoting into `scratch`. `l1`/`l2` are
+/// the elastic-net penalties (ridge = l2 only, lasso = l1 only, OLS = both
+/// 0); the intercept is unpenalized. At convergence the penalized objective
+/// still equals `yty - b·xty`, so the SSE stays exact. Rank-deficient
+/// directions are dropped (coefficient 0). Solution lands in `scratch.b`.
 pub fn solve_normal(
     xtx: &[f64],
     xty: &[f64],
@@ -204,9 +234,6 @@ pub fn solve_normal(
 }
 
 /// Solve the normal equations already copied into `scratch.a`/`scratch.b`.
-/// `l1`/`l2` are the elastic-net penalties (ridge = l2 only, lasso = l1
-/// only, OLS = both 0); the intercept is unpenalized. At convergence the
-/// penalized objective still equals `yty - b·xty`, so the SSE stays exact.
 pub fn solve_prepared(
     scratch: &mut SolveScratch,
     yty: f64,
@@ -284,60 +311,6 @@ pub fn solve_prepared(
     (yty - explained).max(0.0)
 }
 
-/// Extract the fitted `LinearModel` from a design Gram. Layout: `[1, values
-/// (0 where missing), NA indicators (only when `with_indicators`)]`. `l1`/`l2`
-/// are the elastic-net penalties (intercept unpenalized).
-pub fn fit_linear(
-    g: &Gram,
-    chosen: &[usize],
-    with_indicators: bool,
-    l1: f64,
-    l2: f64,
-) -> LinearModel {
-    let nc = chosen.len();
-    let dim = 1 + nc + if with_indicators { nc } else { 0 };
-    let mut scratch = SolveScratch::new(dim);
-    solve_normal(&g.xtx, &g.xty, g.yty, dim, l1, l2, &mut scratch);
-    let sol = scratch.b.clone();
-    LinearModel {
-        cols: chosen.to_vec(),
-        coef: sol[1..1 + nc].to_vec(),
-        na_coef: if with_indicators {
-            sol[1 + nc..1 + 2 * nc].to_vec()
-        } else {
-            Vec::new()
-        },
-        intercept: sol[0],
-    }
-}
-
-/// One design row from column-major storage: `[1, values (0 where missing),
-/// NA indicators]`. Allocation-free; the indicator block is included only
-/// when `with_indicators`.
-pub fn design_row(
-    out: &mut [f64],
-    cols: &[Vec<Option<f64>>],
-    r: usize,
-    chosen: &[usize],
-    with_indicators: bool,
-) {
-    let nc = chosen.len();
-    for slot in out.iter_mut() {
-        *slot = 0.0;
-    }
-    out[0] = 1.0;
-    for (k, &c) in chosen.iter().enumerate() {
-        match cols[c][r] {
-            Some(v) => out[1 + k] = v,
-            None => {
-                if with_indicators {
-                    out[1 + nc + k] = 1.0;
-                }
-            }
-        }
-    }
-}
-
 /// Residual SSE of `(a + b)`'s normal equations without materializing the
 /// sum: fills the shared scratch from `a` (+ `b`), then solves in place.
 pub fn solve_normal_sum(
@@ -376,7 +349,6 @@ fn solve_elastic(
 ) -> f64 {
     let n = scratch.a[0].max(1.0);
     let sum_y = scratch.c[0];
-    // Column means and scales from the Gram (column 0 is all ones).
     let mut mean = vec![0.0; dim];
     let mut scale = vec![1.0; dim];
     for j in 1..dim {
@@ -386,7 +358,6 @@ fn solve_elastic(
         let var = scratch.a[j * dim + j] - n * mean[j] * mean[j];
         scale[j] = if var > 1e-12 { var.sqrt() } else { 1.0 };
     }
-    // Standardised Gram and right-hand side.
     let mut g = vec![0.0; (dim - 1) * (dim - 1)];
     let mut r = vec![0.0; dim - 1];
     for j in 1..dim {
@@ -396,7 +367,6 @@ fn solve_elastic(
             g[(j - 1) * (dim - 1) + (k - 1)] = gc / (scale[j] * scale[k]);
         }
     }
-    // Coordinate descent.
     let mut b = vec![0.0; dim - 1];
     for _ in 0..200 {
         let mut delta = 0.0f64;
@@ -420,8 +390,6 @@ fn solve_elastic(
             break;
         }
     }
-    // Unscale and rebuild the intercept; explained = b^T xty (exact at CD
-    // convergence for the elastic-net objective).
     scratch.b[0] = sum_y / n;
     for j in 1..dim {
         let bj = b[j - 1] / scale[j];
@@ -434,4 +402,88 @@ fn solve_elastic(
         .map(|(t, s)| t * s)
         .sum();
     (yty - explained).max(0.0)
+}
+
+/// Extract the fitted `LinearModel` from a design Gram. Layout: `[1, values
+/// (0 where missing), NA indicators (only when `with_indicators`)]`. `l1`/`l2`
+/// are the elastic-net penalties (intercept unpenalized). `mono` is indexed by
+/// ORIGINAL column: a nonzero entry constrains the feature's direction, and
+/// linear leaves carry feature effects in their coefficients - so the
+/// coefficient is projected onto the allowed halfline (`+1` ⇒ coef ≥ 0,
+/// `-1` ⇒ coef ≤ 0) to keep predictions monotone. Indicators and the
+/// intercept are never constrained.
+pub fn fit_linear(
+    g: &Gram,
+    chosen: &[usize],
+    with_indicators: bool,
+    mono: &[i8],
+    l1: f64,
+    l2: f64,
+) -> LinearModel {
+    let nc = chosen.len();
+    let dim = 1 + nc + if with_indicators { nc } else { 0 };
+    let mut scratch = SolveScratch::new(dim);
+    solve_normal(&g.xtx, &g.xty, g.yty, dim, l1, l2, &mut scratch);
+    let mut sol = scratch.b.clone();
+    for (k, &c) in chosen.iter().enumerate() {
+        match mono.get(c).copied().unwrap_or(0) {
+            1 => sol[k + 1] = sol[k + 1].max(0.0),
+            -1 => sol[k + 1] = sol[k + 1].min(0.0),
+            _ => {}
+        }
+    }
+    LinearModel {
+        cols: chosen.to_vec(),
+        coef: sol[1..1 + nc].to_vec(),
+        na_coef: if with_indicators {
+            sol[1 + nc..1 + 2 * nc].to_vec()
+        } else {
+            Vec::new()
+        },
+        intercept: sol[0],
+    }
+}
+
+impl LinearModel {
+    /// Evaluate on a design row `[1, values (0 where missing), NA
+    /// indicators]` — the raw model output, used for monotone boundary
+    /// ordering (comparing children's fitted outputs AT the split threshold).
+    pub fn eval_design(&self, row: &[f64]) -> f64 {
+        let nc = self.coef.len();
+        let mut y = self.intercept;
+        for k in 0..nc {
+            y += self.coef[k] * row[1 + k];
+        }
+        for k in 0..self.na_coef.len() {
+            y += self.na_coef[k] * row[1 + nc + k];
+        }
+        y
+    }
+}
+
+/// One design row from column-major storage: `[1, values (0 where missing),
+/// NA indicators]`. Allocation-free; the indicator block is included only
+/// when `with_indicators`.
+pub fn design_row(
+    out: &mut [f64],
+    cols: &[Vec<Option<f64>>],
+    r: usize,
+    chosen: &[usize],
+    with_indicators: bool,
+) {
+    let nc = chosen.len();
+    for slot in out.iter_mut() {
+        *slot = 0.0;
+    }
+    out[0] = 1.0;
+    for (k, &c) in chosen.iter().enumerate() {
+        match cols[c][r] {
+            Some(v) => out[1 + k] = v,
+            None => {
+                if with_indicators {
+                    out[1 + nc + k] = 1.0;
+                }
+            }
+        }
+    }
 }

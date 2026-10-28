@@ -1,24 +1,34 @@
 //! Model tree: growth and routing only. Node models and numerics live in
-//! [`crate::node_stats`]; every function here does one job.
+//! [`crate::node_stats`]; column screening lives in [`crate::preselect`].
+//! Every function here does one job.
 //!
-//! Split scanning follows the reference loop shapes instead of inventing
-//! new ones:
+//! Split scanning follows the reference loop shapes:
 //! - mean leaves: rpart's running-sum scan (`rpart/src/anova.c`) — O(1) per
 //!   value, split only where the value changes;
 //! - linear leaves: LightGBM's grouped accumulators
 //!   (`src/treelearner/feature_histogram.cpp`) over per-value Gram groups,
 //!   with per-candidate solves on preallocated matrices
-//!   (`src/treelearner/linear_tree_learner.cpp`: "preallocate the matrix").
-//! Missing values are scored in both default directions (LightGBM's
-//! `default_left` shape) and the gain picks.
+//!   (`src/treelearner/linear_tree_learner.cpp`).
+//! Everything is row-weighted; missing values are scored in both default
+//! directions (LightGBM's `default_left` shape) and the gain picks.
+//!
+//! The column scan is rayon-parallel above a work threshold (Level-1
+//! parallelism) with a **deterministic** tie-break: first-found wins
+//! (lowest column index, then lowest threshold), independent of thread
+//! completion order.
 
 use std::time::Instant;
 
 use crate::node_stats::{
     design_row, fit_linear, solve_normal_sum, Gram, LeafModel, LeafStats, SolveScratch,
 };
+use crate::preselect;
 
 pub use crate::node_stats::{LeafModel as NodeModel, LeafStats as NodeStats, LinearModel};
+
+/// Below this much work (rows x columns) the scan stays single-threaded —
+/// thread overhead would lose.
+const PAR_MIN_WORK: usize = 20_000;
 
 /// Near-tie test: candidates within one part per trillion of the standing
 /// best do not replace it (first-found wins). Mirrors rpart's rounding guard
@@ -48,7 +58,7 @@ pub enum LeafKind {
 }
 
 /// Growth and leaf parameters.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ModelTreeParams {
     /// Maximum tree depth (0 = a single leaf).
     pub max_depth: usize,
@@ -61,24 +71,43 @@ pub struct ModelTreeParams {
     pub leaf_cols: LeafCols,
     /// Leaf model kind.
     pub leaf: LeafKind,
-    /// Ridge penalty on leaf coefficients (intercept unpenalized) —
-    /// LightGBM's `linear_lambda` shape. 0 = plain OLS.
+    /// Ridge penalty on leaf coefficients (intercept unpenalized).
     pub l2: f64,
     /// Lasso penalty on leaf coefficients (intercept unpenalized). With
     /// `l2` this is the elastic net. 0 = off.
     pub l1: f64,
+    /// Per-column monotone direction: -1 / 0 / +1 (indexed like `x`'s
+    /// columns). A split on a constrained column must order the children's
+    /// target means accordingly (XGBoost-style leaf-output constraint).
+    pub monotone: Vec<i8>,
+    /// Interaction groups: features that may interact with each other
+    /// (LightGBM-style). Empty = unconstrained. Groups are disjoint; a
+    /// path may only use columns from one group.
+    pub interaction_groups: Vec<Vec<usize>>,
+    /// Pre-selection: keep only columns whose winnowing-style relevance
+    /// (|weighted correlation with y|) reaches this value. `None` = off.
+    /// Dropped columns cannot split or enter leaves.
+    pub min_relevance: Option<f64>,
 }
 
 impl Default for ModelTreeParams {
     fn default() -> Self {
         Self {
-            max_depth: 8,
-            min_rows: 20,
+            // Defaults below are the bake-off winner on the arena datasets
+            // (examples/default_search.py): regularized linear leaves at
+            // shallow depth beat plain OLS and every baseline bar.
+            max_depth: 4,
+            min_rows: 10,
+            // Noise floor as much as a tuning knob: fitted-leaf gains below
+            // this are numerical, not structural.
             min_gain: 1e-9,
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
-            l2: 0.0,
-            l1: 0.0,
+            l2: 0.1,
+            l1: 0.1,
+            monotone: Vec::new(),
+            interaction_groups: Vec::new(),
+            min_relevance: None,
         }
     }
 }
@@ -101,8 +130,6 @@ struct Node {
 }
 
 /// Per-node timing breakdown — the debug-on-every-level instrumentation.
-/// `group_ns` = extract/sort/value-group aggregation, `scan_ns` = the
-/// candidate scan, `leaf_ns` = fitting the leaf model.
 #[derive(Clone, Debug, Default)]
 pub struct NodeProfile {
     pub depth: usize,
@@ -132,9 +159,19 @@ pub struct DepthProfile {
 pub struct ModelTree {
     pub col_names: Vec<String>,
     pub params: ModelTreeParams,
+    /// Columns that survived pre-selection (original indices).
+    pub active_cols: Vec<usize>,
     nodes: Vec<Node>,
     root: usize,
     profiles: Vec<NodeProfile>,
+}
+
+/// Work of one column scan, merged into the node profile.
+#[derive(Clone, Copy, Debug, Default)]
+struct ScanStats {
+    group_ns: u64,
+    scan_ns: u64,
+    candidates: usize,
 }
 
 impl ModelTree {
@@ -157,9 +194,34 @@ impl ModelTree {
         y: &[Option<f64>],
         params: ModelTreeParams,
     ) -> Result<Self, String> {
+        let n = y.len();
+        Self::fit_weighted_named(col_names, x, y, &vec![1.0; n], params)
+    }
+
+    /// Fit with sample weights (row weightage). Zero-weight rows are
+    /// ignored entirely; negative weights are an error.
+    pub fn fit_weighted(
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        w: &[f64],
+        params: ModelTreeParams,
+    ) -> Result<Self, String> {
+        let d = x.first().map(|r| r.len()).unwrap_or(0);
+        let names: Vec<String> = (0..d).map(|j| format!("x{j}")).collect();
+        Self::fit_weighted_named(names, x, y, w, params)
+    }
+
+    /// Weighted fit with explicit column names.
+    pub fn fit_weighted_named(
+        col_names: Vec<String>,
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        w: &[f64],
+        params: ModelTreeParams,
+    ) -> Result<Self, String> {
         let n_all = y.len();
-        if x.len() != n_all {
-            return Err("x and y length mismatch".to_string());
+        if x.len() != n_all || w.len() != n_all {
+            return Err("x, y and w length mismatch".to_string());
         }
         let d = col_names.len();
         if d == 0 {
@@ -173,36 +235,72 @@ impl ModelTree {
         if params.min_rows == 0 {
             return Err("min_rows must be >= 1".to_string());
         }
+        if params.monotone.iter().any(|&m| m < -1 || m > 1) {
+            return Err("monotone entries must be -1, 0 or 1".to_string());
+        }
+        if !params.monotone.is_empty() && params.monotone.len() != d {
+            return Err("monotone must have one entry per column".to_string());
+        }
 
-        // Column-major; rows with a missing target drop (no signal to learn).
+        // Column-major; rows with missing targets or zero weight drop
+        // (no signal to learn / explicitly absent).
         let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(n_all); d];
         let mut yv: Vec<f64> = Vec::with_capacity(n_all);
+        let mut wv: Vec<f64> = Vec::with_capacity(n_all);
         for (r, row) in x.iter().enumerate() {
+            if w[r] < 0.0 {
+                return Err("weights must be non-negative".to_string());
+            }
             let Some(t) = y[r] else { continue };
+            if w[r] == 0.0 {
+                continue;
+            }
             for j in 0..d {
                 cols[j].push(row[j]);
             }
             yv.push(t);
+            wv.push(w[r]);
         }
         if yv.is_empty() {
-            return Err("no rows with an observed target".to_string());
+            return Err("no rows with an observed target and positive weight".to_string());
         }
+
+        // Pre-selection: keep only informative columns (original indices).
+        let active_cols: Vec<usize> = match params.min_relevance {
+            Some(thr) => {
+                let kept = preselect::select_columns(&cols, &yv, &wv, thr);
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
+            None => (0..d).collect(),
+        };
+        // Shrinking a monotone vector would break indices; keep it aligned.
 
         let rows: Vec<usize> = (0..yv.len()).collect();
         let mut grower = Grower {
             cols: &cols,
             y: &yv,
-            params,
+            w: &wv,
+            params: &params,
+            active: &active_cols,
             nodes: Vec::new(),
             profiles: Vec::new(),
         };
         let root = grower.grow(&rows, 0, &mut Vec::new());
+        // Destructure to release the borrows on params/active_cols before
+        // moving them into the tree.
+        let Grower {
+            nodes, profiles, ..
+        } = grower;
         Ok(Self {
             col_names,
             params,
-            nodes: grower.nodes,
+            active_cols,
+            nodes,
             root,
-            profiles: grower.profiles,
+            profiles,
         })
     }
 
@@ -229,6 +327,32 @@ impl ModelTree {
     /// All splits in the tree (introspection / structure recovery).
     pub fn splits(&self) -> Vec<Split> {
         self.nodes.iter().filter_map(|n| n.split).collect()
+    }
+
+    /// Split columns along each root→leaf path — introspection for
+    /// constraint checking (interaction groups: every path must stay within
+    /// one group) and structure recovery.
+    pub fn split_paths(&self) -> Vec<Vec<usize>> {
+        fn walk(
+            nodes: &[Node],
+            i: usize,
+            path: &mut Vec<usize>,
+            out: &mut Vec<Vec<usize>>,
+        ) {
+            let n = &nodes[i];
+            match (&n.split, n.left, n.right) {
+                (Some(sp), Some(l), Some(r)) => {
+                    path.push(sp.col);
+                    walk(nodes, l, path, out);
+                    walk(nodes, r, path, out);
+                    path.pop();
+                }
+                _ => out.push(path.clone()),
+            }
+        }
+        let mut out = Vec::new();
+        walk(&self.nodes, self.root, &mut Vec::new(), &mut out);
+        out
     }
 
     /// Leaf models with their row counts.
@@ -275,7 +399,9 @@ impl ModelTree {
 struct Grower<'a> {
     cols: &'a [Vec<Option<f64>>],
     y: &'a [f64],
-    params: ModelTreeParams,
+    w: &'a [f64],
+    params: &'a ModelTreeParams,
+    active: &'a [usize],
     nodes: Vec<Node>,
     profiles: Vec<NodeProfile>,
 }
@@ -329,12 +455,17 @@ impl<'a> Grower<'a> {
         }
     }
 
-    /// Columns a leaf model uses for a given root→leaf path.
+    /// Columns a leaf model uses for a given root→leaf path (restricted to
+    /// the pre-selected active columns).
     fn chosen_cols(&self, path: &[usize]) -> Vec<usize> {
         match self.params.leaf_cols {
-            LeafCols::All => (0..self.cols.len()).collect(),
+            LeafCols::All => self.active.to_vec(),
             LeafCols::PathUsed => {
-                let mut p: Vec<usize> = path.to_vec();
+                let mut p: Vec<usize> = path
+                    .iter()
+                    .copied()
+                    .filter(|c| self.active.contains(c))
+                    .collect();
                 p.sort_unstable();
                 p.dedup();
                 p
@@ -342,8 +473,34 @@ impl<'a> Grower<'a> {
         }
     }
 
-    /// Best split across columns; candidates are scored from running
-    /// aggregates, row sets are built only for the winner.
+    /// Interaction constraint (LightGBM-style): a path may only use columns
+    /// from one interaction group; ungrouped columns never interact.
+    fn interact_ok(&self, path: &[usize], j: usize) -> bool {
+        let g = &self.params.interaction_groups;
+        if g.is_empty() {
+            return true;
+        }
+        let group_of = |c: usize| g.iter().position(|grp| grp.contains(&c));
+        match group_of(j) {
+            None => path.iter().all(|&p| group_of(p).is_none()),
+            Some(gj) => path.iter().all(|&p| group_of(p) == Some(gj)),
+        }
+    }
+
+    /// Monotone check: a split on constrained column j must order the
+    /// children's (weighted) target means in the constraint's direction.
+    fn mono_ok(&self, j: usize, mean_l: f64, mean_r: f64) -> bool {
+        if self.params.monotone.is_empty() {
+            return true;
+        }
+        let m = self.params.monotone[j];
+        m == 0 || (mean_l - mean_r) * (m as f64) <= 0.0
+    }
+
+    /// Best split across columns. Columns scan in parallel above a work
+    /// threshold; the winner is chosen deterministically (gain, then
+    /// scan order: lowest column index, lowest threshold, missing_left
+    /// first) — never by thread completion order.
     fn best_split(
         &self,
         rows: &[usize],
@@ -355,24 +512,59 @@ impl<'a> Grower<'a> {
             return None;
         }
 
-        let mut best: Option<(f64, Split)> = None;
         let mut child_path = path.to_vec();
-        for j in 0..self.cols.len() {
-            child_path.push(j);
-            let found = match self.params.leaf {
-                LeafKind::Mean => self.scan_column_mean(rows, j, prof),
-                LeafKind::Linear => self.scan_column_linear(rows, j, &child_path, prof),
-            };
-            child_path.pop();
+        let mut candidates: Vec<(usize, Option<(f64, Split)>, ScanStats)> = Vec::new();
+        let work = rows.len() * self.cols.len();
+        let cols: Vec<usize> = self
+            .active
+            .iter()
+            .copied()
+            .filter(|&j| self.interact_ok(path, j))
+            .collect();
+
+        if work >= PAR_MIN_WORK {
+            use rayon::prelude::*;
+            let mut out: Vec<(usize, Option<(f64, Split)>, ScanStats)> = cols
+                .par_iter()
+                .map(|&j| {
+                    let mut cp = path.to_vec();
+                    cp.push(j);
+                    let (found, st) = self.scan_column(rows, j, &cp);
+                    (j, found, st)
+                })
+                .collect();
+            out.sort_by_key(|(j, _, _)| *j); // deterministic order
+            candidates = out;
+        } else {
+            for &j in &cols {
+                child_path.push(j);
+                let (found, st) = self.scan_column(rows, j, &child_path);
+                child_path.pop();
+                candidates.push((j, found, st));
+            }
+        }
+
+        let mut best: Option<(f64, Split, usize, f64)> = None; // (gain, split, j, threshold)
+        for (j, found, st) in candidates {
+            prof.cols += 1;
+            prof.group_ns += st.group_ns;
+            prof.scan_ns += st.scan_ns;
+            prof.candidates += st.candidates;
             if let Some((gain, sp)) = found {
-                // Deterministic first-found wins on near-ties (see `beats`).
-                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
-                    best = Some((gain, sp));
+                let better = match &best {
+                    None => true,
+                    Some((g, _, bj, bt)) => {
+                        beats(gain, *g)
+                            || (!beats(*g, gain) && (j, sp.threshold) < (*bj, *bt))
+                    }
+                };
+                if better {
+                    best = Some((gain, sp, j, sp.threshold));
                 }
             }
         }
 
-        best.map(|(gain, s)| {
+        best.map(|(_, s, ..)| {
             let (mut lv, mut rv) = (Vec::new(), Vec::new());
             for &r in rows {
                 match self.cols[s.col][r] {
@@ -392,92 +584,106 @@ impl<'a> Grower<'a> {
                     }
                 }
             }
-            let _ = gain;
             (s, lv, rv)
         })
     }
 
-    /// Mean-leaf scan — rpart's `anova.c` shape: running sums per side, O(1)
-    /// per value, split only where the value changes.
-    fn scan_column_mean(
+    /// Dispatch one column's scan to the leaf-kind-specific loop.
+    fn scan_column(
         &self,
         rows: &[usize],
         j: usize,
-        prof: &mut NodeProfile,
-    ) -> Option<(f64, Split)> {
-        prof.cols += 1;
+        path: &[usize],
+    ) -> (Option<(f64, Split)>, ScanStats) {
+        match self.params.leaf {
+            LeafKind::Mean => self.scan_column_mean(rows, j),
+            LeafKind::Linear => self.scan_column_linear(rows, j, path),
+        }
+    }
+
+    /// Mean-leaf scan — rpart's `anova.c` shape: weighted running sums per
+    /// side, O(1) per value, split only where the value changes.
+    fn scan_column_mean(&self, rows: &[usize], j: usize) -> (Option<(f64, Split)>, ScanStats) {
+        let mut st = ScanStats::default();
         let m = self.params.min_rows as f64;
         let t0 = Instant::now();
-        let mut pairs: Vec<(f64, f64)> = rows
+        let mut pairs: Vec<(f64, f64, f64)> = rows
             .iter()
-            .filter_map(|&r| self.cols[j][r].map(|v| (v, self.y[r])))
+            .filter_map(|&r| self.cols[j][r].map(|v| (v, self.y[r], self.w[r])))
             .collect();
         if pairs.len() < 2 {
-            return None;
+            return (None, st);
         }
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
 
         // Missing rows: one extra group, scored in both directions.
         let mut mn = 0usize;
-        let (mut ms, mut mss) = (0.0, 0.0);
+        let (mut msw, mut mswy, mut mswy2) = (0.0, 0.0, 0.0);
         for &r in rows {
             if self.cols[j][r].is_none() {
                 mn += 1;
-                ms += self.y[r];
-                mss += self.y[r] * self.y[r];
+                let (y, w) = (self.y[r], self.w[r]);
+                msw += w;
+                mswy += w * y;
+                mswy2 += w * y * y;
             }
         }
         let mut tn = 0usize;
-        let (mut ts, mut tss) = (0.0, 0.0);
-        for &(_, yv) in &pairs {
+        let (mut tsw, mut tswy, mut tswy2) = (0.0, 0.0, 0.0);
+        for &(_, y, w) in &pairs {
             tn += 1;
-            ts += yv;
-            tss += yv * yv;
+            tsw += w;
+            tswy += w * y;
+            tswy2 += w * y * y;
         }
 
-        fn sse(n: f64, s: f64, ss: f64) -> f64 {
-            if n == 0.0 {
+        fn sse(sw: f64, swy: f64, swy2: f64) -> f64 {
+            if sw <= 0.0 {
                 0.0
             } else {
-                ss - s * s / n
+                swy2 - swy * swy / sw
             }
         }
-        let parent_sse = sse(tn as f64, ts, tss) + sse(mn as f64, ms, mss);
-
-        prof.group_ns += t0.elapsed().as_nanos() as u64;
+        let parent_sse = sse(tsw, tswy, tswy2) + sse(msw, mswy, mswy2);
+        st.group_ns += t0.elapsed().as_nanos() as u64;
         let t1 = Instant::now();
 
         let mut ln = 0usize;
-        let (mut ls, mut lss) = (0.0, 0.0);
+        let (mut lsw, mut lswy, mut lswy2) = (0.0, 0.0, 0.0);
         let mut best: Option<(f64, Split)> = None;
         for k in 0..pairs.len() {
-            let (v, yv) = pairs[k];
+            let (v, y, w) = pairs[k];
             ln += 1;
-            ls += yv;
-            lss += yv * yv;
+            lsw += w;
+            lswy += w * y;
+            lswy2 += w * y * y;
             let is_boundary = k + 1 < pairs.len() && pairs[k + 1].0 != v;
             if !is_boundary {
                 continue;
             }
             let threshold = (v + pairs[k + 1].0) / 2.0;
             let rn = tn - ln;
-            let (rs, rss) = (ts - ls, tss - lss);
-            prof.candidates += 1;
+            let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
+            st.candidates += 1;
             for missing_left in [true, false] {
-                let (aln, als, alss) = if missing_left {
-                    (ln + mn, ls + ms, lss + mss)
+                let (aln, alsw, alswy, alswy2) = if missing_left {
+                    (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2)
                 } else {
-                    (ln, ls, lss)
+                    (ln, lsw, lswy, lswy2)
                 };
-                let (arn, ars, arss) = if missing_left {
-                    (rn, rs, rss)
+                let (arn, arsw, arswy, arswy2) = if missing_left {
+                    (rn, rsw, rswy, rswy2)
                 } else {
-                    (rn + mn, rs + ms, rss + mss)
+                    (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2)
                 };
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
                 }
-                let gain = parent_sse - (sse(aln as f64, als, alss) + sse(arn as f64, ars, arss));
+                if !self.mono_ok(j, alswy / alsw.max(1e-300), arswy / arsw.max(1e-300)) {
+                    continue;
+                }
+                let gain = parent_sse
+                    - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2));
                 if gain <= self.params.min_gain {
                     continue;
                 }
@@ -493,21 +699,20 @@ impl<'a> Grower<'a> {
                 }
             }
         }
-        prof.scan_ns += t1.elapsed().as_nanos() as u64;
-        best
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (best, st)
     }
 
-    /// Linear-leaf scan — LightGBM's histogram shape: one Gram per distinct
-    /// value, running left/right aggregates, per-candidate solve on
+    /// Linear-leaf scan — LightGBM's histogram shape: one weighted Gram per
+    /// distinct value, running left/right aggregates, per-candidate solve on
     /// preallocated scratch (no allocation in the loop).
     fn scan_column_linear(
         &self,
         rows: &[usize],
         j: usize,
         path: &[usize],
-        prof: &mut NodeProfile,
-    ) -> Option<(f64, Split)> {
-        prof.cols += 1;
+    ) -> (Option<(f64, Split)>, ScanStats) {
+        let mut st = ScanStats::default();
         let m = self.params.min_rows;
         let t0 = Instant::now();
 
@@ -520,20 +725,18 @@ impl<'a> Grower<'a> {
             .filter_map(|&r| self.cols[j][r].map(|v| (v, r)))
             .collect();
         if pairs.len() < 2 {
-            return None;
+            return (None, st);
         }
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
 
-        // Value groups: one Gram per distinct value ("loop over each element
-        // within the variable", not over each row).
         let mut groups: Vec<(f64, Gram)> = Vec::new();
         for &(v, r) in &pairs {
             design_row(&mut row_buf, self.cols, r, &chosen, true);
             match groups.last_mut() {
-                Some((gv, g)) if *gv == v => g.add_row(&row_buf, self.y[r]),
+                Some((gv, g)) if *gv == v => g.add_row(&row_buf, self.y[r], self.w[r]),
                 _ => {
                     let mut g = Gram::new(dim);
-                    g.add_row(&row_buf, self.y[r]);
+                    g.add_row(&row_buf, self.y[r], self.w[r]);
                     groups.push((v, g));
                 }
             }
@@ -542,7 +745,7 @@ impl<'a> Grower<'a> {
         for &r in rows {
             if self.cols[j][r].is_none() {
                 design_row(&mut row_buf, self.cols, r, &chosen, true);
-                miss.add_row(&row_buf, self.y[r]);
+                miss.add_row(&row_buf, self.y[r], self.w[r]);
             }
         }
 
@@ -553,14 +756,38 @@ impl<'a> Grower<'a> {
         let mut prow = vec![0.0; pdim];
         for &r in rows {
             design_row(&mut prow, self.cols, r, &parent_chosen, true);
-            pgram.add_row(&prow, self.y[r]);
+            pgram.add_row(&prow, self.y[r], self.w[r]);
         }
         let mut scratch = SolveScratch::new(dim.max(pdim));
         let parent_sse = solve_normal_sum(
-            &pgram, None, pdim, self.params.l1, self.params.l2, &mut scratch,
+            &pgram,
+            None,
+            pdim,
+            self.params.l1,
+            self.params.l2,
+            &mut scratch,
         );
 
-        prof.group_ns += t0.elapsed().as_nanos() as u64;
+        // Monotone columns with linear leaves need one more gate per
+        // candidate: the children's fitted outputs must be ordered AT the
+        // threshold (their intercepts meet there - child means alone don't
+        // order linear responses). The eval point holds other columns at the
+        // node's mean design row.
+        let mut mean_row = vec![0.0; dim];
+        for &r in rows {
+            design_row(&mut row_buf, self.cols, r, &chosen, true);
+            for (m, v) in mean_row.iter_mut().zip(&row_buf) {
+                *m += *v;
+            }
+        }
+        let inv_n = 1.0 / rows.len().max(1) as f64;
+        for v in mean_row.iter_mut() {
+            *v *= inv_n;
+        }
+        let jslot = 1 + chosen.iter().position(|&c| c == j).unwrap();
+        let mut gbuf0 = Gram::new(dim);
+        let mut gbuf1 = Gram::new(dim);
+        st.group_ns += t0.elapsed().as_nanos() as u64;
         let t1 = Instant::now();
 
         let mut total = Gram::new(dim);
@@ -579,15 +806,57 @@ impl<'a> Grower<'a> {
                 continue;
             }
             let threshold = (v + groups[gi + 1].0) / 2.0;
-            prof.candidates += 1;
+            st.candidates += 1;
             for missing_left in [true, false] {
                 let left_n = left.n + if missing_left { miss.n } else { 0 };
                 let right_n = right.n + if missing_left { 0 } else { miss.n };
                 if left_n < m || right_n < m {
                     continue;
                 }
-                // sse(left + miss) + sse(right) or the mirror — two solves,
-                // no materialized sums, no clones.
+                let (wl, wr) = if missing_left {
+                    (left.ws + miss.ws, right.ws)
+                } else {
+                    (left.ws, right.ws + miss.ws)
+                };
+                let (ml, mr) = if missing_left {
+                    ((left.wy + miss.wy) / wl.max(1e-300), right.wy / wr.max(1e-300))
+                } else {
+                    (left.wy / wl.max(1e-300), (right.wy + miss.wy) / wr.max(1e-300))
+                };
+                if !self.mono_ok(j, ml, mr) {
+                    continue;
+                }
+                if self.params.monotone.get(j).copied().unwrap_or(0) != 0 {
+                    gbuf0.clone_from(&left);
+                    gbuf1.clone_from(&right);
+                    if missing_left {
+                        gbuf0.add(&miss);
+                    } else {
+                        gbuf1.add(&miss);
+                    }
+                    let ml_mod = fit_linear(
+                        &gbuf0,
+                        &chosen,
+                        true,
+                        &self.params.monotone,
+                        self.params.l1,
+                        self.params.l2,
+                    );
+                    let mr_mod = fit_linear(
+                        &gbuf1,
+                        &chosen,
+                        true,
+                        &self.params.monotone,
+                        self.params.l1,
+                        self.params.l2,
+                    );
+                    mean_row[jslot] = threshold;
+                    let fl = ml_mod.eval_design(&mean_row);
+                    let fr = mr_mod.eval_design(&mean_row);
+                    if (fl - fr) * self.params.monotone[j] as f64 > 1e-9 {
+                        continue;
+                    }
+                }
                 let (sl, sr) = if missing_left {
                     (
                         solve_normal_sum(&left, Some(&miss), dim, self.params.l1, self.params.l2, &mut scratch),
@@ -615,14 +884,15 @@ impl<'a> Grower<'a> {
                 }
             }
         }
-        prof.scan_ns += t1.elapsed().as_nanos() as u64;
-        best
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (best, st)
     }
 
     /// Fit the leaf model for a node's rows.
     fn make_leaf(&self, rows: &[usize], path: &[usize]) -> LeafModel {
         let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();
-        let stats = LeafStats::from_targets(&yv);
+        let wv: Vec<f64> = rows.iter().map(|&r| self.w[r]).collect();
+        let stats = LeafStats::from_targets(&yv, &wv);
         let linear = if self.params.leaf == LeafKind::Linear {
             let chosen = self.chosen_cols(path);
             let any_missing = rows
@@ -633,12 +903,13 @@ impl<'a> Grower<'a> {
             let mut row = vec![0.0; dim];
             for &r in rows {
                 design_row(&mut row, self.cols, r, &chosen, any_missing);
-                g.add_row(&row, self.y[r]);
+                g.add_row(&row, self.y[r], self.w[r]);
             }
             Some(fit_linear(
                 &g,
                 &chosen,
                 any_missing,
+                &self.params.monotone,
                 self.params.l1,
                 self.params.l2,
             ))

@@ -14,11 +14,14 @@ import itertools
 from pathlib import Path
 
 OUT = Path("benchmarks/elo_scores.csv")
-DATASETS = ["concrete", "abalone", "ozone", "boston", "fc2008"]
+DATA_DIR = Path("benchmarks/elo_data")
+# Datasets are discovered from the prepared files - add data without
+# touching the scorers.
+DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
 
 
 def main():
-    rows = list(csv.DictReader(open(OUT)))
+    rows = [r for r in csv.DictReader(open(OUT)) if r["model"] != "model"]
     by = {(r["dataset"], r["model"]): (float(r["rmse"]), float(r["mae"]), float(r["fit_s"]))
           for r in rows}
 

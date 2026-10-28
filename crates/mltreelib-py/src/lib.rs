@@ -1513,7 +1513,7 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 8, min_rows = 20, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.0, l1 = 0.0))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.1, monotone = vec![], interaction_groups = vec![], min_relevance = None))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -1522,6 +1522,9 @@ impl PyModelTree {
         leaf: &str,
         l2: f64,
         l1: f64,
+        monotone: Vec<i8>,
+        interaction_groups: Vec<Vec<usize>>,
+        min_relevance: Option<f64>,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -1550,6 +1553,9 @@ impl PyModelTree {
                 leaf: kind,
                 l2,
                 l1,
+                monotone,
+                interaction_groups,
+                min_relevance,
             },
             inner: None,
         })
@@ -1560,10 +1566,22 @@ impl PyModelTree {
     /// Args:
     ///     x: rows of predictors; `None` entries are missing (NA rows train).
     ///     y: targets; `None` drops that row.
+    ///     w: optional per-row sample weights (row weightage); zero-weight
+    ///        rows are ignored.
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    fn fit(&mut self, x: Vec<Vec<Option<f64>>>, y: Vec<Option<f64>>) -> PyResult<()> {
-        let tree = ModelTree::fit(&x, &y, self.params).map_err(PyValueError::new_err)?;
+    #[pyo3(signature = (x, y, w = None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<Option<f64>>>,
+        y: Vec<Option<f64>>,
+        w: Option<Vec<f64>>,
+    ) -> PyResult<()> {
+        let tree = match w {
+            Some(w) => ModelTree::fit_weighted(&x, &y, &w, self.params.clone()),
+            None => ModelTree::fit(&x, &y, self.params.clone()),
+        }
+        .map_err(PyValueError::new_err)?;
         self.inner = Some(tree);
         Ok(())
     }
@@ -1657,6 +1675,22 @@ impl PyModelTree {
             out.push(d.into_any().unbind());
         }
         Ok(out)
+    }
+
+    /// Split columns along each root-to-leaf path. Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: one list of column names per root-to-leaf path (the split
+    /// columns on that path) — the introspection behind interaction-group
+    /// checking.
+    fn split_paths(&self) -> PyResult<Vec<Vec<String>>> {
+        let t = self.tree()?;
+        Ok(t
+            .split_paths()
+            .into_iter()
+            .map(|p| p.into_iter().map(|c| t.col_names[c].clone()).collect())
+            .collect())
     }
 
     /// Number of leaves. Task: regression.

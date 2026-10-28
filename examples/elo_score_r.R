@@ -5,7 +5,10 @@
 
 data_dir <- file.path("benchmarks", "elo_data")
 out <- file.path("benchmarks", "elo_scores.csv")
-datasets <- c("concrete", "abalone", "ozone", "boston", "fc2008")
+# Datasets are discovered from the prepared files - add data without
+# touching the scorers.
+datasets <- sort(sub("_train.csv$", "",
+                     list.files(data_dir, pattern = "_train.csv$")))
 if (!file.exists(out)) {
   writeLines("dataset,model,rmse,mae,fit_s", out)
 }
