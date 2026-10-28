@@ -12,6 +12,7 @@ use mltreelib_core::encode::{
     SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
 };
 use mltreelib_core::frame::{Column, Dataset};
+use mltreelib_core::model_tree::{LeafCols, LeafKind, ModelTree, ModelTreeParams};
 use mltreelib_core::metrics::{
     classification_report, grouped_regression_report, regression_report, ClassificationReport,
     RegressionReport,
@@ -1482,6 +1483,148 @@ impl PyMetrics {
     }
 }
 
+/// Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
+/// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
+/// Task: regression.
+#[pyclass(name = "ModelTree")]
+pub struct PyModelTree {
+    params: ModelTreeParams,
+    inner: Option<ModelTree>,
+}
+
+impl PyModelTree {
+    fn tree(&self) -> PyResult<&ModelTree> {
+        self.inner
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))
+    }
+}
+
+#[pymethods]
+impl PyModelTree {
+    /// Create an unfitted model tree. Task: regression.
+    ///
+    /// Args:
+    ///     max_depth: maximum tree depth (0 = a single leaf).
+    ///     min_rows: minimum rows per child side at a split.
+    ///     min_gain: minimum fitted-leaf SSE reduction to split.
+    ///     leaf_cols: "all" (every column) or "path" (only split-path columns).
+    ///     leaf: "linear" (model tree) or "mean" (CART/rpart-style).
+    ///
+    /// Returns: the model tree; call `.fit()` next.
+    #[new]
+    #[pyo3(signature = (max_depth = 8, min_rows = 20, min_gain = 1e-9, leaf_cols = "all", leaf = "linear"))]
+    fn new(
+        max_depth: usize,
+        min_rows: usize,
+        min_gain: f64,
+        leaf_cols: &str,
+        leaf: &str,
+    ) -> PyResult<Self> {
+        let policy = match leaf_cols {
+            "all" => LeafCols::All,
+            "path" => LeafCols::PathUsed,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "leaf_cols must be 'all' or 'path', got {other}"
+                )))
+            }
+        };
+        let kind = match leaf {
+            "linear" => LeafKind::Linear,
+            "mean" => LeafKind::Mean,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "leaf must be 'linear' or 'mean', got {other}"
+                )))
+            }
+        };
+        Ok(Self {
+            params: ModelTreeParams {
+                max_depth,
+                min_rows,
+                min_gain,
+                leaf_cols: policy,
+                leaf: kind,
+            },
+            inner: None,
+        })
+    }
+
+    /// Fit the tree on row-major data. Task: regression.
+    ///
+    /// Args:
+    ///     x: rows of predictors; `None` entries are missing (NA rows train).
+    ///     y: targets; `None` drops that row.
+    ///
+    /// Returns: nothing; the fitted tree replaces the inner model.
+    fn fit(&mut self, x: Vec<Vec<Option<f64>>>, y: Vec<Option<f64>>) -> PyResult<()> {
+        let tree = ModelTree::fit(&x, &y, self.params).map_err(PyValueError::new_err)?;
+        self.inner = Some(tree);
+        Ok(())
+    }
+
+    /// Predict for row-major data; NAs never block a prediction. Task: regression.
+    ///
+    /// Args:
+    ///     x: rows of predictors; `None` entries are missing.
+    ///
+    /// Returns: one predicted value per row.
+    fn predict(&self, x: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+        Ok(self.tree()?.predict(&x))
+    }
+
+    /// Fitted leaf models. Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `fill`,
+    /// `intercept`, `n`.
+    fn leaves(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
+        let t = self.tree()?;
+        let mut out = Vec::new();
+        for (m, n) in t.leaves() {
+            let d = PyDict::new(py);
+            let cols: Vec<String> = m.cols.iter().map(|&j| t.col_names[j].clone()).collect();
+            d.set_item("cols", cols)?;
+            d.set_item("coef", m.coef.clone())?;
+            d.set_item("na_coef", m.na_coef.clone())?;
+            d.set_item("fill", m.fill.clone())?;
+            d.set_item("intercept", m.intercept)?;
+            d.set_item("n", n)?;
+            out.push(d.into_any().unbind());
+        }
+        Ok(out)
+    }
+
+    /// Learned splits. Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: one dict per split with `col`, `threshold`, `missing_left`.
+    fn splits(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
+        let t = self.tree()?;
+        let mut out = Vec::new();
+        for s in t.splits() {
+            let d = PyDict::new(py);
+            d.set_item("col", t.col_names[s.col].clone())?;
+            d.set_item("threshold", s.threshold)?;
+            d.set_item("missing_left", s.missing_left)?;
+            out.push(d.into_any().unbind());
+        }
+        Ok(out)
+    }
+
+    /// Number of leaves. Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: leaf count.
+    fn n_leaves(&self) -> PyResult<usize> {
+        Ok(self.tree()?.n_leaves())
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyBaseNEncoder>()?;
@@ -1496,6 +1639,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLeaveOneOutEncoder>()?;
     m.add_class::<PyMEstimatorEncoder>()?;
     m.add_class::<PyMetrics>()?;
+    m.add_class::<PyModelTree>()?;
     m.add_class::<PyOneHotEncoder>()?;
     m.add_class::<PyQuantileEncoder>()?;
     m.add_class::<PySumEncoder>()?;

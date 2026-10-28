@@ -474,3 +474,29 @@ def test_demo_script_runs():
 
     if list_datasets():
         assert "REAL DATASET" in proc.stdout
+
+
+def test_model_tree_smoke():
+    from mltreelib import ModelTree
+
+    x = [[0.5], [1.5], [2.5], [3.5]] * 5
+    y = [2.0 * xi[0] + 1.0 for xi in x]
+    x[0] = [None]  # NA row trains
+    y[0] = 7.0
+    t = ModelTree(max_depth=3, min_rows=3, leaf="linear")
+    t.fit(x, y)
+    preds = t.predict(x)
+    assert len(preds) == 20 and all(isinstance(p, float) for p in preds)
+    leaves = t.leaves()
+    assert leaves and {"cols", "coef", "na_coef", "intercept", "n"} <= set(leaves[0])
+    # the NA row is fitted by a learned indicator term, not dropped
+    assert any(l["na_coef"] for l in leaves)
+    # mean-leaf mode is the CART/rpart parity mode
+    t2 = ModelTree(leaf="mean")
+    t2.fit(x, y)
+    assert isinstance(t2.predict([[2.0]])[0], float)
+    # bad enum values fail loudly
+    import pytest as _pytest
+
+    with _pytest.raises(ValueError):
+        ModelTree(leaf_cols="bogus")
