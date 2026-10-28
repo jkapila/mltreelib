@@ -10,6 +10,7 @@ use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
 use mltreelib_core::schema::NCategoryRule;
+use mltreelib_core::timefeat::{calendar_parts, lag_by_days as lag_core, parse_ymd};
 use mltreelib_core::transform::{
     summarize as summarize_stats, GroupedScaler, GroupedStrategy, GroupedTransform, SummaryKind,
 };
@@ -332,14 +333,71 @@ impl PyGroupedScaler {
     }
 }
 
+/// Calendar features for ISO dates (YYYY-MM-DD or timestamp): year, halfyear,
+/// quarter, month, week (ISO), iso_year, weekday (0=Mon), day, day_of_year,
+/// season, weekend. Missing dates give missing features.
+#[pyfunction]
+#[pyo3(signature = (dates, hemisphere="north"))]
+fn calendar_features<'py>(
+    py: Python<'py>,
+    dates: Vec<Option<String>>,
+    hemisphere: &str,
+) -> PyResult<Py<PyDict>> {
+    let southern = match hemisphere {
+        "north" => false,
+        "south" => true,
+        other => return Err(PyValueError::new_err(format!("unknown hemisphere '{other}'"))),
+    };
+    const NAMES: [&str; 11] = [
+        "year", "halfyear", "quarter", "month", "week", "iso_year", "weekday", "day",
+        "day_of_year", "season", "weekend",
+    ];
+    let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(dates.len()); NAMES.len()];
+    for d in &dates {
+        match d {
+            None => {
+                for c in cols.iter_mut() {
+                    c.push(None);
+                }
+            }
+            Some(s) => {
+                let (y, m, dd) = parse_ymd(s)
+                    .ok_or_else(|| PyValueError::new_err(format!("unparseable date '{s}'")))?;
+                for (i, (_, v)) in calendar_parts(y, m, dd, southern).into_iter().enumerate() {
+                    cols[i].push(Some(v));
+                }
+            }
+        }
+    }
+    let out = PyDict::new(py);
+    for (name, col) in NAMES.iter().zip(cols) {
+        out.set_item(*name, col)?;
+    }
+    Ok(out.unbind())
+}
+
+/// Lag values by whole days within each key (day granularity).
+#[pyfunction]
+#[pyo3(signature = (keys, dates, values, lag_days))]
+fn lag_by_days(
+    keys: Vec<Option<String>>,
+    dates: Vec<Option<String>>,
+    values: Vec<Option<f64>>,
+    lag_days: u32,
+) -> PyResult<Vec<Option<f64>>> {
+    lag_core(&keys, &dates, &values, lag_days).map_err(PyValueError::new_err)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDatasetBuilder>()?;
     m.add_class::<PyGroupedScaler>()?;
     m.add_class::<PyIndexMapper>()?;
+    m.add_function(wrap_pyfunction!(calendar_features, m)?)?;
     m.add_function(wrap_pyfunction!(generate, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_scale, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_transform, m)?)?;
+    m.add_function(wrap_pyfunction!(lag_by_days, m)?)?;
     m.add_function(wrap_pyfunction!(summarize, m)?)?;
     Ok(())
 }

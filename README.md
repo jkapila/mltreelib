@@ -61,8 +61,9 @@ Order matters: foundations first, then honest replication, then novelty.
 - [x] `IndexMapper` (multi-column categorical codes + exact inverse)
 - [x] Grouped variable transformations (`fit`/`transform`, mean/std/count/quantiles)
 - [x] Adjustable generator + ground-truth manifest (Rust + Python)
-- [ ] `DatasetBuilder` ingest of any data: NA policy (allow/drop/impute), digit rounding, intercept column, dtype reduction
-- [ ] Calendar/time features (year, month, week, day-of-week, hour…)
+- [x] `DatasetBuilder` ingest of any data: NA policy (allow/drop/impute), digit rounding, intercept column, dtype reduction
+- [x] Calendar/time features (year, halfyear, quarter, month, ISO week, weekday, day-of-year, season, weekend)
+- [x] Lag features by whole days within a key (featuregen `LagFeatures` lineage)
 - [ ] Trended transforms at user granularity (year-month, year-week, …) — featuregen lineage
 - [ ] Decomposed transforms (series − trend − seasonality)
 - [ ] Aggregation features (grouped sums/means/counts over windows)

@@ -5,9 +5,11 @@ import pytest
 from mltreelib import (
     DatasetBuilder,
     IndexMapper,
+    calendar_features,
     generate,
     grouped_scale,
     grouped_transform,
+    lag_by_days,
     summarize,
 )
 
@@ -167,3 +169,29 @@ def test_grouped_scale_and_inverse():
 
     with pytest.raises(ValueError):
         grouped_scale(keys, vals, strategy="nope")
+
+
+def test_calendar_features():
+    out = calendar_features(["2026-10-28", None, "2026-10-28T14:30:00"])
+    assert out["year"] == [2026.0, None, 2026.0]
+    assert out["month"] == [10.0, None, 10.0]
+    assert out["quarter"] == [4.0, None, 4.0]
+    assert out["weekday"] == [2.0, None, 2.0]  # Wednesday
+    assert out["season"] == [2.0, None, 2.0]  # fall
+    assert out["weekend"] == [0.0, None, 0.0]
+    assert out["day_of_year"] == [301.0, None, 301.0]
+
+    southern = calendar_features(["2026-01-15"], hemisphere="south")
+    assert southern["season"] == [1.0]  # southern summer
+
+    with pytest.raises(ValueError):
+        calendar_features(["nope"])
+
+
+def test_lag_by_days():
+    keys = ["a", "a", "a"]
+    dates = ["2026-01-01", "2026-01-02", "2026-01-05"]
+    vals = [10.0, 20.0, 30.0]
+    assert lag_by_days(keys, dates, vals, 1) == [None, 10.0, None]
+    assert lag_by_days(keys, dates, vals, 4) == [None, None, 10.0]
+    assert lag_by_days(keys, dates, vals, 0) == [10.0, 20.0, 30.0]
