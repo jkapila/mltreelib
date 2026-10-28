@@ -1,0 +1,11 @@
+# mltreelib
+
+> Tree-based machine learning with a Rust core
+
+## Documentation
+
+- [Home](<https://jkapila.github.io/mltreelib/index.md>)
+- [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>)
+- [Demo walkthrough](<https://jkapila.github.io/mltreelib/demo/index.md>)
+- [Benchmark datasets](<https://jkapila.github.io/mltreelib/datasets/index.md>)
+- [API reference](<https://jkapila.github.io/mltreelib/reference/api/index.md>)
