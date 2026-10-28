@@ -18,10 +18,9 @@ dev = [
     "pytest>=8",
     "matplotlib>=3.8",
     "seaborn>=0.13",
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
     "ruff>=0.8",
+    "zensical>=0.0.67",
 ]
 
 [tool.maturin]

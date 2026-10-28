@@ -1,7 +1,7 @@
 site_name: mltreelib
 site_description: Tree-based machine learning with a Rust core
 theme:
-  name: material
+  variant: modern
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

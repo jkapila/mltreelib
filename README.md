@@ -133,11 +133,13 @@ plus TabArena-v0.1 real data.
 
 ## Documentation
 
-Built with **mkdocs-material** (browse locally or publish `site/` anywhere):
+Built with **Zensical** (`variant: modern` — the maintained successor to
+mkdocs-material; it reads the same `mkdocs.yml`, and `mkdocs build` remains as a
+safety net):
 
 ```sh
-uv run mkdocs serve        # live docs at http://127.0.0.1:8000
-uv run mkdocs build        # static site in site/
+uv run zensical serve     # live docs at http://127.0.0.1:8000
+uv run zensical build     # static site in site/
 ```
 
 - **Docs site** — quickstart, demo walkthrough (with figures), datasets, API reference
