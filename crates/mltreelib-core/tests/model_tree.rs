@@ -362,6 +362,26 @@ fn monotone_constrains_linear_leaf_coefficients() {
 }
 
 #[test]
+fn printer_matches_rpart_layout() {
+    // Gold format: installed rpart's print (references/repos/rpart
+    // print.rpart.R). Preorder rows, binary-heap numbering right-aligned to
+    // the widest, two-space-per-depth indent, R format(signif(x, 7)) columns,
+    // "*" on leaves.
+    let x: Vec<Vec<Option<f64>>> = (0..4).map(|i| vec![Some(i as f64)]).collect();
+    let y: Vec<Option<f64>> = vec![Some(0.0), Some(0.0), Some(1.0), Some(1.0)];
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 1,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let expected = "n= 4 \n\nnode), split, n, deviance, yval\n      * denotes terminal node\n\n1) root 4 1 0.5  \n  2) x0< 1.5 2 0 0.0 *\n  3) x0>=1.5 2 0 1.0 *\n";
+    assert_eq!(format!("{tree}"), expected);
+}
+
+#[test]
 fn interaction_groups_respected() {
     // x2 matters as a STEP deep in the tree (x0 > 0.75 region) - a linear
     // leaf cannot absorb it, so the unconstrained tree must mix groups along

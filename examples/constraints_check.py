@@ -66,7 +66,7 @@ def main():
     print("== monotone (+1 on age, healthcare: charges rise with age) ==")
     print("  (R gbm oracle has constant leaves -> compare at mean-leaf semantics;")
     print("   linear leaves: within-leaf slopes are sign-projected and boundaries")
-    print("   at splits on age gate on the children's fitted outputs at the)")
+    print("   at splits on age gate on the children's fitted outputs at the")
     for leaf in ("mean", "linear"):
         ours_u, ours_c = ModelTree(leaf=leaf, l1=0.0, l2=0.0), ModelTree(
             monotone=mono, leaf=leaf, l1=0.0, l2=0.0

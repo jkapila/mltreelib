@@ -1677,6 +1677,11 @@ impl PyModelTree {
         Ok(out)
     }
 
+    /// rpart-style text print of the tree.
+    fn __repr__(&self) -> PyResult<String> {
+        Ok(format!("{}", self.tree()?))
+    }
+
     /// Split columns along each root-to-leaf path. Task: regression.
     ///
     /// Args: none.

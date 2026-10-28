@@ -461,6 +461,41 @@ impl LinearModel {
     }
 }
 
+/// Per-node frame statistics for printing (rpart's `frame`): count, weighted
+/// mean and residual SSE. O(rows) to accumulate - no digest.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct FrameStats {
+    pub n: usize,
+    pub wsum: f64,
+    pub mean: f64,
+    pub sse: f64,
+}
+
+impl FrameStats {
+    pub fn from_ty(y: &[f64], w: &[f64], rows: &[usize]) -> Self {
+        let mut wsum = 0.0;
+        let mut wy = 0.0;
+        for &r in rows {
+            if w[r] > 0.0 {
+                wsum += w[r];
+                wy += w[r] * y[r];
+            }
+        }
+        let mean = wy / wsum.max(1e-300);
+        let sse: f64 = rows
+            .iter()
+            .filter(|&&r| w[r] > 0.0)
+            .map(|&r| w[r] * (y[r] - mean) * (y[r] - mean))
+            .sum();
+        Self {
+            n: rows.iter().filter(|&&r| w[r] > 0.0).count(),
+            wsum,
+            mean,
+            sse,
+        }
+    }
+}
+
 /// One design row from column-major storage: `[1, values (0 where missing),
 /// NA indicators]`. Allocation-free; the indicator block is included only
 /// when `with_indicators`.
