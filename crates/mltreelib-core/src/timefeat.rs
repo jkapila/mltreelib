@@ -5,7 +5,7 @@
 //! flow straight into tree learners; names/casing of featuregen's string
 //! versions (month names, "week_N") are presentation and stay in Python.
 
-use crate::transform::{GroupedTransform, SummaryKind};
+use crate::transform::{summarize, GroupedTransform, SummaryKind};
 
 /// Season encoding: 0 spring, 1 summer, 2 fall, 3 winter (northern calendar
 /// windows from featuregen: spring 3/21–6/20, summer 6/21–9/22, fall 9/23–12/22).
@@ -128,14 +128,18 @@ pub fn lag_by_days(
     for ((k, dt), v) in keys.iter().zip(dates).zip(values) {
         if let (Some(k), Some(dt)) = (k, dt) {
             let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
-            index.insert((k.clone(), days_from_civil(y, m, d)), *v);
+            let v = match v {
+                Some(x) if x.is_nan() => None,
+                other => *other,
+            };
+            index.insert((k.clone(), days_from_civil(y, m, d)), v);
         }
     }
     let lag = lag_days as i64;
     let mut out = Vec::with_capacity(keys.len());
-    for (k, dt) in keys.iter().zip(dates) {
-        out.push(match (k, dt) {
-            (Some(k), Some(dt)) => {
+    for ((k, dt), v) in keys.iter().zip(dates).zip(values) {
+        out.push(match (k, dt, v) {
+            (Some(k), Some(dt), Some(v)) if !v.is_nan() => {
                 let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
                 index
                     .get(&(k.clone(), days_from_civil(y, m, d) - lag))
@@ -195,9 +199,9 @@ pub fn trended_transform(
         return Err("keys, dates and values length mismatch".into());
     }
     let mut composite = Vec::with_capacity(keys.len());
-    for (k, dt) in keys.iter().zip(dates) {
-        composite.push(match (k, dt) {
-            (Some(k), Some(dt)) => {
+    for ((k, dt), v) in keys.iter().zip(dates).zip(values) {
+        composite.push(match (k, dt, v) {
+            (Some(k), Some(dt), Some(v)) if !v.is_nan() => {
                 let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
                 Some(format!(
                     "{k}|{}",
@@ -210,4 +214,187 @@ pub fn trended_transform(
     let mut gt = GroupedTransform::new();
     gt.fit(&composite, values, kind)?;
     gt.transform(&composite)
+}
+
+/// Additive decomposition output: series − trend, series − seasonal,
+/// series − trend − seasonal (legacy TODO: "Decomposed (series -trend
+/// -seasonality) based variable transformation").
+#[derive(Clone, Debug)]
+pub struct Decomposed {
+    pub detrended: Vec<Option<f64>>,
+    pub deseasonalized: Vec<Option<f64>>,
+    pub residual: Vec<Option<f64>>,
+}
+
+/// Classical additive decomposition per key series, aligned with the
+/// statsmodels `seasonal_decompose` (additive) convention: the trend is a
+/// centered moving average over the key's rows ordered by date
+/// (`trend_window` rows, edges truncated); the seasonal component is the mean
+/// of (series − trend) per (key, season bucket), estimated only from rows with
+/// a complete trend window (its nanmean-at-edges semantics); residual =
+/// series − trend − seasonal. `season_granularity` is a `time_bucket` spec
+/// such as "month" or "weekday". Incomplete rows (missing key/date/value) are
+/// dropped from estimation and produce missing outputs.
+#[allow(clippy::too_many_arguments)]
+pub fn decomposed_transform(
+    keys: &[Option<String>],
+    dates: &[Option<String>],
+    values: &[Option<f64>],
+    season_granularity: &str,
+    trend_window: usize,
+    southern: bool,
+) -> Result<Decomposed, String> {
+    if keys.len() != dates.len() || keys.len() != values.len() {
+        return Err("keys, dates and values length mismatch".into());
+    }
+    if trend_window == 0 {
+        return Err("trend_window must be >= 1".into());
+    }
+    // (key, days, season bucket, value) per row; complete rows only
+    let mut rows: Vec<Option<(String, i64, String, Option<f64>)>> = Vec::with_capacity(keys.len());
+    for ((k, dt), v) in keys.iter().zip(dates).zip(values) {
+        rows.push(match (k, dt) {
+            (Some(k), Some(dt)) => {
+                let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
+                let bucket = time_bucket(y, m, d, season_granularity, southern)?;
+                Some((k.clone(), days_from_civil(y, m, d), bucket, *v))
+            }
+            _ => None,
+        });
+    }
+
+    use std::collections::HashMap as Map;
+    let mut by_key: Map<String, Vec<usize>> = Map::new();
+    for (i, r) in rows.iter().enumerate() {
+        if let Some((k, _, _, _)) = r {
+            by_key.entry(k.clone()).or_default().push(i);
+        }
+    }
+
+    // trend = centered moving average; detrended feeds the seasonal component
+    let mut detrended = vec![None; rows.len()];
+    let mut per_bucket: Map<(String, String), Vec<f64>> = Map::new();
+    for (_, mut idxs) in by_key {
+        idxs.sort_by_key(|&i| (rows[i].as_ref().unwrap().1, i));
+        let n = idxs.len();
+        let half = trend_window / 2;
+        for (pos, &i) in idxs.iter().enumerate() {
+            let val = match rows[i].as_ref().unwrap().3 {
+                Some(v) if !v.is_nan() => v,
+                _ => continue,
+            };
+            let lo = pos.saturating_sub(half);
+            let hi = (pos + half + 1).min(n);
+            let win: Vec<f64> = idxs[lo..hi]
+                .iter()
+                .filter_map(|&j| rows[j].as_ref().unwrap().3)
+                .filter(|v| !v.is_nan())
+                .collect();
+            if win.is_empty() {
+                continue;
+            }
+            let trend = win.iter().sum::<f64>() / win.len() as f64;
+            let det = val - trend;
+            detrended[i] = Some(det);
+            // the seasonal component is estimated only from rows whose trend
+            // window is complete; edge estimates would bias it
+            if pos >= half && pos + half < n {
+                let r = rows[i].as_ref().unwrap();
+                per_bucket
+                    .entry((r.0.clone(), r.2.clone()))
+                    .or_default()
+                    .push(det);
+            }
+        }
+    }
+
+    let seasonal: Map<(String, String), f64> = per_bucket
+        .iter()
+        .map(|(k, vs)| (k.clone(), vs.iter().sum::<f64>() / vs.len() as f64))
+        .collect();
+
+    let mut deseasonalized = vec![None; rows.len()];
+    let mut residual = vec![None; rows.len()];
+    for (i, r) in rows.iter().enumerate() {
+        if let Some((k, _, bucket, Some(v))) = r {
+            if let Some(s) = seasonal.get(&(k.clone(), bucket.clone())) {
+                deseasonalized[i] = Some(v - s);
+                if let Some(det) = detrended[i] {
+                    residual[i] = Some(det - s);
+                }
+            }
+        }
+    }
+    Ok(Decomposed {
+        detrended,
+        deseasonalized,
+        residual,
+    })
+}
+
+/// Trailing-window aggregation per key: each row summarizes the observed
+/// values of its key in the day window ending at its own date. With
+/// `include_current` the window covers (date − window_days, date]; otherwise
+/// strictly earlier days (date − window_days, date). Empty/all-missing windows
+/// give `None`.
+pub fn windowed_transform(
+    keys: &[Option<String>],
+    dates: &[Option<String>],
+    values: &[Option<f64>],
+    window_days: u32,
+    kind: SummaryKind,
+    include_current: bool,
+) -> Result<Vec<Option<f64>>, String> {
+    if keys.len() != dates.len() || keys.len() != values.len() {
+        return Err("keys, dates and values length mismatch".into());
+    }
+    if window_days == 0 {
+        return Err("window_days must be >= 1".into());
+    }
+    use std::collections::HashMap as Map;
+    let mut parsed: Vec<Option<(String, i64, Option<f64>)>> = Vec::with_capacity(keys.len());
+    for ((k, dt), v) in keys.iter().zip(dates).zip(values) {
+        parsed.push(match (k, dt, v) {
+            (Some(k), Some(dt), Some(v)) if !v.is_nan() => {
+                let (y, m, d) = parse_ymd(dt).ok_or_else(|| format!("unparseable date '{dt}'"))?;
+                Some((k.clone(), days_from_civil(y, m, d), Some(*v)))
+            }
+            _ => None,
+        });
+    }
+    let mut by_key: Map<String, Vec<(i64, Option<f64>)>> = Map::new();
+    for p in parsed.iter().flatten() {
+        by_key.entry(p.0.clone()).or_default().push((p.1, p.2));
+    }
+    for series in by_key.values_mut() {
+        series.sort_by_key(|(d, _)| *d);
+    }
+
+    let w = window_days as i64;
+    let mut out = Vec::with_capacity(parsed.len());
+    for p in &parsed {
+        out.push(match p {
+            None => None,
+            Some((k, day, _)) => {
+                let series = &by_key[k];
+                let (lo, hi) = if include_current {
+                    (day - w + 1, day + 1)
+                } else {
+                    (day - w, *day)
+                };
+                let win: Vec<Option<f64>> = series
+                    .iter()
+                    .filter(|(d, _)| *d >= lo && *d < hi)
+                    .map(|(_, v)| *v)
+                    .collect();
+                let s = summarize(&win);
+                if s.count == 0 {
+                    None
+                } else {
+                    Some(s.value(kind))
+                }
+            }
+        });
+    }
+    Ok(out)
 }

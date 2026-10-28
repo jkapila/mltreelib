@@ -10,10 +10,40 @@ use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
 use mltreelib_core::schema::NCategoryRule;
-use mltreelib_core::timefeat::{calendar_parts, lag_by_days as lag_core, parse_ymd, trended_transform as trend_core};
+use mltreelib_core::timefeat::{
+    calendar_parts, decomposed_transform as decomposed_core, lag_by_days as lag_core, parse_ymd,
+    trended_transform as trend_core, windowed_transform as windowed_core,
+};
 use mltreelib_core::transform::{
     summarize as summarize_stats, GroupedScaler, GroupedStrategy, GroupedTransform, SummaryKind,
+    VariableScaler,
 };
+
+/// Rows missing key/date/value are dropped from time-series estimation.
+fn incomplete_rows(
+    keys: &[Option<String>],
+    dates: &[Option<String>],
+    values: &[Option<f64>],
+) -> usize {
+    keys.iter()
+        .zip(dates)
+        .zip(values)
+        .filter(|((k, d), v)| k.is_none() || d.is_none() || v.is_none() || v.is_some_and(|x| x.is_nan()))
+        .count()
+}
+
+fn warn_incomplete(py: Python<'_>, fn_name: &str, n: usize) -> PyResult<()> {
+    if n > 0 {
+        let warnings = py.import("warnings")?;
+        warnings.call_method1(
+            "warn",
+            (format!(
+                "{fn_name}: {n} rows with missing key/date/value dropped from estimation; outputs left as missing"
+            ),),
+        )?;
+    }
+    Ok(())
+}
 
 fn generated_to_dict<'py>(py: Python<'py>, gd: &GeneratedData) -> PyResult<Bound<'py, PyDict>> {
     let out = PyDict::new(py);
@@ -139,6 +169,7 @@ fn summarize<'py>(py: Python<'py>, values: Vec<Option<f64>>) -> PyResult<Bound<'
     let s = summarize_stats(&values);
     let d = PyDict::new(py);
     d.set_item("count", s.count)?;
+    d.set_item("n_missing", s.n_missing)?;
     d.set_item("mean", s.mean)?;
     d.set_item("std", s.std)?;
     d.set_item("min", s.min)?;
@@ -228,6 +259,11 @@ fn dataset_to_dict<'py>(py: Python<'py>, ds: &Dataset) -> PyResult<Bound<'py, Py
     }
     out.set_item("columns", cols)?;
     out.set_item("dtypes", dtypes)?;
+    let na_counts = PyDict::new(py);
+    for c in ds.columns() {
+        na_counts.set_item(c.name(), c.na_count())?;
+    }
+    out.set_item("na_counts", na_counts)?;
     out.set_item("n_rows", ds.n_rows())?;
     out.set_item("n_cols", ds.n_cols())?;
     Ok(out)
@@ -376,24 +412,29 @@ fn calendar_features<'py>(
     Ok(out.unbind())
 }
 
-/// Lag values by whole days within each key (day granularity).
+/// Lag values by whole days within each key (day granularity). Incomplete
+/// rows are dropped from estimation and reported via a warning.
 #[pyfunction]
 #[pyo3(signature = (keys, dates, values, lag_days))]
 fn lag_by_days(
+    py: Python<'_>,
     keys: Vec<Option<String>>,
     dates: Vec<Option<String>>,
     values: Vec<Option<f64>>,
     lag_days: u32,
 ) -> PyResult<Vec<Option<f64>>> {
+    warn_incomplete(py, "lag_by_days", incomplete_rows(&keys, &dates, &values))?;
     lag_core(&keys, &dates, &values, lag_days).map_err(PyValueError::new_err)
 }
 
 /// Grouped summary trended at a time granularity (e.g. "year_month",
 /// "year_week", "month_weekday"): each row gets the summary of its
-/// (key x time-bucket) cell.
+/// (key x time-bucket) cell. Incomplete rows are dropped from estimation and
+/// reported via a warning.
 #[pyfunction]
 #[pyo3(signature = (keys, dates, values, granularity="year_month", kind="mean", hemisphere="north"))]
 fn trended_transform(
+    py: Python<'_>,
     keys: Vec<Option<String>>,
     dates: Vec<Option<String>>,
     values: Vec<Option<f64>>,
@@ -407,7 +448,111 @@ fn trended_transform(
         "south" => true,
         other => return Err(PyValueError::new_err(format!("unknown hemisphere '{other}'"))),
     };
+    warn_incomplete(py, "trended_transform", incomplete_rows(&keys, &dates, &values))?;
     trend_core(&keys, &dates, &values, granularity, k, southern).map_err(PyValueError::new_err)
+}
+
+/// Per-column distributional scaling (each variable independently) —
+/// sklearn-shaped: fit once, then transform / inverse_transform. None/NaN are
+/// missing and pass through as missing.
+#[pyclass(name = "VariableScaler")]
+struct PyVariableScaler {
+    inner: VariableScaler,
+}
+
+#[pymethods]
+impl PyVariableScaler {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: VariableScaler::new(),
+        }
+    }
+
+    /// Fit all columns at once: {name: values}.
+    fn fit(
+        &mut self,
+        columns: std::collections::HashMap<String, Vec<Option<f64>>>,
+        strategy: &str,
+    ) -> PyResult<()> {
+        let s = GroupedStrategy::parse(strategy).map_err(PyValueError::new_err)?;
+        let refs: Vec<(&str, &[Option<f64>])> = columns
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_slice()))
+            .collect();
+        self.inner.fit(&refs, s).map_err(PyValueError::new_err)?;
+        Ok(())
+    }
+
+    fn transform(&self, name: &str, values: Vec<Option<f64>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .transform(name, &values)
+            .map_err(PyValueError::new_err)
+    }
+
+    fn inverse_transform(&self, name: &str, values: Vec<Option<f64>>) -> PyResult<Vec<Option<f64>>> {
+        self.inner
+            .inverse_transform(name, &values)
+            .map_err(PyValueError::new_err)
+    }
+}
+
+/// Additive decomposition (statsmodels `seasonal_decompose` convention):
+/// returns `detrended` (series − trend), `deseasonalized` (series − seasonal)
+/// and `residual` (series − trend − seasonal). Incomplete rows are dropped
+/// from estimation and reported via a warning.
+#[pyfunction]
+#[pyo3(signature = (keys, dates, values, season_granularity="month", trend_window=3, hemisphere="north"))]
+fn decomposed_transform<'py>(
+    py: Python<'py>,
+    keys: Vec<Option<String>>,
+    dates: Vec<Option<String>>,
+    values: Vec<Option<f64>>,
+    season_granularity: &str,
+    trend_window: usize,
+    hemisphere: &str,
+) -> PyResult<Py<PyDict>> {
+    let southern = match hemisphere {
+        "north" => false,
+        "south" => true,
+        other => return Err(PyValueError::new_err(format!("unknown hemisphere '{other}'"))),
+    };
+    warn_incomplete(
+        py,
+        "decomposed_transform",
+        incomplete_rows(&keys, &dates, &values),
+    )?;
+    let d = decomposed_core(&keys, &dates, &values, season_granularity, trend_window, southern)
+        .map_err(PyValueError::new_err)?;
+    let out = PyDict::new(py);
+    out.set_item("detrended", d.detrended)?;
+    out.set_item("deseasonalized", d.deseasonalized)?;
+    out.set_item("residual", d.residual)?;
+    Ok(out.unbind())
+}
+
+/// Trailing-window aggregation per key over day windows (`window_days` days
+/// ending at the row's date). Incomplete rows are dropped from estimation and
+/// reported via a warning.
+#[pyfunction]
+#[pyo3(signature = (keys, dates, values, window_days=7, kind="mean", include_current=true))]
+fn windowed_transform(
+    py: Python<'_>,
+    keys: Vec<Option<String>>,
+    dates: Vec<Option<String>>,
+    values: Vec<Option<f64>>,
+    window_days: u32,
+    kind: &str,
+    include_current: bool,
+) -> PyResult<Vec<Option<f64>>> {
+    let k = SummaryKind::parse(kind).map_err(PyValueError::new_err)?;
+    warn_incomplete(
+        py,
+        "windowed_transform",
+        incomplete_rows(&keys, &dates, &values),
+    )?;
+    windowed_core(&keys, &dates, &values, window_days, k, include_current)
+        .map_err(PyValueError::new_err)
 }
 
 #[pymodule]
@@ -415,12 +560,15 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDatasetBuilder>()?;
     m.add_class::<PyGroupedScaler>()?;
     m.add_class::<PyIndexMapper>()?;
+    m.add_class::<PyVariableScaler>()?;
     m.add_function(wrap_pyfunction!(calendar_features, m)?)?;
+    m.add_function(wrap_pyfunction!(decomposed_transform, m)?)?;
     m.add_function(wrap_pyfunction!(generate, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_scale, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_transform, m)?)?;
     m.add_function(wrap_pyfunction!(lag_by_days, m)?)?;
     m.add_function(wrap_pyfunction!(summarize, m)?)?;
     m.add_function(wrap_pyfunction!(trended_transform, m)?)?;
+    m.add_function(wrap_pyfunction!(windowed_transform, m)?)?;
     Ok(())
 }

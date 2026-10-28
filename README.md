@@ -74,14 +74,25 @@ Order matters: foundations first, then honest replication, then novelty.
 - [x] Calendar/time features (year, halfyear, quarter, month, ISO week, weekday, day-of-year, season, weekend)
 - [x] Lag features by whole days within a key (featuregen `LagFeatures` lineage)
 - [x] Trended transforms at user granularity (`year_month`, `year_week`, `month_weekday`, …) — featuregen lineage
-- [ ] Decomposed transforms (series − trend − seasonality)
-- [ ] Aggregation features (grouped sums/means/counts over windows)
+- [x] Decomposed transforms — statsmodels `seasonal_decompose` convention (trend, seasonal, residual)
+- [x] Windowed aggregations (trailing sums/means/counts over day windows per key)
+- [x] Per-column variable transformations (`VariableScaler`, legacy `VariableTransformation`)
+- [x] Missing data is first-class: NA **and NaN** = missing end-to-end (missing in → missing out);
+      `summarize` shows `n_missing` by default; imputation is optional (allow/drop/impute);
+      time-series transforms drop incomplete rows and warn
 - [ ] Built-in categorical encoders (one-hot, ordinal, target, James-Stein, hashing) — *later by design: keep the tool surface in one package, no encoder-library sprawl*
 - [ ] Featuretools-style automated features (Cartesian products, sub-level %-by-class, deep feature synthesis lite) — *later, same reason*
 - [x] `mltreelib.datasets` loader (pyarrow) — suite loads into `DatasetBuilder`-shaped dicts
 - [ ] Harness integration of `datasets/` + generator sweeps
 
 ### 2. Tree learners in Rust (replicate the giants first)
+
+Design requirements for every learner (the sklearn pipeline is the anti-pattern:
+no forced imputation, no forced numeric encoding):
+- [ ] **Native missing values** — missing-aware split search + learned default
+      directions (XGBoost/LightGBM style); surrogate splits where the classic
+      calls for them (C5.0 lineage)
+- [ ] **Native categorical splits** — high-cardinality aware, no one-hot tax
 - [ ] CART (regression + classification) — oracle: `legacy/mltreelib/tree/models.py`
 - [ ] C4.5 (information gain, gain ratio)
 - [ ] C5.0: rule sets, boosting committees, winnowing — `references/see5-unix.md`

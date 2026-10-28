@@ -74,8 +74,10 @@ impl DatasetBuilder {
         self
     }
 
+    /// Numeric column ingest; NaN is treated as missing.
     pub fn add_numeric(mut self, name: impl Into<String>, values: Vec<Option<f64>>) -> Self {
-        self.columns.push(Column::numeric(name, values));
+        self.columns
+            .push(Column::numeric(name, crate::frame::normalize_numeric(values)));
         self
     }
 

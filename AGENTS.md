@@ -54,8 +54,12 @@ uv run pytest tests/ -q      # Python behavior tests
   reinvent wheels.
 - **Rust core is the source of truth.** Python/R are thin shells. Semantics and
   algorithms live in `mltreelib-core` and are tested there first.
-- **`None` = missing** everywhere (NA slots); unseen categorical levels map to
-  missing, never panic. Degenerate scalings produce missing, not inf.
+- **Missing data is first-class.** `None` **and NaN** = missing (NaN is
+  normalized at ingestion); missing in → missing out, never panic. `summarize`
+  reports `n_missing` by default; imputation is opt-in (`NaPolicy::Impute`),
+  never implicit; time-series transforms drop incomplete rows and the Python
+  layer raises a `UserWarning` with the count. Unseen categorical levels map to
+  missing. Degenerate scalings produce missing, not inf.
 - **Deterministic**: generators/transformations take explicit seeds; no wall-clock
   or unordered iteration in outputs.
 - **Tests are behavior, not wiring.** Every new capability lands with Rust tests

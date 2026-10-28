@@ -72,17 +72,34 @@ impl Column {
 
     pub fn na_count(&self) -> usize {
         match self {
-            Column::Numeric { values, .. } => values.iter().filter(|v| v.is_none()).count(),
+            Column::Numeric { values, .. } => values
+                .iter()
+                .filter(|v| v.is_none() || v.is_some_and(|v| v.is_nan()))
+                .count(),
             Column::Categorical { codes, .. } => codes.iter().filter(|c| c.is_none()).count(),
         }
     }
 
     pub fn is_na(&self, row: usize) -> bool {
         match self {
-            Column::Numeric { values, .. } => values.get(row).is_none_or(|v| v.is_none()),
+            Column::Numeric { values, .. } => values
+                .get(row)
+                .is_none_or(|v| v.is_none() || v.is_some_and(|v| v.is_nan())),
             Column::Categorical { codes, .. } => codes.get(row).is_none_or(|c| c.is_none()),
         }
     }
+}
+
+/// Missing-data policy: `None` and `f64::NAN` are both missing. Normalize at
+/// ingestion boundaries so internals only ever see `None`.
+pub fn normalize_numeric(values: Vec<Option<f64>>) -> Vec<Option<f64>> {
+    values
+        .into_iter()
+        .map(|v| match v {
+            Some(v) if v.is_nan() => None,
+            other => other,
+        })
+        .collect()
 }
 
 #[derive(Clone, Debug)]

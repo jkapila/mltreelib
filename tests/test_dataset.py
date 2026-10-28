@@ -1,17 +1,22 @@
 """Behavior tests for the dataset component through the Python bindings."""
 
+from datetime import date, timedelta
+
 import pytest
 
 from mltreelib import (
     DatasetBuilder,
     IndexMapper,
+    VariableScaler,
     calendar_features,
+    decomposed_transform,
     generate,
     grouped_scale,
     grouped_transform,
     lag_by_days,
     summarize,
     trended_transform,
+    windowed_transform,
 )
 
 
@@ -241,3 +246,60 @@ def test_datasets_loader_feeds_builder():
 
     with pytest.raises(ValueError):
         load_dataset("does-not-exist")
+
+
+def test_summarize_shows_missing_by_default():
+    s = summarize([1.0, None, float("nan"), 3.0])
+    assert s["count"] == 2  # observed only
+    assert s["n_missing"] == 2  # NA + NaN shown, not hidden
+    assert s["mean"] == 2.0
+
+
+def test_builder_reports_na_counts_and_nan_is_missing():
+    b = DatasetBuilder()
+    b.add_numeric("a", [1.0, float("nan"), None])
+    b.add_categorical("b", ["x", None, "y"])
+    ds = b.build()
+    assert ds["na_counts"] == {"a": 2, "b": 1}  # NaN counted as missing
+
+
+def test_variable_scaler():
+    vs = VariableScaler()
+    vs.fit({"a": [1.0, 3.0, 5.0], "b": [10.0, 10.0, 10.0]}, "min-max")
+    assert vs.transform("a", [1.0, 3.0, 5.0]) == [0.0, 0.5, 1.0]
+    assert vs.inverse_transform("a", [0.0, 0.5, 1.0]) == [1.0, 3.0, 5.0]
+    assert vs.transform("b", [10.0]) == [None]  # zero scale -> missing
+    assert vs.transform("a", [float("nan")]) == [None]  # missing in -> missing out
+    with pytest.raises(ValueError):
+        vs.transform("zz", [1.0])
+
+
+def test_ts_transforms_drop_na_rows_and_warn():
+    keys = ["a", "a", None]
+    dates = ["2026-01-01", "2026-01-02", "2026-01-03"]
+    vals = [1.0, None, 3.0]
+
+    with pytest.warns(UserWarning):
+        out = lag_by_days(keys, dates, vals, 1)
+    assert out == [None, None, None]
+
+    with pytest.warns(UserWarning):
+        out = windowed_transform(keys, dates, vals, 3, kind="sum")
+    assert out == [1.0, None, None]
+
+    with pytest.warns(UserWarning):
+        out = trended_transform(keys, dates, vals)
+    assert out == [1.0, None, None]
+
+
+def test_decomposed_transform():
+    dates = [(date(2026, 1, 5) + timedelta(days=i)).isoformat() for i in range(14)]
+    vals = [0.4 if i % 7 < 5 else -1.0 for i in range(14)]
+    keys = ["a"] * 14
+    out = decomposed_transform(
+        keys, dates, vals, season_granularity="weekday", trend_window=7
+    )
+    # zero-mean weekly seasonality, no trend -> clean removal in the interior
+    for i in range(3, 11):
+        assert abs(out["residual"][i]) < 1e-9
+        assert abs(out["deseasonalized"][i]) < 1e-9

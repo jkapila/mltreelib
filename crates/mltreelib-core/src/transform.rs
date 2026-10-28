@@ -36,6 +36,8 @@ impl SummaryKind {
 #[derive(Clone, Copy, Debug)]
 pub struct Summary {
     pub count: usize,
+    /// Missing values (NA or NaN) seen in the input — shown by default.
+    pub n_missing: usize,
     pub sum: f64,
     pub mean: f64,
     pub std: f64,
@@ -51,6 +53,7 @@ impl Summary {
         let nan = f64::NAN;
         Summary {
             count: 0,
+            n_missing: 0,
             sum: 0.0,
             mean: nan,
             std: nan,
@@ -62,7 +65,7 @@ impl Summary {
         }
     }
 
-    fn value(&self, kind: SummaryKind) -> f64 {
+    pub fn value(&self, kind: SummaryKind) -> f64 {
         match kind {
             SummaryKind::Mean => self.mean,
             SummaryKind::Sum => self.sum,
@@ -99,6 +102,7 @@ fn summarize_owned(mut xs: Vec<f64>) -> Summary {
     };
     Summary {
         count: n,
+        n_missing: 0,
         sum,
         mean,
         std: var.sqrt(),
@@ -110,9 +114,21 @@ fn summarize_owned(mut xs: Vec<f64>) -> Summary {
     }
 }
 
-/// Summary of observed values; NAs are skipped.
+/// Summary of observed values with missing counts **shown by default**: NAs
+/// and NaNs are excluded from the statistics but always reported in
+/// `n_missing` — nothing is silently hidden.
 pub fn summarize(values: &[Option<f64>]) -> Summary {
-    summarize_owned(values.iter().flatten().copied().collect())
+    let mut xs = Vec::with_capacity(values.len());
+    let mut n_missing = 0usize;
+    for v in values {
+        match v {
+            Some(v) if !v.is_nan() => xs.push(*v),
+            _ => n_missing += 1,
+        }
+    }
+    let mut s = summarize_owned(xs);
+    s.n_missing = n_missing;
+    s
 }
 
 /// Fit/transform group-level summaries: the value a row gets is the summary of
@@ -137,15 +153,15 @@ impl GroupedTransform {
         if keys.len() != values.len() {
             return Err("keys and values length mismatch".into());
         }
-        let mut groups: HashMap<String, Vec<f64>> = HashMap::new();
+        let mut groups: HashMap<String, Vec<Option<f64>>> = HashMap::new();
         for (k, v) in keys.iter().zip(values) {
-            if let (Some(k), Some(v)) = (k, v) {
+            if let Some(k) = k {
                 groups.entry(k.clone()).or_default().push(*v);
             }
         }
         self.stats = groups
             .into_iter()
-            .map(|(k, vals)| (k, summarize_owned(vals)))
+            .map(|(k, vals)| (k, summarize(&vals)))
             .collect();
         self.kind = Some(kind);
         Ok(self)
@@ -252,6 +268,98 @@ impl GroupedStrategy {
     }
 }
 
+/// Scales one value under a strategy against a fitted summary.
+pub(crate) fn scale_with(
+    strategy: GroupedStrategy,
+    s: &Summary,
+    v: f64,
+    inverse: bool,
+) -> Option<f64> {
+    let (center, scale, is_ratio) = strategy.params(s);
+    if !scale.is_finite() || scale == 0.0 {
+        return None;
+    }
+    Some(if is_ratio {
+        if inverse {
+            v * scale
+        } else {
+            v / scale
+        }
+    } else if inverse {
+        v * scale + center
+    } else {
+        (v - center) / scale
+    })
+}
+
+/// Per-column scaling with the same strategies (legacy `VariableTransformation`:
+/// every variable transformed independently). Unknown column -> error;
+/// degenerate scale -> missing, never inf.
+#[derive(Clone, Debug, Default)]
+pub struct VariableScaler {
+    strategy: Option<GroupedStrategy>,
+    stats: HashMap<String, Summary>,
+}
+
+impl VariableScaler {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn fit(
+        &mut self,
+        columns: &[(&str, &[Option<f64>])],
+        strategy: GroupedStrategy,
+    ) -> Result<&mut Self, String> {
+        self.stats = columns
+            .iter()
+            .map(|(name, vals)| (name.to_string(), summarize(vals)))
+            .collect();
+        self.strategy = Some(strategy);
+        Ok(self)
+    }
+
+    pub fn transform(&self, name: &str, values: &[Option<f64>]) -> Result<Vec<Option<f64>>, String> {
+        self.apply(name, values, false)
+    }
+
+    pub fn inverse_transform(
+        &self,
+        name: &str,
+        values: &[Option<f64>],
+    ) -> Result<Vec<Option<f64>>, String> {
+        self.apply(name, values, true)
+    }
+
+    fn apply(
+        &self,
+        name: &str,
+        values: &[Option<f64>],
+        inverse: bool,
+    ) -> Result<Vec<Option<f64>>, String> {
+        let strategy = self
+            .strategy
+            .ok_or_else(|| "VariableScaler is not fitted".to_string())?;
+        let s = self
+            .stats
+            .get(name)
+            .ok_or_else(|| format!("column '{name}' is not fitted"))?;
+        Ok(values
+            .iter()
+            .map(|v| match v {
+                Some(v) if !v.is_nan() => scale_with(strategy, s, *v, inverse),
+                _ => None,
+            })
+            .collect())
+    }
+
+    pub fn columns(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.stats.keys().cloned().collect();
+        v.sort();
+        v
+    }
+}
+
 /// Fit/transform group-level distributional scaling with exact inverse.
 /// Rows with a missing key/value or an unseen group give `None`; a degenerate
 /// scale (zero) gives `None` instead of inf.
@@ -275,15 +383,15 @@ impl GroupedScaler {
         if keys.len() != values.len() {
             return Err("keys and values length mismatch".into());
         }
-        let mut groups: HashMap<String, Vec<f64>> = HashMap::new();
+        let mut groups: HashMap<String, Vec<Option<f64>>> = HashMap::new();
         for (k, v) in keys.iter().zip(values) {
-            if let (Some(k), Some(v)) = (k, v) {
+            if let Some(k) = k {
                 groups.entry(k.clone()).or_default().push(*v);
             }
         }
         self.stats = groups
             .into_iter()
-            .map(|(k, vals)| (k, summarize_owned(vals)))
+            .map(|(k, vals)| (k, summarize(&vals)))
             .collect();
         self.strategy = Some(strategy);
         Ok(self)
@@ -323,22 +431,11 @@ impl GroupedScaler {
             .map(|(k, v)| {
                 let k = k.as_ref()?;
                 let v = v.as_ref()?;
-                let s = self.stats.get(k)?;
-                let (center, scale, is_ratio) = strategy.params(s);
-                if !scale.is_finite() || scale == 0.0 {
+                if v.is_nan() {
                     return None;
                 }
-                Some(if is_ratio {
-                    if inverse {
-                        v * scale
-                    } else {
-                        v / scale
-                    }
-                } else if inverse {
-                    v * scale + center
-                } else {
-                    (v - center) / scale
-                })
+                let s = self.stats.get(k)?;
+                scale_with(strategy, s, *v, inverse)
             })
             .collect())
     }
