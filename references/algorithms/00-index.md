@@ -46,6 +46,8 @@ files; this index is the map.
 | 37 | GritBot | interpretable rules | `extracted/GritBot/`, `references/docs/gritbot-unix.md` | 06-interpretable.md |
 | 38 | Adaline / Perceptron / Logistic / Softmax / MLP | mlxtend classics | mlxtend.classifier | 07-mlxtend.md |
 | 39 | mlxtend LinearRegression (+ Stacking regressors) | mlxtend classics | mlxtend.regressor | 07-mlxtend.md |
+| 40 | Rust implementations: forust, perpetual, gbdt, bosk, smartcore, linfa, miniboosts, sooboost, biosphere, sklears-tree, treeboost, affinitree, gbt-quantile, rpart | Rust | crates + `repos/` | 08-rust-implementations.md |
+| 41 | TabArena field: ChimeraBoost, CTBoost, xRFM, PrismBoost, APLR (+ PerpetualBooster, Elo snapshot) | benchmark field | `data/tabarena-leaderboard.csv` + repos | 09-tabarena-field.md |
 
 Legend for the entry template: **Source · Idea · Pseudocode · Knobs · Note**.
 Pseudocode is the algorithm's core loop in plain steps — faithful in
