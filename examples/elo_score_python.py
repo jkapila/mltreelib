@@ -114,9 +114,27 @@ def make_models():
 
         return run
 
+    def skl_tree():
+        from sklearn.tree import DecisionTreeRegressor
+
+        def run(xtr, ytr, xte):
+            # sklearn's CART cannot consume NAs — mean-impute (documented).
+            cols = list(zip(*[[float("nan") if v is None else v for v in row] for row in xtr]))
+            means = [sum(c) / len(c) if any(v == v for v in c) else 0.0 for c in cols]
+            fill = lambda rows: [
+                [means[j] if v is None else v for j, v in enumerate(row)] for row in rows
+            ]
+            m = DecisionTreeRegressor(random_state=0)  # stock, unpruned
+            t0 = time.perf_counter()
+            m.fit(np.asarray(fill(xtr)), np.asarray(ytr))
+            return m.predict(np.asarray(fill(xte))), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
+    attempt("sklearn tree", skl_tree)
     return ms
 
 

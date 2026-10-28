@@ -23,28 +23,42 @@ fc2008,rpart,279.942999480787,207.929165980678,0.0149999999999997
 fc2008,cubist,204.316118902788,131.084704589844,0.0609999999999999
 fc2008,lmtree,237.917498442904,158.459944343886,0.0819999999999999
 fc2008,grf_rf,228.3102735698,159.473578712495,0.29
-concrete,ModelTree(all),7.6239,4.9188,0.027
-concrete,ModelTree(path),11.8554,8.1184,0.008
-concrete,ModelTree(mean),8.5220,6.9681,0.001
-concrete,LightGBM(200),5.8477,3.9193,0.098
-abalone,ModelTree(all),2.9901,2.0415,0.213
-abalone,ModelTree(path),2.8264,1.9069,0.055
+concrete,ModelTree(all),7.6239,4.9188,0.029
+concrete,ModelTree(path),11.8554,8.1184,0.027
+concrete,ModelTree(mean),8.5220,6.9681,0.002
+concrete,LightGBM(200),5.8477,3.9193,0.655
+concrete,CTBoost,6.3763,5.1696,0.019
+concrete,sklearn tree,8.0842,5.4093,0.003
+abalone,ModelTree(all),2.9901,2.0415,0.215
+abalone,ModelTree(path),2.8264,1.9069,0.056
 abalone,ModelTree(mean),2.4698,1.7653,0.006
-abalone,LightGBM(200),2.4330,1.7316,0.148
+abalone,LightGBM(200),2.4330,1.7316,0.204
+abalone,CTBoost,2.4823,1.7584,0.016
+abalone,sklearn tree,3.1634,2.2071,0.012
 ozone,ModelTree(all),5.0755,3.8126,0.008
-ozone,ModelTree(path),5.7043,4.4526,0.002
+ozone,ModelTree(path),5.7043,4.4526,0.003
 ozone,ModelTree(mean),4.7450,3.4146,0.001
-ozone,LightGBM(200),4.0932,3.1922,0.045
-boston,ModelTree(all),82.2039,14.4138,0.066
+ozone,LightGBM(200),4.0932,3.1922,0.038
+ozone,CTBoost,4.5425,3.3182,0.003
+ozone,sklearn tree,5.4564,3.9848,0.002
+boston,ModelTree(all),82.2039,14.4138,0.064
 boston,ModelTree(path),4.7671,2.9652,0.010
-boston,ModelTree(mean),3.9889,2.6212,0.001
-boston,LightGBM(200),3.4732,2.1596,0.064
-fc2008,ModelTree(all),804.5766,209.3736,0.046
-fc2008,ModelTree(path),304.3365,218.3550,0.006
-fc2008,ModelTree(mean),256.2346,181.5417,0.001
-fc2008,LightGBM(200),196.5717,124.1115,0.099
-concrete,forust (Rust),5.5870,3.8518,0.263
-abalone,forust (Rust),2.4484,1.7473,0.693
-ozone,forust (Rust),3.9406,2.9863,0.225
-boston,forust (Rust),3.1447,2.1108,0.075
-fc2008,forust (Rust),173.0611,104.6543,0.070
+boston,ModelTree(mean),3.9889,2.6212,0.002
+boston,LightGBM(200),3.4732,2.1596,0.125
+boston,CTBoost,4.0142,3.0789,0.013
+boston,sklearn tree,4.8667,3.2627,0.003
+fc2008,ModelTree(all),804.5766,209.3736,0.041
+fc2008,ModelTree(path),304.3365,218.3550,0.007
+fc2008,ModelTree(mean),256.2346,181.5417,0.002
+fc2008,LightGBM(200),196.5717,124.1115,0.068
+fc2008,CTBoost,192.0784,135.8741,0.021
+concrete,forust (Rust),5.5870,3.8518,0.215
+concrete,perpetual (Rust),5.7374,4.4255,0.112
+abalone,forust (Rust),2.4484,1.7473,0.385
+abalone,perpetual (Rust),2.2955,1.6390,0.209
+ozone,forust (Rust),3.9406,2.9863,0.114
+ozone,perpetual (Rust),3.7746,2.7476,0.033
+boston,forust (Rust),3.1447,2.1108,0.106
+boston,perpetual (Rust),3.4639,2.2238,0.076
+fc2008,forust (Rust),173.0611,104.6543,0.174
+fc2008,perpetual (Rust),210.4450,143.0261,0.594
