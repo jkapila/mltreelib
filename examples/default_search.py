@@ -24,19 +24,37 @@ BARS = ["lmtree", "cubist", "rpart"]
 
 def read_xy(path):
     x, y = [], []
+    width = [0]
     with open(path) as fh:
         for row in csv.reader(fh):
             if row and row[0] == "x0":
+                width[0] = len(row)
                 continue
+            if row and len(row) != width[0]:
+                raise ValueError(f"{path}: row width {len(row)} != {width[0]}")
             x.append([None if v == "" else float(v) for v in row[:-1]])
             y.append(float(row[-1]))
     return x, y
 
 
+def sub(x, y, cap=600, seed=7):
+    """Speed cap for the search pass only — defaults must generalize, so the
+    selection data being smaller is acceptable; final verification runs the
+    full arena."""
+    import random as _random
+
+    if len(y) <= cap:
+        return x, y
+    idx = list(range(len(y)))
+    _random.Random(seed).shuffle(idx)
+    keep = sorted(idx[:cap])
+    return [x[i] for i in keep], [y[i] for i in keep]
+
+
 def main():
     data = {
         ds: (
-            read_xy(DATA_DIR / f"{ds}_train.csv"),
+            sub(*read_xy(DATA_DIR / f"{ds}_train.csv")),
             read_xy(DATA_DIR / f"{ds}_test.csv"),
         )
         for ds in DATASETS

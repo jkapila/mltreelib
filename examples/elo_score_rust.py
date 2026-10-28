@@ -20,10 +20,14 @@ DATASETS = ["concrete", "abalone", "ozone", "boston", "fc2008"]
 
 def read_xy(path):
     x, y = [], []
+    width = [0]
     with open(path) as fh:
         for row in csv.reader(fh):
             if row and row[0] == "x0":
+                width[0] = len(row)
                 continue
+            if row and len(row) != width[0]:
+                raise ValueError(f"{path}: row width {len(row)} != {width[0]}")
             x.append([None if v == "" else float(v) for v in row[:-1]])
             y.append(float(row[-1]))
     return x, y

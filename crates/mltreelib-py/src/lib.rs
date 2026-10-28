@@ -1513,13 +1513,15 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 8, min_rows = 20, min_gain = 1e-9, leaf_cols = "all", leaf = "linear"))]
+    #[pyo3(signature = (max_depth = 8, min_rows = 20, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.0, l1 = 0.0))]
     fn new(
         max_depth: usize,
         min_rows: usize,
         min_gain: f64,
         leaf_cols: &str,
         leaf: &str,
+        l2: f64,
+        l1: f64,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -1546,6 +1548,8 @@ impl PyModelTree {
                 min_gain,
                 leaf_cols: policy,
                 leaf: kind,
+                l2,
+                l1,
             },
             inner: None,
         })

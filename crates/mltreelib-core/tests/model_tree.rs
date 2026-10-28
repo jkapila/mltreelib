@@ -194,6 +194,22 @@ fn na_indicator_makes_missingness_predictive() {
 }
 
 #[test]
+fn predict_missing_on_no_na_leaf_does_not_panic() {
+    // A leaf fitted on fully-observed rows has no indicator terms; a missing
+    // value at predict time must still produce a finite prediction.
+    let x: Vec<Vec<Option<f64>>> = (0..50).map(|i| vec![Some(i as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..50).map(|i| Some(2.0 * i as f64)).collect();
+    let p = ModelTreeParams {
+        max_depth: 0,
+        min_rows: 5,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let preds = tree.predict(&[vec![None]]);
+    assert!(preds[0].is_finite(), "missing must never panic or vanish");
+}
+
+#[test]
 fn min_rows_blocks_tiny_leaves() {
     // Without enough rows per side the tree stays a single mean leaf.
     let x: Vec<Vec<Option<f64>>> = (0..10).map(|i| vec![Some(i as f64)]).collect();

@@ -62,13 +62,18 @@ pub struct LinearModel {
 }
 
 impl LinearModel {
-    /// Predict for one row (`None` = missing). Always returns a value.
+    /// Predict for one row (`None` = missing). Always returns a value; a row
+    /// shorter than the fit-time width treats absent cells as missing (an NA
+    /// never blocks a prediction, and never panics).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
         let mut y = self.intercept;
         for (k, &j) in self.cols.iter().enumerate() {
-            match x[j] {
+            match x.get(j).copied().flatten() {
                 Some(v) => y += self.coef[k] * v,
-                None => y += self.na_coef[k],
+                // A leaf fitted on fully-observed rows has no indicator
+                // terms; missingness then contributes its honest estimate,
+                // zero (nothing learned), never a panic.
+                None => y += self.na_coef.get(k).copied().unwrap_or(0.0),
             }
         }
         y
@@ -179,25 +184,45 @@ impl SolveScratch {
 }
 
 /// Residual SSE of `xtx·b = xty` (least squares over the design), solved by
-/// Gaussian elimination with partial pivoting into `scratch`. Rank-deficient
-/// directions are dropped (coefficient 0): every normal-equation solution
-/// gives the same fitted values and residual, so the SSE is exact. The
-/// solution is left in `scratch.b`.
+/// Gaussian elimination with partial pivoting into `scratch`. `l2` adds ridge
+/// penalty to every non-intercept diagonal entry (LightGBM's `linear_lambda`
+/// shape) — the ridge objective keeps the `yty - b·xty` identity, so this
+/// stays exact for the penalized fit. Rank-deficient directions are dropped
+/// (coefficient 0). The solution is left in `scratch.b`.
 pub fn solve_normal(
     xtx: &[f64],
     xty: &[f64],
     yty: f64,
     dim: usize,
+    l1: f64,
+    l2: f64,
     scratch: &mut SolveScratch,
 ) -> f64 {
     scratch.a[..dim * dim].copy_from_slice(&xtx[..dim * dim]);
     scratch.b[..dim].copy_from_slice(&xty[..dim]);
-    solve_prepared(scratch, yty, dim)
+    solve_prepared(scratch, yty, dim, l1, l2)
 }
 
 /// Solve the normal equations already copied into `scratch.a`/`scratch.b`.
-pub fn solve_prepared(scratch: &mut SolveScratch, yty: f64, dim: usize) -> f64 {
+/// `l1`/`l2` are the elastic-net penalties (ridge = l2 only, lasso = l1
+/// only, OLS = both 0); the intercept is unpenalized. At convergence the
+/// penalized objective still equals `yty - b·xty`, so the SSE stays exact.
+pub fn solve_prepared(
+    scratch: &mut SolveScratch,
+    yty: f64,
+    dim: usize,
+    l1: f64,
+    l2: f64,
+) -> f64 {
     scratch.c[..dim].copy_from_slice(&scratch.b[..dim]); // keep xty
+    if l1 > 0.0 {
+        return solve_elastic(scratch, yty, dim, l1, l2);
+    }
+    if l2 > 0.0 {
+        for i in 1..dim {
+            scratch.a[i * dim + i] += l2; // ridge, intercept unpenalized
+        }
+    }
     let scale = (0..dim)
         .map(|i| scratch.a[i * dim + i].abs())
         .fold(0.0, f64::max)
@@ -260,12 +285,19 @@ pub fn solve_prepared(scratch: &mut SolveScratch, yty: f64, dim: usize) -> f64 {
 }
 
 /// Extract the fitted `LinearModel` from a design Gram. Layout: `[1, values
-/// (0 where missing), NA indicators (only when `with_indicators`)]`.
-pub fn fit_linear(g: &Gram, chosen: &[usize], with_indicators: bool) -> LinearModel {
+/// (0 where missing), NA indicators (only when `with_indicators`)]`. `l1`/`l2`
+/// are the elastic-net penalties (intercept unpenalized).
+pub fn fit_linear(
+    g: &Gram,
+    chosen: &[usize],
+    with_indicators: bool,
+    l1: f64,
+    l2: f64,
+) -> LinearModel {
     let nc = chosen.len();
     let dim = 1 + nc + if with_indicators { nc } else { 0 };
     let mut scratch = SolveScratch::new(dim);
-    solve_normal(&g.xtx, &g.xty, g.yty, dim, &mut scratch);
+    solve_normal(&g.xtx, &g.xty, g.yty, dim, l1, l2, &mut scratch);
     let sol = scratch.b.clone();
     LinearModel {
         cols: chosen.to_vec(),
@@ -312,6 +344,8 @@ pub fn solve_normal_sum(
     a: &Gram,
     b: Option<&Gram>,
     dim: usize,
+    l1: f64,
+    l2: f64,
     scratch: &mut SolveScratch,
 ) -> f64 {
     scratch.a[..dim * dim].copy_from_slice(&a.xtx[..dim * dim]);
@@ -326,5 +360,78 @@ pub fn solve_normal_sum(
         }
         yty += e.yty;
     }
-    solve_prepared(scratch, yty, dim)
+    solve_prepared(scratch, yty, dim, l1, l2)
+}
+
+/// Elastic net by coordinate descent on the standardised Gram (glmnet's
+/// approach): features standardised to unit scale so the penalty is fair
+/// across columns, soft-thresholding for L1, coefficients unscaled on the
+/// way out. The intercept is never penalized.
+fn solve_elastic(
+    scratch: &mut SolveScratch,
+    yty: f64,
+    dim: usize,
+    l1: f64,
+    l2: f64,
+) -> f64 {
+    let n = scratch.a[0].max(1.0);
+    let sum_y = scratch.c[0];
+    // Column means and scales from the Gram (column 0 is all ones).
+    let mut mean = vec![0.0; dim];
+    let mut scale = vec![1.0; dim];
+    for j in 1..dim {
+        mean[j] = scratch.a[j] / n; // xtx[0][j] = sum of column j
+    }
+    for j in 1..dim {
+        let var = scratch.a[j * dim + j] - n * mean[j] * mean[j];
+        scale[j] = if var > 1e-12 { var.sqrt() } else { 1.0 };
+    }
+    // Standardised Gram and right-hand side.
+    let mut g = vec![0.0; (dim - 1) * (dim - 1)];
+    let mut r = vec![0.0; dim - 1];
+    for j in 1..dim {
+        r[j - 1] = (scratch.c[j] - mean[j] * sum_y) / scale[j];
+        for k in 1..dim {
+            let gc = scratch.a[j * dim + k] - n * mean[j] * mean[k];
+            g[(j - 1) * (dim - 1) + (k - 1)] = gc / (scale[j] * scale[k]);
+        }
+    }
+    // Coordinate descent.
+    let mut b = vec![0.0; dim - 1];
+    for _ in 0..200 {
+        let mut delta = 0.0f64;
+        for j in 0..dim - 1 {
+            let gjj = g[j * (dim - 1) + j];
+            if gjj <= 0.0 {
+                continue;
+            }
+            let mut partial = r[j];
+            for k in 0..dim - 1 {
+                if k != j {
+                    partial -= g[j * (dim - 1) + k] * b[k];
+                }
+            }
+            let raw = partial / (gjj + l2);
+            let shrunk = raw.signum() * (raw.abs() - l1 / (gjj + l2)).max(0.0);
+            delta = delta.max((shrunk - b[j]).abs());
+            b[j] = shrunk;
+        }
+        if delta < 1e-10 {
+            break;
+        }
+    }
+    // Unscale and rebuild the intercept; explained = b^T xty (exact at CD
+    // convergence for the elastic-net objective).
+    scratch.b[0] = sum_y / n;
+    for j in 1..dim {
+        let bj = b[j - 1] / scale[j];
+        scratch.b[j] = bj;
+        scratch.b[0] -= mean[j] * bj;
+    }
+    let explained: f64 = scratch.c[..dim]
+        .iter()
+        .zip(&scratch.b[..dim])
+        .map(|(t, s)| t * s)
+        .sum();
+    (yty - explained).max(0.0)
 }

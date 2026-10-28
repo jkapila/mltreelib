@@ -22,10 +22,14 @@ DATASETS = ["concrete", "abalone", "ozone", "boston", "fc2008"]
 
 def read_xy(path):
     x, y = [], []
+    width = [0]
     with open(path) as fh:
         for row in csv.reader(fh):
             if row and row[0] == "x0":
+                width[0] = len(row)
                 continue
+            if row and len(row) != width[0]:
+                raise ValueError(f"{path}: row width {len(row)} != {width[0]}")
             x.append([None if v == "" else float(v) for v in row[:-1]])
             y.append(float(row[-1]))
     return x, y
@@ -149,11 +153,25 @@ def make_models():
 
         return run
 
+    def mars():
+        import pymars as earth  # the mars-earth wheel ships module `pymars`
+
+        def run(xtr, ytr, xte):
+            # Like R's earth, MARS gets raw rows: NA handling is part of the
+            # comparison (R earth failed fc2008's NA cells too).
+            m = earth.Earth()
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=float), np.asarray(ytr, dtype=float))
+            return m.predict(np.asarray(xte, dtype=float)), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
     attempt("sklearn tree", skl_tree)
     attempt("modeltrees lmtree", mtrees)
+    attempt("MARS (mars-earth)", mars)
     return ms
 
 

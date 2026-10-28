@@ -61,6 +61,12 @@ pub struct ModelTreeParams {
     pub leaf_cols: LeafCols,
     /// Leaf model kind.
     pub leaf: LeafKind,
+    /// Ridge penalty on leaf coefficients (intercept unpenalized) —
+    /// LightGBM's `linear_lambda` shape. 0 = plain OLS.
+    pub l2: f64,
+    /// Lasso penalty on leaf coefficients (intercept unpenalized). With
+    /// `l2` this is the elastic net. 0 = off.
+    pub l1: f64,
 }
 
 impl Default for ModelTreeParams {
@@ -71,6 +77,8 @@ impl Default for ModelTreeParams {
             min_gain: 1e-9,
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
+            l2: 0.0,
+            l1: 0.0,
         }
     }
 }
@@ -548,7 +556,9 @@ impl<'a> Grower<'a> {
             pgram.add_row(&prow, self.y[r]);
         }
         let mut scratch = SolveScratch::new(dim.max(pdim));
-        let parent_sse = solve_normal_sum(&pgram, None, pdim, &mut scratch);
+        let parent_sse = solve_normal_sum(
+            &pgram, None, pdim, self.params.l1, self.params.l2, &mut scratch,
+        );
 
         prof.group_ns += t0.elapsed().as_nanos() as u64;
         let t1 = Instant::now();
@@ -580,13 +590,13 @@ impl<'a> Grower<'a> {
                 // no materialized sums, no clones.
                 let (sl, sr) = if missing_left {
                     (
-                        solve_normal_sum(&left, Some(&miss), dim, &mut scratch),
-                        solve_normal_sum(&right, None, dim, &mut scratch),
+                        solve_normal_sum(&left, Some(&miss), dim, self.params.l1, self.params.l2, &mut scratch),
+                        solve_normal_sum(&right, None, dim, self.params.l1, self.params.l2, &mut scratch),
                     )
                 } else {
                     (
-                        solve_normal_sum(&left, None, dim, &mut scratch),
-                        solve_normal_sum(&right, Some(&miss), dim, &mut scratch),
+                        solve_normal_sum(&left, None, dim, self.params.l1, self.params.l2, &mut scratch),
+                        solve_normal_sum(&right, Some(&miss), dim, self.params.l1, self.params.l2, &mut scratch),
                     )
                 };
                 let gain = parent_sse - (sl + sr);
@@ -625,7 +635,13 @@ impl<'a> Grower<'a> {
                 design_row(&mut row, self.cols, r, &chosen, any_missing);
                 g.add_row(&row, self.y[r]);
             }
-            Some(fit_linear(&g, &chosen, any_missing))
+            Some(fit_linear(
+                &g,
+                &chosen,
+                any_missing,
+                self.params.l1,
+                self.params.l2,
+            ))
         } else {
             None
         };
