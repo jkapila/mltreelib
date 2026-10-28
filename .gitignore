@@ -136,3 +136,9 @@ references/
 
 # benchmark data (re-downloadable; MANIFEST.md is tracked)
 datasets/*.parquet
+
+# generated documentation
+docs/
+
+# demo output (figures)
+examples/out/

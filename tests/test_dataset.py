@@ -230,6 +230,7 @@ def test_datasets_loader_feeds_builder():
     ds = load_dataset("blood-transfusion-service-center")
     assert ds["n_rows"] == 748
     assert ds["n_cols"] == 5
+    assert "na_counts" in ds
     assert "DonatedBloodInMarch2007" in ds["columns"]
     assert ds["dtypes"]["DonatedBloodInMarch2007"] == "categorical"  # target Yes/No
     assert ds["dtypes"]["MonthsSinceLastDonation"] == "numeric"
@@ -303,3 +304,22 @@ def test_decomposed_transform():
     for i in range(3, 11):
         assert abs(out["residual"][i]) < 1e-9
         assert abs(out["deseasonalized"][i]) < 1e-9
+
+
+def test_demo_script_runs():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[1] / "examples" / "data_layer_demo.py"
+    if not script.exists():
+        pytest.skip("demo script not present")
+    proc = subprocess.run(
+        [sys.executable, str(script), "blood-transfusion-service-center"],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "REAL DATASET" in proc.stdout
+    assert "GROUND TRUTH" in proc.stdout

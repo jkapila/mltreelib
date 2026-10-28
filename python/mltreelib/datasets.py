@@ -61,6 +61,9 @@ def load_dataset(name: str) -> dict:
         "name": name,
         "columns": columns,
         "dtypes": dtypes,
+        "na_counts": {
+            col: sum(1 for v in values if v is None) for col, values in columns.items()
+        },
         "n_rows": table.num_rows,
         "n_cols": table.num_columns,
     }

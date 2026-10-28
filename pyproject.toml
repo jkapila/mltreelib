@@ -13,7 +13,7 @@ license = "Apache-2.0"
 dependencies = ["pyarrow>=14"]
 
 [dependency-groups]
-dev = ["maturin>=1.5,<2.0", "pytest>=8"]
+dev = ["maturin>=1.5,<2.0", "pytest>=8", "matplotlib>=3.8", "seaborn>=0.13"]
 
 [tool.maturin]
 manifest-path = "crates/mltreelib-py/Cargo.toml"

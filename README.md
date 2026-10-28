@@ -131,6 +131,16 @@ plus TabArena-v0.1 real data.
       uv for envs, arXiv workflow; agent skills for artifacts (hallmark for pages,
       docx/pptx/pdf for documents, research skills for sources)
 
+## Documentation
+
+- **This README** — usage, dependency policy, roadmap/TODO
+- **[AGENTS.md](AGENTS.md)** — project rules and conventions (also [CLAUDE.md](CLAUDE.md))
+- **Rust API**: `cargo doc -p mltreelib-core --no-deps --open` (doc-comments are the reference)
+- **Python API**: `uv run --with pdoc pdoc -o docs/api python/mltreelib`, then open `docs/api/index.html`; or `uv run python -c "help(mltreelib)"`
+- **Runnable walkthrough**: `uv run python examples/data_layer_demo.py [dataset ...]` —
+  prints ingest, missingness, encodings, grouped/trended/windowed/decomposed features
+  and generator ground truth over real data
+
 ## License
 
 Apache-2.0
