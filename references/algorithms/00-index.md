@@ -50,6 +50,8 @@ files; this index is the map.
 | 41 | TabArena field: ChimeraBoost, CTBoost, xRFM, PrismBoost, APLR (+ PerpetualBooster, Elo snapshot) | benchmark field | `data/tabarena-leaderboard.csv` + repos | 09-tabarena-field.md |
 | 42 | CTW, Bayesian Context Trees, Parsimonious Context Trees; applied: news rec (Garcin, RecSys 2013) | context trees | Willems 1995 / Kontoyiannis / Eggeling / Garcin | 10-context-trees-tries.md |
 | 43 | Trie family (trie, radix, suffix tree, TST; TrieKNN, context-tree-as-trie) | data structure | `repos/` + literature | 10-context-trees-tries.md |
+| 44 | TDM, TDR (deep tree retrieval); CHAMELEON session hybrid | retrieval trees | Zhu KDD'18 / Liu'24 / Moreira'19 | 11-sequential-rec-trees.md |
+| 45 | Dynamic time-decay CF, TDTL (trust-region), forgetting-curve rec | temporal decay | Chen'20 / Heryawan'25 / Jin CIKM'23 | 11-sequential-rec-trees.md |
 
 Legend for the entry template: **Source · Idea · Pseudocode · Knobs · Note**.
 Pseudocode is the algorithm's core loop in plain steps — faithful in
