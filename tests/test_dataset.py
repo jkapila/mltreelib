@@ -321,5 +321,11 @@ def test_demo_script_runs():
         timeout=300,
     )
     assert proc.returncode == 0, proc.stderr
-    assert "REAL DATASET" in proc.stdout
+    # sections 2-3 (generator, time features) always run; the dataset section
+    # needs the downloaded suite (parquet files are not tracked in git — CI
+    # checkouts and fresh clones only have datasets/MANIFEST.md)
     assert "GROUND TRUTH" in proc.stdout
+    from mltreelib import list_datasets
+
+    if list_datasets():
+        assert "REAL DATASET" in proc.stdout
