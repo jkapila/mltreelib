@@ -1,6 +1,8 @@
 # API reference
 
-## DatasetBuilder
+## Data layer
+
+### DatasetBuilder
 
 ```
 class DatasetBuilder(n_category=None, na_policy='allow', digits=None, add_intercept=False)
@@ -12,7 +14,7 @@ Owns the ingestion semantics: `n_category` category inference, explicit NA polic
 
 Args (constructor): n\_category: integral numeric columns with at most this many distinct levels become categorical; values \< 1 mean a fraction of rows (None = no inference). na\_policy: "allow" (keep missing), "drop" (drop rows containing any missing) or "impute" (numeric mean, categorical mode). digits: round floats to this many decimal places (None = no rounding). add\_intercept: append a constant 1.0 column named `intercept`.
 
-### DatasetBuilder.add\_categorical
+#### DatasetBuilder.add\_categorical
 
 ```
 add_categorical(self, /, name, values)
@@ -22,7 +24,7 @@ Add a categorical column from strings; the vocabulary is first-seen order. None 
 
 Args: name: column name. values: one level per row (None = missing).
 
-### DatasetBuilder.add\_numeric
+#### DatasetBuilder.add\_numeric
 
 ```
 add_numeric(self, /, name, values)
@@ -32,7 +34,7 @@ Add a numeric column. NaN is treated as missing.
 
 Args: name: column name. values: one value per row (None/NaN = missing).
 
-### DatasetBuilder.build
+#### DatasetBuilder.build
 
 ```
 build(self, /)
@@ -44,57 +46,7 @@ Returns: dict with `columns` (name -\> values), `dtypes` ("numeric" or "categori
 
 Raises: ValueError: inconsistent column lengths, duplicate names, invalid policy usage (e.g. "drop" removing every row).
 
-## GroupedScaler
-
-```
-class GroupedScaler()
-```
-
-Fit/transform group distributional scaling with exact inverse (sklearn-shaped: fit once, then transform / inverse\_transform).
-
-Strategies: centered family — "zscore", "min-max", "median-iqr", "mean-iqr", "median-qd", "median-std", "median-range", "mean-range", "min-qd", "min-iqr"; ratio family — "min", "max", "mean", "median", "iqr", "qd", "std", "range". Missing in -\> missing out; degenerate (zero) scales give missing, never inf.
-
-### GroupedScaler.fit
-
-```
-fit(self, /, keys, values, strategy)
-```
-
-Fit group statistics of `values` under the given strategy.
-
-Args: keys: group label per row (None = missing). values: numeric value per row (None/NaN = missing; counted in each group's `n_missing`). strategy: strategy name (see the class docstring).
-
-Raises: ValueError: unknown strategy or mismatched lengths.
-
-### GroupedScaler.inverse\_transform
-
-```
-inverse_transform(self, /, keys, values)
-```
-
-Exact inverse of `transform` under the fitted statistics.
-
-Args: keys: group label per row. values: previously transformed values.
-
-Returns: original-scale values (up to floating-point error).
-
-Raises: ValueError: not fitted or mismatched lengths.
-
-### GroupedScaler.transform
-
-```
-transform(self, /, keys, values)
-```
-
-Scale values against the fitted group statistics.
-
-Args: keys: group label per row. values: numeric value per row.
-
-Returns: scaled values; None for missing key/value, unseen groups and degenerate scales.
-
-Raises: ValueError: not fitted or mismatched lengths.
-
-## IndexMapper
+### IndexMapper
 
 ```
 class IndexMapper()
@@ -102,7 +54,7 @@ class IndexMapper()
 
 Categorical string \<-\> stable code mapping (sklearn-style fit/transform).
 
-### IndexMapper.fit
+#### IndexMapper.fit
 
 ```
 fit(self, /, name, values)
@@ -110,7 +62,7 @@ fit(self, /, name, values)
 
 Learn the vocabulary of `name` (first-seen order). Re-fitting resets it.
 
-### IndexMapper.get\_all\_names
+#### IndexMapper.get\_all\_names
 
 ```
 get_all_names(self, /, name)
@@ -120,7 +72,7 @@ All fitted levels in code order.
 
 Raises: ValueError: column not fitted.
 
-### IndexMapper.get\_index
+#### IndexMapper.get\_index
 
 ```
 get_index(self, /, name, value)
@@ -130,7 +82,7 @@ Code for one level (None when the level is unseen).
 
 Raises: ValueError: column not fitted.
 
-### IndexMapper.get\_name
+#### IndexMapper.get\_name
 
 ```
 get_name(self, /, name, index)
@@ -140,7 +92,7 @@ Level for one code.
 
 Raises: ValueError: column not fitted or code out of range.
 
-### IndexMapper.inverse\_transform
+#### IndexMapper.inverse\_transform
 
 ```
 inverse_transform(self, /, name, codes)
@@ -154,7 +106,7 @@ Returns: string levels (None where the code is missing).
 
 Raises: ValueError: column not fitted or code out of range.
 
-### IndexMapper.transform
+#### IndexMapper.transform
 
 ```
 transform(self, /, name, values)
@@ -162,7 +114,433 @@ transform(self, /, name, values)
 
 Codes for `values`; unseen levels map to None (missing).
 
-## VariableScaler
+## Categorical encoders
+
+### OneHotEncoder
+
+```
+class OneHotEncoder()
+```
+
+One-hot expansion: one indicator column per fitted level (first-seen order). Missing values and levels unseen at fit produce an all-zero row.
+
+#### OneHotEncoder.fit
+
+```
+fit(self, /, values)
+```
+
+Learn the levels (first-seen order). Re-fitting resets them.
+
+#### OneHotEncoder.levels
+
+```
+levels(self, /)
+```
+
+Fitted levels, in column order.
+
+#### OneHotEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Returns {level: indicator list}; unseen/missing rows are all-zero.
+
+### HashingEncoder
+
+```
+class HashingEncoder(n_buckets)
+```
+
+Hashed one-hot: levels are hashed into `n_buckets` indicator columns, so unseen levels still land somewhere. Deterministic.
+
+#### HashingEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Returns {bucket name: indicator list}.
+
+### BaseNEncoder
+
+```
+class BaseNEncoder(base)
+```
+
+**Base-N / binary** encoding: each level becomes its base-`base` digits as indicator columns (`base = 2` is the classic Binary encoder). Task: **both** (unsupervised). Unseen and missing rows are all-zero.
+
+#### BaseNEncoder.fit
+
+```
+fit(self, /, values)
+```
+
+Fit the level vocabulary on `values`.
+
+#### BaseNEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Returns {digit name: indicator list}.
+
+### CountEncoder
+
+```
+class CountEncoder(normalize)
+```
+
+**Count / frequency** encoding: occurrence count per category (`normalize` gives the share of rows). Task: **both** (unsupervised). Unseen levels give 0.0; missing stays missing.
+
+#### CountEncoder.fit
+
+```
+fit(self, /, values)
+```
+
+Fit counts on `values`.
+
+#### CountEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Count (or share) per row; unseen -\> 0.0, missing -\> None.
+
+### SumEncoder
+
+```
+class SumEncoder()
+```
+
+**Sum contrast** coding: `k-1` columns; level `i < k-1` gets +1 in column `i`, the last level gets -1 across all columns. Task: **both** (unsupervised). Unseen rows give zeros; missing stays missing.
+
+#### SumEncoder.fit
+
+```
+fit(self, /, values)
+```
+
+Fit the level vocabulary on `values`.
+
+#### SumEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Contrast row per row (None = missing).
+
+### TargetEncoder
+
+```
+class TargetEncoder(smoothing)
+```
+
+Smoothed target encoding (fitted-mean flavour).
+
+`w * level_mean + (1 - w) * global_mean` with `w = n / (n + smoothing)`. **Leaky on training data** (the row's own target is in its level mean) — prefer `CatBoostEncoder.fit_transform` for training features. Unseen levels fall back to the global mean; missing stays missing.
+
+#### TargetEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit level means on (values, y).
+
+#### TargetEncoder.prior
+
+```
+prior(self, /)
+```
+
+The global mean used as the unseen-level fallback.
+
+#### TargetEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Encode values; unseen -\> global mean, missing -\> None.
+
+### MEstimatorEncoder
+
+```
+class MEstimatorEncoder(m)
+```
+
+**M-estimate** encoding: `(sum_y + m * global) / (n_level + m)` — target smoothing with fixed strength `m`. Task: **both** (leaky on training data; prefer `CatBoostEncoder` or `LeaveOneOutEncoder` there). Unseen -\> global; missing -\> None.
+
+#### MEstimatorEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit smoothed level means on (values, y).
+
+#### MEstimatorEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Smoothed mean per row; unseen -\> global, missing -\> None.
+
+### LeaveOneOutEncoder
+
+```
+class LeaveOneOutEncoder()
+```
+
+**Leave-one-out** encoding: `fit_transform` gives each row its level's mean target **without that row** (leakage-aware); `transform` on new data uses the full fitted level mean. Task: **both**. Unseen -\> global mean; missing -\> None.
+
+#### LeaveOneOutEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit level means on (values, y).
+
+#### LeaveOneOutEncoder.fit\_transform
+
+```
+fit_transform(self, /, values, y)
+```
+
+Row-level means excluding each row's own target.
+
+#### LeaveOneOutEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Full fitted level means for new rows.
+
+### CatBoostEncoder
+
+```
+class CatBoostEncoder(prior, permutations, seed)
+```
+
+CatBoost-style ordered target statistics — the leakage-safe flavour.
+
+`fit_transform` gives each row the running statistic of its level using only rows earlier in a shuffled order: `(sum_y_prefix + prior * global) / (n_prefix + 1)`, averaged over `permutations` seeded passes. The same level gets different values in different rows — that row-dependence is the anti-leakage mechanism. `transform` (new data) uses prior-smoothed fitted level means.
+
+#### CatBoostEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit prior-smoothed level means (used by `transform` on new data).
+
+#### CatBoostEncoder.fit\_transform
+
+```
+fit_transform(self, /, values, y)
+```
+
+Leakage-safe ordered encodings of the training rows themselves.
+
+#### CatBoostEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Encode new rows from the fitted level means; unseen -\> global mean, missing -\> None.
+
+### QuantileEncoder
+
+```
+class QuantileEncoder(q, smoothing)
+```
+
+**Quantile** encoding: each level becomes its smoothed target quantile (default median), `w * level_quantile + (1 - w) * global_quantile` with `w = n / (n + smoothing)`. Task: **regression**. Unseen -\> global quantile; missing -\> None.
+
+#### QuantileEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit quantiles on (values, y).
+
+#### QuantileEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Smoothed quantile per row; unseen -\> global, missing -\> None.
+
+### JamesSteinEncoder
+
+```
+class JamesSteinEncoder()
+```
+
+**James-Stein** encoding: level means shrunk toward the grand mean with `B = max(0, 1 - ((L - 3) * sigma2) / sum((mean_i - global)^2))`; fewer than three levels collapse to the grand mean. Task: **both**. Unseen -\> global; missing -\> None.
+
+#### JamesSteinEncoder.fit
+
+```
+fit(self, /, values, y)
+```
+
+Fit shrunk means on (values, y).
+
+#### JamesSteinEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Shrunk mean per row; unseen -\> global, missing -\> None.
+
+### TfidfEncoder
+
+```
+class TfidfEncoder(normalize)
+```
+
+Class-level **TF-IDF**: each category becomes a vector over the target classes — `tf(v,j) = count(v,j)/count(v)` times `idf(j) = ln(1 + n/(1 + count(j))) + 1`; `normalize` scales each level vector to unit L2 norm. Task: **classification**. Unseen levels fall back to the global class shares; missing stays missing.
+
+#### TfidfEncoder.fit
+
+```
+fit(self, /, values, y, n_classes)
+```
+
+Fit class counts on (values, y, n\_classes).
+
+#### TfidfEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+One class-space vector per row (None = missing).
+
+### WoEEncoder
+
+```
+class WoEEncoder(prior)
+```
+
+**Weight of Evidence** (credit-risk classic): one-vs-rest `ln(distr_j(v) / distr_not_j(v))` per category, smoothed with additive `prior`. Task: **classification**. Positive = over-representation of the class in that level. Unseen levels give neutral zeros; missing stays missing.
+
+#### WoEEncoder.fit
+
+```
+fit(self, /, values, y, n_classes)
+```
+
+Fit class counts on (values, y, n\_classes).
+
+#### WoEEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+One WoE vector per row (None = missing).
+
+### EmbeddingEncoder
+
+```
+class EmbeddingEncoder(dim, lr, epochs, seed, task)
+```
+
+NN-style **learned embeddings** per category: a small embedding table and a linear head trained by SGD, one table per categorical feature. Task: **both** — softmax head for classification; for regression a ReLU output when all fitted targets are non-negative, linear otherwise. `transform` returns the embeddings, `predict` the trained head. Unseen levels give zeros; missing stays missing.
+
+#### EmbeddingEncoder.fit
+
+```
+fit(self, /, values, y, n_classes=None)
+```
+
+Train on (values, y); `n_classes` is inferred for classification when omitted, ignored for regression.
+
+#### EmbeddingEncoder.predict
+
+```
+predict(self, /, values)
+```
+
+Predictions of the trained head (class label or activated value).
+
+#### EmbeddingEncoder.transform
+
+```
+transform(self, /, values)
+```
+
+Learned embedding per row (None = missing, zeros = unseen).
+
+## Feature transforms
+
+### GroupedScaler
+
+```
+class GroupedScaler()
+```
+
+Fit/transform group distributional scaling with exact inverse (sklearn-shaped: fit once, then transform / inverse\_transform).
+
+Strategies: centered family — "zscore", "min-max", "median-iqr", "mean-iqr", "median-qd", "median-std", "median-range", "mean-range", "min-qd", "min-iqr"; ratio family — "min", "max", "mean", "median", "iqr", "qd", "std", "range". Missing in -\> missing out; degenerate (zero) scales give missing, never inf.
+
+#### GroupedScaler.fit
+
+```
+fit(self, /, keys, values, strategy)
+```
+
+Fit group statistics of `values` under the given strategy.
+
+Args: keys: group label per row (None = missing). values: numeric value per row (None/NaN = missing; counted in each group's `n_missing`). strategy: strategy name (see the class docstring).
+
+Raises: ValueError: unknown strategy or mismatched lengths.
+
+#### GroupedScaler.inverse\_transform
+
+```
+inverse_transform(self, /, keys, values)
+```
+
+Exact inverse of `transform` under the fitted statistics.
+
+Args: keys: group label per row. values: previously transformed values.
+
+Returns: original-scale values (up to floating-point error).
+
+Raises: ValueError: not fitted or mismatched lengths.
+
+#### GroupedScaler.transform
+
+```
+transform(self, /, keys, values)
+```
+
+Scale values against the fitted group statistics.
+
+Args: keys: group label per row. values: numeric value per row.
+
+Returns: scaled values; None for missing key/value, unseen groups and degenerate scales.
+
+Raises: ValueError: not fitted or mismatched lengths.
+
+### VariableScaler
 
 ```
 class VariableScaler()
@@ -172,7 +550,7 @@ Per-column distributional scaling — each variable transformed independently (l
 
 Same strategy names as `GroupedScaler`, applied per column, with exact `inverse_transform`. None/NaN are missing and pass through as missing; degenerate scales give missing, never inf.
 
-### VariableScaler.fit
+#### VariableScaler.fit
 
 ```
 fit(self, /, columns, strategy)
@@ -184,7 +562,7 @@ Args: columns: {name: values} for every column to scale (None/NaN = missing; cou
 
 Raises: ValueError: unknown strategy.
 
-### VariableScaler.inverse\_transform
+#### VariableScaler.inverse\_transform
 
 ```
 inverse_transform(self, /, name, values)
@@ -198,7 +576,7 @@ Returns: original-scale values (up to floating-point error).
 
 Raises: ValueError: not fitted or unknown column.
 
-### VariableScaler.transform
+#### VariableScaler.transform
 
 ```
 transform(self, /, name, values)
@@ -212,55 +590,7 @@ Returns: scaled values; None for missing inputs and degenerate scales.
 
 Raises: ValueError: not fitted or unknown column.
 
-## calendar\_features
-
-```
-def calendar_features(dates, hemisphere='north')
-```
-
-Calendar features for ISO dates (YYYY-MM-DD or timestamp prefix).
-
-Produces year, halfyear, quarter, month, week (ISO), iso\_year, weekday (0 = Monday), day, day\_of\_year, season and weekend as numeric parts, ready for tree learners.
-
-Args: dates: ISO date strings or timestamps (None = missing). hemisphere: "north" or "south" (southern shifts the season by six months).
-
-Returns: dict of 11 feature lists aligned with `dates`; rows with a missing date give None features.
-
-Raises: ValueError: unparseable date or unknown hemisphere.
-
-## decomposed\_transform
-
-```
-def decomposed_transform(keys, dates, values, season_granularity='month', trend_window=3, hemisphere='north')
-```
-
-Additive decomposition, following the statsmodels `seasonal_decompose` (additive) convention.
-
-The trend is a centered moving average over each key's rows ordered by date; the seasonal component is the mean of (series - trend) per (key, season bucket), estimated from rows with a complete trend window. Incomplete rows (missing key/date/value) are dropped from estimation and reported via a warning.
-
-Args: keys: series label per row (None = missing). dates: ISO date strings per row (None = missing). values: numeric values per row (None/NaN = missing). season\_granularity: bucket spec for the seasonal component (e.g. "month", "weekday" — same vocabulary as `trended_transform`). trend\_window: centered moving-average window in rows (\>= 1). hemisphere: "north" or "south" (affects the season component).
-
-Returns: dict with `detrended` (series - trend), `deseasonalized` (series - seasonal) and `residual` (series - trend - seasonal); incomplete rows give None.
-
-Raises: ValueError: trend\_window == 0, unknown granularity/hemisphere, unparseable date or mismatched lengths.
-
-## generate
-
-```
-def generate(n_rows=10000, n_numeric=5, cardinalities=None, hierarchy_levels=3, branching=None, group_effect_strength=0.5, hierarchy_effect_strength=0.3, interaction_strength=0.2, noise=0.1, task='regression', n_classes=2, tail_behavior='gaussian', missingness=0.0, seed=42)
-```
-
-Generate an adjustable benchmark dataset with known ground truth.
-
-The knobs control how much signal lives in numeric effects, categorical levels, hierarchical groups and their interaction — so learners can be scored on **structure recovery**, not just accuracy. Deterministic for a given `seed`.
-
-Args: n\_rows: number of rows to generate. n\_numeric: numeric feature columns; the first two carry linear signal. cardinalities: level count per categorical column (each \>= 2). hierarchy\_levels: depth of the categorical hierarchy (0 = none). branching: child count per hierarchy level (last value repeats). group\_effect\_strength: scale of categorical level effects. hierarchy\_effect\_strength: scale of hierarchy node effects. interaction\_strength: scale of the numeric x categorical interaction. noise: scale of the residual noise. task: "regression" or "classification". n\_classes: class count for classification (equal-frequency cuts). tail\_behavior: "gaussian", "heavy" (Student-t residuals) or "bathtub" (noise grows with the signal — the DAR motivation). missingness: fraction of feature cells set to missing, in \[0, 1). seed: RNG seed.
-
-Returns: dict with `columns` (name -\> values, None = missing), `target`, `labels` (classification only) and `truth` — the true effects plus `truth["variance"]`, the realized variance share of each component.
-
-Raises: ValueError: invalid parameter combination.
-
-## grouped\_scale
+### grouped\_scale
 
 ```
 def grouped_scale(keys, values, strategy='zscore')
@@ -276,7 +606,7 @@ Returns: scaled values; rows with a missing key/value, an unseen group or a dege
 
 Raises: ValueError: unknown strategy or mismatched lengths.
 
-## grouped\_transform
+### grouped\_transform
 
 ```
 def grouped_transform(keys, values, kind='mean')
@@ -290,7 +620,39 @@ Returns: the summary of each row's group; rows with a missing key/value or an un
 
 Raises: ValueError: unknown kind or mismatched lengths.
 
-## lag\_by\_days
+### summarize
+
+```
+def summarize(values)
+```
+
+Summary of observed values, with missing counts shown by default.
+
+NAs and NaNs are excluded from the statistics but always reported in `n_missing` — nothing is silently hidden.
+
+Args: values: numeric values (None/NaN = missing).
+
+Returns: dict with `count` (observed), `n_missing`, `sum`, `mean`, `std`, `min`, `q1`, `median`, `q3`, `max` (NaN for the statistics of an all-missing input).
+
+## Time features
+
+### calendar\_features
+
+```
+def calendar_features(dates, hemisphere='north')
+```
+
+Calendar features for ISO dates (YYYY-MM-DD or timestamp prefix).
+
+Produces year, halfyear, quarter, month, week (ISO), iso\_year, weekday (0 = Monday), day, day\_of\_year, season and weekend as numeric parts, ready for tree learners.
+
+Args: dates: ISO date strings or timestamps (None = missing). hemisphere: "north" or "south" (southern shifts the season by six months).
+
+Returns: dict of 11 feature lists aligned with `dates`; rows with a missing date give None features.
+
+Raises: ValueError: unparseable date or unknown hemisphere.
+
+### lag\_by\_days
 
 ```
 def lag_by_days(keys, dates, values, lag_days)
@@ -306,39 +668,7 @@ Returns: lagged values; None where no source row exists.
 
 Raises: ValueError: unparseable date or mismatched lengths.
 
-## list\_datasets
-
-```
-def list_datasets() -> 'list[str]'
-```
-
-Names of the available benchmark datasets (parquet stems).
-
-## load\_dataset
-
-```
-def load_dataset(name: 'str') -> 'dict'
-```
-
-Load one dataset as `name`/`columns`/`dtypes`/`n_rows`/`n_cols`.
-
-`columns` maps column name to a list with `None` for missing values; `dtypes` is "numeric" or "categorical" (strings/dictionaries).
-
-## summarize
-
-```
-def summarize(values)
-```
-
-Summary of observed values, with missing counts shown by default.
-
-NAs and NaNs are excluded from the statistics but always reported in `n_missing` — nothing is silently hidden.
-
-Args: values: numeric values (None/NaN = missing).
-
-Returns: dict with `count` (observed), `n_missing`, `sum`, `mean`, `std`, `min`, `q1`, `median`, `q3`, `max` (NaN for the statistics of an all-missing input).
-
-## trended\_transform
+### trended\_transform
 
 ```
 def trended_transform(keys, dates, values, granularity='year_month', kind='mean', hemisphere='north')
@@ -354,7 +684,23 @@ Returns: per-row cell summaries; incomplete rows give None.
 
 Raises: ValueError: unknown granularity/kind/hemisphere, unparseable date or mismatched lengths.
 
-## windowed\_transform
+### decomposed\_transform
+
+```
+def decomposed_transform(keys, dates, values, season_granularity='month', trend_window=3, hemisphere='north')
+```
+
+Additive decomposition, following the statsmodels `seasonal_decompose` (additive) convention.
+
+The trend is a centered moving average over each key's rows ordered by date; the seasonal component is the mean of (series - trend) per (key, season bucket), estimated from rows with a complete trend window. Incomplete rows (missing key/date/value) are dropped from estimation and reported via a warning.
+
+Args: keys: series label per row (None = missing). dates: ISO date strings per row (None = missing). values: numeric values per row (None/NaN = missing). season\_granularity: bucket spec for the seasonal component (e.g. "month", "weekday" — same vocabulary as `trended_transform`). trend\_window: centered moving-average window in rows (\>= 1). hemisphere: "north" or "south" (affects the season component).
+
+Returns: dict with `detrended` (series - trend), `deseasonalized` (series - seasonal) and `residual` (series - trend - seasonal); incomplete rows give None.
+
+Raises: ValueError: trend\_window == 0, unknown granularity/hemisphere, unparseable date or mismatched lengths.
+
+### windowed\_transform
 
 ```
 def windowed_transform(keys, dates, values, window_days=7, kind='mean', include_current=True)
@@ -369,3 +715,93 @@ Args: keys: series label per row (None = missing). dates: ISO date strings per r
 Returns: per-row window summaries; None for incomplete rows and for empty/all-missing windows.
 
 Raises: ValueError: window\_days == 0, unknown kind, unparseable date or mismatched lengths.
+
+## Benchmark generator
+
+### generate
+
+```
+def generate(n_rows=10000, n_numeric=5, cardinalities=None, hierarchy_levels=3, branching=None, group_effect_strength=0.5, hierarchy_effect_strength=0.3, interaction_strength=0.2, noise=0.1, task='regression', n_classes=2, tail_behavior='gaussian', missingness=0.0, seed=42)
+```
+
+Generate an adjustable benchmark dataset with known ground truth.
+
+The knobs control how much signal lives in numeric effects, categorical levels, hierarchical groups and their interaction — so learners can be scored on **structure recovery**, not just accuracy. Deterministic for a given `seed`.
+
+Args: n\_rows: number of rows to generate. n\_numeric: numeric feature columns; the first two carry linear signal. cardinalities: level count per categorical column (each \>= 2). hierarchy\_levels: depth of the categorical hierarchy (0 = none). branching: child count per hierarchy level (last value repeats). group\_effect\_strength: scale of categorical level effects. hierarchy\_effect\_strength: scale of hierarchy node effects. interaction\_strength: scale of the numeric x categorical interaction. noise: scale of the residual noise. task: "regression" or "classification". n\_classes: class count for classification (equal-frequency cuts). tail\_behavior: "gaussian", "heavy" (Student-t residuals) or "bathtub" (noise grows with the signal — the DAR motivation). missingness: fraction of feature cells set to missing, in \[0, 1). seed: RNG seed.
+
+Returns: dict with `columns` (name -\> values, None = missing), `target`, `labels` (classification only) and `truth` — the true effects plus `truth["variance"]`, the realized variance share of each component.
+
+Raises: ValueError: invalid parameter combination.
+
+## Datasets
+
+### list\_datasets
+
+```
+def list_datasets() -> 'list[str]'
+```
+
+Names of the available benchmark datasets (parquet stems).
+
+### load\_dataset
+
+```
+def load_dataset(name: 'str') -> 'dict'
+```
+
+Load one dataset as `name`/`columns`/`dtypes`/`n_rows`/`n_cols`.
+
+`columns` maps column name to a list with `None` for missing values; `dtypes` is "numeric" or "categorical" (strings/dictionaries).
+
+## Other
+
+### Metrics
+
+```
+class Metrics()
+```
+
+One metrics class computing complete reports at once — the yardstick every learner is measured with. Task: **both**. Pairs with a missing/NaN side are dropped from the math and reported in `n_missing`, never hidden.
+
+#### Metrics.classification
+
+```
+classification(self, /, y_true, y_pred, probabilities=None)
+```
+
+Complete classification report: accuracy, macro averages, per-class precision/recall/f1/support, confusion matrix — and with `probabilities` (P(class 1)) also logloss, brier and ROC-AUC.
+
+Args: y\_true: integer class labels (None/NaN = missing). y\_pred: predicted labels (None/NaN = missing). probabilities: P(class 1) per row; enables the probabilistic metrics.
+
+Returns: the full report as a dict.
+
+Raises: ValueError: mismatched lengths, non-integer labels or no observed pairs.
+
+#### Metrics.regression
+
+```
+regression(self, /, y_true, y_pred)
+```
+
+Complete regression report: `n`, `n_missing`, `mean_error` (actual - fitted), `bias` (mean\_pred / mean\_true), `mae`, `mad`, `mape` (non-zero targets), `rmse`, `r2`, `max_error`, `explained_variance` and `deciles` — the DAR per-target-decile error profile (the bathtub view).
+
+Args: y\_true: actual values (None/NaN = missing). y\_pred: fitted values (None/NaN = missing).
+
+Returns: the full report as a dict.
+
+Raises: ValueError: mismatched lengths or no observed pairs.
+
+#### Metrics.regression\_by\_group
+
+```
+regression_by_group(self, /, keys, y_true, y_pred)
+```
+
+Regression report per group (keys: dates, categories, ...) — the legacy per-key summary lineage. Rows with a missing key are ignored.
+
+Args: keys: group label per row (None = ignored). y\_true: actual values (None/NaN = missing). y\_pred: fitted values (None/NaN = missing).
+
+Returns: {group: regression report}, sorted by group.
+
+Raises: ValueError: mismatched lengths or a group with no observed pairs.
