@@ -64,6 +64,6 @@ confusion: [[1520.0, 70.0], [228.0, 182.0]]
 
 Business reading: **product count is the first split** — one-product customers churn far more. Among them, **age** and **balance** segment the risk, and **country** matters (non-France higher). On the multi-product side there is a small pocket (3+ products, high balance) that is almost certain to leave — the classic "too many products" signal.
 
-`print(model)` shows the full tree in rpart format; `model.to_svg()` writes `churn_tree.svg` for slides or docs.
+`print(model)` shows the full tree in rpart format; `model.to_dot()` + graphviz renders `churn_tree.svg` for slides or docs.
 
-Next: [Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>) for the encoder catalog, or [Model build &amp; Tree Visualization](<https://jkapila.github.io/mltreelib/examples/model-build-viz/index.md>) to read every part of the output.
+Next: [Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>) for the encoder catalog, [Model building &amp; predictions](<https://jkapila.github.io/mltreelib/examples/model-building/index.md>) for every knob the tree has, or [Inspection](<https://jkapila.github.io/mltreelib/examples/inspection/index.md>) to read every part of the output.

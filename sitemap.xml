@@ -16,7 +16,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/model-build-viz/</loc>
+        <loc>https://jkapila.github.io/mltreelib/examples/inspection/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/visualization/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/field-notes/</loc>

@@ -19,7 +19,8 @@ print("metrics:", {k: round(v, 3) for k, v in
                    Metrics().regression(y_test, pred).items() if k in ("rmse", "mae", "r2")})
 
 print(model)                                  # rpart-style tree text
-open("quickstart_tree.svg", "w").write(model.to_svg())
+dot = model.to_dot()                         # graphviz does the layout
+pgv.AGraph(string=dot).draw("quickstart_tree.svg", prog="dot")
 ```
 
 Output:
@@ -49,13 +50,13 @@ node), split, n, deviance, yval
       14) x0< 6.5 10 0.12400 17.14000 *
       15) x0>=6.5 10 0.12400 19.16000 *
 
-wrote quickstart_tree.svg
+wrote quickstart_tree.svg (rendered by graphviz)
 ```
 
 Three things to notice:
 
 - **The tree prints like rpart** — same numbering, indentation, deviance and yval columns, `*` on leaves. If you know `rpart`, you already know how to read this.
-- **`to_svg()` writes a diagram** — one box per node with the split condition, `n`, and fitted value; edges labeled with thresholds. Open the `.svg` anywhere.
-- **Defaults are tuned** — `leaf="linear"` with small ridge/lasso penalties at shallow depth is the configuration that won our [benchmark bake-off](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>).
+- **`to_dot()` describes the tree, graphviz draws it** — one box per node with the split condition, `n`, and fitted value; edges labeled with thresholds. Layout belongs to graphviz (via pygraphviz); we don't reinvent it.
+- **Defaults are tuned** — `leaf="linear"` with a small ridge (`l2`) penalty at shallow depth is the configuration that won our [benchmark bake-off](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>).
 
 Next: the [Churn example](<https://jkapila.github.io/mltreelib/examples/churn/index.md>) for a real end-to-end problem, or the [API reference](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>) for every parameter.

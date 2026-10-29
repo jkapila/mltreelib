@@ -9,14 +9,14 @@ ModelTree(
     max_depth=4, min_rows=10, min_gain=1e-9,
     leaf_cols="all",        # "all" | "path" — columns available to leaf models
     leaf="linear",          # "linear" | "mean"
-    l2=0.1, l1=0.1,         # ridge / lasso penalties on leaf coefficients
+    l2=0.1, l1=0.0,         # ridge on leaf coefficients (l1 off by default)
     monotone=[],            # per column: 0 | +1 | -1
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
 )
 ```
 
-Defaults are the arena bake-off winner (see [Benchmarks](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)) — plain unregularized leaves were beaten by shallow regularized ones.
+Defaults are the arena bake-off winner (see [Benchmarks](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)) — linear leaves at shallow depth with a small **ridge** (`l2`) penalty. `l1` (lasso/elastic) is available but off by default: coordinate descent is slow inside the split scan and the accuracy gain over ridge is marginal.
 
 ### Methods
 
@@ -25,9 +25,9 @@ Defaults are the arena bake-off winner (see [Benchmarks](<https://jkapila.github
 | `fit(x, y, w=None)` | `self` | rows of `float`/`None` (`None` = missing); `w` = row weights (0 = row ignored) |
 | `predict(x)` | `list[float]` | missing values use the learned NA direction; never panics on short rows |
 | `__repr__()` | `str` | rpart-style text (`print(model)`); refuses to print an unfitted tree |
-| `to_svg()` | `str` | self-contained SVG diagram (boxes + stats + threshold-labeled edges) |
+| `to_dot()` | `str` | Graphviz DOT — render with pygraphviz/graphviz (layout is graphviz's job) |
 | `splits()` | `list[dict]` | `{col, threshold, missing_left}` per split |
-| `leaves()` | `list[tuple]` | `(leaf_model, n)` per terminal node; leaf model has `stats` (mean/std/min/max/digest) and `linear` (coef/na\_coef/intercept) |
+| `leaves()` | `list[dict]` | one flat dict per leaf: `cols, coef, na_coef, intercept, n, mean, std, min, max, quantiles` |
 | `split_paths()` | `list[list[str]]` | split column names per root→leaf path (constraint verification) |
 | `n_leaves()` | `int` | terminal node count |
 | `profile()` | `list[dict]` | per-node timing/shape counters (fit diagnostics) |
@@ -51,6 +51,11 @@ All follow `fit(values)` → `transform(values)` with `None` passed through as m
 - `GroupedScaler` — grouped/trended/windowed numeric transforms (`grouped_transform`, `trended_transform`, `windowed_transform`, `lag_by_days`, `decomposed_transform`, `calendar_features`).
 - `DatasetBuilder` — `add_numeric` / `add_categorical` / `build()` schema summary.
 - `IndexMapper` — string ↔ code mapping with `get_index` / `get_name`.
+
+### Winnowing (column screening)
+
+- `winnow(x, y, min_relevance=0.05)` → `{"kept": [column indices],   "relevance": [score per column]}` — screen columns by univariate relevance before training (LightGBM's "feature pre-filtering" idea).
+- The same screen runs inside `fit` when `min_relevance` is set.
 
 ### Metrics
 

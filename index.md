@@ -19,7 +19,9 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | see it work in 30 seconds | [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>) |
 | solve a real problem | [Examples — Churn](<https://jkapila.github.io/mltreelib/examples/churn/index.md>) |
 | wrangle data &amp; encodings | [Examples — Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>) |
-| read &amp; draw the tree | [Examples — Model build &amp; Tree Visualization](<https://jkapila.github.io/mltreelib/examples/model-build-viz/index.md>) |
+| know every knob | [Examples — Model building &amp; predictions](<https://jkapila.github.io/mltreelib/examples/model-building/index.md>) |
+| read the numbers | [Examples — Inspection](<https://jkapila.github.io/mltreelib/examples/inspection/index.md>) |
+| draw the tree | [Examples — Visualization](<https://jkapila.github.io/mltreelib/examples/visualization/index.md>) |
 | see how it compares | [Benchmarks — ELO](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>) |
 | look up every parameter | [API reference — Data &amp; Model](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>) |
 
