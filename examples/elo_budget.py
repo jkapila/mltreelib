@@ -18,7 +18,7 @@ import subprocess
 import time
 
 
-def run_with_budget(argv, budget_s=180.0, env=None, cwd=None):
+def run_with_budget(argv, budget_s=300.0, env=None, cwd=None):
     """Run argv as a secondary process group with a hard wall-clock budget.
 
     Returns (stdout_text, returncode, timed_out). stdout is drained via

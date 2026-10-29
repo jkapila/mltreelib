@@ -15,6 +15,7 @@ import csv
 import datetime
 import json
 import logging
+import multiprocessing as mp
 import math
 import os
 import subprocess
@@ -77,6 +78,40 @@ SETTINGS = {
         imbalance_penalty=0.06, alpha=0.03,
     ),
 }
+
+
+# Per-(model x dataset) time tiers, same contract as the field harness:
+# 30s = TabArena-toppers line (slow), 180s = CRITICAL, 300s = hard kill.
+SLOW_S = 30.0
+CRITICAL_S = 180.0
+BUDGET_S = 300.0
+
+
+def fit_predict_budgeted(m, xtr, ytr, xte):
+    """Fit + predict in a forked child under the hard wall-clock budget.
+    Returns (pred, fit_s) or None on timeout (the child's rayon threads
+    die with it)."""
+    q = mp.get_context("fork").Queue()
+
+    def work():
+        try:
+            t0 = time.perf_counter()
+            m.fit(xtr, ytr)
+            q.put(("ok", m.predict(xte), time.perf_counter() - t0))
+        except Exception as e:  # surface fit errors as failures, not hangs
+            q.put(("err", repr(e), 0.0))
+
+    p = mp.get_context("fork").Process(target=work)
+    p.start()
+    p.join(BUDGET_S)
+    if p.is_alive():
+        p.kill()
+        p.join()
+        return None
+    try:
+        return q.get_nowait()
+    except Exception:
+        return None
 
 
 def read_xy(path):
@@ -146,10 +181,18 @@ def main():
         xtr, ytr = read_xy(DATA / f"{ds}_train.csv")
         xte, yte = read_xy(DATA / f"{ds}_test.csv")
         for name, m in variants().items():
-            t0 = time.perf_counter()
-            m.fit(xtr, ytr)
-            pred = m.predict(xte)
-            fit_s = time.perf_counter() - t0
+            got = fit_predict_budgeted(m, xtr, ytr, xte)
+            if got is None or got[0] != "ok":
+                reason = "TIMEOUT (300s, killed)" if got is None else f"FAILED ({got[1][:60]})"
+                log.warning("%-24s%-20s %s - keeping previous row", ds, name, reason)
+                continue
+            _, pred, fit_s = got
+            if fit_s > CRITICAL_S:
+                log.warning("%-24s%-20s CRITICAL fit=%.1fs (budget %.0fs)",
+                            ds, name, fit_s, BUDGET_S)
+            elif fit_s > SLOW_S:
+                log.info("%-24s%-20s slow fit=%.1fs (TabArena line %.0fs)",
+                         ds, name, fit_s, SLOW_S)
             reg = Metrics().regression(yte, pred)
             by[(ds, name)] = {
                 "dataset": ds,

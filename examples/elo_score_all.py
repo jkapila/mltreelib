@@ -21,15 +21,31 @@ import time
 from pathlib import Path
 
 from elo_budget import run_with_budget
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.FileHandler("benchmarks/elo_run.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger("elo.orchestrator")
 
 DATA_DIR = Path("benchmarks/elo_data")
 OUT = Path("benchmarks/elo_scores.csv")
 ATTEMPTS = Path("benchmarks/elo_attempts.csv")
 STAGE = DATA_DIR / ".stage"
-BUDGET_S = 180.0
+# Per-(model x dataset) time tiers: 30s = TabArena-toppers line (slow),
+# 180s = CRITICAL, 300s = hard kill (process group dies).
+SLOW_S = 30.0
+CRITICAL_S = 180.0
+BUDGET_S = 300.0
 
 R_MODELS = ["rpart", "cubist", "lmtree", "glmtree", "ctree", "grf_llf",
-            "grf_rf", "earth"]
+            "grf_rf", "earth", "mboost"]
 
 
 def datasets():
@@ -112,12 +128,12 @@ def main():
     env.setdefault("R_LIBS_USER", str(Path.home() / "R" / "library"))
 
     for ds in datasets():
-        print(f"=== dataset: {ds} ===", flush=True)
+        log.info(f"=== dataset: {ds} ===", flush=True)
         stage_dataset(ds)
         for name in R_MODELS + py_models:
             if (ds, name) in done:
                 continue
-            print(f"{ds:<24}{name:<20} RUNNING", flush=True)
+            log.info(f"{ds:<24}{name:<20} RUNNING", flush=True)
             if name in R_MODELS:
                 argv = ["Rscript", "--vanilla", "examples/elo_r_worker.R", ds, name]
             else:
@@ -125,23 +141,29 @@ def main():
             t0 = time.monotonic()
             out, code, timed_out = run_with_budget(argv, BUDGET_S, env=env)
             dt = time.monotonic() - t0
+            if dt > CRITICAL_S:
+                log.warning("%-24s%-20s CRITICAL fit=%.1fs (budget %.0fs)",
+                            ds, name, dt, BUDGET_S)
+            elif dt > SLOW_S:
+                log.info("%-24s%-20s slow fit=%.1fs (TabArena line %.0fs)",
+                         ds, name, dt, SLOW_S)
             if timed_out:
                 record_attempt(ds, name, "timeout", dt)
-                print(f"{ds:<24}{name:<20} TIMEOUT ({BUDGET_S:.0f}s)", flush=True)
+                log.warning("%-24s%-20s TIMEOUT (%.0fs, killed)", ds, name, BUDGET_S)
                 continue
             res = parse_result(out, ds, name)
             if code == 0 and res:
                 rmse, mae, fit = res
                 elo_score_python.append_row(ds, name, rmse, mae, fit)
                 record_attempt(ds, name, "ok", dt)
-                print(f"{ds:<24}{name:<20} rmse={rmse:9.3f} mae={mae:9.3f} fit={fit:6.2f}",
+                log.info(f"{ds:<24}{name:<20} rmse={rmse:9.3f} mae={mae:9.3f} fit={fit:6.2f}",
                       flush=True)
             else:
                 record_attempt(ds, name, "error", dt)
                 tail = [l for l in out.splitlines() if l.strip()][-1:]
-                print(f"{ds:<24}{name:<20} FAILED (exit {code}"
+                log.info(f"{ds:<24}{name:<20} FAILED (exit {code}"
                       f"{': ' + tail[0][:60] if tail else ''})", flush=True)
-        print(f"--- dataset complete: {ds} ---", flush=True)
+        log.info(f"--- dataset complete: {ds} ---", flush=True)
     print("=== orchestrator done ->", OUT, "===", flush=True)
 
 

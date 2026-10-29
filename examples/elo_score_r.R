@@ -63,6 +63,12 @@ fit_predict <- function(model, train, test, ycol, xs) {
       fit <- earth::earth(x = train[, xs, drop = FALSE], y = train[[ycol]])
       predict(fit, test[, xs, drop = FALSE])
     },
+    mboost = {
+      # statistical gradient boosting with tree base-learners (ctree
+      # stumps, mstop=100 stock) - the boosting school's reference entry.
+      fit <- mboost::blackboost(as.formula(paste(ycol, "~ .")), data = train)
+      predict(fit, test)
+    },
     stop(paste("unknown model:", model))
   )
 }
