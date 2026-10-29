@@ -73,7 +73,7 @@ node), split, n, deviance, yval
       14) x0< 614 43 6.511628 0.81395349 *
       15) x0>=614 80 13.387500 0.78750000 *
 
-wrote churn_tree.svg (rendered by graphviz)
+wrote docs/assets/churn_tree.svg (rendered by graphviz)
 ```
 
 Read the tree top-down: `x8` is `active_member` (the strongest signal), `x6` is `products_number` (2+ products almost always churns — leaves 5/7 at 0.78–0.90), `x3` is `age`, `x5` is `balance`. And the categorical split renders as level sets: `x2 in {0}` is `gender` — one level against the rest, exactly as the split search treats it (no dummies anywhere).
