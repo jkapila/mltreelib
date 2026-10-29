@@ -630,7 +630,7 @@ fn min_rows_blocks_tiny_leaves() {
 // ------------------------- split-search knobs (2026-10-29) --------------
 
 use mltreelib_core::model_tree::{
-    CatOrder, CatSearch, ColType, CustomGain, GainFn,
+    CatOrder, CatSearch, ColType, CustomGain, GainFn, PruneCost,
 };
 
 #[test]
@@ -690,19 +690,24 @@ fn categorical_single_vs_rest_stops_at_first_acceptable() {
 fn custom_gain_matches_builtin_entropy() {
     struct EntropyGain;
     impl CustomGain for EntropyGain {
-        fn gain(&self, left: &[f64], right: &[f64]) -> f64 {
-            fn h(ys: &[f64]) -> f64 {
-                let n = ys.len() as f64;
-                let p1 = ys.iter().filter(|&&v| v == 1.0).count() as f64 / n;
+        fn gain(&self, left: &[(f64, f64)], right: &[(f64, f64)]) -> f64 {
+            fn h(p: &[(f64, f64)]) -> f64 {
+                let total: f64 = p.iter().map(|&(_, w)| w).sum();
+                if total <= 0.0 {
+                    return 0.0;
+                }
+                let p1: f64 = p.iter().filter(|&&(y, _)| y == 1.0).map(|&(_, w)| w).sum::<f64>() / total;
                 let p0 = 1.0 - p1;
-                let e = |p: f64| if p > 0.0 { -p * p.log2() } else { 0.0 };
+                let e = |q: f64| if q > 0.0 { -q * q.log2() } else { 0.0 };
                 e(p0) + e(p1)
             }
-            let n = (left.len() + right.len()) as f64;
-            let mut all: Vec<f64> = Vec::new();
+            let wl: f64 = left.iter().map(|&(_, w)| w).sum();
+            let wr: f64 = right.iter().map(|&(_, w)| w).sum();
+            let w = (wl + wr).max(1e-300);
+            let mut all: Vec<(f64, f64)> = Vec::new();
             all.extend_from_slice(left);
             all.extend_from_slice(right);
-            h(&all) - (left.len() as f64 / n) * h(left) - (right.len() as f64 / n) * h(right)
+            h(&all) - (wl / w) * h(left) - (wr / w) * h(right)
         }
     }
     let x: Vec<Vec<Option<f64>>> = (0..40).map(|i| vec![Some((i / 20) as f64)]).collect();
@@ -772,4 +777,157 @@ fn quantile_uses_leaf_digest_and_honors_lean_leaves() {
     let lean = ModelTree::fit(&x, &y, p_lean).unwrap();
     let gone = lean.quantile(&[vec![Some(0.0)]], 0.5);
     assert!(gone[0].is_nan(), "lean leaves must not answer quantiles");
+}
+
+// ------- gain family, weights, imbalance, column sample, pruning ---------
+
+#[test]
+fn gain_ratio_sdr_twoing_find_the_regime_split() {
+    // 0/1 classes in two regimes; any criterion family must find x<=0.5.
+    let x: Vec<Vec<Option<f64>>> = (0..60)
+        .map(|i| vec![Some(if i < 30 { (i % 10) as f64 * 0.05 } else { 1.0 + (i % 10) as f64 * 0.05 })])
+        .collect();
+    let y: Vec<Option<f64>> = (0..60).map(|i| Some(if i < 30 { 0.0 } else { 1.0 })).collect();
+    for gain in [GainFn::GainRatio, GainFn::Sdr, GainFn::Twoing] {
+        let p = ModelTreeParams {
+            max_depth: 1,
+            min_rows: 5,
+            gain: gain.clone(),
+            ..Default::default()
+        };
+        let tree = ModelTree::fit(&x, &y, p).unwrap();
+        let splits = tree.splits();
+        assert_eq!(splits.len(), 1, "{gain:?}");
+        assert!(splits[0].threshold < 1.0, "{gain:?} split too high");
+    }
+}
+
+#[test]
+fn weights_change_the_split() {
+    // Equal rows on both sides of the truth at 0.5; heavy weights on the
+    // right block make the weight-aware split land right of 1.0.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    let mut w = Vec::new();
+    for i in 0..20 {
+        x.push(vec![Some((i as f64) * 0.1)]);
+        y.push(Some(if i < 10 { 0.0 } else { 1.0 }));
+        w.push(if i >= 10 { 50.0 } else { 1.0 });
+    }
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 2,
+        split_precision: None,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit_weighted(&x, &y, &w, p).unwrap();
+    let pred = tree.predict(&[vec![Some(1.2)], vec![Some(0.2)]]);
+    // The 50x block dominates: the split must isolate the light left rows.
+    assert!(pred[0] > 0.5 && pred[1] < 0.5, "{pred:?}");
+}
+
+#[test]
+fn imbalance_penalty_blocks_lopsided_splits() {
+    // A single 5.0 outlier invites a 1-vs-rest split (gain ≈ 24); without
+    // the penalty it forms, with a strong penalty it must not.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..40 {
+        x.push(vec![Some((i as f64) * 0.1)]);
+        y.push(Some(0.0));
+    }
+    x.push(vec![Some(9.0)]);
+    y.push(Some(5.0));
+    let base = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 2,
+        split_precision: None,
+        ..Default::default()
+    };
+    let plain = ModelTree::fit(&x, &y, base.clone()).unwrap();
+    assert_eq!(plain.splits().len(), 1, "unpenalized: the outlier split forms");
+    let penalized = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            imbalance_penalty: 1000.0,
+            ..base
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        penalized.splits().len(),
+        0,
+        "penalized split should not form"
+    );
+}
+
+#[test]
+fn col_sample_is_deterministic_per_seed() {
+    // Four redundant informative columns; one column per node (0.25). Same
+    // seed must reproduce exactly; across seeds the chosen root column
+    // must not be constant.
+    let x: Vec<Vec<Option<f64>>> = (0..120)
+        .map(|i| {
+            vec![
+                Some((i / 10) as f64),
+                Some((i / 10) as f64 + 1.0),
+                Some((i / 10) as f64 - 1.0),
+                Some((i / 10) as f64 * 1.001),
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..120).map(|i| Some((i / 10) as f64 * 2.0)).collect();
+    let mk = |seed: u64| ModelTreeParams {
+        max_depth: 2,
+        min_rows: 3,
+        col_sample: Some(0.25),
+        seed,
+        ..Default::default()
+    };
+    let a = ModelTree::fit(&x, &y, mk(7)).unwrap();
+    let b = ModelTree::fit(&x, &y, mk(7)).unwrap();
+    assert_eq!(a.predict(&x), b.predict(&x), "same seed must reproduce exactly");
+    let root_cols: Vec<usize> = (1u64..=12)
+        .map(|s| {
+            let t = ModelTree::fit(&x, &y, mk(s)).unwrap();
+            t.splits().first().map(|sp| sp.col).unwrap_or(99)
+        })
+        .collect();
+    assert!(
+        root_cols.iter().min() != root_cols.iter().max(),
+        "seeds must explore different columns: {root_cols:?}"
+    );
+}
+
+#[test]
+fn bic_prune_shrinks_noisy_depth() {
+    // Pure noise: cost pruning must collapse the tree to a single leaf.
+    let x: Vec<Vec<Option<f64>>> = (0..80)
+        .map(|i| vec![Some((i % 17) as f64), Some((i % 5) as f64)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..80)
+        .map(|i| Some(((i * 7919) % 101) as f64 / 101.0))
+        .collect();
+    let base = ModelTreeParams {
+        max_depth: 4,
+        min_rows: 2,
+        ..Default::default()
+    };
+    let unpruned = ModelTree::fit(&x, &y, base.clone()).unwrap();
+    let pruned = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            prune: PruneCost::Bic,
+            ..base
+        },
+    )
+    .unwrap();
+    assert!(
+        pruned.splits().len() < unpruned.splits().len(),
+        "BIC must shrink noisy structure ({} vs {})",
+        pruned.splits().len(),
+        unpruned.splits().len()
+    );
 }

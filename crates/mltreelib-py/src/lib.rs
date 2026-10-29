@@ -14,6 +14,7 @@ use mltreelib_core::encode::{
 use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::model_tree::{
     CatOrder, CatSearch, ColType, CustomGain, GainFn, LeafCols, LeafKind, ModelTree, ModelTreeParams,
+    PruneCost,
 };
 use mltreelib_core::metrics::{
     classification_report, grouped_regression_report, regression_report, ClassificationReport,
@@ -1936,13 +1937,13 @@ struct PyGain {
 }
 
 impl CustomGain for PyGain {
-    fn gain(&self, left: &[f64], right: &[f64]) -> f64 {
+    fn gain(&self, left: &[(f64, f64)], right: &[(f64, f64)]) -> f64 {
         Python::attach(|py| {
-            let l = match PyList::new(py, left.iter().copied()) {
+            let l = match PyList::new(py, left.iter().map(|&(y, w)| (y, w))) {
                 Ok(l) => l,
                 Err(_) => return f64::NAN,
             };
-            let r = match PyList::new(py, right.iter().copied()) {
+            let r = match PyList::new(py, right.iter().map(|&(y, w)| (y, w))) {
                 Ok(r) => r,
                 Err(_) => return f64::NAN,
             };
@@ -1998,7 +1999,7 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.1), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.1), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none"))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -2016,6 +2017,11 @@ impl PyModelTree {
         cat_search: &str,
         leaf_digest: bool,
         verbose: u8,
+        alpha: f64,
+        imbalance_penalty: f64,
+        col_sample: Option<f64>,
+        seed: u64,
+        prune: &str,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2043,9 +2049,12 @@ impl PyModelTree {
                         "sse" => GainFn::Sse,
                         "entropy" => GainFn::Entropy,
                         "gini" => GainFn::Gini,
+                        "gain_ratio" => GainFn::GainRatio,
+                        "sdr" => GainFn::Sdr,
+                        "twoing" => GainFn::Twoing,
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'entropy', 'gini' or a callable, got {other}"
+                                "gain must be 'sse', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
                             )))
                         }
                     }
@@ -2093,6 +2102,16 @@ impl PyModelTree {
                 )))
             }
         };
+        let prune_cost = match prune {
+            "none" => PruneCost::None,
+            "bic" => PruneCost::Bic,
+            "mdl" => PruneCost::Mdl,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "prune must be 'none', 'bic' or 'mdl', got {other}"
+                )))
+            }
+        };
         Ok(Self {
             params: ModelTreeParams {
                 max_depth,
@@ -2112,6 +2131,11 @@ impl PyModelTree {
                 cat_search: search,
                 leaf_digest,
                 verbose,
+                alpha,
+                imbalance_penalty,
+                col_sample,
+                seed,
+                prune: prune_cost,
             },
             inner: None,
         })

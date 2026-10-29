@@ -71,21 +71,32 @@ def _knobs(mo):
         value="frequency_desc", label="cat_order (last = explicit)",
     )
     gain = mo.ui.dropdown(
-        options=["sse", "entropy", "gini", "custom (|mean gap|)"], value="sse",
+        options=["sse", "entropy", "gini", "gain_ratio", "sdr", "twoing",
+                 "custom (weighted |mean gap|)"], value="sse",
         label="gain",
     )
     leaf_digest = mo.ui.checkbox(value=True, label="leaf_digest (t-digest per leaf)")
+    alpha = mo.ui.slider(0.0, 0.49, value=0.0, step=0.01, label="alpha (min child weight share)")
+    imbalance_penalty = mo.ui.slider(0.0, 1000.0, value=0.0, step=10.0, label="imbalance_penalty")
+    col_sample = mo.ui.dropdown(
+        options={"all columns": None, "half": 0.5, "third": 0.33}, value="all columns",
+        label="col_sample (per-node random columns)",
+    )
+    prune = mo.ui.dropdown(options=["none", "bic", "mdl"], value="none", label="prune")
     mo.md("## 2. Growth knobs")
-    return max_depth, split_precision, cat_search, cat_order, gain, leaf_digest
+    return (max_depth, split_precision, cat_search, cat_order, gain, leaf_digest,
+            alpha, imbalance_penalty, col_sample, prune)
 
 
 @app.cell
-def _fit(mo, xs, ys, dtypes, max_depth, split_precision, cat_search, cat_order, gain, leaf_digest):
+def _fit(mo, xs, ys, dtypes, max_depth, split_precision, cat_search, cat_order,
+         gain, leaf_digest, alpha, imbalance_penalty, col_sample, prune):
     from mltreelib import ModelTree
 
     def custom_gain(left, right):
-        lm = sum(left) / len(left) if left else 0.0
-        rm = sum(right) / len(right) if right else 0.0
+        # pairs ABI: (y, w) rows per side
+        lm = sum(y * w for y, w in left) / max(sum(w for _, w in left), 1e-9)
+        rm = sum(y * w for y, w in right) / max(sum(w for _, w in right), 1e-9)
         return abs(lm - rm)
 
     g = custom_gain if gain.value.startswith("custom") else gain.value
@@ -97,6 +108,10 @@ def _fit(mo, xs, ys, dtypes, max_depth, split_precision, cat_search, cat_order, 
         cat_order=cat_order.value,
         gain=g,
         leaf_digest=leaf_digest.value,
+        alpha=alpha.value,
+        imbalance_penalty=imbalance_penalty.value,
+        col_sample=col_sample.value,
+        prune=prune.value,
         verbose=2,
     )
     model.fit(xs, ys, dtypes=dtypes)

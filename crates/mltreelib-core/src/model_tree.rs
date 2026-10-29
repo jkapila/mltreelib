@@ -38,41 +38,91 @@ fn beats(gain: f64, best: f64) -> bool {
     gain > best * (1.0 + 1e-12)
 }
 
-/// Shannon entropy (bits) over y-as-class-labels (distinct values = classes).
-fn class_entropy(ys: &[f64]) -> f64 {
-    let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
-    for &y in ys {
-        *counts.entry(y.to_bits()).or_insert(0) += 1;
+/// Weighted Shannon entropy (bits) over y-as-class-labels (weighted class
+/// masses; distinct values are the classes).
+fn class_entropy_w(p: &[(f64, f64)]) -> f64 {
+    let total: f64 = p.iter().map(|&(_, w)| w).sum();
+    if total <= 0.0 {
+        return 0.0;
     }
-    let n = ys.len() as f64;
+    let mut counts: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
+    for &(y, w) in p {
+        *counts.entry(y.to_bits()).or_insert(0.0) += w;
+    }
     counts
         .values()
         .map(|&c| {
-            let p = c as f64 / n;
-            -p * p.log2()
+            let q = c / total;
+            if q > 0.0 {
+                -q * q.log2()
+            } else {
+                0.0
+            }
         })
         .sum()
 }
 
-/// Gini impurity over y-as-class-labels.
-fn class_gini(ys: &[f64]) -> f64 {
-    let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
-    for &y in ys {
-        *counts.entry(y.to_bits()).or_insert(0) += 1;
+/// Weighted Gini impurity over y-as-class-labels.
+fn class_gini_w(p: &[(f64, f64)]) -> f64 {
+    let total: f64 = p.iter().map(|&(_, w)| w).sum();
+    if total <= 0.0 {
+        return 0.0;
     }
-    let n = ys.len() as f64;
+    let mut counts: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
+    for &(y, w) in p {
+        *counts.entry(y.to_bits()).or_insert(0.0) += w;
+    }
     1.0 - counts
         .values()
         .map(|&c| {
-            let p = c as f64 / n;
-            p * p
+            let q = c / total;
+            q * q
         })
         .sum::<f64>()
 }
 
+/// Weighted class-frequency total variation `Σ_j |p_L(j) - p_R(j)|`
+/// (twoing rule's contrast term).
+fn class_total_variation(left: &[(f64, f64)], right: &[(f64, f64)]) -> f64 {
+    let mut lm: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
+    let mut rm: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
+    let (mut lw, mut rw) = (0.0, 0.0);
+    for &(y, w) in left {
+        *lm.entry(y.to_bits()).or_insert(0.0) += w;
+        lw += w;
+    }
+    for &(y, w) in right {
+        *rm.entry(y.to_bits()).or_insert(0.0) += w;
+        rw += w;
+    }
+    if lw <= 0.0 || rw <= 0.0 {
+        return 0.0;
+    }
+    let mut keys: Vec<u64> = lm.keys().copied().collect();
+    keys.extend(rm.keys().copied());
+    keys.sort_unstable();
+    keys.dedup();
+    keys.iter()
+        .map(|k| {
+            (lm.get(k).copied().unwrap_or(0.0) / lw - rm.get(k).copied().unwrap_or(0.0) / rw).abs()
+        })
+        .sum()
+}
+
+/// Weighted sample standard deviation (M5's SDR ingredient).
+fn w_sd(p: &[(f64, f64)]) -> f64 {
+    let sw: f64 = p.iter().map(|&(_, w)| w).sum();
+    if sw <= 0.0 {
+        return 0.0;
+    }
+    let mean = p.iter().map(|&(y, w)| w * y).sum::<f64>() / sw;
+    let var = p.iter().map(|&(y, w)| w * (y - mean) * (y - mean)).sum::<f64>() / sw;
+    var.sqrt()
+}
+
 /// Total rows across level buckets (categorical scan bookkeeping).
-fn levels_total(levels: &[(f64, Vec<f64>)]) -> usize {
-    levels.iter().map(|(_, ys)| ys.len()).sum()
+fn levels_total(levels: &[(f64, Vec<(f64, f64)>)]) -> usize {
+    levels.iter().map(|(_, rows)| rows.len()).sum()
 }
 
 /// Which columns a leaf's linear model may use.
@@ -132,26 +182,48 @@ pub enum CatSearch {
 }
 
 /// Split-quality criterion. Built-ins run the O(1) stats scan; a custom
-/// criterion sees lazy y-slices per candidate.
+/// criterion sees lazy (y, w) slices per candidate. All criteria are
+/// sample-weight aware.
 pub enum GainFn {
-    /// Variance reduction (sum of squares). The regression default.
+    /// Variance reduction (weighted sum of squares). The regression default.
     Sse,
-    /// Information gain: entropy reduction over y-as-class-labels
+    /// Information gain: weighted entropy reduction over y-as-class-labels
     /// (distinct y values are the classes).
     Entropy,
     /// Gini impurity reduction over y-as-class-labels.
     Gini,
-    /// User criterion. Receives the y-values of the two sides per
+    /// C4.5 gain ratio: information gain divided by the split information
+    /// of the two children (penalizes lopsided splits).
+    GainRatio,
+    /// Model-tree criterion (Wang/Quinlan M5): weighted standard-deviation
+    /// reduction `sd(parent) - Σ (w_k/w)·sd(child_k)`.
+    Sdr,
+    /// Breiman twoing rule: `2·P_L·P_R·(Σ_j |p_L(j) - p_R(j)|)^2` over
+    /// class frequencies — favors balanced splits with contrasting sides.
+    Twoing,
+    /// User criterion. Receives lazy `(y, w)` slices of the two sides per
     /// candidate split and returns the split quality (higher = better).
-    /// Note: sees y values only — row weights influence candidate
-    /// generation and `min_rows` but not a custom gain.
     Custom(std::sync::Arc<dyn CustomGain>),
 }
 
-/// User-supplied split criterion over lazy y-slices.
+/// User-supplied split criterion over lazy (y, w) slices.
 pub trait CustomGain: Send + Sync {
-    /// Quality of splitting `left` / `right` (higher = better).
-    fn gain(&self, left: &[f64], right: &[f64]) -> f64;
+    /// Quality of splitting `left` / `right` (higher = better). Each slice
+    /// holds the side's `(target, weight)` rows.
+    fn gain(&self, left: &[(f64, f64)], right: &[(f64, f64)]) -> f64;
+}
+
+/// Optional post-growth pruning cost (bottom-up: a subtree is replaced by
+/// its parent leaf when the leaf's encoding cost is lower).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PruneCost {
+    /// No cost pruning (min_gain only).
+    None,
+    /// Bayesian information criterion: `n·ln(SSE/n) + ln(n)` per leaf,
+    /// `ln(n)` per split — universal (regression and class targets).
+    Bic,
+    /// Mehta/Rissanen/Agrawal MDL node cost over y-as-class-labels.
+    Mdl,
 }
 
 impl Clone for GainFn {
@@ -160,6 +232,9 @@ impl Clone for GainFn {
             GainFn::Sse => GainFn::Sse,
             GainFn::Entropy => GainFn::Entropy,
             GainFn::Gini => GainFn::Gini,
+            GainFn::GainRatio => GainFn::GainRatio,
+            GainFn::Sdr => GainFn::Sdr,
+            GainFn::Twoing => GainFn::Twoing,
             GainFn::Custom(f) => GainFn::Custom(f.clone()),
         }
     }
@@ -171,6 +246,9 @@ impl std::fmt::Debug for GainFn {
             GainFn::Sse => write!(f, "Sse"),
             GainFn::Entropy => write!(f, "Entropy"),
             GainFn::Gini => write!(f, "Gini"),
+            GainFn::GainRatio => write!(f, "GainRatio"),
+            GainFn::Sdr => write!(f, "Sdr"),
+            GainFn::Twoing => write!(f, "Twoing"),
             GainFn::Custom(_) => write!(f, "Custom(<fn>)"),
         }
     }
@@ -230,6 +308,20 @@ pub struct ModelTreeParams {
     /// node. Populates `Tree::trace` (candidate counts, dtype search,
     /// precision grid, gain taken, timings).
     pub verbose: u8,
+    /// Minimum child weight fraction of the node's total weight (grf's
+    /// `alpha`): a split's children must each carry at least this share.
+    /// 0.0 = off (the `min_rows` count gate alone).
+    pub alpha: f64,
+    /// grf-style imbalance penalty subtracted from the gain:
+    /// `imbalance_penalty * (1/n_left + 1/n_right)`. 0.0 = off.
+    pub imbalance_penalty: f64,
+    /// Per-node random column subset (random-forest spirit): fraction of
+    /// the active columns considered at each node's scan. `None` = all.
+    pub col_sample: Option<f64>,
+    /// Seed for the per-node column subset (deterministic given the seed).
+    pub seed: u64,
+    /// Optional post-growth pruning cost (MDL/BIC).
+    pub prune: PruneCost,
 }
 
 impl Default for ModelTreeParams {
@@ -260,6 +352,11 @@ impl Default for ModelTreeParams {
             cat_search: CatSearch::Cumulative,
             leaf_digest: true,
             verbose: 0,
+            alpha: 0.0,
+            imbalance_penalty: 0.0,
+            col_sample: None,
+            seed: 42,
+            prune: PruneCost::None,
         }
     }
 }
@@ -484,6 +581,8 @@ impl ModelTree {
             profiles: Vec::new(),
             cat_parts: Vec::new(),
             trace: Vec::new(),
+            costs: Vec::new(),
+            rng_counter: 0,
         };
         if params.verbose > 0 {
             grower.trace.push(format!(
@@ -775,6 +874,10 @@ struct Grower<'a> {
     cat_parts: Vec<Vec<f64>>,
     /// Training log lines (`params.verbose`).
     trace: Vec<String>,
+    /// Prune-cost bookkeeping aligned with node indices (`prune != None`).
+    costs: Vec<f64>,
+    /// Per-node counter for the random column subset (seeded, deterministic).
+    rng_counter: u64,
 }
 
 impl<'a> Grower<'a> {
@@ -826,6 +929,7 @@ impl<'a> Grower<'a> {
                 let leaf = self.make_leaf(rows, path);
                 prof.leaf_ns += t.elapsed().as_nanos() as u64;
                 self.profiles.push(prof);
+                let cost = self.leaf_cost(rows);
                 self.add(Node {
                     split: None,
                     left: None,
@@ -833,13 +937,49 @@ impl<'a> Grower<'a> {
                     leaf: Some(leaf),
                     n: rows.len(),
                     stats: FrameStats::from_ty(self.y, self.w, rows),
-                })
+                });
+                self.costs.push(cost);
+                self.nodes.len() - 1
             }
             Some((sp, lrows, rrows)) => {
                 path.push(sp.col);
                 let l = self.grow(&lrows, depth + 1, path);
                 let r = self.grow(&rrows, depth + 1, path);
                 path.pop();
+                if self.params.prune != PruneCost::None {
+                    // Bottom-up cost pruning: keep the subtree only when it
+                    // codes cheaper than this node as one leaf.
+                    let leaf_c = self.leaf_cost(rows);
+                    let split_bit = (rows.len() as f64).ln().max(0.0);
+                    let sub_c = self.costs[l] + self.costs[r] + split_bit;
+                    if leaf_c <= sub_c {
+                        let t = Instant::now();
+                        let leaf = self.make_leaf(rows, path);
+                        prof.leaf_ns += t.elapsed().as_nanos() as u64;
+                        self.profiles.push(prof);
+                        self.add(Node {
+                            split: None,
+                            left: None,
+                            right: None,
+                            leaf: Some(leaf),
+                            n: rows.len(),
+                            stats: FrameStats::from_ty(self.y, self.w, rows),
+                        });
+                        self.costs.push(leaf_c);
+                        return self.nodes.len() - 1;
+                    }
+                    self.profiles.push(prof);
+                    self.add(Node {
+                        split: Some(sp),
+                        left: Some(l),
+                        right: Some(r),
+                        leaf: None,
+                        n: rows.len(),
+                        stats: FrameStats::from_ty(self.y, self.w, rows),
+                    });
+                    self.costs.push(sub_c);
+                    return self.nodes.len() - 1;
+                }
                 self.profiles.push(prof);
                 self.add(Node {
                     split: Some(sp),
@@ -848,7 +988,46 @@ impl<'a> Grower<'a> {
                     leaf: None,
                     n: rows.len(),
                     stats: FrameStats::from_ty(self.y, self.w, rows),
-                })
+                });
+                self.costs.push(0.0);
+                self.nodes.len() - 1
+            }
+        }
+    }
+
+    /// Encoding cost of treating `rows` as one leaf (prune criterion).
+    fn leaf_cost(&self, rows: &[usize]) -> f64 {
+        let n = rows.len() as f64;
+        if n <= 1.0 {
+            return 0.0;
+        }
+        match self.params.prune {
+            PruneCost::None => 0.0,
+            PruneCost::Bic => {
+                let sw: f64 = rows.iter().map(|&r| self.w[r]).sum();
+                let mean =
+                    rows.iter().map(|&r| self.w[r] * self.y[r]).sum::<f64>() / sw.max(1e-300);
+                let sse: f64 = rows
+                    .iter()
+                    .map(|&r| self.w[r] * (self.y[r] - mean) * (self.y[r] - mean))
+                    .sum();
+                n * (sse / n).max(1e-300).ln() + n.ln()
+            }
+            PruneCost::Mdl => {
+                // Mehta/Rissanen/Agrawal node cost over y-as-class-labels
+                // (weighted class masses).
+                let mut counts: std::collections::HashMap<u64, f64> =
+                    std::collections::HashMap::new();
+                for &r in rows {
+                    *counts.entry(self.y[r].to_bits()).or_insert(0.0) += self.w[r];
+                }
+                let k = counts.len() as f64;
+                let total: f64 = counts.values().sum();
+                let data: f64 = counts
+                    .values()
+                    .map(|&c| if c > 0.0 { c * (total / c).ln() } else { 0.0 })
+                    .sum();
+                data + (k - 1.0) / 2.0 * (total / 2.0).ln() + k / 2.0 * (k / 2.0).ln().max(0.0)
             }
         }
     }
@@ -914,12 +1093,31 @@ impl<'a> Grower<'a> {
         let mut candidates: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> =
             Vec::new();
         let work = rows.len() * self.cols.len();
-        let cols: Vec<usize> = self
+        let mut cols: Vec<usize> = self
             .active
             .iter()
             .copied()
             .filter(|&j| self.interact_ok(path, j))
             .collect();
+        // Per-node random column subset (random-forest spirit): a seeded
+        // xorshift draw, deterministic across runs and threads.
+        if let Some(frac) = self.params.col_sample {
+            let k = ((cols.len() as f64) * frac).round().max(1.0) as usize;
+            if k < cols.len() {
+                let mut rng = self.params.seed
+                    ^ (self.rng_counter as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                for i in 0..k {
+                    rng ^= rng << 13;
+                    rng ^= rng >> 7;
+                    rng ^= rng << 17;
+                    let j = i + (rng as usize) % (cols.len() - i);
+                    cols.swap(i, j);
+                }
+                cols.truncate(k);
+                cols.sort_unstable(); // deterministic scan order
+            }
+        }
+        self.rng_counter += 1;
 
         if work >= PAR_MIN_WORK {
             use rayon::prelude::*;
@@ -1017,42 +1215,52 @@ impl<'a> Grower<'a> {
     }
 
     /// Split quality of a partition under a non-SSE criterion (higher =
-    /// better). Built-ins see y-as-class-labels; a custom criterion gets
-    /// the raw y-slices of the two sides.
-    fn gain_of(&self, gfn: &GainFn, left: &[f64], right: &[f64]) -> f64 {
+    /// better). All criteria are sample-weight aware; a custom criterion
+    /// gets the lazy `(y, w)` slices of the two sides.
+    fn gain_of(&self, gfn: &GainFn, left: &[(f64, f64)], right: &[(f64, f64)]) -> f64 {
+        let wsum = |p: &[(f64, f64)]| p.iter().map(|&(_, w)| w).sum::<f64>();
+        let mut all: Vec<(f64, f64)> = Vec::with_capacity(left.len() + right.len());
+        all.extend_from_slice(left);
+        all.extend_from_slice(right);
+        let (wl, wr) = (wsum(left), wsum(right));
+        let w = wl + wr;
+        if w <= 0.0 {
+            return 0.0;
+        }
         match gfn {
             GainFn::Sse => {
-                let sse = |ys: &[f64]| {
-                    let n = ys.len() as f64;
-                    if n <= 0.0 {
+                let sse = |p: &[(f64, f64)]| {
+                    let sw = wsum(p);
+                    if sw <= 0.0 {
                         return 0.0;
                     }
-                    let s: f64 = ys.iter().sum();
-                    let s2: f64 = ys.iter().map(|v| v * v).sum();
-                    s2 - s * s / n
+                    let sy: f64 = p.iter().map(|&(y, wt)| wt * y).sum();
+                    let sy2: f64 = p.iter().map(|&(y, wt)| wt * y * y).sum();
+                    sy2 - sy * sy / sw
                 };
-                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
-                all.extend_from_slice(left);
-                all.extend_from_slice(right);
                 sse(&all) - sse(left) - sse(right)
             }
             GainFn::Entropy => {
-                let n = (left.len() + right.len()) as f64;
-                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
-                all.extend_from_slice(left);
-                all.extend_from_slice(right);
-                class_entropy(&all)
-                    - (left.len() as f64 / n) * class_entropy(left)
-                    - (right.len() as f64 / n) * class_entropy(right)
+                class_entropy_w(&all) - (wl / w) * class_entropy_w(left) - (wr / w) * class_entropy_w(right)
             }
             GainFn::Gini => {
-                let n = (left.len() + right.len()) as f64;
-                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
-                all.extend_from_slice(left);
-                all.extend_from_slice(right);
-                class_gini(&all)
-                    - (left.len() as f64 / n) * class_gini(left)
-                    - (right.len() as f64 / n) * class_gini(right)
+                class_gini_w(&all) - (wl / w) * class_gini_w(left) - (wr / w) * class_gini_w(right)
+            }
+            GainFn::GainRatio => {
+                let ig =
+                    class_entropy_w(&all) - (wl / w) * class_entropy_w(left) - (wr / w) * class_entropy_w(right);
+                let info = |x: f64| if x > 0.0 { -x * x.log2() } else { 0.0 };
+                let split_info = info(wl / w) + info(wr / w);
+                if split_info <= 0.0 {
+                    0.0
+                } else {
+                    ig / split_info
+                }
+            }
+            GainFn::Sdr => w_sd(&all) - (wl / w) * w_sd(left) - (wr / w) * w_sd(right),
+            GainFn::Twoing => {
+                let tv = class_total_variation(left, right);
+                2.0 * (wl / w) * (wr / w) * tv * tv
             }
             GainFn::Custom(f) => f.gain(left, right),
         }
@@ -1071,18 +1279,19 @@ impl<'a> Grower<'a> {
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
         let mut st = ScanStats::default();
         let t0 = Instant::now();
-        let mut missing_ys: Vec<f64> = Vec::new();
-        let mut by_level: std::collections::HashMap<u64, Vec<f64>> = std::collections::HashMap::new();
+        let mut missing_yws: Vec<(f64, f64)> = Vec::new();
+        let mut by_level: std::collections::HashMap<u64, Vec<(f64, f64)>> =
+            std::collections::HashMap::new();
         for &r in rows {
-            let y = self.y[r];
+            let (y, w) = (self.y[r], self.w[r]);
             match self.cols[j][r] {
                 Some(v) => {
-                    by_level.entry(v.to_bits()).or_default().push(y);
+                    by_level.entry(v.to_bits()).or_default().push((y, w));
                 }
-                None => missing_ys.push(y),
+                None => missing_yws.push((y, w)),
             }
         }
-        let mut levels: Vec<(f64, Vec<f64>)> = by_level
+        let mut levels: Vec<(f64, Vec<(f64, f64)>)> = by_level
             .into_iter()
             .map(|(b, ys)| (f64::from_bits(b), ys))
             .collect();
@@ -1100,10 +1309,17 @@ impl<'a> Grower<'a> {
                 });
             }
             CatOrder::TargetMean => {
-                let mean = |ys: &[f64]| ys.iter().sum::<f64>() / ys.len().max(1) as f64;
+                let wmean = |p: &[(f64, f64)]| {
+                    let sw: f64 = p.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        0.0
+                    } else {
+                        p.iter().map(|&(y, w)| w * y).sum::<f64>() / sw
+                    }
+                };
                 levels.sort_by(|a, b| {
-                    mean(&b.1)
-                        .partial_cmp(&mean(&a.1))
+                    wmean(&b.1)
+                        .partial_cmp(&wmean(&a.1))
                         .unwrap_or(std::cmp::Ordering::Equal)
                         .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
                 });
@@ -1151,41 +1367,57 @@ impl<'a> Grower<'a> {
             }
         }
 
+        let wsum = |p: &[(f64, f64)]| p.iter().map(|&(_, w)| w).sum::<f64>();
+        let total_w: f64 = wsum(&missing_yws) + levels.iter().map(|(_, r)| wsum(r)).sum::<f64>();
         let mut best: Option<(f64, Vec<f64>, bool)> = None; // (gain, left levels, missing_left)
-        for (ci, left_idx) in candidates.iter().enumerate() {
+        for left_idx in candidates.iter() {
             let in_left: std::collections::HashSet<usize> = left_idx.iter().copied().collect();
             let mut ln = 0usize;
-            let mut left_ys: Vec<f64> = Vec::new();
-            let mut right_ys: Vec<f64> = Vec::new();
+            let mut left_yws: Vec<(f64, f64)> = Vec::new();
+            let mut right_yws: Vec<(f64, f64)> = Vec::new();
             for (li, (_, ys)) in levels.iter().enumerate() {
                 if in_left.contains(&li) {
                     ln += ys.len();
-                    left_ys.extend_from_slice(ys);
+                    left_yws.extend_from_slice(ys);
                 } else {
-                    right_ys.extend_from_slice(ys);
+                    right_yws.extend_from_slice(ys);
                 }
             }
-            if (ln as f64) < m || ((levels_total(&levels) - ln) as f64) < m {
+            let rn = levels_total(&levels) - ln;
+            if (ln as f64) < m || (rn as f64) < m {
                 continue;
             }
             st.candidates += 1;
             for missing_left in [true, false] {
                 let (aln, arn) = if missing_left {
-                    (ln + missing_ys.len(), levels_total(&levels) - ln)
+                    (ln + missing_yws.len(), rn)
                 } else {
-                    (ln, levels_total(&levels) - ln + missing_ys.len())
+                    (ln, rn + missing_yws.len())
                 };
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
                 }
-                let mut ls = left_ys.clone();
-                let mut rs = right_ys.clone();
+                let mut ls = left_yws.clone();
+                let mut rs = right_yws.clone();
                 if missing_left {
-                    ls.extend_from_slice(&missing_ys);
+                    ls.extend_from_slice(&missing_yws);
                 } else {
-                    rs.extend_from_slice(&missing_ys);
+                    rs.extend_from_slice(&missing_yws);
+                }
+                // grf-style alpha: each child carries at least alpha of the
+                // node's total weight.
+                if self.params.alpha > 0.0
+                    && (wsum(&ls) < self.params.alpha * total_w
+                        || wsum(&rs) < self.params.alpha * total_w)
+                {
+                    continue;
                 }
                 let gain = self.gain_of(&self.params.gain, &ls, &rs);
+                let gain = if self.params.imbalance_penalty > 0.0 {
+                    gain - self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64)
+                } else {
+                    gain
+                };
                 if gain <= self.params.min_gain {
                     continue;
                 }
@@ -1200,7 +1432,6 @@ impl<'a> Grower<'a> {
                     break;
                 }
             }
-            let _ = ci;
         }
 
         st.scan_ns += t1.elapsed().as_nanos() as u64;
@@ -1246,17 +1477,17 @@ impl<'a> Grower<'a> {
                 }
             }
         }
-        let ys_sorted: Vec<f64> = pairs.iter().map(|&(_, y, _)| y).collect();
+        let yws_sorted: Vec<(f64, f64)> = pairs.iter().map(|&(_, y, w)| (y, w)).collect();
 
         // Missing rows: one extra group, scored in both directions.
         let mut mn = 0usize;
-        let mut missing_ys: Vec<f64> = Vec::new();
+        let mut missing_yws: Vec<(f64, f64)> = Vec::new();
         let (mut msw, mut mswy, mut mswy2) = (0.0, 0.0, 0.0);
         for &r in rows {
             if self.cols[j][r].is_none() {
                 mn += 1;
                 let (y, w) = (self.y[r], self.w[r]);
-                missing_ys.push(y);
+                missing_yws.push((y, w));
                 msw += w;
                 mswy += w * y;
                 mswy2 += w * y * y;
@@ -1318,6 +1549,13 @@ impl<'a> Grower<'a> {
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
                 }
+                // grf-style alpha: each child carries at least alpha of the
+                // node's total weight.
+                if self.params.alpha > 0.0 && (alsw < self.params.alpha * (tsw + msw)
+                    || arsw < self.params.alpha * (tsw + msw))
+                {
+                    continue;
+                }
                 if !self.mono_ok(j, alswy / alsw.max(1e-300), arswy / arsw.max(1e-300)) {
                     continue;
                 }
@@ -1326,22 +1564,27 @@ impl<'a> Grower<'a> {
                         parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
                     }
                     ref gfn => {
-                        // Lazy slices over the value-sorted y buffer; missing
-                        // rows appended to the side they route to (allocated
-                        // only when the column has missing values).
-                        if missing_ys.is_empty() {
-                            self.gain_of(gfn, &ys_sorted[..k + 1], &ys_sorted[k + 1..])
+                        // Lazy (y, w) slices over the value-sorted buffer;
+                        // missing rows appended to the side they route to
+                        // (allocated only when the column has missing).
+                        if missing_yws.is_empty() {
+                            self.gain_of(gfn, &yws_sorted[..k + 1], &yws_sorted[k + 1..])
                         } else {
-                            let mut ls: Vec<f64> = ys_sorted[..k + 1].to_vec();
-                            let mut rs: Vec<f64> = ys_sorted[k + 1..].to_vec();
+                            let mut ls: Vec<(f64, f64)> = yws_sorted[..k + 1].to_vec();
+                            let mut rs: Vec<(f64, f64)> = yws_sorted[k + 1..].to_vec();
                             if missing_left {
-                                ls.extend_from_slice(&missing_ys);
+                                ls.extend_from_slice(&missing_yws);
                             } else {
-                                rs.extend_from_slice(&missing_ys);
+                                rs.extend_from_slice(&missing_yws);
                             }
                             self.gain_of(gfn, &ls, &rs)
                         }
                     }
+                };
+                let gain = if self.params.imbalance_penalty > 0.0 {
+                    gain - self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64)
+                } else {
+                    gain
                 };
                 if gain <= self.params.min_gain {
                     continue;
@@ -1465,6 +1708,7 @@ impl<'a> Grower<'a> {
             total.add(g);
         }
         let mut left = Gram::new(dim);
+        let total_ws = total.ws;
         let mut right = total;
         let mut best: Option<(f64, Split)> = None;
 
@@ -1491,6 +1735,13 @@ impl<'a> Grower<'a> {
                 } else {
                     (left.ws, right.ws + miss.ws)
                 };
+                // grf-style alpha: each child carries at least alpha of the
+                // node's total weight.
+                if self.params.alpha > 0.0
+                    && (wl < self.params.alpha * total_ws || wr < self.params.alpha * total_ws)
+                {
+                    continue;
+                }
                 let (ml, mr) = if missing_left {
                     ((left.wy + miss.wy) / wl.max(1e-300), right.wy / wr.max(1e-300))
                 } else {
@@ -1542,6 +1793,12 @@ impl<'a> Grower<'a> {
                     )
                 };
                 let gain = parent_sse - (sl + sr);
+                let gain = if self.params.imbalance_penalty > 0.0 {
+                    gain - self.params.imbalance_penalty
+                        * (1.0 / left_n as f64 + 1.0 / right_n as f64)
+                } else {
+                    gain
+                };
                 if gain <= self.params.min_gain {
                     continue;
                 }

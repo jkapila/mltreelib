@@ -15,14 +15,26 @@ ModelTree(
     monotone=[],            # per column: 0 | +1 | -1
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
-    gain="sse",             # "sse" | "entropy" | "gini" | callable(left_y, right_y)
+    gain="sse",             # "sse"|"entropy"|"gini"|"gain_ratio"|"sdr"|"twoing"|callable
     split_precision=0.1,    # numeric candidate grid; None = exact unique scan
     cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
     cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"
     leaf_digest=True,       # keep each leaf's t-digest (quantile() needs it)
     verbose=0,              # 0 silent | 1 per depth | 2 per node (training_log)
+    alpha=0.0,              # min child weight share (grf's alpha); 0 = off
+    imbalance_penalty=0.0,  # subtract penalty*(1/n_l + 1/n_r) from the gain
+    col_sample=None,        # per-node random column fraction (forest spirit)
+    seed=42,                # column-subset seed (deterministic)
+    prune="none",           # "none" | "bic" | "mdl" — bottom-up cost pruning
 )
 ```
+
+The gain family is **sample-weight aware end to end**: weighted class
+masses for entropy/gini/gain_ratio/twoing, weighted moments for sdr/SSE,
+and a custom `gain_fn(left, right)` receives lazy `(y, w)` pair slices of
+the two sides (higher = better). `gain_ratio` is C4.5 (information gain ÷
+split information), `sdr` is the model-tree standard-deviation reduction,
+`twoing` is Breiman's balanced-contrast rule.
 
 Defaults are the arena bake-off winner (see [Benchmarks](../benchmarks/elo.md))
 — linear leaves at shallow depth with a small **ridge** (`l2`) penalty. `l1`
