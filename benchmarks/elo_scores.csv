@@ -457,3 +457,45 @@ ta_miami,statsmodels OLS,185578.4803,115944.2079,0.012
 ta_miami,statsmodels QuantReg,220834.0415,104019.5033,0.693
 ta_miami,statsmodels RLM,206434.8758,103935.8380,0.086
 ta_protein,ChimeraBoost,3.4590,2.3756,18.198
+ta_protein,ExtraTrees,3.3920,2.2356,7.857
+ta_protein,KNN,5.8875,4.6953,0.174
+ta_protein,sklearn Linear,5.2087,4.3717,0.051
+ta_protein,sklearn RF,3.5377,2.3752,25.130
+ta_protein,statsmodels OLS,5.1875,4.3262,0.018
+ta_protein,statsmodels QuantReg,5.3740,4.2938,0.236
+ta_protein,statsmodels RLM,5.2023,4.2877,0.603
+ta_qsar_fish,ChimeraBoost,0.9619,0.6730,0.366
+ta_qsar_fish,EBM,0.9726,0.6770,10.934
+ta_qsar_fish,ExtraTrees,0.9303,0.6008,0.166
+ta_qsar_fish,KNN,1.0366,0.6947,0.028
+ta_qsar_fish,sklearn Linear,1.0614,0.7381,0.023
+ta_qsar_fish,sklearn RF,0.9422,0.6333,0.210
+ta_qsar_fish,statsmodels OLS,1.0614,0.7381,0.001
+ta_qsar_fish,statsmodels QuantReg,1.0789,0.7353,0.010
+ta_qsar_fish,statsmodels RLM,1.0685,0.7372,0.007
+ta_qsar_tid11,ChimeraBoost,0.8958,0.6624,4.218
+ta_qsar_tid11,EBM,1.1275,0.8655,15.555
+ta_qsar_tid11,ExtraTrees,1.0800,0.7599,1.864
+ta_qsar_tid11,KNN,0.9638,0.6937,0.102
+ta_qsar_tid11,sklearn Linear,1.2949,1.0391,0.033
+ta_qsar_tid11,sklearn RF,0.8895,0.6680,1.559
+ta_qsar_tid11,statsmodels OLS,1.2949,1.0391,0.011
+ta_qsar_tid11,statsmodels QuantReg,1.3038,1.0240,0.562
+ta_qsar_tid11,statsmodels RLM,1.2938,1.0319,0.285
+ta_superconductivity,ChimeraBoost,9.0262,5.3472,5.187
+ta_superconductivity,ExtraTrees,8.7820,4.8782,8.847
+ta_superconductivity,KNN,11.7714,6.6150,0.187
+ta_superconductivity,sklearn Linear,19.1825,14.9173,0.059
+ta_superconductivity,sklearn RF,9.2917,5.2788,29.260
+ta_superconductivity,statsmodels OLS,19.1825,14.9173,0.046
+ta_superconductivity,statsmodels QuantReg,19.4255,14.5731,8.687
+ta_superconductivity,statsmodels RLM,19.2062,14.7579,0.915
+ta_wine,ChimeraBoost,0.6244,0.4726,5.968
+ta_wine,EBM,0.6632,0.5148,31.579
+ta_wine,ExtraTrees,0.5989,0.3966,0.862
+ta_wine,KNN,0.8021,0.6178,0.039
+ta_wine,sklearn Linear,0.7468,0.5834,0.028
+ta_wine,sklearn RF,0.6137,0.4433,2.091
+ta_wine,statsmodels OLS,0.7468,0.5834,0.006
+ta_wine,statsmodels QuantReg,0.7505,0.5820,0.160
+ta_wine,statsmodels RLM,0.7469,0.5833,0.043

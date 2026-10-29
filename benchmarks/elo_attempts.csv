@@ -373,3 +373,73 @@ ta_protein,ranger,error,0.7
 ta_protein,bart,error,0.7
 ta_protein,fru,error,0.7
 ta_protein,ChimeraBoost,ok,21.5
+ta_protein,EBM,timeout,300.2
+ta_protein,ExtraTrees,ok,11.7
+ta_protein,KNN,ok,3.9
+ta_protein,XBART,error,3.3
+ta_protein,sklearn Linear,ok,3.5
+ta_protein,sklearn RF,ok,28.6
+ta_protein,statsmodels OLS,ok,3.3
+ta_protein,statsmodels QuantReg,ok,3.5
+ta_protein,statsmodels RLM,ok,3.9
+ta_protein,trust-free,error,3.2
+ta_qsar_fish,mboost,error,0.2
+ta_qsar_fish,ranger,error,0.2
+ta_qsar_fish,bart,error,0.2
+ta_qsar_fish,fru,error,0.2
+ta_qsar_fish,ChimeraBoost,ok,3.6
+ta_qsar_fish,EBM,ok,15.5
+ta_qsar_fish,ExtraTrees,ok,4.0
+ta_qsar_fish,KNN,ok,3.4
+ta_qsar_fish,XBART,error,3.1
+ta_qsar_fish,sklearn Linear,ok,3.3
+ta_qsar_fish,sklearn RF,ok,3.4
+ta_qsar_fish,statsmodels OLS,ok,3.3
+ta_qsar_fish,statsmodels QuantReg,ok,3.3
+ta_qsar_fish,statsmodels RLM,ok,3.2
+ta_qsar_fish,trust-free,error,3.2
+ta_qsar_tid11,mboost,error,0.2
+ta_qsar_tid11,ranger,error,0.2
+ta_qsar_tid11,bart,error,0.2
+ta_qsar_tid11,fru,error,0.2
+ta_qsar_tid11,ChimeraBoost,ok,8.1
+ta_qsar_tid11,EBM,ok,20.2
+ta_qsar_tid11,ExtraTrees,ok,5.6
+ta_qsar_tid11,KNN,ok,3.6
+ta_qsar_tid11,XBART,error,3.3
+ta_qsar_tid11,sklearn Linear,ok,3.3
+ta_qsar_tid11,sklearn RF,ok,5.0
+ta_qsar_tid11,statsmodels OLS,ok,3.4
+ta_qsar_tid11,statsmodels QuantReg,ok,3.7
+ta_qsar_tid11,statsmodels RLM,ok,3.6
+ta_qsar_tid11,trust-free,error,3.2
+ta_superconductivity,mboost,error,1.5
+ta_superconductivity,ranger,error,1.3
+ta_superconductivity,bart,error,1.3
+ta_superconductivity,fru,error,1.3
+ta_superconductivity,ChimeraBoost,ok,8.6
+ta_superconductivity,EBM,timeout,300.2
+ta_superconductivity,ExtraTrees,ok,12.2
+ta_superconductivity,KNN,ok,3.6
+ta_superconductivity,XBART,error,3.2
+ta_superconductivity,sklearn Linear,ok,3.3
+ta_superconductivity,sklearn RF,ok,32.6
+ta_superconductivity,statsmodels OLS,ok,3.3
+ta_superconductivity,statsmodels QuantReg,ok,12.4
+ta_superconductivity,statsmodels RLM,ok,4.2
+ta_superconductivity,trust-free,error,3.2
+ta_wine,mboost,error,0.2
+ta_wine,ranger,error,0.2
+ta_wine,bart,error,0.2
+ta_wine,fru,error,0.2
+ta_wine,ChimeraBoost,ok,9.5
+ta_wine,EBM,ok,35.7
+ta_wine,ExtraTrees,ok,4.2
+ta_wine,KNN,ok,3.4
+ta_wine,XBART,error,3.1
+ta_wine,sklearn Linear,ok,3.4
+ta_wine,sklearn RF,ok,5.2
+ta_wine,statsmodels OLS,ok,3.1
+ta_wine,statsmodels QuantReg,ok,3.4
+ta_wine,statsmodels RLM,ok,3.2
+ta_wine,trust-free,error,3.2

@@ -3,7 +3,7 @@
 
 use crate::model_tree::Grower;
 /// Optional post-growth pruning cost (bottom-up: a subtree is replaced by
-/// its parent leaf when the leaf's encoding cost is lower).
+/// its parent leaf when the leaf's cost is lower).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PruneCost {
     /// No cost pruning (min_gain only).
@@ -13,8 +13,34 @@ pub enum PruneCost {
     Bic,
     /// Mehta/Rissanen/Agrawal MDL node cost over y-as-class-labels.
     Mdl,
+    /// Cost-complexity (rpart `cp` / sklearn `ccp_alpha` semantics):
+    /// node deviance + `cp_alpha` per leaf, greedy bottom-up (the
+    /// whole-tree weakest-link path arrives with `cp_xval`).
+    Cp,
+}
+
+impl PruneCost {
+    /// Cost of keeping one split in the subtree's total (`ln(n)` for the
+    /// encoding criteria; free for cost-complexity, whose per-leaf penalty
+    /// is already in the leaf costs).
+    pub(crate) fn split_bit(self, n: f64) -> f64 {
+        match self {
+            PruneCost::Bic | PruneCost::Mdl => n.ln().max(0.0),
+            _ => 0.0,
+        }
+    }
 }
 impl<'a> Grower<'a> {
+    /// Weighted SSE of `rows` around their weighted mean — the node
+    /// deviance (rpart's convention, independent of leaf kind).
+    fn mean_sse(&self, rows: &[usize]) -> f64 {
+        let sw: f64 = rows.iter().map(|&r| self.w[r]).sum();
+        let mean = rows.iter().map(|&r| self.w[r] * self.y[r]).sum::<f64>() / sw.max(1e-300);
+        rows.iter()
+            .map(|&r| self.w[r] * (self.y[r] - mean) * (self.y[r] - mean))
+            .sum()
+    }
+
     /// Encoding cost of treating `rows` as one leaf (prune criterion).
     pub(crate) fn leaf_cost(&self, rows: &[usize]) -> f64 {
         let n = rows.len() as f64;
@@ -23,14 +49,9 @@ impl<'a> Grower<'a> {
         }
         match self.params.prune {
             PruneCost::None => 0.0,
+            PruneCost::Cp => self.mean_sse(rows) + self.params.cp_alpha,
             PruneCost::Bic => {
-                let sw: f64 = rows.iter().map(|&r| self.w[r]).sum();
-                let mean =
-                    rows.iter().map(|&r| self.w[r] * self.y[r]).sum::<f64>() / sw.max(1e-300);
-                let sse: f64 = rows
-                    .iter()
-                    .map(|&r| self.w[r] * (self.y[r] - mean) * (self.y[r] - mean))
-                    .sum();
+                let sse = self.mean_sse(rows);
                 n * (sse / n).max(1e-300).ln() + n.ln()
             }
             PruneCost::Mdl => {

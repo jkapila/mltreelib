@@ -1422,3 +1422,55 @@ fn surrogate_default_off_keeps_missing_left() {
     let b = t.predict(&[vec![None, Some(0.9)]])[0];
     assert_eq!(a, b, "no surrogates -> one missing direction for both");
 }
+
+// ---- pruning family: cost-complexity (prune="cp"; knob 5 of #3) ----
+
+#[test]
+fn cp_pruning_sweeps_leaf_counts() {
+    // Multi-regime target: unpruned grows several leaves; a huge cp_alpha
+    // collapses everything to one leaf; counts fall monotonically.
+    let x: Vec<Vec<Option<f64>>> = (0..400)
+        .map(|i| vec![Some((i % 8) as f64 / 8.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..400)
+        .map(|i| Some((i % 8) as f64 * (i % 8) as f64 * 0.2 + 0.05 * noise(i)))
+        .collect();
+    let leaves = |cp_alpha: f64| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 4,
+                min_rows: 10,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                prune: PruneCost::Cp,
+                cp_alpha,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .n_leaves()
+    };
+    let (l0, l1, l2, l3) = (leaves(0.0), leaves(0.5), leaves(5.0), leaves(1e9));
+    assert!(l0 >= l1 && l1 >= l2 && l2 >= l3, "monotone: {l0} {l1} {l2} {l3}");
+    assert_eq!(l3, 1, "a huge cp_alpha collapses to one leaf");
+    assert!(l0 > 1, "the unpruned tree grows: {l0}");
+}
+
+#[test]
+fn cp_alpha_rejects_negative() {
+    let x: Vec<Vec<Option<f64>>> = (0..20).map(|i| vec![Some(i as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..20).map(|i| Some(i as f64)).collect();
+    let err = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            prune: PruneCost::Cp,
+            cp_alpha: -1.0,
+            ..Default::default()
+        },
+    )
+    .unwrap_err();
+    assert!(err.contains("cp_alpha"), "{err}");
+}

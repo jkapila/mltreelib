@@ -129,6 +129,10 @@ pub struct ModelTreeParams {
     /// prediction rows missing the split column. 0 = off (the per-split
     /// `missing_left` alone).
     pub maxsurrogate: usize,
+    /// Cost-complexity penalty per leaf (`prune="cp"`; rpart `cp` / sklearn
+    /// `ccp_alpha` semantics): a subtree collapses into its parent leaf
+    /// when the children's deviance reduction does not earn `cp_alpha`.
+    pub cp_alpha: f64,
 }
 
 impl Default for ModelTreeParams {
@@ -171,6 +175,7 @@ impl Default for ModelTreeParams {
             honesty: false,
             honesty_fraction: 0.5,
             maxsurrogate: 0,
+            cp_alpha: 0.0,
         }
     }
 }
@@ -351,6 +356,9 @@ impl ModelTree {
                 return Err("split_cols entries must be valid column indices".to_string());
             }
         }
+        if params.cp_alpha < 0.0 {
+            return Err("cp_alpha must be >= 0".to_string());
+        }
 
         // Column-major; rows with missing targets or zero weight drop
         // (no signal to learn / explicitly absent).
@@ -501,6 +509,25 @@ impl ModelTree {
         sp.missing_left
     }
 
+    /// Root-reachable membership per node index. After cost pruning the
+    /// arena keeps the orphaned subtree nodes; introspection walks the
+    /// live tree only (arena order preserved).
+    fn reachable(&self) -> Vec<bool> {
+        let mut seen = vec![false; self.nodes.len()];
+        let mut stack = vec![self.root];
+        while let Some(i) = stack.pop() {
+            if seen[i] {
+                continue;
+            }
+            seen[i] = true;
+            if let (Some(l), Some(r)) = (self.nodes[i].left, self.nodes[i].right) {
+                stack.push(l);
+                stack.push(r);
+            }
+        }
+        seen
+    }
+
     /// Leaf node index a row lands in (shared walk with `predict`).
     fn leaf_index(&self, row: &[Option<f64>]) -> usize {
         let mut node = self.root;
@@ -550,7 +577,11 @@ impl ModelTree {
 
     /// All splits in the tree (introspection / structure recovery).
     pub fn splits(&self) -> Vec<Split> {
-        self.nodes.iter().filter_map(|n| n.split).collect()
+        let seen = self.reachable();
+        (0..self.nodes.len())
+            .filter(|&i| seen[i])
+            .filter_map(|i| self.nodes[i].split)
+            .collect()
     }
 
     /// Feature importance — each column's share of the total split gain
@@ -559,7 +590,11 @@ impl ModelTree {
     pub fn feature_importances(&self) -> Vec<(String, f64)> {
         let mut totals = vec![0.0f64; self.col_names.len()];
         let mut sum = 0.0;
-        for nd in &self.nodes {
+        let seen = self.reachable();
+        for (i, nd) in self.nodes.iter().enumerate() {
+            if !seen[i] {
+                continue;
+            }
             if let Some(sp) = nd.split {
                 totals[sp.col] += sp.gain;
                 sum += sp.gain;
@@ -634,9 +669,10 @@ impl ModelTree {
 
     /// Leaf models with their row counts.
     pub fn leaves(&self) -> Vec<(&LeafModel, usize)> {
-        self.nodes
-            .iter()
-            .filter_map(|n| n.leaf.as_ref().map(|m| (m, n.n)))
+        let seen = self.reachable();
+        (0..self.nodes.len())
+            .filter(|&i| seen[i])
+            .filter_map(|i| self.nodes[i].leaf.as_ref().map(|m| (m, self.nodes[i].n)))
             .collect()
     }
 
@@ -810,7 +846,7 @@ impl<'a> Grower<'a> {
                     // Bottom-up cost pruning: keep the subtree only when it
                     // codes cheaper than this node as one leaf.
                     let leaf_c = self.leaf_cost(rows);
-                    let split_bit = (rows.len() as f64).ln().max(0.0);
+                    let split_bit = self.params.prune.split_bit(rows.len() as f64);
                     let sub_c = self.costs[l] + self.costs[r] + split_bit;
                     if leaf_c <= sub_c {
                         let t = Instant::now();

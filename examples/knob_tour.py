@@ -142,3 +142,9 @@ for ms in [0, 1]:
     m.fit(sur_x, sur_y, dtypes=["numeric", "numeric"])
     p = [round(m.predict([[None, v]])[0], 2) for v in (0.1, 0.9)]
     print(f"  maxsurrogate={ms}: pred(x0=None, x1=0.1/0.9) = {p}")
+
+print("== cost-complexity pruning (prune='cp'; cp_alpha sweep) ==")
+for a in [0.0, 0.5, 5.0, 1e9]:
+    m = ModelTree(prune="cp", cp_alpha=a, max_depth=4, min_rows=10, leaf="mean")
+    m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
+    print(f"  cp_alpha={a:<6}: leaves={m.n_leaves()}")
