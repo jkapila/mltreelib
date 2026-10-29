@@ -133,6 +133,29 @@ pub struct ModelTreeParams {
     /// `ccp_alpha` semantics): a subtree collapses into its parent leaf
     /// when the children's deviance reduction does not earn `cp_alpha`.
     pub cp_alpha: f64,
+    /// Leaf cap (sklearn `max_leaf_nodes` / LightGBM `num_leaves`): stop
+    /// splitting once this many leaves exist (depth-first budget, exact
+    /// bound). `None` = unlimited (bounded by `max_depth`).
+    pub max_leaf_nodes: Option<usize>,
+    /// ctree trio — minimum rows for a node to attempt a split
+    /// (`minsplit`); `None` falls back to `min_rows`.
+    pub minsplit: Option<usize>,
+    /// ctree trio — minimum rows per leaf (`minbucket`); `None` falls back
+    /// to `min_rows`.
+    pub minbucket: Option<usize>,
+    /// ctree trio — minimum weight fraction of the node per leaf
+    /// (`minprob`). 0.0 = off.
+    pub minprob: f64,
+    /// Exclusive feature bundling (LightGBM EFB): before the scan, bundle
+    /// mutually-exclusive zero-heavy numeric columns into one (disjoint
+    /// value ranges) to cut the scan's column count. `false` = off.
+    /// Preselection strategy family (`winnow` / `efb` / `winnowefb` /
+    /// `boruta`) — see [`crate::preselect::Preselect`]. The winnow
+    /// threshold is `min_relevance`.
+    pub preselect: crate::preselect::Preselect,
+    /// Purity gate: a node whose weighted target standard deviation is at
+    /// most this stays a leaf (its signal is exhausted). `None` = off.
+    pub purity_gate: Option<f64>,
 }
 
 impl Default for ModelTreeParams {
@@ -176,6 +199,12 @@ impl Default for ModelTreeParams {
             honesty_fraction: 0.5,
             maxsurrogate: 0,
             cp_alpha: 0.0,
+            max_leaf_nodes: None,
+            minsplit: None,
+            minbucket: None,
+            minprob: 0.0,
+            preselect: crate::preselect::Preselect::None,
+            purity_gate: None,
         }
     }
 }
@@ -383,16 +412,74 @@ impl ModelTree {
             return Err("no rows with an observed target and positive weight".to_string());
         }
 
-        // Pre-selection: keep only informative columns (original indices).
-        let active_cols: Vec<usize> = match params.min_relevance {
-            Some(thr) => {
+        // Pre-selection family: which columns enter the split search
+        // (`min_relevance` implies winnow when the family is unset).
+        let active_cols: Vec<usize> = match params.preselect {
+            crate::preselect::Preselect::None if params.min_relevance.is_none() => {
+                (0..d).collect()
+            }
+            crate::preselect::Preselect::None | crate::preselect::Preselect::Winnow => {
+                let thr = params.min_relevance.unwrap_or(0.0);
                 let kept = preselect::select_columns(&cols, &yv, &wv, thr);
                 if kept.is_empty() {
                     return Err("pre-selection removed every column".to_string());
                 }
                 kept
             }
-            None => (0..d).collect(),
+            crate::preselect::Preselect::Boruta => {
+                let kept = preselect::boruta(
+                    &cols,
+                    &yv,
+                    &wv,
+                    params.seed,
+                    params.min_relevance.unwrap_or(0.0),
+                );
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
+            crate::preselect::Preselect::ShadowMax => {
+                let kept = preselect::shadowmax(
+                    &cols,
+                    &yv,
+                    &wv,
+                    params.seed,
+                    5,
+                    params.min_relevance.unwrap_or(0.0),
+                );
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
+            crate::preselect::Preselect::Variance => {
+                let kept = preselect::variance(&cols, &yv, &wv, params.min_relevance.unwrap_or(0.0));
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
+            crate::preselect::Preselect::MutualInfo => {
+                let kept = preselect::mutual_info(&cols, &yv, &wv, params.min_relevance.unwrap_or(0.0));
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
+            crate::preselect::Preselect::UniTree => {
+                let (kept, _r2) = preselect::uni_tree_r2(
+                    &cols,
+                    &yv,
+                    &wv,
+                    params.min_relevance.unwrap_or(0.0),
+                    params.seed,
+                );
+                if kept.is_empty() {
+                    return Err("pre-selection removed every column".to_string());
+                }
+                kept
+            }
         };
         // Shrinking a monotone vector would break indices; keep it aligned.
 
@@ -442,7 +529,8 @@ impl ModelTree {
                 params.leaf, params.leaf_digest
             ));
         }
-        let root = grower.grow(&rows, &est_rows, 0, &mut Vec::new());
+        let cap = params.max_leaf_nodes.unwrap_or(usize::MAX);
+        let (root, _) = grower.grow(&rows, &est_rows, 0, &mut Vec::new(), cap);
         // Destructure to release the borrows on params/active_cols before
         // moving them into the tree.
         let Grower {
@@ -754,7 +842,14 @@ impl<'a> Grower<'a> {
         self.nodes.len() - 1
     }
 
-    fn grow(&mut self, rows: &[usize], est: &[usize], depth: usize, path: &mut Vec<usize>) -> usize {
+    fn grow(
+        &mut self,
+        rows: &[usize],
+        est: &[usize],
+        depth: usize,
+        path: &mut Vec<usize>,
+        budget: usize,
+    ) -> (usize, usize) {
         let mut prof = NodeProfile {
             depth,
             rows: rows.len(),
@@ -790,6 +885,21 @@ impl<'a> Grower<'a> {
                     best = None;
                 }
             }
+        }
+        // Purity gate (default off): a node whose weighted target std is at
+        // most `purity_gate` has no signal left — it stays a leaf.
+        if let Some(t) = self.params.purity_gate {
+            let yws: Vec<(f64, f64)> =
+                rows.iter().map(|&r| (self.y[r], self.w[r])).collect();
+            if crate::stats::w_sd(&yws) <= t {
+                best = None;
+            }
+        }
+        // Leaf-cap budget (default off, budget = usize::MAX): a split
+        // needs room for at least two leaves; the left subtree reports its
+        // spend and the right gets the remainder -- exact bound.
+        if best.is_some() && budget < 2 {
+            best = None;
         }
         if self.params.verbose >= 2 {
             let mut line = format!(
@@ -829,7 +939,7 @@ impl<'a> Grower<'a> {
                     stats: FrameStats::from_ty(self.y, self.w, rows),
                 });
                 self.costs.push(cost);
-                self.nodes.len() - 1
+                (self.nodes.len() - 1, 1)
             }
             Some((mut sp, lrows, rrows)) => {
                 // NA surrogate splits: backup routes for rows missing the
@@ -843,9 +953,12 @@ impl<'a> Grower<'a> {
                 }
                 let (est_l, est_r) = self.partition_rows(est, &sp);
                 path.push(sp.col);
-                let l = self.grow(&lrows, &est_l, depth + 1, path);
-                let r = self.grow(&rrows, &est_r, depth + 1, path);
+                let (l, lu) =
+                    self.grow(&lrows, &est_l, depth + 1, path, budget.saturating_sub(1));
+                let (r, ru) =
+                    self.grow(&rrows, &est_r, depth + 1, path, budget.saturating_sub(lu));
                 path.pop();
+                let used = lu + ru;
                 if self.params.prune != PruneCost::None {
                     // Bottom-up cost pruning: keep the subtree only when it
                     // codes cheaper than this node as one leaf.
@@ -866,7 +979,7 @@ impl<'a> Grower<'a> {
                             stats: FrameStats::from_ty(self.y, self.w, rows),
                         });
                         self.costs.push(leaf_c);
-                        return self.nodes.len() - 1;
+                        return (self.nodes.len() - 1, 1);
                     }
                     self.profiles.push(prof);
                     self.add(Node {
@@ -878,7 +991,7 @@ impl<'a> Grower<'a> {
                         stats: FrameStats::from_ty(self.y, self.w, rows),
                     });
                     self.costs.push(sub_c);
-                    return self.nodes.len() - 1;
+                    return (self.nodes.len() - 1, used);
                 }
                 self.profiles.push(prof);
                 self.add(Node {
@@ -890,7 +1003,7 @@ impl<'a> Grower<'a> {
                     stats: FrameStats::from_ty(self.y, self.w, rows),
                 });
                 self.costs.push(0.0);
-                self.nodes.len() - 1
+                (self.nodes.len() - 1, used)
             }
         }
     }

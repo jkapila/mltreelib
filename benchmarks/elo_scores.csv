@@ -499,3 +499,26 @@ ta_wine,sklearn RF,0.6137,0.4433,2.091
 ta_wine,statsmodels OLS,0.7468,0.5834,0.006
 ta_wine,statsmodels QuantReg,0.7505,0.5820,0.160
 ta_wine,statsmodels RLM,0.7469,0.5833,0.043
+abalone,mboost,2.3621,1.6743,3.870
+abalone,ranger,2.3108,1.6480,0.460
+abalone,bart,2.3494,1.6942,6.179
+abalone,trust-free,2.3482,1.6894,36.902
+boston,mboost,3.5225,2.3136,3.499
+boston,ranger,2.7554,2.0413,1.811
+boston,bart,3.3269,2.0417,1.432
+boston,trust-free,4.2748,3.1584,13.429
+concrete,mboost,7.1437,5.6279,-0.777
+concrete,ranger,7.1891,5.6975,1.361
+concrete,bart,5.7630,4.3305,1.377
+concrete,trust-free,7.5111,5.9876,18.982
+fc2008,bart,205.2730,132.5473,2.690
+fc2008,KNN,1202.3288,1053.8750,0.330
+ozone,mboost,3.7862,2.6911,3.134
+ozone,ranger,3.9030,2.8365,1.725
+ozone,bart,3.7759,2.7802,1.412
+ozone,trust-free,4.4707,3.4204,7.408
+ta_airfoil,bart,2.3437,1.7383,3.871
+ta_concrete,mboost,6.1531,4.8172,3.766
+ta_concrete,ranger,5.7536,4.3352,2.215
+ta_concrete,bart,4.2632,3.1369,2.841
+ta_concrete,trust-free,6.6456,4.7354,14.139

@@ -2117,10 +2117,22 @@ impl PyModelTree {
     ///        the per-split missing direction alone).
     ///     cp_alpha: cost-complexity penalty per leaf with prune="cp"
     ///        (rpart cp / sklearn ccp_alpha semantics).
+    ///     max_leaf_nodes: leaf cap — stop splitting once this many leaves
+    ///        exist (None = unlimited, bounded by max_depth).
+    ///     minsplit: minimum node rows to attempt a split (default 2*min_rows).
+    ///     minbucket: minimum rows per leaf (default min_rows).
+    ///     minprob: minimum weight fraction of the node per leaf (0 = off).
+    ///     preselect: column-screening strategy — "none", "winnow"
+    ///        (univariate relevance >= min_relevance), "boruta"/"shadowmax"
+    ///        (shadow comparison), "variance", "mutual_info", or "unitree"
+    ///        (per-variable surrogate trees scored by explained variation
+    ///        R² >= min_relevance).
+    ///     purity_gate: a node whose weighted target std is at most this
+    ///        stays a leaf (None = off).
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false, split_cols = None, honesty = false, honesty_fraction = 0.5, maxsurrogate = 0, cp_alpha = 0.0))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false, split_cols = None, honesty = false, honesty_fraction = 0.5, maxsurrogate = 0, cp_alpha = 0.0, max_leaf_nodes = None, minsplit = None, minbucket = None, minprob = 0.0, preselect = "none", purity_gate = None))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -2152,6 +2164,12 @@ impl PyModelTree {
         honesty_fraction: f64,
         maxsurrogate: usize,
         cp_alpha: f64,
+        max_leaf_nodes: Option<usize>,
+        minsplit: Option<usize>,
+        minbucket: Option<usize>,
+        minprob: f64,
+        preselect: &str,
+        purity_gate: Option<f64>,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2264,6 +2282,21 @@ impl PyModelTree {
                 "split_alpha must be in [0, 1], got {split_alpha}"
             )));
         }
+        let preselect = match preselect {
+            "none" => mltreelib_core::preselect::Preselect::None,
+            "winnow" => mltreelib_core::preselect::Preselect::Winnow,
+            "boruta" => mltreelib_core::preselect::Preselect::Boruta,
+            "shadowmax" => mltreelib_core::preselect::Preselect::ShadowMax,
+            "variance" => mltreelib_core::preselect::Preselect::Variance,
+            "mutual_info" => mltreelib_core::preselect::Preselect::MutualInfo,
+            "unitree" => mltreelib_core::preselect::Preselect::UniTree,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "preselect must be 'none', 'winnow', 'boruta', 'shadowmax', \
+                     'variance', 'mutual_info' or 'unitree', got {other}"
+                )))
+            }
+        };
         Ok(Self {
             params: ModelTreeParams {
                 max_depth,
@@ -2296,6 +2329,12 @@ impl PyModelTree {
                 honesty_fraction,
                 maxsurrogate,
                 cp_alpha,
+                max_leaf_nodes,
+                minsplit,
+                minbucket,
+                minprob,
+                preselect,
+                purity_gate,
             },
             inner: None,
             vocabs: Vec::new(),

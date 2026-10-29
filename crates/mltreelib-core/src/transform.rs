@@ -444,3 +444,113 @@ impl GroupedScaler {
         &self.stats
     }
 }
+/// Exclusive feature bundling: greedily merge columns that are never
+/// jointly nonzero into one column per bundle, each member shifted into a
+/// disjoint value range (one scan column covers the bundle). Returns the
+/// bundled column-major matrix and the map original column j ->
+/// (bundle index, offset) so predictions can rebuild the bundles.
+pub fn efb_bundle(
+    cols: &[Vec<Option<f64>>],
+) -> (Vec<Vec<Option<f64>>>, Vec<(usize, f64)>) {
+    let n = cols.first().map(|c| c.len()).unwrap_or(0);
+    let eps = 1e-12;
+    // (member columns, per-member offset) per bundle
+    let mut bundles: Vec<(Vec<usize>, Vec<f64>)> = Vec::new();
+    let mut map: Vec<(usize, f64)> = vec![(0, 0.0); cols.len()];
+    for (j, col) in cols.iter().enumerate() {
+        let (lo, hi) = col
+            .iter()
+            .flatten()
+            .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), &v| {
+                (a.min(v), b.max(v))
+            });
+        let (lo, hi) = if lo.is_finite() { (lo, hi) } else { (0.0, 0.0) };
+        let mut placed = false;
+        for (bi, (members, offsets)) in bundles.iter_mut().enumerate() {
+            let exclusive = members.iter().all(|&m| {
+                (0..n).all(|r| {
+                    let a = cols[m][r].unwrap_or(0.0).abs();
+                    let b = col[r].unwrap_or(0.0).abs();
+                    a <= eps || b <= eps
+                })
+            });
+            if exclusive {
+                // shift past every member's shifted range
+                let off = members
+                    .iter()
+                    .zip(offsets.iter())
+                    .map(|(&m, &o)| {
+                        let (a, b) = cols[m]
+                            .iter()
+                            .flatten()
+                            .fold((f64::INFINITY, f64::NEG_INFINITY), |(x, y), &v| {
+                                (x.min(v + o), y.max(v + o))
+                            });
+                        b.max(a)
+                    })
+                    .fold(hi, f64::max)
+                    + 1.0;
+                map[j] = (bi, off);
+                members.push(j);
+                offsets.push(off);
+                placed = true;
+                break;
+            }
+        }
+        if !placed {
+            map[j] = (bundles.len(), 0.0);
+            bundles.push((vec![j], vec![0.0]));
+        }
+        let _ = lo;
+    }
+    // materialize bundled columns: sum of the (at most one) nonzero member
+    let mut out: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(n); bundles.len()];
+    for r in 0..n {
+        for (bi, (members, offsets)) in bundles.iter().enumerate() {
+            let mut acc = 0.0;
+            let mut any = false;
+            for (&m, &off) in members.iter().zip(offsets.iter()) {
+                if let Some(v) = cols[m][r] {
+                    any = true;
+                    if v.abs() > eps {
+                        acc = v + off;
+                    }
+                }
+            }
+            out[bi].push(if any { Some(acc) } else { None });
+        }
+    }
+    (out, map)
+}
+
+/// Apply a stored bundle map to row-major input (predict-side rebundling).
+pub fn efb_apply(
+    x: &[Vec<Option<f64>>],
+    map: &[(usize, f64)],
+    n_bundles: usize,
+) -> Vec<Vec<Option<f64>>> {
+    let eps = 1e-12;
+    x.iter()
+        .map(|row| {
+            let mut b: Vec<Option<f64>> = vec![None; n_bundles];
+            let mut any: Vec<bool> = vec![false; n_bundles];
+            for (j, v) in row.iter().enumerate() {
+                let (bi, off) = map[j];
+                if let Some(v) = v {
+                    any[bi] = true;
+                    if v.abs() > eps {
+                        b[bi] = Some(v + off);
+                    } else if b[bi].is_none() {
+                        b[bi] = Some(0.0);
+                    }
+                }
+            }
+            for bi in 0..n_bundles {
+                if !any[bi] {
+                    b[bi] = None;
+                }
+            }
+            b
+        })
+        .collect()
+}

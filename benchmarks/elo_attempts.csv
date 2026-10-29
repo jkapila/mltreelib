@@ -443,3 +443,55 @@ ta_wine,statsmodels OLS,ok,3.1
 ta_wine,statsmodels QuantReg,ok,3.4
 ta_wine,statsmodels RLM,ok,3.2
 ta_wine,trust-free,error,3.2
+abalone,mboost,ok,4.5
+abalone,ranger,ok,4.0
+abalone,bart,ok,6.8
+abalone,fru,error,0.4
+abalone,XBART,error,7.1
+abalone,trust-free,ok,43.4
+boston,mboost,ok,4.0
+boston,ranger,ok,2.3
+boston,bart,ok,1.9
+boston,fru,error,0.4
+boston,XBART,error,6.3
+boston,trust-free,ok,20.0
+concrete,mboost,ok,2.4
+concrete,ranger,ok,1.6
+concrete,bart,ok,1.6
+concrete,fru,error,0.2
+concrete,XBART,error,7.1
+concrete,trust-free,ok,26.0
+fc2008,grf_llf,error,4.4
+fc2008,earth,error,0.9
+fc2008,mboost,error,2.9
+fc2008,ranger,error,3.0
+fc2008,bart,ok,3.4
+fc2008,fru,error,0.5
+fc2008,KNN,ok,8.6
+fc2008,MARS (mars-earth),error,6.9
+fc2008,XBART,error,6.5
+fc2008,sklearn Linear,error,7.7
+fc2008,statsmodels OLS,error,7.6
+fc2008,statsmodels QuantReg,error,7.1
+fc2008,statsmodels RLM,error,7.8
+fc2008,trust-free,error,7.0
+ozone,mboost,ok,3.6
+ozone,ranger,ok,2.1
+ozone,bart,ok,1.8
+ozone,fru,error,0.4
+ozone,XBART,error,7.4
+ozone,trust-free,ok,15.0
+ta_airfoil,mboost,error,2.2
+ta_airfoil,ranger,error,2.3
+ta_airfoil,bart,ok,4.5
+ta_airfoil,fru,error,0.4
+ta_airfoil,XBART,error,7.0
+ta_airfoil,trust-free,error,7.3
+ta_concrete,mboost,ok,4.3
+ta_concrete,ranger,ok,2.8
+ta_concrete,bart,ok,3.4
+ta_concrete,fru,error,0.6
+ta_concrete,XBART,error,6.9
+ta_concrete,trust-free,ok,18.5
+ta_diamonds,mboost,error,1.6
+ta_diamonds,ranger,error,1.5

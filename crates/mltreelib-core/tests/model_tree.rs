@@ -1512,3 +1512,197 @@ fn integer_handler_scans_exact_uniques() {
         "float handler cuts on the precision grid: {thr}"
     );
 }
+
+// ---- knob batch close: leaf-cap / min trio / purity gate / preselect ----
+
+#[test]
+fn leaf_cap_bounds_leaves_exactly() {
+    let x: Vec<Vec<Option<f64>>> = (0..400)
+        .map(|i| vec![Some((i % 8) as f64 / 8.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..400)
+        .map(|i| Some((i % 8) as f64 * 0.7 + 0.05 * noise(i)))
+        .collect();
+    for cap in [1usize, 2, 3, 5] {
+        let tree = ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 6,
+                min_rows: 5,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                max_leaf_nodes: Some(cap),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(tree.n_leaves() <= cap, "cap {cap}: {} leaves", tree.n_leaves());
+    }
+}
+
+#[test]
+fn min_trio_gates_split_eligibility() {
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| vec![Some((i % 4) as f64 / 4.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some((i % 4) as f64 * 1.5 + 0.05 * noise(i)))
+        .collect();
+    let fit = |extra: ModelTreeParams| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 3,
+                min_rows: 5,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                ..extra
+            },
+        )
+        .unwrap()
+        .n_leaves()
+    };
+    let base = fit(ModelTreeParams::default());
+    let gated_split = fit(ModelTreeParams {
+        minsplit: Some(10_000),
+        ..Default::default()
+    });
+    assert_eq!(gated_split, 1, "huge minsplit keeps the root a leaf");
+    let gated_bucket = fit(ModelTreeParams {
+        minbucket: Some(10_000),
+        ..Default::default()
+    });
+    assert_eq!(gated_bucket, 1, "huge minbucket keeps the root a leaf");
+    let balanced = fit(ModelTreeParams {
+        minprob: 0.45,
+        ..Default::default()
+    });
+    assert!(
+        balanced <= base,
+        "minprob cannot grow the tree: {balanced} vs {base}"
+    );
+}
+
+#[test]
+fn purity_gate_stops_noisy_pure_nodes() {
+    // tiny noise everywhere: ungated splits (best-of-noise beats min_gain);
+    // the purity gate sees std << threshold and keeps one leaf.
+    let x: Vec<Vec<Option<f64>>> = (0..300).map(|i| vec![Some(noise(i + 3))]).collect();
+    let y: Vec<Option<f64>> = (0..300).map(|i| Some(5.0 + 0.01 * noise(i))).collect();
+    let fit = |gate: Option<f64>| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 3,
+                min_rows: 5,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                purity_gate: gate,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .n_leaves()
+    };
+    let ungated = fit(None);
+    let gated = fit(Some(0.1));
+    assert_eq!(gated, 1, "the gate sees no signal left");
+    assert!(ungated >= 1);
+}
+
+#[test]
+fn preselect_family_screens_noise_columns() {
+    // one signal column among five noise columns; both strategies must
+    // drop the noise columns (all splits land on the signal).
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| {
+            let mut row: Vec<Option<f64>> = (0..5).map(|j| Some(noise(i * 7 + j))).collect();
+            row.push(Some((i % 2) as f64));
+            row
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| Some(if i % 2 == 1 { 4.0 } else { 0.0 } + 0.05 * noise(i)))
+        .collect();
+    for ps in [
+        mltreelib_core::preselect::Preselect::Winnow,
+        // Boruta keeps anything beating ONE shadow (a coin flip on pure
+        // noise); the strict screener is shadowmax (beats all shadows).
+        mltreelib_core::preselect::Preselect::ShadowMax,
+    ] {
+        let tree = ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 2,
+                min_rows: 5,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                preselect: ps,
+                min_relevance: Some(0.15),
+                seed: 42,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(
+            tree.splits().iter().all(|s| s.col == 5),
+            "{ps:?} must screen to the signal column: {:?}",
+            tree.splits()
+        );
+    }
+}
+
+#[test]
+fn unitree_catches_nonmonotone_signal_winnow_misses() {
+    // y = (x - 0.5)^2: zero correlation (winnow blind), fully explained by
+    // a 2-split surrogate tree (unitree keeps it).
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| vec![Some(i as f64 / 300.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| {
+            let v = i as f64 / 300.0;
+            Some((v - 0.5) * (v - 0.5) * 4.0 + 0.01 * noise(i))
+        })
+        .collect();
+    let (kept, r2) =
+        mltreelib_core::preselect::uni_tree_r2(&x_cols(&x), &yv(&y), &wones(300), 0.1, 42);
+    assert_eq!(kept, vec![0], "unitree sees the U-shape: r2={r2:?}");
+    let (kept_w, rel) =
+        mltreelib_core::preselect::winnow(&x, &yv(&y), &wones(300), 0.1);
+    assert!(kept_w.is_empty(), "winnow is blind to it: rel={rel:?}");
+}
+
+#[test]
+fn variance_drops_constant_columns() {
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    for i in 0..50 {
+        x.push(vec![Some(3.0), Some(i as f64)]);
+    }
+    let y: Vec<f64> = (0..50).map(|i| i as f64).collect();
+    let w = vec![1.0; 50];
+    let kept = mltreelib_core::preselect::variance(&x_cols(&x), &y, &w, 0.0);
+    assert_eq!(kept, vec![1], "the constant column is dropped");
+}
+
+// column-major helper for the preselect unit tests
+fn x_cols(x: &[Vec<Option<f64>>]) -> Vec<Vec<Option<f64>>> {
+    let d = x.first().map(|r| r.len()).unwrap_or(0);
+    let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(x.len()); d];
+    for row in x {
+        for (j, v) in row.iter().enumerate() {
+            cols[j].push(*v);
+        }
+    }
+    cols
+}
+fn yv(y: &[Option<f64>]) -> Vec<f64> {
+    y.iter().map(|v| v.unwrap_or(0.0)).collect()
+}
+fn wones(n: usize) -> Vec<f64> {
+    vec![1.0; n]
+}

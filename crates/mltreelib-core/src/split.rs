@@ -119,8 +119,7 @@ impl<'a> Grower<'a> {
         path: &[usize],
         prof: &mut NodeProfile,
     ) -> Option<(Split, Vec<usize>, Vec<usize>)> {
-        let m = self.params.min_rows;
-        if rows.len() < 2 * m {
+        if rows.len() < self.min_split() {
             return None;
         }
 
@@ -265,6 +264,20 @@ impl<'a> Grower<'a> {
         grid_of(&self.params.dtypes, self.params.split_precision, j)
     }
 
+    /// Minimum node rows to attempt a split (ctree `minsplit`); defaults to
+    /// the historical `2 * min_rows` gate.
+    fn min_split(&self) -> usize {
+        self.params.minsplit.unwrap_or(2 * self.params.min_rows)
+    }
+
+    /// Minimum rows per child: the `minbucket` floor and the `minprob`
+    /// share of the node (ctree trio).
+    fn min_child(&self, node_rows: usize) -> usize {
+        let floor = self.params.minbucket.unwrap_or(self.params.min_rows).max(1);
+        let share = (self.params.minprob * node_rows as f64).ceil() as usize;
+        floor.max(share)
+    }
+
     /// Categorical scan — binary level partitions per `cat_order` /
     /// `cat_search`. Levels are distinct non-missing values; missing rows
     /// are scored in both directions. Monotone constraints are ignored
@@ -342,7 +355,7 @@ impl<'a> Grower<'a> {
         let t1 = Instant::now();
 
         let k = levels.len();
-        let m = self.params.min_rows as f64;
+        let m = self.min_child(rows.len()) as f64;
         // Candidate partitions as level-index sets (left side).
         let mut candidates: Vec<Vec<usize>> = Vec::new();
         match self.params.cat_search {
@@ -457,7 +470,7 @@ impl<'a> Grower<'a> {
     /// side, O(1) per value, split only where the value changes.
     fn scan_column_mean(&self, rows: &[usize], j: usize) -> (Option<(f64, Split)>, ScanStats) {
         let mut st = ScanStats::default();
-        let m = self.params.min_rows as f64;
+        let m = self.min_child(rows.len()) as f64;
         let t0 = Instant::now();
         let mut pairs: Vec<(f64, f64, f64)> = rows
             .iter()
@@ -618,7 +631,7 @@ impl<'a> Grower<'a> {
         path: &[usize],
     ) -> (Option<(f64, Split)>, ScanStats) {
         let mut st = ScanStats::default();
-        let m = self.params.min_rows;
+        let m = self.min_child(rows.len());
         let t0 = Instant::now();
 
         let chosen = self.chosen_cols(path);
