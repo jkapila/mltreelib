@@ -97,3 +97,52 @@ Cubist & C5.0 uncapped / **ours 4 (hard)**. Our own diamonds tour shows depth
 12 + min_rows 500 beats depth 8 + min_rows 50 (555.6 vs 577.0): depth is not
 the villain, leaf size is. Re-bake of defaults is **deferred by request** —
 decide after the pruning + leaf-cap knobs land.
+
+---
+
+# Appendix 2: MARS (R earth), CatBoost, grf knobs (2026-10-29)
+
+## MARS — earth (earth.fit(), since earth() is a ... wrapper)
+
+x, y, weights, wp, subset, na.action, offset, **pmethod** ("backward"|
+"none"|"seqrep"|"exhaustive"), keepxy, trace, **glm** (GLM family!), degree,
+**penalty**, **nk** (max terms), thresh, minspan, endspan, newvar.penalty,
+fast.k, fast.beta, **linpreds** (force terms linear), **allowed**
+(interaction whitelist), **nprune**, Object, Scale.y, Adjust.endspan,
+Auto.linpreds, Force.weights, Use.beta.cache, Force.xtx.prune, Get.leverages,
+Exhaustive.tol.
+
+Notes: pmethod chooses the pruning SEARCH; nk/nprune are the term budgets;
+minspan/endspan control knot spacing; weights AND wp (per-column weights) are
+first-class. This validates the MarsRegressor v1 knob set in
+references/research/mars-port-plan.md (degree, max_terms=nk,
+max_pruned_terms=nprune, penalty, thresh, minspan, endspan).
+
+## CatBoost (resolved defaults from a fitted model)
+
+iterations 1000, learning_rate auto (~0.022), depth 6, l2_leaf_reg 3,
+random_strength 1, bagging_temperature (Bayesian), border_count 254,
+grow_policy SymmetricTree (| Depthwise | Lossguide), min_data_in_leaf 1,
+max_leaves 64, one_hot_max_size, od_type/od_wait (overfitting detector),
+sampling_frequency PerTree, max_ctr_complexity (categorical combinations),
+boosting_type Plain, leaf_estimation_iterations 1, score_function, langevin,
+posterior_sampling.
+
+Notes: border_count=254 is the binned-scan world (our roadmap item);
+grow_policy/max_leaves is the leaf-cap philosophy again; max_ctr_complexity =
+the categorical-combinations trick our preselect roadmap targets; od_type =
+cheap overfitting detector worth stealing.
+
+## grf (regression_forest; ll_regression_forest adds the ll-split family)
+
+X, Y, num.trees, sample.weights, clusters, equalize.cluster.weights,
+sample.fraction, mtry, min.node.size, **honesty, honesty.fraction,
+honesty.prune.leaves**, alpha, imbalance.penalty, ci.group.size,
+**tune.parameters** (+ tune.num.trees/reps/draws), compute.oob.predictions,
+num.threads, seed. Local-linear extras: enable.ll.split,
+ll.split.weight.penalty, ll.split.lambda, ll.split.variables, ll.split.cutoff.
+
+Notes: the honesty triple = sample-splitting fairness (needed for our future
+forest); alpha/imbalance.penalty = imbalance-aware splitting (weight-aware);
+ll.split.* is the mechanism behind grf_llf's board lead (1576.5) — the
+local-linear split criterion is a candidate upgrade for our linear leaves.

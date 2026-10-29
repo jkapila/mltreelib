@@ -64,6 +64,13 @@ TabArena numbers are an **anchor, not a comparison** — their protocol
 `1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best
 tree-based)`.
 
+## The wide table (model × dataset)
+
+Every score in the field — RMSE per model per dataset, best per column
+bolded. Click any column header to sort (the table is interactive):
+
+{% include-markdown "benchmarks/elo_board.md" %}
+
 ## Development rounds (ours vs the frozen field)
 
 The external field (R packages, LightGBM, CatBoost, CTBoost, forust,
