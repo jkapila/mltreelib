@@ -11,6 +11,7 @@ Run:
 
 import csv
 import itertools
+import statistics
 from pathlib import Path
 
 OUT = Path("benchmarks/elo_scores.csv")
@@ -45,9 +46,19 @@ def main():
 
     print("\n== Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==")
     total = len({d for (d, _) in by})
+    fits = {}
+    for r in rows:
+        fits.setdefault(r["model"], []).append(float(r["fit_s"]))
+    line = "+" + "-" * 8 + "+" + "-" * 18 + "+" + "-" * 24 + "+" + "-" * 14 + "+"
+    print(line)
+    print(f"|{'ELO':>7} |{'FIT mean±sd':<17} |{'MODEL':<23} |{'DATA':<13} |")
+    print(line)
     for m, r in sorted(ratings.items(), key=lambda kv: -kv[1]):
         n = sum(1 for (d, mm) in by if mm == m)
-        print(f"{r:7.1f}  {m}  ({n}/{total} datasets)")
+        xs = fits.get(m, [0.0])
+        sd = statistics.stdev(xs) if len(xs) > 1 else 0.0
+        print(f"|{r:7.1f} |{f'{statistics.mean(xs):.2f}±{sd:.2f}s':<17} |{m:<23} |{f'{n}/{total}':<13} |")
+    print(line)
     print("\nTabArena anchor (different protocol - reference only):")
     print("  1955.0  Kumo-Tabular (best overall)")
     print("  1411.0  LightGBM tuned+ens (best tree-based)")

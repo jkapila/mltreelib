@@ -34,13 +34,14 @@ markdown_extensions:
   - toc:
       permalink: true
 extra_javascript:
-  - assets/zoom.js
+  - assets/medium-zoom.min.js
+  - assets/zoom-init.js
 nav:
   - Home: index.md
   - Installation: installation.md
   - Quickstart: quickstart.md
   - Examples:
-      - Churn: examples/churn.md
+      - End-to-end walkthrough: examples/walkthrough.md
       - Data Processing: examples/data-processing.md
       - Model building & predictions: examples/model-building.md
       - Inspection: examples/inspection.md
@@ -53,6 +54,8 @@ nav:
       - Data: reference/data.md
       - Model: reference/model.md
       - Metrics: reference/metrics.md
+      - Evaluation reports: reference/reports.md
+      - Visualization: reference/plots.md
 plugins:
   - search
   - include-markdown
@@ -64,7 +67,7 @@ plugins:
           - index.md
           - installation.md
           - quickstart.md
-          - examples/churn.md
+          - examples/walkthrough.md
           - examples/data-processing.md
           - examples/model-building.md
           - examples/inspection.md
@@ -75,3 +78,5 @@ plugins:
           - reference/data.md
           - reference/model.md
           - reference/metrics.md
+          - reference/reports.md
+          - reference/plots.md

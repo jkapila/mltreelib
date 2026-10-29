@@ -356,7 +356,7 @@ impl ModelTree {
             s.replace('\\', "\\\\").replace('"', "\\\"")
         }
         let mut s = String::from(
-            "digraph tree {\n  node [shape=box, style=\"rounded,filled\", fillcolor=\"#fafafa\", fontname=\"monospace\", fontsize=10];\n  edge [fontname=\"monospace\", fontsize=9, color=\"#888888\"];\n",
+            "digraph tree {\n  rankdir=LR;\n  node [shape=box, style=\"rounded,filled\", fillcolor=\"#fafafa\", fontname=\"monospace\", fontsize=10];\n  edge [fontname=\"monospace\", fontsize=9, color=\"#888888\"];\n",
         );
         // Heap numbering (root 1, children 2i/2i+1) - same ids as the text
         // print, so the two outputs line up.

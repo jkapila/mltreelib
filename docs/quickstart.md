@@ -66,5 +66,5 @@ Three things to notice:
   shallow depth is the configuration that won our [benchmark
   bake-off](benchmarks/elo.md).
 
-Next: the [Churn example](examples/churn.md) for a real end-to-end problem, or
+Next: the [end-to-end walkthrough](examples/walkthrough.md) for a real end-to-end problem, or
 the [API reference](reference/model.md) for every parameter.

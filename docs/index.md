@@ -22,7 +22,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 |---|---|
 | install it | [Installation](installation.md) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
-| solve a real problem | [Examples — Churn](examples/churn.md) |
+| solve a real problem | [Examples — end-to-end walkthrough](examples/walkthrough.md) |
 | wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
 | know every knob | [Examples — Model building & predictions](examples/model-building.md) |
 | read the numbers | [Examples — Inspection](examples/inspection.md) |
@@ -32,7 +32,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 
 !!! tip "Try it right now"
     `uv run python examples/quickstart.py` fits a tree, prints it in rpart
-    format and writes an SVG diagram. The churn example then does the same on
+    format and writes an SVG diagram. The end-to-end walkthrough then does the same on
     10,000 real bank customers.
 
 The research program, roadmap and contribution rules live in the repository

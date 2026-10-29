@@ -128,19 +128,25 @@ for metric in ("euclidean", "manhattan", "chebyshev", "minkowski", "cosine",
     d = m.pairwise_distances(a, b, metric)
     print(f"  {metric:<12} {[[round(v, 3) for v in row] for row in d]}")
 
-# ----------------------------------------------------------------- plots
-fig, axes = plt.subplots(2, 5, figsize=(22, 8))
-plots.plot_roc(truth, scores, ax=axes[0][0])
-plots.plot_pr(truth, scores, ax=axes[0][1])
-plots.plot_cumulative_gain(truth, scores, ax=axes[0][2])
-plots.plot_lift(truth, scores, ax=axes[0][3])
-plots.plot_ks(truth, scores, ax=axes[0][4])
-plots.plot_decile(truth, scores, ax=axes[1][0])
-plots.plot_calibration(truth, scores, ax=axes[1][1])
-plots.plot_response(truth, scores, ax=axes[1][2])
-plots.plot_double_lift(truth, scores, base, model_type="ratio", ax=axes[1][3])
-plots.plot_psi(scores[:h], scores[h:], ax=axes[1][4])
-fig.suptitle("mltreelib.plots - the full chart surface")
-fig.tight_layout()
-fig.savefig("docs/assets/metrics_panels.png", dpi=110)
-print("\nwrote docs/assets/metrics_panels.png (10 charts)")
+# ------------------------------------------- plots: one zoomable file each
+# Every chart is saved SEPARATELY - each image on the docs is click-to-zoom.
+singles = [
+    ("roc", lambda ax: plots.plot_roc(truth, scores, ax=ax)),
+    ("pr", lambda ax: plots.plot_pr(truth, scores, ax=ax)),
+    ("gain", lambda ax: plots.plot_cumulative_gain(truth, scores, ax=ax)),
+    ("lift", lambda ax: plots.plot_lift(truth, scores, ax=ax)),
+    ("ks", lambda ax: plots.plot_ks(truth, scores, ax=ax)),
+    ("decile", lambda ax: plots.plot_decile(truth, scores, ax=ax)),
+    ("calibration", lambda ax: plots.plot_calibration(truth, scores, ax=ax)),
+    ("response", lambda ax: plots.plot_response(truth, scores, ax=ax)),
+    ("double_lift", lambda ax: plots.plot_double_lift(
+        truth, scores, base, model_type="ratio", ax=ax)),
+    ("psi", lambda ax: plots.plot_psi(scores[:h], scores[h:], ax=ax)),
+]
+for _name, _fn in singles:
+    _fig, _ax = plt.subplots(figsize=(5.2, 4.0))
+    _fn(_ax)
+    _fig.tight_layout()
+    _fig.savefig(f"docs/assets/plots/{_name}.png", dpi=110)
+    plt.close(_fig)
+print("\nwrote docs/assets/plots/*.png (10 separate zoomable charts)")

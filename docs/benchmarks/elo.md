@@ -21,26 +21,30 @@ scorers).
 
 ```text
 == Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==
- 1576.5  grf_llf  (17/18 datasets)
- 1524.9  LightGBM(200)  (18/18 datasets)
- 1479.7  CatBoost(200)  (18/18 datasets)
- 1462.9  perpetual (Rust)  (18/18 datasets)
- 1329.9  forust (Rust)  (18/18 datasets)
- 1228.0  grf_rf  (18/18 datasets)
- 1214.8  CTBoost  (18/18 datasets)
- 1001.9  ModelTree(all)  (17/18 datasets)
-  982.5  lmtree  (16/18 datasets)
-  973.1  cubist  (18/18 datasets)
-  956.5  glmtree  (15/18 datasets)
-  881.4  modeltrees lmtree  (17/18 datasets)
-  823.3  MARS (mars-earth)  (12/18 datasets)
-  752.2  ctree  (18/18 datasets)
-  745.9  earth  (17/18 datasets)
-  715.1  ModelTree(winnow)  (17/18 datasets)
-  678.5  sklearn tree  (18/18 datasets)
-  628.0  ModelTree(mean)  (18/18 datasets)
-  539.8  rpart  (18/18 datasets)
-  505.1  ModelTree(path)  (18/18 datasets)
++--------+------------------+------------------------+--------------+
+|    ELO |FIT mean±sd       |MODEL                   |DATA          |
++--------+------------------+------------------------+--------------+
+| 1576.5 |15.41±24.59s      |grf_llf                 |17/18         |
+| 1524.9 |0.67±0.55s        |LightGBM(200)           |18/18         |
+| 1479.7 |0.36±0.31s        |CatBoost(200)           |18/18         |
+| 1462.9 |6.50±13.12s       |perpetual (Rust)        |18/18         |
+| 1329.9 |0.50±0.29s        |forust (Rust)           |18/18         |
+| 1228.0 |11.47±17.45s      |grf_rf                  |18/18         |
+| 1214.8 |0.23±0.37s        |CTBoost                 |18/18         |
+| 1001.9 |17.93±35.31s      |ModelTree(all)          |17/18         |
+|  982.5 |13.89±27.18s      |lmtree                  |16/18         |
+|  973.1 |1.19±1.53s        |cubist                  |18/18         |
+|  956.5 |10.39±19.45s      |glmtree                 |15/18         |
+|  881.4 |17.77±44.25s      |modeltrees lmtree       |17/18         |
+|  823.3 |143.31±463.47s    |MARS (mars-earth)       |12/18         |
+|  752.2 |1.46±2.38s        |ctree                   |18/18         |
+|  745.9 |0.26±0.37s        |earth                   |17/18         |
+|  715.1 |3.14±4.71s        |ModelTree(winnow)       |17/18         |
+|  678.5 |0.13±0.20s        |sklearn tree            |18/18         |
+|  628.0 |0.14±0.19s        |ModelTree(mean)         |18/18         |
+|  539.8 |0.22±0.32s        |rpart                   |18/18         |
+|  505.1 |0.89±1.25s        |ModelTree(path)         |18/18         |
++--------+------------------+------------------------+--------------+
 ```
 
 Reading it:
@@ -54,7 +58,8 @@ Reading it:
   ridge-linear leaves on all 18 official sets. The gap to the boosting tier
   is the remaining mission (committees/forests, see
   `references/research/knob-gap-review.md`).
-- `(n/18 datasets)` = datasets where the model has a score; matchups only
+- `FIT mean±sd` = fit seconds across all scored datasets (mean ± 1 sd);
+  `DATA` = datasets where the model has a score — matchups only
   happen where both models have one. Shortfalls are honest failures, not
   skates: mars-earth hits the 180s-per-algorithm budget on wide sets (12/18),
   and grf_llf/earth skip fc2008's NAs.
