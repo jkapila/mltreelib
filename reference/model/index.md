@@ -8,19 +8,28 @@
 ModelTree(
     max_depth=4, min_rows=10, min_gain=1e-9,
     leaf_cols="all",        # "all" | "path" — columns available to leaf models
-    leaf="linear",          # "linear" | "mean"
+    leaf="linear",          # "linear"|"mean"|"median"|"quantile"|"huber"
+    tau=0.5,                # the quantile for leaf="quantile"
     l2=0.1, l1=0.0,         # ridge on leaf coefficients (l1 off by default)
     monotone=[],            # per column: 0 | +1 | -1
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
-    gain="sse",             # "sse" | "entropy" | "gini" | callable(left_y, right_y)
-    split_precision=0.1,    # numeric candidate grid; None = exact unique scan
+    gain="sse",             # regression: "sse"|"friedman_mse"|"absolute_error"|"huber"|"poisson"|"sdr";
+                            # class: "entropy"|"gini"|"gain_ratio"|"twoing"; or callable
+    split_precision=0.001, # numeric candidate grid (thousandths); None = exact unique scan
     cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
     cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"
     leaf_digest=True,       # keep each leaf's t-digest (quantile() needs it)
     verbose=0,              # 0 silent | 1 per depth | 2 per node (training_log)
+    alpha=0.0,              # min child weight share (grf's alpha); 0 = off
+    imbalance_penalty=0.0,  # subtract penalty*(1/n_l + 1/n_r) from the gain
+    col_sample=None,        # per-node random column fraction (forest spirit)
+    seed=42,                # column-subset seed (deterministic)
+    prune="none",           # "none" | "bic" | "mdl" — bottom-up cost pruning
 )
 ```
+
+The gain family is **sample-weight aware end to end**: weighted class masses for entropy/gini/gain\_ratio/twoing, weighted moments for sdr/SSE, and a custom `gain_fn(left, right)` receives lazy `(y, w)` pair slices of the two sides (higher = better). `gain_ratio` is C4.5 (information gain ÷ split information), `sdr` is the model-tree standard-deviation reduction, `twoing` is Breiman's balanced-contrast rule.
 
 Defaults are the arena bake-off winner (see [Benchmarks](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)) — linear leaves at shallow depth with a small **ridge** (`l2`) penalty. `l1` (lasso/elastic) is available but off by default: coordinate descent is slow inside the split scan and the accuracy gain over ridge is marginal. Turning regularization fully off (`l1=l2=0`) on raw scales is a known blowup mode — keep the ridge unless you standardize your inputs.
 
@@ -36,7 +45,7 @@ m.predict([[0.0], [1.0], [2.0]])
 
 ```
 categorical fit: pred(0,1,2) = [0.0, 5.0, 5.0]     # {0} | {1,2} partition
-grid threshold: 1.3 (on 0.1 grid: True)
+grid threshold: 1.3 (on the grid: True)
 ```
 
 ## Quantiles and the training log

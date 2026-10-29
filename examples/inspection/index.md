@@ -13,9 +13,9 @@ reg = Metrics().regression(y_test, pred)
 ```
 regression report (test set):
   n                    10788.000
-  rmse                 577.033
-  mae                  284.464
-  mad                  284.508
+  rmse                 577.037
+  mae                  284.480
+  mad                  284.523
   r2                   0.979
   bias                 0.999
   max_error            9181.634
@@ -45,11 +45,11 @@ model.profile()        # per-depth fit diagnostics (nodes, rows, candidates,
 ```
 n_leaves: 140
 splits: 139 total; first 5:
-  x6  < 0.500  missing_left=True
-  x3  < 4.025  missing_left=True
-  x3  < 4.005  missing_left=True
-  x3  < 4.215  missing_left=True
-  x2  < 56.500  missing_left=True
+  x6  < 0.000  missing_left=True
+  x3  < 4.020  missing_left=True
+  x3  < 4.000  missing_left=True
+  x3  < 4.210  missing_left=True
+  x2  < 56.000  missing_left=True
 
 split_paths() - split columns along each root-to-leaf path:
    x4 -> x0 -> x3 -> x5 -> x0 -> x4 -> x3 -> x6
@@ -60,7 +60,7 @@ first leaf: n=304  mean=474.8  std=67.4
   range: [326.0, 710.0]  quantiles: [381, 419, 484, 529, 552]
   linear coefs on: ['x0', 'x1', 'x2', 'x3', 'x4', 'x5']  intercept=-860.2
 
-fit profile: 9 depth levels; slowest depth's split scan: 10238.2 ms
+fit profile: 9 depth levels; slowest depth's split scan: 11910.1 ms
 ```
 
 `splits()` and `split_paths()` report **column names** — the tree knows its columns even when you don't pass names (they default to `x0…xN`). Note the split columns' `missing_left=True`: missing values learned their own routing direction per split.

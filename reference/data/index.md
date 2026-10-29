@@ -52,7 +52,7 @@ Next: [Model](<https://jkapila.github.io/mltreelib/reference/model/index.md>) fo
 
 ## Class reference
 
-Full docstrings and every method: the [generated full listing](<https://jkapila.github.io/mltreelib/reference/api/index.md>).
+Full docstrings and every method: the [full generated API](<https://jkapila.github.io/mltreelib/reference/api/index.md>).
 
 **`DatasetBuilder(n_category=None, na_policy='allow', digits=None, add_intercept=False)`** — ingest any raw columns into the typed dataset. `add_categorical(name, values)`, `add_numeric(name, values)`, `build()` → `{"columns", "dtypes", "na_counts", "n_rows", "n_cols"}`.
 

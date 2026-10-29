@@ -1,0 +1,99 @@
+# API reference — ModelTree
+
+The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [Model](<https://jkapila.github.io/mltreelib/reference/model/index.md>).
+
+## ModelTree
+
+`pythonclass ModelTree((max_depth=4, min_rows=10, min_gain=1e-09, leaf_cols='all', leaf='linear', l2=0.1, l1=0.0, monotone=Ellipsis, interaction_groups=Ellipsis, min_relevance=None, gain=None, split_precision=Ellipsis, cat_order=None, cat_search='cumulative', leaf_digest=True, verbose=0, alpha=0.0, imbalance_penalty=0.0, col_sample=None, seed=42, prune='none'))` Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean leaves, NA-aware (learned split directions + NA-indicator leaf terms). Task: regression.
+
+### ModelTree.break\_down
+
+`pythonbreak_down((self, /, row))` DALEX-style break-down of one prediction. Task: regression.
+
+Args: row: one row of predictors (`None` = missing).
+
+Returns: `{"baseline", "steps": [[column_name, contribution], ...], "residual", "prediction"}`; baseline + steps + residual == prediction.
+
+### ModelTree.feature\_importance
+
+`pythonfeature_importance((self, /))` Feature importance - each column's share of the total split gain (rpart's variable importance). Task: regression.
+
+Args: none.
+
+Returns: list of `(column_name, share)` sorted descending; shares sum to 1.
+
+### ModelTree.fit
+
+`pythonfit((self, /, x, y, w=None, dtypes=None))` Fit the tree on row-major data. Task: regression.
+
+Args: x: rows of predictors; `None` entries are missing (NA rows train). y: targets; `None` drops that row. w: optional per-row sample weights (row weightage); zero-weight rows are ignored. dtypes: optional per-column types — "numeric" (default) or "categorical" (values are level codes; the split search partitions levels, no encoding).
+
+Returns: nothing; the fitted tree replaces the inner model.
+
+### ModelTree.leaves
+
+`pythonleaves((self, /))` Fitted leaf models with their distribution stats. Task: regression.
+
+Args: none.
+
+Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `intercept`, `n`, `mean`, `std`, `min`, `max`, `quantiles`.
+
+### ModelTree.n\_leaves
+
+`pythonn_leaves((self, /))` Number of leaves. Task: regression.
+
+Args: none.
+
+Returns: leaf count.
+
+### ModelTree.predict
+
+`pythonpredict((self, /, x))` Predict for row-major data; NAs never block a prediction. Task: regression.
+
+Args: x: rows of predictors; `None` entries are missing.
+
+Returns: one predicted value per row.
+
+### ModelTree.profile
+
+`pythonprofile((self, /))` Per-level timing profile (group/sort, scan, leaf fit). Task: regression.
+
+Args: none.
+
+Returns: one dict per depth level with `depth`, `nodes`, `rows`, `cols`, `candidates`, `group_ns`, `scan_ns`, `leaf_ns`.
+
+### ModelTree.quantile
+
+`pythonquantile((self, /, x, tau))` Conditional quantile prediction from the leaves' t-digests: any tau in \[0, 1\] after the fit. Task: regression.
+
+Args: x: rows of predictors (NA never blocks). tau: quantile level.
+
+Returns: one quantile per row (NaN when a leaf's digest was dropped).
+
+### ModelTree.split\_paths
+
+`pythonsplit_paths((self, /))` Split columns along each root-to-leaf path. Task: regression.
+
+Args: none.
+
+Returns: one list of column names per root-to-leaf path (the split columns on that path) — the introspection behind interaction-group checking.
+
+### ModelTree.splits
+
+`pythonsplits((self, /))` Learned splits. Task: regression.
+
+Args: none.
+
+Returns: one dict per split with `col`, `threshold`, `missing_left`, `gain` (goodness of split).
+
+### ModelTree.to\_dot
+
+`pythonto_dot((self, /))` Graphviz DOT for the tree (render with pygraphviz/graphviz — layout is graphviz's job): `pgv.AGraph(string=model.to_dot()).draw("tree.svg", prog="dot")`.
+
+### ModelTree.training\_log
+
+`pythontraining_log((self, /))` The training log (populated when `verbose > 0`): scan config, per depth/per node candidate counts, precision grid, timings.
+
+Args: none.
+
+Returns: log lines.

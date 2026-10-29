@@ -25,6 +25,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/hpo/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/inspection/</loc>
       </url>
       <url>
@@ -50,6 +53,21 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/data/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/encoders/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/features/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/metrics/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/model-tree/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/data/</loc>

@@ -1,0 +1,71 @@
+# API reference — Data
+
+Typed ingest, the synthetic generator, dataset helpers and column screening. Guide with real examples: [Data](<https://jkapila.github.io/mltreelib/reference/data/index.md>).
+
+## generate
+
+`pythongenerate((n_rows=10000, n_numeric=5, cardinalities=None, hierarchy_levels=3, branching=None, group_effect_strength=0.5, hierarchy_effect_strength=0.3, interaction_strength=0.2, noise=0.1, task='regression', n_classes=2, tail_behavior='gaussian', missingness=0.0, seed=42))` Generate an adjustable benchmark dataset with known ground truth.
+
+The knobs control how much signal lives in numeric effects, categorical levels, hierarchical groups and their interaction — so learners can be scored on **structure recovery**, not just accuracy. Deterministic for a given `seed`.
+
+Args: n\_rows: number of rows to generate. n\_numeric: numeric feature columns; the first two carry linear signal. cardinalities: level count per categorical column (each \>= 2). hierarchy\_levels: depth of the categorical hierarchy (0 = none). branching: child count per hierarchy level (last value repeats). group\_effect\_strength: scale of categorical level effects. hierarchy\_effect\_strength: scale of hierarchy node effects. interaction\_strength: scale of the numeric x categorical interaction. noise: scale of the residual noise. task: "regression" or "classification". n\_classes: class count for classification (equal-frequency cuts). tail\_behavior: "gaussian", "heavy" (Student-t residuals) or "bathtub" (noise grows with the signal — the DAR motivation). missingness: fraction of feature cells set to missing, in \[0, 1). seed: RNG seed.
+
+Returns: dict with `columns` (name -\> values, None = missing), `target`, `labels` (classification only) and `truth` — the true effects plus `truth["variance"]`, the realized variance share of each component.
+
+Raises: ValueError: invalid parameter combination.
+
+## load\_dataset
+
+`pythonload_dataset((name: 'str') -> 'dict')` Load one dataset as `name`/`columns`/`dtypes`/`n_rows`/`n_cols`.
+
+`columns` maps column name to a list with `None` for missing values; `dtypes` is "numeric" or "categorical" (strings/dictionaries).
+
+## list\_datasets
+
+`pythonlist_datasets(() -> 'list[str]')` Names of the available benchmark datasets (parquet stems).
+
+## summarize
+
+`pythonsummarize((values))` Summary of observed values, with missing counts shown by default.
+
+NAs and NaNs are excluded from the statistics but always reported in `n_missing` — nothing is silently hidden.
+
+Args: values: numeric values (None/NaN = missing).
+
+Returns: dict with `count` (observed), `n_missing`, `sum`, `mean`, `std`, `min`, `q1`, `median`, `q3`, `max` (NaN for the statistics of an all-missing input).
+
+## winnow
+
+`pythonwinnow((x, y, w=None, min_relevance=0.05))` Winnowing: screen columns by univariate relevance against the target and keep the relevant ones (the cheap pre-split screening LightGBM's docs call feature pre-filtering / winnowing).
+
+Args: x: rows of predictors; `None` entries are missing. y: targets (rows with `None` targets or zero weight are dropped). w: optional row weights. min\_relevance: keep columns with relevance \>= this (default 0.05).
+
+Returns: `{"kept": [column indices], "relevance": [score per column]}`.
+
+## DatasetBuilder
+
+`pythonclass DatasetBuilder((n_category=None, na_policy='allow', digits=None, add_intercept=False))` Ingest any data into the typed dataset.
+
+Owns the ingestion semantics: `n_category` category inference, explicit NA policy, digit rounding and an optional intercept column. Missing is `None` **or NaN** — both are counted in `na_counts`, and filling is opt-in only.
+
+Args (constructor): n\_category: integral numeric columns with at most this many distinct levels become categorical; values \< 1 mean a fraction of rows (None = no inference). na\_policy: "allow" (keep missing), "drop" (drop rows containing any missing) or "impute" (numeric mean, categorical mode). digits: round floats to this many decimal places (None = no rounding). add\_intercept: append a constant 1.0 column named `intercept`.
+
+### DatasetBuilder.add\_categorical
+
+`pythonadd_categorical((self, /, name, values))` Add a categorical column from strings; the vocabulary is first-seen order. None = missing.
+
+Args: name: column name. values: one level per row (None = missing).
+
+### DatasetBuilder.add\_numeric
+
+`pythonadd_numeric((self, /, name, values))` Add a numeric column. NaN is treated as missing.
+
+Args: name: column name. values: one value per row (None/NaN = missing).
+
+### DatasetBuilder.build
+
+`pythonbuild((self, /))` Build the typed dataset with the configured policies applied.
+
+Returns: dict with `columns` (name -\> values), `dtypes` ("numeric" or "categorical"), `na_counts` (missing per column), `n_rows`, `n_cols`.
+
+Raises: ValueError: inconsistent column lengths, duplicate names, invalid policy usage (e.g. "drop" removing every row).

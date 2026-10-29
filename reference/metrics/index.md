@@ -72,7 +72,7 @@ Next: [Data](<https://jkapila.github.io/mltreelib/reference/data/index.md>) or [
 
 ## The `Metrics` class
 
-`Metrics()` — no constructor args; every method is a complete report. Missing pairs are dropped and counted in `n_missing`. Full docstrings: the [generated full listing](<https://jkapila.github.io/mltreelib/reference/api/index.md>).
+`Metrics()` — no constructor args; every method is a complete report. Missing pairs are dropped and counted in `n_missing`. Full docstrings: the [full generated API](<https://jkapila.github.io/mltreelib/reference/api/index.md>).
 
 | family | methods |
 | --- | --- |
