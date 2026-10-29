@@ -10,12 +10,14 @@ Rust core is the source of truth; this page mirrors it.
 ModelTree(
     max_depth=4, min_rows=10, min_gain=1e-9,
     leaf_cols="all",        # "all" | "path" — columns available to leaf models
-    leaf="linear",          # "linear" | "mean"
+    leaf="linear",          # "linear"|"mean"|"median"|"quantile"|"huber"
+    tau=0.5,                # the quantile for leaf="quantile"
     l2=0.1, l1=0.0,         # ridge on leaf coefficients (l1 off by default)
     monotone=[],            # per column: 0 | +1 | -1
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
-    gain="sse",             # "sse"|"entropy"|"gini"|"gain_ratio"|"sdr"|"twoing"|callable
+    gain="sse",             # regression: "sse"|"friedman_mse"|"absolute_error"|"huber"|"poisson"|"sdr";
+                            # class: "entropy"|"gini"|"gain_ratio"|"twoing"; or callable
     split_precision=0.001, # numeric candidate grid (thousandths); None = exact unique scan
     cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
     cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"

@@ -95,14 +95,19 @@ impl LinearModel {
 pub struct LeafModel {
     pub stats: LeafStats,
     pub linear: Option<LinearModel>,
+    /// Fitted constant for non-mean leaves (median / quantile / Huber
+    /// location). `None` = the weighted mean.
+    pub center: Option<f64>,
 }
 
 impl LeafModel {
-    /// Linear model when present, the leaf mean otherwise.
+    /// Linear model when present, the fitted constant otherwise (weighted
+    /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
         self.linear
             .as_ref()
             .map(|m| m.predict(x))
+            .or(self.center)
             .unwrap_or(self.stats.mean)
     }
 }

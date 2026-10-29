@@ -1999,13 +1999,14 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none"))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none"))]
     fn new(
         max_depth: usize,
         min_rows: usize,
         min_gain: f64,
         leaf_cols: &str,
         leaf: &str,
+        tau: f64,
         l2: f64,
         l1: f64,
         monotone: Vec<i8>,
@@ -2035,9 +2036,12 @@ impl PyModelTree {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
             "mean" => LeafKind::Mean,
+            "median" => LeafKind::Median,
+            "quantile" => LeafKind::Quantile(tau),
+            "huber" => LeafKind::Huber,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "leaf must be 'linear' or 'mean', got {other}"
+                    "leaf must be 'linear', 'mean', 'median', 'quantile' or 'huber', got {other}"
                 )))
             }
         };
@@ -2047,6 +2051,10 @@ impl PyModelTree {
                 if let Ok(name) = g.extract::<String>() {
                     match name.as_str() {
                         "sse" => GainFn::Sse,
+                        "friedman_mse" => GainFn::FriedmanMse,
+                        "absolute_error" => GainFn::AbsoluteError,
+                        "huber" => GainFn::Huber,
+                        "poisson" => GainFn::Poisson,
                         "entropy" => GainFn::Entropy,
                         "gini" => GainFn::Gini,
                         "gain_ratio" => GainFn::GainRatio,
@@ -2054,7 +2062,7 @@ impl PyModelTree {
                         "twoing" => GainFn::Twoing,
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
+                                "gain must be 'sse', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
                             )))
                         }
                     }

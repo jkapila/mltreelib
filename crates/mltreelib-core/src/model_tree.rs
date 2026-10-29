@@ -120,6 +120,118 @@ fn w_sd(p: &[(f64, f64)]) -> f64 {
     var.sqrt()
 }
 
+/// Weighted median (weighted median of y values; pair slices are (y, w)).
+fn w_median(p: &[(f64, f64)]) -> f64 {
+    let mut v: Vec<(f64, f64)> = p.to_vec();
+    v.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in target"));
+    let total: f64 = v.iter().map(|&(_, w)| w).sum();
+    let mut cum = 0.0;
+    for &(y, w) in &v {
+        cum += w;
+        if cum >= total / 2.0 {
+            return y;
+        }
+    }
+    v.last().map(|&(y, _)| y).unwrap_or(0.0)
+}
+
+/// Weighted quantile at `tau` in [0, 1] (weighted order statistic).
+fn w_quantile(p: &[(f64, f64)], tau: f64) -> f64 {
+    let mut v: Vec<(f64, f64)> = p.to_vec();
+    v.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in target"));
+    let total: f64 = v.iter().map(|&(_, w)| w).sum();
+    let target = tau.clamp(0.0, 1.0) * total;
+    let mut cum = 0.0;
+    for &(y, w) in &v {
+        cum += w;
+        if cum >= target {
+            return y;
+        }
+    }
+    v.last().map(|&(y, _)| y).unwrap_or(0.0)
+}
+
+/// Huber M-location via IRLS (delta = 1.345 · weighted sd, matching the
+/// `Huber` criterion; starts from the median).
+fn huber_location(p: &[(f64, f64)]) -> f64 {
+    if p.is_empty() {
+        return 0.0;
+    }
+    let delta = 1.345 * w_sd(p);
+    let d = if delta > 0.0 { delta } else { 1.0 };
+    let mut c = w_median(p);
+    for _ in 0..25 {
+        let (mut swx, mut sw) = (0.0, 0.0);
+        for &(y, w) in p {
+            let u = (y - c).abs();
+            let iw = if u <= d { w } else { w * d / u.max(1e-300) };
+            swx += iw * y;
+            sw += iw;
+        }
+        if sw <= 0.0 {
+            break;
+        }
+        let next = swx / sw;
+        let done = (next - c).abs() <= 1e-9 * (1.0 + c.abs());
+        c = next;
+        if done {
+            break;
+        }
+    }
+    c
+}
+
+/// Weighted L1 cost around the side's median (absolute-error criterion).
+fn l1_cost(p: &[(f64, f64)]) -> f64 {
+    if p.is_empty() {
+        return 0.0;
+    }
+    let med = w_median(p);
+    p.iter().map(|&(y, w)| w * (y - med).abs()).sum()
+}
+
+/// Weighted Huber cost around the side's mean (delta smooths the L1 kink).
+fn huber_cost(p: &[(f64, f64)], delta: f64) -> f64 {
+    let sw: f64 = p.iter().map(|&(_, w)| w).sum();
+    if sw <= 0.0 {
+        return 0.0;
+    }
+    let mean = p.iter().map(|&(y, w)| w * y).sum::<f64>() / sw;
+    let d = if delta > 0.0 { delta } else { 1.0 };
+    p.iter()
+        .map(|&(y, w)| {
+            let u = (y - mean).abs();
+            if u <= d {
+                w * u * u / 2.0
+            } else {
+                w * d * (u - d / 2.0)
+            }
+        })
+        .sum()
+}
+
+/// Weighted Poisson deviance of one side (mean fitted value). Returns 0.0
+/// for non-positive targets so the criterion degrades to no-split.
+fn poisson_deviance(p: &[(f64, f64)]) -> f64 {
+    if p.is_empty() {
+        return 0.0;
+    }
+    if p.iter().any(|&(y, _)| y < 0.0) {
+        return 0.0;
+    }
+    let sw: f64 = p.iter().map(|&(_, w)| w).sum();
+    let mean = p.iter().map(|&(y, w)| w * y).sum::<f64>() / sw.max(1e-300);
+    if mean <= 0.0 {
+        return 0.0;
+    }
+    p.iter()
+        .map(|&(y, w)| {
+            let t = if y > 0.0 { y * (y / mean).ln() - (y - mean) } else { mean };
+            2.0 * w * t
+        })
+        .sum()
+}
+
 /// Total rows across level buckets (categorical scan bookkeeping).
 fn levels_total(levels: &[(f64, Vec<(f64, f64)>)]) -> usize {
     levels.iter().map(|(_, rows)| rows.len()).sum()
@@ -135,13 +247,19 @@ pub enum LeafCols {
 }
 
 /// What the leaf model is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LeafKind {
     /// Linear model over the chosen columns (the model tree).
     Linear,
     /// Plain mean — the CART/rpart leaf. The split criterion then *is*
     /// rpart's deviance criterion.
     Mean,
+    /// Weighted median — L1-optimal constant, outlier-robust.
+    Median,
+    /// Weighted quantile at tau (0.5 = median; any tau in (0, 1)).
+    Quantile(f64),
+    /// Huber M-location (quadratic near the center, linear in the tails).
+    Huber,
 }
 
 /// Per-column type for the split search. Values are `f64` level codes;
@@ -181,12 +299,25 @@ pub enum CatSearch {
     Both,
 }
 
-/// Split-quality criterion. Built-ins run the O(1) stats scan; a custom
-/// criterion sees lazy (y, w) slices per candidate. All criteria are
-/// sample-weight aware.
+/// Split-quality criterion. Built-ins run the O(1) stats scan where the
+/// math allows (`Sse`, `FriedmanMse`); the rest see lazy (y, w) slices per
+/// candidate. All criteria are sample-weight aware.
 pub enum GainFn {
     /// Variance reduction (weighted sum of squares). The regression default.
     Sse,
+    /// Friedman's MSE proxy: `(w_l·w_r/w)·(mean_l − mean_r)^2` — the
+    /// squared mean gap weighted by the child masses (sklearn's
+    /// `friedman_mse`). Regression.
+    FriedmanMse,
+    /// Absolute-error reduction (weighted L1 around each side's median) —
+    /// robust to outliers where SSE chases them. Regression.
+    AbsoluteError,
+    /// Huber-loss reduction (δ = 1.345·sd of the node): quadratic near the
+    /// median, linear in the tails. Regression.
+    Huber,
+    /// Poisson deviance reduction — for counts/rate targets (values must be
+    /// >= 0). Regression.
+    Poisson,
     /// Information gain: weighted entropy reduction over y-as-class-labels
     /// (distinct y values are the classes).
     Entropy,
@@ -196,13 +327,14 @@ pub enum GainFn {
     /// of the two children (penalizes lopsided splits).
     GainRatio,
     /// Model-tree criterion (Wang/Quinlan M5): weighted standard-deviation
-    /// reduction `sd(parent) - Σ (w_k/w)·sd(child_k)`.
+    /// reduction `sd(parent) - Σ (w_k/w)·sd(child_k)`. Regression.
     Sdr,
     /// Breiman twoing rule: `2·P_L·P_R·(Σ_j |p_L(j) - p_R(j)|)^2` over
     /// class frequencies — favors balanced splits with contrasting sides.
     Twoing,
     /// User criterion. Receives lazy `(y, w)` slices of the two sides per
     /// candidate split and returns the split quality (higher = better).
+    /// Pinball/quantile losses and anything exotic live here.
     Custom(std::sync::Arc<dyn CustomGain>),
 }
 
@@ -230,6 +362,10 @@ impl Clone for GainFn {
     fn clone(&self) -> Self {
         match self {
             GainFn::Sse => GainFn::Sse,
+            GainFn::FriedmanMse => GainFn::FriedmanMse,
+            GainFn::AbsoluteError => GainFn::AbsoluteError,
+            GainFn::Huber => GainFn::Huber,
+            GainFn::Poisson => GainFn::Poisson,
             GainFn::Entropy => GainFn::Entropy,
             GainFn::Gini => GainFn::Gini,
             GainFn::GainRatio => GainFn::GainRatio,
@@ -244,6 +380,10 @@ impl std::fmt::Debug for GainFn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             GainFn::Sse => write!(f, "Sse"),
+            GainFn::FriedmanMse => write!(f, "FriedmanMse"),
+            GainFn::AbsoluteError => write!(f, "AbsoluteError"),
+            GainFn::Huber => write!(f, "Huber"),
+            GainFn::Poisson => write!(f, "Poisson"),
             GainFn::Entropy => write!(f, "Entropy"),
             GainFn::Gini => write!(f, "Gini"),
             GainFn::GainRatio => write!(f, "GainRatio"),
@@ -1226,8 +1366,10 @@ impl<'a> Grower<'a> {
             return self.scan_column_categorical(rows, j);
         }
         let (hit, st) = match self.params.leaf {
-            LeafKind::Mean => self.scan_column_mean(rows, j),
             LeafKind::Linear => self.scan_column_linear(rows, j, path),
+            // Constant leaves (mean/median/quantile/huber) share the stats
+            // scan; the `gain` knob picks the quality function.
+            _ => self.scan_column_mean(rows, j),
         };
         (hit.map(|(g, s)| (g, s, None)), st)
     }
@@ -1264,6 +1406,25 @@ impl<'a> Grower<'a> {
                 };
                 sse(&all) - sse(left) - sse(right)
             }
+            GainFn::FriedmanMse => {
+                let mean = |p: &[(f64, f64)]| {
+                    let sw = wsum(p);
+                    if sw <= 0.0 {
+                        0.0
+                    } else {
+                        p.iter().map(|&(y, wt)| wt * y).sum::<f64>() / sw
+                    }
+                };
+                (wl * wr / w) * (mean(left) - mean(right)).powi(2)
+            }
+            GainFn::AbsoluteError => {
+                l1_cost(&all) - l1_cost(left) - l1_cost(right)
+            }
+            GainFn::Huber => {
+                let delta = 1.345 * w_sd(&all);
+                huber_cost(&all, delta) - huber_cost(left, delta) - huber_cost(right, delta)
+            }
+            GainFn::Poisson => poisson_deviance(&all) - poisson_deviance(left) - poisson_deviance(right),
             GainFn::Entropy => {
                 class_entropy_w(&all) - (wl / w) * class_entropy_w(left) - (wr / w) * class_entropy_w(right)
             }
@@ -1876,7 +2037,21 @@ impl<'a> Grower<'a> {
         } else {
             None
         };
-        LeafModel { stats, linear }
+        // Non-mean constant leaves: fit the center on the positive-weight
+        // targets only (same population as the stats).
+        let yws: Vec<(f64, f64)> = yv
+            .iter()
+            .zip(wv.iter())
+            .map(|(&y, &w)| (y, w))
+            .filter(|&(_, w)| w > 0.0)
+            .collect();
+        let center = match self.params.leaf {
+            LeafKind::Median => Some(w_median(&yws)),
+            LeafKind::Quantile(t) => Some(w_quantile(&yws, t)),
+            LeafKind::Huber => Some(huber_location(&yws)),
+            _ => None,
+        };
+        LeafModel { stats, linear, center }
     }
 }
 
@@ -1967,7 +2142,7 @@ impl std::fmt::Display for ModelTree {
                 label: label.to_string(),
                 n: nd.stats.n,
                 dev: nd.stats.sse,
-                yval: nd.stats.mean,
+                yval: nd.leaf.as_ref().and_then(|l| l.center).unwrap_or(nd.stats.mean),
                 leaf: nd.split.is_none(),
             });
             if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {

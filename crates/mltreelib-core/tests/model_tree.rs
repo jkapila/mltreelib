@@ -789,7 +789,14 @@ fn gain_ratio_sdr_twoing_find_the_regime_split() {
         .map(|i| vec![Some(if i < 30 { (i % 10) as f64 * 0.05 } else { 1.0 + (i % 10) as f64 * 0.05 })])
         .collect();
     let y: Vec<Option<f64>> = (0..60).map(|i| Some(if i < 30 { 0.0 } else { 1.0 })).collect();
-    for gain in [GainFn::GainRatio, GainFn::Sdr, GainFn::Twoing] {
+    for gain in [
+        GainFn::FriedmanMse,
+        GainFn::AbsoluteError,
+        GainFn::Huber,
+        GainFn::GainRatio,
+        GainFn::Sdr,
+        GainFn::Twoing,
+    ] {
         let p = ModelTreeParams {
             max_depth: 1,
             min_rows: 5,
@@ -801,6 +808,26 @@ fn gain_ratio_sdr_twoing_find_the_regime_split() {
         assert_eq!(splits.len(), 1, "{gain:?}");
         assert!(splits[0].threshold < 1.0, "{gain:?} split too high");
     }
+}
+
+#[test]
+fn poisson_criterion_splits_counts() {
+    // Count targets (rates): the Poisson deviance must separate the two
+    // rate regimes.
+    let x: Vec<Vec<Option<f64>>> = (0..60)
+        .map(|i| vec![Some(if i < 30 { (i % 5) as f64 * 0.1 } else { 1.0 + (i % 5) as f64 * 0.1 })])
+        .collect();
+    let y: Vec<Option<f64>> = (0..60).map(|i| Some(if i < 30 { 1.0 } else { 8.0 })).collect();
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Poisson,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    assert_eq!(tree.splits().len(), 1);
+    let pred = tree.predict(&[vec![Some(0.2)], vec![Some(1.2)]]);
+    assert!(pred[0] < 2.0 && pred[1] > 5.0, "{pred:?}");
 }
 
 #[test]
@@ -931,4 +958,86 @@ fn bic_prune_shrinks_noisy_depth() {
         pruned.splits().len(),
         unpruned.splits().len()
     );
+}
+
+// ------------------------------ simple leaf kinds ------------------------
+
+#[test]
+fn median_leaf_resists_outliers() {
+    // A 100x outlier in one region drags the mean leaf up; the median leaf
+    // must stay near the bulk.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..40 {
+        x.push(vec![Some(if i < 20 { 0.0 } else { 1.0 })]);
+        y.push(Some(if i < 20 { 5.0 } else if i < 39 { 6.0 } else { 100.0 }));
+    }
+    let base = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        ..Default::default()
+    };
+    let mean_tree = ModelTree::fit(&x, &y, base.clone()).unwrap();
+    let med_tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            leaf: LeafKind::Median,
+            ..base
+        },
+    )
+    .unwrap();
+    let p_mean = mean_tree.predict(&[vec![Some(1.0)]])[0];
+    let p_med = med_tree.predict(&[vec![Some(1.0)]])[0];
+    assert!(p_med < 7.0, "median leaf: {p_med}");
+    assert!(p_mean > 9.0, "mean leaf should be dragged: {p_mean}");
+}
+
+#[test]
+fn quantile_leaf_honors_tau() {
+    let yv: Vec<Option<f64>> = (0..100).map(|i| Some((i % 50) as f64)).collect();
+    let x: Vec<Vec<Option<f64>>> = (0..100).map(|_| vec![Some(0.0)]).collect();
+    let q = |tau: f64| {
+        ModelTree::fit(
+            &x,
+            &yv,
+            ModelTreeParams {
+                max_depth: 0,
+                min_rows: 1,
+                leaf: LeafKind::Quantile(tau),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .predict(&[vec![Some(0.0)]])[0]
+    };
+    let (lo, mid, hi) = (q(0.1), q(0.5), q(0.9));
+    assert!(lo < mid && mid < hi, "quantile leaf ordering: {lo} {mid} {hi}");
+}
+
+#[test]
+fn huber_leaf_sits_between_mean_and_median() {
+    let mut y: Vec<Option<f64>> = (0..39).map(|_| Some(5.0)).collect();
+    y.push(Some(100.0));
+    let x: Vec<Vec<Option<f64>>> = (0..40).map(|_| vec![Some(0.0)]).collect();
+    let fit = |leaf: LeafKind| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 0,
+                min_rows: 1,
+                leaf,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .predict(&[vec![Some(0.0)]])[0]
+    };
+    let (med, hub, mean) = (
+        fit(LeafKind::Median),
+        fit(LeafKind::Huber),
+        fit(LeafKind::Mean),
+    );
+    assert!(med <= hub && hub < mean, "med={med} hub={hub} mean={mean}");
 }
