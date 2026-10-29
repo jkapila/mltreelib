@@ -9,7 +9,8 @@
 //! midpoint split points, so the structures must coincide exactly. Child
 //! ordering may mirror (cosmetic); comparisons are membership-based.
 
-use mltreelib_core::model_tree::{LeafKind, ModelTree, ModelTreeParams};
+use mltreelib_core::leaf::LeafKind;
+use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
 
 const MPG: [f64; 32] = [
     21.0, 21.0, 22.8, 21.4, 18.7, 18.1, 14.3, 24.4, 22.8, 19.2, 17.8, 16.4, 17.3, 15.2,

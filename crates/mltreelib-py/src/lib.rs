@@ -12,10 +12,12 @@ use mltreelib_core::encode::{
     SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
 };
 use mltreelib_core::frame::{Column, Dataset};
-use mltreelib_core::model_tree::{
-    CatOrder, CatSearch, ColType, CustomGain, GainFn, LeafCols, LeafKind, ModelTree, ModelTreeParams,
-    PruneCost,
-};
+use mltreelib_core::criteria::{CustomGain, GainFn};
+use mltreelib_core::gate::SplitTest;
+use mltreelib_core::leaf::{LeafCols, LeafKind};
+use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+use mltreelib_core::prune::PruneCost;
+use mltreelib_core::split::{CatOrder, CatSearch, ColType};
 use mltreelib_core::metrics::{
     classification_report, grouped_regression_report, regression_report, ClassificationReport,
     RegressionReport,
@@ -1981,8 +1983,19 @@ impl PyModelTree {
     ///     min_rows: minimum rows per child side at a split.
     ///     min_gain: minimum fitted-leaf SSE reduction to split.
     ///     leaf_cols: "all" (every column) or "path" (only split-path columns).
-    ///     leaf: "linear" (model tree) or "mean" (CART/rpart-style).
-    ///     gain: split criterion — "sse", "entropy", "gini", or a custom
+    ///     leaf: "linear" (model tree), "mean" (CART/rpart-style constant),
+    ///        "median", "quantile" (with tau) or "huber".
+    ///     tau: quantile in (0, 1) for leaf="quantile".
+    ///     l2: ridge penalty on leaf coefficients (intercept free).
+    ///     l1: lasso penalty on leaf coefficients (with l2 = elastic net).
+    ///     monotone: per-column direction -1/0/+1 (XGBoost-style).
+    ///     interaction_groups: feature groups allowed to interact
+    ///        (LightGBM-style); empty = unconstrained.
+    ///     min_relevance: winnowing-style pre-selection threshold on
+    ///        |weighted correlation with y|; None = off.
+    ///     gain: split criterion — "sse", "friedman_mse", "absolute_error",
+    ///        "huber", "poisson" (regression), "entropy", "gini",
+    ///        "gain_ratio", "sdr", "twoing" (classification) or a custom
     ///        Python callable `gain_fn(left_y, right_y) -> float` (lazy
     ///        y-slices of the two sides; higher = better).
     ///     split_precision: float candidate grid for numeric columns
@@ -1996,10 +2009,23 @@ impl PyModelTree {
     ///     leaf_digest: keep each leaf's t-digest so `quantile` answers any
     ///        tau post-fit (false = lean leaves).
     ///     verbose: training log — 0 silent, 1 per depth, 2 per node.
+    ///     alpha: minimum child weight fraction of the node's total (grf).
+    ///     imbalance_penalty: subtract this * (1/n_left + 1/n_right) from
+    ///        the gain (grf-style balance).
+    ///     col_sample: per-node random column subset fraction (forest
+    ///        spirit); None = all columns.
+    ///     seed: seed for the per-node column subset.
+    ///     prune: post-growth pruning cost — "none", "bic" or "mdl".
+    ///     split_test: significance gate on splitting — "none" or "chow"
+    ///        (Chow structural-break F test: the chosen split must beat the
+    ///        pooled node model at p < split_alpha, else the node is a leaf).
+    ///     split_alpha: significance level for split_test.
+    ///     bonferroni: divide split_alpha by the candidate count evaluated
+    ///        at the node (selection multiplicity).
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none"))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -2023,6 +2049,9 @@ impl PyModelTree {
         col_sample: Option<f64>,
         seed: u64,
         prune: &str,
+        split_test: &str,
+        split_alpha: f64,
+        bonferroni: bool,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2120,6 +2149,20 @@ impl PyModelTree {
                 )))
             }
         };
+        let split_gate = match split_test {
+            "none" => SplitTest::None,
+            "chow" => SplitTest::Chow,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "split_test must be 'none' or 'chow', got {other}"
+                )))
+            }
+        };
+        if !(0.0..=1.0).contains(&split_alpha) {
+            return Err(PyValueError::new_err(format!(
+                "split_alpha must be in [0, 1], got {split_alpha}"
+            )));
+        }
         Ok(Self {
             params: ModelTreeParams {
                 max_depth,
@@ -2144,6 +2187,9 @@ impl PyModelTree {
                 col_sample,
                 seed,
                 prune: prune_cost,
+                split_test: split_gate,
+                split_alpha,
+                bonferroni,
             },
             inner: None,
         })

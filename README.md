@@ -12,6 +12,7 @@ crates/mltreelib-py/     PyO3 bindings (the mltreelib Python surface)
 python/mltreelib/        Python package: datasets loader + optional plots layer
 examples/                runnable examples (all docs output comes from these)
 docs/                    the documentation site (zensical; benchmarks + API + guides)
+tests/                   Python behavior tests (the Rust seam lives in the core crate)
 benchmarks/              the Elo field: prepared splits, scores, attempts, round manifests
 specs/                   implementation specs (published as GitHub issues)
 playground/              local marimo playground for edge-case hunting (not in git)
@@ -46,6 +47,8 @@ m = ModelTree(
     cat_order="frequency_desc", cat_search="cumulative",
     alpha=0.0, imbalance_penalty=0.0,          # grf-style split balance
     prune="none",                              # none|bic|mdl (+ cp family landing)
+    split_test="none",                         # none|chow — significance-gated splitting
+    split_alpha=0.05, bonferroni=False,        # gate level (+ selection correction)
     col_sample=None, seed=42,                  # per-node random column subset
     leaf_digest=True,                          # per-leaf t-digest: any tau post-fit
 )
@@ -56,11 +59,13 @@ m.training_log()                # candidate counts, dtype search, timings (verbo
 ```
 
 Growth knobs under active development (spec `#3`, all default-off until a
-round measures them): significance-gated splitting (`split_test="chow"`,
-`split_alpha`, Bonferroni), `honesty`, NA **surrogate splits**, the pruning
+round measures them): `honesty`, NA **surrogate splits**, the pruning
 family (cost-complexity / C5 pessimistic / cost-matrix),
 `minsplit/minbucket/minprob`, EFB-style pre-selection, and an experimental
-purity gate. Distributional leaves (`leaf_family`: binomial/poisson →
+purity gate. Significance-gated splitting has **landed** (`split_test="chow"`
++ `split_alpha` + `bonferroni`: the scan's best split must beat the pooled
+node model in a Chow F test, else the node stays a leaf). Distributional
+leaves (`leaf_family`: binomial/poisson →
 probit/tobit/tweedie/softmax, `predict_proba`) are spec `#4`.
 
 ## Dataset component

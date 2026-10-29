@@ -2,7 +2,9 @@
 //! the two leaf-column policies, and NA-first behavior (learnable missing
 //! direction + NA-indicator leaf terms).
 
-use mltreelib_core::model_tree::{LeafCols, LeafKind, ModelTree, ModelTreeParams};
+use mltreelib_core::gate::SplitTest;
+use mltreelib_core::leaf::{LeafCols, LeafKind};
+use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
 
 #[test]
 fn stump_is_global_ols() {
@@ -629,9 +631,9 @@ fn min_rows_blocks_tiny_leaves() {
 
 // ------------------------- split-search knobs (2026-10-29) --------------
 
-use mltreelib_core::model_tree::{
-    CatOrder, CatSearch, ColType, CustomGain, GainFn, PruneCost,
-};
+use mltreelib_core::criteria::{CustomGain, GainFn};
+use mltreelib_core::prune::PruneCost;
+use mltreelib_core::split::{CatOrder, CatSearch, ColType};
 
 #[test]
 fn categorical_split_partitions_levels() {
@@ -1040,4 +1042,135 @@ fn huber_leaf_sits_between_mean_and_median() {
         fit(LeafKind::Mean),
     );
     assert!(med <= hub && hub < mean, "med={med} hub={hub} mean={mean}");
+}
+
+// ---- Chow split-significance gate (split_test="chow") ----
+
+/// Deterministic pseudo-noise in [-0.5, 0.5) — splitmix64 avalanche, no
+/// RNG dependency, decorrelated from the row index.
+fn noise(i: usize) -> f64 {
+    let mut z = (i as u64).wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z = z ^ (z >> 31);
+    (z % 1000) as f64 / 1000.0 - 0.5
+}
+
+#[test]
+fn chow_gate_stops_noise_splits() {
+    // Pure noise: no x carries signal. The ungated scan always finds a
+    // split (best-of-many SSE reduction), but none of them is
+    // statistically real — the gate must keep the node a leaf.
+    let x: Vec<Vec<Option<f64>>> = (0..400)
+        .map(|i| vec![Some((i % 20) as f64 / 20.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..400).map(|i| Some(noise(i))).collect();
+
+    let base = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        leaf: LeafKind::Mean,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let ungated = ModelTree::fit(&x, &y, base.clone()).unwrap();
+    assert!(ungated.n_leaves() > 1, "the ungated scan does split noise");
+
+    // Plain Chow at a strict level stops it.
+    let gated = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            split_test: SplitTest::Chow,
+            split_alpha: 1e-6,
+            ..base.clone()
+        },
+    )
+    .unwrap();
+    assert_eq!(gated.n_leaves(), 1, "chow gate must stop noise splits");
+
+    // Selection-corrected Chow at the conventional level stops it too.
+    let bf = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            split_test: SplitTest::Chow,
+            split_alpha: 0.05,
+            bonferroni: true,
+            ..base
+        },
+    )
+    .unwrap();
+    assert_eq!(bf.n_leaves(), 1, "bonferroni chow must stop noise splits");
+}
+
+#[test]
+fn chow_gate_allows_clear_regime() {
+    // Two planted regimes with a real structural break: the gate must let
+    // the split through and the tree must recover the break.
+    let n = 200;
+    let x: Vec<Vec<Option<f64>>> = (0..n).map(|i| vec![Some(i as f64 / n as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..n)
+        .map(|i| {
+            let x0 = i as f64 / n as f64;
+            Some(if x0 >= 0.5 { 5.0 } else { 0.0 } + 0.02 * noise(i))
+        })
+        .collect();
+    let tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 10,
+            leaf: LeafKind::Mean,
+            l2: 0.0,
+            split_test: SplitTest::Chow,
+            split_alpha: 0.05,
+            bonferroni: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(tree.n_leaves() > 1, "a real break must pass the gate");
+    assert!(
+        tree.splits()
+            .iter()
+            .any(|s| s.col == 0 && (s.threshold - 0.5).abs() < 0.06),
+        "the recovered break sits at 0.5: {:?}",
+        tree.splits()
+    );
+    let p0 = tree.predict(&[vec![Some(0.1)]])[0];
+    let p1 = tree.predict(&[vec![Some(0.9)]])[0];
+    assert!(p0 < 1.0 && p1 > 4.0, "regime means recovered: {p0} {p1}");
+}
+
+#[test]
+fn bonferroni_gates_at_least_as_much() {
+    // Borderline signal: the selection-corrected gate can only stop more
+    // often than the uncorrected one (alpha_eff <= alpha).
+    let n = 400;
+    let x: Vec<Vec<Option<f64>>> = (0..n).map(|i| vec![Some((i % 2) as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..n)
+        .map(|i| Some(if i % 2 == 1 { 0.3 } else { 0.0 } + noise(i)))
+        .collect();
+    let fit = |bonf: bool| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 3,
+                min_rows: 10,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                split_test: SplitTest::Chow,
+                split_alpha: 0.05,
+                bonferroni: bonf,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .n_leaves()
+    };
+    let (plain, bf) = (fit(false), fit(true));
+    assert!(bf <= plain, "bonferroni gates more: plain={plain} bf={bf}");
 }
