@@ -495,3 +495,5 @@ ta_concrete,XBART,error,6.9
 ta_concrete,trust-free,ok,18.5
 ta_diamonds,mboost,error,1.6
 ta_diamonds,ranger,error,1.5
+ta_diamonds,bart,ok,70.7
+ta_diamonds,fru,error,0.7

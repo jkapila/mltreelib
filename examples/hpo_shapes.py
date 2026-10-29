@@ -16,8 +16,8 @@ strings, NaN — the three data handlers, no preprocessing.
 """
 
 import logging
+import multiprocessing as mp
 import random
-import signal
 import time
 
 import optuna
@@ -44,7 +44,8 @@ SHAPES = {
     "very-long": ("diamonds", "price"),
 }
 
-TRIAL_CAP_S = 180  # per-fit wall cap; over-cap trials lose on time
+TRIAL_CAP_S = 120  # hard per-trial cap (killable worker process)
+STUDY_CAP_S = 600  # wall cap per (shape, parameter) study
 N_TRIALS = 10
 
 SPACE = {
@@ -58,12 +59,16 @@ SPACE = {
 }
 
 
-class TrialTimeout(Exception):
-    pass
-
-
-def _alarm(signum, frame):
-    raise TrialTimeout()
+def _trial_worker(conn, xtr, ytr, xte, yte, dtypes, kw):
+    """One fit+score in a killable process -- the real time cap."""
+    t0 = time.perf_counter()
+    m = ModelTree(**kw)
+    m.fit(xtr, ytr, dtypes=dtypes)
+    dt = time.perf_counter() - t0
+    pred = m.predict(xte)
+    rmse = (sum((p - y) ** 2 for p, y in zip(pred, yte)) / len(yte)) ** 0.5
+    conn.send((rmse, dt))
+    conn.close()
 
 
 def load(name, ycol):
@@ -85,30 +90,37 @@ def load(name, ycol):
 
 
 def run_study(label, xtr, ytr, xte, yte, dtypes, param):
+    ctx = mp.get_context("fork")
+
     def objective(trial):
         kw = SPACE[param](trial)
-        m = ModelTree(**kw)
-        signal.signal(signal.SIGALRM, _alarm)
-        signal.alarm(TRIAL_CAP_S)
-        t0 = time.perf_counter()
-        try:
-            m.fit(xtr, ytr, dtypes=dtypes)
-            dt = time.perf_counter() - t0
-        except TrialTimeout:
-            signal.alarm(0)
+        parent, child = ctx.Pipe(duplex=False)
+        p = ctx.Process(target=_trial_worker, args=(child, xtr, ytr, xte, yte, dtypes, kw))
+        p.start()
+        p.join(TRIAL_CAP_S)
+        if p.is_alive():
+            p.kill()  # hard cap: the fit cannot outlive its budget
+            p.join()
             trial.set_user_attr("fit_s", float("inf"))
+            trial.set_user_attr("params_used", kw)
             return float("inf")
-        signal.alarm(0)
-        pred = m.predict(xte)
-        rmse = (sum((p - y) ** 2 for p, y in zip(pred, yte)) / len(yte)) ** 0.5
-        trial.set_user_attr("fit_s", dt)
-        trial.set_user_attr("params_used", kw)
-        return rmse
+        if parent.poll():
+            rmse, dt = parent.recv()
+            trial.set_user_attr("fit_s", dt)
+            trial.set_user_attr("params_used", kw)
+            return rmse
+        trial.set_user_attr("fit_s", float("inf"))
+        return float("inf")
 
     study = optuna.create_study(
         direction="minimize", sampler=optuna.samplers.TPESampler(seed=42)
     )
-    study.optimize(objective, n_trials=N_TRIALS, catch=(Exception,))
+    study.optimize(
+        objective,
+        n_trials=N_TRIALS,
+        timeout=STUDY_CAP_S,
+        catch=(Exception,),
+    )
     trials = [t for t in study.trials if t.value is not None and t.value < float("inf")]
     if not trials:
         log.info(f"  {param:<16} all trials over {TRIAL_CAP_S}s cap")

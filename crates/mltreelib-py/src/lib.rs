@@ -2058,118 +2058,128 @@ fn coerce_rows(
 
 #[pymethods]
 impl PyModelTree {
-    /// Create an unfitted model tree. Task: regression.
+    /// Create an unfitted model tree. Task: regression. Data is raw
+    /// (int / float / level values, None/NaN = missing) — the three data
+    /// handlers, no preprocessing.
     ///
-    /// Args:
+    /// Args (grouped by family):
+    ///   GROWTH
     ///     max_depth: maximum tree depth (0 = a single leaf).
     ///     min_rows: minimum rows per child side at a split.
-    ///     min_gain: minimum fitted-leaf SSE reduction to split.
-    ///     leaf_cols: "all" (every column) or "path" (only split-path columns).
-    ///     leaf: "linear" (model tree), "mean" (CART/rpart-style constant),
-    ///        "median", "quantile" (with tau) or "huber".
-    ///     tau: quantile in (0, 1) for leaf="quantile".
-    ///     l2: ridge penalty on leaf coefficients (intercept free).
-    ///     l1: lasso penalty on leaf coefficients (with l2 = elastic net).
-    ///     monotone: per-column direction -1/0/+1 (XGBoost-style).
-    ///     interaction_groups: feature groups allowed to interact
-    ///        (LightGBM-style); empty = unconstrained.
-    ///     min_relevance: winnowing-style pre-selection threshold on
-    ///        |weighted correlation with y|; None = off.
-    ///     gain: split criterion — "sse", "friedman_mse", "absolute_error",
-    ///        "huber", "poisson" (regression), "entropy", "gini",
-    ///        "gain_ratio", "sdr", "twoing" (classification) or a custom
-    ///        Python callable `gain_fn(left_y, right_y) -> float` (lazy
-    ///        y-slices of the two sides; higher = better).
-    ///     split_precision: float candidate grid for numeric columns
-    ///        (0.1 = loop over tenths; thresholds are grid values) or None
-    ///        for the exact unique-value scan.
-    ///     cat_order: categorical level order — "frequency_desc",
-    ///        "target_mean", or an explicit list of level codes.
-    ///     cat_search: categorical candidate sets — "cumulative",
-    ///        "single_vs_rest" (stops at the first acceptable level) or
-    ///        "both".
-    ///     leaf_digest: keep each leaf's t-digest so `quantile` answers any
-    ///        tau post-fit (false = lean leaves).
-    ///     verbose: training log — 0 silent, 1 per depth, 2 per node.
-    ///     alpha: minimum child weight fraction of the node's total (grf).
-    ///     imbalance_penalty: subtract this * (1/n_left + 1/n_right) from
-    ///        the gain (grf-style balance).
-    ///     col_sample: per-node random column subset fraction (forest
-    ///        spirit); None = all columns.
-    ///     seed: seed for the per-node column subset.
-    ///     prune: post-growth pruning cost — "none", "bic" or "mdl".
-    ///     split_test: significance gate on splitting — "none" or "chow"
-    ///        (Chow structural-break F test: the chosen split must beat the
-    ///        pooled node model at p < split_alpha, else the node is a leaf).
-    ///     split_alpha: significance level for split_test.
-    ///     bonferroni: divide split_alpha by the candidate count evaluated
-    ///        at the node (selection multiplicity).
-    ///     split_cols: column indices eligible for the split search (None =
-    ///        all pre-selected columns). Splits only — leaves still see all
-    ///        active columns unless leaf_cols restricts them.
-    ///     honesty: grf-style sample-splitting fairness — a seeded split of
-    ///        the rows into structure (split search, gate, pruning) and
-    ///        estimation (leaf fits); leaves are then honest estimates.
-    ///     honesty_fraction: share of rows assigned to the structure sample.
-    ///     maxsurrogate: NA surrogate splits (rpart lineage) — store up to
-    ///        this many backup splits per node that mimic the primary
-    ///        partition and route rows missing the split column (0 = off,
-    ///        the per-split missing direction alone).
-    ///     cp_alpha: cost-complexity penalty per leaf with prune="cp"
-    ///        (rpart cp / sklearn ccp_alpha semantics).
-    ///     max_leaf_nodes: leaf cap — stop splitting once this many leaves
-    ///        exist (None = unlimited, bounded by max_depth).
     ///     minsplit: minimum node rows to attempt a split (default 2*min_rows).
     ///     minbucket: minimum rows per leaf (default min_rows).
     ///     minprob: minimum weight fraction of the node per leaf (0 = off).
-    ///     preselect: column-screening strategy — "none", "winnow"
-    ///        (univariate relevance >= min_relevance), "boruta"/"shadowmax"
-    ///        (shadow comparison), "variance", "mutual_info", or "unitree"
-    ///        (per-variable surrogate trees scored by explained variation
-    ///        R² >= min_relevance).
+    ///     max_leaf_nodes: leaf cap — stop splitting at this many leaves
+    ///        (None = unlimited, bounded by max_depth).
+    ///     min_gain: minimum fitted-leaf SSE reduction to split.
     ///     purity_gate: a node whose weighted target std is at most this
     ///        stays a leaf (None = off).
+    ///   SEARCH
+    ///     gain: split criterion — "sse", "friedman_mse", "absolute_error",
+    ///        "huber", "poisson" (regression), "entropy", "gini",
+    ///        "gain_ratio", "sdr", "twoing" (classification) or a callable
+    ///        `gain_fn(left_y, right_y) -> float` (higher = better).
+    ///     split_precision: float candidate grid for numeric columns;
+    ///        None = exact unique-value scan.
+    ///     split_cols: column indices eligible for the split search (None =
+    ///        all). Splits only — leaves see all columns.
+    ///     col_sample: per-node random column subset fraction (None = all).
+    ///     seed: seed for the per-node column subset.
+    ///   LEAF
+    ///     leaf: "linear", "mean", "median", "quantile" (with tau) or "huber".
+    ///     tau: quantile in (0, 1) for leaf="quantile".
+    ///     l1: lasso penalty on leaf coefficients (with l2 = elastic net).
+    ///     l2: ridge penalty on leaf coefficients (intercept free).
+    ///     leaf_cols: "all" (every column) or "path" (split-path columns).
+    ///     leaf_digest: keep each leaf's t-digest (quantile answers any
+    ///        tau post-fit; false = lean leaves).
+    ///   CATEGORICAL
+    ///     cat_order: "frequency_desc", "target_mean", or a level-code list.
+    ///     cat_search: "cumulative", "single_vs_rest" or "both".
+    ///   CONSTRAINTS
+    ///     monotone: per-column direction -1/0/+1 (XGBoost-style).
+    ///     interaction_groups: feature groups allowed to interact.
+    ///   BALANCE
+    ///     alpha: minimum child weight fraction of the node (grf).
+    ///     imbalance_penalty: subtract this * (1/n_left + 1/n_right) from
+    ///        the gain (grf-style).
+    ///   PRUNING
+    ///     prune: "none", "bic", "mdl" or "cp" (cost-complexity).
+    ///     cp_alpha: per-leaf penalty with prune="cp".
+    ///   SAMPLING (honesty)
+    ///     honesty: structure/estimation sample split (grf-style).
+    ///     honesty_fraction: share of rows assigned to structure.
+    ///   NA
+    ///     maxsurrogate: backup splits routing rows missing the split
+    ///        column (rpart lineage; 0 = off).
+    ///   GATES
+    ///     split_test: "none" or "chow" (significance-gated splitting).
+    ///     split_alpha: significance level for split_test.
+    ///     bonferroni: divide split_alpha by the node's candidate count.
+    ///   SCREENING
+    ///     preselect: "none", "winnow", "boruta", "shadowmax", "variance",
+    ///        "mutual_info" or "unitree" (per-variable surrogate trees
+    ///        scored by explained variation R²).
+    ///     min_relevance: threshold for the screening strategies.
+    ///   OTHER
+    ///     verbose: training log — 0 silent, 1 per depth, 2 per node.
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false, split_cols = None, honesty = false, honesty_fraction = 0.5, maxsurrogate = 0, cp_alpha = 0.0, max_leaf_nodes = None, minsplit = None, minbucket = None, minprob = 0.0, preselect = "none", purity_gate = None))]
+    #[pyo3(signature = (
+        max_depth = 4, min_rows = 10, minsplit = None, minbucket = None,
+        minprob = 0.0, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
+        gain = None, split_precision = Some(0.001), split_cols = None,
+        col_sample = None, seed = 42,
+        leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.1,
+        leaf_cols = "all", leaf_digest = true,
+        cat_order = None, cat_search = "cumulative",
+        monotone = vec![], interaction_groups = vec![],
+        alpha = 0.0, imbalance_penalty = 0.0,
+        prune = "none", cp_alpha = 0.0,
+        honesty = false, honesty_fraction = 0.5,
+        maxsurrogate = 0,
+        split_test = "none", split_alpha = 0.05, bonferroni = false,
+        preselect = "none", min_relevance = None,
+        verbose = 0
+    ))]
     fn new(
         max_depth: usize,
         min_rows: usize,
-        min_gain: f64,
-        leaf_cols: &str,
-        leaf: &str,
-        tau: f64,
-        l2: f64,
-        l1: f64,
-        monotone: Vec<i8>,
-        interaction_groups: Vec<Vec<usize>>,
-        min_relevance: Option<f64>,
-        gain: Option<Bound<'_, PyAny>>,
-        split_precision: Option<f64>,
-        cat_order: Option<Bound<'_, PyAny>>,
-        cat_search: &str,
-        leaf_digest: bool,
-        verbose: u8,
-        alpha: f64,
-        imbalance_penalty: f64,
-        col_sample: Option<f64>,
-        seed: u64,
-        prune: &str,
-        split_test: &str,
-        split_alpha: f64,
-        bonferroni: bool,
-        split_cols: Option<Vec<usize>>,
-        honesty: bool,
-        honesty_fraction: f64,
-        maxsurrogate: usize,
-        cp_alpha: f64,
-        max_leaf_nodes: Option<usize>,
         minsplit: Option<usize>,
         minbucket: Option<usize>,
         minprob: f64,
-        preselect: &str,
+        max_leaf_nodes: Option<usize>,
+        min_gain: f64,
         purity_gate: Option<f64>,
+        gain: Option<Bound<'_, PyAny>>,
+        split_precision: Option<f64>,
+        split_cols: Option<Vec<usize>>,
+        col_sample: Option<f64>,
+        seed: u64,
+        leaf: &str,
+        tau: f64,
+        l1: f64,
+        l2: f64,
+        leaf_cols: &str,
+        leaf_digest: bool,
+        cat_order: Option<Bound<'_, PyAny>>,
+        cat_search: &str,
+        monotone: Vec<i8>,
+        interaction_groups: Vec<Vec<usize>>,
+        alpha: f64,
+        imbalance_penalty: f64,
+        prune: &str,
+        cp_alpha: f64,
+        honesty: bool,
+        honesty_fraction: f64,
+        maxsurrogate: usize,
+        split_test: &str,
+        split_alpha: f64,
+        bonferroni: bool,
+        preselect: &str,
+        min_relevance: Option<f64>,
+        verbose: u8,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
