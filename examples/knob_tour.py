@@ -118,3 +118,10 @@ for mono in [[], [1]]:
     m.fit(reg_x, reg_y, dtypes=["numeric"])
     p = [m.predict([[v]])[0] for v in (0.2, 0.5, 0.8)]
     print(f"  monotone={str(mono):<4} preds={p}")
+
+print("== split_cols (split-search column subset; leaves stay full) ==")
+for sc in [None, [1]]:
+    m = ModelTree(split_cols=sc, max_depth=3, min_rows=10, l2=0.0)
+    m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
+    cols = sorted({s['col'] for s in m.splits()})
+    print(f"  split_cols={str(sc):<6} split_columns={cols} leaves={m.n_leaves()}")

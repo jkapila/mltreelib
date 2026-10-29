@@ -110,6 +110,10 @@ pub struct ModelTreeParams {
     /// candidate splits evaluated at the node (selection multiplicity —
     /// the best-of-many is biased without it).
     pub bonferroni: bool,
+    /// Columns eligible for the split search (original indices). `None` =
+    /// every pre-selected column. Restricts *splitting only* — leaves still
+    /// see all active columns unless `leaf_cols` restricts them.
+    pub split_cols: Option<Vec<usize>>,
 }
 
 impl Default for ModelTreeParams {
@@ -148,6 +152,7 @@ impl Default for ModelTreeParams {
             split_test: SplitTest::None,
             split_alpha: 0.05,
             bonferroni: false,
+            split_cols: None,
         }
     }
 }
@@ -317,6 +322,11 @@ impl ModelTree {
         }
         if !params.monotone.is_empty() && params.monotone.len() != d {
             return Err("monotone must have one entry per column".to_string());
+        }
+        if let Some(sc) = &params.split_cols {
+            if sc.iter().any(|&j| j >= d) {
+                return Err("split_cols entries must be valid column indices".to_string());
+            }
         }
 
         // Column-major; rows with missing targets or zero weight drop

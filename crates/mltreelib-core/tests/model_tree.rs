@@ -1174,3 +1174,88 @@ fn bonferroni_gates_at_least_as_much() {
     let (plain, bf) = (fit(false), fit(true));
     assert!(bf <= plain, "bonferroni gates more: plain={plain} bf={bf}");
 }
+
+// ---- split_cols: the split search's column subset (knob 2 of #3) ----
+
+#[test]
+fn split_cols_restrict_split_search_only() {
+    // Both columns carry signal; split_cols=[1] must split only on column 1
+    // while the leaf model may still use every column.
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| {
+            vec![
+                Some((i % 10) as f64 / 10.0),
+                Some(((i * 3) % 7) as f64 / 7.0),
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| Some(2.0 * x[i][1].unwrap() - 0.5 * x[i][0].unwrap() + 0.05 * noise(i)))
+        .collect();
+    let tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 10,
+            l2: 0.0,
+            split_cols: Some(vec![1]),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(tree.n_leaves() > 1);
+    assert!(
+        tree.splits().iter().all(|s| s.col == 1),
+        "splits must be on col 1 only: {:?}",
+        tree.splits()
+    );
+    let (leaf, _) = tree.leaves()[0].clone();
+    let m = leaf.linear.as_ref().unwrap();
+    assert_eq!(m.cols, vec![0, 1], "leaves still see all columns");
+}
+
+#[test]
+fn split_cols_excludes_the_signal_column() {
+    // Signal lives in column 1; split_cols=[0] bars it from the scan, so
+    // every split must sit on column 0 (or none happen).
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| vec![Some(noise(i)), Some((i % 2) as f64)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| Some(if i % 2 == 1 { 3.0 } else { 0.0 } + 0.05 * noise(i + 7)))
+        .collect();
+    let tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 10,
+            l2: 0.0,
+            split_cols: Some(vec![0]),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(
+        tree.splits().iter().all(|s| s.col == 0),
+        "no split may touch col 1: {:?}",
+        tree.splits()
+    );
+}
+
+#[test]
+fn split_cols_rejects_out_of_range() {
+    let x: Vec<Vec<Option<f64>>> = (0..20).map(|i| vec![Some(i as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..20).map(|i| Some(i as f64)).collect();
+    let err = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            split_cols: Some(vec![0, 5]),
+            ..Default::default()
+        },
+    )
+    .unwrap_err();
+    assert!(err.contains("split_cols"), "{err}");
+}

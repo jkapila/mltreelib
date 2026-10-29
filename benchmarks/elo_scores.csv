@@ -345,3 +345,62 @@ ta_wine,perpetual (Rust),0.6566,0.5119,0.486
 ta_wine,sklearn tree,0.8325,0.4900,0.058
 ta_superconductivity,ModelTree(all),256.2480,21.2422,1022.152
 ta_superconductivity,ModelTree(winnow),4877.4921,122.4071,961.585
+abalone,ChimeraBoost,2.2213,1.5847,17.072
+abalone,EBM,2.3069,1.6608,11.146
+abalone,ExtraTrees,2.3623,1.6867,0.433
+abalone,KNN,2.5044,1.7596,0.030
+abalone,sklearn Linear,2.3020,1.6653,0.025
+abalone,sklearn RF,2.3162,1.6788,0.687
+abalone,statsmodels OLS,2.3020,1.6653,0.012
+abalone,statsmodels QuantReg,2.3463,1.6396,0.035
+abalone,statsmodels RLM,2.3285,1.6439,0.044
+boston,ChimeraBoost,2.4927,1.8779,0.917
+boston,EBM,3.3838,2.1009,63.677
+boston,ExtraTrees,2.8572,1.8168,0.130
+boston,KNN,5.7590,4.0920,0.025
+boston,sklearn Linear,4.7651,3.5260,0.024
+boston,sklearn RF,3.2163,2.0904,0.191
+boston,statsmodels OLS,4.7651,3.5260,0.004
+boston,statsmodels QuantReg,4.1621,3.0544,0.112
+boston,statsmodels RLM,4.2178,3.1131,0.011
+concrete,ChimeraBoost,5.2506,3.6400,1.212
+concrete,EBM,5.2872,3.7750,20.672
+concrete,ExtraTrees,6.0624,4.2177,0.143
+concrete,KNN,10.9472,8.5698,0.024
+concrete,sklearn Linear,11.3090,8.9090,0.023
+concrete,sklearn RF,6.0597,4.5178,0.188
+concrete,statsmodels OLS,11.3090,8.9090,0.001
+concrete,statsmodels QuantReg,12.0371,8.8071,0.035
+concrete,statsmodels RLM,11.4382,8.7855,0.007
+fc2008,ChimeraBoost,167.6812,103.5252,0.505
+fc2008,EBM,172.6560,110.0985,27.294
+fc2008,ExtraTrees,198.2499,116.2458,0.145
+fc2008,sklearn RF,184.8593,121.4867,0.159
+ozone,ChimeraBoost,4.0820,3.1459,0.284
+ozone,EBM,3.7244,2.7087,6.186
+ozone,ExtraTrees,4.0995,3.1205,0.093
+ozone,KNN,5.4964,3.9727,0.022
+ozone,sklearn Linear,4.4991,3.4018,0.023
+ozone,sklearn RF,3.8811,3.0265,0.127
+ozone,statsmodels OLS,4.4991,3.4018,0.001
+ozone,statsmodels QuantReg,4.9786,3.6468,0.039
+ozone,statsmodels RLM,4.5998,3.4566,0.004
+ta_airfoil,ChimeraBoost,1.3416,0.8673,0.673
+ta_airfoil,EBM,2.0278,1.2496,66.753
+ta_airfoil,ExtraTrees,1.4283,0.9689,0.255
+ta_airfoil,KNN,5.3841,4.1634,0.084
+ta_airfoil,sklearn Linear,4.5077,3.5722,0.027
+ta_airfoil,sklearn RF,1.8045,1.2466,0.597
+ta_airfoil,statsmodels OLS,4.4757,3.5662,0.006
+ta_airfoil,statsmodels QuantReg,4.6683,3.5121,0.282
+ta_airfoil,statsmodels RLM,4.5255,3.5396,0.040
+ta_concrete,ChimeraBoost,3.7231,2.4888,0.704
+ta_concrete,EBM,3.7479,2.5666,36.187
+ta_concrete,ExtraTrees,4.6004,3.0725,0.171
+ta_concrete,KNN,9.0701,7.0654,0.028
+ta_concrete,sklearn Linear,10.4542,8.3126,0.134
+ta_concrete,sklearn RF,4.8466,3.4444,0.303
+ta_concrete,statsmodels OLS,10.4542,8.3126,0.001
+ta_concrete,statsmodels QuantReg,10.8668,8.1941,0.030
+ta_concrete,statsmodels RLM,10.5178,8.2227,0.010
+ta_diamonds,ChimeraBoost,0.0000,0.0000,21.528

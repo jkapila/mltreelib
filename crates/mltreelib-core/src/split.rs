@@ -112,6 +112,13 @@ impl<'a> Grower<'a> {
             .iter()
             .copied()
             .filter(|&j| self.interact_ok(path, j))
+            .filter(|&j| {
+                self.params
+                    .split_cols
+                    .as_ref()
+                    .map(|sc| sc.contains(&j))
+                    .unwrap_or(true)
+            })
             .collect();
         // Per-node random column subset (random-forest spirit): a seeded
         // xorshift draw, deterministic across runs and threads.

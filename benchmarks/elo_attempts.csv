@@ -173,3 +173,113 @@ ta_wine,forust (Rust),ok,2.9
 ta_wine,modeltrees lmtree,ok,4.0
 ta_wine,perpetual (Rust),ok,2.5
 ta_wine,sklearn tree,ok,2.0
+abalone,mboost,error,0.2
+abalone,ranger,error,0.2
+abalone,bart,error,0.2
+abalone,fru,error,0.2
+abalone,ChimeraBoost,ok,20.7
+abalone,EBM,ok,15.2
+abalone,ExtraTrees,ok,4.2
+abalone,KNN,ok,3.2
+abalone,XBART,error,3.2
+abalone,sklearn Linear,ok,3.2
+abalone,sklearn RF,ok,3.8
+abalone,statsmodels OLS,ok,3.0
+abalone,statsmodels QuantReg,ok,2.9
+abalone,statsmodels RLM,ok,3.0
+abalone,trust-free,error,3.0
+boston,mboost,error,0.2
+boston,ranger,error,0.2
+boston,bart,error,0.2
+boston,fru,error,0.2
+boston,ChimeraBoost,ok,3.9
+boston,EBM,ok,67.4
+boston,ExtraTrees,ok,3.1
+boston,KNN,ok,3.1
+boston,XBART,error,3.0
+boston,sklearn Linear,ok,3.0
+boston,sklearn RF,ok,3.1
+boston,statsmodels OLS,ok,3.1
+boston,statsmodels QuantReg,ok,3.0
+boston,statsmodels RLM,ok,2.8
+boston,trust-free,error,2.9
+concrete,mboost,error,0.2
+concrete,ranger,error,0.2
+concrete,bart,error,0.2
+concrete,fru,error,0.2
+concrete,ChimeraBoost,ok,4.3
+concrete,EBM,ok,24.3
+concrete,ExtraTrees,ok,3.1
+concrete,KNN,ok,2.9
+concrete,XBART,error,3.0
+concrete,sklearn Linear,ok,2.9
+concrete,sklearn RF,ok,3.2
+concrete,statsmodels OLS,ok,2.9
+concrete,statsmodels QuantReg,ok,2.9
+concrete,statsmodels RLM,ok,3.1
+concrete,trust-free,error,3.0
+fc2008,mboost,error,0.2
+fc2008,ranger,error,0.2
+fc2008,bart,error,0.2
+fc2008,fru,error,0.2
+fc2008,ChimeraBoost,ok,3.6
+fc2008,EBM,ok,31.1
+fc2008,ExtraTrees,ok,3.1
+fc2008,KNN,error,3.0
+fc2008,XBART,error,3.0
+fc2008,sklearn Linear,error,2.9
+fc2008,sklearn RF,ok,3.0
+fc2008,statsmodels OLS,error,2.9
+fc2008,statsmodels QuantReg,error,2.9
+fc2008,statsmodels RLM,error,2.9
+fc2008,trust-free,error,2.8
+ozone,mboost,error,0.2
+ozone,ranger,error,0.2
+ozone,bart,error,0.2
+ozone,fru,error,0.2
+ozone,ChimeraBoost,ok,3.2
+ozone,EBM,ok,9.8
+ozone,ExtraTrees,ok,3.0
+ozone,KNN,ok,2.9
+ozone,XBART,error,2.9
+ozone,sklearn Linear,ok,2.9
+ozone,sklearn RF,ok,3.0
+ozone,statsmodels OLS,ok,2.9
+ozone,statsmodels QuantReg,ok,2.9
+ozone,statsmodels RLM,ok,2.9
+ozone,trust-free,error,2.9
+ta_airfoil,mboost,error,0.2
+ta_airfoil,ranger,error,0.2
+ta_airfoil,bart,error,0.2
+ta_airfoil,fru,error,0.2
+ta_airfoil,ChimeraBoost,ok,3.7
+ta_airfoil,EBM,ok,70.5
+ta_airfoil,ExtraTrees,ok,3.3
+ta_airfoil,KNN,ok,3.2
+ta_airfoil,XBART,error,3.1
+ta_airfoil,sklearn Linear,ok,3.3
+ta_airfoil,sklearn RF,ok,3.8
+ta_airfoil,statsmodels OLS,ok,3.0
+ta_airfoil,statsmodels QuantReg,ok,3.3
+ta_airfoil,statsmodels RLM,ok,3.1
+ta_airfoil,trust-free,error,3.2
+ta_concrete,mboost,error,0.2
+ta_concrete,ranger,error,0.2
+ta_concrete,bart,error,0.2
+ta_concrete,fru,error,0.2
+ta_concrete,ChimeraBoost,ok,4.1
+ta_concrete,EBM,ok,40.1
+ta_concrete,ExtraTrees,ok,3.5
+ta_concrete,KNN,ok,3.3
+ta_concrete,XBART,error,5.7
+ta_concrete,sklearn Linear,ok,8.2
+ta_concrete,sklearn RF,ok,4.8
+ta_concrete,statsmodels OLS,ok,3.2
+ta_concrete,statsmodels QuantReg,ok,3.3
+ta_concrete,statsmodels RLM,ok,3.2
+ta_concrete,trust-free,error,3.2
+ta_diamonds,mboost,error,0.7
+ta_diamonds,ranger,error,0.7
+ta_diamonds,bart,error,0.7
+ta_diamonds,fru,error,0.7
+ta_diamonds,ChimeraBoost,ok,25.1
