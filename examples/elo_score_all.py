@@ -45,7 +45,8 @@ CRITICAL_S = 180.0
 BUDGET_S = 300.0
 
 R_MODELS = ["rpart", "cubist", "lmtree", "glmtree", "ctree", "grf_llf",
-            "grf_rf", "earth", "mboost"]
+            "grf_rf", "earth", "mboost", "ranger", "bart", "bartMachine",
+            "fru"]
 
 
 def datasets():

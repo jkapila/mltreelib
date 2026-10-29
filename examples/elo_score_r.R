@@ -69,6 +69,24 @@ fit_predict <- function(model, train, test, ycol, xs) {
       fit <- mboost::blackboost(as.formula(paste(ycol, "~ .")), data = train)
       predict(fit, test)
     },
+    ranger = {
+      fit <- ranger::ranger(as.formula(paste(ycol, "~ .")), data = train)
+      predict(fit, test)$predictions
+    },
+    bart = {
+      fit <- dbarts::bart(x.train = train[, xs, drop = FALSE],
+                          y.train = train[[ycol]], verbose = FALSE)
+      colMeans(predict(fit, test[, xs, drop = FALSE]))
+    },
+    bartMachine = {
+      fit <- bartMachine::bartMachine(X = train[, xs, drop = FALSE],
+                                      y = train[[ycol]], verbose = FALSE)
+      predict(fit, test[, xs, drop = FALSE])
+    },
+    fru = {
+      fit <- fru::fru(train[, xs, drop = FALSE], train[[ycol]])
+      predict(fit, test[, xs, drop = FALSE])
+    },
     stop(paste("unknown model:", model))
   )
 }

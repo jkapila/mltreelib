@@ -191,10 +191,38 @@ def make_models():
 
         return run
 
+    def skl_rf():
+        from sklearn.ensemble import RandomForestRegressor
+
+        def run(xtr, ytr, xte):
+            # n_jobs=1: the field runs one multi-core job at a time.
+            m = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=1)
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def trustfree():
+        try:
+            from trust_free import TRUST
+        except ImportError:  # import-name variant across releases
+            from trustfree import TRUST
+
+        def run(xtr, ytr, xte):
+            m = TRUST()
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
     attempt("sklearn tree", skl_tree)
+    attempt("sklearn RF", skl_rf)
+    attempt("trust-free", trustfree)
     attempt("modeltrees lmtree", mtrees)
     attempt("MARS (mars-earth)", mars)
     return ms
