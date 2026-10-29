@@ -14,6 +14,7 @@ benchmarks/elo_scores.csv, and prints started -> reached.
 import csv
 import datetime
 import json
+import logging
 import math
 import os
 import subprocess
@@ -27,7 +28,24 @@ OUT = Path("benchmarks/elo_scores.csv")
 BASE = Path("benchmarks/elo_baselines.csv")
 DATA = Path("benchmarks/elo_data")
 LOG = Path("benchmarks/elo_round.log")
-OURS = ["ModelTree(all)", "ModelTree(path)", "ModelTree(mean)", "ModelTree(winnow)"]
+
+log = logging.getLogger("elo.round")
+
+
+def setup_logging():
+    """Standard file+console logging for Elo runs (the pattern the rest of
+    the codebase adopts later)."""
+    log.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S")
+    fh = logging.FileHandler(LOG, encoding="utf-8")
+    fh.setFormatter(fmt)
+    sh = logging.StreamHandler()
+    sh.setFormatter(fmt)
+    log.handlers = [fh, sh]
+OURS = [
+    "ModelTree(all)", "ModelTree(path)", "ModelTree(mean)", "ModelTree(winnow)",
+    "ModelTree(alpha0)", "ModelTree(alpha.03)",
+]
 
 # The exact settings this round scores — the round manifest records this
 # dict verbatim, and `variants()` builds from it, so the record can never
@@ -44,6 +62,20 @@ SETTINGS = {
     "ModelTree(path)": dict(_BASE, leaf_cols="path"),
     "ModelTree(mean)": dict(_BASE, leaf="mean"),
     "ModelTree(winnow)": dict(_BASE, min_relevance=0.05),
+    # Candidate defaults under evaluation (user spec 2026-10-29), run as two
+    # alpha variants; the round decides which becomes the default.
+    "ModelTree(alpha0)": dict(
+        _BASE,
+        max_depth=12, min_rows=6, l2=6.0, split_precision=None,
+        leaf="linear", gain="sse", prune="bic",
+        imbalance_penalty=0.06, alpha=0.0,
+    ),
+    "ModelTree(alpha.03)": dict(
+        _BASE,
+        max_depth=12, min_rows=6, l2=6.0, split_precision=None,
+        leaf="linear", gain="sse", prune="bic",
+        imbalance_penalty=0.06, alpha=0.03,
+    ),
 }
 
 
@@ -89,6 +121,8 @@ def elo(rows):
 
 
 def main():
+    setup_logging()
+    log.info("round start: %d flavors, settings in this run's manifest", len(SETTINGS))
     rows = list(csv.DictReader(open(OUT)))
     if not rows:
         raise SystemExit("elo_scores.csv is empty - run examples/elo_run_groups.sh first")
@@ -100,7 +134,7 @@ def main():
             w.writerow(["dataset", "model", "rmse", "mae", "fit_s"])
             for r in rows:
                 w.writerow([r["dataset"], r["model"], r["rmse"], r["mae"], r["fit_s"]])
-        print(f"baseline frozen ({len(rows)} rows) -> {BASE}")
+        log.info("baseline frozen (%d rows) -> %s", len(rows), BASE)
 
     datasets = sorted({r["dataset"] for r in rows})
     if os.environ.get("ELO_DATASETS"):
@@ -124,19 +158,19 @@ def main():
                 "mae": f"{reg['mae']:.4f}",
                 "fit_s": f"{fit_s:.3f}",
             }
-            print(f"{ds:<24}{name:<20}rmse={reg['rmse']:>10.3f} fit={fit_s:7.2f}s")
+            log.info("%-24s%-20srmse=%10.3f fit=%7.2fs", ds, name, reg["rmse"], fit_s)
 
     write_scores(list(by.values()))
 
     # started -> reached
     base = list(csv.DictReader(open(BASE)))
     b_elo, c_elo = elo(base), elo(list(by.values()))
-    print("\n== ours: started (frozen baseline) -> reached ==")
-    print(f"{'model':<20}{'ELO before':>12}{'ELO now':>10}{'delta':>8}")
+    log.info("== ours: started (frozen baseline) -> reached ==")
+    log.info("%-20s%12s%10s%8s", "model", "ELO before", "ELO now", "delta")
     for m in OURS:
         b, c = b_elo.get(m), c_elo.get(m)
         if b is not None and c is not None:
-            print(f"{m:<20}{b:>12.1f}{c:>10.1f}{c - b:>+8.1f}")
+            log.info("%-20s%12.1f%10.1f%+8.1f", m, b, c, c - b)
 
     # Provenance manifest: what settings created these numbers.
     sha = subprocess.run(
@@ -155,13 +189,11 @@ def main():
         "elo_after": {m: c_elo.get(m) for m in OURS},
     }
     (rdir / "settings.json").write_text(json.dumps(manifest, indent=2))
-    with open(LOG, "a") as fh:
-        deltas = " ".join(
-            f"{m}:{b_elo.get(m, 0):.0f}->{c_elo.get(m, 0):.0f}" for m in OURS
-        )
-        fh.write(f"{stamp} sha={sha} datasets={len(datasets)} {deltas}\n")
-    print(f"\nround manifest: {rdir / 'settings.json'}")
-    print(f"round log: {LOG}")
+    deltas = " ".join(
+        f"{m}:{b_elo.get(m, 0):.0f}->{c_elo.get(m, 0):.0f}" for m in OURS
+    )
+    log.info("round %s sha=%s datasets=%d %s", stamp, sha, len(datasets), deltas)
+    log.info("round manifest: %s", rdir / "settings.json")
 
 
 if __name__ == "__main__":

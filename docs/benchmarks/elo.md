@@ -117,7 +117,7 @@ Every round records what created its numbers:
   each flavor was fit with (single-sourced: the manifest records the same
   dict `variants()` builds from, so record and reality cannot drift), the
   git SHA, the dataset list, every result row, and Elo before → after.
-- `benchmarks/elo_round.log` — one append-only line per round: `stamp, sha,
+- `benchmarks/elo_round.log` — stdlib `logging` output (file + console), one line per round: `timestamp, stamp, sha,
   dataset count, per-model Elo before->after`. This is the first place to
   look for "what did we change and what did it move".
 - `benchmarks/elo_scores.csv` — the live board (our rows upserted);

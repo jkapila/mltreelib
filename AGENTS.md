@@ -72,6 +72,11 @@ uv run python scripts/gen_api_docs.py   # regenerate docs/reference/api.md after
   concurrently (our rayon scans, LightGBM, CatBoost, …): oversubscribed cores
   make every run slower. Serialize scorers and fits in drivers and background
   jobs.
+- **Logging (future work).** Overall stdlib `logging` across scorers and
+  examples is still owed; the pattern is established in
+  `examples/elo_round.py` (`setup_logging()`: `FileHandler` +
+  `StreamHandler`, timestamped `INFO`). Elo runs use it already — extend the
+  same shape rather than inventing new print-to-file plumbing.
 - **Codex is a standing buddy.** Use the `codex` CLI freely — ask it for
   design advice, have it code or review parts in parallel, and test its
   output. Don't hesitate; it's part of the workflow.
