@@ -161,20 +161,19 @@ pub struct ModelTreeParams {
 impl Default for ModelTreeParams {
     fn default() -> Self {
         Self {
-            // Defaults below are the bake-off winner on the arena datasets
-            // (examples/default_search.py): linear leaves at shallow depth
-            // beat plain OLS and every baseline bar. Ridge (l2) keeps leaf
-            // coefficients sane in closed form; l1 is OFF by default -
-            // coordinate descent is slow in the split scan and the gain over
-            // ridge is marginal (see docs/benchmarks/elo.md).
-            max_depth: 4,
-            min_rows: 10,
+            // Defaults rebaked 2026-10-30 (candidate C, the robust
+            // winner of the 18-dataset sweep: C 10 - coarse-NEW 4 - old 3).
+            // Scale-aware leaves (min_rows floor + minprob share), fine
+            // grid, cost-complexity pruning -- see examples/default_bake.py
+            // for the evidence tables.
+            max_depth: 5,
+            min_rows: 50,
             // Noise floor as much as a tuning knob: fitted-leaf gains below
             // this are numerical, not structural.
             min_gain: 1e-9,
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
-            l2: 0.1,
+            l2: 0.5,
             l1: 0.0,
             monotone: Vec::new(),
             interaction_groups: Vec::new(),
@@ -190,7 +189,7 @@ impl Default for ModelTreeParams {
             imbalance_penalty: 0.0,
             col_sample: None,
             seed: 42,
-            prune: PruneCost::None,
+            prune: PruneCost::Cp,
             split_test: SplitTest::None,
             split_alpha: 0.05,
             bonferroni: false,
@@ -198,11 +197,11 @@ impl Default for ModelTreeParams {
             honesty: false,
             honesty_fraction: 0.5,
             maxsurrogate: 0,
-            cp_alpha: 0.0,
+            cp_alpha: 5.0,
             max_leaf_nodes: None,
             minsplit: None,
             minbucket: None,
-            minprob: 0.0,
+            minprob: 0.02,
             preselect: crate::preselect::Preselect::None,
             purity_gate: None,
         }

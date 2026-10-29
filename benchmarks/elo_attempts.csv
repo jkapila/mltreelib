@@ -497,3 +497,11 @@ ta_diamonds,mboost,error,1.6
 ta_diamonds,ranger,error,1.5
 ta_diamonds,bart,ok,70.7
 ta_diamonds,fru,error,0.7
+ta_diamonds,EBM,timeout,300.2
+ta_diamonds,XBART,error,3.7
+ta_diamonds,trust-free,error,5.2
+ta_fiat500,mboost,ok,1.9
+ta_fiat500,ranger,ok,1.3
+ta_fiat500,bart,ok,1.8
+ta_fiat500,fru,error,0.2
+ta_fiat500,XBART,error,3.3

@@ -523,3 +523,6 @@ ta_concrete,ranger,5.7536,4.3352,2.215
 ta_concrete,bart,4.2632,3.1369,2.841
 ta_concrete,trust-free,6.6456,4.7354,14.139
 ta_diamonds,bart,552.4743,296.6175,64.006
+ta_fiat500,mboost,724.1883,561.6769,1.660
+ta_fiat500,ranger,673.0884,517.5975,1.076
+ta_fiat500,bart,695.7621,537.2165,1.573

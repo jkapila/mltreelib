@@ -62,6 +62,7 @@ fn recovers_planted_split_and_leaf_models() {
         l1: 0.0,
         l2: 0.0,
         split_precision: None,
+        prune: PruneCost::None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -379,6 +380,7 @@ fn printer_matches_rpart_layout() {
         l1: 0.0,
         l2: 0.0,
         split_precision: None,
+        prune: PruneCost::None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -396,6 +398,7 @@ fn dot_export_names_nodes_and_edges() {
         l1: 0.0,
         l2: 0.0,
         split_precision: None,
+        prune: PruneCost::None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -942,6 +945,8 @@ fn bic_prune_shrinks_noisy_depth() {
     let base = ModelTreeParams {
         max_depth: 4,
         min_rows: 2,
+        prune: PruneCost::None,
+        cp_alpha: 0.0,
         ..Default::default()
     };
     let unpruned = ModelTree::fit(&x, &y, base.clone()).unwrap();
@@ -1071,6 +1076,7 @@ fn chow_gate_stops_noise_splits() {
         min_rows: 10,
         leaf: LeafKind::Mean,
         l2: 0.0,
+        prune: PruneCost::None,
         ..Default::default()
     };
     let ungated = ModelTree::fit(&x, &y, base.clone()).unwrap();

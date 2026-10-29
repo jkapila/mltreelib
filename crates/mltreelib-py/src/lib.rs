@@ -2127,16 +2127,16 @@ impl PyModelTree {
     /// Returns: the model tree; call `.fit()` next.
     #[new]
     #[pyo3(signature = (
-        max_depth = 4, min_rows = 10, minsplit = None, minbucket = None,
-        minprob = 0.0, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
+        max_depth = 5, min_rows = 50, minsplit = None, minbucket = None,
+        minprob = 0.02, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
         gain = None, split_precision = Some(0.001), split_cols = None,
         col_sample = None, seed = 42,
-        leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.1,
+        leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.5,
         leaf_cols = "all", leaf_digest = true,
         cat_order = None, cat_search = "cumulative",
         monotone = vec![], interaction_groups = vec![],
         alpha = 0.0, imbalance_penalty = 0.0,
-        prune = "none", cp_alpha = 0.0,
+        prune = "cp", cp_alpha = 5.0,
         honesty = false, honesty_fraction = 0.5,
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
