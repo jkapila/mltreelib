@@ -28,7 +28,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | read the numbers | [Examples — Inspection](examples/inspection.md) |
 | draw the tree | [Examples — Visualization](examples/visualization.md) |
 | see how it compares | [Benchmarks — ELO](benchmarks/elo.md) |
-| look up every parameter | [API reference — Data & Model](reference/data-model.md) |
+| look up every parameter | [API reference](reference/model.md) |
 
 !!! tip "Try it right now"
     `uv run python examples/quickstart.py` fits a tree, prints it in rpart

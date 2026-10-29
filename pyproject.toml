@@ -12,6 +12,14 @@ readme = "README.md"
 license = "Apache-2.0"
 dependencies = ["pyarrow>=14"]
 
+[project.optional-dependencies]
+# Charts and diagrams: the rendering wheels we borrow instead of reinventing.
+plotting = [
+    "matplotlib>=3.8",
+    "pygraphviz>=1.11",
+    "seaborn>=0.13",
+]
+
 [dependency-groups]
 dev = [
     "maturin>=1.5,<2.0",

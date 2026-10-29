@@ -48,7 +48,7 @@ Reading it:
   *ensembles with strong feature handling* (forust/perpetual are boosted trees,
   CatBoost and LightGBM boost, grf_llf is a forest of local-linear trees).
 - **Our `ModelTree` rows are the plain single tree** — its honest baseline
-  position, exactly what the [default bake-off](../reference/data-model.md)
+  position, exactly what the [default bake-off](../reference/model.md)
   optimizes against.
 - `(n/10 datasets)` = datasets where the model has a score; matchups only
   happen where both models have one.

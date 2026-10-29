@@ -38,11 +38,15 @@ def main():
     def short(ds):
         return ds[3:] if ds.startswith("ta_") else ds
 
+    shorts = {d: short(d) for d in datasets}
+    dupes = {s for s in shorts.values() if list(shorts.values()).count(s) > 1}
+    shorts = {d: (d if s in dupes else s) for d, s in shorts.items()}
+
     best = {ds: min(v[0] for (d, _), v in by.items() if d == ds) for ds in datasets}
 
     # ---- wide markdown table (TabArena style) --------------------------
     lines = []
-    lines.append("| Elo | model | " + " | ".join(short(d) for d in datasets) + " |")
+    lines.append("| Elo | model | " + " | ".join(shorts[d] for d in datasets) + " |")
     lines.append("|---:|---| " + "|".join("---:" for _ in datasets) + " |")
     for m in order:
         cells = []
@@ -56,7 +60,7 @@ def main():
         lines.append(f"| {ratings[m]:.0f} | {m} ({n}/{len(datasets)}) | " + " | ".join(cells) + " |")
 
     # ---- interactive sortable table (self-contained) -------------------
-    head = "".join(f"<th data-t='{i}'>{short(d)}</th>" for i, d in enumerate(datasets))
+    head = "".join(f"<th data-t='{i}'>{shorts[d]}</th>" for i, d in enumerate(datasets))
     body_rows = []
     for m in order:
         tds = []

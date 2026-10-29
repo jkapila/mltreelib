@@ -73,6 +73,39 @@ columns even when you don't pass names (they default to `x0…xN`). Note the
 split columns' `missing_left=True`: missing values learned their own routing
 direction per split.
 
+## Explaining one prediction (break-down)
+
+`break_down(row)` decomposes a prediction along its decision path —
+baseline (training mean) + per-column contributions + residual, telescoping
+exactly to the prediction. Columns can repeat along a path (a feature may
+gate several splits):
+
+```text
+break_down of one row: baseline 3936.3 -> prediction 1779.7 (8 steps)
+  x4     -2299.7
+  x0     +851.1
+  x0     -309.9
+  x0     -465.3
+  x14    +189.9
+  x0     -85.0
+  ... 2 more steps
+  residual -166.6  (sum check: 1779.7)
+```
+
+## Feature importance
+
+`feature_importance()` — each column's share of total split gain (rpart's
+variable importance):
+
+```text
+feature importance (top 5 of 26):
+  x4     0.707
+  x0     0.124
+  x20    0.040
+  x23    0.032
+  x14    0.028
+```
+
 ## The tree text itself
 
 `print(model)` is the full rpart-format listing (see the

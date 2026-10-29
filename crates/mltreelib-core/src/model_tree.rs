@@ -121,6 +121,21 @@ pub struct Split {
     pub col: usize,
     pub threshold: f64,
     pub missing_left: bool,
+    /// Goodness of split (parent SSE - children SSE) — the raw material of
+    /// feature importance.
+    pub gain: f64,
+}
+
+/// A prediction decomposed along its decision path (DALEX-style break-down).
+#[derive(Clone, Debug)]
+pub struct BreakDown {
+    /// Training-target mean — the starting level.
+    pub baseline: f64,
+    /// `(column, contribution)` in decision-path order.
+    pub steps: Vec<(usize, f64)>,
+    /// Within-leaf model adjustment (identically 0 for mean leaves).
+    pub residual: f64,
+    pub prediction: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -382,6 +397,59 @@ impl ModelTree {
         }
         s += "}\n";
         s
+    }
+
+    /// Feature importance — each column's share of the total split gain
+    /// (rpart's "variable importance": summed goodness of split). Returns
+    /// (column name, share) pairs sorted descending; shares sum to 1.
+    pub fn feature_importances(&self) -> Vec<(String, f64)> {
+        let mut totals = vec![0.0f64; self.col_names.len()];
+        let mut sum = 0.0;
+        for nd in &self.nodes {
+            if let Some(sp) = nd.split {
+                totals[sp.col] += sp.gain;
+                sum += sp.gain;
+            }
+        }
+        let mut out: Vec<(String, f64)> = self
+            .col_names
+            .iter()
+            .enumerate()
+            .map(|(j, name)| (name.clone(), if sum > 0.0 { totals[j] / sum } else { 0.0 }))
+            .collect();
+        out.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        out
+    }
+
+    /// Break one prediction into path contributions (DALEX-style break-down
+    /// for trees): `baseline` is the training mean; each split on the row's
+    /// route contributes (child node mean − parent node mean) to its column,
+    /// in path order; `residual` is the within-leaf model adjustment. They
+    /// telescope: baseline + Σ steps + residual == prediction.
+    pub fn break_down(&self, x: &[Option<f64>]) -> BreakDown {
+        let mut node = &self.nodes[self.root];
+        let baseline = node.stats.mean;
+        let mut steps: Vec<(usize, f64)> = Vec::new();
+        while let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
+            let go_left = match x.get(sp.col).and_then(|v| *v) {
+                Some(v) => v <= sp.threshold,
+                None => sp.missing_left,
+            };
+            let child = &self.nodes[if go_left { l } else { r }];
+            steps.push((sp.col, child.stats.mean - node.stats.mean));
+            node = child;
+        }
+        let prediction = node
+            .leaf
+            .as_ref()
+            .expect("tree invariant: leaf holds a model")
+            .predict(x);
+        BreakDown {
+            baseline,
+            steps,
+            residual: prediction - node.stats.mean,
+            prediction,
+        }
     }
 
     /// Split columns along each root→leaf path — introspection for
@@ -751,6 +819,7 @@ impl<'a> Grower<'a> {
                             col: j,
                             threshold,
                             missing_left,
+                            gain,
                         },
                     ));
                 }
@@ -936,6 +1005,7 @@ impl<'a> Grower<'a> {
                             col: j,
                             threshold,
                             missing_left,
+                            gain,
                         },
                     ));
                 }

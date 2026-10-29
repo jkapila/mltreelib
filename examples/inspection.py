@@ -57,6 +57,25 @@ prof = model.profile()
 print(f"\nfit profile: {len(prof)} depth levels; slowest depth's split scan: "
       f"{max(p['scan_ns'] for p in prof) / 1e6:.1f} ms")
 
+# --- explaining one prediction (DALEX-style break-down) -----------------
+row = X[n_tr]
+bd = model.break_down(row)
+total = sum(d for _, d in bd["steps"])
+print(f"\nbreak_down of one row: baseline {bd['baseline']:.1f} -> "
+      f"prediction {bd['prediction']:.1f} ({len(bd['steps'])} steps)")
+for col, delta in bd["steps"][:6]:
+    print(f"  {col:<6} {delta:+.1f}")
+if len(bd["steps"]) > 6:
+    print(f"  ... {len(bd['steps']) - 6} more steps")
+print(f"  residual {bd['residual']:+.1f}  "
+      f"(sum check: {bd['baseline'] + total + bd['residual']:.1f})")
+
+# --- feature importance (share of total split gain) --------------------
+imp = model.feature_importance()
+print("\nfeature importance (top 5 of %d):" % len(imp))
+for name, share in imp[:5]:
+    print(f"  {name:<6} {share:.3f}")
+
 # --- the rpart-style text ---------------------------------------------
 print("\nthe tree itself (top of the print):")
 print("\n".join(str(model).splitlines()[:12]))

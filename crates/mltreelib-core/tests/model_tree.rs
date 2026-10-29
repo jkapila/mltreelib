@@ -401,6 +401,98 @@ fn dot_export_names_nodes_and_edges() {
 }
 
 #[test]
+fn feature_importance_ranks_the_signal_column() {
+    // x0 drives y; x1/x2 are noise. Gain-share importance must rank x0 first
+    // with the clear majority of the total split gain.
+    let x: Vec<Vec<Option<f64>>> = (0..400)
+        .map(|i| {
+            vec![
+                Some((i % 40) as f64 / 40.0),
+                Some(((i * 37) % 31) as f64 / 31.0),
+                Some(((i * 17) % 29) as f64 / 29.0),
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..400).map(|i| Some(7.0 * (i % 40) as f64 / 40.0)).collect();
+    let p = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        leaf: LeafKind::Mean,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let imp = tree.feature_importances();
+    assert_eq!(imp[0].0, "x0", "{imp:?}");
+    assert!(imp[0].1 > 0.8, "x0 should own most of the gain: {imp:?}");
+}
+
+#[test]
+fn break_down_telescopes_on_mean_and_linear_leaves() {
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| {
+            vec![
+                Some((i % 20) as f64 / 20.0),
+                Some(((i * 7) % 13) as f64 / 13.0),
+                if i % 17 == 0 {
+                    None
+                } else {
+                    Some(i as f64 % 3.0)
+                },
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(2.0 * (i % 20) as f64 / 20.0 + if i % 20 > 10 { 3.0 } else { 0.0 }))
+        .collect();
+    for leaf in [LeafKind::Mean, LeafKind::Linear] {
+        let p = ModelTreeParams {
+            max_depth: 3,
+            min_rows: 10,
+            l1: 0.0,
+            l2: 0.0,
+            leaf,
+            ..Default::default()
+        };
+        let tree = ModelTree::fit(&x, &y, p).unwrap();
+        for row in x.iter().step_by(7) {
+            let bd = tree.break_down(row);
+            let sum: f64 = bd.steps.iter().map(|(_, v)| v).sum();
+            assert!(
+                (bd.baseline + sum + bd.residual - bd.prediction).abs() < 1e-9,
+                "{leaf:?} {bd:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn break_down_attributes_the_step_column() {
+    // y jumps on x0; a high-x0 row must show the dominant contribution there.
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| vec![Some((i % 20) as f64 / 20.0), Some(((i * 11) % 13) as f64 / 13.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(if i % 20 > 10 { 8.0 } else { 0.0 }))
+        .collect();
+    let p = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        l1: 0.0,
+        l2: 0.0,
+        leaf: LeafKind::Mean,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let bd = tree.break_down(&[Some(1.0), Some(0.5)]);
+    let x0: f64 = bd.steps.iter().filter(|(c, _)| *c == 0).map(|(_, v)| *v).sum();
+    let x1: f64 = bd.steps.iter().filter(|(c, _)| *c == 1).map(|(_, v)| *v).sum();
+    assert!((x0 - (bd.prediction - bd.baseline)).abs() < 1e-9, "x0 carries the step: {bd:?}");
+    assert!(x1.abs() < 1.0, "x1 is noise: {bd:?}");
+}
+
+#[test]
 fn interaction_groups_respected() {
     // x2 matters as a STEP deep in the tree (x0 > 0.75 region) - a linear
     // leaf cannot absorb it, so the unconstrained tree must mix groups along

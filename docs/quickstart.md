@@ -67,4 +67,4 @@ Three things to notice:
   bake-off](benchmarks/elo.md).
 
 Next: the [Churn example](examples/churn.md) for a real end-to-end problem, or
-the [API reference](reference/data-model.md) for every parameter.
+the [API reference](reference/model.md) for every parameter.

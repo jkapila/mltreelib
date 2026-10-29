@@ -1481,6 +1481,423 @@ impl PyMetrics {
         }
         Ok(d.unbind())
     }
+
+    /// Calibration (reliability) bins: mean predicted score vs observed
+    /// frequency per bin. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///     n_bins: equal-width bins over [0, 1] (default 10).
+    ///
+    /// Returns: `{"bins": [{"left", "right", "mean_score", "observed", "n"}]}`
+    /// (empty bins omitted; scores clip into edge bins).
+    #[pyo3(signature = (y_true, scores, n_bins = 10))]
+    fn calibration(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+        n_bins: usize,
+    ) -> PyResult<Py<PyDict>> {
+        let bins =
+            mltreelib_core::metrics::calibration_bins(&y_true, &scores, n_bins)
+                .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        let out: Vec<Py<PyDict>> = bins
+            .iter()
+            .map(|b| {
+                let bd = PyDict::new(py);
+                let _ = bd.set_item("left", b.left);
+                let _ = bd.set_item("right", b.right);
+                let _ = bd.set_item("mean_score", b.mean_score);
+                let _ = bd.set_item("observed", b.observed);
+                let _ = bd.set_item("n", b.n);
+                bd.unbind()
+            })
+            .collect();
+        d.set_item("bins", out)?;
+        Ok(d.unbind())
+    }
+
+    /// ROC curve + AUC. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///
+    /// Returns: `{"points": [[fpr, tpr], ...], "auc": float}`.
+    fn roc_curve(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let (pts, auc) = mltreelib_core::metrics::roc_curve(&y_true, &scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("points", pts)?;
+        d.set_item("auc", auc)?;
+        Ok(d.unbind())
+    }
+
+    /// Precision-recall curve + average precision. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///
+    /// Returns: `{"points": [[recall, precision], ...], "average_precision":
+    /// float}`.
+    fn pr_curve(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let (pts, ap) = mltreelib_core::metrics::pr_curve(&y_true, &scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("points", pts)?;
+        d.set_item("average_precision", ap)?;
+        Ok(d.unbind())
+    }
+
+    /// Cumulative gains curve. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///
+    /// Returns: `{"points": [[population_fraction, capture_rate], ...]}`
+    /// (lift at a point = capture / fraction).
+    fn gain_curve(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let pts = mltreelib_core::metrics::gain_curve(&y_true, &scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("points", pts)?;
+        Ok(d.unbind())
+    }
+
+    /// Cumulative lift curve. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///
+    /// Returns: `{"points": [[population_fraction, lift], ...]}`
+    /// (lift = capture / population fraction).
+    fn lift_curve(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let pts = mltreelib_core::metrics::lift_curve(&y_true, &scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("points", pts)?;
+        Ok(d.unbind())
+    }
+
+    /// KS sweep + statistic + Score@KS. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///
+    /// Returns: `{"points": [[fpr, tpr, score], ...], "ks", "score_at_ks",
+    /// "tpr_at_ks", "fpr_at_ks"}`.
+    fn ks_statistic(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let r = mltreelib_core::metrics::ks_statistic(&y_true, &scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("points", r.points)?;
+        d.set_item("ks", r.ks)?;
+        d.set_item("score_at_ks", r.score_at_ks)?;
+        d.set_item("tpr_at_ks", r.tpr_at_ks)?;
+        d.set_item("fpr_at_ks", r.fpr_at_ks)?;
+        Ok(d.unbind())
+    }
+
+    /// Decile profile (kds/PerfScoreCard decile table; modelplotpy response at
+    /// decile granularity). Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     scores: predicted scores/probabilities.
+    ///     n_buckets: equal-count buckets by score descending (default 10).
+    ///
+    /// Returns: `[{"decile", "n", "avg_score", "events", "event_rate",
+    /// "cum_capture", "cum_event_rate", "lift"}, ...]` (decile 1 = top).
+    #[pyo3(signature = (y_true, scores, n_buckets = 10))]
+    fn decile_table(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores: Vec<f64>,
+        n_buckets: usize,
+    ) -> PyResult<Py<PyAny>> {
+        let rows = mltreelib_core::metrics::decile_table(&y_true, &scores, n_buckets)
+            .map_err(PyValueError::new_err)?;
+        let out: Vec<Py<PyDict>> = rows
+            .iter()
+            .map(|r| {
+                let d = PyDict::new(py);
+                let _ = d.set_item("decile", r.decile);
+                let _ = d.set_item("n", r.n);
+                let _ = d.set_item("avg_score", r.avg_score);
+                let _ = d.set_item("events", r.events);
+                let _ = d.set_item("event_rate", r.event_rate);
+                let _ = d.set_item("cum_capture", r.cum_capture);
+                let _ = d.set_item("cum_event_rate", r.cum_event_rate);
+                let _ = d.set_item("lift", r.lift);
+                d.unbind()
+            })
+            .collect();
+        Ok(pyo3::types::PyList::new(py, out)?.into_any().unbind())
+    }
+
+    /// Stability index (PSI on scores, CSI on a feature column). Task:
+    /// classification or regression monitoring.
+    ///
+    /// Args:
+    ///     reference: reference-period values (bins derive from their range).
+    ///     current: current-period values.
+    ///     n_bins: equal-width bins (default 10).
+    ///
+    /// Returns: `{"psi": float, "bins": [{"left", "right", "reference_share",
+    /// "current_share", "contribution"}, ...]}`.
+    #[pyo3(signature = (reference, current, n_bins = 10))]
+    fn stability_index(
+        &self,
+        py: Python<'_>,
+        reference: Vec<f64>,
+        current: Vec<f64>,
+        n_bins: usize,
+    ) -> PyResult<Py<PyDict>> {
+        let (psi, bins) = mltreelib_core::metrics::stability_index(&reference, &current, n_bins)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("psi", psi)?;
+        let out: Vec<Py<PyDict>> = bins
+            .iter()
+            .map(|b| {
+                let bd = PyDict::new(py);
+                let _ = bd.set_item("left", b.left);
+                let _ = bd.set_item("right", b.right);
+                let _ = bd.set_item("reference_share", b.reference_share);
+                let _ = bd.set_item("current_share", b.current_share);
+                let _ = bd.set_item("contribution", b.contribution);
+                bd.unbind()
+            })
+            .collect();
+        d.set_item("bins", out)?;
+        Ok(d.unbind())
+    }
+
+    /// Double-lift table: actual vs model A vs model B along A's ranking (CAS
+    /// monograph chart; additive vs ratio display is a plotting concern).
+    /// Task: regression or classification.
+    ///
+    /// Args:
+    ///     y_true: targets.
+    ///     scores_a: model A predictions (defines the ranking).
+    ///     scores_b: model B predictions.
+    ///     n_buckets: equal-count buckets (default 10).
+    ///
+    /// Returns: `[{"bucket", "n", "actual", "pred_a", "pred_b"}, ...]`.
+    #[pyo3(signature = (y_true, scores_a, scores_b, n_buckets = 10))]
+    fn double_lift(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        scores_a: Vec<f64>,
+        scores_b: Vec<f64>,
+        n_buckets: usize,
+    ) -> PyResult<Py<PyAny>> {
+        let rows = mltreelib_core::metrics::double_lift(&y_true, &scores_a, &scores_b, n_buckets)
+            .map_err(PyValueError::new_err)?;
+        let out: Vec<Py<PyDict>> = rows
+            .iter()
+            .map(|r| {
+                let d = PyDict::new(py);
+                let _ = d.set_item("bucket", r.bucket);
+                let _ = d.set_item("n", r.n);
+                let _ = d.set_item("actual", r.actual);
+                let _ = d.set_item("pred_a", r.pred_a);
+                let _ = d.set_item("pred_b", r.pred_b);
+                d.unbind()
+            })
+            .collect();
+        Ok(pyo3::types::PyList::new(py, out)?.into_any().unbind())
+    }
+
+    /// Cohen's kappa with optional weights over the label scale. Task:
+    /// classification.
+    ///
+    /// Args:
+    ///     y_true: integer-like labels.
+    ///     y_pred: integer-like labels.
+    ///     weights: "none" | "linear" | "quadratic" (default "quadratic").
+    ///
+    /// Returns: kappa (1 = perfect agreement).
+    #[pyo3(signature = (y_true, y_pred, weights = "quadratic"))]
+    fn weighted_kappa(
+        &self,
+        y_true: Vec<f64>,
+        y_pred: Vec<f64>,
+        weights: &str,
+    ) -> PyResult<f64> {
+        mltreelib_core::metrics::weighted_kappa(&y_true, &y_pred, weights)
+            .map_err(PyValueError::new_err)
+    }
+
+    /// Log loss of probability predictions. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     probs: predicted probabilities.
+    ///
+    /// Returns: mean log loss.
+    fn log_loss(&self, y_true: Vec<f64>, probs: Vec<f64>) -> PyResult<f64> {
+        mltreelib_core::metrics::log_loss(&y_true, &probs).map_err(PyValueError::new_err)
+    }
+
+    /// Brier score of probability predictions. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     probs: predicted probabilities.
+    ///
+    /// Returns: mean squared probability error.
+    fn brier_score(&self, y_true: Vec<f64>, probs: Vec<f64>) -> PyResult<f64> {
+        mltreelib_core::metrics::brier_score(&y_true, &probs).map_err(PyValueError::new_err)
+    }
+
+    /// Hinge loss over signed decision margins. Task: classification.
+    ///
+    /// Args:
+    ///     y_true: targets (positive = > 0.5).
+    ///     decision: decision-function margins (signed).
+    ///
+    /// Returns: mean hinge loss.
+    fn hinge_loss(&self, y_true: Vec<f64>, decision: Vec<f64>) -> PyResult<f64> {
+        mltreelib_core::metrics::hinge_loss(&y_true, &decision).map_err(PyValueError::new_err)
+    }
+
+    /// Single-label classification scorecard (binary or multiclass).
+    /// Task: classification.
+    ///
+    /// Args:
+    ///     y_true: integer-like labels.
+    ///     y_pred: integer-like labels.
+    ///
+    /// Returns: `{"n", "n_classes", "accuracy", "balanced_accuracy",
+    /// "precision_macro/micro/weighted", "recall_*", "f1_*", "mcc",
+    /// "jaccard_macro/micro/weighted", "hamming_loss", "zero_one_loss"}`.
+    fn classification_scores(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        y_pred: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let s = mltreelib_core::metrics::classification_scores(&y_true, &y_pred)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("n", s.n)?;
+        d.set_item("n_classes", s.n_classes)?;
+        d.set_item("accuracy", s.accuracy)?;
+        d.set_item("balanced_accuracy", s.balanced_accuracy)?;
+        d.set_item("precision_macro", s.precision_macro)?;
+        d.set_item("recall_macro", s.recall_macro)?;
+        d.set_item("f1_macro", s.f1_macro)?;
+        d.set_item("precision_micro", s.precision_micro)?;
+        d.set_item("recall_micro", s.recall_micro)?;
+        d.set_item("f1_micro", s.f1_micro)?;
+        d.set_item("precision_weighted", s.precision_weighted)?;
+        d.set_item("recall_weighted", s.recall_weighted)?;
+        d.set_item("f1_weighted", s.f1_weighted)?;
+        d.set_item("mcc", s.mcc)?;
+        d.set_item("jaccard_macro", s.jaccard_macro)?;
+        d.set_item("jaccard_micro", s.jaccard_micro)?;
+        d.set_item("jaccard_weighted", s.jaccard_weighted)?;
+        d.set_item("hamming_loss", s.hamming_loss)?;
+        d.set_item("zero_one_loss", s.zero_one_loss)?;
+        Ok(d.unbind())
+    }
+
+    /// Multilabel scorecard: rows are instances, columns are labels, entries
+    /// > 0.5 are positive (raw entries double as ranking scores).
+    /// Task: multilabel classification.
+    ///
+    /// Args:
+    ///     y_true: label matrix (rows x labels, 0/1).
+    ///     y_scores: prediction/score matrix (same shape).
+    ///
+    /// Returns: `{"n", "n_labels", "subset_accuracy", "hamming_loss",
+    /// "precision_micro/macro/samples", "recall_*", "f1_*",
+    /// "label_ranking_ap", "coverage_error"}`.
+    fn multilabel_scores(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<Vec<f64>>,
+        y_scores: Vec<Vec<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let s = mltreelib_core::metrics::multilabel_scores(&y_true, &y_scores)
+            .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        d.set_item("n", s.n)?;
+        d.set_item("n_labels", s.n_labels)?;
+        d.set_item("subset_accuracy", s.subset_accuracy)?;
+        d.set_item("hamming_loss", s.hamming_loss)?;
+        d.set_item("precision_micro", s.precision_micro)?;
+        d.set_item("recall_micro", s.recall_micro)?;
+        d.set_item("f1_micro", s.f1_micro)?;
+        d.set_item("precision_macro", s.precision_macro)?;
+        d.set_item("recall_macro", s.recall_macro)?;
+        d.set_item("f1_macro", s.f1_macro)?;
+        d.set_item("precision_samples", s.precision_samples)?;
+        d.set_item("recall_samples", s.recall_samples)?;
+        d.set_item("f1_samples", s.f1_samples)?;
+        d.set_item("label_ranking_ap", s.label_ranking_ap)?;
+        d.set_item("coverage_error", s.coverage_error)?;
+        Ok(d.unbind())
+    }
+
+    /// Pairwise distances between two row sets. Task: any.
+    ///
+    /// Args:
+    ///     a: first rows (rows x features).
+    ///     b: second rows (same width).
+    ///     metric: "euclidean" | "manhattan" | "chebyshev" | "minkowski" |
+    ///         "cosine" | "correlation" | "hamming" | "jaccard".
+    ///     p: Minkowski power (default 2.0).
+    ///
+    /// Returns: `len(a) x len(b)` distance matrix.
+    #[pyo3(signature = (a, b, metric = "euclidean", p = 2.0))]
+    fn pairwise_distances(
+        &self,
+        py: Python<'_>,
+        a: Vec<Vec<f64>>,
+        b: Vec<Vec<f64>>,
+        metric: &str,
+        p: f64,
+    ) -> PyResult<Py<PyAny>> {
+        let m = mltreelib_core::metrics::pairwise_distances(&a, &b, metric, p)
+            .map_err(PyValueError::new_err)?;
+        Ok(pyo3::types::PyList::new(py, m)?.into_any().unbind())
+    }
 }
 
 /// Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
@@ -1663,7 +2080,8 @@ impl PyModelTree {
     ///
     /// Args: none.
     ///
-    /// Returns: one dict per split with `col`, `threshold`, `missing_left`.
+    /// Returns: one dict per split with `col`, `threshold`, `missing_left`,
+    /// `gain` (goodness of split).
     fn splits(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
         let t = self.tree()?;
         let mut out = Vec::new();
@@ -1672,9 +2090,45 @@ impl PyModelTree {
             d.set_item("col", t.col_names[s.col].clone())?;
             d.set_item("threshold", s.threshold)?;
             d.set_item("missing_left", s.missing_left)?;
+            d.set_item("gain", s.gain)?;
             out.push(d.into_any().unbind());
         }
         Ok(out)
+    }
+
+    /// Feature importance - each column's share of the total split gain
+    /// (rpart's variable importance). Task: regression.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: list of `(column_name, share)` sorted descending; shares
+    /// sum to 1.
+    fn feature_importance(&self) -> PyResult<Vec<(String, f64)>> {
+        Ok(self.tree()?.feature_importances())
+    }
+
+    /// DALEX-style break-down of one prediction. Task: regression.
+    ///
+    /// Args:
+    ///     row: one row of predictors (`None` = missing).
+    ///
+    /// Returns: `{"baseline", "steps": [[column_name, contribution], ...],
+    /// "residual", "prediction"}`; baseline + steps + residual == prediction.
+    fn break_down(&self, py: Python<'_>, row: Vec<Option<f64>>) -> PyResult<Py<PyDict>> {
+        let t = self.tree()?;
+        let bd = t.break_down(&row);
+        let d = PyDict::new(py);
+        d.set_item("baseline", bd.baseline)?;
+        d.set_item(
+            "steps",
+            bd.steps
+                .into_iter()
+                .map(|(c, v)| (t.col_names[c].clone(), v))
+                .collect::<Vec<_>>(),
+        )?;
+        d.set_item("residual", bd.residual)?;
+        d.set_item("prediction", bd.prediction)?;
+        Ok(d.unbind())
     }
 
     /// rpart-style text print of the tree.
