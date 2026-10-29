@@ -12,11 +12,20 @@ datasets <- sort(sub("_train.csv$", "",
 if (nzchar(Sys.getenv("ELO_DATASETS"))) {  # groups-of-5 runs: score a subset
   datasets <- datasets[datasets %in% strsplit(Sys.getenv("ELO_DATASETS"), ",")[[1]]]
 }
+done <- if (file.exists(out)) {
+  read.csv(out, stringsAsFactors = FALSE)[, c("dataset", "model")]
+} else {
+  data.frame(dataset = character(0), model = character(0))
+}
 if (!file.exists(out)) {
   writeLines("dataset,model,rmse,mae,fit_s", out)
 }
 
 fit_predict <- function(model, train, test, ycol, xs) {
+  # Best-effort per-model budget (algorithm x dataset): hard kills for native
+  # fits go through the python-side subprocess harness; this bounds R-level work.
+  setTimeLimit(elapsed = 300, transient = TRUE)
+  on.exit(setTimeLimit(cpu = Inf, elapsed = Inf), add = TRUE)
   switch(model,
     rpart = {
       fit <- rpart::rpart(as.formula(paste(ycol, "~ .")), data = train)
@@ -78,6 +87,8 @@ for (ds in datasets) {
   xs <- setdiff(names(train), ycol)
   for (model in c("rpart", "cubist", "lmtree", "grf_llf", "grf_rf",
                   "ctree", "glmtree", "earth")) {
+    if (any(done$dataset == ds & done$model == model)) next
+    cat(sprintf("%-22s %-10s RUNNING\n", ds, model)); flush(stdout())
     t0 <- proc.time()[["elapsed"]]
     res <- tryCatch({
       pred <- as.numeric(fit_predict(model, train, test, ycol, xs))

@@ -198,12 +198,26 @@ def run_tree(xtr, ytr, xte, leaf, cols, min_relevance=None):
     return m.predict(xte), time.perf_counter() - t0
 
 
+def scored_pairs():
+    """(dataset, model) pairs already on the board - the resume boundary."""
+    import csv
+
+    if not OUT.exists():
+        return set()
+    with open(OUT) as fh:
+        return {(r["dataset"], r["model"]) for r in csv.DictReader(fh)}
+
+
 def main():
     models = make_models()
+    done = scored_pairs()
     for ds in DATASETS:
         xtr, ytr = read_xy(DATA_DIR / f"{ds}_train.csv")
         xte, yte = read_xy(DATA_DIR / f"{ds}_test.csv")
         for name, fn in models.items():
+            if (ds, name) in done:
+                continue
+            print(f"{ds:<9} {name:<16} RUNNING", flush=True)
             try:
                 pred, fit = fn(xtr, ytr, xte)
                 pairs = [(float(p), t) for p, t in zip(pred, yte) if p == p]
@@ -211,11 +225,11 @@ def main():
                     raise RuntimeError("no finite predictions")
                 rmse, mae = scores([p for p, _ in pairs], [t for _, t in pairs])
                 append_row(ds, name, rmse, mae, fit)
-                print(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
+                print(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}", flush=True)
             except Exception as exc:
                 msg = f"{type(exc).__name__}: {exc}"
-                print(f"{ds:<9} {name:<16} FAILED ({msg[:70]})")
-    print("Python scorer done ->", OUT)
+                print(f"{ds:<9} {name:<16} FAILED ({msg[:70]})", flush=True)
+    print("Python scorer done ->", OUT, flush=True)
 
 
 if __name__ == "__main__":

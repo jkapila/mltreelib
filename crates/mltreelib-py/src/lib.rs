@@ -1482,6 +1482,33 @@ impl PyMetrics {
         Ok(d.unbind())
     }
 
+    /// Classification report per group key (sorted by key). Task:
+    /// classification.
+    ///
+    /// Args:
+    ///     keys: group label per row (rows with missing key/labels skip).
+    ///     y_true: integer class labels.
+    ///     y_pred: integer class labels.
+    ///
+    /// Returns: `{group: classification_report}`.
+    fn classification_by_group(
+        &self,
+        py: Python<'_>,
+        keys: Vec<Option<String>>,
+        y_true: Vec<Option<f64>>,
+        y_pred: Vec<Option<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let groups = mltreelib_core::metrics::grouped_classification_report(
+            &keys, &y_true, &y_pred,
+        )
+        .map_err(PyValueError::new_err)?;
+        let d = PyDict::new(py);
+        for (k, r) in groups {
+            d.set_item(k, classification_to_dict(py, &r)?)?;
+        }
+        Ok(d.unbind())
+    }
+
     /// Calibration (reliability) bins: mean predicted score vs observed
     /// frequency per bin. Task: classification.
     ///

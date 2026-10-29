@@ -1,0 +1,11 @@
+earth_version=5.3.6
+fixture=f05_additive_noisy
+degree=2
+penalty=2
+thresh=1e-4
+fast.k=0
+fast.beta=unused (fast.k=0 disables fast search)
+Scale.y=FALSE
+rss=11.474765637
+gcv=0.040651736412
+n_terms=5

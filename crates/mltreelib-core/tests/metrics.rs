@@ -50,6 +50,34 @@ fn curves_reject_bad_input() {
 }
 
 #[test]
+fn classification_by_group_reports_each_key() {
+    use mltreelib_core::metrics::grouped_classification_report;
+    let s = |v: &str| Some(v.to_string());
+    let keys = vec![s("a"), s("a"), s("b"), s("b"), s("b"), None];
+    let y_true = vec![
+        Some(0.0),
+        Some(1.0),
+        Some(0.0),
+        Some(1.0),
+        Some(1.0),
+        Some(1.0),
+    ];
+    let y_pred = vec![
+        Some(0.0),
+        Some(0.0),
+        Some(0.0),
+        Some(1.0),
+        Some(0.0), // group b: 2 of 3 correct
+        Some(0.0),
+    ];
+    let g = grouped_classification_report(&keys, &y_true, &y_pred).unwrap();
+    assert_eq!(g.len(), 2);
+    assert_eq!(g[0].0, "a");
+    assert!((g[0].1.accuracy - 0.5).abs() < 1e-12); // 1 of 2
+    assert!((g[1].1.accuracy - 2.0 / 3.0).abs() < 1e-12); // 2 of 3, None key skipped
+}
+
+#[test]
 fn ks_perfect_separation_is_one() {
     let y = vec![0.0, 0.0, 1.0, 1.0];
     let r = ks_statistic(&y, &[0.1, 0.2, 0.8, 0.9]).unwrap();

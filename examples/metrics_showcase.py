@@ -56,6 +56,11 @@ grp = m.regression_by_group(
     ["high" if s >= med else "low" for s in scores], truth, scores
 )
 print(f"regression_by_group: {sorted(grp)}")
+cgrp = m.classification_by_group(
+    ["high" if s >= med else "low" for s in scores],
+    [int(v) for v in truth], [int(v) for v in hard],
+)
+print("classification_by_group:", {k: round(v["accuracy"], 3) for k, v in cgrp.items()})
 
 # -------------------------------------------------------------- curves
 print("\n== curves ==")
@@ -137,5 +142,5 @@ plots.plot_double_lift(truth, scores, base, model_type="ratio", ax=axes[1][3])
 plots.plot_psi(scores[:h], scores[h:], ax=axes[1][4])
 fig.suptitle("mltreelib.plots - the full chart surface")
 fig.tight_layout()
-fig.savefig("metrics_panels.png", dpi=110)
-print("\nwrote metrics_panels.png (10 charts)")
+fig.savefig("docs/assets/metrics_panels.png", dpi=110)
+print("\nwrote docs/assets/metrics_panels.png (10 charts)")

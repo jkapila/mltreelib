@@ -1,0 +1,11 @@
+earth_version=5.3.6
+fixture=f02_linear
+degree=1
+penalty=2
+thresh=1e-4
+fast.k=0
+fast.beta=unused (fast.k=0 disables fast search)
+Scale.y=FALSE
+rss=0
+gcv=0
+n_terms=5

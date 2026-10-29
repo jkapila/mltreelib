@@ -1,0 +1,11 @@
+earth_version=5.3.6
+fixture=f09_edges
+degree=2
+penalty=2
+thresh=1e-4
+fast.k=0
+fast.beta=unused (fast.k=0 disables fast search)
+Scale.y=FALSE
+rss=0.380392536614
+gcv=0.00259997461909
+n_terms=4

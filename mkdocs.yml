@@ -45,6 +45,7 @@ nav:
       - Model building & predictions: examples/model-building.md
       - Inspection: examples/inspection.md
       - Visualization: examples/visualization.md
+      - Metrics & plots: examples/metrics-plots.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -68,6 +69,7 @@ plugins:
           - examples/model-building.md
           - examples/inspection.md
           - examples/visualization.md
+          - examples/metrics-plots.md
           - benchmarks/elo.md
           - benchmarks/datasets.md
           - reference/data.md

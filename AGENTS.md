@@ -72,6 +72,9 @@ uv run python scripts/gen_api_docs.py   # regenerate docs/reference/api.md after
   concurrently (our rayon scans, LightGBM, CatBoost, …): oversubscribed cores
   make every run slower. Serialize scorers and fits in drivers and background
   jobs.
+- **Codex is a standing buddy.** Use the `codex` CLI freely — ask it for
+  design advice, have it code or review parts in parallel, and test its
+  output. Don't hesitate; it's part of the workflow.
 - **Tests are behavior, not wiring.** Every new capability lands with Rust tests
   (core) and pytest coverage of the user-visible API. Run both suites before
   committing. No test may pin incidental implementation details.

@@ -1,0 +1,12 @@
+seed=20261029
+name	k	n	note
+f01_constant	x3	n=120	y=3 exactly
+f02_linear	x3	n=120	y=2x0-x1+1
+f03_one_hinge	x2	n=150	y=3*max(0,x0-0.4)
+f04_multiknot_1d	x2	n=200	three-hinge spline in x0
+f05_additive_noisy	x4	n=300	hinges on x0,x1; x2,x3 irrelevant; noise 0.2
+f06_product	x3	n=300	y=5*h(x0-.5)*h(x1+.3); degree 2 must beat degree 1
+f07_friedman1_clean	x10	n=250	Friedman-1 noiseless
+f08_friedman1_noisy	x10	n=250	Friedman-1 noise sigma=1
+f09_edges	x5	n=160	repeated/constant/collinear/extreme-scale
+f10_tiny	x2	n=12	n=12

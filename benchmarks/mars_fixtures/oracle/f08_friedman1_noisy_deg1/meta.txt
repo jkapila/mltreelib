@@ -1,0 +1,11 @@
+earth_version=5.3.6
+fixture=f08_friedman1_noisy
+degree=1
+penalty=2
+thresh=1e-4
+fast.k=0
+fast.beta=unused (fast.k=0 disables fast search)
+Scale.y=FALSE
+rss=9309.32372121
+gcv=43.6148297502
+n_terms=10

@@ -367,6 +367,39 @@ pub fn grouped_regression_report(
     Ok(out)
 }
 
+/// Classification report per group key (sorted by key) — the classification
+/// counterpart of `grouped_regression_report`. Rows with missing key or
+/// missing labels are skipped.
+pub fn grouped_classification_report(
+    keys: &[Option<String>],
+    y_true: &[Option<f64>],
+    y_pred: &[Option<f64>],
+) -> Result<Vec<(String, ClassificationReport)>, String> {
+    if keys.len() != y_true.len() || keys.len() != y_pred.len() {
+        return Err("keys, y_true and y_pred must have the same length".to_string());
+    }
+    let mut groups: Vec<(String, (Vec<Option<f64>>, Vec<Option<f64>>))> = Vec::new();
+    for ((k, t), p) in keys.iter().zip(y_true.iter()).zip(y_pred.iter()) {
+        let (Some(key), Some(t), Some(p)) = (k, t, p) else {
+            continue;
+        };
+        match groups.iter_mut().find(|(g, _)| g == key) {
+            Some((_, (ts, ps))) => {
+                ts.push(Some(*t));
+                ps.push(Some(*p));
+            }
+            None => groups.push((key.clone(), (vec![Some(*t)], vec![Some(*p)]))),
+        }
+    }
+    let mut out = Vec::new();
+    for (k, (ts, ps)) in groups {
+        let r = classification_report(&ts, &ps, None)?; // labels only; no scores
+        out.push((k, r));
+    }
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    Ok(out)
+}
+
 /// One bin of a calibration (reliability) curve.
 #[derive(Clone, Copy, Debug)]
 pub struct CalibBin {
