@@ -2,20 +2,19 @@
 
 Tree-based machine learning with a **Rust core** and thin **Python** (and, next, **R**) frontends. Evolved from the attempt to make the *right* kind of **Decision Trees**, after Hastie, Tibshirani, Friedman, Quinlan, Loh, Chaudhari.
 
-The bet: tree/ensemble methods are under-studied relative to tabular foundation models, and the information hidden in **categorical, grouped and hierarchical structure** is exactly what flat learners lose. We build the classics properly in Rust (CART → C4.5 → C5.0 → Cubist → GritBot), measure them honestly on data where that structure matters, and only then mix and extend. Research grounding lives in [`references/research/`](references/research/) (TabArena analysis, methods map, dataset component design).
+The bet: tree/ensemble methods are under-studied relative to tabular foundation models, and the information hidden in **categorical, grouped and hierarchical structure** is exactly what flat learners lose. We build the classics properly in Rust (CART → C4.5 → C5.0 → Cubist → GritBot), measure them honestly on data where that structure matters, and only then mix and extend.
 
 ## Layout
 
 ```
-crates/mltreelib-core/   Rust core: dataset component (data layer + adjustable
-                         benchmark generator); next: feature transforms, tree learners
-crates/mltreelib-py/    PyO3 bindings, exposed as mltreelib._core
-python/mltreelib/       Python package — scikit-learn-shaped API, no sklearn dependency
-tests/                  Python behavior tests
-datasets/               real benchmark datasets + MANIFEST (sourced, size-capped)
-references/             research/ notes · docs/ vendor manuals · data/ benchmarks ·
-                        sources/ archives · repos/ cloned projects
-legacy/                 previous Python/nbdev implementation (kept as reference oracle)
+crates/mltreelib-core/   Rust core: data layer, generator, metrics, the model tree
+crates/mltreelib-py/     PyO3 bindings (the mltreelib Python surface)
+python/mltreelib/        Python package: datasets loader + optional plots layer
+examples/                runnable examples (all docs output comes from these)
+docs/                    the documentation site (zensical; benchmarks + API + guides)
+benchmarks/              the Elo field: prepared splits, scores, attempts, round manifests
+specs/                   implementation specs (published as GitHub issues)
+playground/              local marimo playground for edge-case hunting (not in git)
 ```
 
 ## Setup
@@ -23,18 +22,46 @@ legacy/                 previous Python/nbdev implementation (kept as reference 
 Requires Rust and [uv](https://docs.astral.sh/uv/).
 
 ```sh
-uv sync                  # creates .venv and builds the Rust extension (maturin)
-uv run pytest tests/ -q  # behavior tests
+uv sync                        # .venv + builds the Rust extension (maturin)
+uv run --with pandas --with pyarrow python examples/quickstart.py
 ```
 
-## Dependency policy
+Optional extras: `plotting` (matplotlib/pygraphviz/seaborn), `tuning` (optuna).
 
-Lean but **pragmatic — no wheel reinvention**: the goal is fast data handling and
-fast tree algorithms, with research on top. Scikit-learn stays out (API shape
-only, never import it); established core packages are welcome where they replace
-real complexity — `pyarrow` for parquet (used by `mltreelib.datasets`), and
-arrow-rs (`arrow`/`parquet`) or Polars in Rust when frames/IO grow beyond the
-in-house `frame` module. Every other dependency must earn its place.
+## The model tree today
+
+Typed ingest — categoricals enter as **levels** (a distinct value is a level;
+the split search partitions level sets), NAs route as-is, nothing is encoded
+for the tree:
+
+```python
+from mltreelib import ModelTree, Metrics
+
+m = ModelTree(
+    max_depth=4, min_rows=10, leaf="linear",   # leaf: linear|mean|median|quantile|huber
+    l2=0.1,                                    # ridge on leaf coefficients
+    gain="sse",                                # regression: sse|friedman_mse|absolute_error|huber|poisson|sdr
+                                               # class: entropy|gini|gain_ratio|twoing | callable
+    split_precision=0.001,                     # candidate grid (None = exact scan)
+    cat_order="frequency_desc", cat_search="cumulative",
+    alpha=0.0, imbalance_penalty=0.0,          # grf-style split balance
+    prune="none",                              # none|bic|mdl (+ cp family landing)
+    col_sample=None, seed=42,                  # per-node random column subset
+    leaf_digest=True,                          # per-leaf t-digest: any tau post-fit
+)
+m.fit(x, y, dtypes=dtypes)      # dtypes per column: "numeric" | "categorical"
+m.predict(xte)                  # NAs never block a prediction
+m.quantile(x, 0.9)              # conditional quantiles from the leaf digests
+m.training_log()                # candidate counts, dtype search, timings (verbose)
+```
+
+Growth knobs under active development (spec `#3`, all default-off until a
+round measures them): significance-gated splitting (`split_test="chow"`,
+`split_alpha`, Bonferroni), `honesty`, NA **surrogate splits**, the pruning
+family (cost-complexity / C5 pessimistic / cost-matrix),
+`minsplit/minbucket/minprob`, EFB-style pre-selection, and an experimental
+purity gate. Distributional leaves (`leaf_family`: binomial/poisson →
+probit/tobit/tweedie/softmax, `predict_proba`) are spec `#4`.
 
 ## Dataset component
 
@@ -61,118 +88,51 @@ Because the ground truth is known, every learner can be scored on *structure
 recovery*, not just accuracy — including tail behavior (`tail_behavior="bathtub"`
 reproduces the DAR bathtub edges) and missingness.
 
-## Roadmap / TODO
+## Measuring: the Elo field
 
-Order matters: foundations first, then honest replication, then novelty.
+`benchmarks/` holds a living field: 18 prepared datasets, 30+ models (our
+flavors; rpart/ctree/lmtree/glmTree/cubist/grf/mboost/ranger/BART-family/
+TRUST/earth in R; LightGBM/CatBoost/CTBoost/ChimeraBoost/EBM/ExtraTrees/
+statsmodels-linear/KNN/trust-free/XBART in Python), round-robin Elo on
+per-dataset RMSE. Every round records a **provenance manifest** (git SHA +
+the exact settings dict + all results) in `benchmarks/rounds/`, and every fit
+runs under strict time tiers: 30s = slow (the TabArena-toppers line), 180s =
+critical, 300s = hard kill. All run events go through stdlib `logging` into
+`benchmarks/elo_run.log` / `elo_round.log`.
 
-### 1. Data & feature layer  ← current
-- [x] Core columnar `Dataset`/`Column` with NA slots and categorical vocabularies
-- [x] `n_category` schema rule (absolute levels or %-of-rows)
-- [x] `IndexMapper` (multi-column categorical codes + exact inverse)
-- [x] Grouped variable transformations (`fit`/`transform`, mean/std/count/quantiles)
-- [x] Adjustable generator + ground-truth manifest (Rust + Python)
-- [x] `DatasetBuilder` ingest of any data: NA policy (allow/drop/impute), digit rounding, intercept column, dtype reduction
-- [x] Calendar/time features (year, halfyear, quarter, month, ISO week, weekday, day-of-year, season, weekend)
-- [x] Lag features by whole days within a key (featuregen `LagFeatures` lineage)
-- [x] Trended transforms at user granularity (`year_month`, `year_week`, `month_weekday`, …) — featuregen lineage
-- [x] Decomposed transforms — statsmodels `seasonal_decompose` convention (trend, seasonal, residual)
-- [x] Windowed aggregations (trailing sums/means/counts over day windows per key)
-- [x] Per-column variable transformations (`VariableScaler`, legacy `VariableTransformation`)
-- [x] Missing data is first-class: NA **and NaN** = missing end-to-end (missing in → missing out);
-      `summarize` shows `n_missing` by default; imputation is optional (allow/drop/impute);
-      time-series transforms drop incomplete rows and warn
-- [x] Built-in categorical encoders: ordinal (`IndexMapper`), one-hot, hashing, base-N/binary,
-      count, sum contrast, smoothed target + M-estimate, leave-one-out, CatBoost-style
-      **ordered target statistics** (`fit_transform` leakage-safe), quantile, James-Stein,
-      class-level `TfidfEncoder`, `WoEEncoder`, `EmbeddingEncoder` (reusable `nn` trainer;
-      ReLU/linear output by target sign) — *research in
-      `references/research/categorical-encoding-research.md`*
-- [ ] cat×cat combinations (inside the tree split search); deferred encoders: GLMM,
-      Helmert/Polynomial/BackwardDifference contrasts, Gray, MultiHot/RankHot, CountTarget
-- [ ] Featuretools-style automated features (Cartesian products, sub-level %-by-class, deep feature synthesis lite) — *later, same reason*
-- [x] `mltreelib.datasets` loader (pyarrow) — suite loads into `DatasetBuilder`-shaped dicts
-- [ ] Harness integration of `datasets/` + generator sweeps
+Docs: [API reference](https://jkapila.github.io/mltreelib/reference/api/),
+[ELO board](https://jkapila.github.io/mltreelib/benchmarks/elo/),
+[guides and examples](https://jkapila.github.io/mltreelib/examples/walkthrough/).
 
-### 2. Tree learners in Rust (replicate the giants first)
+## Dependency policy
 
-Research is consolidated — build order below (see
-`references/research/tree-research-consolidation.md` for the evidence):
+Lean but **pragmatic — no wheel reinvention**: fast data handling and fast
+tree algorithms, with research on top. Scikit-learn stays out of the library
+(API shape only, never imported); established packages earn their place where
+they replace real complexity — `pyarrow` (parquet), `tdigest` (leaf quantiles),
+`rayon` (parallel scans), `faer` (dense solves in the split hot path). The
+field/benchmark tooling may use anything it measures (that is its job).
 
-1. [ ] **Simple model tree v1** — leaf-local linear models, split gain = SSE
-   reduction from fitting leaf models on both sides (linear-tree recipe);
-   leaf OLS via faer; native missing values + native categorical splits in the
-   first cut; per-leaf `Metrics` reports from day one
-2. [ ] CART + C4.5 with constant leaves (oracle: `legacy/mltreelib/tree/models.py`)
-3. [ ] **Cubist**: model trees + committees + kNN corrections
-4. [ ] C5.0 rulesets + committees; GritBot surprising-subgroup mining
-5. [ ] Second split criterion: MOB instability tests (partykit lineage);
-   third: gradient improvement (TAO path)
-6. [ ] Mixing: LinearForest-style ensembles, sparse leaves (TRUST), uncertainty (BART-style)
+## Research inputs
 
-Design requirements for every learner (the sklearn pipeline is the anti-pattern:
-no forced imputation, no forced numeric encoding):
-- [ ] **Native missing values** — missing-aware split search + learned default
-      directions (XGBoost/LightGBM style); surrogate splits where the classic
-      calls for them (C5.0 lineage)
-- [ ] **Native categorical splits** — high-cardinality aware, no one-hot tax
-- [ ] CART (regression + classification) — oracle: `legacy/mltreelib/tree/models.py`
-- [ ] C4.5 (information gain, gain ratio)
-- [ ] C5.0: rule sets, boosting committees, winnowing — `references/docs/see5-unix.md`
-- [ ] Cubist: model trees + committees + neighbor correction — `references/docs/cubist-unix.md`
-- [ ] GritBot: surprising-subgroup mining — `references/docs/gritbot-unix.md`
+Grounded research lives with the team (references/ is local-only): the
+split-criteria survey, NGBoost leaf/training deep-dive, leaf-purity
+literature review, and the knob-gap reviews against rpart/ctree/cubist/
+partykit/grf. Specs are published as GitHub issues (`ready-for-agent`).
 
-### 3. Honest comparisons (proof-driven, not blind experimentation)
-- [ ] Harness vs LightGBM / XGBoost / CatBoost / EBM on `datasets/` + generator sweeps
-- [ ] Vs tabular foundation models (TabPFN-class) on the same splits — see `references/research/tree-vs-foundation-tabular.md`
-- [ ] Structure-recovery scoring: does each method capture the known group/hierarchy signal?
-- [ ] Equal tuning budgets for trees (the classic weak-baseline trap)
+## Roadmap
 
-### 4. Mixing & differentiating features
-- [ ] CatBoost-style statistical features (ordered target statistics) for high-cardinality categoricals
-- [ ] EBM-style consolidation (additive shape functions) as a feature layer
-- [ ] NGBoost-style distributional heads; DAR-style target-space routing
-- [ ] Stacking/blending across families (trees + foundation models)
+1. [x] Data & feature layer (builder, encoders, transforms, generator, datasets loader)
+2. [x] Model tree in Rust (typed ingest, criterion family, leaf kinds, quantiles,
+      pruning (bic/mdl), balance knobs, budgets, training log)
+3. [ ] **Model-tree capability knobs** (issue #3) — significance splits, honesty,
+      NA surrogates, pruning family, minsplit/minbucket/minprob, EFB, purity gate
+4. [ ] **Distributional leaves** (issue #4) — `leaf_family`: binomial/poisson →
+      probit/tobit/tweedie/softmax, `predict_proba`, IRLS on faer
+5. [ ] **Forests & committees** — honesty + averaging (grf-lesson), Cubist-style
+      committees + neighbor adjustment; the ensembles currently top the board
+6. [ ] C5.0 rulesets + committees; GritBot surprising-subgroup mining
+7. [ ] Mixing: LinearForest-style ensembles, sparse leaves (TRUST lineage)
 
-### 5. Packaging
-- [ ] R bindings (extendr over `mltreelib-core`)
-- [ ] Python API parity with the sklearn shape (`fit`/`predict`/`transform`), still no sklearn dependency
-- [ ] Docs + reproducible experiment reports
-
-### 6. Research & publication (the end goal)
-A research-backed package **and a published paper**: the claim is that tree/ensemble
-methods with structural awareness of categorical/group/hierarchical signal recover
-what flat learners lose — measured as structure recovery on generated ground truth
-plus TabArena-v0.1 real data.
-- [ ] Reproducible experiment reports (fixed seeds, uv lockfile, per-dataset win/loss)
-- [ ] Figures/tables generated from the harness, not hand-made
-- [ ] Paper draft — **stack chosen at paper time, no pre-commitment** (survey 2026-10):
-      Typst for modern typesetting; reproducible-manuscript pipelines (Quarto-style)
-      can emit Typst/LaTeX; LaTeX where venues demand it; Rχiv-Maker-style
-      automation is the pattern to evaluate when we get there
-- [ ] Research speed tooling: `autogluon/tabarena` harness, OpenML (`datasets/`),
-      uv for envs, arXiv workflow; agent skills for artifacts (hallmark for pages,
-      docx/pptx/pdf for documents, research skills for sources)
-
-## Documentation
-
-Built with **Zensical** (`variant: modern` — the maintained successor to
-mkdocs-material; it reads the same `mkdocs.yml`, and `mkdocs build` remains as a
-safety net):
-
-```sh
-uv run zensical serve     # live docs at http://127.0.0.1:8000
-uv run zensical build     # static site in site/
-```
-
-- **Docs site** — quickstart, demo walkthrough (with figures), datasets, API reference
-  (generated from the live docstrings by `scripts/gen_api_docs.py`; Zensical natives:
-  `minify`, `llmstxt` → `llms.txt` for LLM consumption)
-- **[AGENTS.md](AGENTS.md)** — project rules and conventions (also [CLAUDE.md](CLAUDE.md))
-- **Rust API**: `cargo doc -p mltreelib-core --no-deps --open` (doc-comments are the reference)
-- **Runnable walkthroughs**: `uv run python examples/data_layer_demo.py [dataset ...]` (data &
-  feature layer) and `uv run python examples/encoding_demo.py [dataset ...]` (every encoder
-  on real data)
-
-## License
-
-Apache-2.0
+Ground rule: **every knob is default-off until a measured round decides
+otherwise** — the round manifests exist so that no number moves for free.

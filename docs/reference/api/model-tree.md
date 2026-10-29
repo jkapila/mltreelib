@@ -4,7 +4,7 @@
 
 The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [Model](../model.md).
 ## ModelTree
-```pythonclass ModelTree((max_depth=4, min_rows=10, min_gain=1e-09, leaf_cols='all', leaf='linear', l2=0.1, l1=0.0, monotone=Ellipsis, interaction_groups=Ellipsis, min_relevance=None, gain=None, split_precision=Ellipsis, cat_order=None, cat_search='cumulative', leaf_digest=True, verbose=0, alpha=0.0, imbalance_penalty=0.0, col_sample=None, seed=42, prune='none'))```
+```pythonclass ModelTree((max_depth=4, min_rows=10, min_gain=1e-09, leaf_cols='all', leaf='linear', tau=0.5, l2=0.1, l1=0.0, monotone=Ellipsis, interaction_groups=Ellipsis, min_relevance=None, gain=None, split_precision=Ellipsis, cat_order=None, cat_search='cumulative', leaf_digest=True, verbose=0, alpha=0.0, imbalance_penalty=0.0, col_sample=None, seed=42, prune='none'))```
 Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
 leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 Task: regression.
