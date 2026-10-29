@@ -144,3 +144,16 @@ site/
 # demo output (figures)
 examples/out/
 catboost_info/
+
+# local tooling / scratch (never commit)
+.omp/
+.scratch/
+home/
+.gitconfig
+
+# vendored legacy material and local experiments
+legacy/
+playground/
+
+# research references: local-only by convention
+references/

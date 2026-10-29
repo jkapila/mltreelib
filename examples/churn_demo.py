@@ -63,8 +63,8 @@ dot = model.to_dot()
 try:
     import pygraphviz as pgv
 
-    pgv.AGraph(string=dot).draw("churn_tree.svg", prog="dot")
-    print("wrote churn_tree.svg (rendered by graphviz)")
+    pgv.AGraph(string=dot).draw("docs/assets/churn_tree.svg", prog="dot")
+    print("wrote docs/assets/churn_tree.svg (rendered by graphviz)")
 except ImportError:
-    open("churn_tree.dot", "w").write(dot)
-    print("wrote churn_tree.dot (render with graphviz `dot -Tsvg`)")
+    open("docs/assets/churn_tree.dot", "w").write(dot)
+    print("wrote docs/assets/churn_tree.dot (render with graphviz `dot -Tsvg`)")

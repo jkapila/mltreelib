@@ -1,1 +1,0 @@
-- 2026-10-29 — [tree family extensibility](./2026-10-29-tree-family-extensibility.md) — **Rust growth loop + Python policy/selection hooks; ModelForest name; family = 3 seams** — Python callbacks too costly in the split inner loop, cheap at selection granularity — revisit 2026-11-28

@@ -238,6 +238,27 @@ pub fn solve_normal(
     solve_prepared(scratch, yty, dim, l1, l2)
 }
 
+/// Dense SPD solve via faer's blocked Cholesky — the split scan's hot
+/// path (thousands of small/medium Gram solves per fit). Returns `None`
+/// for rank-deficient Grams so the caller falls back to the rank-revealing
+/// elimination (singular directions keep coefficient 0).
+fn faer_cholesky_solve(a: &[f64], b: &[f64], dim: usize) -> Option<Vec<f64>> {
+    use faer::prelude::*;
+    let mut m = faer::Mat::<f64>::zeros(dim, dim);
+    for i in 0..dim {
+        for j in 0..dim {
+            m[(i, j)] = a[i * dim + j];
+        }
+    }
+    let llt = m.as_ref().llt(faer::Side::Lower).ok()?;
+    let mut rhs = faer::Mat::<f64>::zeros(dim, 1);
+    for i in 0..dim {
+        rhs[(i, 0)] = b[i];
+    }
+    let x = llt.solve(rhs.as_ref());
+    Some((0..dim).map(|i| x[(i, 0)]).collect())
+}
+
 /// Solve the normal equations already copied into `scratch.a`/`scratch.b`.
 pub fn solve_prepared(
     scratch: &mut SolveScratch,
@@ -254,6 +275,18 @@ pub fn solve_prepared(
         for i in 1..dim {
             scratch.a[i * dim + i] += l2; // ridge, intercept unpenalized
         }
+    }
+    // Fast path: faer Cholesky on the SPD Gram (the common case —
+    // thousands of solves per split scan). Falls through to the
+    // rank-revealing elimination below when the Gram is singular.
+    if let Some(x) = faer_cholesky_solve(&scratch.a[..dim * dim], &scratch.b[..dim], dim) {
+        scratch.b[..dim].copy_from_slice(&x);
+        let explained: f64 = scratch.c[..dim]
+            .iter()
+            .zip(&scratch.b[..dim])
+            .map(|(t, s)| t * s)
+            .sum();
+        return (yty - explained).max(0.0);
     }
     let scale = (0..dim)
         .map(|i| scratch.a[i * dim + i].abs())
