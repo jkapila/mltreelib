@@ -347,7 +347,7 @@ impl Default for ModelTreeParams {
             min_relevance: None,
             dtypes: Vec::new(),
             gain: GainFn::Sse,
-            split_precision: Some(0.1),
+            split_precision: Some(0.001),
             cat_order: CatOrder::FrequencyDesc,
             cat_search: CatSearch::Cumulative,
             leaf_digest: true,
@@ -714,7 +714,18 @@ impl ModelTree {
         for (i, nd) in self.nodes.iter().enumerate() {
             let (l1, l2) = match nd.split {
                 Some(sp) => (
-                    format!("{} < {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
+                    match sp.cat {
+                        Some(ci) => format!(
+                            "{} in {{{}}}",
+                            self.col_names[sp.col],
+                            self.cat_parts[ci]
+                                .iter()
+                                .map(|v| fmt_cut(*v))
+                                .collect::<Vec<_>>()
+                                .join(",")
+                        ),
+                        None => format!("{} < {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
+                    },
                     format!("n={}  dev={:.3}", nd.stats.n, nd.stats.sse),
                 ),
                 None => (
@@ -732,9 +743,22 @@ impl ModelTree {
         }
         for (i, nd) in self.nodes.iter().enumerate() {
             if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {
-                let cut = fmt_cut(sp.threshold);
-                s += &format!("  n{} -> n{} [label=\"< {cut}\"];\n", num[i], num[l]);
-                s += &format!("  n{} -> n{} [label=\">= {cut}\"];\n", num[i], num[r]);
+                let (el, er) = match sp.cat {
+                    Some(ci) => {
+                        let set = self.cat_parts[ci]
+                            .iter()
+                            .map(|v| fmt_cut(*v))
+                            .collect::<Vec<_>>()
+                            .join(",");
+                        (format!("in {{{set}}}"), format!("not in {{{set}}}"))
+                    }
+                    None => {
+                        let cut = fmt_cut(sp.threshold);
+                        (format!("< {cut}"), format!(">= {cut}"))
+                    }
+                };
+                s += &format!("  n{} -> n{} [label=\"{}\"];\n", num[i], num[l], esc(&el));
+                s += &format!("  n{} -> n{} [label=\"{}\"];\n", num[i], num[r], esc(&er));
             }
         }
         s += "}\n";
@@ -1948,9 +1972,22 @@ impl std::fmt::Display for ModelTree {
             });
             if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {
                 let name = &t.col_names[sp.col];
-                let cut = fmt_cut(sp.threshold);
-                walk(t, l, num * 2, depth + 1, &format!("{name}< {cut}"), out);
-                walk(t, r, num * 2 + 1, depth + 1, &format!("{name}>={cut}"), out);
+                let (ll, rl) = match sp.cat {
+                    Some(ci) => {
+                        let set = t.cat_parts[ci]
+                            .iter()
+                            .map(|v| fmt_cut(*v))
+                            .collect::<Vec<_>>()
+                            .join(",");
+                        (format!("{name} in {{{set}}}"), format!("{name} not-in {{{set}}}"))
+                    }
+                    None => {
+                        let cut = fmt_cut(sp.threshold);
+                        (format!("{name}< {cut}"), format!("{name}>={cut}"))
+                    }
+                };
+                walk(t, l, num * 2, depth + 1, &ll, out);
+                walk(t, r, num * 2 + 1, depth + 1, &rl, out);
             }
         }
         let mut rows = Vec::new();

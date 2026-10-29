@@ -19,6 +19,10 @@ plotting = [
     "pygraphviz>=1.11",
     "seaborn>=0.13",
 ]
+# Hyperparameter search: the Optuna wheel (examples/hpo_optuna.py).
+tuning = [
+    "optuna>=3.0",
+]
 
 [dependency-groups]
 dev = [

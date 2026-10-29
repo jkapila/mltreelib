@@ -1,0 +1,2554 @@
+{
+  "round": "20261029-210316",
+  "git_sha": "b7582c2",
+  "settings": {
+    "ModelTree(all)": {
+      "max_depth": 4,
+      "min_rows": 10,
+      "min_gain": 1e-09,
+      "leaf_cols": "all",
+      "leaf": "linear",
+      "l2": 0.1,
+      "l1": 0.0,
+      "monotone": [],
+      "interaction_groups": [],
+      "min_relevance": null,
+      "gain": "sse",
+      "split_precision": 0.001,
+      "cat_order": "frequency_desc",
+      "cat_search": "cumulative",
+      "leaf_digest": true,
+      "verbose": 0,
+      "alpha": 0.0,
+      "imbalance_penalty": 0.0,
+      "col_sample": null,
+      "seed": 42,
+      "prune": "none"
+    },
+    "ModelTree(path)": {
+      "max_depth": 4,
+      "min_rows": 10,
+      "min_gain": 1e-09,
+      "leaf_cols": "path",
+      "leaf": "linear",
+      "l2": 0.1,
+      "l1": 0.0,
+      "monotone": [],
+      "interaction_groups": [],
+      "min_relevance": null,
+      "gain": "sse",
+      "split_precision": 0.001,
+      "cat_order": "frequency_desc",
+      "cat_search": "cumulative",
+      "leaf_digest": true,
+      "verbose": 0,
+      "alpha": 0.0,
+      "imbalance_penalty": 0.0,
+      "col_sample": null,
+      "seed": 42,
+      "prune": "none"
+    },
+    "ModelTree(mean)": {
+      "max_depth": 4,
+      "min_rows": 10,
+      "min_gain": 1e-09,
+      "leaf_cols": "all",
+      "leaf": "mean",
+      "l2": 0.1,
+      "l1": 0.0,
+      "monotone": [],
+      "interaction_groups": [],
+      "min_relevance": null,
+      "gain": "sse",
+      "split_precision": 0.001,
+      "cat_order": "frequency_desc",
+      "cat_search": "cumulative",
+      "leaf_digest": true,
+      "verbose": 0,
+      "alpha": 0.0,
+      "imbalance_penalty": 0.0,
+      "col_sample": null,
+      "seed": 42,
+      "prune": "none"
+    },
+    "ModelTree(winnow)": {
+      "max_depth": 4,
+      "min_rows": 10,
+      "min_gain": 1e-09,
+      "leaf_cols": "all",
+      "leaf": "linear",
+      "l2": 0.1,
+      "l1": 0.0,
+      "monotone": [],
+      "interaction_groups": [],
+      "min_relevance": 0.05,
+      "gain": "sse",
+      "split_precision": 0.001,
+      "cat_order": "frequency_desc",
+      "cat_search": "cumulative",
+      "leaf_digest": true,
+      "verbose": 0,
+      "alpha": 0.0,
+      "imbalance_penalty": 0.0,
+      "col_sample": null,
+      "seed": 42,
+      "prune": "none"
+    }
+  },
+  "datasets": [
+    "abalone",
+    "boston",
+    "concrete",
+    "fc2008",
+    "ozone",
+    "ta_airfoil",
+    "ta_concrete",
+    "ta_diamonds",
+    "ta_fiat500",
+    "ta_food_delivery",
+    "ta_healthcare",
+    "ta_houses",
+    "ta_miami",
+    "ta_protein",
+    "ta_qsar_fish",
+    "ta_qsar_tid11",
+    "ta_superconductivity",
+    "ta_wine"
+  ],
+  "results": [
+    {
+      "dataset": "abalone",
+      "model": "rpart",
+      "rmse": "2.5879",
+      "mae": "1.8603",
+      "fit_s": "0.061"
+    },
+    {
+      "dataset": "abalone",
+      "model": "cubist",
+      "rmse": "2.3076",
+      "mae": "1.6034",
+      "fit_s": "0.525"
+    },
+    {
+      "dataset": "abalone",
+      "model": "lmtree",
+      "rmse": "2.3246",
+      "mae": "1.6773",
+      "fit_s": "1.349"
+    },
+    {
+      "dataset": "abalone",
+      "model": "grf_llf",
+      "rmse": "2.3075",
+      "mae": "1.6254",
+      "fit_s": "2.091"
+    },
+    {
+      "dataset": "abalone",
+      "model": "grf_rf",
+      "rmse": "2.3648",
+      "mae": "1.6619",
+      "fit_s": "1.313"
+    },
+    {
+      "dataset": "abalone",
+      "model": "ctree",
+      "rmse": "2.4252",
+      "mae": "1.7444",
+      "fit_s": "0.121"
+    },
+    {
+      "dataset": "abalone",
+      "model": "glmtree",
+      "rmse": "2.3129",
+      "mae": "1.676",
+      "fit_s": "1.44"
+    },
+    {
+      "dataset": "abalone",
+      "model": "earth",
+      "rmse": "2.2589",
+      "mae": "1.6223",
+      "fit_s": "0.105"
+    },
+    {
+      "dataset": "boston",
+      "model": "rpart",
+      "rmse": "4.3098",
+      "mae": "2.9438",
+      "fit_s": "0.01"
+    },
+    {
+      "dataset": "boston",
+      "model": "cubist",
+      "rmse": "3.9799",
+      "mae": "2.4815",
+      "fit_s": "0.036"
+    },
+    {
+      "dataset": "boston",
+      "model": "lmtree",
+      "rmse": "4.0523",
+      "mae": "2.6892",
+      "fit_s": "0.043"
+    },
+    {
+      "dataset": "boston",
+      "model": "grf_llf",
+      "rmse": "3.7469",
+      "mae": "2.1719",
+      "fit_s": "0.271"
+    },
+    {
+      "dataset": "boston",
+      "model": "grf_rf",
+      "rmse": "3.2724",
+      "mae": "2.2542",
+      "fit_s": "0.191"
+    },
+    {
+      "dataset": "boston",
+      "model": "ctree",
+      "rmse": "4.0185",
+      "mae": "2.6995",
+      "fit_s": "0.057"
+    },
+    {
+      "dataset": "boston",
+      "model": "glmtree",
+      "rmse": "4.0498",
+      "mae": "2.6864",
+      "fit_s": "0.119"
+    },
+    {
+      "dataset": "boston",
+      "model": "earth",
+      "rmse": "4.5097",
+      "mae": "2.715",
+      "fit_s": "0.013"
+    },
+    {
+      "dataset": "concrete",
+      "model": "rpart",
+      "rmse": "9.0686",
+      "mae": "7.3809",
+      "fit_s": "0.009"
+    },
+    {
+      "dataset": "concrete",
+      "model": "cubist",
+      "rmse": "6.8119",
+      "mae": "5.2613",
+      "fit_s": "0.038"
+    },
+    {
+      "dataset": "concrete",
+      "model": "lmtree",
+      "rmse": "7.6436",
+      "mae": "6.1672",
+      "fit_s": "0.042"
+    },
+    {
+      "dataset": "concrete",
+      "model": "grf_llf",
+      "rmse": "6.2924",
+      "mae": "4.663",
+      "fit_s": "0.32"
+    },
+    {
+      "dataset": "concrete",
+      "model": "grf_rf",
+      "rmse": "8.2591",
+      "mae": "6.7532",
+      "fit_s": "0.25"
+    },
+    {
+      "dataset": "concrete",
+      "model": "ctree",
+      "rmse": "9.7571",
+      "mae": "7.2669",
+      "fit_s": "0.069"
+    },
+    {
+      "dataset": "concrete",
+      "model": "glmtree",
+      "rmse": "7.4245",
+      "mae": "6.093",
+      "fit_s": "0.082"
+    },
+    {
+      "dataset": "concrete",
+      "model": "earth",
+      "rmse": "7.0604",
+      "mae": "5.8404",
+      "fit_s": "0.011"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "rpart",
+      "rmse": "279.943",
+      "mae": "207.9292",
+      "fit_s": "0.014"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "cubist",
+      "rmse": "204.3161",
+      "mae": "131.0847",
+      "fit_s": "0.052"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "lmtree",
+      "rmse": "237.9175",
+      "mae": "158.4599",
+      "fit_s": "0.065"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "grf_rf",
+      "rmse": "228.6145",
+      "mae": "159.3458",
+      "fit_s": "0.33"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "ctree",
+      "rmse": "276.4014",
+      "mae": "184.9413",
+      "fit_s": "0.119"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "glmtree",
+      "rmse": "237.9175",
+      "mae": "158.4599",
+      "fit_s": "0.039"
+    },
+    {
+      "dataset": "ozone",
+      "model": "rpart",
+      "rmse": "4.7069",
+      "mae": "3.5052",
+      "fit_s": "0.006"
+    },
+    {
+      "dataset": "ozone",
+      "model": "cubist",
+      "rmse": "4.5724",
+      "mae": "3.2786",
+      "fit_s": "0.019"
+    },
+    {
+      "dataset": "ozone",
+      "model": "lmtree",
+      "rmse": "4.268",
+      "mae": "3.2706",
+      "fit_s": "0.043"
+    },
+    {
+      "dataset": "ozone",
+      "model": "grf_llf",
+      "rmse": "3.768",
+      "mae": "2.7449",
+      "fit_s": "0.15"
+    },
+    {
+      "dataset": "ozone",
+      "model": "grf_rf",
+      "rmse": "4.4393",
+      "mae": "3.3787",
+      "fit_s": "0.112"
+    },
+    {
+      "dataset": "ozone",
+      "model": "ctree",
+      "rmse": "4.2597",
+      "mae": "3.1596",
+      "fit_s": "0.026"
+    },
+    {
+      "dataset": "ozone",
+      "model": "glmtree",
+      "rmse": "4.268",
+      "mae": "3.2706",
+      "fit_s": "0.056"
+    },
+    {
+      "dataset": "ozone",
+      "model": "earth",
+      "rmse": "4.2276",
+      "mae": "3.2602",
+      "fit_s": "0.01"
+    },
+    {
+      "dataset": "abalone",
+      "model": "ModelTree(all)",
+      "rmse": "2.3537",
+      "mae": "1.6664",
+      "fit_s": "2.351"
+    },
+    {
+      "dataset": "abalone",
+      "model": "ModelTree(path)",
+      "rmse": "2.3399",
+      "mae": "1.6747",
+      "fit_s": "0.238"
+    },
+    {
+      "dataset": "abalone",
+      "model": "ModelTree(mean)",
+      "rmse": "2.5435",
+      "mae": "1.8070",
+      "fit_s": "0.038"
+    },
+    {
+      "dataset": "abalone",
+      "model": "ModelTree(winnow)",
+      "rmse": "2.3537",
+      "mae": "1.6664",
+      "fit_s": "2.279"
+    },
+    {
+      "dataset": "abalone",
+      "model": "LightGBM(200)",
+      "rmse": "2.433",
+      "mae": "1.7316",
+      "fit_s": "0.476"
+    },
+    {
+      "dataset": "abalone",
+      "model": "CatBoost(200)",
+      "rmse": "2.3286",
+      "mae": "1.669",
+      "fit_s": "0.247"
+    },
+    {
+      "dataset": "abalone",
+      "model": "CTBoost",
+      "rmse": "2.4823",
+      "mae": "1.7584",
+      "fit_s": "0.022"
+    },
+    {
+      "dataset": "abalone",
+      "model": "sklearn tree",
+      "rmse": "3.1634",
+      "mae": "2.2071",
+      "fit_s": "0.016"
+    },
+    {
+      "dataset": "abalone",
+      "model": "modeltrees lmtree",
+      "rmse": "2.3246",
+      "mae": "1.6773",
+      "fit_s": "0.87"
+    },
+    {
+      "dataset": "abalone",
+      "model": "MARS (mars-earth)",
+      "rmse": "2.2733",
+      "mae": "1.6438",
+      "fit_s": "25.223"
+    },
+    {
+      "dataset": "boston",
+      "model": "ModelTree(all)",
+      "rmse": "5.0699",
+      "mae": "2.8062",
+      "fit_s": "2.390"
+    },
+    {
+      "dataset": "boston",
+      "model": "ModelTree(path)",
+      "rmse": "4.3979",
+      "mae": "2.9123",
+      "fit_s": "0.110"
+    },
+    {
+      "dataset": "boston",
+      "model": "ModelTree(mean)",
+      "rmse": "3.9690",
+      "mae": "2.7530",
+      "fit_s": "0.009"
+    },
+    {
+      "dataset": "boston",
+      "model": "ModelTree(winnow)",
+      "rmse": "5.0699",
+      "mae": "2.8062",
+      "fit_s": "2.362"
+    },
+    {
+      "dataset": "boston",
+      "model": "LightGBM(200)",
+      "rmse": "3.4732",
+      "mae": "2.1596",
+      "fit_s": "0.629"
+    },
+    {
+      "dataset": "boston",
+      "model": "CatBoost(200)",
+      "rmse": "2.5356",
+      "mae": "1.7141",
+      "fit_s": "0.184"
+    },
+    {
+      "dataset": "boston",
+      "model": "CTBoost",
+      "rmse": "4.0142",
+      "mae": "3.0789",
+      "fit_s": "0.015"
+    },
+    {
+      "dataset": "boston",
+      "model": "sklearn tree",
+      "rmse": "4.8667",
+      "mae": "3.2627",
+      "fit_s": "0.005"
+    },
+    {
+      "dataset": "boston",
+      "model": "modeltrees lmtree",
+      "rmse": "4.0523",
+      "mae": "2.6892",
+      "fit_s": "0.198"
+    },
+    {
+      "dataset": "boston",
+      "model": "MARS (mars-earth)",
+      "rmse": "4.7524",
+      "mae": "2.6242",
+      "fit_s": "7.845"
+    },
+    {
+      "dataset": "concrete",
+      "model": "ModelTree(all)",
+      "rmse": "6.8213",
+      "mae": "5.1599",
+      "fit_s": "0.628"
+    },
+    {
+      "dataset": "concrete",
+      "model": "ModelTree(path)",
+      "rmse": "11.3780",
+      "mae": "9.3602",
+      "fit_s": "0.087"
+    },
+    {
+      "dataset": "concrete",
+      "model": "ModelTree(mean)",
+      "rmse": "9.7668",
+      "mae": "7.7110",
+      "fit_s": "0.009"
+    },
+    {
+      "dataset": "concrete",
+      "model": "ModelTree(winnow)",
+      "rmse": "6.8213",
+      "mae": "5.1599",
+      "fit_s": "0.602"
+    },
+    {
+      "dataset": "concrete",
+      "model": "LightGBM(200)",
+      "rmse": "5.8477",
+      "mae": "3.9193",
+      "fit_s": "0.22"
+    },
+    {
+      "dataset": "concrete",
+      "model": "CatBoost(200)",
+      "rmse": "5.739",
+      "mae": "3.9848",
+      "fit_s": "0.118"
+    },
+    {
+      "dataset": "concrete",
+      "model": "CTBoost",
+      "rmse": "6.3763",
+      "mae": "5.1696",
+      "fit_s": "0.019"
+    },
+    {
+      "dataset": "concrete",
+      "model": "sklearn tree",
+      "rmse": "7.9315",
+      "mae": "5.3006",
+      "fit_s": "0.003"
+    },
+    {
+      "dataset": "concrete",
+      "model": "modeltrees lmtree",
+      "rmse": "7.6436",
+      "mae": "6.1672",
+      "fit_s": "0.021"
+    },
+    {
+      "dataset": "concrete",
+      "model": "MARS (mars-earth)",
+      "rmse": "7.1129",
+      "mae": "5.8889",
+      "fit_s": "2.662"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "ModelTree(all)",
+      "rmse": "218.1780",
+      "mae": "137.9417",
+      "fit_s": "1.219"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "ModelTree(path)",
+      "rmse": "270.6857",
+      "mae": "198.2933",
+      "fit_s": "0.075"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "ModelTree(mean)",
+      "rmse": "262.3234",
+      "mae": "180.1492",
+      "fit_s": "0.015"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "ModelTree(winnow)",
+      "rmse": "231.4737",
+      "mae": "146.0964",
+      "fit_s": "0.706"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "LightGBM(200)",
+      "rmse": "196.5717",
+      "mae": "124.1115",
+      "fit_s": "0.269"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "CatBoost(200)",
+      "rmse": "168.8948",
+      "mae": "112.5986",
+      "fit_s": "0.166"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "CTBoost",
+      "rmse": "192.0784",
+      "mae": "135.8741",
+      "fit_s": "0.024"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "sklearn tree",
+      "rmse": "197.7388",
+      "mae": "112.0144",
+      "fit_s": "0.003"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "modeltrees lmtree",
+      "rmse": "237.9175",
+      "mae": "158.4599",
+      "fit_s": "0.02"
+    },
+    {
+      "dataset": "ozone",
+      "model": "ModelTree(all)",
+      "rmse": "5.7638",
+      "mae": "4.0945",
+      "fit_s": "0.262"
+    },
+    {
+      "dataset": "ozone",
+      "model": "ModelTree(path)",
+      "rmse": "5.7794",
+      "mae": "4.2206",
+      "fit_s": "0.038"
+    },
+    {
+      "dataset": "ozone",
+      "model": "ModelTree(mean)",
+      "rmse": "4.6218",
+      "mae": "3.5192",
+      "fit_s": "0.004"
+    },
+    {
+      "dataset": "ozone",
+      "model": "ModelTree(winnow)",
+      "rmse": "5.5813",
+      "mae": "3.8708",
+      "fit_s": "0.183"
+    },
+    {
+      "dataset": "ozone",
+      "model": "LightGBM(200)",
+      "rmse": "4.0932",
+      "mae": "3.1922",
+      "fit_s": "0.104"
+    },
+    {
+      "dataset": "ozone",
+      "model": "CatBoost(200)",
+      "rmse": "3.8169",
+      "mae": "2.9094",
+      "fit_s": "0.118"
+    },
+    {
+      "dataset": "ozone",
+      "model": "CTBoost",
+      "rmse": "4.5425",
+      "mae": "3.3182",
+      "fit_s": "0.005"
+    },
+    {
+      "dataset": "ozone",
+      "model": "sklearn tree",
+      "rmse": "5.4564",
+      "mae": "3.9848",
+      "fit_s": "0.003"
+    },
+    {
+      "dataset": "ozone",
+      "model": "modeltrees lmtree",
+      "rmse": "4.268",
+      "mae": "3.2706",
+      "fit_s": "0.01"
+    },
+    {
+      "dataset": "ozone",
+      "model": "MARS (mars-earth)",
+      "rmse": "4.0996",
+      "mae": "3.0049",
+      "fit_s": "0.691"
+    },
+    {
+      "dataset": "abalone",
+      "model": "forust (Rust)",
+      "rmse": "2.4484",
+      "mae": "1.7473",
+      "fit_s": "0.477"
+    },
+    {
+      "dataset": "abalone",
+      "model": "perpetual (Rust)",
+      "rmse": "2.2931",
+      "mae": "1.6325",
+      "fit_s": "0.224"
+    },
+    {
+      "dataset": "boston",
+      "model": "forust (Rust)",
+      "rmse": "3.1447",
+      "mae": "2.1108",
+      "fit_s": "0.344"
+    },
+    {
+      "dataset": "boston",
+      "model": "perpetual (Rust)",
+      "rmse": "3.4401",
+      "mae": "2.1917",
+      "fit_s": "0.079"
+    },
+    {
+      "dataset": "concrete",
+      "model": "forust (Rust)",
+      "rmse": "5.587",
+      "mae": "3.8518",
+      "fit_s": "0.226"
+    },
+    {
+      "dataset": "concrete",
+      "model": "perpetual (Rust)",
+      "rmse": "5.781",
+      "mae": "4.3894",
+      "fit_s": "0.159"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "forust (Rust)",
+      "rmse": "173.0611",
+      "mae": "104.6543",
+      "fit_s": "0.176"
+    },
+    {
+      "dataset": "fc2008",
+      "model": "perpetual (Rust)",
+      "rmse": "220.856",
+      "mae": "154.4064",
+      "fit_s": "0.437"
+    },
+    {
+      "dataset": "ozone",
+      "model": "forust (Rust)",
+      "rmse": "3.9406",
+      "mae": "2.9863",
+      "fit_s": "0.255"
+    },
+    {
+      "dataset": "ozone",
+      "model": "perpetual (Rust)",
+      "rmse": "3.8823",
+      "mae": "2.8679",
+      "fit_s": "0.059"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "rpart",
+      "rmse": "4.4296",
+      "mae": "3.4417",
+      "fit_s": "0.069"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "cubist",
+      "rmse": "2.4308",
+      "mae": "1.7937",
+      "fit_s": "0.484"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "lmtree",
+      "rmse": "2.8738",
+      "mae": "2.2192",
+      "fit_s": "1.165"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "grf_llf",
+      "rmse": "2.0319",
+      "mae": "1.4396",
+      "fit_s": "0.988"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "grf_rf",
+      "rmse": "2.7795",
+      "mae": "2.0953",
+      "fit_s": "0.999"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "ctree",
+      "rmse": "3.5826",
+      "mae": "2.756",
+      "fit_s": "0.833"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "glmtree",
+      "rmse": "3.3064",
+      "mae": "2.456",
+      "fit_s": "0.401"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "earth",
+      "rmse": "4.2628",
+      "mae": "3.2939",
+      "fit_s": "0.062"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "rpart",
+      "rmse": "9.7869",
+      "mae": "7.762",
+      "fit_s": "0.013"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "cubist",
+      "rmse": "6.1437",
+      "mae": "4.7123",
+      "fit_s": "0.042"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "lmtree",
+      "rmse": "6.6351",
+      "mae": "4.8231",
+      "fit_s": "0.127"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "grf_llf",
+      "rmse": "5.0692",
+      "mae": "3.7191",
+      "fit_s": "0.428"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "grf_rf",
+      "rmse": "6.4908",
+      "mae": "5.0832",
+      "fit_s": "0.415"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "ctree",
+      "rmse": "7.0977",
+      "mae": "5.4627",
+      "fit_s": "0.17"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "glmtree",
+      "rmse": "6.1312",
+      "mae": "4.6586",
+      "fit_s": "0.366"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "earth",
+      "rmse": "6.1971",
+      "mae": "4.9027",
+      "fit_s": "0.014"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "rpart",
+      "rmse": "1496.8856",
+      "mae": "941.8102",
+      "fit_s": "0.854"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "cubist",
+      "rmse": "608.8466",
+      "mae": "290.3599",
+      "fit_s": "3.475"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "lmtree",
+      "rmse": "876.8757",
+      "mae": "295.7066",
+      "fit_s": "46"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "grf_llf",
+      "rmse": "536.6086",
+      "mae": "274.3158",
+      "fit_s": "71.736"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "grf_rf",
+      "rmse": "599.992",
+      "mae": "307.9247",
+      "fit_s": "50.589"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "ctree",
+      "rmse": "603.5125",
+      "mae": "318.0897",
+      "fit_s": "9.783"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "glmtree",
+      "rmse": "641.4309",
+      "mae": "289.8498",
+      "fit_s": "58.885"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "earth",
+      "rmse": "1094.5677",
+      "mae": "715.8854",
+      "fit_s": "0.978"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "rpart",
+      "rmse": "823.8327",
+      "mae": "659.8581",
+      "fit_s": "0.014"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "cubist",
+      "rmse": "739.2682",
+      "mae": "564.1113",
+      "fit_s": "0.047"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "lmtree",
+      "rmse": "718.8392",
+      "mae": "572.6306",
+      "fit_s": "0.243"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "grf_llf",
+      "rmse": "695.7427",
+      "mae": "541.9357",
+      "fit_s": "0.618"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "grf_rf",
+      "rmse": "698.2829",
+      "mae": "546.2683",
+      "fit_s": "0.568"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "ctree",
+      "rmse": "788.0235",
+      "mae": "612.314",
+      "fit_s": "0.076"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "glmtree",
+      "rmse": "718.8392",
+      "mae": "572.6306",
+      "fit_s": "0.669"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "earth",
+      "rmse": "714.0512",
+      "mae": "558.2567",
+      "fit_s": "0.014"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "rpart",
+      "rmse": "8.0337",
+      "mae": "6.2605",
+      "fit_s": "0.358"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "cubist",
+      "rmse": "7.5296",
+      "mae": "5.806",
+      "fit_s": "2.488"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "lmtree",
+      "rmse": "7.513",
+      "mae": "5.8666",
+      "fit_s": "64.019"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "grf_llf",
+      "rmse": "7.5456",
+      "mae": "5.9179",
+      "fit_s": "75.448"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "grf_rf",
+      "rmse": "7.5361",
+      "mae": "5.9111",
+      "fit_s": "50.902"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "ctree",
+      "rmse": "7.8745",
+      "mae": "6.1686",
+      "fit_s": "0.503"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "glmtree",
+      "rmse": "7.513",
+      "mae": "5.8666",
+      "fit_s": "44.889"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "earth",
+      "rmse": "7.9938",
+      "mae": "6.2461",
+      "fit_s": "1.102"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "ModelTree(all)",
+      "rmse": "2.4395",
+      "mae": "1.6861",
+      "fit_s": "2.515"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "ModelTree(path)",
+      "rmse": "4.1164",
+      "mae": "3.2323",
+      "fit_s": "0.104"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "ModelTree(mean)",
+      "rmse": "4.6863",
+      "mae": "3.6773",
+      "fit_s": "0.033"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "ModelTree(winnow)",
+      "rmse": "2.3937",
+      "mae": "1.7928",
+      "fit_s": "1.167"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "LightGBM(200)",
+      "rmse": "1.6174",
+      "mae": "1.0701",
+      "fit_s": "1.568"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "CatBoost(200)",
+      "rmse": "1.6585",
+      "mae": "1.1577",
+      "fit_s": "0.150"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "CTBoost",
+      "rmse": "2.6948",
+      "mae": "2.0553",
+      "fit_s": "0.059"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "sklearn tree",
+      "rmse": "2.6636",
+      "mae": "1.9698",
+      "fit_s": "0.008"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "modeltrees lmtree",
+      "rmse": "2.8738",
+      "mae": "2.2192",
+      "fit_s": "0.156"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "MARS (mars-earth)",
+      "rmse": "4.3117",
+      "mae": "3.3934",
+      "fit_s": "3.767"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "ModelTree(all)",
+      "rmse": "5.8261",
+      "mae": "4.1449",
+      "fit_s": "0.859"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "ModelTree(path)",
+      "rmse": "8.6495",
+      "mae": "6.5486",
+      "fit_s": "0.133"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "ModelTree(mean)",
+      "rmse": "10.3886",
+      "mae": "8.0271",
+      "fit_s": "0.013"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "ModelTree(winnow)",
+      "rmse": "5.8261",
+      "mae": "4.1449",
+      "fit_s": "0.848"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "LightGBM(200)",
+      "rmse": "4.2884",
+      "mae": "2.8997",
+      "fit_s": "0.458"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "CatBoost(200)",
+      "rmse": "4.0547",
+      "mae": "2.8822",
+      "fit_s": "0.129"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "CTBoost",
+      "rmse": "4.9069",
+      "mae": "3.6339",
+      "fit_s": "0.029"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "sklearn tree",
+      "rmse": "5.6645",
+      "mae": "3.6583",
+      "fit_s": "0.006"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "modeltrees lmtree",
+      "rmse": "6.6351",
+      "mae": "4.8231",
+      "fit_s": "0.035"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "MARS (mars-earth)",
+      "rmse": "6.3822",
+      "mae": "4.9328",
+      "fit_s": "3.713"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "ModelTree(all)",
+      "rmse": "0.0000",
+      "mae": "0.0000",
+      "fit_s": "70.664"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "ModelTree(path)",
+      "rmse": "0.2737",
+      "mae": "0.1574",
+      "fit_s": "1.685"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "ModelTree(mean)",
+      "rmse": "0.2284",
+      "mae": "0.1041",
+      "fit_s": "0.502"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "ModelTree(winnow)",
+      "rmse": "0.0492",
+      "mae": "0.0121",
+      "fit_s": "19.793"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "LightGBM(200)",
+      "rmse": "0.0000",
+      "mae": "0.0000",
+      "fit_s": "1.027"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "CatBoost(200)",
+      "rmse": "0.0000",
+      "mae": "0.0000",
+      "fit_s": "1.266"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "CTBoost",
+      "rmse": "0.0069",
+      "mae": "0.0022",
+      "fit_s": "1.117"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "sklearn tree",
+      "rmse": "0.0000",
+      "mae": "0.0000",
+      "fit_s": "0.248"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "modeltrees lmtree",
+      "rmse": "0.0167",
+      "mae": "0.0003",
+      "fit_s": "91.238"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "MARS (mars-earth)",
+      "rmse": "0.0000",
+      "mae": "0.0000",
+      "fit_s": "1614.473"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "ModelTree(all)",
+      "rmse": "2317.3012",
+      "mae": "1012.8216",
+      "fit_s": "1.266"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "ModelTree(path)",
+      "rmse": "990.4913",
+      "mae": "749.2475",
+      "fit_s": "0.142"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "ModelTree(mean)",
+      "rmse": "793.4781",
+      "mae": "607.1588",
+      "fit_s": "0.020"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "ModelTree(winnow)",
+      "rmse": "989.8161",
+      "mae": "720.6770",
+      "fit_s": "0.324"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "LightGBM(200)",
+      "rmse": "716.8796",
+      "mae": "539.9642",
+      "fit_s": "0.383"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "CatBoost(200)",
+      "rmse": "678.2486",
+      "mae": "524.6298",
+      "fit_s": "0.152"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "CTBoost",
+      "rmse": "703.9626",
+      "mae": "543.6793",
+      "fit_s": "0.018"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "sklearn tree",
+      "rmse": "841.8296",
+      "mae": "592.2240",
+      "fit_s": "0.006"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "modeltrees lmtree",
+      "rmse": "718.8392",
+      "mae": "572.6306",
+      "fit_s": "0.621"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "MARS (mars-earth)",
+      "rmse": "713.5991",
+      "mae": "561.3069",
+      "fit_s": "3.538"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "ModelTree(all)",
+      "rmse": "7.4618",
+      "mae": "5.8452",
+      "fit_s": "81.088"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "ModelTree(path)",
+      "rmse": "7.8599",
+      "mae": "6.1935",
+      "fit_s": "1.626"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "ModelTree(mean)",
+      "rmse": "7.8842",
+      "mae": "6.1817",
+      "fit_s": "0.634"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "ModelTree(winnow)",
+      "rmse": "7.8638",
+      "mae": "6.1600",
+      "fit_s": "0.856"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "LightGBM(200)",
+      "rmse": "7.4213",
+      "mae": "5.8277",
+      "fit_s": "0.870"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "CatBoost(200)",
+      "rmse": "7.4364",
+      "mae": "5.8355",
+      "fit_s": "0.774"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "CTBoost",
+      "rmse": "7.4493",
+      "mae": "5.8330",
+      "fit_s": "0.940"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "sklearn tree",
+      "rmse": "10.6143",
+      "mae": "8.2305",
+      "fit_s": "0.478"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "modeltrees lmtree",
+      "rmse": "7.5130",
+      "mae": "5.8666",
+      "fit_s": "33.853"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "rpart",
+      "rmse": "5088.4058",
+      "mae": "3230.5985",
+      "fit_s": "0.027"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "cubist",
+      "rmse": "4535.6041",
+      "mae": "1641.5711",
+      "fit_s": "0.376"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "lmtree",
+      "rmse": "4791.5761",
+      "mae": "2908.7908",
+      "fit_s": "1.169"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "glmtree",
+      "rmse": "4791.5761",
+      "mae": "2908.7908",
+      "fit_s": "1.003"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "ctree",
+      "rmse": "4850.6374",
+      "mae": "2765.4858",
+      "fit_s": "0.849"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "grf_llf",
+      "rmse": "4564.6862",
+      "mae": "2430.2948",
+      "fit_s": "1.550"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "forust (Rust)",
+      "rmse": "1.7322",
+      "mae": "1.2236",
+      "fit_s": "0.325"
+    },
+    {
+      "dataset": "ta_airfoil",
+      "model": "perpetual (Rust)",
+      "rmse": "2.3497",
+      "mae": "1.7162",
+      "fit_s": "1.748"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "forust (Rust)",
+      "rmse": "4.4281",
+      "mae": "3.0578",
+      "fit_s": "0.224"
+    },
+    {
+      "dataset": "ta_concrete",
+      "model": "perpetual (Rust)",
+      "rmse": "4.7464",
+      "mae": "3.4279",
+      "fit_s": "0.170"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "forust (Rust)",
+      "rmse": "0.0001",
+      "mae": "0.0001",
+      "fit_s": "1.206"
+    },
+    {
+      "dataset": "ta_diamonds",
+      "model": "perpetual (Rust)",
+      "rmse": "0.0024",
+      "mae": "0.0004",
+      "fit_s": "44.620"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "forust (Rust)",
+      "rmse": "744.0888",
+      "mae": "550.4859",
+      "fit_s": "0.239"
+    },
+    {
+      "dataset": "ta_fiat500",
+      "model": "perpetual (Rust)",
+      "rmse": "702.4609",
+      "mae": "539.2329",
+      "fit_s": "0.099"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "forust (Rust)",
+      "rmse": "7.4376",
+      "mae": "5.8412",
+      "fit_s": "0.885"
+    },
+    {
+      "dataset": "ta_food_delivery",
+      "model": "perpetual (Rust)",
+      "rmse": "7.4738",
+      "mae": "5.8580",
+      "fit_s": "22.836"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "grf_rf",
+      "rmse": "4614.0002",
+      "mae": "2533.9085",
+      "fit_s": "1.277"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "earth",
+      "rmse": "5724.2400",
+      "mae": "4023.7665",
+      "fit_s": "0.043"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "CTBoost",
+      "rmse": "4508.5786",
+      "mae": "2661.0408",
+      "fit_s": "0.010"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "CatBoost(200)",
+      "rmse": "4664.6846",
+      "mae": "2523.4366",
+      "fit_s": "0.176"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "LightGBM(200)",
+      "rmse": "5121.2629",
+      "mae": "3073.2888",
+      "fit_s": "0.581"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "MARS (mars-earth)",
+      "rmse": "5853.2606",
+      "mae": "3962.9501",
+      "fit_s": "1.101"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "ModelTree(all)",
+      "rmse": "4639.1137",
+      "mae": "2489.7619",
+      "fit_s": "0.739"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "ModelTree(mean)",
+      "rmse": "4865.3954",
+      "mae": "2759.8359",
+      "fit_s": "0.015"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "ModelTree(path)",
+      "rmse": "6573.1921",
+      "mae": "3552.6891",
+      "fit_s": "0.079"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "ModelTree(winnow)",
+      "rmse": "4778.1847",
+      "mae": "2642.8529",
+      "fit_s": "0.454"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "forust (Rust)",
+      "rmse": "5113.3852",
+      "mae": "2929.5726",
+      "fit_s": "0.499"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "modeltrees lmtree",
+      "rmse": "4791.5761",
+      "mae": "2908.7908",
+      "fit_s": "0.033"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "perpetual (Rust)",
+      "rmse": "4533.5541",
+      "mae": "2626.0809",
+      "fit_s": "0.067"
+    },
+    {
+      "dataset": "ta_healthcare",
+      "model": "sklearn tree",
+      "rmse": "6404.1137",
+      "mae": "2863.9293",
+      "fit_s": "0.034"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "rpart",
+      "rmse": "0.3779",
+      "mae": "0.2924",
+      "fit_s": "0.215"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "cubist",
+      "rmse": "0.2298",
+      "mae": "0.1553",
+      "fit_s": "1.431"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "lmtree",
+      "rmse": "0.2377",
+      "mae": "0.1625",
+      "fit_s": "10.848"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "glmtree",
+      "rmse": "0.2354",
+      "mae": "0.1617",
+      "fit_s": "37.178"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "ctree",
+      "rmse": "0.3045",
+      "mae": "0.2252",
+      "fit_s": "1.608"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "grf_llf",
+      "rmse": "0.2317",
+      "mae": "0.1628",
+      "fit_s": "13.094"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "grf_rf",
+      "rmse": "0.2456",
+      "mae": "0.1773",
+      "fit_s": "14.160"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "earth",
+      "rmse": "0.2907",
+      "mae": "0.2180",
+      "fit_s": "0.157"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "CTBoost",
+      "rmse": "0.2261",
+      "mae": "0.1619",
+      "fit_s": "0.172"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "CatBoost(200)",
+      "rmse": "0.2193",
+      "mae": "0.1562",
+      "fit_s": "0.355"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "LightGBM(200)",
+      "rmse": "0.2162",
+      "mae": "0.1529",
+      "fit_s": "0.271"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "ModelTree(all)",
+      "rmse": "0.3644",
+      "mae": "0.1992",
+      "fit_s": "7.454"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "ModelTree(mean)",
+      "rmse": "0.3838",
+      "mae": "0.2919",
+      "fit_s": "0.171"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "ModelTree(path)",
+      "rmse": "0.3788",
+      "mae": "0.2898",
+      "fit_s": "1.018"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "ModelTree(winnow)",
+      "rmse": "0.3352",
+      "mae": "0.2534",
+      "fit_s": "3.222"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "forust (Rust)",
+      "rmse": "0.2238",
+      "mae": "0.1597",
+      "fit_s": "0.469"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "modeltrees lmtree",
+      "rmse": "0.2377",
+      "mae": "0.1625",
+      "fit_s": "1.188"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "perpetual (Rust)",
+      "rmse": "0.2113",
+      "mae": "0.1483",
+      "fit_s": "2.455"
+    },
+    {
+      "dataset": "ta_houses",
+      "model": "sklearn tree",
+      "rmse": "0.3163",
+      "mae": "0.2194",
+      "fit_s": "0.152"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "rpart",
+      "rmse": "192132.4025",
+      "mae": "112549.5997",
+      "fit_s": "0.212"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "cubist",
+      "rmse": "114392.7336",
+      "mae": "50586.9074",
+      "fit_s": "1.415"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "lmtree",
+      "rmse": "112822.6276",
+      "mae": "54234.9796",
+      "fit_s": "88.300"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "ctree",
+      "rmse": "140881.7087",
+      "mae": "69392.1622",
+      "fit_s": "2.668"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "grf_llf",
+      "rmse": "102864.9238",
+      "mae": "47277.1050",
+      "fit_s": "12.956"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "grf_rf",
+      "rmse": "124261.1341",
+      "mae": "56371.8984",
+      "fit_s": "11.607"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "earth",
+      "rmse": "145755.8544",
+      "mae": "92290.8910",
+      "fit_s": "0.179"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "CTBoost",
+      "rmse": "107014.0902",
+      "mae": "51635.8944",
+      "fit_s": "0.186"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "CatBoost(200)",
+      "rmse": "89876.8050",
+      "mae": "45533.2042",
+      "fit_s": "0.376"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "LightGBM(200)",
+      "rmse": "93946.8689",
+      "mae": "45382.2016",
+      "fit_s": "0.328"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "ModelTree(all)",
+      "rmse": "1536911.8984",
+      "mae": "832154.5700",
+      "fit_s": "34.821"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "ModelTree(mean)",
+      "rmse": "188718.1280",
+      "mae": "107628.8610",
+      "fit_s": "0.158"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "ModelTree(path)",
+      "rmse": "1230887.1708",
+      "mae": "641661.7864",
+      "fit_s": "2.031"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "ModelTree(winnow)",
+      "rmse": "3415089.1914",
+      "mae": "2246776.7941",
+      "fit_s": "9.670"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "forust (Rust)",
+      "rmse": "93768.8548",
+      "mae": "46371.8566",
+      "fit_s": "0.375"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "perpetual (Rust)",
+      "rmse": "91669.3578",
+      "mae": "43974.4676",
+      "fit_s": "3.456"
+    },
+    {
+      "dataset": "ta_miami",
+      "model": "sklearn tree",
+      "rmse": "146810.5100",
+      "mae": "68367.7558",
+      "fit_s": "0.180"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "rpart",
+      "rmse": "5.4592",
+      "mae": "4.5060",
+      "fit_s": "0.632"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "cubist",
+      "rmse": "4.4317",
+      "mae": "3.0729",
+      "fit_s": "3.647"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "ctree",
+      "rmse": "4.5936",
+      "mae": "3.2995",
+      "fit_s": "1.132"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "grf_llf",
+      "rmse": "3.5928",
+      "mae": "2.5994",
+      "fit_s": "37.160"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "grf_rf",
+      "rmse": "3.9968",
+      "mae": "2.9908",
+      "fit_s": "35.940"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "earth",
+      "rmse": "5.0255",
+      "mae": "4.1069",
+      "fit_s": "0.629"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "CTBoost",
+      "rmse": "4.1929",
+      "mae": "3.1825",
+      "fit_s": "0.349"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "CatBoost(200)",
+      "rmse": "3.9228",
+      "mae": "2.8947",
+      "fit_s": "0.654"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "LightGBM(200)",
+      "rmse": "3.9186",
+      "mae": "2.8705",
+      "fit_s": "0.941"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "ModelTree(all)",
+      "rmse": "4.8524",
+      "mae": "3.8919",
+      "fit_s": "29.972"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "ModelTree(mean)",
+      "rmse": "5.3627",
+      "mae": "4.3562",
+      "fit_s": "0.373"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "ModelTree(path)",
+      "rmse": "36.2869",
+      "mae": "25.7096",
+      "fit_s": "3.848"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "ModelTree(winnow)",
+      "rmse": "5.0133",
+      "mae": "4.0412",
+      "fit_s": "4.931"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "forust (Rust)",
+      "rmse": "3.9650",
+      "mae": "2.8987",
+      "fit_s": "0.894"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "modeltrees lmtree",
+      "rmse": "4.8492",
+      "mae": "2.9851",
+      "fit_s": "5.961"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "perpetual (Rust)",
+      "rmse": "3.7813",
+      "mae": "2.7651",
+      "fit_s": "2.841"
+    },
+    {
+      "dataset": "ta_protein",
+      "model": "sklearn tree",
+      "rmse": "5.0683",
+      "mae": "2.9457",
+      "fit_s": "0.493"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "rpart",
+      "rmse": "1.1243",
+      "mae": "0.7967",
+      "fit_s": "0.025"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "cubist",
+      "rmse": "1.0197",
+      "mae": "0.6932",
+      "fit_s": "0.292"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "lmtree",
+      "rmse": "1.0356",
+      "mae": "0.7074",
+      "fit_s": "1.009"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "glmtree",
+      "rmse": "1.0290",
+      "mae": "0.7051",
+      "fit_s": "1.183"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "ctree",
+      "rmse": "1.0776",
+      "mae": "0.7737",
+      "fit_s": "0.881"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "grf_llf",
+      "rmse": "0.9672",
+      "mae": "0.6539",
+      "fit_s": "1.164"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "grf_rf",
+      "rmse": "0.9780",
+      "mae": "0.6774",
+      "fit_s": "1.122"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "earth",
+      "rmse": "0.9985",
+      "mae": "0.7022",
+      "fit_s": "0.039"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "CTBoost",
+      "rmse": "0.9900",
+      "mae": "0.6970",
+      "fit_s": "0.010"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "CatBoost(200)",
+      "rmse": "0.9506",
+      "mae": "0.6525",
+      "fit_s": "0.149"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "LightGBM(200)",
+      "rmse": "0.9716",
+      "mae": "0.6604",
+      "fit_s": "0.216"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "MARS (mars-earth)",
+      "rmse": "0.9877",
+      "mae": "0.6971",
+      "fit_s": "4.428"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "ModelTree(all)",
+      "rmse": "1.1330",
+      "mae": "0.7318",
+      "fit_s": "0.356"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "ModelTree(mean)",
+      "rmse": "1.1306",
+      "mae": "0.8000",
+      "fit_s": "0.009"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "ModelTree(path)",
+      "rmse": "1.1413",
+      "mae": "0.8084",
+      "fit_s": "0.089"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "ModelTree(winnow)",
+      "rmse": "1.1330",
+      "mae": "0.7318",
+      "fit_s": "0.353"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "forust (Rust)",
+      "rmse": "1.0119",
+      "mae": "0.6580",
+      "fit_s": "0.337"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "modeltrees lmtree",
+      "rmse": "1.0356",
+      "mae": "0.7074",
+      "fit_s": "0.033"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "perpetual (Rust)",
+      "rmse": "0.9551",
+      "mae": "0.6615",
+      "fit_s": "0.102"
+    },
+    {
+      "dataset": "ta_qsar_fish",
+      "model": "sklearn tree",
+      "rmse": "1.2727",
+      "mae": "0.8838",
+      "fit_s": "0.027"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "rpart",
+      "rmse": "1.2888",
+      "mae": "1.0220",
+      "fit_s": "0.230"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "cubist",
+      "rmse": "1.1091",
+      "mae": "0.8026",
+      "fit_s": "1.116"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "lmtree",
+      "rmse": "1.1220",
+      "mae": "0.8574",
+      "fit_s": "5.063"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "glmtree",
+      "rmse": "1.1220",
+      "mae": "0.8574",
+      "fit_s": "5.548"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "ctree",
+      "rmse": "1.1483",
+      "mae": "0.8721",
+      "fit_s": "1.856"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "grf_llf",
+      "rmse": "0.8638",
+      "mae": "0.6522",
+      "fit_s": "5.700"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "grf_rf",
+      "rmse": "1.0071",
+      "mae": "0.7853",
+      "fit_s": "4.955"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "earth",
+      "rmse": "1.3010",
+      "mae": "1.0467",
+      "fit_s": "0.208"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "CTBoost",
+      "rmse": "1.0190",
+      "mae": "0.7963",
+      "fit_s": "0.137"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "CatBoost(200)",
+      "rmse": "0.9136",
+      "mae": "0.6826",
+      "fit_s": "0.360"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "LightGBM(200)",
+      "rmse": "0.8967",
+      "mae": "0.6710",
+      "fit_s": "0.340"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "MARS (mars-earth)",
+      "rmse": "1.2974",
+      "mae": "1.0394",
+      "fit_s": "8.642"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "ModelTree(all)",
+      "rmse": "1.0933",
+      "mae": "0.8313",
+      "fit_s": "7.708"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "ModelTree(mean)",
+      "rmse": "1.2729",
+      "mae": "1.0042",
+      "fit_s": "0.093"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "ModelTree(path)",
+      "rmse": "1.2898",
+      "mae": "1.0158",
+      "fit_s": "0.264"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "ModelTree(winnow)",
+      "rmse": "1.1241",
+      "mae": "0.8489",
+      "fit_s": "3.389"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "forust (Rust)",
+      "rmse": "0.9209",
+      "mae": "0.6871",
+      "fit_s": "0.737"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "modeltrees lmtree",
+      "rmse": "1.1220",
+      "mae": "0.8574",
+      "fit_s": "1.065"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "perpetual (Rust)",
+      "rmse": "1.0243",
+      "mae": "0.8038",
+      "fit_s": "3.441"
+    },
+    {
+      "dataset": "ta_qsar_tid11",
+      "model": "sklearn tree",
+      "rmse": "1.1139",
+      "mae": "0.7736",
+      "fit_s": "0.065"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "rpart",
+      "rmse": "18.9143",
+      "mae": "13.6143",
+      "fit_s": "1.063"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "cubist",
+      "rmse": "12.0058",
+      "mae": "6.7469",
+      "fit_s": "5.234"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "ctree",
+      "rmse": "13.6014",
+      "mae": "8.4052",
+      "fit_s": "4.587"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "grf_llf",
+      "rmse": "8.9640",
+      "mae": "5.2997",
+      "fit_s": "32.811"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "grf_rf",
+      "rmse": "11.0090",
+      "mae": "6.8427",
+      "fit_s": "26.684"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "earth",
+      "rmse": "18.5902",
+      "mae": "13.7115",
+      "fit_s": "0.805"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "CTBoost",
+      "rmse": "11.4086",
+      "mae": "7.4241",
+      "fit_s": "0.983"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "CatBoost(200)",
+      "rmse": "10.2394",
+      "mae": "6.5324",
+      "fit_s": "0.772"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "LightGBM(200)",
+      "rmse": "9.6440",
+      "mae": "6.0097",
+      "fit_s": "1.090"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "ModelTree(mean)",
+      "rmse": "18.0647",
+      "mae": "12.5547",
+      "fit_s": "0.468"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "ModelTree(path)",
+      "rmse": "18.9809",
+      "mae": "12.9757",
+      "fit_s": "3.617"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "forust (Rust)",
+      "rmse": "9.8710",
+      "mae": "6.1829",
+      "fit_s": "0.623"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "modeltrees lmtree",
+      "rmse": "81.7487",
+      "mae": "10.6010",
+      "fit_s": "164.865"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "perpetual (Rust)",
+      "rmse": "9.6098",
+      "mae": "5.7318",
+      "fit_s": "33.635"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "sklearn tree",
+      "rmse": "11.3618",
+      "mae": "6.0073",
+      "fit_s": "0.634"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "rpart",
+      "rmse": "0.7740",
+      "mae": "0.6147",
+      "fit_s": "0.117"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "cubist",
+      "rmse": "0.7220",
+      "mae": "0.5447",
+      "fit_s": "0.695"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "lmtree",
+      "rmse": "0.7106",
+      "mae": "0.5603",
+      "fit_s": "2.679"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "glmtree",
+      "rmse": "0.7111",
+      "mae": "0.5578",
+      "fit_s": "3.946"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "ctree",
+      "rmse": "0.7456",
+      "mae": "0.5904",
+      "fit_s": "0.959"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "grf_llf",
+      "rmse": "0.6379",
+      "mae": "0.4846",
+      "fit_s": "5.461"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "grf_rf",
+      "rmse": "0.6935",
+      "mae": "0.5440",
+      "fit_s": "5.100"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "earth",
+      "rmse": "0.7264",
+      "mae": "0.5684",
+      "fit_s": "0.102"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "CTBoost",
+      "rmse": "0.6861",
+      "mae": "0.5360",
+      "fit_s": "0.074"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "CatBoost(200)",
+      "rmse": "0.6548",
+      "mae": "0.5063",
+      "fit_s": "0.259"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "LightGBM(200)",
+      "rmse": "0.6304",
+      "mae": "0.4772",
+      "fit_s": "2.237"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "MARS (mars-earth)",
+      "rmse": "0.7263",
+      "mae": "0.5690",
+      "fit_s": "43.676"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "ModelTree(all)",
+      "rmse": "0.7062",
+      "mae": "0.5554",
+      "fit_s": "3.704"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "ModelTree(mean)",
+      "rmse": "0.7629",
+      "mae": "0.5918",
+      "fit_s": "0.090"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "ModelTree(path)",
+      "rmse": "0.7602",
+      "mae": "0.6143",
+      "fit_s": "0.373"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "ModelTree(winnow)",
+      "rmse": "0.7265",
+      "mae": "0.5757",
+      "fit_s": "0.995"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "forust (Rust)",
+      "rmse": "0.6577",
+      "mae": "0.4937",
+      "fit_s": "0.762"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "modeltrees lmtree",
+      "rmse": "0.7106",
+      "mae": "0.5603",
+      "fit_s": "1.993"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "perpetual (Rust)",
+      "rmse": "0.6566",
+      "mae": "0.5119",
+      "fit_s": "0.486"
+    },
+    {
+      "dataset": "ta_wine",
+      "model": "sklearn tree",
+      "rmse": "0.8325",
+      "mae": "0.4900",
+      "fit_s": "0.058"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "ModelTree(all)",
+      "rmse": "256.2480",
+      "mae": "21.2422",
+      "fit_s": "1022.152"
+    },
+    {
+      "dataset": "ta_superconductivity",
+      "model": "ModelTree(winnow)",
+      "rmse": "4877.4921",
+      "mae": "122.4071",
+      "fit_s": "961.585"
+    }
+  ],
+  "elo_before": {
+    "ModelTree(all)": 1001.8696176425264,
+    "ModelTree(path)": 505.05403237740427,
+    "ModelTree(mean)": 627.9764106602544,
+    "ModelTree(winnow)": 715.1224546217773
+  },
+  "elo_after": {
+    "ModelTree(all)": 914.7851874287597,
+    "ModelTree(path)": 545.8324024282883,
+    "ModelTree(mean)": 649.6580306387355,
+    "ModelTree(winnow)": 650.6808518818692
+  }
+}

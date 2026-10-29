@@ -47,6 +47,7 @@ nav:
       - Inspection: examples/inspection.md
       - Visualization: examples/visualization.md
       - Metrics & plots: examples/metrics-plots.md
+      - Hyperparameter search: examples/hpo.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md

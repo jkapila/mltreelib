@@ -24,27 +24,29 @@ scorers).
 +-----------+---------------------+--------------------------+-------------+
 |    ELO    |    FIT TIME (±sd)   |          MODEL           |     DATA    |
 +-----------+---------------------+--------------------------+-------------+
-|   1576.5  |   15.41 s (±24.59)  |         grf_llf          |    17/18    |
-|   1524.9  |     0.67 s (±0.55)  |      LightGBM(200)       |    18/18    |
-|   1479.7  |     0.36 s (±0.31)  |      CatBoost(200)       |    18/18    |
-|   1462.9  |    6.50 s (±13.12)  |     perpetual (Rust)     |    18/18    |
-|   1329.9  |     0.50 s (±0.29)  |      forust (Rust)       |    18/18    |
-|   1228.0  |   11.47 s (±17.45)  |          grf_rf          |    18/18    |
-|   1214.8  |     0.23 s (±0.37)  |         CTBoost          |    18/18    |
-|   1001.9  |   17.93 s (±35.31)  |      ModelTree(all)      |    17/18    |
-|   982.5   |   13.89 s (±27.18)  |          lmtree          |    16/18    |
-|   973.1   |     1.19 s (±1.53)  |          cubist          |    18/18    |
-|   956.5   |   10.39 s (±19.45)  |         glmtree          |    15/18    |
-|   881.4   |   17.77 s (±44.25)  |    modeltrees lmtree     |    17/18    |
-|   823.3   |  143.31 s (±463.47) |    MARS (mars-earth)     |    12/18    |
-|   752.2   |     1.46 s (±2.38)  |          ctree           |    18/18    |
-|   745.9   |     0.26 s (±0.37)  |          earth           |    17/18    |
-|   715.1   |     3.14 s (±4.71)  |    ModelTree(winnow)     |    17/18    |
-|   678.5   |     0.13 s (±0.20)  |       sklearn tree       |    18/18    |
-|   628.0   |     0.14 s (±0.19)  |     ModelTree(mean)      |    18/18    |
-|   539.8   |     0.22 s (±0.32)  |          rpart           |    18/18    |
-|   505.1   |     0.89 s (±1.25)  |     ModelTree(path)      |    18/18    |
+|   1577.1  |   15.41 s (±24.59)  |         grf_llf          |    17/18    |
+|   1525.9  |     0.67 s (±0.55)  |      LightGBM(200)       |    18/18    |
+|   1480.5  |     0.36 s (±0.31)  |      CatBoost(200)       |    18/18    |
+|   1463.7  |    6.50 s (±13.12)  |     perpetual (Rust)     |    18/18    |
+|   1331.3  |     0.50 s (±0.29)  |      forust (Rust)       |    18/18    |
+|   1229.5  |   11.47 s (±17.45)  |          grf_rf          |    18/18    |
+|   1217.3  |     0.23 s (±0.37)  |         CTBoost          |    18/18    |
+|   980.1   |   13.89 s (±27.18)  |          lmtree          |    16/18    |
+|   977.2   |     1.19 s (±1.53)  |          cubist          |    18/18    |
+|   954.2   |   10.39 s (±19.45)  |         glmtree          |    15/18    |
+|   914.8   |   70.56 s (±238.75) |      ModelTree(all)      |    18/18    |
+|   891.5   |   17.77 s (±44.25)  |    modeltrees lmtree     |    17/18    |
+|   823.5   |  143.31 s (±463.47) |    MARS (mars-earth)     |    12/18    |
+|   765.6   |     1.46 s (±2.38)  |          ctree           |    18/18    |
+|   763.5   |     0.26 s (±0.37)  |          earth           |    17/18    |
+|   691.7   |     0.13 s (±0.20)  |       sklearn tree       |    18/18    |
+|   650.7   |   56.32 s (±225.98) |    ModelTree(winnow)     |    18/18    |
+|   649.7   |     0.15 s (±0.20)  |     ModelTree(mean)      |    18/18    |
+|   566.3   |     0.22 s (±0.32)  |          rpart           |    18/18    |
+|   545.8   |     0.86 s (±1.22)  |     ModelTree(path)      |    18/18    |
 +-----------+---------------------+--------------------------+-------------+
+
+TabArena anchor (different protocol - reference only):
 ```
 
 Reading it:
@@ -52,12 +54,13 @@ Reading it:
 - **Stock configs only** — nothing tuned per dataset. The top of the board is
   *forests and boosted ensembles with strong feature handling* (grf's
   local-linear forest leads; forust/perpetual are boosted trees).
-- **`ModelTree(all)` at 1001.9 now sits above the whole classical model-tree
-  and CART pack** — lmtree (982.5), cubist (973.1), glmtree (956.5), ctree
-  (752.2), sklearn tree (678.5), rpart (539.8) — the plain single tree with
-  ridge-linear leaves on all 18 official sets. The gap to the boosting tier
-  is the remaining mission (committees/forests, see
-  `references/research/knob-gap-review.md`).
+- **Our flavors reflect the current defaults** (the split grid at 0.001,
+  ridge-linear leaves): `ModelTree(all)` 914.8, `winnow` 650.7, `mean`
+  649.7, `path` 545.8. The field anchor predates the split-grid default, so
+  the live comparison is the round deltas — see **Running a round** below
+  and `benchmarks/elo_round.log`: the grid trades differently per flavor
+  (`path`/`mean` gain, `all`/`winnow` pay), and the manifests in
+  `benchmarks/rounds/` record exactly which settings produced each move.
 - `FIT mean±sd` = fit seconds across all scored datasets (mean ± 1 sd);
   `DATA` = datasets where the model has a score — matchups only
   happen where both models have one. Shortfalls are honest failures, not
@@ -98,3 +101,27 @@ each group) is `bash examples/elo_run_groups.sh`.
 The field's raw scores (per dataset RMSE/MAE/fit time) live in
 [`benchmarks/elo_scores.csv`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/elo_scores.csv);
 the longer research log is in `docs/field-notes.md`.
+
+## Running a round (repeatable, with provenance)
+
+One command re-scores **our four flavors** against the frozen field:
+
+```bash
+uv run python examples/elo_round.py                    # all 18 datasets
+ELO_DATASETS=abalone,boston uv run python examples/elo_round.py   # subset
+```
+
+Every round records what created its numbers:
+
+- `benchmarks/rounds/<stamp>/settings.json` — the **exact settings dict**
+  each flavor was fit with (single-sourced: the manifest records the same
+  dict `variants()` builds from, so record and reality cannot drift), the
+  git SHA, the dataset list, every result row, and Elo before → after.
+- `benchmarks/elo_round.log` — one append-only line per round: `stamp, sha,
+  dataset count, per-model Elo before->after`. This is the first place to
+  look for "what did we change and what did it move".
+- `benchmarks/elo_scores.csv` — the live board (our rows upserted);
+  `benchmarks/elo_baselines.csv` — the frozen anchor ("where we started").
+
+Tuned settings from `examples/hpo_optuna.py` print in the same dict shape —
+paste them into `SETTINGS` in `elo_round.py` to score a tuned flavor.

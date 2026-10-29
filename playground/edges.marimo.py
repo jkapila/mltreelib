@@ -11,7 +11,7 @@ it is a testing surface.
 
 import marimo
 
-__generated_with = "0.9.0"
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -34,12 +34,15 @@ def _data(mo):
     n = mo.ui.slider(60, 2000, value=400, label="rows")
     na_rate = mo.ui.slider(0.0, 0.4, value=0.05, step=0.01, label="NA rate")
     cat_card = mo.ui.slider(2, 12, value=5, label="categorical levels")
-    mo.md(f"## 1. Synthetic typed data — rows={n.value}, NA={na_rate.value}, levels={cat_card.value}")
-    return n, na_rate, cat_card, random
+    mo.md("## 1. Synthetic typed data (flip the sliders above)")
+    mo.hstack([
+        n, na_rate, cat_card
+    ], justify="center",align ='center')
+    return cat_card, n, na_rate, random
 
 
 @app.cell
-def _frame(n, na_rate, cat_card, random):
+def _frame(cat_card, n, na_rate, random):
     random.seed(42)
     xs, ys, dtypes = [], [], ["numeric", "categorical"]
     for _ in range(n.value):
@@ -52,15 +55,15 @@ def _frame(n, na_rate, cat_card, random):
             None if random.random() < na_rate.value else lev,
         ])
         ys.append(y)
-    return xs, ys, dtypes
+    return dtypes, xs, ys
 
 
 @app.cell
 def _knobs(mo):
     max_depth = mo.ui.slider(1, 8, value=3, label="max_depth")
     split_precision = mo.ui.dropdown(
-        options={"0.1 grid (default)": 0.1, "0.01 grid": 0.01, "exact (None)": None},
-        value="0.1 grid (default)", label="split_precision",
+        options={"0.001 grid (default)": 0.1, "0.01 grid": 0.01, "exact (None)": None},
+        value="0.001 grid (default)", label="split_precision",
     )
     cat_search = mo.ui.dropdown(
         options=["cumulative", "single_vs_rest", "both"], value="cumulative",
@@ -84,13 +87,42 @@ def _knobs(mo):
     )
     prune = mo.ui.dropdown(options=["none", "bic", "mdl"], value="none", label="prune")
     mo.md("## 2. Growth knobs")
-    return (max_depth, split_precision, cat_search, cat_order, gain, leaf_digest,
-            alpha, imbalance_penalty, col_sample, prune)
+    mo.vstack([
+            mo.hstack([max_depth, split_precision , cat_search, gain]),
+             mo.hstack([leaf_digest, alpha, imbalance_penalty,prune]),
+        ],align ='center')
+
+    return (
+        alpha,
+        cat_order,
+        cat_search,
+        col_sample,
+        gain,
+        imbalance_penalty,
+        leaf_digest,
+        max_depth,
+        prune,
+        split_precision,
+    )
 
 
-@app.cell
-def _fit(mo, xs, ys, dtypes, max_depth, split_precision, cat_search, cat_order,
-         gain, leaf_digest, alpha, imbalance_penalty, col_sample, prune):
+@app.cell(hide_code=True)
+def _fit(
+    alpha,
+    cat_order,
+    cat_search,
+    col_sample,
+    dtypes,
+    gain,
+    imbalance_penalty,
+    leaf_digest,
+    max_depth,
+    mo,
+    prune,
+    split_precision,
+    xs,
+    ys,
+):
     from mltreelib import ModelTree
 
     def custom_gain(left, right):
@@ -115,14 +147,13 @@ def _fit(mo, xs, ys, dtypes, max_depth, split_precision, cat_search, cat_order,
         verbose=2,
     )
     model.fit(xs, ys, dtypes=dtypes)
-    mo.md(f"**fitted** — leaves: {len(model.leaves())}, splits: {len(model.splits())}")
-    return model, custom_gain
 
-
-@app.cell
-def _log(mo, model):
-    mo.md("## 3. Training log (verbose=2: scan config + per node)")
-    mo.accordion({"training_log()": "\n".join(model.training_log())})
+    mo.vstack([mo.md(f"**fitted** — leaves: {len(model.leaves())}, splits: {len(model.splits())}"),
+               mo.md("## 3. Training log (verbose=2: scan config + per node)"),
+               # mo.accordion({"training_log()": "\n".join(model.training_log())}, multiple=True)
+               model.training_log()
+              ])
+    return (model,)
 
 
 @app.cell
@@ -135,6 +166,7 @@ def _quantiles(mo, model):
     }
     mo.md("## 4. Conditional quantiles from the leaf t-digests (any tau, no refit)")
     mo.ui.table(rows)
+    return
 
 
 @app.cell
@@ -142,6 +174,12 @@ def _edge(mo, model):
     # classic edge rows: all-NA, unseen level, huge value
     edge_rows = [[None, None], [123456.0, 99.0], [0.0, None]]
     mo.md(f"## 5. Edge rows — predictions never block: {model.predict(edge_rows)}")
+    return
+
+
+@app.cell
+def _():
+    return
 
 
 if __name__ == "__main__":

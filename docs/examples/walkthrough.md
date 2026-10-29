@@ -1,80 +1,95 @@
-# Churn
+# End-to-end walkthrough — churn
 
-Who leaves the bank? An end-to-end run on the bundled **Bank Customer Churn**
-dataset (10,000 customers): encode categoricals, fit, evaluate, interpret.
-The full script: [`examples/churn_demo.py`](https://github.com/jkapila/mltreelib/blob/main/examples/churn_demo.py).
+The whole story on one real problem: predict who leaves the bank. **Typed
+ingest** throughout — `country` and `gender` enter the tree as **levels**
+(a distinct value is a level; the split search partitions level sets), NAs
+route as-is, and nothing is ever encoded for the tree. Strings are coded
+once by `IndexMapper` because the fit takes numbers — that mapping is a
+pipeline step, not a tree step. The tree is a regressor; fit on a 0/1 churn
+target it is a solid, fully interpretable baseline (threshold at 0.5).
 
-The tree is a regressor — fit on a 0/1 churn target it makes a solid, fully
-interpretable baseline (threshold predictions at 0.5).
+Script:
+[`examples/churn_demo.py`](https://github.com/jkapila/mltreelib/blob/main/examples/churn_demo.py)
+(`uv run --with pandas --with pyarrow --with matplotlib python examples/churn_demo.py`).
 
-## Data
+## Typed ingest
 
 ```python
-df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
-y = (df["churn"] == "Yes").astype(float)     # churn: No/Yes -> 0/1
+from mltreelib import IndexMapper, Metrics, ModelTree
 
-# OneHotEncoder for the two categoricals; the rest is already numeric.
+df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
+y = (df["churn"] == "Yes").astype(float).tolist()
+
+cols = [c for c in df.columns if c != "churn"]
+mappers = {}
 for col in ("country", "gender"):
-    enc = OneHotEncoder()
-    enc.fit(...)
-    dummies = enc.transform(...)
+    m = IndexMapper()
+    m.fit(col, [None if pd.isna(v) else str(v) for v in df[col]])
+    mappers[col] = m
+
+dtypes, columns = [], []
+for col in cols:
+    raw = [None if pd.isna(v) else v for v in df[col]]
+    if col in mappers:
+        dtypes.append("categorical")
+        columns.append(mappers[col].transform(col, [None if v is None else str(v) for v in raw]))
+    else:
+        dtypes.append("numeric")
+        columns.append([None if v is None else float(v) for v in raw])
+X = [list(row) for row in zip(*columns)]
+
+model = ModelTree(max_depth=4, min_rows=40)
+model.fit(xtr, ytr, dtypes=dtypes)
 ```
+
+## Output
 
 ```text
 rows: 10000   churn rate: 0.204
-feature columns (the tree prints xN indices):
-  x0=credit_score, x1=age, x2=tenure, x3=balance, x4=products_number,
-  x5=credit_card, x6=active_member, x7=estimated_salary, x8=country_France,
-  x9=country_Germany, x10=country_Spain, x11=gender_Female, x12=gender_Male
-```
+columns (xN index -> name, dtype):
+  x0=credit_score(nume), x1=country(cate), x2=gender(cate), x3=age(nume), x4=tenure(nume), x5=balance(nume), x6=products_number(nume), x7=credit_card(nume), x8=active_member(nume), x9=estimated_salary(nume)
+test rmse: 0.344  r2: 0.275
+accuracy @0.5: 0.852  macro f1: 0.721
+confusion: [[1535.0, 55.0], [242.0, 168.0]]
 
-## Fit & evaluate
+n= 8000
 
-```python
-model = ModelTree(max_depth=4, min_rows=40)
-model.fit(xtr, ytr)
-pred = model.predict(xte)
-```
+node), split, n, deviance, yval
+      * denotes terminal node
 
-Deterministic 80/20 split. The evaluation uses the package's `Metrics`:
-
-```text
-test rmse: 0.330  r2: 0.330
-accuracy @0.5: 0.851  macro f1: 0.730
-confusion: [[1520.0, 70.0], [228.0, 182.0]]
-```
-
-85% accuracy with 20% churn — and the confusion matrix shows the model finds
-most churners (182 of 410) while rarely crying wolf (70 false alarms).
-
-## The story the tree tells
-
-```text
  1) root 8000 1296.108875 0.20337500
-   2) x4< 1.5 4045 809.442274 0.27663782        # one product
-     4) x1< 45.5 3050 465.351148 0.18786885     # younger
-       8) x3< 97778.31 1073 167.679404 0.19384902
-        16) x1< 39.5 785 90.955414 0.13375796 *
-        17) x1>=39.5 288 66.163194 0.35763889 *
-       9) x3>=97778.31 1977 297.612544 0.18462317
-        18) x8< 0.5 1354 124.730428 0.10265879 *   # not France
-        19) x8>=0.5 623 144.016051 0.36276083 *
-     5) x1>=45.5 995 246.385930 0.54874372      # older, one product: 55% churn
-   ...
-   3) x4>=1.5 3955 442.749937 0.12844501        # 2+ products: 13% churn
-     ...
-      15) x3>=50210 168 6.708333 0.95833333     # wealthy, 3+ products: 96% churn!
+   2) x8< 0 3881 756.173151 0.26513785
+     4) x6< 2 3737 682.729997 0.24056730
+       8) x6< 1 1978 461.367543 0.37057634
+        16) x5< 98635.77 713 171.279102 0.40112202 *
+        17) x5>=98635.77 1265 289.048221 0.35335968 *
+       9) x6>=1 1759 150.334281 0.09437180
+        18) x3< 44 1552 84.780928 0.05798969 *
+        19) x3>=44 207 48.096618 0.36714976 *
+     5) x6>=2 144 12.638889 0.90277778
+      10) x3< 42 65 10.984615 0.78461538 *
+      11) x3>=42 79 0.000000 1.00000000 *
+   3) x8>=0 4119 511.181840 0.14518087
+     6) x6< 2 3996 437.437437 0.12512513
+      12) x0< 768 3509 388.566543 0.12681676
+        24) x3< 45 2666 208.501125 0.08552138 *
+        25) x3>=45 843 161.141163 0.25741400 *
+      13) x0>=768 487 48.788501 0.11293634
+        26) x2 in {0} 272 18.529412 0.07352941 *
+        27) x2 not-in {0} 215 29.302326 0.16279070 *
+     7) x6>=2 123 19.918699 0.79674797
+      14) x0< 614 43 6.511628 0.81395349 *
+      15) x0>=614 80 13.387500 0.78750000 *
+
+wrote churn_tree.svg (rendered by graphviz)
 ```
 
-Business reading: **product count is the first split** — one-product customers
-churn far more. Among them, **age** and **balance** segment the risk, and
-**country** matters (non-France higher). On the multi-product side there is a
-small pocket (3+ products, high balance) that is almost certain to leave — the
-classic "too many products" signal.
+Read the tree top-down: `x8` is `active_member` (the strongest signal),
+`x6` is `products_number` (2+ products almost always churns — leaves 5/7
+at 0.78–0.90), `x3` is `age`, `x5` is `balance`. And the categorical split
+renders as level sets: `x2 in {0}` is `gender` — one level against the
+rest, exactly as the split search treats it (no dummies anywhere).
 
-`print(model)` shows the full tree in rpart format;
-`model.to_dot()` + graphviz renders `churn_tree.svg` for slides or docs.
-
-Next: [Data Processing](data-processing.md) for the encoder catalog,
-[Model building & predictions](model-building.md) for every knob the tree
-has, or [Inspection](inspection.md) to read every part of the output.
+The tree diagram (left-to-right) is `churn_tree.svg`; the explanation
+charts for the same fit — importance and the breakdown waterfall of one
+row — live in [Visualization](visualization.md).

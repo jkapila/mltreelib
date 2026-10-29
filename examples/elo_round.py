@@ -12,8 +12,11 @@ benchmarks/elo_scores.csv, and prints started -> reached.
 """
 
 import csv
+import datetime
+import json
 import math
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,7 +26,25 @@ from mltreelib import Metrics, ModelTree
 OUT = Path("benchmarks/elo_scores.csv")
 BASE = Path("benchmarks/elo_baselines.csv")
 DATA = Path("benchmarks/elo_data")
+LOG = Path("benchmarks/elo_round.log")
 OURS = ["ModelTree(all)", "ModelTree(path)", "ModelTree(mean)", "ModelTree(winnow)"]
+
+# The exact settings this round scores — the round manifest records this
+# dict verbatim, and `variants()` builds from it, so the record can never
+# drift from what produced the numbers.
+_BASE = dict(
+    max_depth=4, min_rows=10, min_gain=1e-9, leaf_cols="all", leaf="linear",
+    l2=0.1, l1=0.0, monotone=[], interaction_groups=[], min_relevance=None,
+    gain="sse", split_precision=0.001, cat_order="frequency_desc",
+    cat_search="cumulative", leaf_digest=True, verbose=0, alpha=0.0,
+    imbalance_penalty=0.0, col_sample=None, seed=42, prune="none",
+)
+SETTINGS = {
+    "ModelTree(all)": dict(_BASE),
+    "ModelTree(path)": dict(_BASE, leaf_cols="path"),
+    "ModelTree(mean)": dict(_BASE, leaf="mean"),
+    "ModelTree(winnow)": dict(_BASE, min_relevance=0.05),
+}
 
 
 def read_xy(path):
@@ -40,12 +61,7 @@ def read_xy(path):
 
 
 def variants():
-    return {
-        "ModelTree(all)": ModelTree(),
-        "ModelTree(path)": ModelTree(leaf_cols="path"),
-        "ModelTree(mean)": ModelTree(leaf="mean"),
-        "ModelTree(winnow)": ModelTree(min_relevance=0.05),
-    }
+    return {name: ModelTree(**cfg) for name, cfg in SETTINGS.items()}
 
 
 def write_scores(rows):
@@ -121,6 +137,31 @@ def main():
         b, c = b_elo.get(m), c_elo.get(m)
         if b is not None and c is not None:
             print(f"{m:<20}{b:>12.1f}{c:>10.1f}{c - b:>+8.1f}")
+
+    # Provenance manifest: what settings created these numbers.
+    sha = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+    ).stdout.strip()
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    rdir = Path("benchmarks/rounds") / stamp
+    rdir.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "round": stamp,
+        "git_sha": sha,
+        "settings": SETTINGS,
+        "datasets": datasets,
+        "results": list(by.values()),
+        "elo_before": {m: b_elo.get(m) for m in OURS},
+        "elo_after": {m: c_elo.get(m) for m in OURS},
+    }
+    (rdir / "settings.json").write_text(json.dumps(manifest, indent=2))
+    with open(LOG, "a") as fh:
+        deltas = " ".join(
+            f"{m}:{b_elo.get(m, 0):.0f}->{c_elo.get(m, 0):.0f}" for m in OURS
+        )
+        fh.write(f"{stamp} sha={sha} datasets={len(datasets)} {deltas}\n")
+    print(f"\nround manifest: {rdir / 'settings.json'}")
+    print(f"round log: {LOG}")
 
 
 if __name__ == "__main__":

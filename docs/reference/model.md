@@ -16,7 +16,7 @@ ModelTree(
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
     gain="sse",             # "sse"|"entropy"|"gini"|"gain_ratio"|"sdr"|"twoing"|callable
-    split_precision=0.1,    # numeric candidate grid; None = exact unique scan
+    split_precision=0.001, # numeric candidate grid (thousandths); None = exact unique scan
     cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
     cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"
     leaf_digest=True,       # keep each leaf's t-digest (quantile() needs it)
@@ -64,7 +64,7 @@ m.predict([[0.0], [1.0], [2.0]])
 
 ```text
 categorical fit: pred(0,1,2) = [0.0, 5.0, 5.0]     # {0} | {1,2} partition
-grid threshold: 1.3 (on 0.1 grid: True)
+grid threshold: 1.3 (on the grid: True)
 ```
 
 ## Quantiles and the training log

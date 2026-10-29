@@ -37,49 +37,49 @@ ozone,grf_rf,4.4393,3.3787,0.112
 ozone,ctree,4.2597,3.1596,0.026
 ozone,glmtree,4.268,3.2706,0.056
 ozone,earth,4.2276,3.2602,0.01
-abalone,ModelTree(all),2.333,1.6412,2.813
-abalone,ModelTree(path),2.3385,1.6734,0.28
-abalone,ModelTree(mean),2.5424,1.813,0.038
-abalone,ModelTree(winnow),2.333,1.6412,2.782
+abalone,ModelTree(all),2.3537,1.6664,2.351
+abalone,ModelTree(path),2.3399,1.6747,0.238
+abalone,ModelTree(mean),2.5435,1.8070,0.038
+abalone,ModelTree(winnow),2.3537,1.6664,2.279
 abalone,LightGBM(200),2.433,1.7316,0.476
 abalone,CatBoost(200),2.3286,1.669,0.247
 abalone,CTBoost,2.4823,1.7584,0.022
 abalone,sklearn tree,3.1634,2.2071,0.016
 abalone,modeltrees lmtree,2.3246,1.6773,0.87
 abalone,MARS (mars-earth),2.2733,1.6438,25.223
-boston,ModelTree(all),4.7517,2.6954,2.42
-boston,ModelTree(path),4.3979,2.9123,0.12
-boston,ModelTree(mean),4.0118,2.8182,0.009
-boston,ModelTree(winnow),4.7517,2.6954,2.476
+boston,ModelTree(all),5.0699,2.8062,2.390
+boston,ModelTree(path),4.3979,2.9123,0.110
+boston,ModelTree(mean),3.9690,2.7530,0.009
+boston,ModelTree(winnow),5.0699,2.8062,2.362
 boston,LightGBM(200),3.4732,2.1596,0.629
 boston,CatBoost(200),2.5356,1.7141,0.184
 boston,CTBoost,4.0142,3.0789,0.015
 boston,sklearn tree,4.8667,3.2627,0.005
 boston,modeltrees lmtree,4.0523,2.6892,0.198
 boston,MARS (mars-earth),4.7524,2.6242,7.845
-concrete,ModelTree(all),6.8213,5.1599,0.582
-concrete,ModelTree(path),11.378,9.3602,0.087
-concrete,ModelTree(mean),9.7668,7.711,0.009
-concrete,ModelTree(winnow),6.8213,5.1599,0.596
+concrete,ModelTree(all),6.8213,5.1599,0.628
+concrete,ModelTree(path),11.3780,9.3602,0.087
+concrete,ModelTree(mean),9.7668,7.7110,0.009
+concrete,ModelTree(winnow),6.8213,5.1599,0.602
 concrete,LightGBM(200),5.8477,3.9193,0.22
 concrete,CatBoost(200),5.739,3.9848,0.118
 concrete,CTBoost,6.3763,5.1696,0.019
 concrete,sklearn tree,7.9315,5.3006,0.003
 concrete,modeltrees lmtree,7.6436,6.1672,0.021
 concrete,MARS (mars-earth),7.1129,5.8889,2.662
-fc2008,ModelTree(all),218.178,137.9417,1.133
-fc2008,ModelTree(path),270.6857,198.2933,0.072
-fc2008,ModelTree(mean),262.3234,180.1492,0.013
-fc2008,ModelTree(winnow),231.4737,146.0964,0.729
+fc2008,ModelTree(all),218.1780,137.9417,1.219
+fc2008,ModelTree(path),270.6857,198.2933,0.075
+fc2008,ModelTree(mean),262.3234,180.1492,0.015
+fc2008,ModelTree(winnow),231.4737,146.0964,0.706
 fc2008,LightGBM(200),196.5717,124.1115,0.269
 fc2008,CatBoost(200),168.8948,112.5986,0.166
 fc2008,CTBoost,192.0784,135.8741,0.024
 fc2008,sklearn tree,197.7388,112.0144,0.003
 fc2008,modeltrees lmtree,237.9175,158.4599,0.02
-ozone,ModelTree(all),5.7623,4.0818,0.266
-ozone,ModelTree(path),5.7794,4.2206,0.037
+ozone,ModelTree(all),5.7638,4.0945,0.262
+ozone,ModelTree(path),5.7794,4.2206,0.038
 ozone,ModelTree(mean),4.6218,3.5192,0.004
-ozone,ModelTree(winnow),5.5796,3.8574,0.186
+ozone,ModelTree(winnow),5.5813,3.8708,0.183
 ozone,LightGBM(200),4.0932,3.1922,0.104
 ozone,CatBoost(200),3.8169,2.9094,0.118
 ozone,CTBoost,4.5425,3.3182,0.005
@@ -136,50 +136,50 @@ ta_food_delivery,grf_rf,7.5361,5.9111,50.902
 ta_food_delivery,ctree,7.8745,6.1686,0.503
 ta_food_delivery,glmtree,7.513,5.8666,44.889
 ta_food_delivery,earth,7.9938,6.2461,1.102
-ta_airfoil,ModelTree(all),2.4887,1.7323,3.422
-ta_airfoil,ModelTree(path),4.0338,3.1215,0.121
-ta_airfoil,ModelTree(mean),4.6660,3.6610,0.029
-ta_airfoil,ModelTree(winnow),2.3929,1.7700,1.400
+ta_airfoil,ModelTree(all),2.4395,1.6861,2.515
+ta_airfoil,ModelTree(path),4.1164,3.2323,0.104
+ta_airfoil,ModelTree(mean),4.6863,3.6773,0.033
+ta_airfoil,ModelTree(winnow),2.3937,1.7928,1.167
 ta_airfoil,LightGBM(200),1.6174,1.0701,1.568
 ta_airfoil,CatBoost(200),1.6585,1.1577,0.150
 ta_airfoil,CTBoost,2.6948,2.0553,0.059
 ta_airfoil,sklearn tree,2.6636,1.9698,0.008
 ta_airfoil,modeltrees lmtree,2.8738,2.2192,0.156
 ta_airfoil,MARS (mars-earth),4.3117,3.3934,3.767
-ta_concrete,ModelTree(all),5.8063,4.1242,0.868
-ta_concrete,ModelTree(path),8.6495,6.5486,0.121
-ta_concrete,ModelTree(mean),10.2866,7.9138,0.013
-ta_concrete,ModelTree(winnow),5.8063,4.1242,0.883
+ta_concrete,ModelTree(all),5.8261,4.1449,0.859
+ta_concrete,ModelTree(path),8.6495,6.5486,0.133
+ta_concrete,ModelTree(mean),10.3886,8.0271,0.013
+ta_concrete,ModelTree(winnow),5.8261,4.1449,0.848
 ta_concrete,LightGBM(200),4.2884,2.8997,0.458
 ta_concrete,CatBoost(200),4.0547,2.8822,0.129
 ta_concrete,CTBoost,4.9069,3.6339,0.029
 ta_concrete,sklearn tree,5.6645,3.6583,0.006
 ta_concrete,modeltrees lmtree,6.6351,4.8231,0.035
 ta_concrete,MARS (mars-earth),6.3822,4.9328,3.713
-ta_diamonds,ModelTree(all),0.0000,0.0000,67.421
-ta_diamonds,ModelTree(path),0.2737,0.1573,1.628
-ta_diamonds,ModelTree(mean),0.2284,0.1041,0.414
-ta_diamonds,ModelTree(winnow),0.0492,0.0121,19.081
+ta_diamonds,ModelTree(all),0.0000,0.0000,70.664
+ta_diamonds,ModelTree(path),0.2737,0.1574,1.685
+ta_diamonds,ModelTree(mean),0.2284,0.1041,0.502
+ta_diamonds,ModelTree(winnow),0.0492,0.0121,19.793
 ta_diamonds,LightGBM(200),0.0000,0.0000,1.027
 ta_diamonds,CatBoost(200),0.0000,0.0000,1.266
 ta_diamonds,CTBoost,0.0069,0.0022,1.117
 ta_diamonds,sklearn tree,0.0000,0.0000,0.248
 ta_diamonds,modeltrees lmtree,0.0167,0.0003,91.238
 ta_diamonds,MARS (mars-earth),0.0000,0.0000,1614.473
-ta_fiat500,ModelTree(all),2116.1759,965.0716,1.166
-ta_fiat500,ModelTree(path),1073.6494,740.4022,0.143
-ta_fiat500,ModelTree(mean),789.3130,604.8170,0.016
-ta_fiat500,ModelTree(winnow),989.8161,720.6770,0.287
+ta_fiat500,ModelTree(all),2317.3012,1012.8216,1.266
+ta_fiat500,ModelTree(path),990.4913,749.2475,0.142
+ta_fiat500,ModelTree(mean),793.4781,607.1588,0.020
+ta_fiat500,ModelTree(winnow),989.8161,720.6770,0.324
 ta_fiat500,LightGBM(200),716.8796,539.9642,0.383
 ta_fiat500,CatBoost(200),678.2486,524.6298,0.152
 ta_fiat500,CTBoost,703.9626,543.6793,0.018
 ta_fiat500,sklearn tree,841.8296,592.2240,0.006
 ta_fiat500,modeltrees lmtree,718.8392,572.6306,0.621
 ta_fiat500,MARS (mars-earth),713.5991,561.3069,3.538
-ta_food_delivery,ModelTree(all),7.4618,5.8452,135.215
-ta_food_delivery,ModelTree(path),7.8599,6.1935,1.863
-ta_food_delivery,ModelTree(mean),7.8842,6.1817,0.566
-ta_food_delivery,ModelTree(winnow),7.8638,6.1600,0.830
+ta_food_delivery,ModelTree(all),7.4618,5.8452,81.088
+ta_food_delivery,ModelTree(path),7.8599,6.1935,1.626
+ta_food_delivery,ModelTree(mean),7.8842,6.1817,0.634
+ta_food_delivery,ModelTree(winnow),7.8638,6.1600,0.856
 ta_food_delivery,LightGBM(200),7.4213,5.8277,0.870
 ta_food_delivery,CatBoost(200),7.4364,5.8355,0.774
 ta_food_delivery,CTBoost,7.4493,5.8330,0.940
@@ -207,10 +207,10 @@ ta_healthcare,CTBoost,4508.5786,2661.0408,0.010
 ta_healthcare,CatBoost(200),4664.6846,2523.4366,0.176
 ta_healthcare,LightGBM(200),5121.2629,3073.2888,0.581
 ta_healthcare,MARS (mars-earth),5853.2606,3962.9501,1.101
-ta_healthcare,ModelTree(all),4639.9177,2493.4692,0.736
-ta_healthcare,ModelTree(mean),4865.3954,2759.8359,0.016
-ta_healthcare,ModelTree(path),6573.1921,3552.6891,0.082
-ta_healthcare,ModelTree(winnow),4788.8599,2661.5574,0.447
+ta_healthcare,ModelTree(all),4639.1137,2489.7619,0.739
+ta_healthcare,ModelTree(mean),4865.3954,2759.8359,0.015
+ta_healthcare,ModelTree(path),6573.1921,3552.6891,0.079
+ta_healthcare,ModelTree(winnow),4778.1847,2642.8529,0.454
 ta_healthcare,forust (Rust),5113.3852,2929.5726,0.499
 ta_healthcare,modeltrees lmtree,4791.5761,2908.7908,0.033
 ta_healthcare,perpetual (Rust),4533.5541,2626.0809,0.067
@@ -226,10 +226,10 @@ ta_houses,earth,0.2907,0.2180,0.157
 ta_houses,CTBoost,0.2261,0.1619,0.172
 ta_houses,CatBoost(200),0.2193,0.1562,0.355
 ta_houses,LightGBM(200),0.2162,0.1529,0.271
-ta_houses,ModelTree(all),0.3644,0.1992,8.487
-ta_houses,ModelTree(mean),0.3830,0.2919,0.167
-ta_houses,ModelTree(path),0.3788,0.2898,1.081
-ta_houses,ModelTree(winnow),0.3353,0.2534,3.983
+ta_houses,ModelTree(all),0.3644,0.1992,7.454
+ta_houses,ModelTree(mean),0.3838,0.2919,0.171
+ta_houses,ModelTree(path),0.3788,0.2898,1.018
+ta_houses,ModelTree(winnow),0.3352,0.2534,3.222
 ta_houses,forust (Rust),0.2238,0.1597,0.469
 ta_houses,modeltrees lmtree,0.2377,0.1625,1.188
 ta_houses,perpetual (Rust),0.2113,0.1483,2.455
@@ -244,10 +244,10 @@ ta_miami,earth,145755.8544,92290.8910,0.179
 ta_miami,CTBoost,107014.0902,51635.8944,0.186
 ta_miami,CatBoost(200),89876.8050,45533.2042,0.376
 ta_miami,LightGBM(200),93946.8689,45382.2016,0.328
-ta_miami,ModelTree(all),1490016.7424,809384.6531,37.491
-ta_miami,ModelTree(mean),188893.0153,107775.2063,0.148
-ta_miami,ModelTree(path),1540449.2507,894585.3061,2.086
-ta_miami,ModelTree(winnow),3399823.5918,2239322.2833,8.681
+ta_miami,ModelTree(all),1536911.8984,832154.5700,34.821
+ta_miami,ModelTree(mean),188718.1280,107628.8610,0.158
+ta_miami,ModelTree(path),1230887.1708,641661.7864,2.031
+ta_miami,ModelTree(winnow),3415089.1914,2246776.7941,9.670
 ta_miami,forust (Rust),93768.8548,46371.8566,0.375
 ta_miami,perpetual (Rust),91669.3578,43974.4676,3.456
 ta_miami,sklearn tree,146810.5100,68367.7558,0.180
@@ -260,10 +260,10 @@ ta_protein,earth,5.0255,4.1069,0.629
 ta_protein,CTBoost,4.1929,3.1825,0.349
 ta_protein,CatBoost(200),3.9228,2.8947,0.654
 ta_protein,LightGBM(200),3.9186,2.8705,0.941
-ta_protein,ModelTree(all),4.8539,3.8975,31.814
-ta_protein,ModelTree(mean),5.3630,4.3563,0.358
-ta_protein,ModelTree(path),36.2530,25.6723,3.901
-ta_protein,ModelTree(winnow),5.0100,4.0383,5.865
+ta_protein,ModelTree(all),4.8524,3.8919,29.972
+ta_protein,ModelTree(mean),5.3627,4.3562,0.373
+ta_protein,ModelTree(path),36.2869,25.7096,3.848
+ta_protein,ModelTree(winnow),5.0133,4.0412,4.931
 ta_protein,forust (Rust),3.9650,2.8987,0.894
 ta_protein,modeltrees lmtree,4.8492,2.9851,5.961
 ta_protein,perpetual (Rust),3.7813,2.7651,2.841
@@ -280,10 +280,10 @@ ta_qsar_fish,CTBoost,0.9900,0.6970,0.010
 ta_qsar_fish,CatBoost(200),0.9506,0.6525,0.149
 ta_qsar_fish,LightGBM(200),0.9716,0.6604,0.216
 ta_qsar_fish,MARS (mars-earth),0.9877,0.6971,4.428
-ta_qsar_fish,ModelTree(all),1.1345,0.7356,0.361
-ta_qsar_fish,ModelTree(mean),1.1292,0.7964,0.009
-ta_qsar_fish,ModelTree(path),1.1410,0.8075,0.088
-ta_qsar_fish,ModelTree(winnow),1.1345,0.7356,0.356
+ta_qsar_fish,ModelTree(all),1.1330,0.7318,0.356
+ta_qsar_fish,ModelTree(mean),1.1306,0.8000,0.009
+ta_qsar_fish,ModelTree(path),1.1413,0.8084,0.089
+ta_qsar_fish,ModelTree(winnow),1.1330,0.7318,0.353
 ta_qsar_fish,forust (Rust),1.0119,0.6580,0.337
 ta_qsar_fish,modeltrees lmtree,1.0356,0.7074,0.033
 ta_qsar_fish,perpetual (Rust),0.9551,0.6615,0.102
@@ -300,10 +300,10 @@ ta_qsar_tid11,CTBoost,1.0190,0.7963,0.137
 ta_qsar_tid11,CatBoost(200),0.9136,0.6826,0.360
 ta_qsar_tid11,LightGBM(200),0.8967,0.6710,0.340
 ta_qsar_tid11,MARS (mars-earth),1.2974,1.0394,8.642
-ta_qsar_tid11,ModelTree(all),1.0933,0.8313,7.083
-ta_qsar_tid11,ModelTree(mean),1.2729,1.0042,0.081
-ta_qsar_tid11,ModelTree(path),1.2898,1.0158,0.249
-ta_qsar_tid11,ModelTree(winnow),1.1241,0.8489,3.354
+ta_qsar_tid11,ModelTree(all),1.0933,0.8313,7.708
+ta_qsar_tid11,ModelTree(mean),1.2729,1.0042,0.093
+ta_qsar_tid11,ModelTree(path),1.2898,1.0158,0.264
+ta_qsar_tid11,ModelTree(winnow),1.1241,0.8489,3.389
 ta_qsar_tid11,forust (Rust),0.9209,0.6871,0.737
 ta_qsar_tid11,modeltrees lmtree,1.1220,0.8574,1.065
 ta_qsar_tid11,perpetual (Rust),1.0243,0.8038,3.441
@@ -317,8 +317,8 @@ ta_superconductivity,earth,18.5902,13.7115,0.805
 ta_superconductivity,CTBoost,11.4086,7.4241,0.983
 ta_superconductivity,CatBoost(200),10.2394,6.5324,0.772
 ta_superconductivity,LightGBM(200),9.6440,6.0097,1.090
-ta_superconductivity,ModelTree(mean),18.0644,12.5539,0.488
-ta_superconductivity,ModelTree(path),18.9809,12.9757,3.704
+ta_superconductivity,ModelTree(mean),18.0647,12.5547,0.468
+ta_superconductivity,ModelTree(path),18.9809,12.9757,3.617
 ta_superconductivity,forust (Rust),9.8710,6.1829,0.623
 ta_superconductivity,modeltrees lmtree,81.7487,10.6010,164.865
 ta_superconductivity,perpetual (Rust),9.6098,5.7318,33.635
@@ -335,11 +335,13 @@ ta_wine,CTBoost,0.6861,0.5360,0.074
 ta_wine,CatBoost(200),0.6548,0.5063,0.259
 ta_wine,LightGBM(200),0.6304,0.4772,2.237
 ta_wine,MARS (mars-earth),0.7263,0.5690,43.676
-ta_wine,ModelTree(all),0.7068,0.5518,3.564
-ta_wine,ModelTree(mean),0.7629,0.5919,0.065
-ta_wine,ModelTree(path),0.7509,0.6037,0.308
-ta_wine,ModelTree(winnow),0.7347,0.5773,1.369
+ta_wine,ModelTree(all),0.7062,0.5554,3.704
+ta_wine,ModelTree(mean),0.7629,0.5918,0.090
+ta_wine,ModelTree(path),0.7602,0.6143,0.373
+ta_wine,ModelTree(winnow),0.7265,0.5757,0.995
 ta_wine,forust (Rust),0.6577,0.4937,0.762
 ta_wine,modeltrees lmtree,0.7106,0.5603,1.993
 ta_wine,perpetual (Rust),0.6566,0.5119,0.486
 ta_wine,sklearn tree,0.8325,0.4900,0.058
+ta_superconductivity,ModelTree(all),256.2480,21.2422,1022.152
+ta_superconductivity,ModelTree(winnow),4877.4921,122.4071,961.585

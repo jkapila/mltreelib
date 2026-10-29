@@ -746,6 +746,7 @@ fn split_precision_grid_rounds_thresholds() {
     let p = ModelTreeParams {
         max_depth: 1,
         min_rows: 2,
+        split_precision: Some(0.1),
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
