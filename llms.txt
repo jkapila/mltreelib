@@ -14,4 +14,6 @@
 - [Visualization](<https://jkapila.github.io/mltreelib/examples/visualization/index.md>)
 - [ELO](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)
 - [DataSets](<https://jkapila.github.io/mltreelib/benchmarks/datasets/index.md>)
-- [Data &amp; Model](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>)
+- [Data](<https://jkapila.github.io/mltreelib/reference/data/index.md>)
+- [Model](<https://jkapila.github.io/mltreelib/reference/model/index.md>)
+- [Metrics](<https://jkapila.github.io/mltreelib/reference/metrics/index.md>)

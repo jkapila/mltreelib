@@ -4,6 +4,15 @@
         <loc>https://jkapila.github.io/mltreelib/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/agents/domain/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/agents/issue-tracker/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/agents/triage-labels/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/benchmarks/datasets/</loc>
       </url>
       <url>
@@ -37,6 +46,12 @@
         <loc>https://jkapila.github.io/mltreelib/reference/api/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/reference/data-model/</loc>
+        <loc>https://jkapila.github.io/mltreelib/reference/data/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/metrics/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/model/</loc>
       </url>
 </urlset>

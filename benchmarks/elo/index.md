@@ -38,7 +38,7 @@ Reproduce: `uv run python examples/elo_report.py` (reads `benchmarks/elo_scores.
 Reading it:
 
 - **Stock configs only** — nothing tuned per dataset. The top of the board is *ensembles with strong feature handling* (forust/perpetual are boosted trees, CatBoost and LightGBM boost, grf\_llf is a forest of local-linear trees).
-- **Our `ModelTree` rows are the plain single tree** — its honest baseline position, exactly what the [default bake-off](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>) optimizes against.
+- **Our `ModelTree` rows are the plain single tree** — its honest baseline position, exactly what the [default bake-off](<https://jkapila.github.io/mltreelib/reference/model/index.md>) optimizes against.
 - `(n/10 datasets)` = datasets where the model has a score; matchups only happen where both models have one.
 
 TabArena numbers are an **anchor, not a comparison** — their protocol (tuned+ensembled, different splits) differs; shown only for scale: `1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best tree-based)`.

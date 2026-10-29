@@ -32,6 +32,18 @@ uv run python -c "from mltreelib import ModelTree; print(ModelTree())"
 
 An unfitted tree refuses to print its structure (by design); the call should raise `ValueError: ModelTree is not fitted`. Fit anything and `print(model)` shows the rpart-style tree.
 
+## Plotting (optional extra)
+
+Charts and diagrams ride on the standard rendering wheels — install them only when you build figures:
+
+```
+pip install mltreelib[plotting]     # matplotlib + pygraphviz + seaborn
+# or
+uv sync --extra plotting
+```
+
+`mltreelib.plots` (metric charts) and `ModelTree.to_dot()` + pygraphviz (tree diagrams) are the two consumers. The core library never imports them.
+
 ## What you get
 
 |  |  |

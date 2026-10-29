@@ -23,7 +23,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | read the numbers | [Examples — Inspection](<https://jkapila.github.io/mltreelib/examples/inspection/index.md>) |
 | draw the tree | [Examples — Visualization](<https://jkapila.github.io/mltreelib/examples/visualization/index.md>) |
 | see how it compares | [Benchmarks — ELO](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>) |
-| look up every parameter | [API reference — Data &amp; Model](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>) |
+| look up every parameter | [API reference](<https://jkapila.github.io/mltreelib/reference/model/index.md>) |
 
 > [!TIP]
 >
