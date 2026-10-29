@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
+  "mcpServers": {
+    "alphaxiv": {
+      "type": "http",
+      "url": "https://api.alphaxiv.org/mcp/v1",
+      "auth": {
+        "type": "oauth",
+        "credentialId": "mcp_oauth:profile:default:https://api.alphaxiv.org/mcp/v1",
+        "tokenUrl": "https://api.alphaxiv.org/auth/oauth2/token",
+        "clientId": "qggwTPaUZLeAiacevokpagUpGFbVpPnc",
+        "resource": "https://api.alphaxiv.org/mcp/v1"
+      },
+      "oauth": {
+        "clientId": "qggwTPaUZLeAiacevokpagUpGFbVpPnc"
+      }
+    }
+  }
+}

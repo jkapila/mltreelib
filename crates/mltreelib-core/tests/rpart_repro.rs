@@ -99,6 +99,7 @@ fn cart_params() -> ModelTreeParams {
         min_rows: 2,
         min_gain: 1e-9,
         leaf: LeafKind::Mean,
+        split_precision: None,
         ..Default::default()
     }
 }

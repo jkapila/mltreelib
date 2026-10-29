@@ -12,7 +12,9 @@ use mltreelib_core::encode::{
     SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
 };
 use mltreelib_core::frame::{Column, Dataset};
-use mltreelib_core::model_tree::{LeafCols, LeafKind, ModelTree, ModelTreeParams};
+use mltreelib_core::model_tree::{
+    CatOrder, CatSearch, ColType, CustomGain, GainFn, LeafCols, LeafKind, ModelTree, ModelTreeParams,
+};
 use mltreelib_core::metrics::{
     classification_report, grouped_regression_report, regression_report, ClassificationReport,
     RegressionReport,
@@ -1927,6 +1929,31 @@ impl PyMetrics {
     }
 }
 
+/// Custom split criterion bridge: a Python callable over lazy y-slices.
+/// Per-candidate callback cost is on the user (the generic slow path).
+struct PyGain {
+    fun: Py<PyAny>,
+}
+
+impl CustomGain for PyGain {
+    fn gain(&self, left: &[f64], right: &[f64]) -> f64 {
+        Python::attach(|py| {
+            let l = match PyList::new(py, left.iter().copied()) {
+                Ok(l) => l,
+                Err(_) => return f64::NAN,
+            };
+            let r = match PyList::new(py, right.iter().copied()) {
+                Ok(r) => r,
+                Err(_) => return f64::NAN,
+            };
+            self.fun
+                .call1(py, (l, r))
+                .and_then(|v| v.extract::<f64>(py))
+                .unwrap_or(f64::NAN)
+        })
+    }
+}
+
 /// Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression.
@@ -1954,10 +1981,24 @@ impl PyModelTree {
     ///     min_gain: minimum fitted-leaf SSE reduction to split.
     ///     leaf_cols: "all" (every column) or "path" (only split-path columns).
     ///     leaf: "linear" (model tree) or "mean" (CART/rpart-style).
+    ///     gain: split criterion — "sse", "entropy", "gini", or a custom
+    ///        Python callable `gain_fn(left_y, right_y) -> float` (lazy
+    ///        y-slices of the two sides; higher = better).
+    ///     split_precision: float candidate grid for numeric columns
+    ///        (0.1 = loop over tenths; thresholds are grid values) or None
+    ///        for the exact unique-value scan.
+    ///     cat_order: categorical level order — "frequency_desc",
+    ///        "target_mean", or an explicit list of level codes.
+    ///     cat_search: categorical candidate sets — "cumulative",
+    ///        "single_vs_rest" (stops at the first acceptable level) or
+    ///        "both".
+    ///     leaf_digest: keep each leaf's t-digest so `quantile` answers any
+    ///        tau post-fit (false = lean leaves).
+    ///     verbose: training log — 0 silent, 1 per depth, 2 per node.
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.1), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -1969,6 +2010,12 @@ impl PyModelTree {
         monotone: Vec<i8>,
         interaction_groups: Vec<Vec<usize>>,
         min_relevance: Option<f64>,
+        gain: Option<Bound<'_, PyAny>>,
+        split_precision: Option<f64>,
+        cat_order: Option<Bound<'_, PyAny>>,
+        cat_search: &str,
+        leaf_digest: bool,
+        verbose: u8,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -1988,6 +2035,64 @@ impl PyModelTree {
                 )))
             }
         };
+        let gain_fn = match &gain {
+            None => GainFn::Sse,
+            Some(g) => {
+                if let Ok(name) = g.extract::<String>() {
+                    match name.as_str() {
+                        "sse" => GainFn::Sse,
+                        "entropy" => GainFn::Entropy,
+                        "gini" => GainFn::Gini,
+                        other => {
+                            return Err(PyValueError::new_err(format!(
+                                "gain must be 'sse', 'entropy', 'gini' or a callable, got {other}"
+                            )))
+                        }
+                    }
+                } else if g.is_callable() {
+                    GainFn::Custom(std::sync::Arc::new(PyGain {
+                        fun: g.clone().unbind(),
+                    }))
+                } else {
+                    return Err(PyValueError::new_err(
+                        "gain must be 'sse', 'entropy', 'gini' or a callable",
+                    ));
+                }
+            }
+        };
+        let order = match &cat_order {
+            None => CatOrder::FrequencyDesc,
+            Some(co) => {
+                if let Ok(name) = co.extract::<String>() {
+                    match name.as_str() {
+                        "frequency_desc" => CatOrder::FrequencyDesc,
+                        "target_mean" => CatOrder::TargetMean,
+                        other => {
+                            return Err(PyValueError::new_err(format!(
+                                "cat_order must be 'frequency_desc', 'target_mean' or a level list, got {other}"
+                            )))
+                        }
+                    }
+                } else {
+                    let levels: Vec<f64> = co.extract().map_err(|_| {
+                        PyValueError::new_err(
+                            "cat_order must be a string or a list of level codes",
+                        )
+                    })?;
+                    CatOrder::Explicit(levels)
+                }
+            }
+        };
+        let search = match cat_search {
+            "cumulative" => CatSearch::Cumulative,
+            "single_vs_rest" => CatSearch::SingleVsRest,
+            "both" => CatSearch::Both,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "cat_search must be 'cumulative', 'single_vs_rest' or 'both', got {other}"
+                )))
+            }
+        };
         Ok(Self {
             params: ModelTreeParams {
                 max_depth,
@@ -2000,6 +2105,13 @@ impl PyModelTree {
                 monotone,
                 interaction_groups,
                 min_relevance,
+                dtypes: Vec::new(),
+                gain: gain_fn,
+                split_precision,
+                cat_order: order,
+                cat_search: search,
+                leaf_digest,
+                verbose,
             },
             inner: None,
         })
@@ -2012,15 +2124,31 @@ impl PyModelTree {
     ///     y: targets; `None` drops that row.
     ///     w: optional per-row sample weights (row weightage); zero-weight
     ///        rows are ignored.
+    ///     dtypes: optional per-column types — "numeric" (default) or
+    ///        "categorical" (values are level codes; the split search
+    ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None))]
     fn fit(
         &mut self,
         x: Vec<Vec<Option<f64>>>,
         y: Vec<Option<f64>>,
         w: Option<Vec<f64>>,
+        dtypes: Option<Vec<String>>,
     ) -> PyResult<()> {
+        if let Some(dts) = dtypes {
+            self.params.dtypes = dts
+                .iter()
+                .map(|d| match d.as_str() {
+                    "numeric" => Ok(ColType::Numeric),
+                    "categorical" => Ok(ColType::Categorical),
+                    other => Err(PyValueError::new_err(format!(
+                        "dtypes entries must be 'numeric' or 'categorical', got {other}"
+                    ))),
+                })
+                .collect::<PyResult<Vec<_>>>()?;
+        }
         let tree = match w {
             Some(w) => ModelTree::fit_weighted(&x, &y, &w, self.params.clone()),
             None => ModelTree::fit(&x, &y, self.params.clone()),
@@ -2028,6 +2156,28 @@ impl PyModelTree {
         .map_err(PyValueError::new_err)?;
         self.inner = Some(tree);
         Ok(())
+    }
+
+    /// Conditional quantile prediction from the leaves' t-digests: any tau
+    /// in [0, 1] after the fit. Task: regression.
+    ///
+    /// Args:
+    ///     x: rows of predictors (NA never blocks).
+    ///     tau: quantile level.
+    ///
+    /// Returns: one quantile per row (NaN when a leaf's digest was dropped).
+    fn quantile(&self, x: Vec<Vec<Option<f64>>>, tau: f64) -> PyResult<Vec<f64>> {
+        Ok(self.tree()?.quantile(&x, tau))
+    }
+
+    /// The training log (populated when `verbose > 0`): scan config, per
+    /// depth/per node candidate counts, precision grid, timings.
+    ///
+    /// Args: none.
+    ///
+    /// Returns: log lines.
+    fn training_log(&self) -> PyResult<Vec<String>> {
+        Ok(self.tree()?.trace.clone())
     }
 
     /// Predict for row-major data; NAs never block a prediction. Task: regression.

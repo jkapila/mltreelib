@@ -38,6 +38,43 @@ fn beats(gain: f64, best: f64) -> bool {
     gain > best * (1.0 + 1e-12)
 }
 
+/// Shannon entropy (bits) over y-as-class-labels (distinct values = classes).
+fn class_entropy(ys: &[f64]) -> f64 {
+    let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+    for &y in ys {
+        *counts.entry(y.to_bits()).or_insert(0) += 1;
+    }
+    let n = ys.len() as f64;
+    counts
+        .values()
+        .map(|&c| {
+            let p = c as f64 / n;
+            -p * p.log2()
+        })
+        .sum()
+}
+
+/// Gini impurity over y-as-class-labels.
+fn class_gini(ys: &[f64]) -> f64 {
+    let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+    for &y in ys {
+        *counts.entry(y.to_bits()).or_insert(0) += 1;
+    }
+    let n = ys.len() as f64;
+    1.0 - counts
+        .values()
+        .map(|&c| {
+            let p = c as f64 / n;
+            p * p
+        })
+        .sum::<f64>()
+}
+
+/// Total rows across level buckets (categorical scan bookkeeping).
+fn levels_total(levels: &[(f64, Vec<f64>)]) -> usize {
+    levels.iter().map(|(_, ys)| ys.len()).sum()
+}
+
 /// Which columns a leaf's linear model may use.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LeafCols {
@@ -55,6 +92,88 @@ pub enum LeafKind {
     /// Plain mean — the CART/rpart leaf. The split criterion then *is*
     /// rpart's deviance criterion.
     Mean,
+}
+
+/// Per-column type for the split search. Values are `f64` level codes;
+/// a distinct value IS a level. Missing (`None`) is a first-class state,
+/// routed by `missing_left` — never imputed here.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ColType {
+    /// Threshold splits (on the `split_precision` grid when set).
+    Numeric,
+    /// Level-partition splits per `cat_order` / `cat_search`.
+    Categorical,
+}
+
+/// Order in which a categorical column's levels are visited when building
+/// the candidate partitions.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CatOrder {
+    /// Most frequent level first (counted at the node).
+    FrequencyDesc,
+    /// Highest target mean first (CART-style ordering).
+    TargetMean,
+    /// Explicit level order (codes); levels not listed are appended after,
+    /// by descending frequency.
+    Explicit(Vec<f64>),
+}
+
+/// Which candidate partitions a categorical column contributes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CatSearch {
+    /// Cumulative sweep along the order: {top-1}|rest, {top-2}|rest, ...
+    /// `k-1` candidates. Default.
+    Cumulative,
+    /// Each level alone vs the rest, visited in order; stops early at
+    /// `gain >= min_gain` on the first acceptable level.
+    SingleVsRest,
+    /// The union of both candidate sets; best gain wins.
+    Both,
+}
+
+/// Split-quality criterion. Built-ins run the O(1) stats scan; a custom
+/// criterion sees lazy y-slices per candidate.
+pub enum GainFn {
+    /// Variance reduction (sum of squares). The regression default.
+    Sse,
+    /// Information gain: entropy reduction over y-as-class-labels
+    /// (distinct y values are the classes).
+    Entropy,
+    /// Gini impurity reduction over y-as-class-labels.
+    Gini,
+    /// User criterion. Receives the y-values of the two sides per
+    /// candidate split and returns the split quality (higher = better).
+    /// Note: sees y values only — row weights influence candidate
+    /// generation and `min_rows` but not a custom gain.
+    Custom(std::sync::Arc<dyn CustomGain>),
+}
+
+/// User-supplied split criterion over lazy y-slices.
+pub trait CustomGain: Send + Sync {
+    /// Quality of splitting `left` / `right` (higher = better).
+    fn gain(&self, left: &[f64], right: &[f64]) -> f64;
+}
+
+impl Clone for GainFn {
+    fn clone(&self) -> Self {
+        match self {
+            GainFn::Sse => GainFn::Sse,
+            GainFn::Entropy => GainFn::Entropy,
+            GainFn::Gini => GainFn::Gini,
+            GainFn::Custom(f) => GainFn::Custom(f.clone()),
+        }
+    }
+}
+
+impl std::fmt::Debug for GainFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GainFn::Sse => write!(f, "Sse"),
+            GainFn::Entropy => write!(f, "Entropy"),
+            GainFn::Gini => write!(f, "Gini"),
+            GainFn::Custom(_) => write!(f, "Custom(<fn>)"),
+        }
+    }
 }
 
 /// Growth and leaf parameters.
@@ -88,6 +207,29 @@ pub struct ModelTreeParams {
     /// (|weighted correlation with y|) reaches this value. `None` = off.
     /// Dropped columns cannot split or enter leaves.
     pub min_relevance: Option<f64>,
+    /// Per-column type for the split search (indexed like `x`'s columns).
+    /// Empty = all numeric. Categorical columns contribute level-partition
+    /// candidates instead of thresholds — no encoding on the growth path.
+    pub dtypes: Vec<ColType>,
+    /// Split-quality criterion (higher gain = better split).
+    pub gain: GainFn,
+    /// Candidate-threshold grid for numeric columns: values are rounded to
+    /// this grid before the scan (0.1 = loop over tenths), thresholds are
+    /// grid values. `None` = exact unique-value scan. Prediction always
+    /// compares raw values.
+    pub split_precision: Option<f64>,
+    /// Order categorical levels are visited in.
+    pub cat_order: CatOrder,
+    /// Which candidate partitions categorical columns contribute.
+    pub cat_search: CatSearch,
+    /// Keep each leaf's t-digest (see `ModelTree::quantile` — any tau
+    /// post-fit). `false` drops the digest after fit (leaner leaves);
+    /// quantile queries then return NaN.
+    pub leaf_digest: bool,
+    /// Training log verbosity: 0 = silent, 1 = per depth level, 2 = per
+    /// node. Populates `Tree::trace` (candidate counts, dtype search,
+    /// precision grid, gain taken, timings).
+    pub verbose: u8,
 }
 
 impl Default for ModelTreeParams {
@@ -111,11 +253,20 @@ impl Default for ModelTreeParams {
             monotone: Vec::new(),
             interaction_groups: Vec::new(),
             min_relevance: None,
+            dtypes: Vec::new(),
+            gain: GainFn::Sse,
+            split_precision: Some(0.1),
+            cat_order: CatOrder::FrequencyDesc,
+            cat_search: CatSearch::Cumulative,
+            leaf_digest: true,
+            verbose: 0,
         }
     }
 }
 
-/// One binary split: values `<= threshold` go left.
+/// One binary split: values `<= threshold` go left (numeric), or
+/// `left_levels` membership goes left (categorical, `cat = Some(i)` indexes
+/// `Tree::cat_parts`).
 #[derive(Clone, Copy, Debug)]
 pub struct Split {
     pub col: usize,
@@ -124,6 +275,9 @@ pub struct Split {
     /// Goodness of split (parent SSE - children SSE) — the raw material of
     /// feature importance.
     pub gain: f64,
+    /// Categorical partition handle: `Some(i)` = `Tree::cat_parts[i]` lists
+    /// the level codes routed left. `None` = threshold split.
+    pub cat: Option<usize>,
 }
 
 /// A prediction decomposed along its decision path (DALEX-style break-down).
@@ -183,6 +337,28 @@ pub struct ModelTree {
     nodes: Vec<Node>,
     root: usize,
     profiles: Vec<NodeProfile>,
+    /// Categorical partitions referenced by `Split::cat`.
+    cat_parts: Vec<Vec<f64>>,
+    /// Training log (populated when `params.verbose > 0`).
+    pub trace: Vec<String>,
+}
+
+impl ModelTree {
+    /// Grid-aware left test shared by fit partitioning, prediction and
+    /// break_down: numeric values compare on the `split_precision` grid
+    /// (raw when unset); categorical splits test partition membership.
+    fn goes_left(&self, sp: &Split, v: f64) -> bool {
+        if let Some(i) = sp.cat {
+            return self.cat_parts[i].contains(&v);
+        }
+        match self.params.split_precision {
+            Some(p) if p > 0.0 => {
+                let q = 1.0 / p;
+                (v * q).round() / q <= sp.threshold
+            }
+            _ => v <= sp.threshold,
+        }
+    }
 }
 
 /// Work of one column scan, merged into the node profile.
@@ -306,13 +482,44 @@ impl ModelTree {
             active: &active_cols,
             nodes: Vec::new(),
             profiles: Vec::new(),
+            cat_parts: Vec::new(),
+            trace: Vec::new(),
         };
+        if params.verbose > 0 {
+            grower.trace.push(format!(
+                "scan: gain={:?} split_precision={:?} cat_search={:?} ({:?}) leaf={:?} leaf_digest={}",
+                params.gain, params.split_precision, params.cat_search, params.cat_order,
+                params.leaf, params.leaf_digest
+            ));
+        }
         let root = grower.grow(&rows, 0, &mut Vec::new());
         // Destructure to release the borrows on params/active_cols before
         // moving them into the tree.
         let Grower {
-            nodes, profiles, ..
+            nodes, profiles, cat_parts, mut trace, ..
         } = grower;
+        if params.verbose > 0 {
+            // Per-depth summary from the node profiles.
+            let mut by_depth: std::collections::BTreeMap<usize, (usize, usize, usize, u64)> =
+                std::collections::BTreeMap::new();
+            for p in &profiles {
+                let e = by_depth.entry(p.depth).or_insert((0, 0, 0, 0));
+                e.0 += 1;
+                e.1 += p.rows;
+                e.2 += p.candidates;
+                e.3 += p.scan_ns / 1_000_000;
+            }
+            let mut lines: Vec<String> = by_depth
+                .iter()
+                .map(|(d, (nodes, rows, candidates, scan_ms))| {
+                    format!(
+                        "depth {d}: nodes={nodes} rows={rows} candidates={candidates} scan_ms={scan_ms}"
+                    )
+                })
+                .collect();
+            lines.extend(trace);
+            trace = lines;
+        }
         Ok(Self {
             col_names,
             params,
@@ -320,7 +527,43 @@ impl ModelTree {
             nodes,
             root,
             profiles,
+            cat_parts,
+            trace,
         })
+    }
+
+    /// Leaf node index a row lands in (shared walk with `predict`).
+    fn leaf_index(&self, row: &[Option<f64>]) -> usize {
+        let mut node = self.root;
+        while let (Some(sp), Some(l), Some(r)) = (
+            &self.nodes[node].split,
+            self.nodes[node].left,
+            self.nodes[node].right,
+        ) {
+            let go_left = match row.get(sp.col).and_then(|v| *v) {
+                Some(v) => self.goes_left(sp, v),
+                None => sp.missing_left,
+            };
+            node = if go_left { l } else { r };
+        }
+        node
+    }
+
+    /// Conditional quantile prediction: `tau` in [0, 1], one value per row.
+    /// Reads each leaf's t-digest (see `LeafStats::digest`), so ANY tau is
+    /// answerable post-fit without a refit. Returns NaN when the leaf's
+    /// digest was dropped (`leaf_digest = false`) or is empty.
+    pub fn quantile(&self, x: &[Vec<Option<f64>>], tau: f64) -> Vec<f64> {
+        x.iter()
+            .map(|row| {
+                let idx = self.leaf_index(row);
+                let leaf = self.nodes[idx]
+                    .leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model");
+                leaf.stats.quantile(tau).unwrap_or(f64::NAN)
+            })
+            .collect()
     }
 
     /// Predict for row-major `x`. NAs never block a prediction.
@@ -330,7 +573,7 @@ impl ModelTree {
                 let mut node = &self.nodes[self.root];
                 while let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
                     let go_left = match row.get(sp.col).and_then(|v| *v) {
-                        Some(v) => v <= sp.threshold,
+                        Some(v) => self.goes_left(sp, v),
                         None => sp.missing_left,
                     };
                     node = &self.nodes[if go_left { l } else { r }];
@@ -527,9 +770,28 @@ struct Grower<'a> {
     active: &'a [usize],
     nodes: Vec<Node>,
     profiles: Vec<NodeProfile>,
+    /// Categorical partitions referenced by `Split::cat` (moved into the
+    /// fitted tree).
+    cat_parts: Vec<Vec<f64>>,
+    /// Training log lines (`params.verbose`).
+    trace: Vec<String>,
 }
 
 impl<'a> Grower<'a> {
+    /// Grid-aware left test (see `ModelTree::goes_left`).
+    fn goes_left(&self, sp: &Split, v: f64) -> bool {
+        if let Some(i) = sp.cat {
+            return self.cat_parts[i].contains(&v);
+        }
+        match self.params.split_precision {
+            Some(p) if p > 0.0 => {
+                let q = 1.0 / p;
+                (v * q).round() / q <= sp.threshold
+            }
+            _ => v <= sp.threshold,
+        }
+    }
+
     fn add(&mut self, node: Node) -> usize {
         self.nodes.push(node);
         self.nodes.len() - 1
@@ -546,6 +808,17 @@ impl<'a> Grower<'a> {
         } else {
             None
         };
+        if self.params.verbose >= 2 {
+            self.trace.push(format!(
+                "node depth={} rows={} cols={} candidates={} scan_ms={} leaf_ms={}",
+                prof.depth,
+                prof.rows,
+                prof.cols,
+                prof.candidates,
+                prof.scan_ns / 1_000_000,
+                prof.leaf_ns / 1_000_000
+            ));
+        }
 
         match best {
             None => {
@@ -627,7 +900,7 @@ impl<'a> Grower<'a> {
     /// scan order: lowest column index, lowest threshold, missing_left
     /// first) — never by thread completion order.
     fn best_split(
-        &self,
+        &mut self,
         rows: &[usize],
         path: &[usize],
         prof: &mut NodeProfile,
@@ -638,7 +911,8 @@ impl<'a> Grower<'a> {
         }
 
         let mut child_path = path.to_vec();
-        let mut candidates: Vec<(usize, Option<(f64, Split)>, ScanStats)> = Vec::new();
+        let mut candidates: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> =
+            Vec::new();
         let work = rows.len() * self.cols.len();
         let cols: Vec<usize> = self
             .active
@@ -649,7 +923,7 @@ impl<'a> Grower<'a> {
 
         if work >= PAR_MIN_WORK {
             use rayon::prelude::*;
-            let mut out: Vec<(usize, Option<(f64, Split)>, ScanStats)> = cols
+            let mut out: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> = cols
                 .par_iter()
                 .map(|&j| {
                     let mut cp = path.to_vec();
@@ -669,32 +943,36 @@ impl<'a> Grower<'a> {
             }
         }
 
-        let mut best: Option<(f64, Split, usize, f64)> = None; // (gain, split, j, threshold)
+        let mut best: Option<(f64, Split, Option<Vec<f64>>, usize, f64)> = None;
         for (j, found, st) in candidates {
             prof.cols += 1;
             prof.group_ns += st.group_ns;
             prof.scan_ns += st.scan_ns;
             prof.candidates += st.candidates;
-            if let Some((gain, sp)) = found {
+            if let Some((gain, sp, part)) = found {
                 let better = match &best {
                     None => true,
-                    Some((g, _, bj, bt)) => {
+                    Some((g, _, _, bj, bt)) => {
                         beats(gain, *g)
                             || (!beats(*g, gain) && (j, sp.threshold) < (*bj, *bt))
                     }
                 };
                 if better {
-                    best = Some((gain, sp, j, sp.threshold));
+                    best = Some((gain, sp, part, j, sp.threshold));
                 }
             }
         }
 
-        best.map(|(_, s, ..)| {
+        best.map(|(_, mut s, part, ..)| {
+            if let Some(p) = part {
+                s.cat = Some(self.cat_parts.len());
+                self.cat_parts.push(p);
+            }
             let (mut lv, mut rv) = (Vec::new(), Vec::new());
             for &r in rows {
                 match self.cols[s.col][r] {
                     Some(v) => {
-                        if v <= s.threshold {
+                        if self.goes_left(&s, v) {
                             lv.push(r);
                         } else {
                             rv.push(r);
@@ -713,17 +991,235 @@ impl<'a> Grower<'a> {
         })
     }
 
-    /// Dispatch one column's scan to the leaf-kind-specific loop.
+    /// Dispatch one column's scan to the dtype/leaf-kind-specific loop.
+    /// The hit carries an optional categorical partition (registered by
+    /// `best_split` into `cat_parts`).
     fn scan_column(
         &self,
         rows: &[usize],
         j: usize,
         path: &[usize],
-    ) -> (Option<(f64, Split)>, ScanStats) {
-        match self.params.leaf {
+    ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        if self.col_type(j) == ColType::Categorical {
+            return self.scan_column_categorical(rows, j);
+        }
+        let (hit, st) = match self.params.leaf {
             LeafKind::Mean => self.scan_column_mean(rows, j),
             LeafKind::Linear => self.scan_column_linear(rows, j, path),
+        };
+        (hit.map(|(g, s)| (g, s, None)), st)
+    }
+
+    /// Column type for the split search: `params.dtypes` when set, else
+    /// numeric.
+    fn col_type(&self, j: usize) -> ColType {
+        self.params.dtypes.get(j).copied().unwrap_or(ColType::Numeric)
+    }
+
+    /// Split quality of a partition under a non-SSE criterion (higher =
+    /// better). Built-ins see y-as-class-labels; a custom criterion gets
+    /// the raw y-slices of the two sides.
+    fn gain_of(&self, gfn: &GainFn, left: &[f64], right: &[f64]) -> f64 {
+        match gfn {
+            GainFn::Sse => {
+                let sse = |ys: &[f64]| {
+                    let n = ys.len() as f64;
+                    if n <= 0.0 {
+                        return 0.0;
+                    }
+                    let s: f64 = ys.iter().sum();
+                    let s2: f64 = ys.iter().map(|v| v * v).sum();
+                    s2 - s * s / n
+                };
+                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
+                all.extend_from_slice(left);
+                all.extend_from_slice(right);
+                sse(&all) - sse(left) - sse(right)
+            }
+            GainFn::Entropy => {
+                let n = (left.len() + right.len()) as f64;
+                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
+                all.extend_from_slice(left);
+                all.extend_from_slice(right);
+                class_entropy(&all)
+                    - (left.len() as f64 / n) * class_entropy(left)
+                    - (right.len() as f64 / n) * class_entropy(right)
+            }
+            GainFn::Gini => {
+                let n = (left.len() + right.len()) as f64;
+                let mut all: Vec<f64> = Vec::with_capacity(left.len() + right.len());
+                all.extend_from_slice(left);
+                all.extend_from_slice(right);
+                class_gini(&all)
+                    - (left.len() as f64 / n) * class_gini(left)
+                    - (right.len() as f64 / n) * class_gini(right)
+            }
+            GainFn::Custom(f) => f.gain(left, right),
         }
+    }
+
+    /// Categorical scan — binary level partitions per `cat_order` /
+    /// `cat_search`. Levels are distinct non-missing values; missing rows
+    /// are scored in both directions. Monotone constraints are ignored
+    /// here (they shape numeric trends). Gain ranking for `LeafKind::Linear`
+    /// columns also uses `params.gain` on the y-slices (partition quality),
+    /// independent of the leaf fit.
+    fn scan_column_categorical(
+        &self,
+        rows: &[usize],
+        j: usize,
+    ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let t0 = Instant::now();
+        let mut missing_ys: Vec<f64> = Vec::new();
+        let mut by_level: std::collections::HashMap<u64, Vec<f64>> = std::collections::HashMap::new();
+        for &r in rows {
+            let y = self.y[r];
+            match self.cols[j][r] {
+                Some(v) => {
+                    by_level.entry(v.to_bits()).or_default().push(y);
+                }
+                None => missing_ys.push(y),
+            }
+        }
+        let mut levels: Vec<(f64, Vec<f64>)> = by_level
+            .into_iter()
+            .map(|(b, ys)| (f64::from_bits(b), ys))
+            .collect();
+        if levels.len() < 2 {
+            st.group_ns = t0.elapsed().as_nanos() as u64;
+            return (None, st);
+        }
+        // Level order (deterministic: ties by level code ascending).
+        match &self.params.cat_order {
+            CatOrder::FrequencyDesc => {
+                levels.sort_by(|a, b| {
+                    b.1.len()
+                        .cmp(&a.1.len())
+                        .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                });
+            }
+            CatOrder::TargetMean => {
+                let mean = |ys: &[f64]| ys.iter().sum::<f64>() / ys.len().max(1) as f64;
+                levels.sort_by(|a, b| {
+                    mean(&b.1)
+                        .partial_cmp(&mean(&a.1))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                        .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                });
+            }
+            CatOrder::Explicit(order) => {
+                let rank = |v: f64| {
+                    order
+                        .iter()
+                        .position(|o| *o == v)
+                        .unwrap_or(usize::MAX)
+                };
+                levels.sort_by(|a, b| {
+                    rank(a.0)
+                        .cmp(&rank(b.0))
+                        .then(b.1.len().cmp(&a.1.len()))
+                        .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                });
+            }
+        }
+        st.group_ns += t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+
+        let k = levels.len();
+        let m = self.params.min_rows as f64;
+        // Candidate partitions as level-index sets (left side).
+        let mut candidates: Vec<Vec<usize>> = Vec::new();
+        match self.params.cat_search {
+            CatSearch::Cumulative => {
+                for i in 1..k {
+                    candidates.push((0..i).collect());
+                }
+            }
+            CatSearch::SingleVsRest => {
+                for i in 0..k {
+                    candidates.push(vec![i]);
+                }
+            }
+            CatSearch::Both => {
+                for i in 1..k {
+                    candidates.push((0..i).collect());
+                }
+                for i in 0..k {
+                    candidates.push(vec![i]);
+                }
+            }
+        }
+
+        let mut best: Option<(f64, Vec<f64>, bool)> = None; // (gain, left levels, missing_left)
+        for (ci, left_idx) in candidates.iter().enumerate() {
+            let in_left: std::collections::HashSet<usize> = left_idx.iter().copied().collect();
+            let mut ln = 0usize;
+            let mut left_ys: Vec<f64> = Vec::new();
+            let mut right_ys: Vec<f64> = Vec::new();
+            for (li, (_, ys)) in levels.iter().enumerate() {
+                if in_left.contains(&li) {
+                    ln += ys.len();
+                    left_ys.extend_from_slice(ys);
+                } else {
+                    right_ys.extend_from_slice(ys);
+                }
+            }
+            if (ln as f64) < m || ((levels_total(&levels) - ln) as f64) < m {
+                continue;
+            }
+            st.candidates += 1;
+            for missing_left in [true, false] {
+                let (aln, arn) = if missing_left {
+                    (ln + missing_ys.len(), levels_total(&levels) - ln)
+                } else {
+                    (ln, levels_total(&levels) - ln + missing_ys.len())
+                };
+                if (aln as f64) < m || (arn as f64) < m {
+                    continue;
+                }
+                let mut ls = left_ys.clone();
+                let mut rs = right_ys.clone();
+                if missing_left {
+                    ls.extend_from_slice(&missing_ys);
+                } else {
+                    rs.extend_from_slice(&missing_ys);
+                }
+                let gain = self.gain_of(&self.params.gain, &ls, &rs);
+                if gain <= self.params.min_gain {
+                    continue;
+                }
+                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                    let left_levels: Vec<f64> =
+                        left_idx.iter().map(|&li| levels[li].0).collect();
+                    best = Some((gain, left_levels, missing_left));
+                }
+                // Single-vs-rest loops in `cat_order` and stops at the
+                // first acceptable level (gain > min_gain, checked above).
+                if matches!(self.params.cat_search, CatSearch::SingleVsRest) {
+                    break;
+                }
+            }
+            let _ = ci;
+        }
+
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (
+            best.map(|(gain, left_levels, missing_left)| {
+                (
+                    gain,
+                    Split {
+                        col: j,
+                        threshold: 0.0,
+                        missing_left,
+                        gain,
+                        cat: None,
+                    },
+                    Some(left_levels),
+                )
+            }),
+            st,
+        )
     }
 
     /// Mean-leaf scan — rpart's `anova.c` shape: weighted running sums per
@@ -740,14 +1236,27 @@ impl<'a> Grower<'a> {
             return (None, st);
         }
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+        // split_precision grid: values round to the grid before the scan;
+        // candidates are grid boundaries (midpoints when unset).
+        if let Some(p) = self.params.split_precision {
+            if p > 0.0 {
+                let q = 1.0 / p;
+                for t in pairs.iter_mut() {
+                    t.0 = (t.0 * q).round() / q;
+                }
+            }
+        }
+        let ys_sorted: Vec<f64> = pairs.iter().map(|&(_, y, _)| y).collect();
 
         // Missing rows: one extra group, scored in both directions.
         let mut mn = 0usize;
+        let mut missing_ys: Vec<f64> = Vec::new();
         let (mut msw, mut mswy, mut mswy2) = (0.0, 0.0, 0.0);
         for &r in rows {
             if self.cols[j][r].is_none() {
                 mn += 1;
                 let (y, w) = (self.y[r], self.w[r]);
+                missing_ys.push(y);
                 msw += w;
                 mswy += w * y;
                 mswy2 += w * y * y;
@@ -786,7 +1295,12 @@ impl<'a> Grower<'a> {
             if !is_boundary {
                 continue;
             }
-            let threshold = (v + pairs[k + 1].0) / 2.0;
+            // Grid mode: thresholds are grid values (compare rounds to the
+            // same grid, see `goes_left`); exact mode keeps midpoints.
+            let threshold = match self.params.split_precision {
+                Some(_) => v,
+                None => (v + pairs[k + 1].0) / 2.0,
+            };
             let rn = tn - ln;
             let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
             st.candidates += 1;
@@ -807,8 +1321,28 @@ impl<'a> Grower<'a> {
                 if !self.mono_ok(j, alswy / alsw.max(1e-300), arswy / arsw.max(1e-300)) {
                     continue;
                 }
-                let gain = parent_sse
-                    - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2));
+                let gain = match self.params.gain {
+                    GainFn::Sse => {
+                        parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
+                    }
+                    ref gfn => {
+                        // Lazy slices over the value-sorted y buffer; missing
+                        // rows appended to the side they route to (allocated
+                        // only when the column has missing values).
+                        if missing_ys.is_empty() {
+                            self.gain_of(gfn, &ys_sorted[..k + 1], &ys_sorted[k + 1..])
+                        } else {
+                            let mut ls: Vec<f64> = ys_sorted[..k + 1].to_vec();
+                            let mut rs: Vec<f64> = ys_sorted[k + 1..].to_vec();
+                            if missing_left {
+                                ls.extend_from_slice(&missing_ys);
+                            } else {
+                                rs.extend_from_slice(&missing_ys);
+                            }
+                            self.gain_of(gfn, &ls, &rs)
+                        }
+                    }
+                };
                 if gain <= self.params.min_gain {
                     continue;
                 }
@@ -820,6 +1354,7 @@ impl<'a> Grower<'a> {
                             threshold,
                             missing_left,
                             gain,
+                            cat: None,
                         },
                     ));
                 }
@@ -854,6 +1389,15 @@ impl<'a> Grower<'a> {
             return (None, st);
         }
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+        // split_precision grid (see scan_column_mean).
+        if let Some(p) = self.params.split_precision {
+            if p > 0.0 {
+                let q = 1.0 / p;
+                for t in pairs.iter_mut() {
+                    t.0 = (t.0 * q).round() / q;
+                }
+            }
+        }
 
         let mut groups: Vec<(f64, Gram)> = Vec::new();
         for &(v, r) in &pairs {
@@ -931,7 +1475,10 @@ impl<'a> Grower<'a> {
             if gi + 1 >= groups.len() || left.n < m || right.n < m {
                 continue;
             }
-            let threshold = (v + groups[gi + 1].0) / 2.0;
+            let threshold = match self.params.split_precision {
+                Some(_) => *v,
+                None => (v + groups[gi + 1].0) / 2.0,
+            };
             st.candidates += 1;
             for missing_left in [true, false] {
                 let left_n = left.n + if missing_left { miss.n } else { 0 };
@@ -1006,6 +1553,7 @@ impl<'a> Grower<'a> {
                             threshold,
                             missing_left,
                             gain,
+                            cat: None,
                         },
                     ));
                 }
@@ -1019,7 +1567,11 @@ impl<'a> Grower<'a> {
     fn make_leaf(&self, rows: &[usize], path: &[usize]) -> LeafModel {
         let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();
         let wv: Vec<f64> = rows.iter().map(|&r| self.w[r]).collect();
-        let stats = LeafStats::from_targets(&yv, &wv);
+        let mut stats = LeafStats::from_targets(&yv, &wv);
+        if !self.params.leaf_digest {
+            // Lean leaves: drop the t-digest (`quantile` then returns NaN).
+            stats.digest = tdigest::TDigest::new_with_size(1);
+        }
         let linear = if self.params.leaf == LeafKind::Linear {
             let chosen = self.chosen_cols(path);
             let any_missing = rows

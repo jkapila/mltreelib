@@ -59,6 +59,7 @@ fn recovers_planted_split_and_leaf_models() {
         min_rows: 20,
         l1: 0.0,
         l2: 0.0,
+        split_precision: None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -111,6 +112,7 @@ fn path_used_leaves_are_piecewise_linear() {
         l1: 0.0,
         l2: 0.0,
         leaf_cols: LeafCols::PathUsed,
+        split_precision: None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -374,6 +376,7 @@ fn printer_matches_rpart_layout() {
         min_rows: 1,
         l1: 0.0,
         l2: 0.0,
+        split_precision: None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -390,6 +393,7 @@ fn dot_export_names_nodes_and_edges() {
         min_rows: 1,
         l1: 0.0,
         l2: 0.0,
+        split_precision: None,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -621,4 +625,151 @@ fn min_rows_blocks_tiny_leaves() {
     assert!(tree.splits().is_empty());
     let preds = tree.predict(&x);
     assert!(preds.iter().all(|p| p.is_finite()), "mean leaf still predicts");
+}
+
+// ------------------------- split-search knobs (2026-10-29) --------------
+
+use mltreelib_core::model_tree::{
+    CatOrder, CatSearch, ColType, CustomGain, GainFn,
+};
+
+#[test]
+fn categorical_split_partitions_levels() {
+    // Level 0 sits at y≈0, levels 1 and 2 at y≈5: the true binary
+    // partition is {0} | {1,2}. Codes are the levels; dtypes declare the
+    // column categorical — no encoding anywhere.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for (code, base) in [(0.0, 0.0), (1.0, 5.0), (2.0, 5.0)] {
+        for i in 0..20 {
+            x.push(vec![Some(code)]);
+            y.push(Some(base + (i as f64 - 10.0) * 0.01));
+        }
+    }
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        dtypes: vec![ColType::Categorical],
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let splits = tree.splits();
+    assert_eq!(splits.len(), 1);
+    assert!(splits[0].cat.is_some(), "categorical split must be a partition");
+    // The partition lives in the side table; membership decides routing.
+    let left = tree.predict(&[vec![Some(0.0)], vec![Some(1.0)], vec![Some(2.0)]]);
+    assert!(left[0] < 1.0 && left[1] > 4.0 && left[2] > 4.0, "{left:?}");
+}
+
+#[test]
+fn categorical_single_vs_rest_stops_at_first_acceptable() {
+    // Four levels, one clearly separate; the most frequent level is the
+    // last one by code. SingleVsRest visits in frequency order and stops
+    // at the first acceptable level.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for (code, base, n) in [(0.0, 0.0, 5), (1.0, 0.0, 5), (2.0, 0.0, 5), (3.0, 9.0, 30)] {
+        for _ in 0..n {
+            x.push(vec![Some(code)]);
+            y.push(Some(base));
+        }
+    }
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 3,
+        dtypes: vec![ColType::Categorical],
+        cat_search: CatSearch::SingleVsRest,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let pred = tree.predict(&[vec![Some(3.0)], vec![Some(0.0)]]);
+    assert!(pred[0] > 5.0 && pred[1] < 4.0, "{pred:?}");
+}
+
+#[test]
+fn custom_gain_matches_builtin_entropy() {
+    struct EntropyGain;
+    impl CustomGain for EntropyGain {
+        fn gain(&self, left: &[f64], right: &[f64]) -> f64 {
+            fn h(ys: &[f64]) -> f64 {
+                let n = ys.len() as f64;
+                let p1 = ys.iter().filter(|&&v| v == 1.0).count() as f64 / n;
+                let p0 = 1.0 - p1;
+                let e = |p: f64| if p > 0.0 { -p * p.log2() } else { 0.0 };
+                e(p0) + e(p1)
+            }
+            let n = (left.len() + right.len()) as f64;
+            let mut all: Vec<f64> = Vec::new();
+            all.extend_from_slice(left);
+            all.extend_from_slice(right);
+            h(&all) - (left.len() as f64 / n) * h(left) - (right.len() as f64 / n) * h(right)
+        }
+    }
+    let x: Vec<Vec<Option<f64>>> = (0..40).map(|i| vec![Some((i / 20) as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..40)
+        .map(|i| Some(if i % 4 < 2 { 0.0 } else { 1.0 }))
+        .collect();
+    let mut p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 2,
+        ..Default::default()
+    };
+    p.gain = GainFn::Entropy;
+    let t_ent = ModelTree::fit(&x, &y, p.clone()).unwrap();
+    p.gain = GainFn::Custom(std::sync::Arc::new(EntropyGain));
+    let t_custom = ModelTree::fit(&x, &y, p).unwrap();
+    let a = t_ent.splits();
+    let b = t_custom.splits();
+    assert_eq!(a.len(), b.len());
+    if let (Some(sa), Some(sb)) = (a.first(), b.first()) {
+        assert_eq!(sa.col, sb.col);
+        assert_eq!(sa.threshold, sb.threshold);
+    }
+}
+
+#[test]
+fn split_precision_grid_rounds_thresholds() {
+    // Values scattered inside tenths; the grid must produce a grid-valued
+    // threshold and route raw values consistently at predict time.
+    let x: Vec<Vec<Option<f64>>> = (0..40)
+        .map(|i| {
+            let v = if i < 20 { 1.24 + (i as f64) * 0.001 } else { 2.27 + (i as f64) * 0.001 };
+            vec![Some(v)]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..40).map(|i| Some(if i < 20 { 0.0 } else { 1.0 })).collect();
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 2,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let splits = tree.splits();
+    assert_eq!(splits.len(), 1);
+    let t = splits[0].threshold;
+    assert!((t * 10.0 - (t * 10.0).round()).abs() < 1e-9, "threshold {t} not on 0.1 grid");
+    let pred = tree.predict(&x);
+    assert!(pred[..20].iter().all(|&v| v < 0.5));
+    assert!(pred[20..].iter().all(|&v| v > 0.5));
+}
+
+#[test]
+fn quantile_uses_leaf_digest_and_honors_lean_leaves() {
+    let x: Vec<Vec<Option<f64>>> = (0..60).map(|i| vec![Some((i / 30) as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..60).map(|i| Some((i % 30) as f64)).collect();
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p.clone()).unwrap();
+    let med = tree.quantile(&[vec![Some(0.0)]], 0.5);
+    assert!(med[0].is_finite(), "digest quantile should be answerable");
+    let p_lean = ModelTreeParams {
+        leaf_digest: false,
+        ..p
+    };
+    let lean = ModelTree::fit(&x, &y, p_lean).unwrap();
+    let gone = lean.quantile(&[vec![Some(0.0)]], 0.5);
+    assert!(gone[0].is_nan(), "lean leaves must not answer quantiles");
 }

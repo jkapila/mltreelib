@@ -15,6 +15,12 @@ ModelTree(
     monotone=[],            # per column: 0 | +1 | -1
     interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
     min_relevance=None,     # relevance threshold for column screening
+    gain="sse",             # "sse" | "entropy" | "gini" | callable(left_y, right_y)
+    split_precision=0.1,    # numeric candidate grid; None = exact unique scan
+    cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
+    cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"
+    leaf_digest=True,       # keep each leaf's t-digest (quantile() needs it)
+    verbose=0,              # 0 silent | 1 per depth | 2 per node (training_log)
 )
 ```
 
@@ -25,12 +31,56 @@ inside the split scan and the accuracy gain over ridge is marginal. Turning
 regularization fully off (`l1=l2=0`) on raw scales is a known blowup mode —
 keep the ridge unless you standardize your inputs.
 
+## Split search — per dtype, no encoding
+
+Categorical columns are **levels as-is** (`dtypes` declares them; a distinct
+value is a level), NAs route as-is. Nothing is ever encoded on the growth
+path — the encoders in [Data](data.md) are pipeline tools for feeding
+sklearn and friends, never invoked by the tree. Binary level partitions
+(`cat_search`) are built along `cat_order`; multiway partitions are reserved
+for a later build. `gain` picks the split-quality function: the built-ins
+scan on summary stats, a custom `gain_fn(left_y, right_y) -> float` receives
+lazy y-slices per candidate (higher = better; sees y values only). Float
+columns scan candidates on the `split_precision` grid (thresholds are grid
+values; prediction rounds to the same grid), `None` restores the exact scan.
+
+```python
+m = ModelTree(max_depth=1, min_rows=5, gain="entropy", cat_search="cumulative")
+m.fit(x, y, dtypes=["categorical"])
+m.predict([[0.0], [1.0], [2.0]])
+```
+
+```text
+categorical fit: pred(0,1,2) = [0.0, 5.0, 5.0]     # {0} | {1,2} partition
+grid threshold: 1.3 (on 0.1 grid: True)
+```
+
+## Quantiles and the training log
+
+`leaf_digest=True` keeps a t-digest in every leaf (weighted targets) —
+`quantile(x, tau)` then answers **any** τ after the fit (median now, p90
+later, no refit). `leaf_digest=False` drops the digests (leaner; quantile
+returns NaN). `training_log()` returns the scan log when `verbose > 0`:
+scan config, per-depth/per-node candidate counts, timings.
+
+```python
+mq = ModelTree(max_depth=1, min_rows=5)          # leaf_digest=True default
+mq.fit(xg, yg)
+mq.quantile([[1.25]], 0.5), mq.quantile([[2.25]], 0.9)
+```
+
+```text
+quantile 0.5: 0.0 | p90: 1.0
+training_log: 3 lines; first: depth 0: nodes=1 rows=60 candidates=3 scan_ms=0
+```
+
 ## Fitting & predicting
 
 | method | returns | notes |
 |---|---|---|
-| `fit(x, y, w=None)` | `self` | rows of `float`/`None` (`None` = missing); `w` = row weights (0 = row ignored); rows with `None` target drop |
+| `fit(x, y, w=None, dtypes=None)` | `self` | rows of `float`/`None` (`None` = missing); `w` = row weights (0 = row ignored); `dtypes` = per column `"numeric"`/`"categorical"` (levels as-is); rows with `None` target drop |
 | `predict(x)` | `list[float]` | missing cells route by the learned NA direction; never panics on short rows |
+| `quantile(x, tau)` | `list[float]` | conditional τ-quantile per row from the leaf t-digests |
 
 ## Reading the model
 
