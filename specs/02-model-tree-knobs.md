@@ -18,8 +18,10 @@ One batch of growth knobs — all default-off, all measured by a round before
 any default flips: `split_test="chow"` with `split_alpha` + `bonferroni`
 growth-time significance gating; explicit `leaf_cols`/`split_cols`;
 `honesty` sample splitting; surrogate splits for NA routing; the pruning
-family (`prune` extended with cp/ccp_alpha, c5, cost-matrix); the
-minsplit/minbucket/minprob trio; EFB-style pre-selection; and the purity
+family (`prune` extended with cp/ccp_alpha, c5, cost-matrix); a **leaf-cap**
+(`max_leaf_nodes`-style — the depth-free growth bound sklearn/CatBoost use;
+required for the defaults rebake); the minsplit/minbucket/minprob trio;
+EFB-style pre-selection; and the purity
 gate (`leaf_gate` = bic|cv with the DAR y-tail exception).
 
 ## User Stories
@@ -92,4 +94,4 @@ gate (`leaf_gate` = bic|cv with the DAR y-tail exception).
 ## Further Notes
 
 - The user's order is authoritative: chow gate → leaf/split cols → honesty →
-  surrogates → pruning → minsplit trio → EFB → purity gate.
+  surrogates → pruning → leaf-cap → minsplit trio → EFB → purity gate.
