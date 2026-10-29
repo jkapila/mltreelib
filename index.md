@@ -17,7 +17,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | --- | --- |
 | install it | [Installation](<https://jkapila.github.io/mltreelib/installation/index.md>) |
 | see it work in 30 seconds | [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>) |
-| solve a real problem | [Examples — Churn](<https://jkapila.github.io/mltreelib/examples/churn/index.md>) |
+| solve a real problem | [Examples — end-to-end walkthrough](<https://jkapila.github.io/mltreelib/examples/walkthrough/index.md>) |
 | wrangle data &amp; encodings | [Examples — Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>) |
 | know every knob | [Examples — Model building &amp; predictions](<https://jkapila.github.io/mltreelib/examples/model-building/index.md>) |
 | read the numbers | [Examples — Inspection](<https://jkapila.github.io/mltreelib/examples/inspection/index.md>) |
@@ -29,6 +29,6 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 >
 > **Try it right now**
 >
-> `uv run python examples/quickstart.py` fits a tree, prints it in rpart format and writes an SVG diagram. The churn example then does the same on 10,000 real bank customers.
+> `uv run python examples/quickstart.py` fits a tree, prints it in rpart format and writes an SVG diagram. The end-to-end walkthrough then does the same on 10,000 real bank customers.
 
 The research program, roadmap and contribution rules live in the repository (`README.md`, `AGENTS.md`).

@@ -6,17 +6,17 @@ Script: [`examples/model_building.py`](<https://github.com/jkapila/mltreelib/blo
 
 ```
 diamonds: 53940 rows x 26 cols (deeper trees below)
-baseline depth=8                       rmse=   577.0  r2=0.979  leaves=140
-deeper depth=12                        rmse=   598.6  r2=0.977  leaves=370
-coarser leaves min_rows=500            rmse=   555.6  r2=0.980  leaves=57
-leaf="mean"                            rmse=   884.5  r2=0.950  leaves=150
-leaf="linear", leaf_cols="path"        rmse=  1137.5  r2=0.918  leaves=127
-linear, l1=0 l2=0 (no ridge!)          rmse=798670.6  r2=-40499.654  leaves=21
-row weights (2x carat<1)               rmse=   884.5  r2=0.950  leaves=150
+baseline depth=8                       rmse=     577.0  r2=      0.979  leaves= 140
+deeper depth=12                        rmse=     598.6  r2=      0.977  leaves= 370
+coarser leaves min_rows=500            rmse=     555.6  r2=      0.980  leaves=  57
+leaf="mean"                            rmse=     884.5  r2=      0.950  leaves= 150
+leaf="linear", leaf_cols="path"        rmse=    1137.5  r2=      0.918  leaves= 127
+linear, l1=0 l2=0 (no ridge!)          rmse=  798670.6  r2= -40499.654  leaves=  21
+row weights (2x carat<1)               rmse=     884.5  r2=      0.950  leaves= 150
 winnow kept 15/26 columns (dropped: [1, 7, 9, 10, 11, 12, 21, 22, 23, 24, 25])
-min_relevance=0.05 (winnowed fit)      rmse=   898.1  r2=0.949  leaves=134
-monotone +1 on carat                   rmse=   601.8  r2=0.977  leaves=139
-interaction_groups [[carat],[rest]]    rmse=   583.7  r2=0.978  leaves=138
+min_relevance=0.05 (winnowed fit)      rmse=     898.1  r2=      0.949  leaves= 134
+monotone +1 on carat                   rmse=     601.8  r2=      0.977  leaves= 139
+interaction_groups [[carat],[rest]]    rmse=     583.7  r2=      0.978  leaves= 138
 predictions with missing carat: [1175.4, -1371.3, 1042.0]
 ```
 

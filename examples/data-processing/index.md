@@ -57,6 +57,8 @@ realized variance share of each component:
 cat_0 true level effects (first 4): [1.219, 0.186, 0.252, 0.098]
 ```
 
+*rendered by `mltreelib.plots.plot_variance_shares` (the same figure the generator's `truth["variance"]` feeds).*
+
 ## Step 3 — time features and missing-data behavior
 
 A synthetic two-store panel: calendar parts, day lags, trended and windowed aggregations, and the additive decomposition — residuals sit at machine zero on this clean panel. The last block feeds an incomplete row deliberately: it is dropped from estimation with a `UserWarning`, and its output is missing.

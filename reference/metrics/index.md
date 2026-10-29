@@ -69,3 +69,53 @@ plots.plot_ks(y_test, scores)          # click the figure in these docs to zoom
 Time-series metrics (MAPE/SMAPE variants, MASE, pinball for quantiles, Tweedie/Poisson deviance with the GLM leaves) are parked with their feature work.
 
 Next: [Data](<https://jkapila.github.io/mltreelib/reference/data/index.md>) or [Model](<https://jkapila.github.io/mltreelib/reference/model/index.md>).
+
+## The `Metrics` class
+
+`Metrics()` — no constructor args; every method is a complete report. Missing pairs are dropped and counted in `n_missing`. Full docstrings: the [generated full listing](<https://jkapila.github.io/mltreelib/reference/api/index.md>).
+
+| family | methods |
+| --- | --- |
+| reports | `classification(y_true, y_pred, probabilities=None)`, `classification_scores(y_true, scores)`, `regression(y_true, y_pred)`, `classification_by_group(keys, ...)`, `regression_by_group(keys, y_true, y_pred)` |
+| curves | `roc_curve`, `pr_curve`, `gain_curve`, `lift_curve`, `decile_table`, `calibration` |
+| probability &amp; margin | `log_loss`, `brier_score`, `hinge_loss` |
+| scorecards | `ks_statistic`, `weighted_kappa(y_true, y_pred, rev, power)` |
+| multilabel | `multilabel_scores(y_true, y_pred)` |
+| distances | `pairwise_distances(a, b, metric, p=2)` |
+| stability | `stability_index(reference, current, n_bins=10)` |
+| model comparison | `double_lift(y_true, a, b, model_type)` |
+
+## A real example (churn)
+
+```
+from mltreelib import Metrics, load_dataset
+
+cols = load_dataset("churn")["columns"]
+y = [1 if str(v) == "Yes" else 0 for v in cols["CustomerChurned"]]
+print(f"churn: 5000 rows; event rate {sum(y)/len(y):.3f} ({sum(y)} churned)")
+scores = [float(v) for v in cols["total_day_charge"]]   # a (silly) risk score
+med = sorted(scores)[len(scores) // 2]
+pred = [1 if s >= med else 0 for s in scores]
+
+rep = Metrics().classification(y, pred,
+                               probabilities=[min(1.0, s / 80.0) for s in scores])
+print(f"classification: accuracy={rep['accuracy']:.3f} "
+      f"macro_f1={rep['macro_f1']:.3f} auc={rep['auc']:.3f} "
+      f"logloss={rep['logloss']:.3f} brier={rep['brier']:.3f}")
+mins = [float(v) for v in cols["total_day_minutes"]]
+fit = [s / 0.17 for s in scores]                        # charge = 0.17 * minutes
+rr = Metrics().regression(mins, fit)
+print(f"regression: n={rr['n']} rmse={rr['rmse']:.2f} mae={rr['mae']:.2f} "
+      f"r2={rr['r2']:.3f} mape={rr['mape']:.2f}")
+gr = Metrics().regression_by_group([str(v) for v in cols["state"]], mins, fit)
+print(f"regression_by_group: {len(gr)} groups (keyed by group)")
+```
+
+```
+churn: 5000 rows; event rate 0.141 (707 churned)
+classification: accuracy=0.531 macro_f1=0.462 auc=0.640 logloss=0.545 brier=0.176
+regression: n=5000 rmse=0.02 mae=0.01 r2=1.000 mape=0.01
+regression_by_group: 51 groups (keyed by group)
+```
+
+The classification report carries `accuracy`, `macro_precision/recall/f1`, `per_class`, `confusion` and (with `probabilities`) `auc`, `logloss`, `brier`. The regression report carries `n`, `n_missing`, `mean_error`, `bias`, `mae`, `mad`, `mape`, `rmse`, `r2`, `max_error`, `explained_variance` and the `deciles` error profile; the grouped version returns one such report **per group** (dict keyed by group). Full output shapes on real data: the [Metrics &amp; plots showcase](<https://jkapila.github.io/mltreelib/examples/metrics-plots/index.md>).

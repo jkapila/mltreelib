@@ -65,6 +65,8 @@ log_loss 3.204  brier 0.177  hinge 0.506
 
 All ten charts from `mltreelib.plots`, one figure (click to zoom):
 
+Rendered charts (all thirteen, zoomable): [Visualization](<https://jkapila.github.io/mltreelib/reference/plots/index.md>).
+
 | chart | what it answers |
 | --- | --- |
 | `plot_roc` / `plot_pr` | discrimination; PR is the honest view on imbalance |
@@ -75,4 +77,4 @@ All ten charts from `mltreelib.plots`, one figure (click to zoom):
 | `plot_double_lift` | head-to-head model comparison along one ranking (CAS) |
 | `plot_psi` | score/feature stability between two periods |
 
-Each chart takes `ax=` and returns Axes, so panels compose like above. The library itself never imports matplotlib — this layer is opt-in via the `[plotting]` extra. Every number on this page comes from the script; the API shapes are in [Metrics](<https://jkapila.github.io/mltreelib/reference/metrics/index.md>).
+Each chart takes `ax=` and returns Axes, so any panel composes. The library itself never imports matplotlib — this layer is opt-in via the `[plotting]` extra. Every number on this page comes from the script; the API shapes are in [Metrics](<https://jkapila.github.io/mltreelib/reference/metrics/index.md>).

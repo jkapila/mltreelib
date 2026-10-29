@@ -59,4 +59,4 @@ Three things to notice:
 - **`to_dot()` describes the tree, graphviz draws it** — one box per node with the split condition, `n`, and fitted value; edges labeled with thresholds. Layout belongs to graphviz (via pygraphviz); we don't reinvent it.
 - **Defaults are tuned** — `leaf="linear"` with a small ridge (`l2`) penalty at shallow depth is the configuration that won our [benchmark bake-off](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>).
 
-Next: the [Churn example](<https://jkapila.github.io/mltreelib/examples/churn/index.md>) for a real end-to-end problem, or the [API reference](<https://jkapila.github.io/mltreelib/reference/model/index.md>) for every parameter.
+Next: the [end-to-end walkthrough](<https://jkapila.github.io/mltreelib/examples/walkthrough/index.md>) for a real end-to-end problem, or the [API reference](<https://jkapila.github.io/mltreelib/reference/model/index.md>) for every parameter.
