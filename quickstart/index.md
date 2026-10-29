@@ -1,67 +1,61 @@
 # Quickstart
 
-## Data layer
-
-Ingest any data with the semantics that matter: category inference, explicit NA policies, digit rounding, optional intercept.
+Fit a tree, read it, see it. The full script lives at [`examples/quickstart.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/quickstart.py>).
 
 ```
-from mltreelib import DatasetBuilder
+from mltreelib import ModelTree, Metrics
 
-b = DatasetBuilder(n_category=0.05, na_policy="impute", digits=2, add_intercept=True)
-b.add_numeric("price", [1.234, None, 2.356])
-b.add_categorical("region", ["north", "south", None])
-ds = b.build()
-ds["n_rows"], ds["dtypes"], ds["na_counts"]
+# Toy data: a step function plus a linear trend (deterministic).
+x = [[float(i % 8)] for i in range(80)]
+y = [2.0 * (i % 8) + (5.0 if i % 8 > 4 else 0.0) + ((i * 13) % 7) * 0.05 for i in range(80)]
+
+# Defaults are already tuned (regularized linear leaves, shallow depth).
+model = ModelTree()
+model.fit(x, y)
+
+pred = model.predict([[float(v)] for v in range(8)])
+print("predictions:", [round(p, 2) for p in pred])
+print("metrics:", {k: round(v, 3) for k, v in
+                   Metrics().regression(y_test, pred).items() if k in ("rmse", "mae", "r2")})
+
+print(model)                                  # rpart-style tree text
+open("quickstart_tree.svg", "w").write(model.to_svg())
 ```
 
-Missing values are `None` **or NaN** — both are missing, counted in `na_counts`, and filling is never implicit (`allow` / `drop` / `impute`).
-
-## Summaries and encodings
+Output:
 
 ```
-from mltreelib import summarize, IndexMapper
+predictions: [0.16, 2.18, 4.17, 6.15, 8.13, 15.12, 17.14, 19.16]
+metrics: {'mae': 0.151, 'rmse': 0.152, 'r2': 0.999}
 
-summarize([1.0, None, 3.0])   # count, n_missing, mean, std, min, q1, median, q3, max
+n= 80
 
-m = IndexMapper()
-m.fit("region", ["north", "south", "north"])
-m.transform("region", ["north", "unseen"])   # [0, None] — unseen levels are missing
+node), split, n, deviance, yval
+      * denotes terminal node
+
+ 1) root 80 3639.19987 9.02625
+   2) x0< 4.5 50 397.26680 4.15800
+     4) x0< 1.5 20 20.62200 1.17000
+       8) x0< 0.5 10 0.12400 0.16000 *
+       9) x0>=0.5 10 0.09600 2.18000 *
+     5) x0>=1.5 30 79.04000 6.15000
+      10) x0< 2.5 10 0.08025 4.16500 *
+      11) x0>=2.5 20 19.85637 7.14250
+        22) x0< 3.5 10 0.07500 6.15000 *
+        23) x0>=3.5 10 0.08025 8.13500 *
+   3) x0>=4.5 30 81.95200 17.14000
+     6) x0< 5.5 10 0.09600 15.12000 *
+     7) x0>=5.5 20 20.65000 18.15000
+      14) x0< 6.5 10 0.12400 17.14000 *
+      15) x0>=6.5 10 0.12400 19.16000 *
+
+wrote quickstart_tree.svg
 ```
 
-## Feature transforms
+Three things to notice:
 
-```
-from mltreelib import GroupedScaler, VariableScaler, grouped_transform
+- **The tree prints like rpart** — same numbering, indentation, deviance and yval columns, `*` on leaves. If you know `rpart`, you already know how to read this.
+- **`to_svg()` writes a diagram** — one box per node with the split condition, `n`, and fitted value; edges labeled with thresholds. Open the `.svg` anywhere.
+- **Defaults are tuned** — `leaf="linear"` with small ridge/lasso penalties at shallow depth is the configuration that won our [benchmark bake-off](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>).
 
-grouped_transform(keys, values, kind="mean")        # per-group summary per row
-g = GroupedScaler(); g.fit(keys, values, "zscore"); g.transform(keys, values)
-v = VariableScaler(); v.fit({"price": prices}, "min-max")   # per-column, exact inverse
-```
-
-18 distributional strategies (`zscore`, `min-max`, `median-iqr`, `min-qd`, … and the ratio family), all with algebraic `inverse_transform`.
-
-## Time features
-
-```
-from mltreelib import calendar_features, lag_by_days, trended_transform, windowed_transform, decomposed_transform
-
-calendar_features(["2026-10-28"])                  # weekday, season, ISO week, ...
-lag_by_days(keys, dates, values, 7)                # day lags within each key
-trended_transform(keys, dates, values, granularity="year_month")
-windowed_transform(keys, dates, values, window_days=7, kind="sum")
-decomposed_transform(keys, dates, values, season_granularity="weekday", trend_window=7)
-```
-
-Decomposition follows the statsmodels `seasonal_decompose` (additive) convention: `detrended`, `deseasonalized`, `residual`. Time-series transforms drop incomplete rows and raise a `UserWarning` with the count.
-
-## Generator with ground truth
-
-```
-from mltreelib import generate
-
-g = generate(n_rows=10_000, cardinalities=[8, 64], hierarchy_levels=2,
-             group_effect_strength=0.6, seed=42)
-g["truth"]["variance"]   # realized variance share per component
-```
-
-Every learner can be scored on **structure recovery**, not just accuracy.
+Next: the [Churn example](<https://jkapila.github.io/mltreelib/examples/churn/index.md>) for a real end-to-end problem, or the [API reference](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>) for every parameter.

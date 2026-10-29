@@ -4,18 +4,33 @@
         <loc>https://jkapila.github.io/mltreelib/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/datasets/</loc>
+        <loc>https://jkapila.github.io/mltreelib/benchmarks/datasets/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/demo/</loc>
+        <loc>https://jkapila.github.io/mltreelib/benchmarks/elo/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/churn/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/model-build-viz/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/field-notes/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/installation/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/quickstart/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/data-model/</loc>
       </url>
 </urlset>

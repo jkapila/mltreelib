@@ -5,7 +5,11 @@
 ## Documentation
 
 - [Home](<https://jkapila.github.io/mltreelib/index.md>)
+- [Installation](<https://jkapila.github.io/mltreelib/installation/index.md>)
 - [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>)
-- [Demo walkthrough](<https://jkapila.github.io/mltreelib/demo/index.md>)
-- [Benchmark datasets](<https://jkapila.github.io/mltreelib/datasets/index.md>)
-- [API reference](<https://jkapila.github.io/mltreelib/reference/api/index.md>)
+- [Churn](<https://jkapila.github.io/mltreelib/examples/churn/index.md>)
+- [Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>)
+- [Model build &amp; Tree Visualization](<https://jkapila.github.io/mltreelib/examples/model-build-viz/index.md>)
+- [ELO](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)
+- [DataSets](<https://jkapila.github.io/mltreelib/benchmarks/datasets/index.md>)
+- [Data &amp; Model](<https://jkapila.github.io/mltreelib/reference/data-model/index.md>)
