@@ -134,12 +134,12 @@ def main():
     env.setdefault("R_LIBS_USER", str(Path.home() / "R" / "library"))
 
     for ds in datasets():
-        log.info(f"=== dataset: {ds} ===", flush=True)
+        log.info(f"=== dataset: {ds} ===")
         stage_dataset(ds)
         for name in models:
             if (ds, name) in done:
                 continue
-            log.info(f"{ds:<24}{name:<20} RUNNING", flush=True)
+            log.info(f"{ds:<24}{name:<20} RUNNING")
             if name in R_MODELS:
                 argv = ["Rscript", "--vanilla", "examples/elo_r_worker.R", ds, name]
             else:
@@ -162,14 +162,13 @@ def main():
                 rmse, mae, fit = res
                 elo_score_python.append_row(ds, name, rmse, mae, fit)
                 record_attempt(ds, name, "ok", dt)
-                log.info(f"{ds:<24}{name:<20} rmse={rmse:9.3f} mae={mae:9.3f} fit={fit:6.2f}",
-                      flush=True)
+                log.info(f"{ds:<24}{name:<20} rmse={rmse:9.3f} mae={mae:9.3f} fit={fit:6.2f}")
             else:
                 record_attempt(ds, name, "error", dt)
                 tail = [l for l in out.splitlines() if l.strip()][-1:]
                 log.info(f"{ds:<24}{name:<20} FAILED (exit {code}"
-                      f"{': ' + tail[0][:60] if tail else ''})", flush=True)
-        log.info(f"--- dataset complete: {ds} ---", flush=True)
+                      f"{': ' + tail[0][:60] if tail else ''})")
+        log.info(f"--- dataset complete: {ds} ---")
     print("=== orchestrator done ->", OUT, "===", flush=True)
 
 
