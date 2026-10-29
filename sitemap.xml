@@ -19,6 +19,9 @@
         <loc>https://jkapila.github.io/mltreelib/benchmarks/elo/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_board/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/churn/</loc>
       </url>
       <url>
@@ -26,6 +29,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/inspection/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
