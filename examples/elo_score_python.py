@@ -204,10 +204,7 @@ def make_models():
         return run
 
     def trustfree():
-        try:
-            from trust_free import TRUST
-        except ImportError:  # import-name variant across releases
-            from trustfree import TRUST
+        from trust import TRUST  # pip name trust-free, import name trust
 
         def run(xtr, ytr, xte):
             m = TRUST()

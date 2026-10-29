@@ -60,6 +60,21 @@ pred <- switch(model,
     fit <- earth::earth(as.formula(paste(ycol, "~ .")), data = train)
     predict(fit, test)
   },
+  mboost = {
+    fit <- mboost::blackboost(as.formula(paste(ycol, "~ .")), data = train)
+    predict(fit, test)
+  },
+  ranger = {
+    fit <- ranger::ranger(as.formula(paste(ycol, "~ .")), data = train)
+    predict(fit, test)$predictions
+  },
+  bart = {
+    fit <- dbarts::bart(x.train = as.matrix(train[, xs, drop = FALSE]),
+                        y.train = train[[ycol]],
+                        x.test = as.matrix(test[, xs, drop = FALSE]),
+                        verbose = FALSE)
+    colMeans(fit$yhat.test)
+  },
   stop("unknown model: ", model)
 )
 dt <- proc.time()[["elapsed"]] - t0
