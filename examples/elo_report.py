@@ -49,15 +49,21 @@ def main():
     fits = {}
     for r in rows:
         fits.setdefault(r["model"], []).append(float(r["fit_s"]))
-    line = "+" + "-" * 8 + "+" + "-" * 18 + "+" + "-" * 24 + "+" + "-" * 14 + "+"
+    w = (11, 21, 26, 13)
+
+    def row(*cells):
+        return "|" + "|".join(c.center(x) for c, x in zip(cells, w)) + "|"
+
+    line = "+" + "+".join("-" * x for x in w) + "+"
     print(line)
-    print(f"|{'ELO':>7} |{'FIT mean±sd':<17} |{'MODEL':<23} |{'DATA':<13} |")
+    print(row("ELO", "FIT TIME (±sd)", "MODEL", "DATA"))
     print(line)
     for m, r in sorted(ratings.items(), key=lambda kv: -kv[1]):
         n = sum(1 for (d, mm) in by if mm == m)
         xs = fits.get(m, [0.0])
         sd = statistics.stdev(xs) if len(xs) > 1 else 0.0
-        print(f"|{r:7.1f} |{f'{statistics.mean(xs):.2f}±{sd:.2f}s':<17} |{m:<23} |{f'{n}/{total}':<13} |")
+        print(row(f"{r:.1f}", f"{statistics.mean(xs):>6.2f} s (±{sd:.2f})", m,
+                  f"{n}/{total}"))
     print(line)
     print("\nTabArena anchor (different protocol - reference only):")
     print("  1955.0  Kumo-Tabular (best overall)")
