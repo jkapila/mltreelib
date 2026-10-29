@@ -70,7 +70,7 @@ evaluation.
 
 ## Class reference
 
-Full docstrings and every method: the [generated full listing](api.md).
+Full docstrings and every method: the [full generated API](api/).
 
 **`DatasetBuilder(n_category=None, na_policy='allow', digits=None,
 add_intercept=False)`** — ingest any raw columns into the typed dataset.

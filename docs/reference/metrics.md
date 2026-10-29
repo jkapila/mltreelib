@@ -109,7 +109,7 @@ Next: [Data](data.md) or [Model](model.md).
 
 `Metrics()` — no constructor args; every method is a complete report.
 Missing pairs are dropped and counted in `n_missing`. Full docstrings:
-the [generated full listing](api.md).
+the [full generated API](api/).
 
 | family | methods |
 |---|---|

@@ -51,9 +51,15 @@ nav:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
   - API reference:
-      - Data: reference/data.md
-      - Model: reference/model.md
-      - Metrics: reference/metrics.md
+      - Overview: reference/api/index.md
+      - Data: reference/api/data.md
+      - ModelTree: reference/api/model-tree.md
+      - Metrics: reference/api/metrics.md
+      - Encoders & scalers: reference/api/encoders.md
+      - Feature functions: reference/api/features.md
+      - Data guide: reference/data.md
+      - Model guide: reference/model.md
+      - Metrics guide: reference/metrics.md
       - Evaluation reports: reference/reports.md
       - Visualization: reference/plots.md
 plugins:
@@ -80,3 +86,9 @@ plugins:
           - reference/metrics.md
           - reference/reports.md
           - reference/plots.md
+          - reference/api/index.md
+          - reference/api/data.md
+          - reference/api/model-tree.md
+          - reference/api/metrics.md
+          - reference/api/encoders.md
+          - reference/api/features.md

@@ -38,4 +38,4 @@ Real values for every field on real data: the
 [Metrics & plots showcase](../examples/metrics-plots.md) and the
 [Metrics page](metrics.md) example.
 
-[Full generated listing](api.md) · next: [Visualization](plots.md)
+[Full generated listing](api/) · next: [Visualization](plots.md)
