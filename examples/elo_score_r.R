@@ -78,11 +78,6 @@ fit_predict <- function(model, train, test, ycol, xs) {
                           y.train = train[[ycol]], verbose = FALSE)
       colMeans(predict(fit, test[, xs, drop = FALSE]))
     },
-    bartMachine = {
-      fit <- bartMachine::bartMachine(X = train[, xs, drop = FALSE],
-                                      y = train[[ycol]], verbose = FALSE)
-      predict(fit, test[, xs, drop = FALSE])
-    },
     fru = {
       fit <- fru::fru(train[, xs, drop = FALSE], train[[ycol]])
       predict(fit, test[, xs, drop = FALSE])
