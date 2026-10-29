@@ -14,6 +14,20 @@ import itertools
 import statistics
 from pathlib import Path
 
+import logging
+
+# Standard run logging: file + console (the AGENTS.md logging pattern).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.FileHandler("benchmarks/elo_run.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger("elo.report")
+
 OUT = Path("benchmarks/elo_scores.csv")
 DATA_DIR = Path("benchmarks/elo_data")
 # Datasets are discovered from the prepared files - add data without
@@ -28,11 +42,11 @@ def main():
 
     for ds in DATASETS:
         here = {m: v for (d, m), v in by.items() if d == ds}
-        print(f"\n== {ds} ==")
-        print(f"{'model':<24}{'RMSE':>9}{'MAE':>9}{'fit s':>8}")
-        print("-" * 52)
+        log.info(f"\n== {ds} ==")
+        log.info(f"{'model':<24}{'RMSE':>9}{'MAE':>9}{'fit s':>8}")
+        log.info("-" * 52)
         for m, (rmse, mae, fit) in sorted(here.items(), key=lambda kv: kv[1][0]):
-            print(f"{m:<24}{rmse:>9.3f}{mae:>9.3f}{fit:>8.2f}")
+            log.info(f"{m:<24}{rmse:>9.3f}{mae:>9.3f}{fit:>8.2f}")
 
     ratings = {m: 1000.0 for (_, m) in by}
     k = 32.0
@@ -44,7 +58,7 @@ def main():
             ratings[a] += k * (sa - ea)
             ratings[b] += k * ((1.0 - sa) - (1.0 - ea))
 
-    print("\n== Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==")
+    log.info("\n== Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==")
     total = len({d for (d, _) in by})
     fits = {}
     for r in rows:
@@ -55,19 +69,19 @@ def main():
         return "|" + "|".join(c.center(x) for c, x in zip(cells, w)) + "|"
 
     line = "+" + "+".join("-" * x for x in w) + "+"
-    print(line)
-    print(row("ELO", "FIT TIME (±sd)", "MODEL", "DATA"))
-    print(line)
+    log.info(line)
+    log.info(row("ELO", "FIT TIME (±sd)", "MODEL", "DATA"))
+    log.info(line)
     for m, r in sorted(ratings.items(), key=lambda kv: -kv[1]):
         n = sum(1 for (d, mm) in by if mm == m)
         xs = fits.get(m, [0.0])
         sd = statistics.stdev(xs) if len(xs) > 1 else 0.0
-        print(row(f"{r:.1f}", f"{statistics.mean(xs):>6.2f} s (±{sd:.2f})", m,
-                  f"{n}/{total}"))
-    print(line)
-    print("\nTabArena anchor (different protocol - reference only):")
-    print("  1955.0  Kumo-Tabular (best overall)")
-    print("  1411.0  LightGBM tuned+ens (best tree-based)")
+        log.info(row(f"{r:.1f}", f"{statistics.mean(xs):>6.2f} s (±{sd:.2f})", m,
+                     f"{n}/{total}"))
+    log.info(line)
+    log.info("\nTabArena anchor (different protocol - reference only):")
+    log.info("  1955.0  Kumo-Tabular (best overall)")
+    log.info("  1411.0  LightGBM tuned+ens (best tree-based)")
 
 
 if __name__ == "__main__":

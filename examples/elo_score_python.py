@@ -13,6 +13,20 @@ import math
 import time
 from pathlib import Path
 
+import logging
+
+# Standard run logging: file + console (the AGENTS.md logging pattern).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.FileHandler("benchmarks/elo_run.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger("elo.scorer.py")
+
 from mltreelib import ModelTree
 
 DATA_DIR = Path("benchmarks/elo_data")
@@ -217,7 +231,7 @@ def main():
         for name, fn in models.items():
             if (ds, name) in done:
                 continue
-            print(f"{ds:<9} {name:<16} RUNNING", flush=True)
+            log.info(f"{ds:<9} {name:<16} RUNNING")
             try:
                 pred, fit = fn(xtr, ytr, xte)
                 pairs = [(float(p), t) for p, t in zip(pred, yte) if p == p]
@@ -225,11 +239,11 @@ def main():
                     raise RuntimeError("no finite predictions")
                 rmse, mae = scores([p for p, _ in pairs], [t for _, t in pairs])
                 append_row(ds, name, rmse, mae, fit)
-                print(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}", flush=True)
+                log.info(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
             except Exception as exc:
                 msg = f"{type(exc).__name__}: {exc}"
-                print(f"{ds:<9} {name:<16} FAILED ({msg[:70]})", flush=True)
-    print("Python scorer done ->", OUT, flush=True)
+                log.info(f"{ds:<9} {name:<16} FAILED ({msg[:70]})")
+    log.info("Python scorer done -> %s", OUT)
 
 
 if __name__ == "__main__":

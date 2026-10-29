@@ -13,6 +13,20 @@ import math
 import time
 from pathlib import Path
 
+import logging
+
+# Standard run logging: file + console (the AGENTS.md logging pattern).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.FileHandler("benchmarks/elo_run.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger("elo.scorer.rust")
+
 DATA_DIR = Path("benchmarks/elo_data")
 OUT = Path("benchmarks/elo_scores.csv")
 # Datasets are discovered from the prepared files - add data without
@@ -129,16 +143,16 @@ def main():
         for name, fn in models.items():
             if (ds, name) in done:
                 continue
-            print(f"{ds:<9} {name:<16} RUNNING", flush=True)
+            log.info(f"{ds:<9} {name:<16} RUNNING")
             try:
                 pred, fit = fn(xtr, ytr, xte)
                 rmse, mae = scores([float(p) for p in pred], yte)
                 append_row(ds, name, rmse, mae, fit)
-                print(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}", flush=True)
+                log.info(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
             except Exception as exc:
                 msg = f"{type(exc).__name__}: {exc}"
-                print(f"{ds:<9} {name:<16} FAILED ({msg[:70]})", flush=True)
-    print("Rust scorer done ->", OUT, flush=True)
+                log.info(f"{ds:<9} {name:<16} FAILED ({msg[:70]})")
+    log.info("Rust scorer done -> %s", OUT)
 
 
 if __name__ == "__main__":
