@@ -34,6 +34,7 @@ from mltreelib._core import (
     summarize,
     trended_transform,
     windowed_transform,
+    winnow,
 )
 from mltreelib.datasets import list_datasets, load_dataset
 
@@ -69,5 +70,6 @@ __all__ = [
     "summarize",
     "trended_transform",
     "windowed_transform",
+    "winnow",
 ]
 __version__ = "0.1.0"

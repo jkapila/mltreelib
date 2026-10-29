@@ -40,7 +40,9 @@ nav:
   - Examples:
       - Churn: examples/churn.md
       - Data Processing: examples/data-processing.md
-      - Model build & Tree Visualization: examples/model-build-viz.md
+      - Model building & predictions: examples/model-building.md
+      - Inspection: examples/inspection.md
+      - Visualization: examples/visualization.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -59,7 +61,9 @@ plugins:
           - quickstart.md
           - examples/churn.md
           - examples/data-processing.md
-          - examples/model-build-viz.md
+          - examples/model-building.md
+          - examples/inspection.md
+          - examples/visualization.md
           - benchmarks/elo.md
           - benchmarks/datasets.md
           - reference/data-model.md

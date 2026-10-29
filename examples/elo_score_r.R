@@ -9,6 +9,9 @@ out <- file.path("benchmarks", "elo_scores.csv")
 # touching the scorers.
 datasets <- sort(sub("_train.csv$", "",
                      list.files(data_dir, pattern = "_train.csv$")))
+if (nzchar(Sys.getenv("ELO_DATASETS"))) {  # groups-of-5 runs: score a subset
+  datasets <- datasets[datasets %in% strsplit(Sys.getenv("ELO_DATASETS"), ",")[[1]]]
+}
 if (!file.exists(out)) {
   writeLines("dataset,model,rmse,mae,fit_s", out)
 }
@@ -24,8 +27,8 @@ fit_predict <- function(model, train, test, ycol, xs) {
       predict(fit, test[, xs, drop = FALSE])
     },
     lmtree = {
-      f <- as.formula(paste(ycol, "~", paste(xs, collapse = " + "), "|",
-                            paste(xs, collapse = " + ")))
+      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+                            paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::lmtree(f, data = train)
       predict(fit, test)
     },
@@ -42,8 +45,8 @@ fit_predict <- function(model, train, test, ycol, xs) {
       predict(fit, test)
     },
     glmtree = {
-      f <- as.formula(paste(ycol, "~", paste(xs, collapse = " + "), "|",
-                            paste(xs, collapse = " + ")))
+      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+                            paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::glmtree(f, data = train)
       predict(fit, test, type = "response")
     },

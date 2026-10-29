@@ -24,5 +24,12 @@ print("metrics:", {k: round(v, 3) for k, v in Metrics().regression(y_test, pred)
 print()  # rpart-style tree text
 print(model)
 
-open("quickstart_tree.svg", "w").write(model.to_svg())
-print("wrote quickstart_tree.svg")
+dot = model.to_dot()  # graphviz does layout; we only describe the graph
+try:
+    import pygraphviz as pgv
+
+    pgv.AGraph(string=dot).draw("quickstart_tree.svg", prog="dot")
+    print("wrote quickstart_tree.svg (rendered by graphviz)")
+except ImportError:
+    open("quickstart_tree.dot", "w").write(dot)
+    print("wrote quickstart_tree.dot (render: dot -Tsvg quickstart_tree.dot -o tree.svg)")

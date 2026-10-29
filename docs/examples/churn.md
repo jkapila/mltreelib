@@ -73,8 +73,8 @@ small pocket (3+ products, high balance) that is almost certain to leave — the
 classic "too many products" signal.
 
 `print(model)` shows the full tree in rpart format;
-`model.to_svg()` writes `churn_tree.svg` for slides or docs.
+`model.to_dot()` + graphviz renders `churn_tree.svg` for slides or docs.
 
-Next: [Data Processing](data-processing.md) for the encoder catalog, or
-[Model build & Tree Visualization](model-build-viz.md) to read every part of
-the output.
+Next: [Data Processing](data-processing.md) for the encoder catalog,
+[Model building & predictions](model-building.md) for every knob the tree
+has, or [Inspection](inspection.md) to read every part of the output.

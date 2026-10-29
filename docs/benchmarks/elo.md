@@ -58,6 +58,25 @@ TabArena numbers are an **anchor, not a comparison** — their protocol
 `1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best
 tree-based)`.
 
+## Development rounds (ours vs the frozen field)
+
+The external field (R packages, LightGBM, CatBoost, CTBoost, forust,
+perpetual, MARS, sklearn, modeltrees) is scored **once** and frozen in
+`benchmarks/elo_baselines.csv` — *where we started*. Every development round
+re-scores only the ModelTree variants on the same prepared splits:
+
+```bash
+uv run python examples/elo_round.py                 # all datasets
+ELO_DATASETS=abalone,boston uv run python examples/elo_round.py   # a subset
+uv run python examples/elo_round.py --freeze        # deliberately re-anchor
+```
+
+Each round prints `started (frozen baseline) -> reached` Elo for every
+ModelTree flavor, with per-fit timings in the scores file — so progress across
+iterations is visible instead of silently overwritten. The full from-scratch
+rebuild (all models, groups of 5 datasets, shareable intermediate state after
+each group) is `bash examples/elo_run_groups.sh`.
+
 The field's raw scores (per dataset RMSE/MAE/fit time) live in
 [`benchmarks/elo_scores.csv`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/elo_scores.csv);
 the longer research log is in `docs/field-notes.md`.

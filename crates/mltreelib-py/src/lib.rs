@@ -1513,7 +1513,7 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.1, monotone = vec![], interaction_groups = vec![], min_relevance = None))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -1682,11 +1682,11 @@ impl PyModelTree {
         Ok(format!("{}", self.tree()?))
     }
 
-    /// Self-contained SVG diagram of the tree (boxes with node stats, edges
-    /// labeled with split thresholds). Write the returned string to a .svg
-    /// file or display it inline.
-    fn to_svg(&self) -> PyResult<String> {
-        Ok(self.tree()?.to_svg())
+    /// Graphviz DOT for the tree (render with pygraphviz/graphviz — layout is
+    /// graphviz's job):
+    /// `pgv.AGraph(string=model.to_dot()).draw("tree.svg", prog="dot")`.
+    fn to_dot(&self) -> PyResult<String> {
+        Ok(self.tree()?.to_dot())
     }
 
     /// Split columns along each root-to-leaf path. Task: regression.
@@ -1715,6 +1715,40 @@ impl PyModelTree {
     }
 }
 
+/// Winnowing: screen columns by univariate relevance against the target and
+/// keep the relevant ones (the cheap pre-split screening LightGBM's docs call
+/// feature pre-filtering / winnowing).
+///
+/// Args:
+///     x: rows of predictors; `None` entries are missing.
+///     y: targets (rows with `None` targets or zero weight are dropped).
+///     w: optional row weights.
+///     min_relevance: keep columns with relevance >= this (default 0.05).
+///
+/// Returns: `{"kept": [column indices], "relevance": [score per column]}`.
+#[pyfunction]
+#[pyo3(signature = (x, y, w = None, min_relevance = 0.05))]
+fn winnow(
+    py: Python<'_>,
+    x: Vec<Vec<Option<f64>>>,
+    y: Vec<Option<f64>>,
+    w: Option<Vec<f64>>,
+    min_relevance: f64,
+) -> PyResult<Py<PyDict>> {
+    let wv: Vec<f64> = w.unwrap_or_else(|| vec![1.0; y.len()]);
+    let keep: Vec<usize> = (0..y.len())
+        .filter(|&i| i < x.len() && y[i].is_some() && wv.get(i).copied().unwrap_or(0.0) > 0.0)
+        .collect();
+    let rows: Vec<Vec<Option<f64>>> = keep.iter().map(|&i| x[i].clone()).collect();
+    let yy: Vec<f64> = keep.iter().map(|&i| y[i].unwrap()).collect();
+    let ww: Vec<f64> = keep.iter().map(|&i| wv[i]).collect();
+    let (kept, rel) = mltreelib_core::preselect::winnow(&rows, &yy, &ww, min_relevance);
+    let d = PyDict::new(py);
+    d.set_item("kept", kept)?;
+    d.set_item("relevance", rel)?;
+    Ok(d.unbind())
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyBaseNEncoder>()?;
@@ -1738,6 +1772,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyVariableScaler>()?;
     m.add_class::<PyWoEEncoder>()?;
     m.add_function(wrap_pyfunction!(calendar_features, m)?)?;
+    m.add_function(wrap_pyfunction!(winnow, m)?)?;
     m.add_function(wrap_pyfunction!(decomposed_transform, m)?)?;
     m.add_function(wrap_pyfunction!(generate, m)?)?;
     m.add_function(wrap_pyfunction!(grouped_scale, m)?)?;

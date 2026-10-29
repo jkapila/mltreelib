@@ -68,6 +68,10 @@ uv run python scripts/gen_api_docs.py   # regenerate docs/reference/api.md after
   missing. Degenerate scalings produce missing, not inf.
 - **Deterministic**: generators/transformations take explicit seeds; no wall-clock
   or unordered iteration in outputs.
+- **One multi-core job at a time.** Never run several multi-core algorithms
+  concurrently (our rayon scans, LightGBM, CatBoost, …): oversubscribed cores
+  make every run slower. Serialize scorers and fits in drivers and background
+  jobs.
 - **Tests are behavior, not wiring.** Every new capability lands with Rust tests
   (core) and pytest coverage of the user-visible API. Run both suites before
   committing. No test may pin incidental implementation details.

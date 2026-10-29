@@ -37,6 +37,8 @@ TABARENA = {
     "ta_protein": ("physiochemical_protein", "ResidualSize"),
     "ta_qsar_fish": ("QSAR_fish_toxicity", "LC50"),
     "ta_wine": ("wine_quality", "median_wine_quality"),
+    "ta_qsar_tid11": ("QSAR-TID-11", "MEDIAN_PXC50"),
+    "ta_superconductivity": ("superconductivity", "critical_temp"),
 }
 
 # RuleQuest demo sets: target column index, dropped columns, categoricals

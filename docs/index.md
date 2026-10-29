@@ -24,7 +24,9 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
 | solve a real problem | [Examples — Churn](examples/churn.md) |
 | wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
-| read & draw the tree | [Examples — Model build & Tree Visualization](examples/model-build-viz.md) |
+| know every knob | [Examples — Model building & predictions](examples/model-building.md) |
+| read the numbers | [Examples — Inspection](examples/inspection.md) |
+| draw the tree | [Examples — Visualization](examples/visualization.md) |
 | see how it compares | [Benchmarks — ELO](benchmarks/elo.md) |
 | look up every parameter | [API reference — Data & Model](reference/data-model.md) |
 

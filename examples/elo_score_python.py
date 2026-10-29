@@ -20,6 +20,10 @@ OUT = Path("benchmarks/elo_scores.csv")
 # Datasets are discovered from the prepared files - add data without
 # touching the scorers.
 DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
+import os
+if os.environ.get("ELO_DATASETS"):  # groups-of-5 runs: score a subset
+    _only = set(os.environ["ELO_DATASETS"].split(","))
+    DATASETS = [d for d in DATASETS if d in _only]
 
 
 def read_xy(path):
@@ -70,6 +74,9 @@ def make_models():
         "ModelTree(all)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "linear", "all"),
         "ModelTree(path)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "linear", "path"),
         "ModelTree(mean)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "mean", "all"),
+        "ModelTree(winnow)": lambda xtr, ytr, xte: run_tree(
+            xtr, ytr, xte, "linear", "all", min_relevance=0.05
+        ),
     }
 
     def attempt(name, builder):
@@ -179,10 +186,12 @@ def make_models():
     return ms
 
 
-def run_tree(xtr, ytr, xte, leaf, cols):
+def run_tree(xtr, ytr, xte, leaf, cols, min_relevance=None):
     kw = {"leaf": leaf}
     if cols == "path":
         kw["leaf_cols"] = "path"
+    if min_relevance is not None:
+        kw["min_relevance"] = min_relevance
     t0 = time.perf_counter()
     m = ModelTree(**kw)  # unoptimized: plain defaults
     m.fit(xtr, [float(v) for v in ytr])

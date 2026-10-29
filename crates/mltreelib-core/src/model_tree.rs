@@ -94,8 +94,11 @@ impl Default for ModelTreeParams {
     fn default() -> Self {
         Self {
             // Defaults below are the bake-off winner on the arena datasets
-            // (examples/default_search.py): regularized linear leaves at
-            // shallow depth beat plain OLS and every baseline bar.
+            // (examples/default_search.py): linear leaves at shallow depth
+            // beat plain OLS and every baseline bar. Ridge (l2) keeps leaf
+            // coefficients sane in closed form; l1 is OFF by default -
+            // coordinate descent is slow in the split scan and the gain over
+            // ridge is marginal (see docs/benchmarks/elo.md).
             max_depth: 4,
             min_rows: 10,
             // Noise floor as much as a tuning knob: fitted-leaf gains below
@@ -104,7 +107,7 @@ impl Default for ModelTreeParams {
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
             l2: 0.1,
-            l1: 0.1,
+            l1: 0.0,
             monotone: Vec::new(),
             interaction_groups: Vec::new(),
             min_relevance: None,
@@ -330,81 +333,28 @@ impl ModelTree {
         self.nodes.iter().filter_map(|n| n.split).collect()
     }
 
-    /// Self-contained SVG diagram of the tree: one box per node (split
-    /// condition, `n`, `yval`, deviance), edges labeled with thresholds.
-    /// Leaves occupy equal horizontal slots; a parent centers over its
-    /// children. Static and dependency-free - open the string in any viewer.
-    pub fn to_svg(&self) -> String {
-        const BOX_W: f64 = 190.0;
-        const BOX_H: f64 = 62.0;
-        const GAP_X: f64 = 24.0;
-        const GAP_Y: f64 = 34.0;
-        const MARGIN: f64 = 12.0;
-
+    /// Graphviz DOT for the tree. We only describe the graph - layout and
+    /// rendering belong to graphviz (the wheel we do not reinvent):
+    /// `pgv.AGraph(string=model.to_dot()).draw("tree.svg", prog="dot")`.
+    pub fn to_dot(&self) -> String {
         fn esc(s: &str) -> String {
-            s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+            s.replace('\\', "\\\\").replace('"', "\\\"")
         }
-        fn layout(
-            t: &ModelTree,
-            i: usize,
-            depth: usize,
-            slot: &mut f64,
-            pos: &mut Vec<(f64, f64)>,
-        ) -> f64 {
-            let nd = &t.nodes[i];
-            match (nd.split, nd.left, nd.right) {
-                (Some(_), Some(l), Some(r)) => {
-                    let xl = layout(t, l, depth + 1, slot, pos);
-                    let xr = layout(t, r, depth + 1, slot, pos);
-                    let x = (xl + xr) / 2.0;
-                    pos[i] = (x, depth as f64);
-                    x
-                }
-                _ => {
-                    let x = *slot;
-                    *slot += 1.0;
-                    pos[i] = (x, depth as f64);
-                    x
-                }
-            }
-        }
-
-        let mut pos = vec![(0.0, 0.0); self.nodes.len()];
-        let mut slot = 0.0;
-        layout(self, self.root, 0, &mut slot, &mut pos);
-        let slots = slot.max(1.0);
-        let width = MARGIN * 2.0 + slots * BOX_W + (slots - 1.0) * GAP_X;
-        let depth = pos.iter().map(|p| p.1).fold(0.0f64, f64::max) + 1.0;
-        let height = MARGIN * 2.0 + depth * BOX_H + (depth - 1.0) * GAP_Y;
-
-        let cx = |p: (f64, f64)| (MARGIN + p.0 * (BOX_W + GAP_X) + BOX_W / 2.0, MARGIN + p.1 * (BOX_H + GAP_Y));
-        let mut s = format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.0} {height:.0}" font-family="monospace" font-size="12">
-<rect x="0" y="0" width="{width:.0}" height="{height:.0}" fill="white"/>
-"#
+        let mut s = String::from(
+            "digraph tree {\n  node [shape=box, style=\"rounded,filled\", fillcolor=\"#fafafa\", fontname=\"monospace\", fontsize=10];\n  edge [fontname=\"monospace\", fontsize=9, color=\"#888888\"];\n",
         );
-        // Edges first (boxes paint over the ends).
-        for (i, nd) in self.nodes.iter().enumerate() {
-            if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {
-                let (px, py) = cx(pos[i]);
-                for (child, side) in [(l, "<"), (r, ">=")] {
-                    let (cxx, cyy) = cx(pos[child]);
-                    let (ex, ey) = (cxx, cyy - BOX_H / 2.0);
-                    let (sx, sy) = (px, py + BOX_H / 2.0);
-                    let lbl = esc(&format!("{side} {}", fmt_cut(sp.threshold)));
-                    s += &format!(
-                        r##"<line x1="{sx:.1}" y1="{sy:.1}" x2="{ex:.1}" y2="{ey:.1}" stroke="#888" stroke-width="1.5"/>
-<text x="{mx:.1}" y="{my:.1}" fill="#444" text-anchor="middle">{lbl}</text>
-"##,
-                        mx = (sx + ex) / 2.0,
-                        my = (sy + ey) / 2.0 - 4.0,
-                    );
-                }
+        // Heap numbering (root 1, children 2i/2i+1) - same ids as the text
+        // print, so the two outputs line up.
+        let mut num = vec![0usize; self.nodes.len()];
+        fn number(t: &ModelTree, i: usize, k: usize, num: &mut Vec<usize>) {
+            num[i] = k;
+            if let (Some(_), Some(l), Some(r)) = (t.nodes[i].split, t.nodes[i].left, t.nodes[i].right) {
+                number(t, l, k * 2, num);
+                number(t, r, k * 2 + 1, num);
             }
         }
+        number(self, self.root, 1, &mut num);
         for (i, nd) in self.nodes.iter().enumerate() {
-            let (x, y) = cx(pos[i]);
-            let (bx, by) = (x - BOX_W / 2.0, y - BOX_H / 2.0);
             let (l1, l2) = match nd.split {
                 Some(sp) => (
                     format!("{} < {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
@@ -415,19 +365,22 @@ impl ModelTree {
                     format!("n={}  yval={:.3}", nd.stats.n, nd.stats.mean),
                 ),
             };
-            let stroke = if nd.split.is_some() { "#333" } else { "#2a7" };
+            let stroke = if nd.split.is_some() { "#333333" } else { "#22aa77" };
             s += &format!(
-                r##"<rect x="{bx:.1}" y="{by:.1}" width="{BOX_W:.0}" height="{BOX_H:.0}" rx="6" fill="#fafafa" stroke="{stroke}" stroke-width="1.5"/>
-<text x="{x:.1}" y="{ty1:.1}" text-anchor="middle" fill="#111">{}</text>
-<text x="{x:.1}" y="{ty2:.1}" text-anchor="middle" fill="#444">{}</text>
-"##,
+                "  n{} [label=\"{}\\n{}\", color=\"{stroke}\"];\n",
+                num[i],
                 esc(&l1),
-                esc(&l2),
-                ty1 = y - 8.0,
-                ty2 = y + 12.0,
+                esc(&l2)
             );
         }
-        s += "</svg>\n";
+        for (i, nd) in self.nodes.iter().enumerate() {
+            if let (Some(sp), Some(l), Some(r)) = (nd.split, nd.left, nd.right) {
+                let cut = fmt_cut(sp.threshold);
+                s += &format!("  n{} -> n{} [label=\"< {cut}\"];\n", num[i], num[l]);
+                s += &format!("  n{} -> n{} [label=\">= {cut}\"];\n", num[i], num[r]);
+            }
+        }
+        s += "}\n";
         s
     }
 

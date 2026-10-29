@@ -18,6 +18,10 @@ OUT = Path("benchmarks/elo_scores.csv")
 # Datasets are discovered from the prepared files - add data without
 # touching the scorers.
 DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
+import os
+if os.environ.get("ELO_DATASETS"):  # groups-of-5 runs: score a subset
+    _only = set(os.environ["ELO_DATASETS"].split(","))
+    DATASETS = [d for d in DATASETS if d in _only]
 
 
 def read_xy(path):

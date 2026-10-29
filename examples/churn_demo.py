@@ -52,5 +52,12 @@ print(f"confusion: {clf['confusion']}")
 print()
 print(model)  # the story: which customers churn
 
-open("churn_tree.svg", "w").write(model.to_svg())
-print("wrote churn_tree.svg")
+dot = model.to_dot()
+try:
+    import pygraphviz as pgv
+
+    pgv.AGraph(string=dot).draw("churn_tree.svg", prog="dot")
+    print("wrote churn_tree.svg (rendered by graphviz)")
+except ImportError:
+    open("churn_tree.dot", "w").write(dot)
+    print("wrote churn_tree.dot (render with graphviz `dot -Tsvg`)")

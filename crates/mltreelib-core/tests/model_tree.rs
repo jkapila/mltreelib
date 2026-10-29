@@ -382,6 +382,25 @@ fn printer_matches_rpart_layout() {
 }
 
 #[test]
+fn dot_export_names_nodes_and_edges() {
+    let x: Vec<Vec<Option<f64>>> = (0..4).map(|i| vec![Some(i as f64)]).collect();
+    let y: Vec<Option<f64>> = vec![Some(0.0), Some(0.0), Some(1.0), Some(1.0)];
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 1,
+        l1: 0.0,
+        l2: 0.0,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let dot = tree.to_dot();
+    assert!(dot.starts_with("digraph tree {"));
+    assert!(dot.contains("n1 -> n2 [label=\"< 1.5\"]"), "{dot}");
+    assert!(dot.contains("n1 -> n3 [label=\">= 1.5\"]"), "{dot}");
+    assert!(dot.contains("label=\"leaf\\nn=2  yval=0.000\""), "{dot}");
+}
+
+#[test]
 fn interaction_groups_respected() {
     // x2 matters as a STEP deep in the tree (x0 > 0.75 region) - a linear
     // leaf cannot absorb it, so the unconstrained tree must mix groups along

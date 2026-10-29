@@ -36,6 +36,33 @@ pub fn relevance(cols: &[Vec<Option<f64>>], y: &[f64], w: &[f64]) -> Vec<f64> {
     out
 }
 
+/// Winnowing: screen columns by univariate relevance against the target and
+/// keep those at or above `min_relevance` (the cheap pre-split screening
+/// LightGBM's docs call feature pre-filtering / winnowing). Row-major `x`.
+/// Returns (kept ORIGINAL column indices, relevance score per column).
+pub fn winnow(
+    x: &[Vec<Option<f64>>],
+    y: &[f64],
+    w: &[f64],
+    min_relevance: f64,
+) -> (Vec<usize>, Vec<f64>) {
+    let d = x.first().map(|r| r.len()).unwrap_or(0);
+    let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(x.len()); d];
+    for row in x {
+        for (j, v) in row.iter().enumerate() {
+            cols[j].push(*v);
+        }
+    }
+    let rel = relevance(&cols, y, w);
+    let kept = rel
+        .iter()
+        .enumerate()
+        .filter(|(_, &r)| r >= min_relevance)
+        .map(|(j, _)| j)
+        .collect();
+    (kept, rel)
+}
+
 /// Keep columns with relevance >= `min_relevance` (and non-constant). Returns
 /// original column indices, ascending.
 pub fn select_columns(
