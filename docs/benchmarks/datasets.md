@@ -29,4 +29,4 @@ straight back into the data layer.
 Included verbatim from `datasets/MANIFEST.md` (single source — the table below
 always matches what ships in `datasets/`):
 
-{% include-markdown "../datasets/MANIFEST.md" %}
+{% include-markdown "../../datasets/MANIFEST.md" %}

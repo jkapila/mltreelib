@@ -44,9 +44,10 @@ def main():
             ratings[b] += k * ((1.0 - sa) - (1.0 - ea))
 
     print("\n== Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==")
+    total = len({d for (d, _) in by})
     for m, r in sorted(ratings.items(), key=lambda kv: -kv[1]):
-        n = sum(1 for (_, mm) in by if mm == m)
-        print(f"{r:7.1f}  {m}  ({n}/5 datasets)")
+        n = sum(1 for (d, mm) in by if mm == m)
+        print(f"{r:7.1f}  {m}  ({n}/{total} datasets)")
     print("\nTabArena anchor (different protocol - reference only):")
     print("  1955.0  Kumo-Tabular (best overall)")
     print("  1411.0  LightGBM tuned+ens (best tree-based)")

@@ -1,4 +1,8 @@
-# Demo walkthrough
+# Data Processing
+
+The data & feature layer, one script at a time: ingest and missingness, the
+18 encoders, grouped/trended/windowed features, the generator's ground truth,
+and the drop-and-warn NA behavior.
 
 ```bash
 uv run python examples/data_layer_demo.py              # default: churn

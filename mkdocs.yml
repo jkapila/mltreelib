@@ -35,10 +35,17 @@ markdown_extensions:
       permalink: true
 nav:
   - Home: index.md
+  - Installation: installation.md
   - Quickstart: quickstart.md
-  - Demo walkthrough: demo.md
-  - Benchmark datasets: datasets.md
-  - API reference: reference/api.md
+  - Examples:
+      - Churn: examples/churn.md
+      - Data Processing: examples/data-processing.md
+      - Model build & Tree Visualization: examples/model-build-viz.md
+  - Benchmarks:
+      - ELO: benchmarks/elo.md
+      - DataSets: benchmarks/datasets.md
+  - API reference:
+      - Data & Model: reference/data-model.md
 plugins:
   - search
   - include-markdown
@@ -48,7 +55,11 @@ plugins:
       sections:
         Documentation:
           - index.md
+          - installation.md
           - quickstart.md
-          - demo.md
-          - datasets.md
-          - reference/api.md
+          - examples/churn.md
+          - examples/data-processing.md
+          - examples/model-build-viz.md
+          - benchmarks/elo.md
+          - benchmarks/datasets.md
+          - reference/data-model.md
