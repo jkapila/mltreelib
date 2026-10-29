@@ -274,7 +274,7 @@ impl ModelTree {
         if let Some(i) = sp.cat {
             return self.cat_parts[i].contains(&v);
         }
-        match self.params.split_precision {
+        match crate::split::grid_of(&self.params.dtypes, self.params.split_precision, sp.col) {
             Some(p) if p > 0.0 => {
                 let q = 1.0 / p;
                 (v * q).round() / q <= sp.threshold
@@ -495,7 +495,11 @@ impl ModelTree {
         if let Some(si) = sp.sur {
             for s in &self.sur_parts[si] {
                 if let Some(v) = row.get(s.col).and_then(|v| *v) {
-                    let left = match self.params.split_precision {
+                    let left = match crate::split::grid_of(
+                        &self.params.dtypes,
+                        self.params.split_precision,
+                        s.col,
+                    ) {
                         Some(p) if p > 0.0 => {
                             let q = 1.0 / p;
                             (v * q).round() / q <= s.threshold
@@ -736,7 +740,7 @@ impl<'a> Grower<'a> {
         if let Some(i) = sp.cat {
             return self.cat_parts[i].contains(&v);
         }
-        match self.params.split_precision {
+        match crate::split::grid_of(&self.params.dtypes, self.params.split_precision, sp.col) {
             Some(p) if p > 0.0 => {
                 let q = 1.0 / p;
                 (v * q).round() / q <= sp.threshold

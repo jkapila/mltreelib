@@ -18,15 +18,36 @@ const PAR_MIN_WORK: usize = 20_000;
 fn levels_total(levels: &[(f64, Vec<(f64, f64)>)]) -> usize {
     levels.iter().map(|(_, rows)| rows.len()).sum()
 }
-/// Per-column type for the split search. Values are `f64` level codes;
-/// a distinct value IS a level. Missing (`None`) is a first-class state,
-/// routed by `missing_left` — never imputed here.
+/// Per-column data handler — exactly three kinds, the split loop's whole
+/// world. Values are `f64` at the core boundary; for categorical columns a
+/// distinct value IS a level (identity, never order). Missing (`None`/NA)
+/// is a first-class state: a surrogate split routes it when present, else
+/// `missing_left` — or it can be carried as a level of its own.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ColType {
-    /// Threshold splits (on the `split_precision` grid when set).
-    Numeric,
-    /// Level-partition splits per `cat_order` / `cat_search`.
+    /// Integer handler: scan unique values small → big; the cut is exact
+    /// (`v < a`) — no precision grid.
+    Integer,
+    /// Float handler: scan unique values small → big on the
+    /// `split_precision` grid (the precision parameter).
+    Float,
+    /// Categorical/level handler: scan levels largest frequency → smallest
+    /// (`cat_order`); the cut is set membership (`v in {a,b,c}`).
     Categorical,
+}
+
+/// Precision grid of column `j`: the integer handler scans exact unique
+/// values (no grid); the float handler uses the `split_precision`
+/// parameter.
+pub(crate) fn grid_of(
+    dtypes: &[ColType],
+    split_precision: Option<f64>,
+    j: usize,
+) -> Option<f64> {
+    match dtypes.get(j) {
+        Some(ColType::Integer) => None,
+        _ => split_precision,
+    }
 }
 
 /// Order in which a categorical column's levels are visited when building
@@ -233,9 +254,15 @@ impl<'a> Grower<'a> {
     }
 
     /// Column type for the split search: `params.dtypes` when set, else
-    /// numeric.
+    /// float.
     fn col_type(&self, j: usize) -> ColType {
-        self.params.dtypes.get(j).copied().unwrap_or(ColType::Numeric)
+        self.params.dtypes.get(j).copied().unwrap_or(ColType::Float)
+    }
+
+    /// Precision grid for a column's scan: integer handlers scan exact
+    /// unique values (no grid); float handlers use `split_precision`.
+    fn grid_for(&self, j: usize) -> Option<f64> {
+        grid_of(&self.params.dtypes, self.params.split_precision, j)
     }
 
     /// Categorical scan — binary level partitions per `cat_order` /
@@ -442,7 +469,7 @@ impl<'a> Grower<'a> {
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
         // split_precision grid: values round to the grid before the scan;
         // candidates are grid boundaries (midpoints when unset).
-        if let Some(p) = self.params.split_precision {
+        if let Some(p) = self.grid_for(j) {
             if p > 0.0 {
                 let q = 1.0 / p;
                 for t in pairs.iter_mut() {
@@ -501,7 +528,7 @@ impl<'a> Grower<'a> {
             }
             // Grid mode: thresholds are grid values (compare rounds to the
             // same grid, see `goes_left`); exact mode keeps midpoints.
-            let threshold = match self.params.split_precision {
+            let threshold = match self.grid_for(j) {
                 Some(_) => v,
                 None => (v + pairs[k + 1].0) / 2.0,
             };
@@ -607,7 +634,7 @@ impl<'a> Grower<'a> {
         }
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
         // split_precision grid (see scan_column_mean).
-        if let Some(p) = self.params.split_precision {
+        if let Some(p) = self.grid_for(j) {
             if p > 0.0 {
                 let q = 1.0 / p;
                 for t in pairs.iter_mut() {
@@ -693,7 +720,7 @@ impl<'a> Grower<'a> {
             if gi + 1 >= groups.len() || left.n < m || right.n < m {
                 continue;
             }
-            let threshold = match self.params.split_precision {
+            let threshold = match self.grid_for(j) {
                 Some(_) => *v,
                 None => (v + groups[gi + 1].0) / 2.0,
             };

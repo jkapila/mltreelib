@@ -1474,3 +1474,41 @@ fn cp_alpha_rejects_negative() {
     .unwrap_err();
     assert!(err.contains("cp_alpha"), "{err}");
 }
+
+// ---- three data handlers (integer / float / levels) ----
+
+#[test]
+fn integer_handler_scans_exact_uniques() {
+    // Planted break between 3 and 4; with split_precision=2.0 the float
+    // handler would snap candidates to a 2.0 grid, but the integer handler
+    // scans exact unique values (midpoint cut at 3.5).
+    let x: Vec<Vec<Option<f64>>> = (0..100).map(|i| vec![Some((i % 10) as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..100)
+        .map(|i| Some(if i % 10 <= 3 { 0.0 } else { 5.0 } + 0.02 * noise(i)))
+        .collect();
+    let fit = |dt: ColType| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 1,
+                min_rows: 5,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                split_precision: Some(2.0),
+                dtypes: vec![dt],
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    };
+    let int = fit(ColType::Integer);
+    let thr = int.splits()[0].threshold;
+    assert!((thr - 3.5).abs() < 1e-9, "integer handler cuts exactly: {thr}");
+    let flt = fit(ColType::Float);
+    let thr = flt.splits()[0].threshold;
+    assert!(
+        (thr / 2.0 - (thr / 2.0).round()).abs() < 1e-9,
+        "float handler cuts on the precision grid: {thr}"
+    );
+}

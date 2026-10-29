@@ -1964,6 +1964,10 @@ impl CustomGain for PyGain {
 pub struct PyModelTree {
     params: ModelTreeParams,
     inner: Option<ModelTree>,
+    /// Per-column level vocabularies (categorical columns that carried
+    /// string cells at fit): identity codes, first-seen order. `None` for
+    /// columns whose values were already numeric level codes.
+    vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
 }
 
 impl PyModelTree {
@@ -1972,6 +1976,84 @@ impl PyModelTree {
             .as_ref()
             .ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))
     }
+}
+
+/// Coerce raw cells to the core's rows — the three data handlers at the
+/// door. Integer/float columns take int/float cells; categorical columns
+/// take level values (a distinct value IS a level; string cells carry an
+/// internal identity vocabulary, first-seen codes — identity, never
+/// order). `None`/NaN = missing.
+fn coerce_rows(
+    rows: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+    dtypes: &[ColType],
+    vocabs: &mut Vec<Option<std::collections::HashMap<String, f64>>>,
+    building: bool,
+) -> PyResult<Vec<Vec<Option<f64>>>> {
+    let n_cols = rows.first().map(|r| r.len()).unwrap_or(0);
+    if building {
+        vocabs.clear();
+        for j in 0..n_cols {
+            let cat = dtypes.get(j) == Some(&ColType::Categorical);
+            let has_str = cat
+                && rows.iter().any(|r| {
+                    r.get(j)
+                        .and_then(|c| c.as_ref())
+                        .map(|v| v.extract::<String>().is_ok())
+                        .unwrap_or(false)
+                });
+            vocabs.push(if has_str {
+                Some(std::collections::HashMap::new())
+            } else {
+                None
+            });
+        }
+    }
+    let mut out = Vec::with_capacity(rows.len());
+    for r in rows {
+        if r.len() != n_cols {
+            return Err(PyValueError::new_err("ragged x: rows differ in width"));
+        }
+        let mut orow = Vec::with_capacity(n_cols);
+        for (j, c) in r.into_iter().enumerate() {
+            let v = match c {
+                None => None,
+                Some(cell) => {
+                    if let Ok(f) = cell.extract::<f64>() {
+                        if f.is_nan() {
+                            None
+                        } else {
+                            Some(f)
+                        }
+                    } else if let Ok(s) = cell.extract::<String>() {
+                        match &mut vocabs[j] {
+                            Some(vocab) => {
+                                if building {
+                                    let next = vocab.len() as f64;
+                                    Some(*vocab.entry(s).or_insert(next))
+                                } else {
+                                    // unseen level at predict: a code no
+                                    // trained partition contains
+                                    Some(vocab.get(&s).copied().unwrap_or(f64::MAX))
+                                }
+                            }
+                            None => {
+                                return Err(PyValueError::new_err(format!(
+                                    "column {j}: string value in a numeric column"
+                                )))
+                            }
+                        }
+                    } else {
+                        return Err(PyValueError::new_err(format!(
+                            "column {j}: cells must be numbers, strings or None"
+                        )));
+                    }
+                }
+            };
+            orow.push(v);
+        }
+        out.push(orow);
+    }
+    Ok(out)
 }
 
 #[pymethods]
@@ -2216,6 +2298,7 @@ impl PyModelTree {
                 cp_alpha,
             },
             inner: None,
+            vocabs: Vec::new(),
         })
     }
 
@@ -2234,7 +2317,7 @@ impl PyModelTree {
     #[pyo3(signature = (x, y, w = None, dtypes = None))]
     fn fit(
         &mut self,
-        x: Vec<Vec<Option<f64>>>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
         y: Vec<Option<f64>>,
         w: Option<Vec<f64>>,
         dtypes: Option<Vec<String>>,
@@ -2243,14 +2326,16 @@ impl PyModelTree {
             self.params.dtypes = dts
                 .iter()
                 .map(|d| match d.as_str() {
-                    "numeric" => Ok(ColType::Numeric),
-                    "categorical" => Ok(ColType::Categorical),
+                    "numeric" | "float" => Ok(ColType::Float),
+                    "integer" | "int" => Ok(ColType::Integer),
+                    "categorical" | "cat" | "level" => Ok(ColType::Categorical),
                     other => Err(PyValueError::new_err(format!(
-                        "dtypes entries must be 'numeric' or 'categorical', got {other}"
+                        "dtypes entries must be 'integer', 'float' or 'categorical', got {other}"
                     ))),
                 })
                 .collect::<PyResult<Vec<_>>>()?;
         }
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, true)?;
         let tree = match w {
             Some(w) => ModelTree::fit_weighted(&x, &y, &w, self.params.clone()),
             None => ModelTree::fit(&x, &y, self.params.clone()),
@@ -2268,7 +2353,12 @@ impl PyModelTree {
     ///     tau: quantile level.
     ///
     /// Returns: one quantile per row (NaN when a leaf's digest was dropped).
-    fn quantile(&self, x: Vec<Vec<Option<f64>>>, tau: f64) -> PyResult<Vec<f64>> {
+    fn quantile(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        tau: f64,
+    ) -> PyResult<Vec<f64>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.quantile(&x, tau))
     }
 
@@ -2288,7 +2378,8 @@ impl PyModelTree {
     ///     x: rows of predictors; `None` entries are missing.
     ///
     /// Returns: one predicted value per row.
-    fn predict(&self, x: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+    fn predict(&mut self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.predict(&x))
     }
 
