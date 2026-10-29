@@ -633,7 +633,7 @@ fn min_rows_blocks_tiny_leaves() {
 
 use mltreelib_core::criteria::{CustomGain, GainFn};
 use mltreelib_core::prune::PruneCost;
-use mltreelib_core::split::{CatOrder, CatSearch, ColType};
+use mltreelib_core::split::{CatSearch, ColType};
 
 #[test]
 fn categorical_split_partitions_levels() {
@@ -1258,4 +1258,75 @@ fn split_cols_rejects_out_of_range() {
     )
     .unwrap_err();
     assert!(err.contains("split_cols"), "{err}");
+}
+
+// ---- honesty: structure/estimation sample split (knob 3 of #3) ----
+
+#[test]
+fn honesty_fits_leaves_on_estimation_rows() {
+    // 200 rows, honesty_fraction=0.2: 40 structure rows drive the growth
+    // (node counts), the 160 estimation rows fit the leaves (leaf stats).
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| vec![Some((i % 2) as f64), Some((i % 5) as f64 / 5.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(2.0 * x[i][1].unwrap() + 0.05 * noise(i)))
+        .collect();
+    let fit = |honesty: bool, frac: f64| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 2,
+                min_rows: 5,
+                l2: 0.0,
+                honesty,
+                honesty_fraction: frac,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    };
+    let honest = fit(true, 0.2);
+    let est_rows: usize = honest.leaves().iter().map(|(m, _)| m.stats.n).sum();
+    assert_eq!(est_rows, 160, "leaves must fit the estimation rows only");
+    // Node counts are structure-side (print/prune stay growth-consistent).
+    let node_rows: usize = honest.leaves().iter().map(|(_, n)| n).sum();
+    assert_eq!(node_rows, 40, "node counts are the structure rows");
+
+    // Determinism: same seed, same tree.
+    let again = fit(true, 0.2);
+    assert_eq!(honest.predict(&x), again.predict(&x));
+
+    // Default off: leaves fit all rows (the estimation set IS the node).
+    let plain = fit(false, 0.2);
+    let all_rows: usize = plain.leaves().iter().map(|(m, _)| m.stats.n).sum();
+    assert_eq!(all_rows, 200);
+}
+
+#[test]
+fn honesty_fraction_controls_the_split() {
+    let x: Vec<Vec<Option<f64>>> = (0..200).map(|i| vec![Some((i % 4) as f64)]).collect();
+    let y: Vec<Option<f64>> = (0..200).map(|i| Some((i % 4) as f64 + 0.05 * noise(i))).collect();
+    let est = |frac: f64| {
+        ModelTree::fit(
+            &x,
+            &y,
+            ModelTreeParams {
+                max_depth: 2,
+                min_rows: 10,
+                l2: 0.0,
+                honesty: true,
+                honesty_fraction: frac,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .leaves()
+        .iter()
+        .map(|(m, _)| m.stats.n)
+        .sum::<usize>()
+    };
+    assert_eq!(est(0.2), 160, "20% structure -> 80% estimation");
+    assert_eq!(est(0.8), 40, "80% structure -> 20% estimation");
 }

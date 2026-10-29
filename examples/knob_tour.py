@@ -125,3 +125,10 @@ for sc in [None, [1]]:
     m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
     cols = sorted({s['col'] for s in m.splits()})
     print(f"  split_cols={str(sc):<6} split_columns={cols} leaves={m.n_leaves()}")
+
+print("== honesty (structure/estimation split; grf-style fairness) ==")
+for hon, frac in [(False, 0.5), (True, 0.5), (True, 0.2)]:
+    m = ModelTree(honesty=hon, honesty_fraction=frac, max_depth=3, min_rows=5)
+    m.fit(reg_x, reg_y, dtypes=["numeric"])
+    p = [round(m.predict([[v]])[0], 3) for v in (0.1, 0.9)]
+    print(f"  honesty={hon!s:<5} frac={frac}: leaves={m.n_leaves()} preds={p}")

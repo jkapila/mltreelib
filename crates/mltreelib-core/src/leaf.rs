@@ -86,6 +86,16 @@ impl<'a> Grower<'a> {
         (rss, k)
     }
 
+    /// Rows a leaf model fits on: the honesty estimation rows when there
+    /// are enough (`min_rows`), else the node's structure rows.
+    pub(crate) fn leaf_rows<'b>(&self, rows: &'b [usize], est: &'b [usize]) -> &'b [usize] {
+        if self.params.honesty && est.len() >= self.params.min_rows {
+            est
+        } else {
+            rows
+        }
+    }
+
     /// Fit the leaf model for a node's rows.
     pub(crate) fn make_leaf(&self, rows: &[usize], path: &[usize]) -> LeafModel {
         let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();

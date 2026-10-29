@@ -114,6 +114,16 @@ pub struct ModelTreeParams {
     /// every pre-selected column. Restricts *splitting only* — leaves still
     /// see all active columns unless `leaf_cols` restricts them.
     pub split_cols: Option<Vec<usize>>,
+    /// Honesty (grf's sample-splitting fairness): a seeded partition of the
+    /// rows — structure rows drive the split search, gate and pruning;
+    /// estimation rows fit the leaf models. Leaf estimates are then honest
+    /// (independent of the structure that selected the split). Off by
+    /// default. A node whose estimation rows fall under `min_rows` falls
+    /// back to its structure rows (training log notes it).
+    pub honesty: bool,
+    /// Share of rows assigned to the *structure* sample under `honesty`
+    /// (grf's `honesty.fraction`).
+    pub honesty_fraction: f64,
 }
 
 impl Default for ModelTreeParams {
@@ -153,6 +163,8 @@ impl Default for ModelTreeParams {
             split_alpha: 0.05,
             bonferroni: false,
             split_cols: None,
+            honesty: false,
+            honesty_fraction: 0.5,
         }
     }
 }
@@ -365,7 +377,31 @@ impl ModelTree {
         };
         // Shrinking a monotone vector would break indices; keep it aligned.
 
-        let rows: Vec<usize> = (0..yv.len()).collect();
+        // Honesty (grf's sample-splitting fairness): a seeded partition of
+        // the rows — structure rows drive the split search, gate and
+        // pruning; estimation rows fit the leaf models. Default off (the
+        // estimation set then IS the structure set).
+        let all_rows: Vec<usize> = (0..yv.len()).collect();
+        let (rows, est_rows): (Vec<usize>, Vec<usize>) = if params.honesty {
+            let n = all_rows.len();
+            let k = (((n as f64) * params.honesty_fraction).round() as usize)
+                .clamp(1, n.max(2) - 1);
+            let mut idx = all_rows;
+            let mut rng = params.seed ^ 0xD1B5_4A32_D192_ED03;
+            for i in (1..n).rev() {
+                rng ^= rng << 13;
+                rng ^= rng >> 7;
+                rng ^= rng << 17;
+                let j = (rng as usize) % (i + 1);
+                idx.swap(i, j);
+            }
+            let (mut s, mut e) = (idx[..k].to_vec(), idx[k..].to_vec());
+            s.sort_unstable();
+            e.sort_unstable();
+            (s, e)
+        } else {
+            (all_rows.clone(), all_rows)
+        };
         let mut grower = Grower {
             cols: &cols,
             y: &yv,
@@ -386,7 +422,7 @@ impl ModelTree {
                 params.leaf, params.leaf_digest
             ));
         }
-        let root = grower.grow(&rows, 0, &mut Vec::new());
+        let root = grower.grow(&rows, &est_rows, 0, &mut Vec::new());
         // Destructure to release the borrows on params/active_cols before
         // moving them into the tree.
         let Grower {
@@ -644,7 +680,7 @@ impl<'a> Grower<'a> {
         self.nodes.len() - 1
     }
 
-    fn grow(&mut self, rows: &[usize], depth: usize, path: &mut Vec<usize>) -> usize {
+    fn grow(&mut self, rows: &[usize], est: &[usize], depth: usize, path: &mut Vec<usize>) -> usize {
         let mut prof = NodeProfile {
             depth,
             rows: rows.len(),
@@ -706,7 +742,7 @@ impl<'a> Grower<'a> {
         match best {
             None => {
                 let t = Instant::now();
-                let leaf = self.make_leaf(rows, path);
+                let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
                 prof.leaf_ns += t.elapsed().as_nanos() as u64;
                 self.profiles.push(prof);
                 let cost = self.leaf_cost(rows);
@@ -722,9 +758,10 @@ impl<'a> Grower<'a> {
                 self.nodes.len() - 1
             }
             Some((sp, lrows, rrows)) => {
+                let (est_l, est_r) = self.partition_rows(est, &sp);
                 path.push(sp.col);
-                let l = self.grow(&lrows, depth + 1, path);
-                let r = self.grow(&rrows, depth + 1, path);
+                let l = self.grow(&lrows, &est_l, depth + 1, path);
+                let r = self.grow(&rrows, &est_r, depth + 1, path);
                 path.pop();
                 if self.params.prune != PruneCost::None {
                     // Bottom-up cost pruning: keep the subtree only when it
@@ -734,7 +771,7 @@ impl<'a> Grower<'a> {
                     let sub_c = self.costs[l] + self.costs[r] + split_bit;
                     if leaf_c <= sub_c {
                         let t = Instant::now();
-                        let leaf = self.make_leaf(rows, path);
+                        let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
                         prof.leaf_ns += t.elapsed().as_nanos() as u64;
                         self.profiles.push(prof);
                         self.add(Node {

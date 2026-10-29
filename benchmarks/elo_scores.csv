@@ -404,3 +404,20 @@ ta_concrete,statsmodels OLS,10.4542,8.3126,0.001
 ta_concrete,statsmodels QuantReg,10.8668,8.1941,0.030
 ta_concrete,statsmodels RLM,10.5178,8.2227,0.010
 ta_diamonds,ChimeraBoost,0.0000,0.0000,21.528
+ta_diamonds,ExtraTrees,0.0000,0.0000,1.806
+ta_diamonds,KNN,0.2829,0.1403,0.500
+ta_diamonds,sklearn Linear,0.0000,0.0000,0.083
+ta_diamonds,sklearn RF,0.0000,0.0000,3.452
+ta_diamonds,statsmodels OLS,0.0000,0.0000,0.066
+ta_diamonds,statsmodels QuantReg,0.0000,0.0000,0.082
+ta_diamonds,statsmodels RLM,0.0000,0.0000,2.847
+ta_fiat500,ChimeraBoost,697.8756,534.3798,0.468
+ta_fiat500,EBM,692.0970,535.3020,14.991
+ta_fiat500,ExtraTrees,701.9323,497.9796,0.220
+ta_fiat500,KNN,829.6377,624.2221,0.025
+ta_fiat500,sklearn Linear,714.3353,567.6927,0.024
+ta_fiat500,sklearn RF,680.1304,503.2710,0.308
+ta_fiat500,statsmodels OLS,714.3353,567.6927,0.004
+ta_fiat500,statsmodels QuantReg,742.2566,590.2007,0.121
+ta_fiat500,statsmodels RLM,716.6681,566.2677,0.006
+ta_food_delivery,ChimeraBoost,7.2277,5.6888,10.616

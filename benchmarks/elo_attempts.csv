@@ -283,3 +283,33 @@ ta_diamonds,ranger,error,0.7
 ta_diamonds,bart,error,0.7
 ta_diamonds,fru,error,0.7
 ta_diamonds,ChimeraBoost,ok,25.1
+ta_diamonds,EBM,timeout,300.2
+ta_diamonds,ExtraTrees,ok,5.3
+ta_diamonds,KNN,ok,4.0
+ta_diamonds,XBART,error,3.4
+ta_diamonds,sklearn Linear,ok,3.6
+ta_diamonds,sklearn RF,ok,7.1
+ta_diamonds,statsmodels OLS,ok,3.6
+ta_diamonds,statsmodels QuantReg,ok,3.6
+ta_diamonds,statsmodels RLM,ok,6.6
+ta_diamonds,trust-free,error,3.2
+ta_fiat500,mboost,error,0.2
+ta_fiat500,ranger,error,0.2
+ta_fiat500,bart,error,0.2
+ta_fiat500,fru,error,0.2
+ta_fiat500,ChimeraBoost,ok,4.0
+ta_fiat500,EBM,ok,20.8
+ta_fiat500,ExtraTrees,ok,4.4
+ta_fiat500,KNN,ok,3.3
+ta_fiat500,XBART,error,3.2
+ta_fiat500,sklearn Linear,ok,3.3
+ta_fiat500,sklearn RF,ok,3.4
+ta_fiat500,statsmodels OLS,ok,3.2
+ta_fiat500,statsmodels QuantReg,ok,3.4
+ta_fiat500,statsmodels RLM,ok,3.2
+ta_fiat500,trust-free,error,3.0
+ta_food_delivery,mboost,error,0.9
+ta_food_delivery,ranger,error,0.9
+ta_food_delivery,bart,error,0.9
+ta_food_delivery,fru,error,0.9
+ta_food_delivery,ChimeraBoost,ok,14.4

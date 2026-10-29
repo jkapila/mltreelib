@@ -187,27 +187,28 @@ impl<'a> Grower<'a> {
                 s.cat = Some(self.cat_parts.len());
                 self.cat_parts.push(p);
             }
-            let (mut lv, mut rv) = (Vec::new(), Vec::new());
-            for &r in rows {
-                match self.cols[s.col][r] {
-                    Some(v) => {
-                        if self.goes_left(&s, v) {
-                            lv.push(r);
-                        } else {
-                            rv.push(r);
-                        }
-                    }
-                    None => {
-                        if s.missing_left {
-                            lv.push(r);
-                        } else {
-                            rv.push(r);
-                        }
-                    }
-                }
-            }
+            let (lv, rv) = self.partition_rows(rows, &s);
             (s, lv, rv)
         })
+    }
+
+    /// Route `rows` through a split (missing values follow
+    /// `missing_left`). Shared by the structure partition and the honesty
+    /// estimation partition.
+    pub(crate) fn partition_rows(&self, rows: &[usize], sp: &Split) -> (Vec<usize>, Vec<usize>) {
+        let (mut lv, mut rv) = (Vec::new(), Vec::new());
+        for &r in rows {
+            let go_left = match self.cols[sp.col][r] {
+                Some(v) => self.goes_left(sp, v),
+                None => sp.missing_left,
+            };
+            if go_left {
+                lv.push(r);
+            } else {
+                rv.push(r);
+            }
+        }
+        (lv, rv)
     }
 
     /// Dispatch one column's scan to the dtype/leaf-kind-specific loop.
