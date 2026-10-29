@@ -7,11 +7,12 @@
 #   - live progress log: tail -f benchmarks/elo_run.log
 #
 #   bash examples/elo_run_resume.sh                    # everything missing
+#   ELO_EXCLUDE=ModelTree bash examples/elo_run_resume.sh   # skip our flavors
 #   ELO_DATASETS=ta_healthcare,ta_protein bash examples/elo_run_resume.sh
-set -u
+set -euo pipefail
 export R_LIBS_USER=$HOME/R/library
 LOG=benchmarks/elo_run.log
-PY_DEPS=(--with pandas --with numpy --with lightgbm --with catboost --with ctboost --with scikit-learn --with trust-free --with chimeraboost --with interpret --with statsmodels --with "xbart @ git+https://github.com/jingyuhe/xbart#subdirectory=python" --with mars-earth --with forust --with perpetual)
+PY_DEPS=(--with pandas --with numpy --with lightgbm --with catboost --with ctboost --with scikit-learn --with trust-free --with chimeraboost --with interpret --with statsmodels --with mars-earth --with forust --with perpetual)
 RS_DEPS=(--with pandas --with numpy --with scikit-learn --with forust --with perpetual)
 
 datasets=${ELO_DATASETS:-$(ls benchmarks/elo_data/*_train.csv | sed 's|.*/||;s|_train.csv||' | sort | tr '\n' ',' | sed 's|,$||')}
