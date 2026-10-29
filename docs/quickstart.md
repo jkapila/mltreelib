@@ -21,7 +21,7 @@ print("metrics:", {k: round(v, 3) for k, v in
 
 print(model)                                  # rpart-style tree text
 dot = model.to_dot()                         # graphviz does the layout
-pgv.AGraph(string=dot).draw("quickstart_tree.svg", prog="dot")
+pgv.AGraph(string=dot).draw("docs/assets/quickstart_tree.svg", prog="dot")
 ```
 
 Output:
@@ -49,7 +49,7 @@ node), split, n, deviance, yval
       13) x0>=5 10 0.12400 17.14000 *
      7) x0>=6 10 0.12400 19.16000 *
 
-wrote quickstart_tree.svg (rendered by graphviz)
+wrote docs/assets/quickstart_tree.svg (rendered by graphviz)
 ```
 
 Three things to notice:
