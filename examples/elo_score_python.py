@@ -217,11 +217,26 @@ def make_models():
 
         return run
 
+    def xbart():
+        from xbart import XBART
+
+        def run(xtr, ytr, xte):
+            # The README's documented config; predictions are the
+            # posterior mean over post-burnin sweeps.
+            m = XBART(num_trees=100, num_sweeps=40, burnin=15)
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            pred = np.asarray(m.predict(np.asarray(xte, dtype=np.float64)))
+            return pred[:, 15:].mean(axis=1), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
     attempt("sklearn tree", skl_tree)
     attempt("sklearn RF", skl_rf)
+    attempt("XBART", xbart)
     attempt("trust-free", trustfree)
     attempt("modeltrees lmtree", mtrees)
     attempt("MARS (mars-earth)", mars)
