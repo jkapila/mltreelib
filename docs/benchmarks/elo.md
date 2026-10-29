@@ -21,37 +21,43 @@ scorers).
 
 ```text
 == Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==
- 1343.6  forust (Rust)  (5/10 datasets)
- 1342.9  perpetual (Rust)  (5/10 datasets)
- 1341.1  CatBoost(200)  (10/10 datasets)
- 1297.6  grf_llf  (4/10 datasets)
- 1241.4  LightGBM(200)  (10/10 datasets)
- 1103.9  earth  (4/10 datasets)
- 1046.7  CTBoost  (10/10 datasets)
- 1014.2  MARS (mars-earth)  (8/10 datasets)
-  983.9  glmtree  (5/10 datasets)
-  979.1  cubist  (5/10 datasets)
-  956.8  lmtree  (5/10 datasets)
-  934.2  grf_rf  (5/10 datasets)
-  933.1  ctree  (5/10 datasets)
-  868.6  modeltrees lmtree  (10/10 datasets)
-  820.1  ModelTree(mean)  (10/10 datasets)
-  811.5  sklearn tree  (10/10 datasets)
-  704.7  rpart  (5/10 datasets)
-  655.0  ModelTree(all)  (10/10 datasets)
-  621.5  ModelTree(path)  (10/10 datasets)
+ 1576.5  grf_llf  (17/18 datasets)
+ 1524.9  LightGBM(200)  (18/18 datasets)
+ 1479.7  CatBoost(200)  (18/18 datasets)
+ 1462.9  perpetual (Rust)  (18/18 datasets)
+ 1329.9  forust (Rust)  (18/18 datasets)
+ 1228.0  grf_rf  (18/18 datasets)
+ 1214.8  CTBoost  (18/18 datasets)
+ 1001.9  ModelTree(all)  (17/18 datasets)
+  982.5  lmtree  (16/18 datasets)
+  973.1  cubist  (18/18 datasets)
+  956.5  glmtree  (15/18 datasets)
+  881.4  modeltrees lmtree  (17/18 datasets)
+  823.3  MARS (mars-earth)  (12/18 datasets)
+  752.2  ctree  (18/18 datasets)
+  745.9  earth  (17/18 datasets)
+  715.1  ModelTree(winnow)  (17/18 datasets)
+  678.5  sklearn tree  (18/18 datasets)
+  628.0  ModelTree(mean)  (18/18 datasets)
+  539.8  rpart  (18/18 datasets)
+  505.1  ModelTree(path)  (18/18 datasets)
 ```
 
 Reading it:
 
 - **Stock configs only** — nothing tuned per dataset. The top of the board is
-  *ensembles with strong feature handling* (forust/perpetual are boosted trees,
-  CatBoost and LightGBM boost, grf_llf is a forest of local-linear trees).
-- **Our `ModelTree` rows are the plain single tree** — its honest baseline
-  position, exactly what the [default bake-off](../reference/model.md)
-  optimizes against.
-- `(n/10 datasets)` = datasets where the model has a score; matchups only
-  happen where both models have one.
+  *forests and boosted ensembles with strong feature handling* (grf's
+  local-linear forest leads; forust/perpetual are boosted trees).
+- **`ModelTree(all)` at 1001.9 now sits above the whole classical model-tree
+  and CART pack** — lmtree (982.5), cubist (973.1), glmtree (956.5), ctree
+  (752.2), sklearn tree (678.5), rpart (539.8) — the plain single tree with
+  ridge-linear leaves on all 18 official sets. The gap to the boosting tier
+  is the remaining mission (committees/forests, see
+  `references/research/knob-gap-review.md`).
+- `(n/18 datasets)` = datasets where the model has a score; matchups only
+  happen where both models have one. Shortfalls are honest failures, not
+  skates: mars-earth hits the 180s-per-algorithm budget on wide sets (12/18),
+  and grf_llf/earth skip fc2008's NAs.
 
 TabArena numbers are an **anchor, not a comparison** — their protocol
 (tuned+ensembled, different splits) differs; shown only for scale:

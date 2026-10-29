@@ -1,0 +1,175 @@
+dataset,model,status,seconds
+ta_healthcare,rpart,ok,0.2
+ta_healthcare,cubist,ok,0.5
+ta_healthcare,lmtree,ok,1.3
+ta_healthcare,glmtree,ok,1.2
+ta_healthcare,ctree,ok,1.0
+ta_healthcare,grf_llf,ok,1.8
+fc2008,grf_llf,error,1.3
+fc2008,earth,error,0.2
+fc2008,MARS (mars-earth),error,2.3
+ta_airfoil,forust (Rust),ok,3.0
+ta_airfoil,perpetual (Rust),ok,4.2
+ta_concrete,forust (Rust),ok,2.5
+ta_concrete,perpetual (Rust),ok,2.4
+ta_diamonds,forust (Rust),ok,3.9
+ta_diamonds,perpetual (Rust),ok,47.1
+ta_fiat500,forust (Rust),ok,2.6
+ta_fiat500,perpetual (Rust),ok,2.4
+ta_food_delivery,MARS (mars-earth),timeout,180.1
+ta_food_delivery,forust (Rust),ok,3.5
+ta_food_delivery,perpetual (Rust),ok,25.5
+ta_healthcare,grf_rf,ok,1.5
+ta_healthcare,earth,ok,0.2
+ta_healthcare,CTBoost,ok,2.5
+ta_healthcare,CatBoost(200),ok,2.6
+ta_healthcare,LightGBM(200),ok,2.9
+ta_healthcare,MARS (mars-earth),ok,3.4
+ta_healthcare,ModelTree(all),ok,3.0
+ta_healthcare,ModelTree(mean),ok,2.4
+ta_healthcare,ModelTree(path),ok,2.5
+ta_healthcare,ModelTree(winnow),ok,2.8
+ta_healthcare,forust (Rust),ok,2.8
+ta_healthcare,modeltrees lmtree,ok,2.4
+ta_healthcare,perpetual (Rust),ok,2.4
+ta_healthcare,sklearn tree,ok,2.5
+ta_houses,rpart,ok,0.5
+ta_houses,cubist,ok,1.7
+ta_houses,lmtree,ok,13.7
+ta_houses,glmtree,ok,40.0
+ta_houses,ctree,ok,1.9
+ta_houses,grf_llf,ok,16.1
+ta_houses,grf_rf,ok,14.6
+ta_houses,earth,ok,0.4
+ta_houses,CTBoost,ok,2.4
+ta_houses,CatBoost(200),ok,2.7
+ta_houses,LightGBM(200),ok,2.5
+ta_houses,MARS (mars-earth),timeout,180.1
+ta_houses,ModelTree(all),ok,10.7
+ta_houses,ModelTree(mean),ok,2.4
+ta_houses,ModelTree(path),ok,3.4
+ta_houses,ModelTree(winnow),ok,6.2
+ta_houses,forust (Rust),ok,2.7
+ta_houses,modeltrees lmtree,ok,3.4
+ta_houses,perpetual (Rust),ok,4.6
+ta_houses,sklearn tree,ok,2.3
+ta_miami,rpart,ok,0.5
+ta_miami,cubist,ok,1.7
+ta_miami,lmtree,ok,96.3
+ta_miami,glmtree,timeout,180.1
+ta_miami,ctree,ok,3.0
+ta_miami,grf_llf,ok,13.4
+ta_miami,grf_rf,ok,12.1
+ta_miami,earth,ok,0.5
+ta_miami,CTBoost,ok,2.4
+ta_miami,CatBoost(200),ok,2.7
+ta_miami,LightGBM(200),ok,2.7
+ta_miami,MARS (mars-earth),timeout,180.1
+ta_miami,ModelTree(all),ok,40.1
+ta_miami,ModelTree(mean),ok,2.5
+ta_miami,ModelTree(path),ok,4.3
+ta_miami,ModelTree(winnow),ok,11.1
+ta_miami,forust (Rust),ok,2.6
+ta_miami,modeltrees lmtree,timeout,180.1
+ta_miami,perpetual (Rust),ok,5.8
+ta_miami,sklearn tree,ok,2.5
+ta_protein,rpart,ok,1.3
+ta_protein,cubist,ok,4.3
+ta_protein,lmtree,timeout,180.1
+ta_protein,glmtree,timeout,180.2
+ta_protein,ctree,ok,4.3
+ta_protein,grf_llf,ok,40.8
+ta_protein,grf_rf,ok,39.7
+ta_protein,earth,ok,1.3
+ta_protein,CTBoost,ok,3.0
+ta_protein,CatBoost(200),ok,3.2
+ta_protein,LightGBM(200),ok,3.5
+ta_protein,MARS (mars-earth),timeout,180.2
+ta_protein,ModelTree(all),ok,34.3
+ta_protein,ModelTree(mean),ok,2.9
+ta_protein,ModelTree(path),ok,6.5
+ta_protein,ModelTree(winnow),ok,8.4
+ta_protein,forust (Rust),ok,3.6
+ta_protein,modeltrees lmtree,ok,8.4
+ta_protein,perpetual (Rust),ok,5.3
+ta_protein,sklearn tree,ok,3.1
+ta_qsar_fish,rpart,ok,0.2
+ta_qsar_fish,cubist,ok,0.5
+ta_qsar_fish,lmtree,ok,1.2
+ta_qsar_fish,glmtree,ok,1.4
+ta_qsar_fish,ctree,ok,1.1
+ta_qsar_fish,grf_llf,ok,1.3
+ta_qsar_fish,grf_rf,ok,1.3
+ta_qsar_fish,earth,ok,0.2
+ta_qsar_fish,CTBoost,ok,2.4
+ta_qsar_fish,CatBoost(200),ok,2.7
+ta_qsar_fish,LightGBM(200),ok,2.5
+ta_qsar_fish,MARS (mars-earth),ok,6.9
+ta_qsar_fish,ModelTree(all),ok,2.8
+ta_qsar_fish,ModelTree(mean),ok,2.3
+ta_qsar_fish,ModelTree(path),ok,2.4
+ta_qsar_fish,ModelTree(winnow),ok,2.7
+ta_qsar_fish,forust (Rust),ok,2.7
+ta_qsar_fish,modeltrees lmtree,ok,2.6
+ta_qsar_fish,perpetual (Rust),ok,2.4
+ta_qsar_fish,sklearn tree,ok,2.4
+ta_qsar_tid11,rpart,ok,0.4
+ta_qsar_tid11,cubist,ok,1.3
+ta_qsar_tid11,lmtree,ok,5.3
+ta_qsar_tid11,glmtree,ok,5.8
+ta_qsar_tid11,ctree,ok,2.2
+ta_qsar_tid11,grf_llf,ok,6.2
+ta_qsar_tid11,grf_rf,ok,5.2
+ta_qsar_tid11,earth,ok,0.4
+ta_qsar_tid11,CTBoost,ok,2.6
+ta_qsar_tid11,CatBoost(200),ok,2.7
+ta_qsar_tid11,LightGBM(200),ok,2.7
+ta_qsar_tid11,MARS (mars-earth),ok,11.0
+ta_qsar_tid11,ModelTree(all),ok,9.5
+ta_qsar_tid11,ModelTree(mean),ok,2.4
+ta_qsar_tid11,ModelTree(path),ok,2.6
+ta_qsar_tid11,ModelTree(winnow),ok,6.0
+ta_qsar_tid11,forust (Rust),ok,3.1
+ta_qsar_tid11,modeltrees lmtree,ok,3.5
+ta_qsar_tid11,perpetual (Rust),ok,5.9
+ta_qsar_tid11,sklearn tree,ok,2.6
+ta_superconductivity,rpart,ok,2.5
+ta_superconductivity,cubist,ok,6.6
+ta_superconductivity,lmtree,timeout,180.0
+ta_superconductivity,glmtree,timeout,180.1
+ta_superconductivity,ctree,ok,6.0
+ta_superconductivity,grf_llf,ok,37.1
+ta_superconductivity,grf_rf,ok,30.9
+ta_superconductivity,earth,ok,2.2
+ta_superconductivity,CTBoost,ok,4.3
+ta_superconductivity,CatBoost(200),ok,3.4
+ta_superconductivity,LightGBM(200),ok,3.7
+ta_superconductivity,MARS (mars-earth),timeout,180.2
+ta_superconductivity,ModelTree(all),timeout,180.5
+ta_superconductivity,ModelTree(mean),ok,3.5
+ta_superconductivity,ModelTree(path),ok,6.2
+ta_superconductivity,ModelTree(winnow),timeout,180.5
+ta_superconductivity,forust (Rust),ok,3.1
+ta_superconductivity,modeltrees lmtree,ok,167.4
+ta_superconductivity,perpetual (Rust),ok,36.0
+ta_superconductivity,sklearn tree,ok,3.1
+ta_wine,rpart,ok,0.3
+ta_wine,cubist,ok,0.9
+ta_wine,lmtree,ok,2.9
+ta_wine,glmtree,ok,4.2
+ta_wine,ctree,ok,1.2
+ta_wine,grf_llf,ok,5.7
+ta_wine,grf_rf,ok,5.4
+ta_wine,earth,ok,0.3
+ta_wine,CTBoost,ok,2.3
+ta_wine,CatBoost(200),ok,2.5
+ta_wine,LightGBM(200),ok,4.5
+ta_wine,MARS (mars-earth),ok,45.8
+ta_wine,ModelTree(all),ok,5.4
+ta_wine,ModelTree(mean),ok,2.1
+ta_wine,ModelTree(path),ok,2.3
+ta_wine,ModelTree(winnow),ok,3.4
+ta_wine,forust (Rust),ok,2.9
+ta_wine,modeltrees lmtree,ok,4.0
+ta_wine,perpetual (Rust),ok,2.5
+ta_wine,sklearn tree,ok,2.0
