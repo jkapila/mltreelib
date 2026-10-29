@@ -132,3 +132,13 @@ for hon, frac in [(False, 0.5), (True, 0.5), (True, 0.2)]:
     m.fit(reg_x, reg_y, dtypes=["numeric"])
     p = [round(m.predict([[v]])[0], 3) for v in (0.1, 0.9)]
     print(f"  honesty={hon!s:<5} frac={frac}: leaves={m.n_leaves()} preds={p}")
+
+print("== NA surrogate splits (maxsurrogate; rpart lineage) ==")
+sur_x = [[(None if i % 20 == 0 else i / 300.0), i / 300.0 + 0.2 * noise(i)]
+         for i in range(300)]
+sur_y = [5.0 if i / 300.0 >= 0.5 else 0.0 for i in range(300)]
+for ms in [0, 1]:
+    m = ModelTree(maxsurrogate=ms, max_depth=1, min_rows=10, leaf="mean")
+    m.fit(sur_x, sur_y, dtypes=["numeric", "numeric"])
+    p = [round(m.predict([[None, v]])[0], 2) for v in (0.1, 0.9)]
+    print(f"  maxsurrogate={ms}: pred(x0=None, x1=0.1/0.9) = {p}")

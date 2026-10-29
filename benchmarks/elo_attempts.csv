@@ -313,3 +313,63 @@ ta_food_delivery,ranger,error,0.9
 ta_food_delivery,bart,error,0.9
 ta_food_delivery,fru,error,0.9
 ta_food_delivery,ChimeraBoost,ok,14.4
+ta_food_delivery,EBM,ok,100.2
+ta_food_delivery,ExtraTrees,ok,15.4
+ta_food_delivery,KNN,ok,3.8
+ta_food_delivery,XBART,error,3.4
+ta_food_delivery,sklearn Linear,ok,3.6
+ta_food_delivery,sklearn RF,ok,22.1
+ta_food_delivery,statsmodels OLS,ok,3.6
+ta_food_delivery,statsmodels QuantReg,ok,15.4
+ta_food_delivery,statsmodels RLM,ok,7.2
+ta_food_delivery,trust-free,error,3.3
+ta_healthcare,mboost,error,0.2
+ta_healthcare,ranger,error,0.2
+ta_healthcare,bart,error,0.2
+ta_healthcare,fru,error,0.2
+ta_healthcare,ChimeraBoost,ok,3.5
+ta_healthcare,EBM,ok,11.7
+ta_healthcare,ExtraTrees,ok,3.3
+ta_healthcare,KNN,ok,3.1
+ta_healthcare,XBART,error,3.0
+ta_healthcare,sklearn Linear,ok,3.2
+ta_healthcare,sklearn RF,ok,3.3
+ta_healthcare,statsmodels OLS,ok,3.1
+ta_healthcare,statsmodels QuantReg,ok,3.0
+ta_healthcare,statsmodels RLM,ok,3.3
+ta_healthcare,trust-free,error,3.0
+ta_houses,mboost,error,0.3
+ta_houses,ranger,error,0.3
+ta_houses,bart,error,0.3
+ta_houses,fru,error,0.3
+ta_houses,ChimeraBoost,ok,13.1
+ta_houses,EBM,ok,71.4
+ta_houses,ExtraTrees,ok,6.1
+ta_houses,KNN,ok,3.0
+ta_houses,XBART,error,3.0
+ta_houses,sklearn Linear,ok,3.1
+ta_houses,sklearn RF,ok,10.1
+ta_houses,statsmodels OLS,ok,3.0
+ta_houses,statsmodels QuantReg,ok,3.3
+ta_houses,statsmodels RLM,ok,3.6
+ta_houses,trust-free,error,3.0
+ta_miami,mboost,error,0.3
+ta_miami,ranger,error,0.3
+ta_miami,bart,error,0.3
+ta_miami,fru,error,0.3
+ta_miami,ChimeraBoost,ok,7.0
+ta_miami,EBM,ok,114.0
+ta_miami,ExtraTrees,ok,6.6
+ta_miami,KNN,ok,3.2
+ta_miami,XBART,error,3.3
+ta_miami,sklearn Linear,ok,3.1
+ta_miami,sklearn RF,ok,11.3
+ta_miami,statsmodels OLS,ok,3.2
+ta_miami,statsmodels QuantReg,ok,3.8
+ta_miami,statsmodels RLM,ok,3.2
+ta_miami,trust-free,error,3.2
+ta_protein,mboost,error,0.7
+ta_protein,ranger,error,0.7
+ta_protein,bart,error,0.7
+ta_protein,fru,error,0.7
+ta_protein,ChimeraBoost,ok,21.5

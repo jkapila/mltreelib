@@ -417,6 +417,7 @@ impl<'a> Grower<'a> {
                         missing_left,
                         gain,
                         cat: None,
+                        sur: None,
                     },
                     Some(left_levels),
                 )
@@ -570,6 +571,7 @@ impl<'a> Grower<'a> {
                             missing_left,
                             gain,
                             cat: None,
+                            sur: None,
                         },
                     ));
                 }
@@ -783,6 +785,7 @@ impl<'a> Grower<'a> {
                             missing_left,
                             gain,
                             cat: None,
+                            sur: None,
                         },
                     ));
                 }

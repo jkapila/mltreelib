@@ -16,6 +16,7 @@ pub mod nn;
 pub mod prune;
 pub mod split;
 pub mod stats;
+pub mod surrogate;
 pub mod text_print;
 pub mod preselect;
 pub mod index;

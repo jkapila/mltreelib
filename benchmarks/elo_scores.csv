@@ -421,3 +421,39 @@ ta_fiat500,statsmodels OLS,714.3353,567.6927,0.004
 ta_fiat500,statsmodels QuantReg,742.2566,590.2007,0.121
 ta_fiat500,statsmodels RLM,716.6681,566.2677,0.006
 ta_food_delivery,ChimeraBoost,7.2277,5.6888,10.616
+ta_food_delivery,EBM,7.4411,5.8485,94.909
+ta_food_delivery,ExtraTrees,8.8832,6.9229,11.877
+ta_food_delivery,KNN,9.0368,7.1678,0.433
+ta_food_delivery,sklearn Linear,8.3483,6.6245,0.102
+ta_food_delivery,sklearn RF,7.9157,6.1937,18.707
+ta_food_delivery,statsmodels OLS,8.3483,6.6245,0.168
+ta_food_delivery,statsmodels QuantReg,8.4251,6.5731,11.929
+ta_food_delivery,statsmodels RLM,8.3795,6.5791,3.718
+ta_healthcare,ChimeraBoost,4472.5083,2452.6136,0.356
+ta_healthcare,EBM,4585.7594,2607.6587,7.745
+ta_healthcare,ExtraTrees,5214.9547,2721.5774,0.219
+ta_healthcare,KNN,10037.9892,6829.0257,0.025
+ta_healthcare,sklearn Linear,5853.0975,3962.5258,0.023
+ta_healthcare,sklearn RF,4953.1293,2731.5744,0.245
+ta_healthcare,statsmodels OLS,5853.0975,3962.5258,0.004
+ta_healthcare,statsmodels QuantReg,7211.4872,3496.3382,0.039
+ta_healthcare,statsmodels RLM,7116.0972,3484.0315,0.016
+ta_houses,ChimeraBoost,0.2071,0.1438,9.942
+ta_houses,EBM,0.2184,0.1537,67.443
+ta_houses,ExtraTrees,0.2314,0.1649,2.936
+ta_houses,KNN,0.5193,0.4142,0.062
+ta_houses,sklearn Linear,0.3431,0.2569,0.033
+ta_houses,sklearn RF,0.2259,0.1582,7.040
+ta_houses,statsmodels OLS,0.3431,0.2569,0.007
+ta_houses,statsmodels QuantReg,0.3451,0.2557,0.069
+ta_houses,statsmodels RLM,0.3449,0.2560,0.275
+ta_miami,ChimeraBoost,83756.9479,40786.2913,3.945
+ta_miami,EBM,92513.5298,49325.7536,109.708
+ta_miami,ExtraTrees,97261.0185,45008.9274,3.193
+ta_miami,KNN,147140.1990,74372.9671,0.115
+ta_miami,sklearn Linear,189247.1172,116667.8970,0.034
+ta_miami,sklearn RF,105480.3949,48046.1219,8.190
+ta_miami,statsmodels OLS,185578.4803,115944.2079,0.012
+ta_miami,statsmodels QuantReg,220834.0415,104019.5033,0.693
+ta_miami,statsmodels RLM,206434.8758,103935.8380,0.086
+ta_protein,ChimeraBoost,3.4590,2.3756,18.198

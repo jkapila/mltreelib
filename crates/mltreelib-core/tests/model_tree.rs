@@ -1330,3 +1330,95 @@ fn honesty_fraction_controls_the_split() {
     assert_eq!(est(0.2), 160, "20% structure -> 80% estimation");
     assert_eq!(est(0.8), 40, "80% structure -> 20% estimation");
 }
+
+// ---- NA surrogate splits (maxsurrogate; knob 4 of #3) ----
+
+#[test]
+fn surrogate_routes_missing_rows() {
+    // x0 carries the break but goes missing on 1 of 20 rows; x1 is a
+    // jittery mirror of x0 (always observed) — noisier than x0-with-holes,
+    // so x0 always wins the split, while x1 stays a >0.5-agreement mimic.
+    // With maxsurrogate=1 the missing-x0 rows route by the x1 surrogate.
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| {
+            let v = i as f64 / 300.0;
+            vec![
+                if i % 20 == 0 { None } else { Some(v) },
+                Some(v + 0.2 * noise(i)),
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| Some(if i as f64 / 300.0 >= 0.5 { 5.0 } else { 0.0 }))
+        .collect();
+    let fit = |x: &[Vec<Option<f64>>], maxsurrogate: usize| {
+        ModelTree::fit(
+            x,
+            &y,
+            ModelTreeParams {
+                max_depth: 2,
+                min_rows: 10,
+                leaf: LeafKind::Mean,
+                l2: 0.0,
+                maxsurrogate,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    };
+    let with_s = fit(&x, 1);
+    assert!(
+        with_s.splits().iter().any(|s| s.col == 0),
+        "the primary split must be on x0: {:?}",
+        with_s.splits()
+    );
+    let p_lo = with_s.predict(&[vec![None, Some(0.1)]])[0];
+    let p_hi = with_s.predict(&[vec![None, Some(0.9)]])[0];
+    assert!(p_lo < 1.0 && p_hi > 4.0, "surrogate must route both: {p_lo} {p_hi}");
+
+    // The mirror case: x1 = 1 - x0 (flipped mimic) must also route.
+    let xm: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| {
+            let v = i as f64 / 300.0;
+            vec![
+                if i % 20 == 0 { None } else { Some(v) },
+                Some(1.0 - v + 0.2 * noise(i)),
+            ]
+        })
+        .collect();
+    let m = fit(&xm, 1);
+    let p_lo = m.predict(&[vec![None, Some(0.9)]])[0]; // x1=0.9 -> x0=0.1
+    let p_hi = m.predict(&[vec![None, Some(0.1)]])[0]; // x1=0.1 -> x0=0.9
+    assert!(p_lo < 1.0 && p_hi > 4.0, "flipped surrogate must route: {p_lo} {p_hi}");
+}
+
+#[test]
+fn surrogate_default_off_keeps_missing_left() {
+    // x1 carries no signal here, so the primary is x0 and the two probe
+    // rows (x0 missing) both follow missing_left -> equal predictions.
+    let x: Vec<Vec<Option<f64>>> = (0..300)
+        .map(|i| {
+            let v = i as f64 / 300.0;
+            vec![if i % 20 == 0 { None } else { Some(v) }, Some(noise(i))]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..300)
+        .map(|i| Some(if i as f64 / 300.0 >= 0.5 { 5.0 } else { 0.0 }))
+        .collect();
+    let t = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 1,
+            min_rows: 10,
+            leaf: LeafKind::Mean,
+            l2: 0.0,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(t.splits().iter().any(|s| s.col == 0), "primary must be x0");
+    let a = t.predict(&[vec![None, Some(0.1)]])[0];
+    let b = t.predict(&[vec![None, Some(0.9)]])[0];
+    assert_eq!(a, b, "no surrogates -> one missing direction for both");
+}

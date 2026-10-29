@@ -124,6 +124,11 @@ pub struct ModelTreeParams {
     /// Share of rows assigned to the *structure* sample under `honesty`
     /// (grf's `honesty.fraction`).
     pub honesty_fraction: f64,
+    /// NA surrogate splits (rpart's `maxsurrogate`): store up to this many
+    /// backup splits per node that mimic the primary partition, to route
+    /// prediction rows missing the split column. 0 = off (the per-split
+    /// `missing_left` alone).
+    pub maxsurrogate: usize,
 }
 
 impl Default for ModelTreeParams {
@@ -165,6 +170,7 @@ impl Default for ModelTreeParams {
             split_cols: None,
             honesty: false,
             honesty_fraction: 0.5,
+            maxsurrogate: 0,
         }
     }
 }
@@ -183,6 +189,9 @@ pub struct Split {
     /// Categorical partition handle: `Some(i)` = `Tree::cat_parts[i]` lists
     /// the level codes routed left. `None` = threshold split.
     pub cat: Option<usize>,
+    /// Surrogate-split handle: `Some(i)` = `Tree::sur_parts[i]` lists the
+    /// backup splits that route rows missing the split column.
+    pub sur: Option<usize>,
 }
 
 /// A prediction decomposed along its decision path (DALEX-style break-down).
@@ -246,6 +255,8 @@ pub struct ModelTree {
     pub(crate) profiles: Vec<NodeProfile>,
     /// Categorical partitions referenced by `Split::cat`.
     pub(crate) cat_parts: Vec<Vec<f64>>,
+    /// Surrogate splits referenced by `Split::sur` (aligned by handle).
+    pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
     /// Training log (populated when `params.verbose > 0`).
     pub trace: Vec<String>,
 }
@@ -411,6 +422,7 @@ impl ModelTree {
             nodes: Vec::new(),
             profiles: Vec::new(),
             cat_parts: Vec::new(),
+            sur_parts: Vec::new(),
             trace: Vec::new(),
             costs: Vec::new(),
             rng_counter: 0,
@@ -426,7 +438,12 @@ impl ModelTree {
         // Destructure to release the borrows on params/active_cols before
         // moving them into the tree.
         let Grower {
-            nodes, profiles, cat_parts, mut trace, ..
+            nodes,
+            profiles,
+            cat_parts,
+            sur_parts,
+            mut trace,
+            ..
         } = grower;
         if params.verbose > 0 {
             // Per-depth summary from the node profiles.
@@ -458,8 +475,30 @@ impl ModelTree {
             root,
             profiles,
             cat_parts,
+            sur_parts,
             trace,
         })
+    }
+
+    /// Route a row missing the split column: the first observed surrogate
+    /// decides (mirrored when `flip`), else the split's `missing_left`.
+    /// Surrogate comparisons share the grid convention with `goes_left`.
+    fn surrogate_left(&self, row: &[Option<f64>], sp: &Split) -> bool {
+        if let Some(si) = sp.sur {
+            for s in &self.sur_parts[si] {
+                if let Some(v) = row.get(s.col).and_then(|v| *v) {
+                    let left = match self.params.split_precision {
+                        Some(p) if p > 0.0 => {
+                            let q = 1.0 / p;
+                            (v * q).round() / q <= s.threshold
+                        }
+                        _ => v <= s.threshold,
+                    };
+                    return if s.flip { !left } else { left };
+                }
+            }
+        }
+        sp.missing_left
     }
 
     /// Leaf node index a row lands in (shared walk with `predict`).
@@ -472,7 +511,7 @@ impl ModelTree {
         ) {
             let go_left = match row.get(sp.col).and_then(|v| *v) {
                 Some(v) => self.goes_left(sp, v),
-                None => sp.missing_left,
+                None => self.surrogate_left(row, sp),
             };
             node = if go_left { l } else { r };
         }
@@ -500,14 +539,7 @@ impl ModelTree {
     pub fn predict(&self, x: &[Vec<Option<f64>>]) -> Vec<f64> {
         x.iter()
             .map(|row| {
-                let mut node = &self.nodes[self.root];
-                while let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
-                    let go_left = match row.get(sp.col).and_then(|v| *v) {
-                        Some(v) => self.goes_left(sp, v),
-                        None => sp.missing_left,
-                    };
-                    node = &self.nodes[if go_left { l } else { r }];
-                }
+                let node = &self.nodes[self.leaf_index(row)];
                 node.leaf
                     .as_ref()
                     .expect("tree invariant: leaf holds a model")
@@ -554,8 +586,8 @@ impl ModelTree {
         let mut steps: Vec<(usize, f64)> = Vec::new();
         while let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
             let go_left = match x.get(sp.col).and_then(|v| *v) {
-                Some(v) => v <= sp.threshold,
-                None => sp.missing_left,
+                Some(v) => self.goes_left(sp, v),
+                None => self.surrogate_left(x, sp),
             };
             let child = &self.nodes[if go_left { l } else { r }];
             steps.push((sp.col, child.stats.mean - node.stats.mean));
@@ -652,6 +684,8 @@ pub(crate) struct Grower<'a> {
     /// Categorical partitions referenced by `Split::cat` (moved into the
     /// fitted tree).
     pub(crate) cat_parts: Vec<Vec<f64>>,
+    /// Surrogate splits referenced by `Split::sur` (moved into the tree).
+    pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
     /// Training log lines (`params.verbose`).
     pub(crate) trace: Vec<String>,
     /// Prune-cost bookkeeping aligned with node indices (`prune != None`).
@@ -757,7 +791,16 @@ impl<'a> Grower<'a> {
                 self.costs.push(cost);
                 self.nodes.len() - 1
             }
-            Some((sp, lrows, rrows)) => {
+            Some((mut sp, lrows, rrows)) => {
+                // NA surrogate splits: backup routes for rows missing the
+                // split column (rpart lineage; off unless maxsurrogate > 0).
+                if self.params.maxsurrogate > 0 {
+                    let found = self.find_surrogates(rows, &sp, &lrows);
+                    if !found.is_empty() {
+                        sp.sur = Some(self.sur_parts.len());
+                        self.sur_parts.push(found);
+                    }
+                }
                 let (est_l, est_r) = self.partition_rows(est, &sp);
                 path.push(sp.col);
                 let l = self.grow(&lrows, &est_l, depth + 1, path);

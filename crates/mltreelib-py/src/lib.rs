@@ -2029,10 +2029,14 @@ impl PyModelTree {
     ///        the rows into structure (split search, gate, pruning) and
     ///        estimation (leaf fits); leaves are then honest estimates.
     ///     honesty_fraction: share of rows assigned to the structure sample.
+    ///     maxsurrogate: NA surrogate splits (rpart lineage) — store up to
+    ///        this many backup splits per node that mimic the primary
+    ///        partition and route rows missing the split column (0 = off,
+    ///        the per-split missing direction alone).
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
-    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false, split_cols = None, honesty = false, honesty_fraction = 0.5))]
+    #[pyo3(signature = (max_depth = 4, min_rows = 10, min_gain = 1e-9, leaf_cols = "all", leaf = "linear", tau = 0.5, l2 = 0.1, l1 = 0.0, monotone = vec![], interaction_groups = vec![], min_relevance = None, gain = None, split_precision = Some(0.001), cat_order = None, cat_search = "cumulative", leaf_digest = true, verbose = 0, alpha = 0.0, imbalance_penalty = 0.0, col_sample = None, seed = 42, prune = "none", split_test = "none", split_alpha = 0.05, bonferroni = false, split_cols = None, honesty = false, honesty_fraction = 0.5, maxsurrogate = 0))]
     fn new(
         max_depth: usize,
         min_rows: usize,
@@ -2062,6 +2066,7 @@ impl PyModelTree {
         split_cols: Option<Vec<usize>>,
         honesty: bool,
         honesty_fraction: f64,
+        maxsurrogate: usize,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2203,6 +2208,7 @@ impl PyModelTree {
                 split_cols,
                 honesty,
                 honesty_fraction,
+                maxsurrogate,
             },
             inner: None,
         })
