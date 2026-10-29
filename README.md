@@ -120,7 +120,8 @@ field/benchmark tooling may use anything it measures (that is its job).
 
 ## Research inputs
 
-Grounded research lives with the team (references/ is local-only): the
+Grounded research lives in `references/research/` (tracked; bulky clones of
+the reference sources stay local): the
 split-criteria survey, NGBoost leaf/training deep-dive, leaf-purity
 literature review, and the knob-gap reviews against rpart/ctree/cubist/
 partykit/grf. Specs are published as GitHub issues (`ready-for-agent`).

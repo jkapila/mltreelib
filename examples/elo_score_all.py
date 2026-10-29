@@ -124,6 +124,11 @@ def main():
 
     py_models = sorted(set(elo_score_python.make_models())
                        | set(elo_score_rust.make_models()))
+    # ELO_EXCLUDE: comma-separated name substrings to skip (e.g. "ModelTree"
+    # while our model changes under the field — score everything else).
+    exclude = [s for s in os.environ.get("ELO_EXCLUDE", "").split(",") if s]
+    models = [m for m in R_MODELS + py_models
+              if not any(s in m for s in exclude)]
     done = done_pairs()
     env = dict(os.environ)
     env.setdefault("R_LIBS_USER", str(Path.home() / "R" / "library"))
@@ -131,7 +136,7 @@ def main():
     for ds in datasets():
         log.info(f"=== dataset: {ds} ===", flush=True)
         stage_dataset(ds)
-        for name in R_MODELS + py_models:
+        for name in models:
             if (ds, name) in done:
                 continue
             log.info(f"{ds:<24}{name:<20} RUNNING", flush=True)

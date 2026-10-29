@@ -155,7 +155,5 @@ home/
 legacy/
 playground/
 
-# research references: local-only by convention
-references/
 /churn_tree.svg
 /churn_tree.dot
