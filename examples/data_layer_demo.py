@@ -51,52 +51,39 @@ def fmt(v) -> str:
 
 # ---------------------------------------------------------------- figures ---
 def figures(variance=None, panel=None, out_dir: Path | None = None):
-    """Render demo figures when matplotlib + seaborn are importable."""
+    """Render demo figures via mltreelib.plots (needs matplotlib)."""
     try:
         import matplotlib
 
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        import seaborn as sns
     except ImportError:
-        print("\n(figures skipped: install with `uv run --with seaborn --with matplotlib`)")
+        print("\n(figures skipped: install with `uv run --with matplotlib`)")
         return
-    sns.set_theme(style="whitegrid")
+    from mltreelib import plots as mplots
+
     out_dir = out_dir or (Path(__file__).resolve().parent / "out")
     out_dir.mkdir(exist_ok=True)
 
     if variance:
-        shares = {k: variance[k] for k in ("numeric", "categorical", "hierarchy", "interaction", "noise")}
-        fig, ax = plt.subplots(figsize=(7, 3.2))
-        sns.barplot(x=list(shares.values()), y=list(shares.keys()), ax=ax, color="steelblue")
-        ax.set_xlabel("realized variance share (var component / var target)")
-        ax.set_title("Generator ground truth: where the signal lives")
-        fig.tight_layout()
+        shares = {k: variance[k] for k in
+                  ("numeric", "categorical", "hierarchy", "interaction", "noise")}
+        ax = mplots.plot_variance_shares(shares)
+        ax.figure.tight_layout()
         path = out_dir / "variance_shares.png"
-        fig.savefig(path, dpi=120)
-        plt.close(fig)
+        ax.figure.savefig(path, dpi=120)
+        plt.close(ax.figure)
         print(f"figure: {path}")
 
     if panel:
         dates, values, trend, detrended, deseason, residual = panel
-        fig, axes = plt.subplots(2, 2, figsize=(11, 5.6), sharex=True)
-        axes[0][0].plot(values, label="series")
-        axes[0][0].plot(trend, label="trend (centered MA)")
-        axes[0][0].set_title("series + trend")
-        axes[0][0].legend()
-        axes[0][1].plot(detrended)
-        axes[0][1].set_title("detrended (series - trend)")
-        axes[1][0].plot(deseason)
-        axes[1][0].set_title("deseasonalized (series - seasonal)")
-        axes[1][1].plot(residual)
-        axes[1][1].set_title("residual")
-        for ax in axes[1]:
-            ax.set_xticks(range(0, len(dates), 3), dates[::3], rotation=30, ha="right")
-        fig.suptitle("Additive decomposition (statsmodels convention)")
-        fig.tight_layout()
+        axes = mplots.plot_decomposition(values, trend, detrended, deseason,
+                                         residual, dates=dates)
+        axes[0][0].figure.suptitle("Additive decomposition (statsmodels convention)")
+        axes[0][0].figure.tight_layout()
         path = out_dir / "decomposition.png"
-        fig.savefig(path, dpi=120)
-        plt.close(fig)
+        axes[0][0].figure.savefig(path, dpi=120)
+        plt.close(axes[0][0].figure)
         print(f"figure: {path}")
 
 

@@ -38,7 +38,7 @@ def show(label, model, w=None):
     model.fit(xtr, ytr, w)
     pred = model.predict(xte)
     m = Metrics().regression(yte, pred)
-    print(f"{label:<38} rmse={m['rmse']:>8.1f}  r2={m['r2']:.3f}  leaves={model.n_leaves()}")
+    print(f"{label:<38} rmse={m['rmse']:>10.1f}  r2={m['r2']:>11.3f}  leaves={model.n_leaves():>4}")
 
 
 # 1) depth / min_rows / min_gain - the growth knobs

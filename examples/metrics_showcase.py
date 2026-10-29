@@ -16,7 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from mltreelib import Metrics, ModelTree, OneHotEncoder, plots
+from mltreelib import Metrics, ModelTree, OneHotEncoder, generate, plots
 
 m = Metrics()
 
@@ -149,4 +149,26 @@ for _name, _fn in singles:
     _fig.tight_layout()
     _fig.savefig(f"docs/assets/plots/{_name}.png", dpi=110)
     plt.close(_fig)
-print("\nwrote docs/assets/plots/*.png (10 separate zoomable charts)")
+
+# ---- explanation + data-truth charts (different input shapes) ----------
+_fig, _ax = plt.subplots(figsize=(5.2, 4.0))
+plots.plot_importance(tree.feature_importance(), ax=_ax)
+_fig.tight_layout()
+_fig.savefig("docs/assets/plots/importance.png", dpi=110)
+plt.close(_fig)
+
+_bd = tree.break_down(X[n_tr // 2])
+_fig, _ax = plt.subplots(figsize=(6.2, 4.0))
+plots.plot_breakdown(_bd, ax=_ax)
+_fig.tight_layout()
+_fig.savefig("docs/assets/plots/breakdown.png", dpi=110)
+plt.close(_fig)
+
+_g = generate(n_rows=20000, seed=20261029)
+_fig, _ax = plt.subplots(figsize=(5.2, 3.2))
+plots.plot_variance_shares(_g["truth"]["variance"], ax=_ax)
+_fig.tight_layout()
+_fig.savefig("docs/assets/plots/variance_shares.png", dpi=110)
+plt.close(_fig)
+print(f"explanation + data-truth charts -> docs/assets/plots/*.png")
+print("\nwrote docs/assets/plots/*.png (13 separate zoomable charts)")

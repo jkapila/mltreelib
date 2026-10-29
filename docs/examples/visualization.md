@@ -1,56 +1,46 @@
-# Visualization
+# Visualization — tree diagrams and diagnostic plots
 
-Real-work visualization: tree diagrams and diagnostic plots. The division of
-labor is deliberate — **graphviz draws the tree** (we only emit DOT; layout is
-a solved problem we don't reimplement) and **matplotlib draws the plots**.
+The end-to-end picture: a real fit on
+[`airfoil_self_noise`](../benchmarks/datasets.md) (1,503 rows, 5 numeric +
+1 categorical), the tree drawn left-to-right, and the diagnostic +
+explanation charts. Script:
+[`examples/visualization.py`](https://github.com/jkapila/mltreelib/blob/main/examples/visualization.py)
+(`uv run --with pandas --with pygraphviz --with matplotlib python examples/visualization.py`).
+Every image here is click-to-zoom.
 
-Script: [`examples/visualization.py`](https://github.com/jkapila/mltreelib/blob/main/examples/visualization.py).
+## The tree, depth 3 for readability
 
-## Tree diagrams via graphviz
+`max_depth=3, min_rows=30` — constrained for clarity, not score. Rectangles
+test a numeric threshold, diamonds are leaves (fitted value + support):
 
-```python
-import pygraphviz as pgv
+![airfoil regression tree, 8 leaves, depth 3](../assets/airfoil_tree.svg)
 
-dot = model.to_dot()                    # DOT description, heap-numbered nodes
-g = pgv.AGraph(string=dot)
-g.layout(prog="dot")                    # graphviz does the layout
-g.draw("docs/assets/diamonds_tree.svg")
-```
+*left-to-right (`rankdir=LR`): the split path reads as a sentence.*
 
-`to_dot()` emits one box per node (split condition, `n`, deviance / leaf
-`yval`), edges labeled with `< t` / `>= t`, node ids matching the rpart text
-print — so the printed tree and the diagram line up node-for-node.
+## Diagnostics
 
-Here is the fitted diamonds tree (depth 6, 200-row leaves), rendered by
-graphviz from `to_dot()` output:
+![airfoil predicted vs actual and residuals](../assets/airfoil_diagnostics.png)
 
-![diamonds tree](../assets/diamonds_tree.svg)
+## Explanation
 
-## Diagnostic plots
+Feature importance (share of total split gain) and the DALE-style breakdown
+of one test row — baseline → per-column steps → prediction:
 
-Predicted-vs-actual and residual panels (matplotlib, guarded so the library
-itself never depends on it):
-
-![diamonds diagnostics](../assets/diamonds_diagnostics.png)
-
-The tree tracks price almost linearly at the top end but fans out at high
-prices — the classic heteroscedastic diamond signal.
-
-## Run it
-
-```bash
-uv run --with pandas --with pygraphviz --with matplotlib python examples/visualization.py
-```
+![feature importance](../assets/airfoil_importance.png)
+![breakdown of one test row](../assets/airfoil_breakdown.png)
 
 ```text
-tree diagram: docs/assets/diamonds_tree.svg (42 leaves, rendered by graphviz)
-diagnostics: docs/assets/diamonds_diagnostics.png
-test rmse: 573.6
+tree diagram: docs/assets/airfoil_tree.svg (8 leaves, depth 3, rendered by graphviz)
+diagnostics: docs/assets/airfoil_diagnostics.png
+feature importance: docs/assets/airfoil_importance.png
+breakdown of one test row: docs/assets/airfoil_breakdown.png
+test rmse: 2.3
 ```
 
-No pygraphviz? The DOT file is still there (`to_dot()` output / `dot -Tsvg
-file.dot -o tree.svg` with the graphviz binary). The engine is always
-graphviz either way.
+## The chart layer
 
-Next: [Benchmarks — ELO](../benchmarks/elo.md) for what the model is worth at
-scale, or [Inspection](inspection.md) for the numbers behind the pictures.
+All fourteen chart functions (`mltreelib.plots`) are catalogued under
+[API reference — Visualization](../reference/plots.md); the full metrics +
+charts showcase is [Metrics & plots](metrics-plots.md).
+
+**Examples — next: [Metrics & plots](metrics-plots.md)**

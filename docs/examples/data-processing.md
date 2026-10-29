@@ -66,6 +66,9 @@ cat_0 true level effects (first 4): [1.219, 0.186, 0.252, 0.098]
 
 ![Realized variance shares](assets/variance_shares.png)
 
+*rendered by `mltreelib.plots.plot_variance_shares` (the same figure the
+generator's `truth["variance"]` feeds).*
+
 ## Step 3 — time features and missing-data behavior
 
 A synthetic two-store panel: calendar parts, day lags, trended and windowed

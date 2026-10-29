@@ -67,7 +67,7 @@ log_loss 3.204  brier 0.177  hinge 0.506
 
 All ten charts from `mltreelib.plots`, one figure (click to zoom):
 
-Rendered charts (all ten, zoomable): [Visualization](../reference/plots.md).
+Rendered charts (all thirteen, zoomable): [Visualization](../reference/plots.md).
 
 | chart | what it answers |
 |---|---|

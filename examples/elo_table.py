@@ -80,23 +80,23 @@ def main():
 <style>
 #elo-interactive {{ overflow-x: auto; }}
 #elo-interactive table {{ border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; font-family: var(--md-text-font-family, monospace); }}
-#elo-interactive th, #elo-interactive td {{ padding: 2px 10px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #ddd); text-align: right; background: var(--md-default-bg-color, #fff); }}
+#elo-interactive th, #elo-interactive td {{ padding: 2px 10px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #ddd); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }}
 #elo-interactive th {{ cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 2; }}
 #elo-interactive th:hover {{ color: var(--md-accent-fg-color, #06c); }}
 #elo-interactive td.n {{ text-align: right; }}
 #elo-interactive tr:hover td {{ background: var(--md-default-fg-color--lightest, #f5f5f5); }}
 /* freeze panes: the three key columns stay put while datasets scroll */
-#elo-interactive th.k1, #elo-interactive td:nth-child(1) {{ position: sticky; left: 0; z-index: 1; }}
-#elo-interactive th.k2, #elo-interactive td:nth-child(2) {{ position: sticky; left: 56px; z-index: 1; }}
-#elo-interactive th.k3, #elo-interactive td:nth-child(3) {{ position: sticky; left: 148px; z-index: 1; }}
+#elo-interactive th.k1, #elo-interactive td:nth-child(1) {{ position: sticky; left: 0; z-index: 1; width: 72px; min-width: 72px; }}
+#elo-interactive th.k2, #elo-interactive td:nth-child(2) {{ position: sticky; left: 72px; z-index: 1; width: 176px; min-width: 176px; }}
+#elo-interactive th.k3, #elo-interactive td:nth-child(3) {{ position: sticky; left: 248px; z-index: 1; width: 200px; min-width: 200px; }}
 #elo-interactive th.k1, #elo-interactive th.k2, #elo-interactive th.k3 {{ z-index: 3; }}
 #elo-interactive .c {{ color: var(--md-default-fg-color--light, #999); font-size: 0.68rem; }}
 </style>
 <table>
 <thead><tr>
-<th class='k1 k' data-t='-1'>ELO</th>
-<th class='k2 k' data-t='-2'>FIT (mean±sd)</th>
-<th class='k3 k' data-t='-3'>MODEL</th>{th}
+<th class='k1 k' data-t='0'>ELO</th>
+<th class='k2 k' data-t='1'>FIT TIME (±sd)</th>
+<th class='k3 k' data-t='2'>MODEL</th>{th}
 </tr></thead>
 <tbody>{''.join(body)}</tbody>
 </table>
@@ -110,7 +110,7 @@ def main():
       var i = +th.dataset.t, d = dir[i] = -(dir[i] || 1);
       var rows = Array.prototype.slice.call(t.tBodies[0].rows);
       rows.sort(function (a, b) {{
-        var x = a.cells[i + 3].textContent.trim(), y = b.cells[i + 3].textContent.trim();
+        var x = a.cells[i].textContent.trim(), y = b.cells[i].textContent.trim();
         var nx = parseFloat(x), ny = parseFloat(y);
         return d * (isNaN(nx) || isNaN(ny) ? x.localeCompare(y) : nx - ny);
       }});

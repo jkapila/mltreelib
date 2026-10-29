@@ -209,3 +209,74 @@ def plot_psi(reference, current, n_bins=10, ax=None):
     ax.legend()
     if own:
         return ax
+
+
+# ------------------------------------------------ explanation & data truth
+
+def plot_importance(importances, ax=None):
+    """Horizontal bars of model.feature_importance() (name, share) pairs."""
+    ax, own = _ax(ax)
+    names = [n for n, _ in importances][::-1]
+    shares = [s for _, s in importances][::-1]
+    ax.barh(names, shares, color="#2a7")
+    ax.set_xlabel("share of total split gain")
+    ax.set_title(f"feature importance ({len(importances)} shown)")
+    if own:
+        return ax
+
+
+def plot_breakdown(bd, ax=None):
+    """Waterfall of model.break_down(row): baseline -> steps -> prediction."""
+    ax, own = _ax(ax)
+    steps = list(bd["steps"])
+    labels = ["baseline"] + [n for n, _ in steps] + ["residual", "prediction"]
+    ax.bar(0, bd["baseline"], color="#888")
+    running = bd["baseline"]
+    for i, (_, d) in enumerate(steps, start=1):
+        ax.bar(i, d, bottom=running, color="#2a7" if d >= 0 else "#c63")
+        running += d
+    ax.bar(len(labels) - 2, bd["residual"], bottom=running, color="#da3")
+    ax.bar(len(labels) - 1, bd["prediction"], color="#333")
+    ax.set_xticks(range(len(labels)), labels, rotation=45, ha="right")
+    ax.set_ylabel("value")
+    ax.set_title(f"breakdown: {bd['baseline']:.1f} -> {bd['prediction']:.1f}")
+    if own:
+        return ax
+
+
+def plot_variance_shares(shares, ax=None):
+    """Horizontal bars of realized variance shares (generate() truth)."""
+    ax, own = _ax(ax)
+    keys = list(shares.keys())
+    ax.barh(keys, [shares[k] for k in keys], color="steelblue")
+    ax.set_xlabel("realized variance share (var component / var target)")
+    ax.set_title("Generator ground truth: where the signal lives")
+    if own:
+        return ax
+
+
+def plot_decomposition(values, trend, detrended, deseason, residual,
+                       dates=None, axes=None):
+    """Four-panel additive decomposition (statsmodels convention).
+
+    Returns the 2x2 axes array (creates the figure when `axes` is None).
+    """
+    created = None
+    if axes is None:
+        created, axes = plt.subplots(2, 2, figsize=(11, 5.6), sharex=True)
+    axes[0][0].plot(values, label="series")
+    axes[0][0].plot(trend, label="trend (centered MA)")
+    axes[0][0].set_title("series + trend")
+    axes[0][0].legend()
+    axes[0][1].plot(detrended)
+    axes[0][1].set_title("detrended (series - trend)")
+    axes[1][0].plot(deseason)
+    axes[1][0].set_title("deseasonalized (series - seasonal)")
+    axes[1][1].plot(residual)
+    axes[1][1].set_title("residual")
+    if dates is not None:
+        for ax in axes[1]:
+            ax.set_xticks(range(0, len(dates), max(1, len(dates) // 10)),
+                          dates[::max(1, len(dates) // 10)], rotation=30, ha="right")
+    if created is not None:
+        return axes
