@@ -231,11 +231,113 @@ def make_models():
 
         return run
 
+    def chimera():
+        from chimeraboost import ChimeraBoostRegressor
+
+        def run(xtr, ytr, xte):
+            m = ChimeraBoostRegressor()  # quality=3 stock
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def ebm():
+        from interpret.glassbox import ExplainableBoostingRegressor
+
+        def run(xtr, ytr, xte):
+            m = ExplainableBoostingRegressor()  # GA2M, stock
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def extra_trees():
+        from sklearn.ensemble import ExtraTreesRegressor
+
+        def run(xtr, ytr, xte):
+            m = ExtraTreesRegressor(n_estimators=100, random_state=42, n_jobs=1)
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def skl_linear():
+        from sklearn.linear_model import LinearRegression
+
+        def run(xtr, ytr, xte):
+            m = LinearRegression()
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def knn():
+        from sklearn.neighbors import KNeighborsRegressor
+
+        def run(xtr, ytr, xte):
+            m = KNeighborsRegressor(n_neighbors=5)
+            t0 = time.perf_counter()
+            m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
+            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+
+        return run
+
+    def sm_ols():
+        import statsmodels.api as sm
+
+        def run(xtr, ytr, xte):
+            xa = sm.add_constant(np.asarray(xtr, dtype=np.float64), has_constant="add")
+            xe = sm.add_constant(np.asarray(xte, dtype=np.float64), has_constant="add")
+            t0 = time.perf_counter()
+            fit = sm.OLS(np.asarray(ytr, dtype=np.float64), xa).fit()
+            return fit.predict(xe), time.perf_counter() - t0
+
+        return run
+
+    def sm_rlm():
+        import statsmodels.api as sm
+
+        def run(xtr, ytr, xte):
+            # robust linear model (Huber T) - the outlier-robust baseline.
+            xa = sm.add_constant(np.asarray(xtr, dtype=np.float64), has_constant="add")
+            xe = sm.add_constant(np.asarray(xte, dtype=np.float64), has_constant="add")
+            t0 = time.perf_counter()
+            fit = sm.RLM(np.asarray(ytr, dtype=np.float64), xa,
+                         M=sm.robust.norms.HuberT()).fit()
+            return fit.predict(xe), time.perf_counter() - t0
+
+        return run
+
+    def sm_qreg():
+        import statsmodels.api as sm
+
+        def run(xtr, ytr, xte):
+            # median (q=0.5) quantile regression - the quantile-leaf baseline.
+            xa = sm.add_constant(np.asarray(xtr, dtype=np.float64), has_constant="add")
+            xe = sm.add_constant(np.asarray(xte, dtype=np.float64), has_constant="add")
+            t0 = time.perf_counter()
+            fit = sm.QuantReg(np.asarray(ytr, dtype=np.float64), xa).fit(q=0.5)
+            return fit.predict(xe), time.perf_counter() - t0
+
+        return run
+
     attempt("LightGBM(200)", lgbm)
     attempt("CatBoost(200)", catb)
     attempt("CTBoost", ctb)
+    attempt("ChimeraBoost", chimera)
+    attempt("EBM", ebm)
+    attempt("ExtraTrees", extra_trees)
     attempt("sklearn tree", skl_tree)
     attempt("sklearn RF", skl_rf)
+    attempt("sklearn Linear", skl_linear)
+    attempt("KNN", knn)
+    attempt("statsmodels OLS", sm_ols)
+    attempt("statsmodels RLM", sm_rlm)
+    attempt("statsmodels QuantReg", sm_qreg)
     attempt("XBART", xbart)
     attempt("trust-free", trustfree)
     attempt("modeltrees lmtree", mtrees)
