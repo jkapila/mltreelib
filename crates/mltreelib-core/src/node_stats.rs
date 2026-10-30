@@ -189,6 +189,11 @@ impl Gram {
         self.n -= other.n;
     }
 
+    /// Design dimension of this aggregate (intercept included).
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+
     /// Weighted mean of the target over this aggregate.
     pub fn mean(&self) -> f64 {
         if self.ws > 0.0 {
@@ -235,7 +240,7 @@ pub fn solve_normal(
 ) -> f64 {
     scratch.a[..dim * dim].copy_from_slice(&xtx[..dim * dim]);
     scratch.b[..dim].copy_from_slice(&xty[..dim]);
-    solve_prepared(scratch, yty, dim, l1, l2)
+    solve_prepared(scratch, yty, dim, l1, l2, None)
 }
 
 /// Dense SPD solve via faer's blocked Cholesky — the split scan's hot
@@ -266,10 +271,11 @@ pub fn solve_prepared(
     dim: usize,
     l1: f64,
     l2: f64,
+    warm: Option<&mut [f64]>,
 ) -> f64 {
     scratch.c[..dim].copy_from_slice(&scratch.b[..dim]); // keep xty
     if l1 > 0.0 {
-        return solve_elastic(scratch, yty, dim, l1, l2);
+        return solve_elastic(scratch, yty, dim, l1, l2, warm);
     }
     if l2 > 0.0 {
         for i in 1..dim {
@@ -358,6 +364,7 @@ pub fn solve_normal_sum(
     l1: f64,
     l2: f64,
     scratch: &mut SolveScratch,
+    warm: Option<&mut [f64]>,
 ) -> f64 {
     scratch.a[..dim * dim].copy_from_slice(&a.xtx[..dim * dim]);
     scratch.b[..dim].copy_from_slice(&a.xty[..dim]);
@@ -371,7 +378,256 @@ pub fn solve_normal_sum(
         }
         yty += e.yty;
     }
-    solve_prepared(scratch, yty, dim, l1, l2)
+    solve_prepared(scratch, yty, dim, l1, l2, warm)
+}
+
+/// Lower-triangular Cholesky factor of a moving design's normal matrix
+/// (`xtx` + the `l2` ridge, intercept unpenalized), maintained across the
+/// split sweep: rows entering a side apply a rank-1 update, rows leaving a
+/// guarded rank-1 downdate. The Gram aggregate stays the source of truth —
+/// the factor is a disposable cache around it, rebuilt on demand, so
+/// correctness never depends on the incremental path. Storage is the
+/// lower triangle, column-major (`L[i][j]` at `l[j*dim + i]`) so the
+/// recurrence works contiguous slices; the recurrences are the classic
+/// LINPACK `dchud`/`dchdd` shapes.
+pub struct Chol {
+    l: Vec<f64>,
+    v: Vec<f64>, // rank-1 work buffer (allocation-free updates)
+    dim: usize,
+}
+
+impl Chol {
+    /// Factor `(a + b).xtx + l2·I*` (intercept unpenalized) — `None` when
+    /// the matrix is not positive definite, in which case the caller keeps
+    /// solving the exact historical way.
+    pub fn factor_grams(a: &Gram, b: Option<&Gram>, l2: f64) -> Option<Chol> {
+        let dim = a.dim();
+        let mut xtx = a.xtx[..dim * dim].to_vec();
+        if let Some(e) = b {
+            for (dst, src) in xtx.iter_mut().zip(&e.xtx[..dim * dim]) {
+                *dst += *src;
+            }
+        }
+        let mut l = vec![0.0; dim * dim];
+        for j in 0..dim {
+            for i in j..dim {
+                let mut s = xtx[i * dim + j] + if i == j && j > 0 { l2 } else { 0.0 };
+                for k in 0..j {
+                    s -= l[k * dim + i] * l[k * dim + j];
+                }
+                if i == j {
+                    if !(s > 0.0) {
+                        return None;
+                    }
+                    l[j * dim + j] = s.sqrt();
+                } else {
+                    l[j * dim + i] = s / l[j * dim + j];
+                }
+            }
+        }
+        Some(Chol {
+            l,
+            v: vec![0.0; dim],
+            dim,
+        })
+    }
+
+    /// `A + w·φφᵀ` — never fails: a positive-semidefinite addition keeps
+    /// the factor valid.
+    pub fn rank1_add(&mut self, phi: &[f64], w: f64) {
+        self.rank1(phi, w, true);
+    }
+
+    /// `A − w·φφᵀ` — `false` when the downdate would leave the matrix
+    /// non-positive-definite; the factor is then unusable and the caller
+    /// drops it. (A refused downdate may leave `l` half-updated — dropping
+    /// is the contract.)
+    pub fn rank1_sub(&mut self, phi: &[f64], w: f64) -> bool {
+        self.rank1(phi, w, false)
+    }
+
+    /// Shared recurrence for both directions: the L column update differs
+    /// only in sign, and the work vector's update collapses to
+    /// `(v − s·l_old)/c` in both (the rotation identities make the two
+    /// textbook formulas coincide).
+    fn rank1(&mut self, phi: &[f64], w: f64, add: bool) -> bool {
+        if w <= 0.0 {
+            return true;
+        }
+        let d = self.dim;
+        let sw = w.sqrt();
+        for (t, &s) in self.v[..d].iter_mut().zip(&phi[..d]) {
+            *t = s * sw;
+        }
+        for j in 0..d {
+            let x = self.l[j * d + j];
+            let y = self.v[j];
+            let r2 = if add { x * x + y * y } else { x * x - y * y };
+            if !add && !(r2 > 1e-12 * x * x) {
+                return false;
+            }
+            let r = r2.sqrt();
+            let c = r / x;
+            let s = y / x;
+            let inv_c = 1.0 / c;
+            self.l[j * d + j] = r;
+            for (lp, vp) in self.l[j * d + j + 1..j * d + d]
+                .iter_mut()
+                .zip(&mut self.v[j + 1..d])
+            {
+                let lold = *lp;
+                let sv = s * *vp;
+                *lp = (lold + if add { sv } else { -sv }) * inv_c;
+                *vp = (*vp - s * lold) * inv_c;
+            }
+        }
+        true
+    }
+
+    /// Solve `(xtx + ridge)·b = xty` through the factor — O(dim²).
+    pub fn solve_into(&self, xty: &[f64], out: &mut [f64]) {
+        let d = self.dim;
+        for i in 0..d {
+            let mut s = xty[i];
+            for k in 0..i {
+                s -= self.l[k * d + i] * out[k];
+            }
+            out[i] = s / self.l[i * d + i];
+        }
+        for i in (0..d).rev() {
+            let mut s = out[i];
+            for k in i + 1..d {
+                s -= self.l[i * d + k] * out[k];
+            }
+            out[i] = s / self.l[i * d + i];
+        }
+    }
+}
+
+/// One side of the linear scan's sweep. The moving Gram aggregate crosses
+/// the cut in whole value groups (exact historical arithmetic); on top of
+/// it, Cholesky factors of the two solve systems the side takes part in —
+/// `gram` and `gram + extra` (`extra` = the column's fixed missing
+/// aggregate) — follow the same rows one rank-1 step at a time and let
+/// candidates be scored in O(dim²) instead of a fresh O(dim³) fit. The
+/// folding is economic, not unconditional: a group wider than ~dim/3 rows
+/// costs more to fold than to re-factor, so the sweep drops the factors
+/// there and the solves take the exact historical path until a finer
+/// group's [`SideTrack::ensure`] re-materializes them. Factors are
+/// disposable (failed downdate, periodic refresh); correctness never
+/// depends on the incremental path.
+pub struct SideTrack {
+    pub gram: Gram,
+    pub extra: Option<Gram>,
+    dim: usize,
+    l2: f64,
+    chols: [Option<Chol>; 2], // [plain, +extra]
+    ops: u32,
+    warm: [Vec<f64>; 2], // elastic-net warm starts (raw coefficients)
+    xty: Vec<f64>,
+    coef: Vec<f64>,
+}
+
+impl SideTrack {
+    pub fn new(gram: Gram, extra: Option<Gram>, l2: f64) -> Self {
+        let dim = gram.dim();
+        Self {
+            gram,
+            extra,
+            dim,
+            l2,
+            chols: [None, None],
+            ops: 0,
+            warm: [vec![0.0; dim], vec![0.0; dim]],
+            xty: vec![0.0; dim],
+            coef: vec![0.0; dim],
+        }
+    }
+
+    /// Materialize the maintained factors from the current aggregate —
+    /// called at groups small enough for the row-by-row folding to pay.
+    /// Must run before the next group is folded into the Gram so the
+    /// factor and the rank-1 steps stay consistent.
+    pub fn ensure(&mut self) {
+        if self.chols[0].is_none() {
+            self.chols[0] = Chol::factor_grams(&self.gram, None, self.l2);
+        }
+        if self.chols[1].is_none() && self.extra.is_some() {
+            self.chols[1] = Chol::factor_grams(&self.gram, self.extra.as_ref(), self.l2);
+        }
+    }
+
+    /// Drop the maintained factors — the caller is folding a group too
+    /// large for row-by-row updates.
+    pub fn drop_factors(&mut self) {
+        self.chols[0] = None;
+        self.chols[1] = None;
+    }
+
+    /// One row crossing the cut: `dir > 0` entering this side (rank-1
+    /// update), `dir < 0` leaving (guarded rank-1 downdate). The Gram
+    /// aggregate is moved by the caller in whole groups; the factors track
+    /// the same contributions row by row.
+    pub fn move_row(&mut self, phi: &[f64], w: f64, dir: i32) {
+        self.ops += 1;
+        if self.ops % 2048 == 0 {
+            self.chols[0] = None;
+            self.chols[1] = None; // periodic refresh bounds drift
+        }
+        for i in 0..2 {
+            if let Some(c) = self.chols[i].as_mut() {
+                let ok = if dir > 0 {
+                    c.rank1_add(phi, w);
+                    true
+                } else {
+                    c.rank1_sub(phi, w)
+                };
+                if !ok {
+                    self.chols[i] = None;
+                }
+            }
+        }
+    }
+
+    /// Residual score of this side's system in the shared `yty − xty·b`
+    /// convention (`plus` selects the `gram + extra` system).
+    pub fn sse(&mut self, plus: bool, l1: f64, scratch: &mut SolveScratch) -> f64 {
+        let idx = if plus && self.extra.is_some() { 1 } else { 0 };
+        let extra = if plus { self.extra.as_ref() } else { None };
+        if l1 > 0.0 {
+            // Elastic net: no maintained factor — the historical descent,
+            // warm-started from the previous candidate's coefficients.
+            return solve_normal_sum(
+                &self.gram,
+                extra,
+                self.dim,
+                l1,
+                self.l2,
+                scratch,
+                Some(&mut self.warm[idx][..]),
+            );
+        }
+        let d = self.dim;
+        self.xty[..d].copy_from_slice(&self.gram.xty[..d]);
+        let mut yty = self.gram.yty;
+        if let Some(e) = extra {
+            for (t, s) in self.xty[..d].iter_mut().zip(&e.xty[..d]) {
+                *t += *s;
+            }
+            yty += e.yty;
+        }
+        if let Some(c) = self.chols[idx].as_ref() {
+            c.solve_into(&self.xty[..d], &mut self.coef[..d]);
+            let explained: f64 = self.xty[..d]
+                .iter()
+                .zip(&self.coef[..d])
+                .map(|(t, s)| t * s)
+                .sum();
+            (yty - explained).max(0.0)
+        } else {
+            solve_normal_sum(&self.gram, extra, d, l1, self.l2, scratch, None)
+        }
+    }
 }
 
 /// Elastic net by coordinate descent on the standardised Gram (glmnet's
@@ -384,6 +640,7 @@ fn solve_elastic(
     dim: usize,
     l1: f64,
     l2: f64,
+    warm: Option<&mut [f64]>,
 ) -> f64 {
     let n = scratch.a[0].max(1.0);
     let sum_y = scratch.c[0];
@@ -406,6 +663,14 @@ fn solve_elastic(
         }
     }
     let mut b = vec![0.0; dim - 1];
+    // Warm start from the previous candidate's coefficients (scaled into
+    // this candidate's standardization): adjacent candidates differ by one
+    // value group, so the descent usually converges in a few sweeps.
+    if let Some(w) = warm.as_deref() {
+        for j in 1..dim {
+            b[j - 1] = w[j] * scale[j];
+        }
+    }
     for _ in 0..200 {
         let mut delta = 0.0f64;
         for j in 0..dim - 1 {
@@ -433,6 +698,9 @@ fn solve_elastic(
         let bj = b[j - 1] / scale[j];
         scratch.b[j] = bj;
         scratch.b[0] -= mean[j] * bj;
+    }
+    if let Some(w) = warm {
+        w[..dim].copy_from_slice(&scratch.b[..dim]);
     }
     let explained: f64 = scratch.c[..dim]
         .iter()

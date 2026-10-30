@@ -11,9 +11,14 @@
 //! - mean leaves: rpart's running-sum scan (`rpart/src/anova.c`) — O(1) per
 //!   value, split only where the value changes;
 //! - linear leaves: LightGBM's grouped accumulators
-//!   (`src/treelearner/feature_histogram.cpp`) over per-value Gram groups,
-//!   with per-candidate solves on preallocated matrices
-//!   (`src/treelearner/linear_tree_learner.cpp`).
+//!   (`src/treelearner/feature_histogram.cpp`) over per-value Gram groups
+//!   — with the per-candidate solves of that reference
+//!   (`src/treelearner/linear_tree_learner.cpp`) replaced by maintained
+//!   Cholesky factors: rows crossing the cut fold into the factors one
+//!   rank-1 step at a time and candidates are scored by triangular solves
+//!   (issue #7). Groups wider than ~dim/3 rows drop the factors instead —
+//!   a re-factor is cheaper than the fold — and any solve without a live
+//!   factor is exactly the historical solve.
 //! Everything is row-weighted; missing values are scored in both default
 //! directions (LightGBM's `default_left` shape) and the gain picks.
 //!

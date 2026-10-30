@@ -7,9 +7,9 @@
 use std::time::Instant;
 
 use crate::criteria::{beats, gain_of, GainFn};
-use crate::leaf::LeafKind;
+use crate::leaf::{LeafCols, LeafKind};
 use crate::model_tree::{Grower, NodeProfile, Split};
-use crate::node_stats::{design_row, fit_linear, solve_normal_sum, Gram, SolveScratch};
+use crate::node_stats::{design_row, fit_linear, solve_normal_sum, Gram, SideTrack, SolveScratch};
 
 /// Below this much work (rows x columns) the scan stays single-threaded —
 /// thread overhead would lose.
@@ -18,6 +18,14 @@ const PAR_MIN_WORK: usize = 20_000;
 fn levels_total(levels: &[(f64, Vec<(f64, f64)>)]) -> usize {
     levels.iter().map(|(_, rows)| rows.len()).sum()
 }
+/// Column-independent parent statistics for one node's scan — valid
+/// under the `all` leaf-column policy, where the design class does not
+/// depend on which column is being scanned.
+struct ParentPre {
+    parent_sse: f64,
+    mean_row: Vec<f64>,
+}
+
 /// Per-column data handler — exactly three kinds, the split loop's whole
 /// world. Values are `f64` at the core boundary; for categorical columns a
 /// distinct value IS a level (identity, never order). Missing (`None`/NA)
@@ -109,6 +117,46 @@ impl<'a> Grower<'a> {
         m == 0 || (mean_l - mean_r) * (m as f64) <= 0.0
     }
 
+    /// Parent fit score (the gain's origin) and the node's mean design row
+    /// (the monotone gate's evaluation point) for one scan design.
+    /// Computed once per node by `best_split` when the design is
+    /// column-independent (`leaf_cols = all`), once per column otherwise.
+    fn parent_stats(&self, rows: &[usize], chosen: &[usize], dim: usize) -> (f64, Vec<f64>) {
+        let mut pgram = Gram::new(dim);
+        let mut prow = vec![0.0; dim];
+        for &r in rows {
+            design_row(&mut prow, self.cols, r, chosen, true);
+            pgram.add_row(&prow, self.y[r], self.w[r]);
+        }
+        let mut scratch = SolveScratch::new(dim);
+        let parent_sse = solve_normal_sum(
+            &pgram,
+            None,
+            dim,
+            self.params.l1,
+            self.params.l2,
+            &mut scratch,
+            None,
+        );
+        // Monotone columns with linear leaves need one more gate per
+        // candidate: the children's fitted outputs must be ordered AT the
+        // threshold (their intercepts meet there - child means alone don't
+        // order linear responses). The eval point holds other columns at
+        // the node's mean design row.
+        let mut mean_row = vec![0.0; dim];
+        for &r in rows {
+            design_row(&mut prow, self.cols, r, chosen, true);
+            for (m, v) in mean_row.iter_mut().zip(&prow) {
+                *m += *v;
+            }
+        }
+        let inv_n = 1.0 / rows.len().max(1) as f64;
+        for v in mean_row.iter_mut() {
+            *v *= inv_n;
+        }
+        (parent_sse, mean_row)
+    }
+
     /// Best split across columns. Columns scan in parallel above a work
     /// threshold; the winner is chosen deterministically (gain, then
     /// scan order: lowest column index, lowest threshold, missing_left
@@ -160,6 +208,18 @@ impl<'a> Grower<'a> {
         }
         self.rng_counter += 1;
 
+        // Parent score + mean design row are column-independent under the
+        // `all` leaf-column policy: hoisted from per-column to per-node.
+        let parent_pre: Option<ParentPre> = match self.params.leaf_cols {
+            LeafCols::All => {
+                let chosen = self.chosen_cols(path);
+                let dim = 1 + 2 * chosen.len();
+                let (parent_sse, mean_row) = self.parent_stats(rows, &chosen, dim);
+                Some(ParentPre { parent_sse, mean_row })
+            }
+            _ => None,
+        };
+
         if work >= PAR_MIN_WORK {
             use rayon::prelude::*;
             let mut out: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> = cols
@@ -167,7 +227,7 @@ impl<'a> Grower<'a> {
                 .map(|&j| {
                     let mut cp = path.to_vec();
                     cp.push(j);
-                    let (found, st) = self.scan_column(rows, j, &cp);
+                    let (found, st) = self.scan_column(rows, j, &cp, parent_pre.as_ref());
                     (j, found, st)
                 })
                 .collect();
@@ -176,7 +236,7 @@ impl<'a> Grower<'a> {
         } else {
             for &j in &cols {
                 child_path.push(j);
-                let (found, st) = self.scan_column(rows, j, &child_path);
+                let (found, st) = self.scan_column(rows, j, &child_path, parent_pre.as_ref());
                 child_path.pop();
                 candidates.push((j, found, st));
             }
@@ -239,12 +299,13 @@ impl<'a> Grower<'a> {
         rows: &[usize],
         j: usize,
         path: &[usize],
+        pre: Option<&ParentPre>,
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
         if self.col_type(j) == ColType::Categorical {
             return self.scan_column_categorical(rows, j);
         }
         let (hit, st) = match self.params.leaf {
-            LeafKind::Linear => self.scan_column_linear(rows, j, path),
+            LeafKind::Linear => self.scan_column_linear(rows, j, path, pre),
             // Constant leaves (mean/median/quantile/huber) share the stats
             // scan; the `gain` knob picks the quality function.
             _ => self.scan_column_mean(rows, j),
@@ -629,6 +690,7 @@ impl<'a> Grower<'a> {
         rows: &[usize],
         j: usize,
         path: &[usize],
+        pre: Option<&ParentPre>,
     ) -> (Option<(f64, Split)>, ScanStats) {
         let mut st = ScanStats::default();
         let m = self.min_child(rows.len());
@@ -656,15 +718,22 @@ impl<'a> Grower<'a> {
             }
         }
 
-        let mut groups: Vec<(f64, Gram)> = Vec::new();
-        for &(v, r) in &pairs {
+        // Groups carry their row range into `pairs` too: the Grams move
+        // across the cut in whole groups (exact historical arithmetic)
+        // while the maintained factors follow the same rows one rank-1
+        // step at a time.
+        let mut groups: Vec<(f64, Gram, usize, usize)> = Vec::new();
+        for (idx, &(v, r)) in pairs.iter().enumerate() {
             design_row(&mut row_buf, self.cols, r, &chosen, true);
             match groups.last_mut() {
-                Some((gv, g)) if *gv == v => g.add_row(&row_buf, self.y[r], self.w[r]),
+                Some((gv, g, _, e)) if *gv == v => {
+                    g.add_row(&row_buf, self.y[r], self.w[r]);
+                    *e = idx + 1;
+                }
                 _ => {
                     let mut g = Gram::new(dim);
                     g.add_row(&row_buf, self.y[r], self.w[r]);
-                    groups.push((v, g));
+                    groups.push((v, g, idx, idx + 1));
                 }
             }
         }
@@ -676,41 +745,14 @@ impl<'a> Grower<'a> {
             }
         }
 
-        // Parent SSE over the parent's design class (once per node).
-        let parent_chosen = self.chosen_cols(path);
-        let pdim = 1 + 2 * parent_chosen.len();
-        let mut pgram = Gram::new(pdim);
-        let mut prow = vec![0.0; pdim];
-        for &r in rows {
-            design_row(&mut prow, self.cols, r, &parent_chosen, true);
-            pgram.add_row(&prow, self.y[r], self.w[r]);
-        }
-        let mut scratch = SolveScratch::new(dim.max(pdim));
-        let parent_sse = solve_normal_sum(
-            &pgram,
-            None,
-            pdim,
-            self.params.l1,
-            self.params.l2,
-            &mut scratch,
-        );
-
-        // Monotone columns with linear leaves need one more gate per
-        // candidate: the children's fitted outputs must be ordered AT the
-        // threshold (their intercepts meet there - child means alone don't
-        // order linear responses). The eval point holds other columns at the
-        // node's mean design row.
-        let mut mean_row = vec![0.0; dim];
-        for &r in rows {
-            design_row(&mut row_buf, self.cols, r, &chosen, true);
-            for (m, v) in mean_row.iter_mut().zip(&row_buf) {
-                *m += *v;
-            }
-        }
-        let inv_n = 1.0 / rows.len().max(1) as f64;
-        for v in mean_row.iter_mut() {
-            *v *= inv_n;
-        }
+        // Parent score + the node's mean design row (the monotone gate's
+        // evaluation point): column-independent under the `all` leaf
+        // policy and hoisted to one call per node by `best_split`.
+        let (parent_sse, mut mean_row) = match pre {
+            Some(p) => (p.parent_sse, p.mean_row.clone()),
+            None => self.parent_stats(rows, &chosen, dim),
+        };
+        let mut scratch = SolveScratch::new(dim);
         let jslot = 1 + chosen.iter().position(|&c| c == j).unwrap();
         let mut gbuf0 = Gram::new(dim);
         let mut gbuf1 = Gram::new(dim);
@@ -718,19 +760,42 @@ impl<'a> Grower<'a> {
         let t1 = Instant::now();
 
         let mut total = Gram::new(dim);
-        for (_, g) in &groups {
+        for (_, g, ..) in &groups {
             total.add(g);
         }
-        let mut left = Gram::new(dim);
         let total_ws = total.ws;
-        let mut right = total;
+        let has_miss = miss.n > 0;
+        let miss_extra = if has_miss { Some(miss.clone()) } else { None };
+        let mut left = SideTrack::new(Gram::new(dim), miss_extra.clone(), self.params.l2);
+        let mut right = SideTrack::new(total, miss_extra, self.params.l2);
         let mut best: Option<(f64, Split)> = None;
 
         for gi in 0..groups.len() {
-            let (v, g) = &groups[gi];
-            left.add(g);
-            right.sub(g);
-            if gi + 1 >= groups.len() || left.n < m || right.n < m {
+            let (v, g, start, end) = &groups[gi];
+            // A group wider than ~dim/3 rows is cheaper to re-factor than
+            // to fold row by row (rank-1 cost is linear in the group, the
+            // refactor is not): drop the maintained factors there and let
+            // solves take the exact path until a finer group re-materializes
+            // them. Smaller groups fold in one rank-1 step per row.
+            let fine = (*end - *start) * 3 <= dim;
+            if fine {
+                left.ensure();
+                right.ensure();
+            } else {
+                left.drop_factors();
+                right.drop_factors();
+            }
+            left.gram.add(g);
+            right.gram.sub(g);
+            if fine {
+                for &(_, r) in &pairs[*start..*end] {
+                    design_row(&mut row_buf, self.cols, r, &chosen, true);
+                    let w = self.w[r];
+                    left.move_row(&row_buf, w, 1);
+                    right.move_row(&row_buf, w, -1);
+                }
+            }
+            if gi + 1 >= groups.len() || left.gram.n < m || right.gram.n < m {
                 continue;
             }
             let threshold = match self.grid_for(j) {
@@ -738,16 +803,20 @@ impl<'a> Grower<'a> {
                 None => (v + groups[gi + 1].0) / 2.0,
             };
             st.candidates += 1;
-            for missing_left in [true, false] {
-                let left_n = left.n + if missing_left { miss.n } else { 0 };
-                let right_n = right.n + if missing_left { 0 } else { miss.n };
+            // With no missing rows both routing variants are identical and
+            // the first-found tie-break keeps `missing_left = true`, so the
+            // false variant is exactly redundant.
+            let variants: &[bool] = if has_miss { &[true, false] } else { &[true] };
+            for &missing_left in variants {
+                let left_n = left.gram.n + if missing_left { miss.n } else { 0 };
+                let right_n = right.gram.n + if missing_left { 0 } else { miss.n };
                 if left_n < m || right_n < m {
                     continue;
                 }
                 let (wl, wr) = if missing_left {
-                    (left.ws + miss.ws, right.ws)
+                    (left.gram.ws + miss.ws, right.gram.ws)
                 } else {
-                    (left.ws, right.ws + miss.ws)
+                    (left.gram.ws, right.gram.ws + miss.ws)
                 };
                 // grf-style alpha: each child carries at least alpha of the
                 // node's total weight.
@@ -757,16 +826,22 @@ impl<'a> Grower<'a> {
                     continue;
                 }
                 let (ml, mr) = if missing_left {
-                    ((left.wy + miss.wy) / wl.max(1e-300), right.wy / wr.max(1e-300))
+                    (
+                        (left.gram.wy + miss.wy) / wl.max(1e-300),
+                        right.gram.wy / wr.max(1e-300),
+                    )
                 } else {
-                    (left.wy / wl.max(1e-300), (right.wy + miss.wy) / wr.max(1e-300))
+                    (
+                        left.gram.wy / wl.max(1e-300),
+                        (right.gram.wy + miss.wy) / wr.max(1e-300),
+                    )
                 };
                 if !self.mono_ok(j, ml, mr) {
                     continue;
                 }
                 if self.params.monotone.get(j).copied().unwrap_or(0) != 0 {
-                    gbuf0.clone_from(&left);
-                    gbuf1.clone_from(&right);
+                    gbuf0.clone_from(&left.gram);
+                    gbuf1.clone_from(&right.gram);
                     if missing_left {
                         gbuf0.add(&miss);
                     } else {
@@ -797,13 +872,13 @@ impl<'a> Grower<'a> {
                 }
                 let (sl, sr) = if missing_left {
                     (
-                        solve_normal_sum(&left, Some(&miss), dim, self.params.l1, self.params.l2, &mut scratch),
-                        solve_normal_sum(&right, None, dim, self.params.l1, self.params.l2, &mut scratch),
+                        left.sse(true, self.params.l1, &mut scratch),
+                        right.sse(false, self.params.l1, &mut scratch),
                     )
                 } else {
                     (
-                        solve_normal_sum(&left, None, dim, self.params.l1, self.params.l2, &mut scratch),
-                        solve_normal_sum(&right, Some(&miss), dim, self.params.l1, self.params.l2, &mut scratch),
+                        left.sse(false, self.params.l1, &mut scratch),
+                        right.sse(true, self.params.l1, &mut scratch),
                     )
                 };
                 let gain = parent_sse - (sl + sr);

@@ -11,6 +11,7 @@
 
 use mltreelib_core::leaf::LeafKind;
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+use mltreelib_core::prune::PruneCost;
 
 const MPG: [f64; 32] = [
     21.0, 21.0, 22.8, 21.4, 18.7, 18.1, 14.3, 24.4, 22.8, 19.2, 17.8, 16.4, 17.3, 15.2,
@@ -101,6 +102,9 @@ fn cart_params() -> ModelTreeParams {
         min_gain: 1e-9,
         leaf: LeafKind::Mean,
         split_precision: None,
+        // Growth-only comparison: the defaults' cost-complexity pruner
+        // must not touch this tree (pruning is a later weighing criterion).
+        prune: PruneCost::None,
         ..Default::default()
     }
 }
