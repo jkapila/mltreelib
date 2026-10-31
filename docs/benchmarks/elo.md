@@ -38,30 +38,46 @@ Every score tracked in the arena includes two core architectural dimensions:
 
 ```text
 == Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==
-+-----------+---------------------+--------------------------+-------------+
-|    ELO    |    FIT TIME (±sd)   |          MODEL           |     DATA    |
-+-----------+---------------------+--------------------------+-------------+
-|   1577.1  |   15.41 s (±24.59)  |         grf_llf          |    17/18    |
-|   1525.9  |     0.67 s (±0.55)  |      LightGBM(200)       |    18/18    |
-|   1480.5  |     0.36 s (±0.31)  |      CatBoost(200)       |    18/18    |
-|   1463.7  |    6.50 s (±13.12)  |     perpetual (Rust)     |    18/18    |
-|   1331.3  |     0.50 s (±0.29)  |      forust (Rust)       |    18/18    |
-|   1229.5  |   11.47 s (±17.45)  |          grf_rf          |    18/18    |
-|   1217.3  |     0.23 s (±0.37)  |         CTBoost          |    18/18    |
-|   980.1   |   13.89 s (±27.18)  |          lmtree          |    16/18    |
-|   977.2   |     1.19 s (±1.53)  |          cubist          |    18/18    |
-|   954.2   |   10.39 s (±19.45)  |         glmtree          |    15/18    |
-|   914.8   |   70.56 s (±238.75) |      ModelTree(all)      |    18/18    |
-|   891.5   |   17.77 s (±44.25)  |    modeltrees lmtree     |    17/18    |
-|   823.5   |  143.31 s (±463.47) |    MARS (mars-earth)     |    12/18    |
-|   765.6   |     1.46 s (±2.38)  |          ctree           |    18/18    |
-|   763.5   |     0.26 s (±0.37)  |          earth           |    17/18    |
-|   691.7   |     0.13 s (±0.20)  |       sklearn tree       |    18/18    |
-|   650.7   |   56.32 s (±225.98) |    ModelTree(winnow)     |    18/18    |
-|   649.7   |     0.15 s (±0.20)  |     ModelTree(mean)      |    18/18    |
-|   566.3   |     0.22 s (±0.32)  |          rpart           |    18/18    |
-|   545.8   |     0.86 s (±1.22)  |     ModelTree(path)      |    18/18    |
-+-----------+---------------------+--------------------------+-------------+
++-----------+---------------------+------------------------+--------+------------+-----------+
+|    ELO    |    FIT TIME (±sd)   |         MODEL          |  LANG  |    CAT     |    DATA   |
++-----------+---------------------+------------------------+--------+------------+-----------+
+|   1690.0  |   12.01 s (±17.76)  |      ChimeraBoost      | Python |  internal  |   18/18   |
+|   1622.3  |   18.24 s (±23.58)  |         ranger         |   R    |  internal  |   16/18   |
+|   1618.1  |   19.20 s (±33.35)  |       sklearn RF       | Python |  external  |   18/18   |
+|   1568.1  |   13.02 s (±33.28)  |       ExtraTrees       | Python |  external  |   18/18   |
+|   1532.3  |   23.17 s (±31.44)  |        grf_llf         |   R    |    none    |   16/18   |
+|   1470.6  |     0.35 s (±0.22)  |     LightGBM(200)      | Python |  internal  |   18/18   |
+|   1439.3  |    7.20 s (±23.69)  |    perpetual (Rust)    |  Rust  |  external  |   17/18   |
+|   1425.5  |     1.04 s (±1.10)  |     CatBoost(200)      | Python |  internal  |   18/18   |
+|   1350.1  |     0.95 s (±1.91)  |  HistGradientBoosting  | Python |  internal  |   17/18   |
+|   1319.3  |   65.08 s (±68.98)  |          EBM           | Python |  internal  |   15/18   |
+|   1299.2  |     1.22 s (±0.86)  |     forust (Rust)      |  Rust  |  external  |   18/18   |
+|   1210.8  |     0.76 s (±1.83)  |        CTBoost         | Python |  internal  |   17/18   |
+|   1168.4  |   27.91 s (±39.58)  |          bart          |   R    |  internal  |   17/18   |
+|   1166.7  |   18.06 s (±23.80)  |         grf_rf         |   R    |    none    |   18/18   |
+|   1050.1  |   13.77 s (±20.73)  |     ModelTree(all)     |  Rust  |  internal  |   16/18   |
+|   1030.9  |    7.00 s (±13.24)  |      sklearn GBM       | Python |  external  |   18/18   |
+|   976.4   |   20.22 s (±47.48)  |         lmtree         |   R    |  internal  |   14/18   |
+|   972.9   |   15.29 s (±51.54)  |   modeltrees lmtree    | Python |  internal  |   14/18   |
+|   958.1   |   29.02 s (±57.11)  |        glmtree         |   R    |  internal  |   14/18   |
+|   928.3   |     5.95 s (±8.90)  |   ModelTree(winnow)    |  Rust  |  internal  |   16/18   |
+|   892.7   |    6.23 s (±15.19)  |         cubist         |   R    |  internal  |   17/18   |
+|   873.1   |   20.49 s (±31.78)  |   MARS (mars-earth)    | Python |  external  |   10/18   |
+|   761.5   |   20.60 s (±51.49)  |         mboost         |   R    |  internal  |   15/18   |
+|   697.6   |     0.33 s (±0.68)  |    statsmodels OLS     | Python |    none    |    8/18   |
+|   690.7   |   10.19 s (±27.50)  |         earth          |   R    |  internal  |   17/18   |
+|   681.8   |     0.09 s (±0.10)  |          KNN           | Python |  external  |   18/18   |
+|   655.7   |   21.17 s (±59.09)  |         ctree          |   R    |  internal  |   17/18   |
+|   611.2   |    14.37 s (±7.33)  |       trust-free       | Python |    none    |    4/18   |
+|   584.5   |     0.09 s (±0.23)  |     sklearn Linear     | Python |  external  |   18/18   |
+|   547.3   |   10.80 s (±21.74)  |    ModelTree(path)     |  Rust  |  internal  |   18/18   |
+|   539.8   |     0.34 s (±0.57)  |      sklearn tree      | Python |  external  |   18/18   |
+|   527.1   |   17.48 s (±43.02)  |    statsmodels RLM     | Python |    none    |    8/18   |
+|   482.0   |    5.34 s (±20.14)  |    ModelTree(mean)     |  Rust  |  internal  |   18/18   |
+|   368.3   |   22.52 s (±59.15)  |  statsmodels QuantReg  | Python |    none    |    7/18   |
+|   289.3   |     1.34 s (±3.71)  |         rpart          |   R    |  internal  |   17/18   |
++-----------+---------------------+------------------------+--------+------------+-----------+
+```
 
 TabArena anchor (different protocol - reference only):
 ```

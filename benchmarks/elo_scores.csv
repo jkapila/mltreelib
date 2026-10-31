@@ -521,3 +521,24 @@ ta_wine,grf_rf,R,none,0.6931,0.5440,9.9020
 ta_wine,earth,R,internal,0.7303,0.5722,0.2200
 ta_wine,mboost,R,internal,0.7203,0.5660,5.0510
 ta_wine,ranger,R,internal,0.6115,0.4499,3.9360
+ta_wine,bart,R,internal,0.6904,0.5418,12.8020
+ta_wine,CTBoost,Python,internal,0.6861,0.5360,0.1520
+ta_wine,CatBoost(200),Python,internal,0.6482,0.5018,0.6360
+ta_wine,ChimeraBoost,Python,internal,0.6234,0.4617,65.3330
+ta_wine,EBM,Python,internal,0.6632,0.5145,58.8050
+ta_wine,ExtraTrees,Python,external,0.6020,0.4014,1.7180
+ta_wine,HistGradientBoosting,Python,internal,0.6498,0.4996,0.4840
+ta_wine,KNN,Python,external,0.8037,0.6189,0.0210
+ta_wine,LightGBM(200),Python,internal,0.6304,0.4772,0.3620
+ta_wine,MARS (mars-earth),Python,external,0.7271,0.5691,103.1390
+ta_wine,ModelTree(all),Rust,internal,0.7047,0.5498,16.3530
+ta_wine,ModelTree(mean),Rust,internal,0.7469,0.5914,0.2470
+ta_wine,ModelTree(path),Rust,internal,0.7402,0.5947,4.7800
+ta_wine,ModelTree(winnow),Rust,internal,0.7189,0.5670,7.5080
+ta_wine,forust (Rust),Rust,external,0.6580,0.4944,1.1380
+ta_wine,modeltrees lmtree,Python,internal,0.7093,0.5593,1.1690
+ta_wine,perpetual (Rust),Rust,external,0.6566,0.5119,0.9420
+ta_wine,sklearn GBM,Python,external,0.6942,0.5437,1.5090
+ta_wine,sklearn Linear,Python,external,0.7468,0.5834,0.0040
+ta_wine,sklearn RF,Python,external,0.6125,0.4428,4.0650
+ta_wine,sklearn tree,Python,external,0.8463,0.5038,0.0650

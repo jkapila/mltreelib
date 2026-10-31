@@ -712,3 +712,29 @@ ta_wine,grf_rf,ok,10.6
 ta_wine,earth,ok,0.8
 ta_wine,mboost,ok,5.6
 ta_wine,ranger,ok,4.5
+ta_wine,bart,ok,13.4
+ta_wine,fru,error,0.5
+ta_wine,CTBoost,ok,6.3
+ta_wine,CatBoost(200),ok,7.4
+ta_wine,ChimeraBoost,ok,72.1
+ta_wine,EBM,ok,66.1
+ta_wine,ExtraTrees,ok,8.0
+ta_wine,HistGradientBoosting,ok,6.6
+ta_wine,KNN,ok,6.2
+ta_wine,LightGBM(200),ok,6.5
+ta_wine,MARS (mars-earth),ok,109.5
+ta_wine,ModelTree(all),ok,22.3
+ta_wine,ModelTree(mean),ok,6.4
+ta_wine,ModelTree(path),ok,10.7
+ta_wine,ModelTree(winnow),ok,13.6
+ta_wine,forust (Rust),ok,7.3
+ta_wine,modeltrees lmtree,ok,7.2
+ta_wine,perpetual (Rust),ok,6.9
+ta_wine,sklearn GBM,ok,7.7
+ta_wine,sklearn Linear,ok,6.1
+ta_wine,sklearn RF,ok,10.1
+ta_wine,sklearn tree,ok,6.2
+ta_wine,statsmodels OLS,error,6.0
+ta_wine,statsmodels QuantReg,error,6.3
+ta_wine,statsmodels RLM,error,6.0
+ta_wine,trust-free,error,6.2
