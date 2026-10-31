@@ -56,18 +56,18 @@ try:
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     sample = list(range(0, len(pred), max(1, len(pred) // 2000)))
     axes[0].scatter([y[n_tr + i] for i in sample], [pred[i] for i in sample],
-                    s=4, alpha=0.4, color="#2a7")
+                    s=4, alpha=0.4, color=mplots.PALETTE["primary"])
     lo = min(min(pred), min(y[n_tr:]))
     hi = max(max(pred), max(y[n_tr:]))
-    axes[0].plot([lo, hi], [lo, hi], color="#333", lw=1)
+    axes[0].plot([lo, hi], [lo, hi], color=mplots.PALETTE["dark"], lw=1)
     axes[0].set_xlabel("actual scaled sound pressure")
     axes[0].set_ylabel("predicted")
     axes[0].set_title("airfoil: predicted vs actual (test)")
 
     resid = [p - t for p, t in zip(pred, y[n_tr:])]
     axes[1].scatter([pred[i] for i in sample], [resid[i] for i in sample],
-                    s=4, alpha=0.4, color="#c63")
-    axes[1].axhline(0, color="#333", lw=1)
+                    s=4, alpha=0.4, color=mplots.PALETTE["accent"])
+    axes[1].axhline(0, color=mplots.PALETTE["dark"], lw=1)
     axes[1].set_xlabel("predicted")
     axes[1].set_ylabel("residual")
     axes[1].set_title("residuals")

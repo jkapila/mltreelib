@@ -30,3 +30,435 @@ ta_fiat500,sklearn Linear,Python,external,715.3237,572.2033,0.0040
 ta_fiat500,MARS (mars-earth),Python,external,708.5311,557.8362,9.5670
 ta_fiat500,HistGradientBoosting,Python,internal,714.7252,543.8569,0.5630
 ta_fiat500,sklearn GBM,Python,external,700.3535,542.9188,0.2640
+abalone,rpart,R,internal,2.5879,1.8603,0.0790
+abalone,cubist,R,internal,2.2941,1.5925,0.7150
+abalone,lmtree,R,internal,2.2718,1.6455,3.3770
+abalone,glmtree,R,internal,2.2764,1.6525,7.1350
+abalone,ctree,R,internal,2.4170,1.7364,1.6910
+abalone,grf_llf,R,none,2.2377,1.6157,3.9240
+abalone,grf_rf,R,none,2.3593,1.6751,2.0640
+abalone,earth,R,internal,2.2589,1.6223,0.1360
+abalone,mboost,R,internal,2.3636,1.6780,3.3800
+abalone,ranger,R,internal,2.3099,1.6599,2.4760
+abalone,bart,R,internal,2.3413,1.6929,5.9130
+abalone,CTBoost,Python,internal,2.5015,1.7715,0.0470
+abalone,CatBoost(200),Python,internal,2.3075,1.6425,0.5740
+abalone,ChimeraBoost,Python,internal,2.2889,1.6313,21.4270
+abalone,EBM,Python,internal,2.2999,1.6613,15.2740
+abalone,ExtraTrees,Python,external,2.3450,1.6742,0.7030
+abalone,HistGradientBoosting,Python,internal,2.3622,1.6736,0.4550
+abalone,KNN,Python,external,2.5044,1.7596,0.0110
+abalone,LightGBM(200),Python,internal,2.4330,1.7316,0.2540
+abalone,MARS (mars-earth),Python,external,2.2739,1.6443,45.5680
+abalone,ModelTree(all),Rust,internal,2.4095,1.7100,7.1360
+abalone,ModelTree(mean),Rust,internal,2.5193,1.7826,0.1130
+abalone,ModelTree(path),Rust,internal,2.6240,1.8538,3.1800
+abalone,ModelTree(winnow),Rust,internal,2.4095,1.7100,7.1130
+abalone,forust (Rust),Rust,external,2.4239,1.7381,0.5910
+abalone,modeltrees lmtree,Python,internal,2.2718,1.6455,0.2230
+abalone,perpetual (Rust),Rust,external,2.3160,1.6520,0.3770
+abalone,sklearn GBM,Python,external,2.2906,1.6300,0.5810
+abalone,sklearn Linear,Python,external,2.3016,1.6921,0.0030
+abalone,sklearn RF,Python,external,2.2984,1.6677,1.2830
+abalone,sklearn tree,Python,external,3.2368,2.2304,0.0200
+boston,rpart,R,internal,4.3098,2.9438,0.0390
+boston,cubist,R,internal,3.9799,2.4815,0.5490
+boston,lmtree,R,internal,4.0523,2.6892,1.6940
+boston,glmtree,R,internal,4.0498,2.6864,1.7600
+boston,ctree,R,internal,4.0185,2.6995,0.2870
+boston,grf_llf,R,none,3.7597,2.1587,1.8830
+boston,grf_rf,R,none,3.2654,2.2557,1.7540
+boston,earth,R,internal,4.4538,2.6142,0.0910
+boston,mboost,R,internal,3.5225,2.3136,2.9880
+boston,ranger,R,internal,2.6432,1.9704,1.6610
+boston,bart,R,internal,3.3843,1.9888,1.4630
+boston,CTBoost,Python,internal,4.0142,3.0789,0.0310
+boston,CatBoost(200),Python,internal,2.5033,1.7920,0.2800
+boston,ChimeraBoost,Python,internal,2.7273,1.9234,1.4470
+boston,EBM,Python,internal,3.4201,2.1288,76.7010
+boston,ExtraTrees,Python,external,2.8038,1.8243,0.2600
+boston,HistGradientBoosting,Python,internal,3.3178,2.1500,0.3050
+boston,KNN,Python,external,5.7590,4.0920,0.0040
+boston,LightGBM(200),Python,internal,3.4732,2.1596,0.1480
+boston,MARS (mars-earth),Python,external,4.8449,2.6204,16.3080
+boston,ModelTree(all),Rust,internal,4.5368,2.6521,0.9870
+boston,ModelTree(mean),Rust,internal,4.3408,3.3353,0.0170
+boston,ModelTree(path),Rust,internal,3.8210,2.8503,0.3450
+boston,ModelTree(winnow),Rust,internal,4.5368,2.6521,0.9820
+boston,forust (Rust),Rust,external,3.1517,2.1188,0.4270
+boston,modeltrees lmtree,Python,internal,4.0523,2.6892,0.0580
+boston,perpetual (Rust),Rust,external,3.4401,2.1917,0.1820
+boston,sklearn GBM,Python,external,3.2089,2.1088,0.1970
+boston,sklearn Linear,Python,external,4.7651,3.5260,0.0020
+boston,sklearn RF,Python,external,3.2157,2.0795,0.3680
+boston,sklearn tree,Python,external,4.7693,3.1559,0.0060
+concrete,rpart,R,internal,9.0686,7.3809,0.0420
+concrete,cubist,R,internal,6.8119,5.2613,0.5560
+concrete,lmtree,R,internal,7.6436,6.1672,1.5850
+concrete,glmtree,R,internal,7.4245,6.0930,1.7200
+concrete,ctree,R,internal,9.7571,7.2669,1.6830
+concrete,grf_llf,R,none,6.3136,4.6615,1.9990
+concrete,grf_rf,R,none,8.2605,6.7654,2.0620
+concrete,earth,R,internal,7.0604,5.8404,0.0970
+concrete,mboost,R,internal,7.1437,5.6279,2.9120
+concrete,ranger,R,internal,7.2902,5.7839,1.8500
+concrete,bart,R,internal,5.5068,3.9909,2.0530
+concrete,CTBoost,Python,internal,6.3763,5.1696,0.0420
+concrete,CatBoost(200),Python,internal,5.7390,3.9848,0.2800
+concrete,ChimeraBoost,Python,internal,5.5211,3.9253,0.9120
+concrete,EBM,Python,internal,5.2872,3.7750,40.7670
+concrete,ExtraTrees,Python,external,6.0624,4.2177,0.3210
+concrete,HistGradientBoosting,Python,internal,5.8780,4.1297,0.4170
+concrete,KNN,Python,external,10.9472,8.5698,0.0500
+concrete,LightGBM(200),Python,internal,5.8477,3.9193,0.1850
+concrete,MARS (mars-earth),Python,external,7.1129,5.8889,5.9600
+concrete,ModelTree(all),Rust,internal,6.4212,4.9851,0.7740
+concrete,ModelTree(mean),Rust,internal,11.0560,8.9617,0.0170
+concrete,ModelTree(path),Rust,internal,12.3982,9.5219,0.5620
+concrete,ModelTree(winnow),Rust,internal,6.4212,4.9851,0.7970
+concrete,forust (Rust),Rust,external,5.5870,3.8518,1.4850
+concrete,modeltrees lmtree,Python,internal,7.6436,6.1672,0.0580
+concrete,perpetual (Rust),Rust,external,5.7810,4.3894,0.3150
+concrete,sklearn GBM,Python,external,6.3769,4.9408,0.2440
+concrete,sklearn Linear,Python,external,11.3090,8.9090,0.0470
+concrete,sklearn RF,Python,external,6.0597,4.5178,0.4070
+concrete,sklearn tree,Python,external,7.9315,5.3006,0.0580
+concrete,statsmodels OLS,Python,none,11.3090,8.9090,0.0040
+concrete,statsmodels QuantReg,Python,none,12.0371,8.8071,0.0820
+concrete,statsmodels RLM,Python,none,11.4382,8.7855,0.0150
+concrete,trust-free,Python,none,7.5111,5.9876,17.2730
+fc2008,grf_rf,R,none,232.4065,160.9104,1.9260
+fc2008,mboost,R,internal,234.6313,168.6992,2.8930
+fc2008,ranger,R,internal,204.2791,143.1724,1.7100
+fc2008,bart,R,internal,195.8226,123.5915,2.0310
+fc2008,CTBoost,Python,internal,193.0465,139.5793,0.0300
+fc2008,CatBoost(200),Python,internal,196.2928,129.5404,0.6210
+fc2008,ChimeraBoost,Python,internal,197.2423,140.5659,0.7740
+fc2008,EBM,Python,internal,163.2328,103.9067,28.9980
+fc2008,ExtraTrees,Python,external,202.0520,118.2794,0.2130
+fc2008,HistGradientBoosting,Python,internal,200.2463,132.0042,0.3770
+fc2008,KNN,Python,external,250.5235,179.2225,0.0040
+fc2008,LightGBM(200),Python,internal,202.6151,128.9058,0.1720
+fc2008,ModelTree(all),Rust,internal,265.2499,173.0431,0.4040
+fc2008,ModelTree(mean),Rust,internal,292.7029,216.1877,0.0300
+fc2008,ModelTree(path),Rust,internal,421.6991,311.5954,0.1080
+fc2008,ModelTree(winnow),Rust,internal,266.4047,186.7732,0.2140
+fc2008,forust (Rust),Rust,external,167.7374,100.4522,0.6220
+fc2008,perpetual (Rust),Rust,external,222.6506,150.3050,0.0690
+fc2008,sklearn GBM,Python,external,190.9264,139.2887,0.1200
+fc2008,sklearn Linear,Python,external,290.7107,188.5550,0.0020
+fc2008,sklearn RF,Python,external,201.6055,128.9380,0.2510
+fc2008,sklearn tree,Python,external,210.3108,117.9032,0.0030
+ozone,rpart,R,internal,4.7069,3.5052,0.0350
+ozone,cubist,R,internal,4.5724,3.2786,0.5130
+ozone,lmtree,R,internal,4.2680,3.2706,0.0180
+ozone,glmtree,R,internal,4.2680,3.2706,1.5810
+ozone,ctree,R,internal,4.2597,3.1596,1.5140
+ozone,grf_llf,R,none,3.8045,2.7861,1.6960
+ozone,grf_rf,R,none,4.4816,3.4167,1.6360
+ozone,earth,R,internal,4.2276,3.2602,0.0860
+ozone,mboost,R,internal,3.7862,2.6911,2.5960
+ozone,ranger,R,internal,3.8915,2.8345,1.6030
+ozone,bart,R,internal,3.7781,2.7863,1.2280
+ozone,CTBoost,Python,internal,4.5425,3.3182,0.0080
+ozone,CatBoost(200),Python,internal,3.8169,2.9094,0.1910
+ozone,ChimeraBoost,Python,internal,4.0114,2.9436,0.6830
+ozone,EBM,Python,internal,3.7244,2.7087,12.7100
+ozone,ExtraTrees,Python,external,4.0995,3.1205,0.2070
+ozone,HistGradientBoosting,Python,internal,3.8363,3.0068,0.2130
+ozone,KNN,Python,external,5.4964,3.9727,0.0530
+ozone,LightGBM(200),Python,internal,4.0932,3.1922,0.1110
+ozone,MARS (mars-earth),Python,external,4.0996,3.0049,1.5270
+ozone,ModelTree(all),Rust,internal,4.3106,3.4120,0.3610
+ozone,ModelTree(mean),Rust,internal,5.4852,4.0652,0.0060
+ozone,ModelTree(path),Rust,internal,5.4418,4.1172,0.0800
+ozone,ModelTree(winnow),Rust,internal,4.2418,3.2894,0.2360
+ozone,forust (Rust),Rust,external,3.9406,2.9863,0.5500
+ozone,modeltrees lmtree,Python,internal,4.2680,3.2706,0.0400
+ozone,perpetual (Rust),Rust,external,3.8823,2.8679,0.0820
+ozone,sklearn GBM,Python,external,3.8805,2.8217,0.2040
+ozone,sklearn Linear,Python,external,4.4991,3.4018,0.0430
+ozone,sklearn RF,Python,external,3.8811,3.0265,0.2790
+ozone,sklearn tree,Python,external,5.4564,3.9848,0.0680
+ozone,statsmodels OLS,Python,none,4.4991,3.4018,0.0010
+ozone,statsmodels QuantReg,Python,none,4.9786,3.6468,0.0860
+ozone,statsmodels RLM,Python,none,4.5998,3.4566,0.0090
+ozone,trust-free,Python,none,4.4707,3.4204,7.2170
+ta_airfoil,rpart,R,internal,4.4426,3.4553,0.0410
+ta_airfoil,cubist,R,internal,2.4730,1.7966,0.6360
+ta_airfoil,lmtree,R,internal,2.5797,1.7793,1.6820
+ta_airfoil,glmtree,R,internal,2.5566,1.7876,1.8140
+ta_airfoil,ctree,R,internal,3.7884,2.8324,1.7300
+ta_airfoil,grf_llf,R,none,2.3439,1.6518,0.9710
+ta_airfoil,grf_rf,R,none,2.7916,2.0988,2.4350
+ta_airfoil,earth,R,internal,4.3107,3.3638,0.0880
+ta_airfoil,bart,R,internal,1.8740,1.3231,3.5360
+ta_airfoil,CTBoost,Python,internal,2.5289,1.9027,0.0250
+ta_airfoil,CatBoost(200),Python,internal,1.7067,1.1831,0.4070
+ta_airfoil,ChimeraBoost,Python,internal,1.7120,1.1674,2.4260
+ta_airfoil,EBM,Python,internal,1.8501,1.2194,66.2180
+ta_airfoil,ExtraTrees,Python,external,1.4303,0.9613,0.3620
+ta_airfoil,HistGradientBoosting,Python,internal,1.7776,1.2126,0.4200
+ta_airfoil,KNN,Python,external,6.1491,4.9573,0.0050
+ta_airfoil,LightGBM(200),Python,internal,1.6260,1.0926,0.2350
+ta_airfoil,MARS (mars-earth),Python,external,4.3967,3.4171,1.0200
+ta_airfoil,ModelTree(all),Rust,internal,3.2896,2.5183,0.4160
+ta_airfoil,ModelTree(mean),Rust,internal,4.8179,3.7597,0.0660
+ta_airfoil,ModelTree(path),Rust,internal,4.3816,3.3619,0.2130
+ta_airfoil,ModelTree(winnow),Rust,internal,3.5499,2.7333,0.3110
+ta_airfoil,forust (Rust),Rust,external,1.6064,1.0902,0.3690
+ta_airfoil,modeltrees lmtree,Python,internal,2.9064,2.2379,0.1490
+ta_airfoil,perpetual (Rust),Rust,external,2.2451,1.6125,0.2650
+ta_airfoil,sklearn GBM,Python,external,2.6218,1.9893,0.1770
+ta_airfoil,sklearn Linear,Python,external,4.8467,3.8668,0.0020
+ta_airfoil,sklearn RF,Python,external,1.8379,1.2564,0.4350
+ta_airfoil,sklearn tree,Python,external,2.8015,2.0424,0.0060
+ta_concrete,rpart,R,internal,9.7869,7.7620,0.0460
+ta_concrete,cubist,R,internal,6.1437,4.7123,0.5540
+ta_concrete,lmtree,R,internal,6.6351,4.8231,1.6870
+ta_concrete,glmtree,R,internal,6.1312,4.6586,2.1240
+ta_concrete,ctree,R,internal,7.0977,5.4627,1.7130
+ta_concrete,grf_llf,R,none,5.1278,3.7490,2.1990
+ta_concrete,grf_rf,R,none,6.5005,5.0751,2.0430
+ta_concrete,earth,R,internal,6.1971,4.9027,0.0930
+ta_concrete,mboost,R,internal,6.1531,4.8172,2.8810
+ta_concrete,ranger,R,internal,5.7318,4.3239,1.7850
+ta_concrete,bart,R,internal,3.9715,2.8557,2.6540
+ta_concrete,CTBoost,Python,internal,4.9069,3.6339,0.0600
+ta_concrete,CatBoost(200),Python,internal,4.0547,2.8822,0.3740
+ta_concrete,ChimeraBoost,Python,internal,3.9012,2.6617,0.8920
+ta_concrete,EBM,Python,internal,3.7479,2.5666,65.4730
+ta_concrete,ExtraTrees,Python,external,4.6004,3.0725,0.3750
+ta_concrete,HistGradientBoosting,Python,internal,4.5591,3.1025,0.4870
+ta_concrete,KNN,Python,external,9.0701,7.0654,0.0600
+ta_concrete,LightGBM(200),Python,internal,4.2884,2.8997,0.2170
+ta_concrete,MARS (mars-earth),Python,external,6.3822,4.9328,8.4390
+ta_concrete,ModelTree(all),Rust,internal,6.4851,4.4188,1.4450
+ta_concrete,ModelTree(mean),Rust,internal,9.8930,7.9108,0.0300
+ta_concrete,ModelTree(path),Rust,internal,9.7400,7.2953,0.9830
+ta_concrete,ModelTree(winnow),Rust,internal,6.4851,4.4188,1.4020
+ta_concrete,forust (Rust),Rust,external,4.4281,3.0578,1.4240
+ta_concrete,modeltrees lmtree,Python,internal,6.6351,4.8231,0.0880
+ta_concrete,perpetual (Rust),Rust,external,4.7464,3.4279,0.4620
+ta_concrete,sklearn GBM,Python,external,5.3802,3.9816,0.2920
+ta_concrete,sklearn Linear,Python,external,10.4542,8.3126,0.0490
+ta_concrete,sklearn RF,Python,external,4.8466,3.4444,0.5460
+ta_concrete,sklearn tree,Python,external,5.6645,3.6583,0.0510
+ta_concrete,statsmodels OLS,Python,none,10.4542,8.3126,0.0020
+ta_concrete,statsmodels QuantReg,Python,none,10.8668,8.1941,0.0610
+ta_concrete,statsmodels RLM,Python,none,10.5178,8.2227,0.0210
+ta_concrete,trust-free,Python,none,6.6456,4.7354,23.2970
+ta_diamonds,rpart,R,internal,1296.4227,849.7300,0.4290
+ta_diamonds,cubist,R,internal,638.2340,320.4544,3.4170
+ta_diamonds,lmtree,R,internal,728.3638,292.3538,51.9190
+ta_diamonds,glmtree,R,internal,626.4662,286.6103,88.9620
+ta_diamonds,ctree,R,internal,603.7319,318.3935,6.7060
+ta_diamonds,grf_llf,R,none,565.0860,279.9745,88.6700
+ta_diamonds,grf_rf,R,none,594.0717,302.2147,60.8520
+ta_diamonds,earth,R,internal,1078.9485,711.7752,2.4520
+ta_diamonds,mboost,R,internal,816.0765,465.7034,12.6130
+ta_diamonds,ranger,R,internal,627.7075,312.7876,31.9750
+ta_diamonds,bart,R,internal,539.7460,287.5431,114.4310
+ta_diamonds,CTBoost,Python,internal,0.0646,0.0165,0.5020
+ta_diamonds,CatBoost(200),Python,internal,0.0687,0.0178,2.7400
+ta_diamonds,ChimeraBoost,Python,internal,0.0636,0.0147,4.5710
+ta_diamonds,EBM,Python,internal,0.0604,0.0177,19.7670
+ta_diamonds,ExtraTrees,Python,external,0.0655,0.0127,14.1820
+ta_diamonds,HistGradientBoosting,Python,internal,0.0686,0.0195,0.6350
+ta_diamonds,KNN,Python,external,0.1886,0.1096,0.1410
+ta_diamonds,LightGBM(200),Python,internal,0.0698,0.0190,0.4110
+ta_diamonds,ModelTree(all),Rust,internal,0.0624,0.0180,31.0520
+ta_diamonds,ModelTree(mean),Rust,internal,0.0897,0.0451,1.4500
+ta_diamonds,ModelTree(path),Rust,internal,0.1596,0.1073,13.0420
+ta_diamonds,ModelTree(winnow),Rust,internal,0.0624,0.0180,31.1120
+ta_diamonds,forust (Rust),Rust,external,0.0893,0.0174,2.0110
+ta_diamonds,perpetual (Rust),Rust,external,0.0589,0.0133,3.6560
+ta_diamonds,sklearn GBM,Python,external,0.0684,0.0165,7.4610
+ta_diamonds,sklearn Linear,Python,external,0.0619,0.0183,0.0400
+ta_diamonds,sklearn RF,Python,external,0.1712,0.0137,23.2760
+ta_diamonds,sklearn tree,Python,external,0.1098,0.0166,0.3570
+ta_food_delivery,rpart,R,internal,8.3235,6.4858,1.3990
+ta_food_delivery,cubist,R,internal,8.4175,6.4590,5.4910
+ta_food_delivery,glmtree,R,internal,8.0130,6.3962,201.8720
+ta_food_delivery,ctree,R,internal,7.8751,6.1686,242.7840
+ta_food_delivery,grf_llf,R,none,7.5499,5.9141,62.8280
+ta_food_delivery,grf_rf,R,none,7.5473,5.9121,63.8490
+ta_food_delivery,earth,R,internal,7.9938,6.2461,72.9750
+ta_food_delivery,ranger,R,internal,7.7265,6.0622,39.2700
+ta_food_delivery,bart,R,internal,7.8008,6.1062,98.4850
+ta_food_delivery,CatBoost(200),Python,internal,7.4340,5.8310,3.1600
+ta_food_delivery,ChimeraBoost,Python,internal,7.2361,5.6920,2.7390
+ta_food_delivery,EBM,Python,internal,7.4475,5.8523,232.2890
+ta_food_delivery,ExtraTrees,Python,external,8.6400,6.7327,13.4860
+ta_food_delivery,KNN,Python,external,9.5193,7.5966,0.2040
+ta_food_delivery,LightGBM(200),Python,internal,7.6728,6.0192,0.7860
+ta_food_delivery,ModelTree(all),Rust,internal,7.4202,5.8135,76.2650
+ta_food_delivery,ModelTree(mean),Rust,internal,7.8385,6.1435,85.9200
+ta_food_delivery,ModelTree(path),Rust,internal,7.5981,5.9917,89.2360
+ta_food_delivery,ModelTree(winnow),Rust,internal,7.8638,6.1614,1.5110
+ta_food_delivery,forust (Rust),Rust,external,7.4351,5.8394,2.1460
+ta_food_delivery,perpetual (Rust),Rust,external,7.4847,5.8596,2.6150
+ta_food_delivery,sklearn GBM,Python,external,7.6404,5.9741,7.2720
+ta_food_delivery,sklearn Linear,Python,external,8.4503,6.6583,0.0130
+ta_food_delivery,sklearn RF,Python,external,7.9289,6.2127,33.0430
+ta_food_delivery,sklearn tree,Python,external,10.5931,8.1994,0.5220
+ta_healthcare,rpart,R,internal,5088.4058,3230.5985,0.0370
+ta_healthcare,cubist,R,internal,4531.0165,1639.2129,0.5570
+ta_healthcare,lmtree,R,internal,4486.7914,2397.7473,1.6030
+ta_healthcare,glmtree,R,internal,4486.7914,2397.7473,1.6680
+ta_healthcare,ctree,R,internal,4886.1271,2754.9602,1.4820
+ta_healthcare,grf_llf,R,none,4542.9509,2431.6699,2.1920
+ta_healthcare,grf_rf,R,none,4608.0917,2543.0193,2.0350
+ta_healthcare,earth,R,internal,5724.6287,4026.1312,0.0880
+ta_healthcare,mboost,R,internal,4372.4401,2364.2614,2.6850
+ta_healthcare,ranger,R,internal,4634.8861,2760.0214,1.7100
+ta_healthcare,bart,R,internal,4487.4216,2383.0300,2.8860
+ta_healthcare,CTBoost,Python,internal,4509.9753,2654.0901,0.0200
+ta_healthcare,CatBoost(200),Python,internal,4511.4994,2460.9004,0.4070
+ta_healthcare,ChimeraBoost,Python,internal,4425.9749,2427.5907,0.7370
+ta_healthcare,EBM,Python,internal,4489.4019,2545.6316,8.1290
+ta_healthcare,ExtraTrees,Python,external,5189.4269,2692.4686,0.3160
+ta_healthcare,HistGradientBoosting,Python,internal,4976.6818,2887.5893,0.4650
+ta_healthcare,KNN,Python,external,11145.1849,7913.4874,0.0040
+ta_healthcare,LightGBM(200),Python,internal,5148.2587,3119.3999,0.2090
+ta_healthcare,MARS (mars-earth),Python,external,5809.8588,4120.4916,4.0530
+ta_healthcare,ModelTree(all),Rust,internal,4972.7509,2705.0199,0.5310
+ta_healthcare,ModelTree(mean),Rust,internal,4791.0679,2722.4849,0.0400
+ta_healthcare,ModelTree(path),Rust,internal,4976.7542,2972.0747,0.4350
+ta_healthcare,ModelTree(winnow),Rust,internal,4972.7509,2705.0199,0.5350
+ta_healthcare,forust (Rust),Rust,external,4832.5901,2738.7888,0.3770
+ta_healthcare,modeltrees lmtree,Python,internal,4486.7914,2397.7473,0.1770
+ta_healthcare,perpetual (Rust),Rust,external,4537.2892,2614.4210,0.0990
+ta_healthcare,sklearn GBM,Python,external,4512.9874,2441.8126,0.1720
+ta_healthcare,sklearn Linear,Python,external,5854.9831,3963.0899,0.0020
+ta_healthcare,sklearn RF,Python,external,4884.1132,2663.3070,0.4030
+ta_healthcare,sklearn tree,Python,external,6286.5854,2917.7990,0.0060
+ta_houses,rpart,R,internal,0.3779,0.2924,0.4110
+ta_houses,cubist,R,internal,0.2298,0.1553,2.6920
+ta_houses,lmtree,R,internal,0.2377,0.1625,24.1280
+ta_houses,glmtree,R,internal,0.2354,0.1617,72.1470
+ta_houses,ctree,R,internal,0.3045,0.2252,2.9950
+ta_houses,grf_llf,R,none,0.2314,0.1627,23.7190
+ta_houses,grf_rf,R,none,0.2456,0.1773,22.8200
+ta_houses,earth,R,internal,0.2907,0.2180,0.3060
+ta_houses,mboost,R,internal,0.2976,0.2261,7.0260
+ta_houses,ranger,R,internal,0.2383,0.1720,13.7900
+ta_houses,bart,R,internal,0.2339,0.1692,43.0120
+ta_houses,CTBoost,Python,internal,0.2261,0.1619,0.3360
+ta_houses,CatBoost(200),Python,internal,0.2193,0.1562,0.6050
+ta_houses,ChimeraBoost,Python,internal,0.2085,0.1448,7.8600
+ta_houses,EBM,Python,internal,0.2184,0.1537,101.6120
+ta_houses,ExtraTrees,Python,external,0.2314,0.1649,5.8080
+ta_houses,HistGradientBoosting,Python,internal,0.2248,0.1601,0.4540
+ta_houses,KNN,Python,external,0.5193,0.4142,0.1070
+ta_houses,LightGBM(200),Python,internal,0.2162,0.1529,0.3000
+ta_houses,ModelTree(all),Rust,internal,0.2574,0.1843,24.3290
+ta_houses,ModelTree(mean),Rust,internal,0.3585,0.2745,0.4670
+ta_houses,ModelTree(path),Rust,internal,0.3560,0.2726,11.4890
+ta_houses,ModelTree(winnow),Rust,internal,0.3293,0.2496,12.5980
+ta_houses,forust (Rust),Rust,external,0.2238,0.1597,1.5290
+ta_houses,modeltrees lmtree,Python,internal,0.2377,0.1625,2.6070
+ta_houses,perpetual (Rust),Rust,external,0.2113,0.1483,4.5930
+ta_houses,sklearn GBM,Python,external,0.2573,0.1914,5.1260
+ta_houses,sklearn Linear,Python,external,0.3431,0.2569,0.0500
+ta_houses,sklearn RF,Python,external,0.2259,0.1582,14.2240
+ta_houses,sklearn tree,Python,external,0.3163,0.2194,0.2720
+ta_houses,statsmodels OLS,Python,none,0.3431,0.2569,0.0130
+ta_houses,statsmodels QuantReg,Python,none,0.3451,0.2557,0.1430
+ta_houses,statsmodels RLM,Python,none,0.3449,0.2560,0.2920
+ta_miami,rpart,R,internal,192132.4025,112549.5997,0.4520
+ta_miami,cubist,R,internal,114607.6026,50883.5591,2.8760
+ta_miami,lmtree,R,internal,113425.1184,54457.8906,177.7940
+ta_miami,ctree,R,internal,140802.3248,69324.5750,4.9430
+ta_miami,grf_llf,R,none,102561.4179,47172.5360,21.9490
+ta_miami,grf_rf,R,none,124681.6856,56457.9655,19.9670
+ta_miami,earth,R,internal,145755.8544,92290.8910,0.3260
+ta_miami,mboost,R,internal,134404.2439,68758.6671,7.6110
+ta_miami,ranger,R,internal,101302.6555,46183.4144,14.0960
+ta_miami,bart,R,internal,101243.0227,49839.4632,29.7840
+ta_miami,CTBoost,Python,internal,107014.0902,51635.8944,0.3740
+ta_miami,CatBoost(200),Python,internal,87832.7998,44850.3549,0.8210
+ta_miami,ChimeraBoost,Python,internal,85052.7642,41702.1534,14.7610
+ta_miami,EBM,Python,internal,91918.7660,49281.1304,209.0040
+ta_miami,ExtraTrees,Python,external,98024.4143,45633.5888,5.8630
+ta_miami,HistGradientBoosting,Python,internal,99388.4511,48808.0858,0.6000
+ta_miami,KNN,Python,external,147140.1990,74372.9671,0.0790
+ta_miami,LightGBM(200),Python,internal,93946.8689,45382.2016,0.3300
+ta_miami,ModelTree(all),Rust,internal,127066.8603,55532.1684,30.7390
+ta_miami,ModelTree(mean),Rust,internal,177412.3119,99092.7500,0.3810
+ta_miami,ModelTree(path),Rust,internal,182240.2020,99153.1180,6.6120
+ta_miami,ModelTree(winnow),Rust,internal,126937.7270,56075.6900,20.4270
+ta_miami,forust (Rust),Rust,external,93775.1954,46375.1313,0.9760
+ta_miami,modeltrees lmtree,Python,internal,104905.8629,50855.1840,194.0830
+ta_miami,perpetual (Rust),Rust,external,91666.4780,43967.5605,5.4010
+ta_miami,sklearn GBM,Python,external,110163.5286,56682.6761,6.3820
+ta_miami,sklearn Linear,Python,external,189246.7998,116668.0160,0.0070
+ta_miami,sklearn RF,Python,external,105171.2699,47849.8341,16.3060
+ta_miami,sklearn tree,Python,external,147951.1444,68301.2598,0.2740
+ta_protein,rpart,R,internal,5.4592,4.5060,1.1230
+ta_protein,cubist,R,internal,4.4317,3.0729,5.8580
+ta_protein,ctree,R,internal,4.5936,3.2995,6.4600
+ta_protein,grf_llf,R,none,3.5932,2.5984,67.4780
+ta_protein,grf_rf,R,none,3.9965,2.9903,63.2460
+ta_protein,earth,R,internal,5.0255,4.1069,1.1380
+ta_protein,mboost,R,internal,5.0345,4.0870,14.4380
+ta_protein,ranger,R,internal,3.5056,2.4357,70.8010
+ta_protein,bart,R,internal,4.3278,3.3362,101.4790
+ta_protein,CTBoost,Python,internal,4.1929,3.1825,0.6680
+ta_protein,CatBoost(200),Python,internal,3.9228,2.8947,1.1420
+ta_protein,ChimeraBoost,Python,internal,3.4462,2.3638,33.3150
+ta_protein,ExtraTrees,Python,external,3.3920,2.2356,14.8390
+ta_protein,HistGradientBoosting,Python,internal,4.1057,3.0868,0.6530
+ta_protein,KNN,Python,external,5.8875,4.6953,0.2030
+ta_protein,LightGBM(200),Python,internal,3.9186,2.8705,0.4600
+ta_protein,ModelTree(all),Rust,internal,4.5162,3.4524,28.9820
+ta_protein,ModelTree(mean),Rust,internal,5.2197,4.1828,0.9380
+ta_protein,ModelTree(path),Rust,internal,5.3321,4.3335,15.4050
+ta_protein,ModelTree(winnow),Rust,internal,4.9605,3.9507,9.7830
+ta_protein,forust (Rust),Rust,external,3.9650,2.8987,1.1550
+ta_protein,modeltrees lmtree,Python,internal,4.8492,2.9851,10.5930
+ta_protein,perpetual (Rust),Rust,external,3.7813,2.7651,4.1750
+ta_protein,sklearn GBM,Python,external,4.7015,3.7554,17.9580
+ta_protein,sklearn Linear,Python,external,5.2087,4.3717,0.0590
+ta_protein,sklearn RF,Python,external,3.5377,2.3752,47.5900
+ta_protein,sklearn tree,Python,external,5.0683,2.9457,0.8440
+ta_protein,statsmodels OLS,Python,none,5.1875,4.3262,0.0320
+ta_protein,statsmodels QuantReg,Python,none,5.3740,4.2938,0.5720
+ta_protein,statsmodels RLM,Python,none,5.2023,4.2877,1.4400
+ta_qsar_fish,rpart,R,internal,1.1243,0.7967,0.0380
+ta_qsar_fish,cubist,R,internal,1.0197,0.6932,0.5120
+ta_qsar_fish,lmtree,R,internal,1.0356,0.7074,1.8150
+ta_qsar_fish,glmtree,R,internal,1.0290,0.7051,2.1690
+ta_qsar_fish,ctree,R,internal,1.0776,0.7737,1.5910
+ta_qsar_fish,grf_llf,R,none,0.9659,0.6559,1.9990
+ta_qsar_fish,grf_rf,R,none,0.9787,0.6769,2.0100
+ta_qsar_fish,earth,R,internal,0.9985,0.7022,0.0930
+ta_qsar_fish,bart,R,internal,0.9692,0.6753,2.2670
+ta_qsar_fish,CTBoost,Python,internal,0.9900,0.6970,0.0200
+ta_qsar_fish,CatBoost(200),Python,internal,0.9506,0.6525,0.2720
+ta_qsar_fish,ChimeraBoost,Python,internal,0.9510,0.6510,0.6750
+ta_qsar_fish,EBM,Python,internal,0.9726,0.6770,18.7840
+ta_qsar_fish,ExtraTrees,Python,external,0.9303,0.6008,0.3030
+ta_qsar_fish,HistGradientBoosting,Python,internal,0.9663,0.6483,0.3300
+ta_qsar_fish,KNN,Python,external,1.0366,0.6947,0.0610
+ta_qsar_fish,LightGBM(200),Python,internal,0.9716,0.6604,0.2270
+ta_qsar_fish,MARS (mars-earth),Python,external,0.9877,0.6971,9.2990
+ta_qsar_fish,ModelTree(all),Rust,internal,0.9978,0.7064,0.5640
+ta_qsar_fish,ModelTree(mean),Rust,internal,1.1120,0.8254,0.0180
+ta_qsar_fish,ModelTree(path),Rust,internal,1.1403,0.8424,0.4530
+ta_qsar_fish,ModelTree(winnow),Rust,internal,0.9978,0.7064,0.5700
+ta_qsar_fish,forust (Rust),Rust,external,1.0119,0.6580,1.5010
+ta_qsar_fish,modeltrees lmtree,Python,internal,1.0356,0.7074,0.0570
+ta_qsar_fish,perpetual (Rust),Rust,external,0.9551,0.6615,0.1190
+ta_qsar_fish,sklearn GBM,Python,external,0.9623,0.6597,0.2280
+ta_qsar_fish,sklearn Linear,Python,external,1.0614,0.7381,0.0470
+ta_qsar_fish,sklearn RF,Python,external,0.9422,0.6333,0.4260
+ta_qsar_fish,sklearn tree,Python,external,1.2727,0.8838,0.0570
+ta_qsar_fish,statsmodels OLS,Python,none,1.0614,0.7381,0.0010
+ta_qsar_fish,statsmodels QuantReg,Python,none,1.0789,0.7353,0.0290
+ta_qsar_fish,statsmodels RLM,Python,none,1.0685,0.7372,0.0170
+ta_qsar_fish,trust-free,Python,none,1.0865,0.7668,9.6900
+ta_qsar_tid11,rpart,R,internal,1.2674,0.9962,15.4700
+ta_qsar_tid11,cubist,R,internal,0.8806,0.6307,63.3580
+ta_qsar_tid11,lmtree,R,internal,0.9595,0.7436,9.1270
+ta_qsar_tid11,glmtree,R,internal,0.9595,0.7436,13.9820

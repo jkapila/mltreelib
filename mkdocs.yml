@@ -44,6 +44,10 @@ nav:
       - End-to-end walkthrough: examples/walkthrough.md
       - Data Processing: examples/data-processing.md
       - Model building & predictions: examples/model-building.md
+      - Growth knob tour: examples/knob-tour.md
+      - Distributional leaves: examples/distributional-leaves.md
+      - Categorical encoders: examples/categorical-encoders.md
+      - Monotone & interaction constraints: examples/constraints.md
       - Inspection: examples/inspection.md
       - Visualization: examples/visualization.md
       - Metrics & plots: examples/metrics-plots.md
@@ -51,6 +55,8 @@ nav:
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
+  - Research:
+      - Field notes: field-notes.md
   - API reference:
       - Overview: reference/api/index.md
       - Data: reference/api/data.md
@@ -77,11 +83,17 @@ plugins:
           - examples/walkthrough.md
           - examples/data-processing.md
           - examples/model-building.md
+          - examples/knob-tour.md
+          - examples/distributional-leaves.md
+          - examples/categorical-encoders.md
+          - examples/constraints.md
           - examples/inspection.md
           - examples/visualization.md
           - examples/metrics-plots.md
+          - examples/hpo.md
           - benchmarks/elo.md
           - benchmarks/datasets.md
+          - field-notes.md
           - reference/data.md
           - reference/model.md
           - reference/metrics.md

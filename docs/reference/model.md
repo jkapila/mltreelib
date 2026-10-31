@@ -8,35 +8,40 @@ Rust core is the source of truth; this page mirrors it.
 
 ```python
 ModelTree(
-    max_depth=4, min_rows=10, min_gain=1e-9,
-    leaf_cols="all",        # "all" | "path" — columns available to leaf models
-    leaf="linear",          # "linear"|"mean"|"median"|"quantile"|"huber"
-    tau=0.5,                # the quantile for leaf="quantile"
-    l2=0.1, l1=0.0,         # ridge on leaf coefficients (l1 off by default)
-    monotone=[],            # per column: 0 | +1 | -1
-    interaction_groups=[],  # [[col, ...], ...] — paths may not mix groups
-    min_relevance=None,     # relevance threshold for column screening
-    gain="sse",             # regression: "sse"|"friedman_mse"|"absolute_error"|"huber"|"poisson"|"sdr";
-                            # class: "entropy"|"gini"|"gain_ratio"|"twoing"; or callable
-    split_precision=0.001, # numeric candidate grid (thousandths); None = exact unique scan
-    cat_order="frequency_desc",  # "frequency_desc" | "target_mean" | [level codes]
-    cat_search="cumulative",     # "cumulative" | "single_vs_rest" | "both"
-    leaf_digest=True,       # keep each leaf's t-digest (quantile() needs it)
-    verbose=0,              # 0 silent | 1 per depth | 2 per node (training_log)
-    alpha=0.0,              # min child weight share (grf's alpha); 0 = off
-    imbalance_penalty=0.0,  # subtract penalty*(1/n_l + 1/n_r) from the gain
-    col_sample=None,        # per-node random column fraction (forest spirit)
-    seed=42,                # column-subset seed (deterministic)
-    prune="none",           # "none" | "bic" | "mdl" — bottom-up cost pruning
+    # Growth & stopping
+    max_depth=5, min_rows=50, minsplit=None, minbucket=None,
+    minprob=0.02, max_leaf_nodes=None, min_gain=1e-9, purity_gate=None,
+    # Search
+    gain=None, split_precision=0.001, split_cols=None,
+    col_sample=None, seed=42,
+    # Leaf & family
+    leaf="linear", leaf_family="gaussian", tau=0.5, l1=0.0, l2=0.5,
+    leaf_cols="all", leaf_digest=True,
+    # Categorical
+    cat_order=None, cat_search="cumulative",
+    # Constraints
+    monotone=[], interaction_groups=[],
+    # Balance (grf)
+    alpha=0.0, imbalance_penalty=0.0,
+    # Pruning
+    prune="cp", cp_alpha=5.0,
+    # Honesty & surrogates
+    honesty=False, honesty_fraction=0.5, maxsurrogate=0,
+    # Significance gates (MOB)
+    split_test="none", split_alpha=0.05, bonferroni=False,
+    # Screening
+    preselect="none", min_relevance=None,
+    # Diagnostics
+    verbose=0,
 )
 ```
 
 The gain family is **sample-weight aware end to end**: weighted class
 masses for entropy/gini/gain_ratio/twoing, weighted moments for sdr/SSE,
-and a custom `gain_fn(left, right)` receives lazy `(y, w)` pair slices of
-the two sides (higher = better). `gain_ratio` is C4.5 (information gain ÷
-split information), `sdr` is the model-tree standard-deviation reduction,
-`twoing` is Breiman's balanced-contrast rule.
+fitted deviance for binomial/Poisson, and a custom `gain_fn(left, right)`
+receives lazy `(y, w)` pair slices of the two sides (higher = better).
+`gain="deviance"` scores the fitted leaf-family likelihood and is
+recommended for binomial and Poisson leaves.
 
 Defaults are the arena bake-off winner (see [Benchmarks](../benchmarks/elo.md))
 — linear leaves at shallow depth with a small **ridge** (`l2`) penalty. `l1`
@@ -45,56 +50,58 @@ inside the split scan and the accuracy gain over ridge is marginal. Turning
 regularization fully off (`l1=l2=0`) on raw scales is a known blowup mode —
 keep the ridge unless you standardize your inputs.
 
-## Split search — per dtype, no encoding
+## Split search — per dtype, raw data in
 
-Categorical columns are **levels as-is** (`dtypes` declares them; a distinct
-value is a level), NAs route as-is. Nothing is ever encoded on the growth
-path — the encoders in [Data](data.md) are pipeline tools for feeding
-sklearn and friends, never invoked by the tree. Binary level partitions
-(`cat_search`) are built along `cat_order`; multiway partitions are reserved
-for a later build. `gain` picks the split-quality function: the built-ins
-scan on summary stats, a custom `gain_fn(left_y, right_y) -> float` receives
-lazy y-slices per candidate (higher = better; sees y values only). Float
-columns scan candidates on the `split_precision` grid (thresholds are grid
-values; prediction rounds to the same grid), `None` restores the exact scan.
-
-```python
-m = ModelTree(max_depth=1, min_rows=5, gain="entropy", cat_search="cumulative")
-m.fit(x, y, dtypes=["categorical"])
-m.predict([[0.0], [1.0], [2.0]])
-```
-
-```text
-categorical fit: pred(0,1,2) = [0.0, 5.0, 5.0]     # {0} | {1,2} partition
-grid threshold: 1.3 (on the grid: True)
-```
-
-## Quantiles and the training log
-
-`leaf_digest=True` keeps a t-digest in every leaf (weighted targets) —
-`quantile(x, tau)` then answers **any** τ after the fit (median now, p90
-later, no refit). `leaf_digest=False` drops the digests (leaner; quantile
-returns NaN). `training_log()` returns the scan log when `verbose > 0`:
-scan config, per-depth/per-node candidate counts, timings.
+Categorical columns are **levels as-is** (`dtypes` declares `"categorical"`;
+string values and numeric level codes enter directly — identity, never order),
+NAs route as-is. Raw strings are ingested directly: the tree builds an internal
+identity dictionary on the fly without requiring an external encoder. Binary
+level partitions (`cat_search`) are built along `cat_order` (`"frequency_desc"`,
+`"target_mean"`, or custom); multiway partitions are reserved for a later build.
+`gain` picks the split-quality function: built-ins scan on summary stats or
+deviance; a custom `gain_fn(left_y, right_y) -> float` receives lazy y-slices
+per candidate. Numeric columns scan candidates on the `split_precision` grid
+(thresholds are grid values; prediction compares raw values), `None` restores
+the exact unique-value scan.
 
 ```python
-mq = ModelTree(max_depth=1, min_rows=5)          # leaf_digest=True default
-mq.fit(xg, yg)
-mq.quantile([[1.25]], 0.5), mq.quantile([[2.25]], 0.9)
+# Raw strings ingested directly in categorical columns:
+m = ModelTree(max_depth=2, min_rows=2, cat_order="target_mean")
+m.fit([["paris", 1.0], ["tokyo", 2.0], ["paris", 3.0], ["london", 4.0]],
+      [10.0, 20.0, 15.0, 30.0], dtypes=["categorical", "numeric"])
+m.predict([["paris", 1.5], ["london", 3.5]])
 ```
 
-```text
-quantile 0.5: 0.0 | p90: 1.0
-training_log: 3 lines; first: depth 0: nodes=1 rows=60 candidates=3 scan_ms=0
-```
+## Significance gates & Honesty
+
+- **`split_test="chow"`**: A Chow structural break F-test gates node splitting.
+  The candidate split must demonstrate statistically significant parameter
+  heterogeneity over the pooled node model at `split_alpha` (e.g. 0.05),
+  optionally adjusted with `bonferroni=True` across evaluated split candidates.
+- **`honesty=True`**: GRF-style sample splitting partition. `honesty_fraction`
+  (default 0.5) of rows select tree structure and splits; the held-out estimation
+  rows fit leaf parameters, yielding unbiased honest predictions.
+
+## Distributional leaves — binomial & Poisson
+
+`leaf_family` switches the leaf distribution and link function:
+- `"gaussian"` (default): Identity link, least squares regression.
+- `"binomial"`: Logit link for 0/1 binary targets. Coefficients are on the log-odds
+  scale; `predict` and `predict_proba` return response probabilities `P(Y=1)`.
+- `"poisson"`: Log link for nonnegative counts or rates. Coefficients are on the
+  log-rate scale; `predict` returns expected counts.
+
+Pair with `gain="deviance"` so split search maximizes deviance reduction under the family.
 
 ## Fitting & predicting
 
 | method | returns | notes |
 |---|---|---|
-| `fit(x, y, w=None, dtypes=None)` | `self` | rows of `float`/`None` (`None` = missing); `w` = row weights (0 = row ignored); `dtypes` = per column `"numeric"`/`"categorical"` (levels as-is); rows with `None` target drop |
-| `predict(x)` | `list[float]` | missing cells route by the learned NA direction; never panics on short rows |
-| `quantile(x, tau)` | `list[float]` | conditional τ-quantile per row from the leaf t-digests |
+| `fit(x, y, w=None, dtypes=None)` | `self` | rows of `float`/`str`/`None` (`None` = missing); `w` = row weights; `dtypes` = per column `"numeric"`/`"categorical"`; strings in categorical columns ingested natively |
+| `predict(x)` | `list[float]` | response-scale predictions (regression mean, binomial P(1), Poisson expected count); NAs route by learned NA direction |
+| `predict_proba(x)` | `list[float]` | response probability P(Y=1) for `leaf_family="binomial"` |
+| `cdf(x, value)` | `list[float]` | conditional fitted-distribution CDF P(Y <= value) for binomial/Poisson |
+| `quantile(x, tau)` | `list[float]` | empirical conditional τ-quantile from leaf t-digests (`leaf_digest=True`) |
 
 ## Reading the model
 

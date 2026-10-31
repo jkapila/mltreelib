@@ -31,7 +31,16 @@ def read_xy(path):
         header = next(reader, None)
         for row in reader:
             if row:
-                x.append([None if v == "" else float(v) for v in row[:-1]])
+                cells = []
+                for v in row[:-1]:
+                    if v == "":
+                        cells.append(None)
+                    else:
+                        try:
+                            cells.append(float(v))
+                        except ValueError:
+                            cells.append(v)
+                x.append(cells)
                 y.append(float(row[-1]))
     return x, y, (header or [])
 
@@ -51,12 +60,22 @@ def main():
     age_col = hdr.index("age")
     mono = [0] * (len(hdr) - 1)
     mono[age_col] = 1
+    dtypes = [
+        "categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric"
+        for j in range(len(xtr[0]))
+    ]
 
-    # Probe grid: sweep age, hold others at medians.
+    # Probe grid: sweep age, hold others at representative medians / modes.
     med = []
     for j in range(len(xtr[0])):
-        vals = sorted(v for v in (r[j] for r in xtr) if v is not None)
-        med.append(vals[len(vals) // 2] if vals else 0.0)
+        vals = [r[j] for r in xtr if r[j] is not None]
+        if vals and isinstance(vals[0], (int, float)):
+            svals = sorted(vals)
+            med.append(svals[len(svals) // 2])
+        elif vals:
+            med.append(vals[0])
+        else:
+            med.append(0.0)
     grid = []
     for i in range(24):
         r = list(med)
@@ -71,8 +90,8 @@ def main():
         ours_u, ours_c = ModelTree(leaf=leaf, l1=0.0, l2=0.0), ModelTree(
             monotone=mono, leaf=leaf, l1=0.0, l2=0.0
         )
-        ours_u.fit(xtr, ytr)
-        ours_c.fit(xtr, ytr)
+        ours_u.fit(xtr, ytr, dtypes=dtypes)
+        ours_c.fit(xtr, ytr, dtypes=dtypes)
         pu, pc = ours_u.predict(grid), ours_c.predict(grid)
         print(f"  ours/{leaf:<6} unconstrained monotone: {monotone_ok(pu)}"
               f"   constrained: {monotone_ok(pc)}")

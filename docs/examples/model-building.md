@@ -84,5 +84,30 @@ predictions with missing carat: [1175.4, -1371.3, 1042.0]
 direction, not a crash — see [Inspection](inspection.md) for the leaf
 coefficients behind it.)
 
+## Distributional leaves — `leaf_family`
+
+Binary targets and counts get a family instead of a Gaussian mean:
+`leaf_family="binomial"` (logit link) for 0/1 targets and `"poisson"`
+(log link) for nonnegative counts or rates. Pair them with
+`gain="deviance"` so the split search scores the fitted likelihood, not
+squared error. Predictions stay on the response scale — `predict_proba`
+returns `P(class 1)`, and `cdf(x, value)` returns the fitted distribution's
+`P(Y <= value)` (distinct from the empirical `quantile`).
+
+Script: [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py).
+
+```text
+binomial P(1): [0.25, 0.75]
+binomial P(Y <= 0): [0.75, 0.25]
+poisson means: [1.0, 2.0, 4.0]
+poisson P(Y <= 0): [0.367879, 0.018316]
+categorical + NA P(1): [0.0, 1.0, 1.0]
+```
+
+The exact grouped MLEs recover the planted log-odds and log-rates;
+categorical levels and missing values route through the same native handlers
+as Gaussian trees. Linear coefficients are on the **link scale** (logit /
+log); `predict`/`predict_proba` convert back to response means.
+
 Next: [Inspection](inspection.md) for the metrics and structure reports, or
 [Visualization](visualization.md) to draw the tree.

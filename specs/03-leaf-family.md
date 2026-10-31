@@ -78,3 +78,12 @@ saved NGBoost deep-dive: leaves fit distribution parameters directly in v1
 - The user's phrase "leaf_family is the right approach we can generalize it
   to many variants" is the design mandate; the family list order is
   binomial → poisson → probit → tobit → tweedie → softmax.
+
+## Status (2026-10-31)
+
+First batch **landed** (`de9ec9c`): binomial/logit and poisson/log with
+constant + linear shapes, `gain="deviance"`, weighted IRLS on faer,
+`predict_proba`, fitted `cdf`, family-aware pruning and `leaves()` output.
+Gaussian behavior unchanged. Remaining for follow-up rounds: probit, tobit,
+tweedie, softmax; distributional outputs beyond `cdf`; family/gain default
+suggestion surfaced to the user (not auto-switched).

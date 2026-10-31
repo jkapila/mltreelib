@@ -126,3 +126,511 @@ credit-g,HistGradientBoosting,ok,7.0
 credit-g,sklearn GBM,ok,6.1
 ta_fiat500,HistGradientBoosting,ok,4.8
 ta_fiat500,sklearn GBM,ok,4.3
+abalone,rpart,ok,0.7
+abalone,cubist,ok,1.2
+abalone,lmtree,ok,3.9
+abalone,glmtree,ok,7.6
+abalone,ctree,ok,2.2
+abalone,grf_llf,ok,4.4
+abalone,grf_rf,ok,4.1
+abalone,earth,ok,0.6
+abalone,mboost,ok,3.9
+abalone,ranger,ok,3.0
+abalone,bart,ok,6.4
+abalone,fru,error,0.5
+abalone,CTBoost,ok,6.0
+abalone,CatBoost(200),ok,6.7
+abalone,ChimeraBoost,ok,28.4
+abalone,EBM,ok,22.3
+abalone,ExtraTrees,ok,6.9
+abalone,HistGradientBoosting,ok,6.4
+abalone,KNN,ok,6.0
+abalone,LightGBM(200),ok,6.5
+abalone,MARS (mars-earth),ok,52.5
+abalone,ModelTree(all),ok,13.5
+abalone,ModelTree(mean),ok,5.9
+abalone,ModelTree(path),ok,9.2
+abalone,ModelTree(winnow),ok,13.1
+abalone,forust (Rust),ok,6.5
+abalone,modeltrees lmtree,ok,6.2
+abalone,perpetual (Rust),ok,6.4
+abalone,sklearn GBM,ok,7.0
+abalone,sklearn Linear,ok,6.1
+abalone,sklearn RF,ok,7.3
+abalone,sklearn tree,ok,6.2
+abalone,statsmodels OLS,error,5.8
+abalone,statsmodels QuantReg,error,5.9
+abalone,statsmodels RLM,error,5.9
+abalone,trust-free,error,5.8
+boston,rpart,ok,0.5
+boston,cubist,ok,1.0
+boston,lmtree,ok,2.2
+boston,glmtree,ok,2.2
+boston,ctree,ok,2.2
+boston,grf_llf,ok,2.4
+boston,grf_rf,ok,2.2
+boston,earth,ok,0.5
+boston,mboost,ok,3.4
+boston,ranger,ok,2.1
+boston,bart,ok,1.9
+boston,fru,error,0.4
+boston,CTBoost,ok,5.9
+boston,CatBoost(200),ok,6.1
+boston,ChimeraBoost,ok,7.4
+boston,EBM,ok,84.0
+boston,ExtraTrees,ok,6.9
+boston,HistGradientBoosting,ok,6.8
+boston,KNN,ok,6.1
+boston,LightGBM(200),ok,5.8
+boston,MARS (mars-earth),ok,22.2
+boston,ModelTree(all),ok,6.7
+boston,ModelTree(mean),ok,5.8
+boston,ModelTree(path),ok,6.2
+boston,ModelTree(winnow),ok,6.1
+boston,forust (Rust),ok,6.4
+boston,modeltrees lmtree,ok,6.4
+boston,perpetual (Rust),ok,6.2
+boston,sklearn GBM,ok,6.3
+boston,sklearn Linear,ok,5.8
+boston,sklearn RF,ok,6.3
+boston,sklearn tree,ok,5.9
+boston,statsmodels OLS,error,6.1
+boston,statsmodels QuantReg,error,6.2
+boston,statsmodels RLM,error,6.4
+boston,trust-free,error,6.9
+concrete,rpart,ok,0.5
+concrete,cubist,ok,1.0
+concrete,lmtree,ok,2.0
+concrete,glmtree,ok,2.2
+concrete,ctree,ok,2.1
+concrete,grf_llf,ok,2.5
+concrete,grf_rf,ok,2.6
+concrete,earth,ok,0.8
+concrete,mboost,ok,3.4
+concrete,ranger,ok,2.3
+concrete,bart,ok,2.6
+concrete,fru,error,0.5
+concrete,CTBoost,ok,6.2
+concrete,CatBoost(200),ok,6.6
+concrete,ChimeraBoost,ok,7.1
+concrete,EBM,ok,47.7
+concrete,ExtraTrees,ok,7.1
+concrete,HistGradientBoosting,ok,7.1
+concrete,KNN,ok,6.1
+concrete,LightGBM(200),ok,5.9
+concrete,MARS (mars-earth),ok,11.7
+concrete,ModelTree(all),ok,6.7
+concrete,ModelTree(mean),ok,5.8
+concrete,ModelTree(path),ok,6.3
+concrete,ModelTree(winnow),ok,6.6
+concrete,forust (Rust),ok,7.6
+concrete,modeltrees lmtree,ok,5.9
+concrete,perpetual (Rust),ok,6.3
+concrete,sklearn GBM,ok,5.9
+concrete,sklearn Linear,ok,5.9
+concrete,sklearn RF,ok,6.1
+concrete,sklearn tree,ok,6.0
+concrete,statsmodels OLS,ok,6.7
+concrete,statsmodels QuantReg,ok,6.4
+concrete,statsmodels RLM,ok,5.9
+concrete,trust-free,ok,23.4
+fc2008,rpart,error,0.5
+fc2008,cubist,error,1.3
+fc2008,lmtree,error,2.0
+fc2008,glmtree,error,2.0
+fc2008,ctree,error,2.1
+fc2008,grf_llf,error,1.9
+fc2008,grf_rf,ok,2.4
+fc2008,earth,error,0.5
+fc2008,mboost,ok,3.4
+fc2008,ranger,ok,2.2
+fc2008,bart,ok,2.5
+fc2008,fru,error,0.4
+fc2008,CTBoost,ok,5.8
+fc2008,CatBoost(200),ok,6.5
+fc2008,ChimeraBoost,ok,6.7
+fc2008,EBM,ok,35.8
+fc2008,ExtraTrees,ok,6.3
+fc2008,HistGradientBoosting,ok,6.2
+fc2008,KNN,ok,5.8
+fc2008,LightGBM(200),ok,5.8
+fc2008,MARS (mars-earth),error,5.9
+fc2008,ModelTree(all),ok,6.2
+fc2008,ModelTree(mean),ok,5.8
+fc2008,ModelTree(path),ok,6.1
+fc2008,ModelTree(winnow),ok,6.0
+fc2008,forust (Rust),ok,6.4
+fc2008,modeltrees lmtree,error,6.1
+fc2008,perpetual (Rust),ok,6.0
+fc2008,sklearn GBM,ok,5.9
+fc2008,sklearn Linear,ok,5.9
+fc2008,sklearn RF,ok,6.1
+fc2008,sklearn tree,ok,5.8
+fc2008,statsmodels OLS,error,5.9
+fc2008,statsmodels QuantReg,error,5.7
+fc2008,statsmodels RLM,error,5.8
+fc2008,trust-free,error,5.7
+ozone,rpart,ok,0.5
+ozone,cubist,ok,1.0
+ozone,lmtree,ok,2.0
+ozone,glmtree,ok,2.0
+ozone,ctree,ok,2.0
+ozone,grf_llf,ok,2.2
+ozone,grf_rf,ok,2.1
+ozone,earth,ok,0.5
+ozone,mboost,ok,3.1
+ozone,ranger,ok,2.1
+ozone,bart,ok,1.7
+ozone,fru,error,0.4
+ozone,CTBoost,ok,5.8
+ozone,CatBoost(200),ok,5.8
+ozone,ChimeraBoost,ok,6.7
+ozone,EBM,ok,19.6
+ozone,ExtraTrees,ok,6.4
+ozone,HistGradientBoosting,ok,6.2
+ozone,KNN,ok,6.1
+ozone,LightGBM(200),ok,5.9
+ozone,MARS (mars-earth),ok,7.5
+ozone,ModelTree(all),ok,6.4
+ozone,ModelTree(mean),ok,5.7
+ozone,ModelTree(path),ok,6.0
+ozone,ModelTree(winnow),ok,6.2
+ozone,forust (Rust),ok,6.5
+ozone,modeltrees lmtree,ok,6.3
+ozone,perpetual (Rust),ok,6.4
+ozone,sklearn GBM,ok,6.2
+ozone,sklearn Linear,ok,6.0
+ozone,sklearn RF,ok,5.7
+ozone,sklearn tree,ok,5.9
+ozone,statsmodels OLS,ok,5.8
+ozone,statsmodels QuantReg,ok,5.9
+ozone,statsmodels RLM,ok,5.7
+ozone,trust-free,ok,12.9
+ta_airfoil,rpart,ok,0.5
+ta_airfoil,cubist,ok,1.1
+ta_airfoil,lmtree,ok,2.1
+ta_airfoil,glmtree,ok,2.3
+ta_airfoil,ctree,ok,2.2
+ta_airfoil,grf_llf,ok,2.9
+ta_airfoil,grf_rf,ok,2.9
+ta_airfoil,earth,ok,0.5
+ta_airfoil,mboost,error,2.0
+ta_airfoil,ranger,error,1.9
+ta_airfoil,bart,ok,4.0
+ta_airfoil,fru,error,0.4
+ta_airfoil,CTBoost,ok,5.8
+ta_airfoil,CatBoost(200),ok,6.3
+ta_airfoil,ChimeraBoost,ok,8.4
+ta_airfoil,EBM,ok,73.0
+ta_airfoil,ExtraTrees,ok,6.6
+ta_airfoil,HistGradientBoosting,ok,6.3
+ta_airfoil,KNN,ok,5.9
+ta_airfoil,LightGBM(200),ok,6.2
+ta_airfoil,MARS (mars-earth),ok,7.1
+ta_airfoil,ModelTree(all),ok,6.6
+ta_airfoil,ModelTree(mean),ok,6.1
+ta_airfoil,ModelTree(path),ok,6.1
+ta_airfoil,ModelTree(winnow),ok,6.2
+ta_airfoil,forust (Rust),ok,6.6
+ta_airfoil,modeltrees lmtree,ok,6.3
+ta_airfoil,perpetual (Rust),ok,6.7
+ta_airfoil,sklearn GBM,ok,6.6
+ta_airfoil,sklearn Linear,ok,6.7
+ta_airfoil,sklearn RF,ok,6.7
+ta_airfoil,sklearn tree,ok,5.9
+ta_airfoil,statsmodels OLS,error,5.9
+ta_airfoil,statsmodels QuantReg,error,6.1
+ta_airfoil,statsmodels RLM,error,6.7
+ta_airfoil,trust-free,error,6.3
+ta_concrete,rpart,ok,0.5
+ta_concrete,cubist,ok,1.0
+ta_concrete,lmtree,ok,2.2
+ta_concrete,glmtree,ok,2.6
+ta_concrete,ctree,ok,2.2
+ta_concrete,grf_llf,ok,2.7
+ta_concrete,grf_rf,ok,2.5
+ta_concrete,earth,ok,0.5
+ta_concrete,mboost,ok,3.4
+ta_concrete,ranger,ok,2.2
+ta_concrete,bart,ok,3.2
+ta_concrete,fru,error,0.4
+ta_concrete,CTBoost,ok,6.0
+ta_concrete,CatBoost(200),ok,7.0
+ta_concrete,ChimeraBoost,ok,7.0
+ta_concrete,EBM,ok,72.8
+ta_concrete,ExtraTrees,ok,7.5
+ta_concrete,HistGradientBoosting,ok,7.4
+ta_concrete,KNN,ok,6.8
+ta_concrete,LightGBM(200),ok,7.0
+ta_concrete,MARS (mars-earth),ok,15.1
+ta_concrete,ModelTree(all),ok,8.3
+ta_concrete,ModelTree(mean),ok,6.7
+ta_concrete,ModelTree(path),ok,7.6
+ta_concrete,ModelTree(winnow),ok,8.1
+ta_concrete,forust (Rust),ok,8.1
+ta_concrete,modeltrees lmtree,ok,7.2
+ta_concrete,perpetual (Rust),ok,7.4
+ta_concrete,sklearn GBM,ok,7.2
+ta_concrete,sklearn Linear,ok,6.7
+ta_concrete,sklearn RF,ok,6.8
+ta_concrete,sklearn tree,ok,6.1
+ta_concrete,statsmodels OLS,ok,5.8
+ta_concrete,statsmodels QuantReg,ok,6.0
+ta_concrete,statsmodels RLM,ok,6.0
+ta_concrete,trust-free,ok,29.3
+ta_diamonds,rpart,ok,1.3
+ta_diamonds,cubist,ok,4.3
+ta_diamonds,lmtree,ok,55.9
+ta_diamonds,glmtree,ok,93.0
+ta_diamonds,ctree,ok,9.8
+ta_diamonds,grf_llf,ok,92.2
+ta_diamonds,grf_rf,ok,62.8
+ta_diamonds,earth,ok,3.3
+ta_diamonds,mboost,ok,13.5
+ta_diamonds,ranger,ok,34.3
+ta_diamonds,bart,ok,120.4
+ta_diamonds,fru,error,0.9
+ta_diamonds,CTBoost,ok,7.8
+ta_diamonds,CatBoost(200),ok,9.3
+ta_diamonds,ChimeraBoost,ok,11.2
+ta_diamonds,EBM,ok,26.9
+ta_diamonds,ExtraTrees,ok,20.7
+ta_diamonds,HistGradientBoosting,ok,7.0
+ta_diamonds,KNN,ok,6.6
+ta_diamonds,LightGBM(200),ok,6.7
+ta_diamonds,MARS (mars-earth),timeout,300.1
+ta_diamonds,ModelTree(all),ok,38.1
+ta_diamonds,ModelTree(mean),ok,7.7
+ta_diamonds,ModelTree(path),ok,19.4
+ta_diamonds,ModelTree(winnow),ok,37.5
+ta_diamonds,forust (Rust),ok,8.7
+ta_diamonds,modeltrees lmtree,timeout,300.2
+ta_diamonds,perpetual (Rust),ok,10.3
+ta_diamonds,sklearn GBM,ok,14.9
+ta_diamonds,sklearn Linear,ok,14.2
+ta_diamonds,sklearn RF,ok,30.8
+ta_diamonds,sklearn tree,ok,7.1
+ta_diamonds,statsmodels OLS,error,6.5
+ta_diamonds,statsmodels QuantReg,error,6.5
+ta_diamonds,statsmodels RLM,error,7.6
+ta_diamonds,trust-free,error,6.8
+ta_food_delivery,rpart,ok,2.6
+ta_food_delivery,cubist,ok,6.6
+ta_food_delivery,lmtree,timeout,300.5
+ta_food_delivery,glmtree,ok,213.1
+ta_food_delivery,ctree,ok,250.2
+ta_food_delivery,grf_llf,ok,64.6
+ta_food_delivery,grf_rf,ok,65.7
+ta_food_delivery,earth,ok,74.2
+ta_food_delivery,mboost,error,21.3
+ta_food_delivery,ranger,ok,40.3
+ta_food_delivery,bart,ok,99.7
+ta_food_delivery,fru,error,0.9
+ta_food_delivery,CTBoost,error,7.3
+ta_food_delivery,CatBoost(200),ok,9.6
+ta_food_delivery,ChimeraBoost,ok,9.3
+ta_food_delivery,EBM,ok,239.9
+ta_food_delivery,ExtraTrees,ok,20.2
+ta_food_delivery,HistGradientBoosting,error,6.6
+ta_food_delivery,KNN,ok,6.7
+ta_food_delivery,LightGBM(200),ok,7.0
+ta_food_delivery,MARS (mars-earth),timeout,300.2
+ta_food_delivery,ModelTree(all),ok,82.7
+ta_food_delivery,ModelTree(mean),ok,93.3
+ta_food_delivery,ModelTree(path),ok,95.5
+ta_food_delivery,ModelTree(winnow),ok,8.7
+ta_food_delivery,forust (Rust),ok,9.6
+ta_food_delivery,modeltrees lmtree,timeout,300.2
+ta_food_delivery,perpetual (Rust),ok,10.1
+ta_food_delivery,sklearn GBM,ok,14.0
+ta_food_delivery,sklearn Linear,ok,6.8
+ta_food_delivery,sklearn RF,ok,39.9
+ta_food_delivery,sklearn tree,ok,7.0
+ta_food_delivery,statsmodels OLS,error,6.2
+ta_food_delivery,statsmodels QuantReg,error,6.2
+ta_food_delivery,statsmodels RLM,error,6.2
+ta_food_delivery,trust-free,error,6.2
+ta_healthcare,rpart,ok,0.5
+ta_healthcare,cubist,ok,1.0
+ta_healthcare,lmtree,ok,2.1
+ta_healthcare,glmtree,ok,2.1
+ta_healthcare,ctree,ok,1.9
+ta_healthcare,grf_llf,ok,2.7
+ta_healthcare,grf_rf,ok,2.5
+ta_healthcare,earth,ok,0.5
+ta_healthcare,mboost,ok,3.1
+ta_healthcare,ranger,ok,2.1
+ta_healthcare,bart,ok,3.3
+ta_healthcare,fru,error,0.4
+ta_healthcare,CTBoost,ok,5.6
+ta_healthcare,CatBoost(200),ok,6.1
+ta_healthcare,ChimeraBoost,ok,6.7
+ta_healthcare,EBM,ok,14.7
+ta_healthcare,ExtraTrees,ok,6.0
+ta_healthcare,HistGradientBoosting,ok,6.2
+ta_healthcare,KNN,ok,5.9
+ta_healthcare,LightGBM(200),ok,5.9
+ta_healthcare,MARS (mars-earth),ok,9.7
+ta_healthcare,ModelTree(all),ok,6.2
+ta_healthcare,ModelTree(mean),ok,5.7
+ta_healthcare,ModelTree(path),ok,6.2
+ta_healthcare,ModelTree(winnow),ok,6.2
+ta_healthcare,forust (Rust),ok,6.0
+ta_healthcare,modeltrees lmtree,ok,5.8
+ta_healthcare,perpetual (Rust),ok,5.7
+ta_healthcare,sklearn GBM,ok,5.8
+ta_healthcare,sklearn Linear,ok,5.9
+ta_healthcare,sklearn RF,ok,6.0
+ta_healthcare,sklearn tree,ok,5.6
+ta_healthcare,statsmodels OLS,error,5.6
+ta_healthcare,statsmodels QuantReg,error,5.7
+ta_healthcare,statsmodels RLM,error,5.6
+ta_healthcare,trust-free,error,5.9
+ta_houses,rpart,ok,1.1
+ta_houses,cubist,ok,3.3
+ta_houses,lmtree,ok,24.8
+ta_houses,glmtree,ok,72.8
+ta_houses,ctree,ok,3.6
+ta_houses,grf_llf,ok,24.7
+ta_houses,grf_rf,ok,23.8
+ta_houses,earth,ok,0.9
+ta_houses,mboost,ok,7.7
+ta_houses,ranger,ok,14.5
+ta_houses,bart,ok,43.7
+ta_houses,fru,error,0.7
+ta_houses,CTBoost,ok,6.2
+ta_houses,CatBoost(200),ok,6.6
+ta_houses,ChimeraBoost,ok,14.0
+ta_houses,EBM,ok,108.3
+ta_houses,ExtraTrees,ok,11.6
+ta_houses,HistGradientBoosting,ok,6.2
+ta_houses,KNN,ok,5.9
+ta_houses,LightGBM(200),ok,6.2
+ta_houses,MARS (mars-earth),timeout,300.2
+ta_houses,ModelTree(all),ok,30.6
+ta_houses,ModelTree(mean),ok,6.6
+ta_houses,ModelTree(path),ok,17.4
+ta_houses,ModelTree(winnow),ok,18.5
+ta_houses,forust (Rust),ok,7.8
+ta_houses,modeltrees lmtree,ok,9.1
+ta_houses,perpetual (Rust),ok,10.5
+ta_houses,sklearn GBM,ok,11.2
+ta_houses,sklearn Linear,ok,6.3
+ta_houses,sklearn RF,ok,20.5
+ta_houses,sklearn tree,ok,6.2
+ta_houses,statsmodels OLS,ok,6.1
+ta_houses,statsmodels QuantReg,ok,6.5
+ta_houses,statsmodels RLM,ok,6.3
+ta_houses,trust-free,error,5.1
+ta_miami,rpart,ok,1.5
+ta_miami,cubist,ok,3.7
+ta_miami,lmtree,ok,178.5
+ta_miami,glmtree,timeout,300.1
+ta_miami,ctree,ok,5.7
+ta_miami,grf_llf,ok,22.9
+ta_miami,grf_rf,ok,20.9
+ta_miami,earth,ok,1.0
+ta_miami,mboost,ok,8.4
+ta_miami,ranger,ok,15.0
+ta_miami,bart,ok,30.7
+ta_miami,fru,error,0.8
+ta_miami,CTBoost,ok,6.6
+ta_miami,CatBoost(200),ok,7.3
+ta_miami,ChimeraBoost,ok,21.1
+ta_miami,EBM,ok,216.1
+ta_miami,ExtraTrees,ok,12.3
+ta_miami,HistGradientBoosting,ok,6.6
+ta_miami,KNN,ok,6.4
+ta_miami,LightGBM(200),ok,6.3
+ta_miami,MARS (mars-earth),timeout,300.2
+ta_miami,ModelTree(all),ok,36.8
+ta_miami,ModelTree(mean),ok,6.2
+ta_miami,ModelTree(path),ok,12.4
+ta_miami,ModelTree(winnow),ok,26.4
+ta_miami,forust (Rust),ok,7.2
+ta_miami,modeltrees lmtree,ok,200.0
+ta_miami,perpetual (Rust),ok,11.6
+ta_miami,sklearn GBM,ok,12.6
+ta_miami,sklearn Linear,ok,6.1
+ta_miami,sklearn RF,ok,22.4
+ta_miami,sklearn tree,ok,6.5
+ta_miami,statsmodels OLS,error,5.8
+ta_miami,statsmodels QuantReg,error,5.7
+ta_miami,statsmodels RLM,error,6.0
+ta_miami,trust-free,error,5.7
+ta_protein,rpart,ok,2.3
+ta_protein,cubist,ok,7.1
+ta_protein,lmtree,timeout,300.1
+ta_protein,glmtree,timeout,300.1
+ta_protein,ctree,ok,7.7
+ta_protein,grf_llf,ok,69.5
+ta_protein,grf_rf,ok,65.4
+ta_protein,earth,ok,2.7
+ta_protein,mboost,ok,16.0
+ta_protein,ranger,ok,72.3
+ta_protein,bart,ok,103.1
+ta_protein,fru,error,1.3
+ta_protein,CTBoost,ok,7.9
+ta_protein,CatBoost(200),ok,7.8
+ta_protein,ChimeraBoost,ok,39.9
+ta_protein,EBM,timeout,300.2
+ta_protein,ExtraTrees,ok,21.4
+ta_protein,HistGradientBoosting,ok,7.2
+ta_protein,KNN,ok,6.8
+ta_protein,LightGBM(200),ok,6.9
+ta_protein,MARS (mars-earth),timeout,300.1
+ta_protein,ModelTree(all),ok,35.5
+ta_protein,ModelTree(mean),ok,7.5
+ta_protein,ModelTree(path),ok,22.0
+ta_protein,ModelTree(winnow),ok,16.1
+ta_protein,forust (Rust),ok,7.6
+ta_protein,modeltrees lmtree,ok,17.0
+ta_protein,perpetual (Rust),ok,10.4
+ta_protein,sklearn GBM,ok,24.4
+ta_protein,sklearn Linear,ok,6.3
+ta_protein,sklearn RF,ok,54.0
+ta_protein,sklearn tree,ok,7.2
+ta_protein,statsmodels OLS,ok,6.3
+ta_protein,statsmodels QuantReg,ok,7.1
+ta_protein,statsmodels RLM,ok,8.4
+ta_protein,trust-free,error,9.3
+ta_qsar_fish,rpart,ok,0.5
+ta_qsar_fish,cubist,ok,0.9
+ta_qsar_fish,lmtree,ok,2.3
+ta_qsar_fish,glmtree,ok,2.7
+ta_qsar_fish,ctree,ok,2.0
+ta_qsar_fish,grf_llf,ok,2.4
+ta_qsar_fish,grf_rf,ok,2.5
+ta_qsar_fish,earth,ok,0.6
+ta_qsar_fish,mboost,error,2.0
+ta_qsar_fish,ranger,error,1.9
+ta_qsar_fish,bart,ok,2.7
+ta_qsar_fish,fru,error,0.4
+ta_qsar_fish,CTBoost,ok,6.1
+ta_qsar_fish,CatBoost(200),ok,6.2
+ta_qsar_fish,ChimeraBoost,ok,6.8
+ta_qsar_fish,EBM,ok,25.6
+ta_qsar_fish,ExtraTrees,ok,6.1
+ta_qsar_fish,HistGradientBoosting,ok,6.7
+ta_qsar_fish,KNN,ok,6.1
+ta_qsar_fish,LightGBM(200),ok,6.3
+ta_qsar_fish,MARS (mars-earth),ok,15.2
+ta_qsar_fish,ModelTree(all),ok,6.2
+ta_qsar_fish,ModelTree(mean),ok,5.6
+ta_qsar_fish,ModelTree(path),ok,6.1
+ta_qsar_fish,ModelTree(winnow),ok,6.6
+ta_qsar_fish,forust (Rust),ok,7.7
+ta_qsar_fish,modeltrees lmtree,ok,6.1
+ta_qsar_fish,perpetual (Rust),ok,6.0
+ta_qsar_fish,sklearn GBM,ok,6.4
+ta_qsar_fish,sklearn Linear,ok,6.0
+ta_qsar_fish,sklearn RF,ok,6.6
+ta_qsar_fish,sklearn tree,ok,6.2
+ta_qsar_fish,statsmodels OLS,ok,6.0
+ta_qsar_fish,statsmodels QuantReg,ok,5.9
+ta_qsar_fish,statsmodels RLM,ok,6.0
+ta_qsar_fish,trust-free,ok,15.7
+ta_qsar_tid11,rpart,ok,18.5
+ta_qsar_tid11,cubist,ok,66.5
+ta_qsar_tid11,lmtree,ok,12.3
+ta_qsar_tid11,glmtree,ok,17.1

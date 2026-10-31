@@ -20,6 +20,18 @@ except ImportError as e:  # pragma: no cover - environment guard
 
 from mltreelib import Metrics
 
+# Unified color palette matching mltreelib documentation theme (Teal & Deep Orange)
+PALETTE = {
+    "primary": "#00897b",        # Teal (main curve, model line, positive waterfall)
+    "accent": "#f4511e",         # Deep Orange (comparison curve, negative waterfall, second model)
+    "secondary": "#0288d1",      # Blue / Cerulean (lift, reference indicators)
+    "muted": "#80cbc4",          # Soft Teal (background bars, distribution shares)
+    "dark": "#263238",           # Charcoal (actuals, final totals)
+    "gray": "#78909c",           # Slate gray (baselines, secondary bars)
+    "light_neutral": "#b0bec5",  # Light gray (diagonal random lines, thresholds)
+    "warning": "#fbc02d",        # Amber (residual waterfall steps)
+}
+
 
 def _ax(ax):
     if ax is not None:
@@ -35,8 +47,8 @@ def plot_roc(y_true, scores, ax=None):
     ax, own = _ax(ax)
     r = Metrics().roc_curve(y_true, scores)
     pts = r["points"]
-    ax.plot([p[0] for p in pts], [p[1] for p in pts], color="#2a7", lw=1.8)
-    ax.plot([0, 1], [0, 1], color="#999", lw=0.8, ls="--")
+    ax.plot([p[0] for p in pts], [p[1] for p in pts], color=PALETTE["primary"], lw=1.8)
+    ax.plot([0, 1], [0, 1], color=PALETTE["light_neutral"], lw=0.8, ls="--")
     ax.set_xlabel("false positive rate")
     ax.set_ylabel("true positive rate")
     ax.set_title(f"ROC (AUC = {r['auc']:.3f})")
@@ -49,7 +61,7 @@ def plot_pr(y_true, scores, ax=None):
     ax, own = _ax(ax)
     r = Metrics().pr_curve(y_true, scores)
     pts = r["points"]
-    ax.plot([p[0] for p in pts], [p[1] for p in pts], color="#c63", lw=1.8)
+    ax.plot([p[0] for p in pts], [p[1] for p in pts], color=PALETTE["primary"], lw=1.8)
     ax.set_xlabel("recall")
     ax.set_ylabel("precision")
     ax.set_title(f"precision-recall (AP = {r['average_precision']:.3f})")
@@ -61,9 +73,9 @@ def plot_cumulative_gain(y_true, scores, ax=None):
     """Cumulative gains (modelplotpy/kds): capture vs population fraction."""
     ax, own = _ax(ax)
     pts = Metrics().gain_curve(y_true, scores)["points"]
-    ax.plot([p[0] for p in pts], [p[1] for p in pts], color="#2a7", lw=1.8,
+    ax.plot([p[0] for p in pts], [p[1] for p in pts], color=PALETTE["primary"], lw=1.8,
             label="model")
-    ax.plot([0, 1], [0, 1], color="#999", lw=0.8, ls="--", label="random")
+    ax.plot([0, 1], [0, 1], color=PALETTE["light_neutral"], lw=0.8, ls="--", label="random")
     ax.set_xlabel("population fraction")
     ax.set_ylabel("capture rate")
     ax.set_title("cumulative gains")
@@ -76,8 +88,8 @@ def plot_lift(y_true, scores, ax=None):
     """Cumulative lift (kds/modelplotpy): capture / population fraction."""
     ax, own = _ax(ax)
     pts = Metrics().lift_curve(y_true, scores)["points"]
-    ax.plot([p[0] for p in pts], [p[1] for p in pts], color="#06c", lw=1.8)
-    ax.axhline(1.0, color="#999", lw=0.8, ls="--")
+    ax.plot([p[0] for p in pts], [p[1] for p in pts], color=PALETTE["secondary"], lw=1.8)
+    ax.axhline(1.0, color=PALETTE["light_neutral"], lw=0.8, ls="--")
     ax.set_xlabel("population fraction")
     ax.set_ylabel("lift")
     ax.set_title("cumulative lift")
@@ -91,11 +103,11 @@ def plot_ks(y_true, scores, ax=None):
     ax, own = _ax(ax)
     r = Metrics().ks_statistic(y_true, scores)
     pts = r["points"]
-    ax.plot([p[2] for p in pts], [p[1] for p in pts], color="#2a7", lw=1.5,
+    ax.plot([p[2] for p in pts], [p[1] for p in pts], color=PALETTE["primary"], lw=1.5,
             label="TPR")
-    ax.plot([p[2] for p in pts], [p[0] for p in pts], color="#c63", lw=1.5,
+    ax.plot([p[2] for p in pts], [p[0] for p in pts], color=PALETTE["accent"], lw=1.5,
             label="FPR")
-    ax.axvline(r["score_at_ks"], color="#06c", lw=1.0, ls="--")
+    ax.axvline(r["score_at_ks"], color=PALETTE["secondary"], lw=1.0, ls="--")
     ax.annotate(f"KS = {r['ks']:.3f}\nscore@KS = {r['score_at_ks']:.3f}",
                 xy=(r["score_at_ks"], r["tpr_at_ks"]), xytext=(0.05, 0.9),
                 textcoords="axes fraction")
@@ -113,11 +125,11 @@ def plot_decile(y_true, scores, n_buckets=10, ax=None):
     ax, own = _ax(ax)
     rows = Metrics().decile_table(y_true, scores, n_buckets)
     d = [r["decile"] for r in rows]
-    ax.bar(d, [r["event_rate"] for r in rows], color="#8ab", label="event rate")
+    ax.bar(d, [r["event_rate"] for r in rows], color=PALETTE["muted"], label="event rate")
     ax.set_xlabel("decile (1 = top scores)")
     ax.set_ylabel("event rate")
     ax2 = ax.twinx()
-    ax2.plot(d, [r["cum_capture"] for r in rows], color="#c63", lw=1.8,
+    ax2.plot(d, [r["cum_capture"] for r in rows], color=PALETTE["accent"], lw=1.8,
              label="cum capture")
     ax2.set_ylabel("cumulative capture")
     ax.set_title("decile profile")
@@ -130,8 +142,8 @@ def plot_calibration(y_true, scores, n_bins=10, ax=None):
     ax, own = _ax(ax)
     bins = Metrics().calibration(y_true, scores, n_bins)["bins"]
     ax.plot([b["mean_score"] for b in bins], [b["observed"] for b in bins],
-            marker="o", color="#2a7", label="model")
-    ax.plot([0, 1], [0, 1], color="#999", lw=0.8, ls="--", label="perfect")
+            marker="o", color=PALETTE["primary"], label="model")
+    ax.plot([0, 1], [0, 1], color=PALETTE["light_neutral"], lw=0.8, ls="--", label="perfect")
     ax.set_xlabel("mean predicted score")
     ax.set_ylabel("observed rate")
     ax.set_title("calibration")
@@ -145,9 +157,9 @@ def plot_response(y_true, scores, n_buckets=10, ax=None):
     ax, own = _ax(ax)
     rows = Metrics().decile_table(y_true, scores, n_buckets)
     d = [r["decile"] for r in rows]
-    ax.plot(d, [r["event_rate"] for r in rows], marker="o", color="#06c",
+    ax.plot(d, [r["event_rate"] for r in rows], marker="o", color=PALETTE["secondary"],
             label="response")
-    ax.plot(d, [r["cum_event_rate"] for r in rows], marker="s", color="#2a7",
+    ax.plot(d, [r["cum_event_rate"] for r in rows], marker="s", color=PALETTE["primary"],
             label="cumulative response")
     ax.set_xlabel("decile (1 = top scores)")
     ax.set_ylabel("rate")
@@ -173,11 +185,11 @@ def plot_double_lift(y_true, scores_a, scores_b, n_buckets=10,
         if denom == 0:
             denom = 1.0
     d = [r["bucket"] for r in rows]
-    ax.plot(d, [r["actual"] / denom for r in rows], marker="o", color="#111",
+    ax.plot(d, [r["actual"] / denom for r in rows], marker="o", color=PALETTE["dark"],
             lw=2.0, label="actual")
-    ax.plot(d, [r["pred_a"] / denom for r in rows], marker="^", color="#06c",
+    ax.plot(d, [r["pred_a"] / denom for r in rows], marker="^", color=PALETTE["primary"],
             label=label_a)
-    ax.plot(d, [r["pred_b"] / denom for r in rows], marker="s", color="#c63",
+    ax.plot(d, [r["pred_b"] / denom for r in rows], marker="s", color=PALETTE["accent"],
             label=label_b)
     ax.set_xlabel(f"bucket by {label_a} (1 = highest)")
     ax.set_ylabel("ratio to overall actual" if model_type == "ratio" else "mean")
@@ -195,12 +207,12 @@ def plot_psi(reference, current, n_bins=10, ax=None):
     r = Metrics().stability_index(reference, current, n_bins)
     bins = r["bins"]
     x = list(range(len(bins)))
-    ax.bar(x, [b["reference_share"] for b in bins], color="#8ab",
+    ax.bar(x, [b["reference_share"] for b in bins], color=PALETTE["muted"],
            label="reference")
-    ax.bar(x, [b["current_share"] for b in bins], color="#c63", alpha=0.6,
+    ax.bar(x, [b["current_share"] for b in bins], color=PALETTE["accent"], alpha=0.6,
            label="current")
     ax2 = ax.twinx()
-    ax2.plot(x, [b["contribution"] for b in bins], color="#111", lw=1.2,
+    ax2.plot(x, [b["contribution"] for b in bins], color=PALETTE["dark"], lw=1.2,
              marker="o", label="PSI contribution")
     ax.set_xlabel("bin")
     ax.set_ylabel("share")
@@ -218,7 +230,7 @@ def plot_importance(importances, ax=None):
     ax, own = _ax(ax)
     names = [n for n, _ in importances][::-1]
     shares = [s for _, s in importances][::-1]
-    ax.barh(names, shares, color="#2a7")
+    ax.barh(names, shares, color=PALETTE["primary"])
     ax.set_xlabel("share of total split gain")
     ax.set_title(f"feature importance ({len(importances)} shown)")
     if own:
@@ -230,13 +242,13 @@ def plot_breakdown(bd, ax=None):
     ax, own = _ax(ax)
     steps = list(bd["steps"])
     labels = ["baseline"] + [n for n, _ in steps] + ["residual", "prediction"]
-    ax.bar(0, bd["baseline"], color="#888")
+    ax.bar(0, bd["baseline"], color=PALETTE["gray"])
     running = bd["baseline"]
     for i, (_, d) in enumerate(steps, start=1):
-        ax.bar(i, d, bottom=running, color="#2a7" if d >= 0 else "#c63")
+        ax.bar(i, d, bottom=running, color=PALETTE["primary"] if d >= 0 else PALETTE["accent"])
         running += d
-    ax.bar(len(labels) - 2, bd["residual"], bottom=running, color="#da3")
-    ax.bar(len(labels) - 1, bd["prediction"], color="#333")
+    ax.bar(len(labels) - 2, bd["residual"], bottom=running, color=PALETTE["warning"])
+    ax.bar(len(labels) - 1, bd["prediction"], color=PALETTE["dark"])
     ax.set_xticks(range(len(labels)), labels, rotation=45, ha="right")
     ax.set_ylabel("value")
     ax.set_title(f"breakdown: {bd['baseline']:.1f} -> {bd['prediction']:.1f}")
@@ -248,7 +260,7 @@ def plot_variance_shares(shares, ax=None):
     """Horizontal bars of realized variance shares (generate() truth)."""
     ax, own = _ax(ax)
     keys = list(shares.keys())
-    ax.barh(keys, [shares[k] for k in keys], color="steelblue")
+    ax.barh(keys, [shares[k] for k in keys], color=PALETTE["primary"])
     ax.set_xlabel("realized variance share (var component / var target)")
     ax.set_title("Generator ground truth: where the signal lives")
     if own:
