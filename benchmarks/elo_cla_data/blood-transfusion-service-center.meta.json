@@ -1,0 +1,27 @@
+{
+ "dataset": "blood-transfusion-service-center",
+ "target": "DonatedBloodInMarch2007",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 570,
+  "Yes": 178
+ },
+ "n_train": 598,
+ "n_test": 150,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "MonthsSinceLastDonation": "numeric",
+  "NumberOfDonations": "numeric",
+  "TotalBloodDonated": "numeric",
+  "MonthsSinceFirstDonation": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

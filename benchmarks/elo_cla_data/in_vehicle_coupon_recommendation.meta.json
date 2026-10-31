@@ -1,0 +1,47 @@
+{
+ "dataset": "in_vehicle_coupon_recommendation",
+ "target": "AcceptCoupon",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 5474,
+  "Yes": 7210
+ },
+ "n_train": 10147,
+ "n_test": 2537,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "destination": "categorical",
+  "passenger": "categorical",
+  "weather": "categorical",
+  "temperature": "numeric",
+  "time": "numeric",
+  "coupon": "categorical",
+  "expiration": "categorical",
+  "gender": "categorical",
+  "age": "categorical",
+  "maritalStatus": "categorical",
+  "has_children": "categorical",
+  "education": "categorical",
+  "occupation": "categorical",
+  "income": "categorical",
+  "car": "categorical",
+  "Bar": "categorical",
+  "CoffeeHouse": "categorical",
+  "CarryAway": "categorical",
+  "RestaurantLessThan20": "categorical",
+  "Restaurant20To50": "categorical",
+  "toCoupon_GEQ15min": "categorical",
+  "toCoupon_GEQ25min": "categorical",
+  "direction_same": "categorical",
+  "direction_opp": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

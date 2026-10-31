@@ -1,0 +1,43 @@
+{
+ "dataset": "credit-g",
+ "target": "good_or_bad_customer",
+ "task": "binary",
+ "classes": [
+  "bad",
+  "good"
+ ],
+ "class_counts": {
+  "bad": 300,
+  "good": 700
+ },
+ "n_train": 800,
+ "n_test": 200,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "checking_status": "categorical",
+  "duration_months": "numeric",
+  "credit_history": "categorical",
+  "credit_purpose": "categorical",
+  "credit_amount": "numeric",
+  "savings_status": "categorical",
+  "employment_since": "categorical",
+  "installment_rate_percent": "numeric",
+  "personal_status_sex": "categorical",
+  "other_debtors": "categorical",
+  "residence_since": "numeric",
+  "property": "categorical",
+  "age_years": "numeric",
+  "other_installment_plans": "categorical",
+  "housing": "categorical",
+  "existing_credits_count": "numeric",
+  "job": "categorical",
+  "people_liable": "numeric",
+  "telephone": "categorical",
+  "foreign_worker": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

@@ -1,0 +1,29 @@
+{
+ "dataset": "Fitness_Club",
+ "target": "attended",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 1046,
+  "Yes": 454
+ },
+ "n_train": 1200,
+ "n_test": 300,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "months_as_member": "numeric",
+  "weight": "numeric",
+  "days_before": "numeric",
+  "day_of_week": "categorical",
+  "time": "categorical",
+  "category": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

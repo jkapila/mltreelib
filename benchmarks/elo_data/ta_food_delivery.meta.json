@@ -1,0 +1,23 @@
+{
+  "dataset": "ta_food_delivery",
+  "target": "Time_taken(min)",
+  "task": "regression",
+  "n_train": 36360,
+  "n_test": 9091,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "Delivery_person_ID": "categorical",
+    "Delivery_person_Age": "numeric",
+    "Delivery_person_Ratings": "numeric",
+    "Restaurant_latitude": "numeric",
+    "Restaurant_longitude": "numeric",
+    "Delivery_location_latitude": "numeric",
+    "Delivery_location_longitude": "numeric",
+    "Type_of_order": "categorical",
+    "Type_of_vehicle": "categorical"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

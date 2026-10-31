@@ -1,0 +1,48 @@
+{
+ "dataset": "Marketing_Campaign",
+ "target": "Response",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 1906,
+  "Yes": 334
+ },
+ "n_train": 1792,
+ "n_test": 448,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "Year_Birth": "numeric",
+  "Education": "categorical",
+  "Marital_Status": "categorical",
+  "Income": "numeric",
+  "Kidhome": "numeric",
+  "Teenhome": "numeric",
+  "Dt_Customer": "categorical",
+  "Recency": "numeric",
+  "MntWines": "numeric",
+  "MntFruits": "numeric",
+  "MntMeatProducts": "numeric",
+  "MntFishProducts": "numeric",
+  "MntSweetProducts": "numeric",
+  "MntGoldProds": "numeric",
+  "NumDealsPurchases": "numeric",
+  "NumWebPurchases": "numeric",
+  "NumCatalogPurchases": "numeric",
+  "NumStorePurchases": "numeric",
+  "NumWebVisitsMonth": "numeric",
+  "AcceptedCmp3": "categorical",
+  "AcceptedCmp4": "categorical",
+  "AcceptedCmp5": "categorical",
+  "AcceptedCmp1": "categorical",
+  "AcceptedCmp2": "categorical",
+  "Complain": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

@@ -1,0 +1,31 @@
+{
+ "dataset": "diabetes",
+ "target": "TestedPositiveForDiabetes",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 500,
+  "Yes": 268
+ },
+ "n_train": 614,
+ "n_test": 154,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "Pregnancies": "numeric",
+  "Glucose": "numeric",
+  "BloodPressure": "numeric",
+  "SkinThickness": "numeric",
+  "Insulin": "numeric",
+  "BMI": "numeric",
+  "DiabetesPedigreeFunction": "numeric",
+  "Age": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

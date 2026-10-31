@@ -1,0 +1,31 @@
+{
+ "dataset": "maternal_health_risk",
+ "target": "RiskLevel",
+ "task": "multiclass",
+ "classes": [
+  "high risk",
+  "low risk",
+  "mid risk"
+ ],
+ "class_counts": {
+  "high risk": 272,
+  "low risk": 406,
+  "mid risk": 336
+ },
+ "n_train": 812,
+ "n_test": 202,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "Age": "numeric",
+  "SystolicBP": "numeric",
+  "DiastolicBP": "numeric",
+  "BS": "numeric",
+  "BodyTemp": "numeric",
+  "HeartRate": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

@@ -1,0 +1,33 @@
+{
+ "dataset": "Bank_Customer_Churn",
+ "target": "churn",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 7963,
+  "Yes": 2037
+ },
+ "n_train": 8000,
+ "n_test": 2000,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "credit_score": "numeric",
+  "country": "categorical",
+  "gender": "categorical",
+  "age": "numeric",
+  "tenure": "numeric",
+  "balance": "numeric",
+  "products_number": "numeric",
+  "credit_card": "categorical",
+  "active_member": "categorical",
+  "estimated_salary": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

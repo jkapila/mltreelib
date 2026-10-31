@@ -1,0 +1,29 @@
+{
+  "dataset": "ta_miami",
+  "target": "SALE_PRC",
+  "task": "regression",
+  "n_train": 11020,
+  "n_test": 2756,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "LATITUDE": "numeric",
+    "LONGITUDE": "numeric",
+    "LND_SQFOOT": "numeric",
+    "TOT_LVG_AREA": "numeric",
+    "SPEC_FEAT_VAL": "numeric",
+    "RAIL_DIST": "numeric",
+    "OCEAN_DIST": "numeric",
+    "WATER_DIST": "numeric",
+    "CNTR_DIST": "numeric",
+    "SUBCNTR_DI": "numeric",
+    "HWY_DIST": "numeric",
+    "age": "numeric",
+    "avno60plus": "categorical",
+    "month_sold": "numeric",
+    "structure_quality": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

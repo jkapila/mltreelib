@@ -1,0 +1,20 @@
+{
+  "dataset": "ta_qsar_fish",
+  "target": "LC50",
+  "task": "regression",
+  "n_train": 725,
+  "n_test": 182,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "CIC0": "numeric",
+    "SM1_Dz(Z)": "numeric",
+    "GATS1i": "numeric",
+    "NdsCH": "numeric",
+    "NdssC": "numeric",
+    "MLOGP": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

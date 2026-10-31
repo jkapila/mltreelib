@@ -1,0 +1,33 @@
+{
+ "dataset": "E-CommereShippingData",
+ "target": "ArrivedLate",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 4436,
+  "Yes": 6563
+ },
+ "n_train": 8799,
+ "n_test": 2200,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "Warehouse_block": "categorical",
+  "Mode_of_Shipment": "categorical",
+  "Customer_care_calls": "numeric",
+  "Customer_rating": "numeric",
+  "Cost_of_the_Product": "numeric",
+  "Prior_purchases": "numeric",
+  "Product_importance": "categorical",
+  "Gender": "categorical",
+  "Discount_offered": "numeric",
+  "Weight_in_gms": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

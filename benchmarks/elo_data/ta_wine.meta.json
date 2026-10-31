@@ -1,0 +1,26 @@
+{
+  "dataset": "ta_wine",
+  "target": "median_wine_quality",
+  "task": "regression",
+  "n_train": 5197,
+  "n_test": 1300,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "fixed_acidity": "numeric",
+    "volatile_acidity": "numeric",
+    "citric_acid": "numeric",
+    "residual_sugar": "numeric",
+    "chlorides": "numeric",
+    "free_sulfur_dioxide": "numeric",
+    "total_sulfur_dioxide": "numeric",
+    "density": "numeric",
+    "pH": "numeric",
+    "sulphates": "numeric",
+    "alcohol": "numeric",
+    "wine_color": "categorical"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

@@ -1,0 +1,36 @@
+{
+ "dataset": "bank-marketing",
+ "target": "SubscribeTermDeposit",
+ "task": "binary",
+ "classes": [
+  "no",
+  "yes"
+ ],
+ "class_counts": {
+  "no": 39922,
+  "yes": 5289
+ },
+ "n_train": 36169,
+ "n_test": 9042,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "age": "numeric",
+  "job": "categorical",
+  "marital": "categorical",
+  "education": "categorical",
+  "default": "categorical",
+  "balance": "numeric",
+  "housing": "categorical",
+  "loan": "categorical",
+  "contact": "categorical",
+  "campaign": "numeric",
+  "pdays": "numeric",
+  "previous": "numeric",
+  "poutcome": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

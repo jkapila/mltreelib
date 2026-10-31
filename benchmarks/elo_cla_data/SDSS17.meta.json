@@ -1,0 +1,36 @@
+{
+ "dataset": "SDSS17",
+ "target": "ObjectType",
+ "task": "multiclass",
+ "classes": [
+  "GALAXY",
+  "QSO",
+  "STAR"
+ ],
+ "class_counts": {
+  "GALAXY": 47613,
+  "QSO": 13994,
+  "STAR": 16446
+ },
+ "n_train": 62442,
+ "n_test": 15611,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "alpha": "numeric",
+  "delta": "numeric",
+  "u": "numeric",
+  "g": "numeric",
+  "r": "numeric",
+  "i": "numeric",
+  "z": "numeric",
+  "cam_col": "numeric",
+  "redshift": "numeric",
+  "plate": "categorical",
+  "fiber_ID": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

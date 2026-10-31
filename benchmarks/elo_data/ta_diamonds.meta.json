@@ -1,0 +1,23 @@
+{
+  "dataset": "ta_diamonds",
+  "target": "price",
+  "task": "regression",
+  "n_train": 43152,
+  "n_test": 10788,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "carat": "numeric",
+    "cut": "categorical",
+    "color": "categorical",
+    "clarity": "categorical",
+    "depth": "numeric",
+    "table": "numeric",
+    "x": "numeric",
+    "y": "numeric",
+    "z": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

@@ -1,0 +1,21 @@
+{
+  "dataset": "ta_fiat500",
+  "target": "price",
+  "task": "regression",
+  "n_train": 1230,
+  "n_test": 308,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "model": "categorical",
+    "engine_power": "numeric",
+    "age_in_days": "numeric",
+    "km": "numeric",
+    "previous_owners": "numeric",
+    "lat": "numeric",
+    "lon": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

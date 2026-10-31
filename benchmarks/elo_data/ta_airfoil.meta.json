@@ -1,0 +1,19 @@
+{
+  "dataset": "ta_airfoil",
+  "target": "scaled-sound-pressure",
+  "task": "regression",
+  "n_train": 1202,
+  "n_test": 301,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "frequency": "numeric",
+    "attack-angle": "categorical",
+    "chord-length": "numeric",
+    "free-stream-velocity": "numeric",
+    "suction-side-displacement-thickness": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

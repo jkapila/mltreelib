@@ -154,6 +154,8 @@ home/
 # vendored legacy material and local experiments
 legacy/
 playground/
+tmp/
+benchmarks/cla_preds/
 
 /churn_tree.svg
 /churn_tree.dot

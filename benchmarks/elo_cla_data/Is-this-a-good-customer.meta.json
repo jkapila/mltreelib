@@ -1,0 +1,36 @@
+{
+ "dataset": "Is-this-a-good-customer",
+ "target": "bad_client_target",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 1527,
+  "Yes": 196
+ },
+ "n_train": 1379,
+ "n_test": 344,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "month": "numeric",
+  "credit_amount": "numeric",
+  "credit_term": "numeric",
+  "age": "numeric",
+  "sex": "categorical",
+  "education": "categorical",
+  "product_type": "categorical",
+  "having_children_flg": "categorical",
+  "region": "categorical",
+  "income": "numeric",
+  "family_status": "categorical",
+  "phone_operator": "categorical",
+  "is_client": "categorical"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

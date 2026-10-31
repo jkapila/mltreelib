@@ -1,0 +1,53 @@
+{
+ "dataset": "hazelnut-spread-contaminant-detection",
+ "target": "Contaminated",
+ "task": "binary",
+ "classes": [
+  "0",
+  "1"
+ ],
+ "class_counts": {
+  "0": 1200,
+  "1": 1200
+ },
+ "n_train": 1920,
+ "n_test": 480,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "s12": "numeric",
+  "s13": "numeric",
+  "s14": "numeric",
+  "s15": "numeric",
+  "s16": "numeric",
+  "s21": "numeric",
+  "s23": "numeric",
+  "s24": "numeric",
+  "s25": "numeric",
+  "s26": "numeric",
+  "s31": "numeric",
+  "s32": "numeric",
+  "s34": "numeric",
+  "s35": "numeric",
+  "s36": "numeric",
+  "s41": "numeric",
+  "s42": "numeric",
+  "s43": "numeric",
+  "s45": "numeric",
+  "s46": "numeric",
+  "s51": "numeric",
+  "s52": "numeric",
+  "s53": "numeric",
+  "s54": "numeric",
+  "s56": "numeric",
+  "s61": "numeric",
+  "s62": "numeric",
+  "s63": "numeric",
+  "s64": "numeric",
+  "s65": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

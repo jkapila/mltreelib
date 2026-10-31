@@ -1,0 +1,23 @@
+{
+  "dataset": "ta_protein",
+  "target": "ResidualSize",
+  "task": "regression",
+  "n_train": 36584,
+  "n_test": 9146,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "TotalSurfaceArea": "numeric",
+    "NonPolarExposedArea": "numeric",
+    "FracExposedNonPolarResidue": "numeric",
+    "FracExposedNonPolarPart": "numeric",
+    "MassWeightedExposedArea": "numeric",
+    "AvgDeviationExposedArea": "numeric",
+    "EuclideanDistance": "numeric",
+    "SecondaryStructurePenalty": "numeric",
+    "SpatialDistNK": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

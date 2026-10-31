@@ -1,0 +1,22 @@
+{
+  "dataset": "ta_houses",
+  "target": "LnMedianHouseValue",
+  "task": "regression",
+  "n_train": 16512,
+  "n_test": 4128,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "MedianIncome": "numeric",
+    "HousingMedianAge": "numeric",
+    "TotalRooms": "numeric",
+    "TotalBedrooms": "numeric",
+    "Population": "numeric",
+    "Households": "numeric",
+    "Latitude": "numeric",
+    "Longitude": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

@@ -1,0 +1,20 @@
+{
+  "dataset": "ta_healthcare",
+  "target": "charges",
+  "task": "regression",
+  "n_train": 1070,
+  "n_test": 268,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "age": "numeric",
+    "sex": "categorical",
+    "bmi": "numeric",
+    "children": "numeric",
+    "smoker": "categorical",
+    "region": "categorical"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

@@ -1,0 +1,22 @@
+{
+  "dataset": "ozone",
+  "target": "c8",
+  "task": "regression",
+  "n_train": 264,
+  "n_test": 66,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "c0": "numeric",
+    "c1": "numeric",
+    "c2": "numeric",
+    "c3": "numeric",
+    "c4": "numeric",
+    "c5": "numeric",
+    "c6": "numeric",
+    "c7": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

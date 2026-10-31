@@ -1,0 +1,46 @@
+{
+ "dataset": "heloc",
+ "target": "RiskPerformance",
+ "task": "binary",
+ "classes": [
+  "Bad",
+  "Good"
+ ],
+ "class_counts": {
+  "Bad": 5459,
+  "Good": 5000
+ },
+ "n_train": 8367,
+ "n_test": 2092,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "ExternalRiskEstimate": "numeric",
+  "MSinceOldestTradeOpen": "numeric",
+  "MSinceMostRecentTradeOpen": "numeric",
+  "AverageMInFile": "numeric",
+  "NumSatisfactoryTrades": "numeric",
+  "NumTrades60Ever2DerogPubRec": "numeric",
+  "NumTrades90Ever2DerogPubRec": "numeric",
+  "PercentTradesNeverDelq": "numeric",
+  "MSinceMostRecentDelq": "numeric",
+  "MaxDelq2PublicRecLast12M": "numeric",
+  "MaxDelqEver": "numeric",
+  "NumTotalTrades": "numeric",
+  "NumTradesOpeninLast12M": "numeric",
+  "PercentInstallTrades": "numeric",
+  "MSinceMostRecentInqexcl7days": "numeric",
+  "NumInqLast6M": "numeric",
+  "NumInqLast6Mexcl7days": "numeric",
+  "NetFractionRevolvingBurden": "numeric",
+  "NetFractionInstallBurden": "numeric",
+  "NumRevolvingTradesWBalance": "numeric",
+  "NumInstallTradesWBalance": "numeric",
+  "NumBank2NatlTradesWHighUtilization": "numeric",
+  "PercentTradesWBalance": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

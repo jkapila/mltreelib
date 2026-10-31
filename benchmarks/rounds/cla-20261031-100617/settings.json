@@ -1,0 +1,41 @@
+{
+  "round": "cla-20261031-100617",
+  "kind": "classification (first Elo classification round, TabArena-v0.1)",
+  "git_sha": "b4fbc31",
+  "board": "benchmarks/elo_cla_scores.csv",
+  "datasets": [
+    { "dataset": "Bank_Customer_Churn", "task": "binary" },
+    { "dataset": "SDSS17", "task": "multiclass" },
+    { "dataset": "bank-marketing", "task": "binary" },
+    { "dataset": "blood-transfusion-service-center", "task": "binary" },
+    { "dataset": "credit-g", "task": "binary" },
+    { "dataset": "diabetes", "task": "binary" },
+    { "dataset": "heloc", "task": "binary" },
+    { "dataset": "jm1", "task": "binary" },
+    { "dataset": "maternal_health_risk", "task": "multiclass" },
+    { "dataset": "online_shoppers_intention", "task": "binary" },
+    { "dataset": "splice", "task": "multiclass" },
+    { "dataset": "students_dropout_and_academic_success", "task": "multiclass" }
+  ],
+  "recipe": {
+    "data": "TabArena-v0.1 only (no RuleQuest this iteration)",
+    "features": "raw as-is; NO encoding for ModelTree (strings stay strings; its three data handlers infer Integer/Float-with-precision/Categorical-levels)",
+    "driver_encoding": "sklearn-only ordinal encoding, fit on train (Python driver only; R and ModelTree consume raw rows)",
+    "split": "stratified_80_20, seed 7 (per <ds>.meta.json)",
+    "target": "last column, raw labels; binary positive class = classes[1] (canonical str-sorted order)",
+    "budget": "180s hard wall-clock cap per (algorithm x dataset) via examples/elo_budget.run_with_budget (process-group kill)"
+  },
+  "metrics": {
+    "primary": "logloss",
+    "diagnostics": ["accuracy", "bal_acc", "auc", "macro_f1"],
+    "auc": "binary only (classes[1] score); empty field on the board for multiclass"
+  },
+  "settings": {
+    "ModelTree(all)": { "leaf": "linear" },
+    "ModelTree(path)": { "leaf": "linear", "leaf_cols": "path" },
+    "ModelTree(mean)": { "leaf": "mean" },
+    "ModelTree(winnow)": { "leaf": "linear", "min_relevance": 0.05 }
+  },
+  "modeltree_baseline": "0/1 least-squares leaves; stock defaults max_depth=5 min_rows=50 minprob=0.02 split_precision=0.001 l2=0.5 prune=cp cp_alpha=5.0. Overrides limited to the leaf-family/path/winnow knobs in `settings` (exactly the examples/elo_score_python.py run_tree params). y mapped to 0.0/1.0 with positive = classes[1]; predictions = fitted values clipped to [0,1], used as P(positive). Entered on the 8 binary sets only: multiclass not entered (regression core until leaf_family #4).",
+  "field": "R and Python models run stock library configs, no HPO (Optuna is a later phase); their configs live in examples/elo_score_cla_r.R and examples/elo_score_cla_python.py."
+}

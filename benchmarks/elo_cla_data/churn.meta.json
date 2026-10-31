@@ -1,0 +1,42 @@
+{
+ "dataset": "churn",
+ "target": "CustomerChurned",
+ "task": "binary",
+ "classes": [
+  "No",
+  "Yes"
+ ],
+ "class_counts": {
+  "No": 4293,
+  "Yes": 707
+ },
+ "n_train": 4000,
+ "n_test": 1000,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "state": "categorical",
+  "account_length": "numeric",
+  "area_code": "categorical",
+  "international_plan": "categorical",
+  "voice_mail_plan": "categorical",
+  "number_vmail_messages": "numeric",
+  "total_day_minutes": "numeric",
+  "total_day_calls": "numeric",
+  "total_day_charge": "numeric",
+  "total_eve_minutes": "numeric",
+  "total_eve_calls": "numeric",
+  "total_eve_charge": "numeric",
+  "total_night_minutes": "numeric",
+  "total_night_calls": "numeric",
+  "total_night_charge": "numeric",
+  "total_intl_minutes": "numeric",
+  "total_intl_calls": "numeric",
+  "total_intl_charge": "numeric",
+  "number_customer_service_calls": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

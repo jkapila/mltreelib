@@ -1,0 +1,26 @@
+{
+  "dataset": "boston",
+  "target": "c7",
+  "task": "regression",
+  "n_train": 404,
+  "n_test": 102,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "c8": "numeric",
+    "c9": "numeric",
+    "c10": "numeric",
+    "c11": "categorical",
+    "c12": "numeric",
+    "c13": "numeric",
+    "c14": "numeric",
+    "c15": "numeric",
+    "c16": "numeric",
+    "c17": "numeric",
+    "c18": "numeric",
+    "c20": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

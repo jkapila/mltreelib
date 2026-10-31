@@ -1,0 +1,22 @@
+{
+  "dataset": "ta_concrete",
+  "target": "ConcreteCompressiveStrength",
+  "task": "regression",
+  "n_train": 824,
+  "n_test": 206,
+  "split": {
+    "kind": "random_80_20",
+    "seed": 7
+  },
+  "columns": {
+    "Cement": "numeric",
+    "BlastFurnaceSlag": "numeric",
+    "FlyAsh": "numeric",
+    "Water": "numeric",
+    "Superplasticizer": "numeric",
+    "CoarseAggregate": "numeric",
+    "FineAggregate": "numeric",
+    "Age": "numeric"
+  },
+  "encoding": "none (raw as-is; native categoricals)"
+}

@@ -1,0 +1,40 @@
+{
+ "dataset": "online_shoppers_intention",
+ "target": "Revenue",
+ "task": "binary",
+ "classes": [
+  "False",
+  "True"
+ ],
+ "class_counts": {
+  "False": 10422,
+  "True": 1908
+ },
+ "n_train": 9864,
+ "n_test": 2466,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "Administrative": "numeric",
+  "Administrative_Duration": "numeric",
+  "Informational": "numeric",
+  "Informational_Duration": "numeric",
+  "ProductRelated": "numeric",
+  "ProductRelated_Duration": "numeric",
+  "BounceRates": "numeric",
+  "ExitRates": "numeric",
+  "PageValues": "numeric",
+  "SpecialDay": "numeric",
+  "Month": "categorical",
+  "OperatingSystems": "categorical",
+  "Browser": "categorical",
+  "Region": "categorical",
+  "TrafficType": "categorical",
+  "VisitorType": "categorical",
+  "Weekend": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}

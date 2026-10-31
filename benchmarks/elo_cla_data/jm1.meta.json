@@ -1,0 +1,44 @@
+{
+ "dataset": "jm1",
+ "target": "defects",
+ "task": "binary",
+ "classes": [
+  "False",
+  "True"
+ ],
+ "class_counts": {
+  "False": 8779,
+  "True": 2106
+ },
+ "n_train": 8708,
+ "n_test": 2177,
+ "n_rows_dropped_na_target": 0,
+ "split": {
+  "kind": "stratified_80_20",
+  "seed": 7
+ },
+ "columns": {
+  "loc": "numeric",
+  "v(g)": "numeric",
+  "ev(g)": "numeric",
+  "iv(g)": "numeric",
+  "n": "numeric",
+  "v": "numeric",
+  "l": "numeric",
+  "d": "numeric",
+  "i": "numeric",
+  "e": "numeric",
+  "b": "numeric",
+  "t": "numeric",
+  "lOCode": "numeric",
+  "lOComment": "numeric",
+  "lOBlank": "numeric",
+  "locCodeAndComment": "numeric",
+  "uniq_Op": "numeric",
+  "uniq_Opnd": "numeric",
+  "total_Op": "numeric",
+  "total_Opnd": "numeric",
+  "branchCount": "numeric"
+ },
+ "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)"
+}
