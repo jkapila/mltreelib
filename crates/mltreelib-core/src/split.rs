@@ -102,6 +102,14 @@ struct ScanStats {
     candidates: usize,
 }
 
+/// Reusable per-thread scratch buffers to eliminate heap allocation during column scans.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct SplitScratch {
+    pub pairs: Vec<(f64, f64, f64)>,
+    pub missing_yws: Vec<(f64, f64)>,
+    pub level_moments: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, swy, swy2)
+}
+
 impl<'a> Grower<'a> {
     /// Interaction constraint (LightGBM-style): a path may only use columns
     /// from one interaction group; ungrouped columns never interact.
@@ -247,23 +255,27 @@ impl<'a> Grower<'a> {
             SplitEval::Fast => None,
         };
 
+        let mut scratch = SplitScratch::default();
         if work >= PAR_MIN_WORK {
             use rayon::prelude::*;
             let mut out: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> = cols
                 .par_iter()
-                .map(|&j| {
-                    let mut cp = path.to_vec();
-                    cp.push(j);
-                    let (found, st) = self.scan_column(rows, j, &cp, parent_pre.as_ref());
-                    (j, found, st)
-                })
+                .map_init(
+                    SplitScratch::default,
+                    |sc, &j| {
+                        let mut cp = path.to_vec();
+                        cp.push(j);
+                        let (found, st) = self.scan_column(rows, j, &cp, parent_pre.as_ref(), sc);
+                        (j, found, st)
+                    },
+                )
                 .collect();
             out.sort_by_key(|(j, _, _)| *j); // deterministic order
             candidates = out;
         } else {
             for &j in &cols {
                 child_path.push(j);
-                let (found, st) = self.scan_column(rows, j, &child_path, parent_pre.as_ref());
+                let (found, st) = self.scan_column(rows, j, &child_path, parent_pre.as_ref(), &mut scratch);
                 child_path.pop();
                 candidates.push((j, found, st));
             }
@@ -327,6 +339,7 @@ impl<'a> Grower<'a> {
         j: usize,
         path: &[usize],
         pre: Option<&ParentPre>,
+        scratch: &mut SplitScratch,
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
         let (hit, st) = match self.params.split_eval {
             SplitEval::Exhaustive => {
@@ -336,18 +349,18 @@ impl<'a> Grower<'a> {
                     return self.scan_column_family(rows, j, path, pre);
                 }
                 if self.col_type(j) == ColType::Categorical {
-                    return self.scan_column_categorical(rows, j);
+                    return self.scan_column_categorical(rows, j, scratch);
                 }
                 match self.params.leaf {
                     LeafKind::Linear => self.scan_column_linear(rows, j, path, pre),
-                    _ => self.scan_column_mean(rows, j),
+                    _ => self.scan_column_mean(rows, j, scratch),
                 }
             }
             SplitEval::Fast => {
                 if self.col_type(j) == ColType::Categorical {
-                    return self.scan_column_categorical(rows, j);
+                    return self.scan_column_categorical(rows, j, scratch);
                 }
-                self.scan_column_mean(rows, j)
+                self.scan_column_mean(rows, j, scratch)
             }
         };
         (hit.map(|(g, s)| (g, s, None)), st)
@@ -389,9 +402,210 @@ impl<'a> Grower<'a> {
         &self,
         rows: &[usize],
         j: usize,
+        scratch: &mut SplitScratch,
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
         let mut st = ScanStats::default();
         let t0 = Instant::now();
+
+        let is_standard_gain = matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
+        if is_standard_gain {
+            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64)> =
+                std::collections::HashMap::new();
+            let (mut mn, mut msw, mut mswy, mut mswy2) = (0usize, 0.0, 0.0, 0.0);
+            for &r in rows {
+                let (y, w) = (self.y[r], self.w[r]);
+                match self.cols[j][r] {
+                    Some(v) => {
+                        let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0));
+                        e.0 += 1;
+                        e.1 += w;
+                        e.2 += w * y;
+                        e.3 += w * y * y;
+                    }
+                    None => {
+                        mn += 1;
+                        msw += w;
+                        mswy += w * y;
+                        mswy2 += w * y * y;
+                    }
+                }
+            }
+            if by_level.len() < 2 {
+                st.group_ns = t0.elapsed().as_nanos() as u64;
+                return (None, st);
+            }
+            scratch.level_moments.clear();
+            for (b, (n, sw, swy, swy2)) in by_level {
+                scratch.level_moments.push((f64::from_bits(b), n, sw, swy, swy2));
+            }
+
+            // Level order (deterministic: ties by level code ascending).
+            match &self.params.cat_order {
+                CatOrder::FrequencyDesc => {
+                    scratch.level_moments.sort_by(|a, b| {
+                        b.1.cmp(&a.1)
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+                CatOrder::TargetMean => {
+                    let wmean = |sw: f64, swy: f64| if sw <= 0.0 { 0.0 } else { swy / sw };
+                    scratch.level_moments.sort_by(|a, b| {
+                        wmean(b.2, b.3)
+                            .partial_cmp(&wmean(a.2, a.3))
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+                CatOrder::Explicit(order) => {
+                    let rank = |v: f64| {
+                        order.iter().position(|o| *o == v).unwrap_or(usize::MAX)
+                    };
+                    scratch.level_moments.sort_by(|a, b| {
+                        rank(a.0)
+                            .cmp(&rank(b.0))
+                            .then(b.1.cmp(&a.1))
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+            }
+            st.group_ns += t0.elapsed().as_nanos() as u64;
+            let t1 = Instant::now();
+
+            let k = scratch.level_moments.len();
+            let m = self.min_child(rows.len()) as f64;
+            let (mut tn, mut tsw, mut tswy, mut tswy2) = (0usize, 0.0, 0.0, 0.0);
+            for &(_, n, sw, swy, swy2) in scratch.level_moments.iter() {
+                tn += n;
+                tsw += sw;
+                tswy += swy;
+                tswy2 += swy2;
+            }
+            let total_w = tsw + msw;
+
+            fn sse(sw: f64, swy: f64, swy2: f64) -> f64 {
+                if sw <= 0.0 { 0.0 } else { swy2 - swy * swy / sw }
+            }
+            let parent_sse = sse(tsw, tswy, tswy2) + sse(msw, mswy, mswy2);
+
+            let mut best: Option<(f64, Vec<usize>, bool)> = None;
+
+            let mut eval_split = |left_indices: &[usize], ln: usize, lsw: f64, lswy: f64, lswy2: f64, best: &mut Option<(f64, Vec<usize>, bool)>| -> bool {
+                let rn = tn - ln;
+                let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
+                if (ln as f64) < m || (rn as f64) < m {
+                    return false;
+                }
+                st.candidates += 1;
+                let mut candidate_hit = false;
+                for missing_left in [true, false] {
+                    let (aln, alsw, alswy, alswy2) = if missing_left {
+                        (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2)
+                    } else {
+                        (ln, lsw, lswy, lswy2)
+                    };
+                    let (arn, arsw, arswy, arswy2) = if missing_left {
+                        (rn, rsw, rswy, rswy2)
+                    } else {
+                        (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2)
+                    };
+                    if (aln as f64) < m || (arn as f64) < m {
+                        continue;
+                    }
+                    if self.params.alpha > 0.0
+                        && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w)
+                    {
+                        continue;
+                    }
+                    let gain = match self.params.gain {
+                        GainFn::Deviance if self.params.leaf_family != crate::family::LeafFamily::Gaussian => {
+                            self.constant_family_cost(tsw + msw, tswy + mswy)
+                                - self.constant_family_cost(alsw, alswy)
+                                - self.constant_family_cost(arsw, arswy)
+                        }
+                        GainFn::Sse | GainFn::Deviance => {
+                            parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
+                        }
+                        _ => unreachable!(),
+                    };
+                    let gain = if self.params.imbalance_penalty > 0.0 {
+                        gain - self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64)
+                    } else {
+                        gain
+                    };
+                    if gain <= self.params.min_gain {
+                        continue;
+                    }
+                    candidate_hit = true;
+                    if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                        *best = Some((gain, left_indices.to_vec(), missing_left));
+                    }
+                }
+                candidate_hit
+            };
+
+            match self.params.cat_search {
+                CatSearch::Cumulative => {
+                    let (mut ln, mut lsw, mut lswy, mut lswy2) = (0usize, 0.0, 0.0, 0.0);
+                    let mut left_indices = Vec::with_capacity(k);
+                    for i in 1..k {
+                        let (_, cn, csw, cswy, cswy2) = scratch.level_moments[i - 1];
+                        ln += cn;
+                        lsw += csw;
+                        lswy += cswy;
+                        lswy2 += cswy2;
+                        left_indices.push(i - 1);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, &mut best);
+                    }
+                }
+                CatSearch::SingleVsRest => {
+                    for i in 0..k {
+                        let (_, ln, lsw, lswy, lswy2) = scratch.level_moments[i];
+                        let hit = eval_split(&[i], ln, lsw, lswy, lswy2, &mut best);
+                        if hit {
+                            break;
+                        }
+                    }
+                }
+                CatSearch::Both => {
+                    let (mut ln, mut lsw, mut lswy, mut lswy2) = (0usize, 0.0, 0.0, 0.0);
+                    let mut left_indices = Vec::with_capacity(k);
+                    for i in 1..k {
+                        let (_, cn, csw, cswy, cswy2) = scratch.level_moments[i - 1];
+                        ln += cn;
+                        lsw += csw;
+                        lswy += cswy;
+                        lswy2 += cswy2;
+                        left_indices.push(i - 1);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, &mut best);
+                    }
+                    for i in 0..k {
+                        let (_, ln, lsw, lswy, lswy2) = scratch.level_moments[i];
+                        eval_split(&[i], ln, lsw, lswy, lswy2, &mut best);
+                    }
+                }
+            }
+
+            st.scan_ns += t1.elapsed().as_nanos() as u64;
+            return (
+                best.map(|(gain, left_indices, missing_left)| {
+                    let left_levels: Vec<f64> = left_indices.iter().map(|&li| scratch.level_moments[li].0).collect();
+                    (
+                        gain,
+                        Split {
+                            col: j,
+                            threshold: 0.0,
+                            missing_left,
+                            gain,
+                            cat: None,
+                            sur: None,
+                        },
+                        Some(left_levels),
+                    )
+                }),
+                st,
+            );
+        }
+
         let mut missing_yws: Vec<(f64, f64)> = Vec::new();
         let mut by_level: std::collections::HashMap<u64, Vec<(f64, f64)>> =
             std::collections::HashMap::new();
@@ -457,7 +671,6 @@ impl<'a> Grower<'a> {
 
         let k = levels.len();
         let m = self.min_child(rows.len()) as f64;
-        // Candidate partitions as level-index sets (left side).
         let mut candidates: Vec<Vec<usize>> = Vec::new();
         match self.params.cat_search {
             CatSearch::Cumulative => {
@@ -482,7 +695,7 @@ impl<'a> Grower<'a> {
 
         let wsum = |p: &[(f64, f64)]| p.iter().map(|&(_, w)| w).sum::<f64>();
         let total_w: f64 = wsum(&missing_yws) + levels.iter().map(|(_, r)| wsum(r)).sum::<f64>();
-        let mut best: Option<(f64, Vec<f64>, bool)> = None; // (gain, left levels, missing_left)
+        let mut best: Option<(f64, Vec<f64>, bool)> = None;
         for left_idx in candidates.iter() {
             let in_left: std::collections::HashSet<usize> = left_idx.iter().copied().collect();
             let mut ln = 0usize;
@@ -517,8 +730,6 @@ impl<'a> Grower<'a> {
                 } else {
                     rs.extend_from_slice(&missing_yws);
                 }
-                // grf-style alpha: each child carries at least alpha of the
-                // node's total weight.
                 if self.params.alpha > 0.0
                     && (wsum(&ls) < self.params.alpha * total_w
                         || wsum(&rs) < self.params.alpha * total_w)
@@ -539,8 +750,6 @@ impl<'a> Grower<'a> {
                         left_idx.iter().map(|&li| levels[li].0).collect();
                     best = Some((gain, left_levels, missing_left));
                 }
-                // Single-vs-rest loops in `cat_order` and stops at the
-                // first acceptable level (gain > min_gain, checked above).
                 if matches!(self.params.cat_search, CatSearch::SingleVsRest) {
                     break;
                 }
@@ -569,39 +778,51 @@ impl<'a> Grower<'a> {
 
     /// Mean-leaf scan — rpart's `anova.c` shape: weighted running sums per
     /// side, O(1) per value, split only where the value changes.
-    fn scan_column_mean(&self, rows: &[usize], j: usize) -> (Option<(f64, Split)>, ScanStats) {
+    fn scan_column_mean(
+        &self,
+        rows: &[usize],
+        j: usize,
+        scratch: &mut SplitScratch,
+    ) -> (Option<(f64, Split)>, ScanStats) {
         let mut st = ScanStats::default();
         let m = self.min_child(rows.len()) as f64;
         let t0 = Instant::now();
-        let mut pairs: Vec<(f64, f64, f64)> = rows
-            .iter()
-            .filter_map(|&r| self.cols[j][r].map(|v| (v, self.y[r], self.w[r])))
-            .collect();
-        if pairs.len() < 2 {
+
+        scratch.pairs.clear();
+        for &r in rows {
+            if let Some(v) = self.cols[j][r] {
+                scratch.pairs.push((v, self.y[r], self.w[r]));
+            }
+        }
+        if scratch.pairs.len() < 2 {
             return (None, st);
         }
-        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
-        // split_precision grid: values round to the grid before the scan;
-        // candidates are grid boundaries (midpoints when unset).
+        scratch.pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+
         if let Some(p) = self.grid_for(j) {
             if p > 0.0 {
                 let q = 1.0 / p;
-                for t in pairs.iter_mut() {
+                for t in scratch.pairs.iter_mut() {
                     t.0 = (t.0 * q).round() / q;
                 }
             }
         }
-        let yws_sorted: Vec<(f64, f64)> = pairs.iter().map(|&(_, y, w)| (y, w)).collect();
+
+        let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
+        if is_custom_gain {
+            scratch.missing_yws.clear();
+        }
 
         // Missing rows: one extra group, scored in both directions.
         let mut mn = 0usize;
-        let mut missing_yws: Vec<(f64, f64)> = Vec::new();
         let (mut msw, mut mswy, mut mswy2) = (0.0, 0.0, 0.0);
         for &r in rows {
             if self.cols[j][r].is_none() {
                 mn += 1;
                 let (y, w) = (self.y[r], self.w[r]);
-                missing_yws.push((y, w));
+                if is_custom_gain {
+                    scratch.missing_yws.push((y, w));
+                }
                 msw += w;
                 mswy += w * y;
                 mswy2 += w * y * y;
@@ -609,7 +830,7 @@ impl<'a> Grower<'a> {
         }
         let mut tn = 0usize;
         let (mut tsw, mut tswy, mut tswy2) = (0.0, 0.0, 0.0);
-        for &(_, y, w) in &pairs {
+        for &(_, y, w) in scratch.pairs.iter() {
             tn += 1;
             tsw += w;
             tswy += w * y;
@@ -630,21 +851,20 @@ impl<'a> Grower<'a> {
         let mut ln = 0usize;
         let (mut lsw, mut lswy, mut lswy2) = (0.0, 0.0, 0.0);
         let mut best: Option<(f64, Split)> = None;
-        for k in 0..pairs.len() {
-            let (v, y, w) = pairs[k];
+        let n_pairs = scratch.pairs.len();
+        for k in 0..n_pairs {
+            let (v, y, w) = scratch.pairs[k];
             ln += 1;
             lsw += w;
             lswy += w * y;
             lswy2 += w * y * y;
-            let is_boundary = k + 1 < pairs.len() && pairs[k + 1].0 != v;
+            let is_boundary = k + 1 < n_pairs && scratch.pairs[k + 1].0 != v;
             if !is_boundary {
                 continue;
             }
-            // Grid mode: thresholds are grid values (compare rounds to the
-            // same grid, see `goes_left`); exact mode keeps midpoints.
             let threshold = match self.grid_for(j) {
                 Some(_) => v,
-                None => (v + pairs[k + 1].0) / 2.0,
+                None => (v + scratch.pairs[k + 1].0) / 2.0,
             };
             let rn = tn - ln;
             let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
@@ -663,8 +883,6 @@ impl<'a> Grower<'a> {
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
                 }
-                // grf-style alpha: each child carries at least alpha of the
-                // node's total weight.
                 if self.params.alpha > 0.0 && (alsw < self.params.alpha * (tsw + msw)
                     || arsw < self.params.alpha * (tsw + msw))
                 {
@@ -683,18 +901,16 @@ impl<'a> Grower<'a> {
                         parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
                     }
                     ref gfn => {
-                        // Lazy (y, w) slices over the value-sorted buffer;
-                        // missing rows appended to the side they route to
-                        // (allocated only when the column has missing).
-                        if missing_yws.is_empty() {
+                        let yws_sorted: Vec<(f64, f64)> = scratch.pairs.iter().map(|&(_, y, w)| (y, w)).collect();
+                        if scratch.missing_yws.is_empty() {
                             gain_of(gfn, &yws_sorted[..k + 1], &yws_sorted[k + 1..])
                         } else {
                             let mut ls: Vec<(f64, f64)> = yws_sorted[..k + 1].to_vec();
                             let mut rs: Vec<(f64, f64)> = yws_sorted[k + 1..].to_vec();
                             if missing_left {
-                                ls.extend_from_slice(&missing_yws);
+                                ls.extend_from_slice(&scratch.missing_yws);
                             } else {
-                                rs.extend_from_slice(&missing_yws);
+                                rs.extend_from_slice(&scratch.missing_yws);
                             }
                             gain_of(gfn, &ls, &rs)
                         }

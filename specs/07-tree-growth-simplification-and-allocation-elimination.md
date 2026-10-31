@@ -79,14 +79,14 @@ The optimizations will be implemented and validated sequentially against TabAren
   - Candidate split evaluation defaults to $O(1)$ scalar variance/deviance reduction (`SplitEval::Fast`).
   - Terminal leaves fit regularized multivariate linear / GLM regression models.
   - Retain `SplitEval::Exhaustive` for exact research comparisons.
-- [ ] **Phase 2A: Zero-Allocation Worker Scratch Buffers (`SplitScratch`)**:
+- [x] **Phase 2A: Zero-Allocation Worker Scratch Buffers (`SplitScratch`)**:
   - Introduce preallocated per-thread reusable vectors (`pairs`, `missing_yws`).
   - Pass mutable scratch down the recursive growth stack, clearing capacities instead of re-allocating heap vectors.
-- [ ] **Phase 2B: Scalar Precomputed Moments for Categorical Splits**:
+- [x] **Phase 2B: Scalar Precomputed Moments for Categorical Splits**:
   - Two-pass level moment aggregation $(w_k, wy_k, wy^2_k)$.
   - Evaluate prefix and single-vs-rest splits via $O(1)$ scalar additions and subtractions.
   - Eliminate `HashSet<usize>` and `Vec<(f64, f64)>` cloning in `scan_column_categorical`.
-- [ ] **Phase 2C: Lazy T-Digest Finalization**:
+- [x] **Phase 2C: Lazy T-Digest Finalization**:
   - Store only scalar moments ($N, \text{mean}, \text{variance}$) on internal tree nodes.
   - Construct 100-centroid t-digests strictly on finalized terminal leaves when `leaf_digest=true`.
 - [ ] **Phase 3A: Pre-Sorted Index Partitioning**:

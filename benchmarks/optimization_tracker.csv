@@ -17,3 +17,6 @@ Elo-LightGBM,credit-g,classification,1000,20,237.0,0,0,accuracy,0.725
 Phase1-Decoupled,houses,regression,20640,8,619.46,27,26,rmse,0.2957
 Phase1-Decoupled,bank-marketing,classification,45211,13,1428.27,26,25,accuracy,0.8916
 Phase1-Decoupled,credit-g,classification,1000,20,73.85,12,11,accuracy,0.75
+Phase2-Scratch-Moments-LazyDigest,houses,regression,20640,8,582.09,27,26,rmse,0.2957
+Phase2-Scratch-Moments-LazyDigest,bank-marketing,classification,45211,13,1334.8,26,25,accuracy,0.8916
+Phase2-Scratch-Moments-LazyDigest,credit-g,classification,1000,20,66.2,12,11,accuracy,0.75

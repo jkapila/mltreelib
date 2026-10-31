@@ -125,17 +125,10 @@ impl<'a> Grower<'a> {
     }
 
     fn fit_leaf(&self, rows: &[usize], path: &[usize], digest: bool) -> LeafModel {
-        let family = self.params.leaf_family;
-        let stats = if digest || family == LeafFamily::Gaussian {
+        let stats = if digest {
             let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();
             let wv: Vec<f64> = rows.iter().map(|&r| self.w[r]).collect();
-            let mut stats = LeafStats::from_targets(&yv, &wv);
-            if !digest {
-                // Lean Gaussian leaves retain historical stats semantics;
-                // only the digest is dropped.
-                stats.digest = tdigest::TDigest::new_with_size(1);
-            }
-            stats
+            LeafStats::from_targets(&yv, &wv)
         } else {
             LeafStats::from_rows(self.y, self.w, rows)
         };
