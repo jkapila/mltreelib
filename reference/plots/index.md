@@ -34,8 +34,10 @@ Rendered on the churn demo (real `y`, tree scores, mean baseline) — generated 
 
 **`plot_double_lift(y, a, b, model_type="ratio")` / `plot_psi(reference, current, n_bins=10)`**
 
+**`plot_confusion_matrix(confusion)` / `plot_residuals(y_true, y_pred)`**
+
 **`plot_importance(model.feature_importance())` / `plot_breakdown(model.break_down(row))`**
 
-**`plot_variance_shares(generate(...)["truth"]["variance"])`** — the generator's ground truth. The 2×2 **`plot_decomposition`** panel (statsmodels convention) renders on the [Data processing page](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>).
+**`plot_variance_shares(generate(...)["truth"]["variance"])` / `plot_decomposition(values, trend, detrended, deseason, residual)`**
 
 **Reference — next: [Evaluation reports](<https://jkapila.github.io/mltreelib/reference/reports/index.md>)**

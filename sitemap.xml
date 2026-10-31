@@ -37,6 +37,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/distributional-leaves/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/honesty-weights/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/hpo/</loc>
       </url>
       <url>
@@ -49,7 +52,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/missing-routing/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/timeseries-forecasting/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/visualization/</loc>
