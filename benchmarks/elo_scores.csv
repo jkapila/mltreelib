@@ -462,3 +462,62 @@ ta_qsar_tid11,rpart,R,internal,1.2674,0.9962,15.4700
 ta_qsar_tid11,cubist,R,internal,0.8806,0.6307,63.3580
 ta_qsar_tid11,lmtree,R,internal,0.9595,0.7436,9.1270
 ta_qsar_tid11,glmtree,R,internal,0.9595,0.7436,13.9820
+ta_qsar_tid11,ctree,R,internal,1.0588,0.7915,64.1550
+ta_qsar_tid11,grf_rf,R,none,0.9323,0.7378,14.7370
+ta_qsar_tid11,earth,R,internal,1.0175,0.7985,92.3560
+ta_qsar_tid11,mboost,R,internal,1.0806,0.8675,203.9550
+ta_qsar_tid11,ranger,R,internal,0.7503,0.5779,39.2150
+ta_qsar_tid11,CTBoost,Python,internal,0.8335,0.6491,7.0120
+ta_qsar_tid11,CatBoost(200),Python,internal,0.7641,0.5916,3.8010
+ta_qsar_tid11,ChimeraBoost,Python,internal,0.7421,0.5505,38.5410
+ta_qsar_tid11,ExtraTrees,Python,external,1.0272,0.6884,141.7790
+ta_qsar_tid11,HistGradientBoosting,Python,internal,0.7744,0.5917,8.3500
+ta_qsar_tid11,KNN,Python,external,0.8641,0.6208,0.2490
+ta_qsar_tid11,LightGBM(200),Python,internal,0.7449,0.5669,0.7690
+ta_qsar_tid11,ModelTree(mean),Rust,internal,1.2742,1.0191,4.2020
+ta_qsar_tid11,ModelTree(path),Rust,internal,1.3308,1.0649,9.1170
+ta_qsar_tid11,forust (Rust),Rust,external,0.7797,0.5911,1.2810
+ta_qsar_tid11,modeltrees lmtree,Python,internal,0.9595,0.7436,4.5710
+ta_qsar_tid11,sklearn GBM,Python,external,0.9612,0.7683,26.0720
+ta_qsar_tid11,sklearn Linear,Python,external,0.9595,0.7436,0.9600
+ta_qsar_tid11,sklearn RF,Python,external,0.7431,0.5509,82.0530
+ta_qsar_tid11,sklearn tree,Python,external,1.0574,0.7049,1.6320
+ta_qsar_tid11,statsmodels OLS,Python,none,0.9595,0.7436,1.8960
+ta_qsar_tid11,statsmodels RLM,Python,none,0.9702,0.7441,123.1970
+ta_superconductivity,rpart,R,internal,18.2448,13.1934,2.8460
+ta_superconductivity,cubist,R,internal,12.4512,6.7374,15.5450
+ta_superconductivity,ctree,R,internal,12.7309,7.6876,16.6420
+ta_superconductivity,grf_llf,R,none,8.6408,5.0162,76.5750
+ta_superconductivity,grf_rf,R,none,10.7721,6.6769,49.4000
+ta_superconductivity,earth,R,internal,17.7010,13.3449,2.6270
+ta_superconductivity,mboost,R,internal,15.3207,10.9890,36.3460
+ta_superconductivity,ranger,R,internal,9.0605,5.1655,64.1690
+ta_superconductivity,bart,R,internal,11.8344,7.7615,47.2330
+ta_superconductivity,CTBoost,Python,internal,10.9870,7.0830,3.6310
+ta_superconductivity,CatBoost(200),Python,internal,9.9184,6.2616,1.9090
+ta_superconductivity,ChimeraBoost,Python,internal,8.8827,5.1466,17.5720
+ta_superconductivity,ExtraTrees,Python,external,8.7713,4.8269,33.1810
+ta_superconductivity,HistGradientBoosting,Python,internal,10.2001,6.4540,1.0050
+ta_superconductivity,KNN,Python,external,11.8037,6.6214,0.3230
+ta_superconductivity,LightGBM(200),Python,internal,9.4248,5.7414,0.8280
+ta_superconductivity,ModelTree(mean),Rust,internal,16.7982,11.4176,2.0930
+ta_superconductivity,ModelTree(path),Rust,internal,15.3977,10.2234,38.3750
+ta_superconductivity,forust (Rust),Rust,external,9.6801,5.9556,3.8540
+ta_superconductivity,perpetual (Rust),Rust,external,9.3581,5.5119,98.8290
+ta_superconductivity,sklearn GBM,Python,external,12.6150,8.6753,51.7620
+ta_superconductivity,sklearn Linear,Python,external,17.7219,13.5260,0.3750
+ta_superconductivity,sklearn RF,Python,external,9.1528,5.1548,120.1280
+ta_superconductivity,sklearn tree,Python,external,11.6106,5.9866,1.9100
+ta_superconductivity,statsmodels OLS,Python,none,17.6893,13.5073,0.6880
+ta_superconductivity,statsmodels QuantReg,Python,none,17.9855,13.2144,156.6570
+ta_superconductivity,statsmodels RLM,Python,none,17.7453,13.3121,14.8850
+ta_wine,rpart,R,internal,0.7740,0.6147,0.2180
+ta_wine,cubist,R,internal,0.7226,0.5414,1.4500
+ta_wine,lmtree,R,internal,0.7093,0.5593,4.7760
+ta_wine,glmtree,R,internal,0.7131,0.5585,6.6920
+ta_wine,ctree,R,internal,0.7456,0.5904,1.8180
+ta_wine,grf_llf,R,none,0.6383,0.4858,10.1170
+ta_wine,grf_rf,R,none,0.6931,0.5440,9.9020
+ta_wine,earth,R,internal,0.7303,0.5722,0.2200
+ta_wine,mboost,R,internal,0.7203,0.5660,5.0510
+ta_wine,ranger,R,internal,0.6115,0.4499,3.9360

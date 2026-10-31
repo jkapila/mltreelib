@@ -48,6 +48,9 @@ nav:
       - Distributional leaves: examples/distributional-leaves.md
       - Categorical encoders: examples/categorical-encoders.md
       - Monotone & interaction constraints: examples/constraints.md
+      - Missing data & routing: examples/missing-routing.md
+      - Honest trees & weights: examples/honesty-weights.md
+      - Time series forecasting: examples/timeseries-forecasting.md
       - Inspection: examples/inspection.md
       - Visualization: examples/visualization.md
       - Metrics & plots: examples/metrics-plots.md
@@ -87,6 +90,9 @@ plugins:
           - examples/distributional-leaves.md
           - examples/categorical-encoders.md
           - examples/constraints.md
+          - examples/missing-routing.md
+          - examples/honesty-weights.md
+          - examples/timeseries-forecasting.md
           - examples/inspection.md
           - examples/visualization.md
           - examples/metrics-plots.md

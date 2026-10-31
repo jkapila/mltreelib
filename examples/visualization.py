@@ -54,23 +54,25 @@ try:
     from mltreelib import plots as mplots
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+    mplots._style_axis(axes[0])
+    mplots._style_axis(axes[1])
     sample = list(range(0, len(pred), max(1, len(pred) // 2000)))
     axes[0].scatter([y[n_tr + i] for i in sample], [pred[i] for i in sample],
-                    s=4, alpha=0.4, color=mplots.PALETTE["primary"])
+                    s=14, alpha=0.55, color=mplots.PALETTE["primary"], zorder=3)
     lo = min(min(pred), min(y[n_tr:]))
     hi = max(max(pred), max(y[n_tr:]))
-    axes[0].plot([lo, hi], [lo, hi], color=mplots.PALETTE["dark"], lw=1)
-    axes[0].set_xlabel("actual scaled sound pressure")
-    axes[0].set_ylabel("predicted")
-    axes[0].set_title("airfoil: predicted vs actual (test)")
+    axes[0].plot([lo, hi], [lo, hi], color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2)
+    axes[0].set_xlabel("Actual Scaled Sound Pressure")
+    axes[0].set_ylabel("Predicted Value")
+    axes[0].set_title("Airfoil: Predicted vs. Actual (Test)")
 
     resid = [p - t for p, t in zip(pred, y[n_tr:])]
     axes[1].scatter([pred[i] for i in sample], [resid[i] for i in sample],
-                    s=4, alpha=0.4, color=mplots.PALETTE["accent"])
-    axes[1].axhline(0, color=mplots.PALETTE["dark"], lw=1)
-    axes[1].set_xlabel("predicted")
-    axes[1].set_ylabel("residual")
-    axes[1].set_title("residuals")
+                    s=14, alpha=0.55, color=mplots.PALETTE["secondary"], zorder=3)
+    axes[1].axhline(0, color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2)
+    axes[1].set_xlabel("Predicted Value")
+    axes[1].set_ylabel("Residual (Predicted − Actual)")
+    axes[1].set_title("Airfoil: Residuals vs. Fitted")
     fig.tight_layout()
     fig.savefig(ASSETS / "airfoil_diagnostics.png", dpi=110)
     plt.close(fig)

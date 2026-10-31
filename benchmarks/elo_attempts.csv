@@ -634,3 +634,81 @@ ta_qsar_tid11,rpart,ok,18.5
 ta_qsar_tid11,cubist,ok,66.5
 ta_qsar_tid11,lmtree,ok,12.3
 ta_qsar_tid11,glmtree,ok,17.1
+ta_qsar_tid11,ctree,ok,67.1
+ta_qsar_tid11,grf_llf,timeout,300.4
+ta_qsar_tid11,grf_rf,ok,18.1
+ta_qsar_tid11,earth,ok,95.2
+ta_qsar_tid11,mboost,ok,206.9
+ta_qsar_tid11,ranger,ok,42.0
+ta_qsar_tid11,bart,error,8.8
+ta_qsar_tid11,fru,error,2.9
+ta_qsar_tid11,CTBoost,ok,18.0
+ta_qsar_tid11,CatBoost(200),ok,15.4
+ta_qsar_tid11,ChimeraBoost,ok,50.4
+ta_qsar_tid11,EBM,timeout,300.5
+ta_qsar_tid11,ExtraTrees,ok,152.4
+ta_qsar_tid11,HistGradientBoosting,ok,21.0
+ta_qsar_tid11,KNN,ok,11.4
+ta_qsar_tid11,LightGBM(200),ok,12.7
+ta_qsar_tid11,MARS (mars-earth),timeout,300.2
+ta_qsar_tid11,ModelTree(all),timeout,300.5
+ta_qsar_tid11,ModelTree(mean),ok,14.2
+ta_qsar_tid11,ModelTree(path),ok,18.4
+ta_qsar_tid11,ModelTree(winnow),timeout,300.4
+ta_qsar_tid11,forust (Rust),ok,11.6
+ta_qsar_tid11,modeltrees lmtree,ok,15.6
+ta_qsar_tid11,perpetual (Rust),timeout,300.9
+ta_qsar_tid11,sklearn GBM,ok,37.6
+ta_qsar_tid11,sklearn Linear,ok,11.3
+ta_qsar_tid11,sklearn RF,ok,92.3
+ta_qsar_tid11,sklearn tree,ok,12.1
+ta_qsar_tid11,statsmodels OLS,ok,12.0
+ta_qsar_tid11,statsmodels QuantReg,timeout,300.2
+ta_qsar_tid11,statsmodels RLM,ok,133.1
+ta_qsar_tid11,trust-free,error,10.6
+ta_superconductivity,rpart,ok,8.6
+ta_superconductivity,cubist,ok,20.9
+ta_superconductivity,lmtree,timeout,300.1
+ta_superconductivity,glmtree,timeout,300.1
+ta_superconductivity,ctree,ok,21.9
+ta_superconductivity,grf_llf,ok,82.5
+ta_superconductivity,grf_rf,ok,55.6
+ta_superconductivity,earth,ok,8.3
+ta_superconductivity,mboost,ok,42.0
+ta_superconductivity,ranger,ok,69.9
+ta_superconductivity,bart,ok,52.8
+ta_superconductivity,fru,error,5.8
+ta_superconductivity,CTBoost,ok,12.3
+ta_superconductivity,CatBoost(200),ok,10.4
+ta_superconductivity,ChimeraBoost,ok,26.2
+ta_superconductivity,EBM,timeout,300.2
+ta_superconductivity,ExtraTrees,ok,41.3
+ta_superconductivity,HistGradientBoosting,ok,9.5
+ta_superconductivity,KNN,ok,8.6
+ta_superconductivity,LightGBM(200),ok,9.2
+ta_superconductivity,MARS (mars-earth),timeout,300.3
+ta_superconductivity,ModelTree(all),timeout,693.9
+ta_superconductivity,ModelTree(mean),ok,15.5
+ta_superconductivity,ModelTree(path),ok,47.5
+ta_superconductivity,ModelTree(winnow),timeout,608.0
+ta_superconductivity,forust (Rust),ok,16.6
+ta_superconductivity,modeltrees lmtree,timeout,300.3
+ta_superconductivity,perpetual (Rust),ok,108.3
+ta_superconductivity,sklearn GBM,ok,62.3
+ta_superconductivity,sklearn Linear,ok,9.4
+ta_superconductivity,sklearn RF,ok,129.6
+ta_superconductivity,sklearn tree,ok,11.7
+ta_superconductivity,statsmodels OLS,ok,10.0
+ta_superconductivity,statsmodels QuantReg,ok,165.9
+ta_superconductivity,statsmodels RLM,ok,23.8
+ta_superconductivity,trust-free,error,9.8
+ta_wine,rpart,ok,0.9
+ta_wine,cubist,ok,2.0
+ta_wine,lmtree,ok,5.3
+ta_wine,glmtree,ok,7.2
+ta_wine,ctree,ok,2.4
+ta_wine,grf_llf,ok,10.8
+ta_wine,grf_rf,ok,10.6
+ta_wine,earth,ok,0.8
+ta_wine,mboost,ok,5.6
+ta_wine,ranger,ok,4.5

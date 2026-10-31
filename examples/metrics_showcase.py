@@ -142,6 +142,8 @@ singles = [
     ("double_lift", lambda ax: plots.plot_double_lift(
         truth, scores, base, model_type="ratio", ax=ax)),
     ("psi", lambda ax: plots.plot_psi(scores[:h], scores[h:], ax=ax)),
+    ("confusion", lambda ax: plots.plot_confusion_matrix(clf["confusion"], class_names=["Retained", "Churned"], ax=ax)),
+    ("residuals", lambda ax: plots.plot_residuals(truth, scores, ax=ax)),
 ]
 for _name, _fn in singles:
     _fig, _ax = plt.subplots(figsize=(5.2, 4.0))
@@ -170,5 +172,19 @@ plots.plot_variance_shares(_g["truth"]["variance"], ax=_ax)
 _fig.tight_layout()
 _fig.savefig("docs/assets/plots/variance_shares.png", dpi=110)
 plt.close(_fig)
+
+# Decomposition chart
+from datetime import date, timedelta
+from mltreelib import decomposed_transform
+_dates = [(date(2026, 1, 1) + timedelta(days=i)).isoformat() for i in range(28)]
+_vals = [20.0 + 0.5 * i + (5.0 if i % 7 in (5, 6) else -2.0) for i in range(28)]
+_d = decomposed_transform(["store"] * 28, _dates, _vals, season_granularity="weekday", trend_window=7)
+_trend = [_vals[i] - (_d["detrended"][i] or _vals[i]) for i in range(28)]
+_fig, _axes = plt.subplots(2, 2, figsize=(10.0, 5.5), sharex=True)
+plots.plot_decomposition(_vals, _trend, _d["detrended"], _d["deseasonalized"], _d["residual"], dates=_dates, axes=_axes)
+_fig.tight_layout()
+_fig.savefig("docs/assets/plots/decomposition.png", dpi=110)
+plt.close(_fig)
+
 print(f"explanation + data-truth charts -> docs/assets/plots/*.png")
-print("\nwrote docs/assets/plots/*.png (13 separate zoomable charts)")
+print("\nwrote docs/assets/plots/*.png (16 separate zoomable charts)")

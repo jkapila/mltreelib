@@ -15,42 +15,42 @@ uv run python examples/metrics_showcase.py
 churn: 2000 test rows, event rate 0.205
 
 == reports ==
-regression: rmse 0.420  r2 -0.084  deciles 10
-classification: accuracy 0.796  macro f1 0.648  confusion [[1444.0, 146.0], [262.0, 148.0]]
+regression: rmse 0.328  r2 0.342  deciles 10
+classification: accuracy 0.851  macro f1 0.734  confusion [[1515.0, 75.0], [223.0, 187.0]]
 regression_by_group: ['high', 'low']
-classification_by_group: {'high': 0.709, 'low': 0.883}
+classification_by_group: {'high': 0.75, 'low': 0.952}
 
 == curves ==
-roc: auc 0.676 over 1554 points
-pr:  ap 0.386
-ks:  0.361 at score 0.183 (tpr 0.60 / fpr 0.24)
-gain/decile 1: capture 0.241  lift 2.41
+roc: auc 0.849 over 1799 points
+pr:  ap 0.684
+ks:  0.554 at score 0.174 (tpr 0.79 / fpr 0.23)
+gain/decile 1: capture 0.390  lift 3.90
 calibration: 10 non-empty bins
 
 == probability & margin scores ==
-log_loss 3.204  brier 0.177  hinge 0.506
+log_loss 0.441  brier 0.107  hinge 0.417
 
 == classification scorecard ==
-  accuracy=0.796  balanced_accuracy=0.635  precision_macro=0.675  recall_macro=0.635  f1_macro=0.648  precision_micro=0.796  recall_micro=0.796  f1_micro=0.796  precision_weighted=0.776  recall_weighted=0.796  f1_weighted=0.783  mcc=0.307  jaccard_macro=0.523  jaccard_micro=0.661  jaccard_weighted=0.674  hamming_loss=0.204  zero_one_loss=0.204
+  accuracy=0.851  balanced_accuracy=0.704  precision_macro=0.793  recall_macro=0.704  f1_macro=0.734  precision_micro=0.851  recall_micro=0.851  f1_micro=0.851  precision_weighted=0.839  recall_weighted=0.851  f1_weighted=0.838  mcc=0.489  jaccard_macro=0.611  jaccard_micro=0.741  jaccard_weighted=0.743  hamming_loss=0.149  zero_one_loss=0.149
 
 == multilabel ==
   subset_accuracy 1.000  hamming 0.000  lrap 1.000  coverage 1.83
 
 == agreement ==
-  weighted_kappa(none): 0.301
-  weighted_kappa(linear): 0.301
-  weighted_kappa(quadratic): 0.301
+  weighted_kappa(none): 0.472
+  weighted_kappa(linear): 0.472
+  weighted_kappa(quadratic): 0.472
 
 == stability ==
-  PSI (score halves): 0.0143
+  PSI (score halves): 0.0104
   CSI (age train vs test): 0.0055
 
 == double lift (tree vs mean baseline) ==
-  bucket 1: n=400 actual=0.443 tree=0.748 base=0.205
-  bucket 2: n=400 actual=0.223 tree=0.186 base=0.205
-  bucket 3: n=400 actual=0.120 tree=0.103 base=0.205
-  bucket 4: n=400 actual=0.060 tree=0.041 base=0.205
-  bucket 5: n=400 actual=0.180 tree=0.003 base=0.205
+  bucket 1: n=400 actual=0.593 tree=0.632 base=0.205
+  bucket 2: n=400 actual=0.240 tree=0.224 base=0.205
+  bucket 3: n=400 actual=0.115 tree=0.103 base=0.205
+  bucket 4: n=400 actual=0.048 tree=0.049 base=0.205
+  bucket 5: n=400 actual=0.030 tree=0.008 base=0.205
 
 == pairwise distances ==
   euclidean    [[5.0, 0.0], [3.606, 1.414]]
@@ -65,19 +65,23 @@ log_loss 3.204  brier 0.177  hinge 0.506
 
 ## The chart surface
 
-All ten charts from `mltreelib.plots`, one figure (click to zoom):
-
-Rendered charts (all thirteen, zoomable): [Visualization](../reference/plots.md).
+All sixteen charts from `mltreelib.plots` render as click-to-zoom figures in [Visualization Reference](../reference/plots.md):
 
 | chart | what it answers |
 |---|---|
-| `plot_roc` / `plot_pr` | discrimination; PR is the honest view on imbalance |
-| `plot_cumulative_gain` / `plot_lift` | targeting: "top decile captures X% at Y× lift" |
-| `plot_ks` | separation + Score@KS |
-| `plot_decile` | scorecard profile: event rate bars + cumulative capture |
-| `plot_calibration` / `plot_response` | can the probabilities be trusted? |
+| `plot_roc` / `plot_pr` | discrimination; PR is the honest view on class imbalance |
+| `plot_cumulative_gain` / `plot_lift` | targeting efficiency: "top decile captures X% at Y× lift" |
+| `plot_ks` | maximum separation distance between classes + Score@KS |
+| `plot_decile` | scorecard decile profile: event rate bars + cumulative capture |
+| `plot_calibration` / `plot_response` | probability reliability vs. diagonal and decile response |
 | `plot_double_lift` | head-to-head model comparison along one ranking (CAS) |
-| `plot_psi` | score/feature stability between two periods |
+| `plot_psi` | score/feature stability and population shift between two periods |
+| `plot_confusion_matrix` | classification error distribution across class boundaries |
+| `plot_residuals` | regression fit diagnostics: actual vs. predicted and equality line |
+| `plot_importance` | variable importance shares of total split gain |
+| `plot_breakdown` | DALE-style waterfall attribution of one observation |
+| `plot_variance_shares` | realized variance shares against ground truth |
+| `plot_decomposition` | 4-panel additive time-series decomposition (trend/season/residual) |
 
 Each chart takes `ax=` and returns Axes, so any panel composes. The
 library itself never imports matplotlib — this layer is opt-in via the
