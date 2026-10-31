@@ -3,3 +3,17 @@ Phase1-Baseline,houses,regression,20640,8,629.44,27,26,rmse,0.2957
 Phase1-Baseline,bank-marketing,classification,45211,13,1454.2,26,25,accuracy,0.8916
 Phase1-Decoupled,houses,regression,20640,8,625.42,27,26,rmse,0.2957
 Phase1-Decoupled,bank-marketing,classification,45211,13,1411.94,26,25,accuracy,0.8916
+Elo-ModelTree(all),houses,regression,20640,8,24329.0,27,26,rmse,0.2574
+Elo-ModelTree(mean),houses,regression,20640,8,467.0,25,24,rmse,0.3585
+Elo-Cubist,houses,regression,20640,8,2692.0,0,0,rmse,0.2298
+Elo-rpart,houses,regression,20640,8,411.0,0,0,rmse,0.3779
+Elo-LightGBM,houses,regression,20640,8,300.0,0,0,rmse,0.2162
+Elo-CatBoost,houses,regression,20640,8,605.0,0,0,rmse,0.2193
+Elo-ctree,credit-g,classification,1000,20,1573.0,0,0,accuracy,0.735
+Elo-glmtree,credit-g,classification,1000,20,1590.0,0,0,accuracy,0.735
+Elo-rpart,credit-g,classification,1000,20,62.0,0,0,accuracy,0.725
+Elo-CatBoost,credit-g,classification,1000,20,1192.0,0,0,accuracy,0.71
+Elo-LightGBM,credit-g,classification,1000,20,237.0,0,0,accuracy,0.725
+Phase1-Decoupled,houses,regression,20640,8,619.46,27,26,rmse,0.2957
+Phase1-Decoupled,bank-marketing,classification,45211,13,1428.27,26,25,accuracy,0.8916
+Phase1-Decoupled,credit-g,classification,1000,20,73.85,12,11,accuracy,0.75
