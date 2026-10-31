@@ -1,0 +1,37 @@
+dataset,model,lang,cat_handling,logloss,accuracy,bal_acc,auc,macro_f1,fit_s
+credit-g,CatBoost(200),Python,internal,0.5230,0.7100,0.6119,0.7540,0.6184,1.1920
+credit-g,ExtraTrees,Python,external,0.5225,0.7250,0.6274,0.7467,0.6357,0.2460
+credit-g,LightGBM(200),Python,internal,0.8179,0.7250,0.6417,0.7229,0.6491,0.2370
+credit-g,forust (Rust),Rust,external,0.7081,0.7000,0.6095,0.7348,0.6149,0.3460
+credit-g,perpetual (Rust),Rust,external,0.5379,0.7150,0.5964,0.7304,0.6007,1.2290
+credit-g,sklearn LogReg,Python,external,0.5589,0.6900,0.5690,0.7063,0.5689,0.1490
+credit-g,sklearn RF,Python,external,0.5121,0.7450,0.6512,0.7657,0.6622,0.2910
+credit-g,sklearn tree,Python,external,11.9159,0.6550,0.6107,0.6107,0.6053,0.0080
+credit-g,rpart,R,internal,0.6296,0.7250,0.6607,0.6431,0.6644,0.0620
+credit-g,ctree,R,internal,0.5461,0.7350,0.6726,0.7168,0.6766,1.5730
+credit-g,glmtree,R,internal,0.5174,0.7350,0.6726,0.7739,0.6766,1.5900
+credit-g,earth,R,internal,0.5361,0.7450,0.6655,0.7502,0.6747,0.3080
+credit-g,mboost,R,internal,0.5022,0.7400,0.6762,0.7800,0.6810,4.1830
+credit-g,ranger,R,internal,0.5058,0.7450,0.6226,0.7746,0.6315,1.7390
+credit-g,bart,R,internal,0.5014,0.7400,0.6619,0.7793,0.6702,1.1210
+credit-g,CTBoost,Python,internal,0.5209,0.7350,0.6107,0.7518,0.6170,0.3000
+credit-g,ChimeraBoost,Python,internal,0.5292,0.7350,0.6298,0.7582,0.6393,2.7480
+credit-g,EBM,Python,internal,0.5120,0.7550,0.6726,0.7715,0.6836,11.3450
+credit-g,KNN,Python,external,2.2654,0.6300,0.5024,0.5414,0.4929,0.0750
+credit-g,modeltrees glmtree,Python,internal,0.5174,0.7350,0.6726,0.7739,0.6766,0.0850
+credit-g,modeltrees multinomtree,Python,internal,0.5174,0.7350,0.6726,0.7739,0.6766,0.0930
+credit-g,MARS (mars-earth),Python,external,0.5549,0.7000,0.5667,0.7077,0.5629,13.3440
+Fitness_Club,rpart,R,internal,0.5004,0.7933,0.7307,0.7307,0.7418,0.0450
+Fitness_Club,c50_tree,R,internal,0.4564,0.8133,0.7512,0.8001,0.7650,1.9200
+Fitness_Club,c50_rules,R,internal,6.4514,0.8100,0.7458,0.7507,0.7599,1.9410
+Fitness_Club,ctree,R,internal,0.4527,0.7933,0.7307,0.8269,0.7418,1.5150
+Fitness_Club,mboost,R,internal,0.4479,0.7933,0.7307,0.8356,0.7418,2.7970
+Fitness_Club,ranger,R,internal,0.4675,0.7867,0.7321,0.8188,0.7392,1.9060
+Fitness_Club,ExtraTrees,Python,external,0.7232,0.7500,0.7120,0.8003,0.7087,0.2670
+Fitness_Club,HistGradientBoosting,Python,internal,0.5476,0.7667,0.7147,0.8041,0.7186,0.6620
+Fitness_Club,KNN,Python,external,2.1991,0.7633,0.6905,0.7549,0.7010,0.0070
+Fitness_Club,LightGBM(200),Python,internal,0.6279,0.7733,0.7194,0.8004,0.7248,0.3860
+credit-g,c50_tree,R,internal,0.6779,0.7100,0.6119,0.5958,0.6184,2.0290
+credit-g,c50_rules,R,internal,6.7199,0.7150,0.6155,0.6244,0.6225,2.0780
+credit-g,HistGradientBoosting,Python,internal,0.6589,0.7450,0.6607,0.7377,0.6707,0.5140
+credit-g,sklearn GBM,Python,external,0.5388,0.7350,0.6583,0.7487,0.6658,0.2890

@@ -1,23 +1,24 @@
-"""Prepare the Elo arena data ONCE for every regression task:
+"""Prepare the Elo arena data for regression tasks preserving raw features.
 
-- TabArena-v0.1's official regression tasks (13 in the MANIFEST; 11 run now),
-  read from the local validated parquets in datasets/;
-- the five RuleQuest demo sets (kept for continuity with earlier runs).
+- TabArena-v0.1 regression tasks read from datasets/*.parquet
+- RuleQuest demo sets (kept for continuity with earlier runs)
 
-One 80/20 split each (seed 7), identical full one-hot encoding for every
-scorer. Writes benchmarks/elo_data/<ds>_{train,test}.csv; scorers discover
-datasets from those files, so adding data never touches the scorers.
-
-Deferred (documented): superconductivity (82 cols) and QSAR-TID-11 (1025
-cols) exceed the exact linear-leaf scan's cost today - they are the stress
-cases for the preselect/binned-candidate phase.
+Data is kept RAW:
+- Numeric columns remain numeric
+- Categorical columns remain raw strings (NO get_dummies / one-hot encoding)
+- No artificial column variance trimming (the 300s budget handles wide data)
+- Missing values written as empty string ("")
+- Target column written as the last column named "y"
+- Outputs <ds>_{train,test}.csv and <ds>.meta.json (column roles, target, split info)
 
 Run:
     uv run --with pandas --with pyarrow python examples/elo_prepare.py
 """
 
+import json
 import random
 from pathlib import Path
+import pandas as pd
 
 DATA = Path("references/sources/cubist-demo/CubistR2/Data")
 PQ = Path("datasets")
@@ -65,73 +66,110 @@ RULEQUEST = {
 }
 
 
-def split_indices(n):
+def split_indices(n: int, seed: int = SEED):
     idx = list(range(n))
-    random.Random(SEED).shuffle(idx)
+    random.Random(seed).shuffle(idx)
     n_tr = int(0.8 * n)
     return sorted(idx[:n_tr]), sorted(idx[n_tr:])
 
 
-def write_frames(name, x, y):
-    import pandas as pd
-
-    df = x.copy()
-    df["y"] = y
-    tr, te = split_indices(len(df))
-    df.iloc[tr].to_csv(OUT / f"{name}_train.csv", index=False, na_rep="")
-    df.iloc[te].to_csv(OUT / f"{name}_test.csv", index=False, na_rep="")
-    na = int(df.drop(columns=["y"]).isna().sum().sum())
-    print(f"{name:<16} {len(tr):>6} train / {len(te):>5} test, "
-          f"{df.shape[1] - 1:>3} cols, {na} missing cells")
+def write_dataset(name: str, x: pd.DataFrame, y: pd.Series, roles: dict, target_name: str = "y"):
+    tr, te = split_indices(len(x))
+    
+    # Target always written as last column named 'y'
+    for split, idx in (("train", tr), ("test", te)):
+        frame = x.iloc[idx].copy()
+        frame["y"] = y.iloc[idx].values
+        frame.to_csv(OUT / f"{name}_{split}.csv", index=False, na_rep="")
+    
+    na_count = int(x.isna().sum().sum())
+    meta = {
+        "dataset": name,
+        "target": target_name,
+        "task": "regression",
+        "n_train": len(tr),
+        "n_test": len(te),
+        "split": {"kind": "random_80_20", "seed": SEED},
+        "columns": roles,
+        "encoding": "none (raw as-is; native categoricals)",
+    }
+    (OUT / f"{name}.meta.json").write_text(json.dumps(meta, indent=2))
+    
+    cat_count = sum(1 for r in roles.values() if r == "categorical")
+    print(f"{name:<20} {len(tr):>6} tr / {len(te):>5} te | "
+          f"{x.shape[1]:>3} cols ({cat_count} cat) | {na_count} NA")
 
 
 def load_tabarena():
-    import pandas as pd
-
     for name, (pq, target) in TABARENA.items():
-        df = pd.read_parquet(PQ / f"{pq}.parquet")
+        pq_path = PQ / f"{pq}.parquet"
+        if not pq_path.exists():
+            print(f"Skipping {name}: {pq_path} not found")
+            continue
+        
+        df = pd.read_parquet(pq_path)
+        if target not in df.columns:
+            print(f"Skipping {name}: target {target} not in columns")
+            continue
+            
+        df = df.dropna(subset=[target])
         y = df[target].astype(float)
-        x = pd.get_dummies(df.drop(columns=[target]), dtype=float)
-        if x.shape[1] > 40:
-            # Tractability cap (documented): keep the 40 highest-variance
-            # columns after encoding. Identical columns for every model, so
-            # internal comparisons stay fair; wide-data handling is the
-            # preselect layer's job.
-            var = x.var()
-            keep = list(var.sort_values(ascending=False).index[:40])
-            x = x[sorted(keep)]
-        write_frames(name, x, y)
+        x = df.drop(columns=[target])
+        
+        roles = {}
+        for c in x.columns:
+            if pd.api.types.is_numeric_dtype(x[c]):
+                roles[c] = "numeric"
+            else:
+                roles[c] = "categorical"
+                # Normalize string representations
+                x[c] = x[c].astype(str).replace({"nan": None, "None": None, "<NA>": None})
+
+        write_dataset(name, x, y, roles, target_name=target)
 
 
 def load_rulequest():
-    import pandas as pd
-
     for name, cfg in RULEQUEST.items():
+        data_path = DATA / f"{name}.data"
+        if not data_path.exists():
+            print(f"Skipping RuleQuest {name}: {data_path} not found")
+            continue
+            
         rows, y = [], []
-        for line in (DATA / f"{name}.data").read_text().splitlines():
-            if not line.strip():
+        for line in data_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
                 continue
             parts = [p.strip() for p in line.split(",")]
             y.append(float(parts[cfg["target"]]))
+            
             feats = {}
             for i, p in enumerate(parts):
                 if i == cfg["target"] or i in cfg["drop"]:
                     continue
                 if i in cfg["cats"]:
-                    for lev in cfg["cats"][i]:
-                        feats[f"c{i}_{lev}"] = 1.0 if p == lev else 0.0
+                    # Preserve raw category string (or None if missing)
+                    feats[f"c{i}"] = None if p in ("N/A", "?", "") else p
                 else:
                     feats[f"c{i}"] = None if p in ("N/A", "?", "") else float(p)
             rows.append(feats)
-        write_frames(name, pd.DataFrame(rows), pd.Series(y))
+            
+        x_df = pd.DataFrame(rows)
+        roles = {}
+        for c in x_df.columns:
+            idx = int(c[1:])
+            roles[c] = "categorical" if idx in cfg["cats"] else "numeric"
+            
+        write_dataset(name, x_df, pd.Series(y), roles, target_name=f"c{cfg['target']}")
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    print("Preparing TabArena regression datasets (raw as-is)...")
     load_tabarena()
+    print("\nPreparing RuleQuest datasets (raw as-is)...")
     load_rulequest()
-    print("\ndeferred (wide-column stress for the preselect/binned-scan phase):")
-    print("  superconductivity (82 cols), QSAR-TID-11 (1025 cols)")
+    print("\nRegression dataset preparation complete -> benchmarks/elo_data/")
 
 
 if __name__ == "__main__":

@@ -97,16 +97,13 @@ reproduces the DAR bathtub edges) and missingness.
 
 ## Measuring: the Elo field
 
-`benchmarks/` holds a living field: 18 prepared datasets, 30+ models (our
-flavors; rpart/ctree/lmtree/glmTree/cubist/grf/mboost/ranger/BART-family/
-TRUST/earth in R; LightGBM/CatBoost/CTBoost/ChimeraBoost/EBM/ExtraTrees/
-statsmodels-linear/KNN/trust-free/XBART in Python), round-robin Elo on
-per-dataset RMSE. Every round records a **provenance manifest** (git SHA +
-the exact settings dict + all results) in `benchmarks/rounds/`, and every fit
-runs under strict time tiers: 30s = slow (the TabArena-toppers line), 180s =
-critical, 300s = hard kill. All run events go through stdlib `logging` into
-`benchmarks/elo_run.log` / `elo_round.log`.
+`benchmarks/` holds a living field comparing models across **Rust, Python, and R**:
+- **Regression arena**: 18 datasets, 36 models (our `ModelTree` flavors; `rpart`, `ctree`, `lmtree`, `glmtree`, `cubist`, `grf`, `mboost`, `ranger`, `bart`, `fru`, `earth` in R; `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `HistGradientBoosting`, `sklearn GBM`, `sklearn RF`, `ExtraTrees`, `sklearn Linear`, `KNN`, `MARS`, `statsmodels OLS/RLM/QuantReg`, `modeltrees lmtree` in Python; `forust` and `perpetual` in Rust), round-robin Elo on per-dataset RMSE.
+- **Classification arena**: 24 TabArena datasets (20 binary, 4 multiclass), 28 models across Python, Rust, and R (including RuleQuest `C5.0 (tree)` and `C5.0 (rules)` in R, `HistGradientBoosting`, `sklearn GBM`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `ranger`, `mboost`, `bart`, `glmtree`), round-robin Elo on per-dataset logloss. *(Note: ModelTree classification is under active development and will be attached once complete.)*
 
+Every entry tracks language (`Rust`, `Python`, `R`) and categorical handling (`internal` native/as-is, `external` driver-encoded, `none` numeric-only). Fits run under a strict 300s process-group timeout with hard `SIGKILL` termination.
+
+Runbook & experimentation guide: [benchmarks/README.md](benchmarks/README.md).
 Docs: [API reference](https://jkapila.github.io/mltreelib/reference/api/),
 [ELO board](https://jkapila.github.io/mltreelib/benchmarks/elo/),
 [guides and examples](https://jkapila.github.io/mltreelib/examples/walkthrough/).
