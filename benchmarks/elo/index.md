@@ -34,78 +34,139 @@ Every score tracked in the arena includes two core architectural dimensions: - *
 
 ```
 == Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==
-+-----------+---------------------+--------------------------+-------------+
-|    ELO    |    FIT TIME (±sd)   |          MODEL           |     DATA    |
-+-----------+---------------------+--------------------------+-------------+
-|   1577.1  |   15.41 s (±24.59)  |         grf_llf          |    17/18    |
-|   1525.9  |     0.67 s (±0.55)  |      LightGBM(200)       |    18/18    |
-|   1480.5  |     0.36 s (±0.31)  |      CatBoost(200)       |    18/18    |
-|   1463.7  |    6.50 s (±13.12)  |     perpetual (Rust)     |    18/18    |
-|   1331.3  |     0.50 s (±0.29)  |      forust (Rust)       |    18/18    |
-|   1229.5  |   11.47 s (±17.45)  |          grf_rf          |    18/18    |
-|   1217.3  |     0.23 s (±0.37)  |         CTBoost          |    18/18    |
-|   980.1   |   13.89 s (±27.18)  |          lmtree          |    16/18    |
-|   977.2   |     1.19 s (±1.53)  |          cubist          |    18/18    |
-|   954.2   |   10.39 s (±19.45)  |         glmtree          |    15/18    |
-|   914.8   |   70.56 s (±238.75) |      ModelTree(all)      |    18/18    |
-|   891.5   |   17.77 s (±44.25)  |    modeltrees lmtree     |    17/18    |
-|   823.5   |  143.31 s (±463.47) |    MARS (mars-earth)     |    12/18    |
-|   765.6   |     1.46 s (±2.38)  |          ctree           |    18/18    |
-|   763.5   |     0.26 s (±0.37)  |          earth           |    17/18    |
-|   691.7   |     0.13 s (±0.20)  |       sklearn tree       |    18/18    |
-|   650.7   |   56.32 s (±225.98) |    ModelTree(winnow)     |    18/18    |
-|   649.7   |     0.15 s (±0.20)  |     ModelTree(mean)      |    18/18    |
-|   566.3   |     0.22 s (±0.32)  |          rpart           |    18/18    |
-|   545.8   |     0.86 s (±1.22)  |     ModelTree(path)      |    18/18    |
-+-----------+---------------------+--------------------------+-------------+
-
-TabArena anchor (different protocol - reference only):
++-----------+---------------------+------------------------+--------+------------+-----------+
+|    ELO    |    FIT TIME (±sd)   |         MODEL          |  LANG  |    CAT     |    DATA   |
++-----------+---------------------+------------------------+--------+------------+-----------+
+|   1690.0  |   12.01 s (±17.76)  |      ChimeraBoost      | Python |  internal  |   18/18   |
+|   1622.3  |   18.24 s (±23.58)  |         ranger         |   R    |  internal  |   16/18   |
+|   1618.1  |   19.20 s (±33.35)  |       sklearn RF       | Python |  external  |   18/18   |
+|   1568.1  |   13.02 s (±33.28)  |       ExtraTrees       | Python |  external  |   18/18   |
+|   1532.3  |   23.17 s (±31.44)  |        grf_llf         |   R    |    none    |   16/18   |
+|   1470.6  |     0.35 s (±0.22)  |     LightGBM(200)      | Python |  internal  |   18/18   |
+|   1439.3  |    7.20 s (±23.69)  |    perpetual (Rust)    |  Rust  |  external  |   17/18   |
+|   1425.5  |     1.04 s (±1.10)  |     CatBoost(200)      | Python |  internal  |   18/18   |
+|   1350.1  |     0.95 s (±1.91)  |  HistGradientBoosting  | Python |  internal  |   17/18   |
+|   1319.3  |   65.08 s (±68.98)  |          EBM           | Python |  internal  |   15/18   |
+|   1299.2  |     1.22 s (±0.86)  |     forust (Rust)      |  Rust  |  external  |   18/18   |
+|   1210.8  |     0.76 s (±1.83)  |        CTBoost         | Python |  internal  |   17/18   |
+|   1168.4  |   27.91 s (±39.58)  |          bart          |   R    |  internal  |   17/18   |
+|   1166.7  |   18.06 s (±23.80)  |         grf_rf         |   R    |    none    |   18/18   |
+|   1050.1  |   13.77 s (±20.73)  |     ModelTree(all)     |  Rust  |  internal  |   16/18   |
+|   1030.9  |    7.00 s (±13.24)  |      sklearn GBM       | Python |  external  |   18/18   |
+|   976.4   |   20.22 s (±47.48)  |         lmtree         |   R    |  internal  |   14/18   |
+|   972.9   |   15.29 s (±51.54)  |   modeltrees lmtree    | Python |  internal  |   14/18   |
+|   958.1   |   29.02 s (±57.11)  |        glmtree         |   R    |  internal  |   14/18   |
+|   928.3   |     5.95 s (±8.90)  |   ModelTree(winnow)    |  Rust  |  internal  |   16/18   |
+|   892.7   |    6.23 s (±15.19)  |         cubist         |   R    |  internal  |   17/18   |
+|   873.1   |   20.49 s (±31.78)  |   MARS (mars-earth)    | Python |  external  |   10/18   |
+|   761.5   |   20.60 s (±51.49)  |         mboost         |   R    |  internal  |   15/18   |
+|   697.6   |     0.33 s (±0.68)  |    statsmodels OLS     | Python |    none    |    8/18   |
+|   690.7   |   10.19 s (±27.50)  |         earth          |   R    |  internal  |   17/18   |
+|   681.8   |     0.09 s (±0.10)  |          KNN           | Python |  external  |   18/18   |
+|   655.7   |   21.17 s (±59.09)  |         ctree          |   R    |  internal  |   17/18   |
+|   611.2   |    14.37 s (±7.33)  |       trust-free       | Python |    none    |    4/18   |
+|   584.5   |     0.09 s (±0.23)  |     sklearn Linear     | Python |  external  |   18/18   |
+|   547.3   |   10.80 s (±21.74)  |    ModelTree(path)     |  Rust  |  internal  |   18/18   |
+|   539.8   |     0.34 s (±0.57)  |      sklearn tree      | Python |  external  |   18/18   |
+|   527.1   |   17.48 s (±43.02)  |    statsmodels RLM     | Python |    none    |    8/18   |
+|   482.0   |    5.34 s (±20.14)  |    ModelTree(mean)     |  Rust  |  internal  |   18/18   |
+|   368.3   |   22.52 s (±59.15)  |  statsmodels QuantReg  | Python |    none    |    7/18   |
+|   289.3   |     1.34 s (±3.71)  |         rpart          |   R    |  internal  |   17/18   |
++-----------+---------------------+------------------------+--------+------------+-----------+
 ```
 
+TabArena anchor (different protocol - reference only):
+
+````
 Reading it:
 
-- **Stock configs only** — nothing tuned per dataset. The top of the board is *forests and boosted ensembles with strong feature handling* (grf's local-linear forest leads; forust/perpetual are boosted trees).
-- **Our flavors reflect the current defaults** (the split grid at 0.001, ridge-linear leaves): `ModelTree(all)` 914.8, `winnow` 650.7, `mean` 649.7, `path` 545.8. The field anchor predates the split-grid default, so the live comparison is the round deltas — see **Running a round** below and `benchmarks/elo_round.log`: the grid trades differently per flavor (`path`/`mean` gain, `all`/`winnow` pay), and the manifests in `benchmarks/rounds/` record exactly which settings produced each move.
-- `FIT mean±sd` = fit seconds across all scored datasets (mean ± 1 sd); `DATA` = datasets where the model has a score — matchups only happen where both models have one. Shortfalls are honest failures, not skates: mars-earth hits the 180s-per-algorithm budget on wide sets (12/18), and grf\_llf/earth skip fc2008's NAs.
+- **Stock configs only** — nothing tuned per dataset. The top of the board is
+  *forests and boosted ensembles with strong feature handling* (grf's
+  local-linear forest leads; forust/perpetual are boosted trees).
+- **Our flavors reflect the current defaults** (the split grid at 0.001,
+  ridge-linear leaves): `ModelTree(all)` 914.8, `winnow` 650.7, `mean`
+  649.7, `path` 545.8. The field anchor predates the split-grid default, so
+  the live comparison is the round deltas — see **Running a round** below
+  and `benchmarks/elo_round.log`: the grid trades differently per flavor
+  (`path`/`mean` gain, `all`/`winnow` pay), and the manifests in
+  `benchmarks/rounds/` record exactly which settings produced each move.
+- `FIT mean±sd` = fit seconds across all scored datasets (mean ± 1 sd);
+  `DATA` = datasets where the model has a score — matchups only
+  happen where both models have one. Shortfalls are honest failures, not
+  skates: mars-earth hits the 180s-per-algorithm budget on wide sets (12/18),
+  and grf_llf/earth skip fc2008's NAs.
 
-TabArena numbers are an **anchor, not a comparison** — their protocol (tuned+ensembled, different splits) differs; shown only for scale: `1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best tree-based)`.
+TabArena numbers are an **anchor, not a comparison** — their protocol
+(tuned+ensembled, different splits) differs; shown only for scale:
+`1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best
+tree-based)`.
 
 ## The wide table (model × dataset)
 
-Every score in the field — RMSE per model per dataset, best per column bolded. Click any column header to sort (the table is interactive):
+Every score in the field — RMSE per model per dataset, best per column
+bolded. Click any column header to sort (the table is interactive):
 
-| ELO | FIT TIME (±sd) | MODEL | abalone | boston | concrete | fc2008 | ozone | airfoil | ta\_concrete | diamonds | fiat500 | food\_delivery | healthcare | houses | miami | protein | qsar\_fish | qsar\_tid11 | superconductivity | wine |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1577 | 15.41±24.59s | **grf\_llf** 17/18 | 2.31 | 3.75 | 6.29 | · | **3.77** | 2.03 | 5.07 | 536.61 | 695.74 | 7.55 | 4564.69 | 0.23 | 102864.92 | **3.59** | 0.97 | **0.86** | **8.96** | 0.64 |
-| 1526 | 0.67±0.55s | **LightGBM(200)** 18/18 | 2.43 | 3.47 | 5.85 | 196.57 | 4.09 | **1.62** | 4.29 | **0.00** | 716.88 | **7.42** | 5121.26 | 0.22 | 93946.87 | 3.92 | 0.97 | 0.90 | 9.64 | **0.63** |
-| 1481 | 0.36±0.31s | **CatBoost(200)** 18/18 | 2.33 | **2.54** | 5.74 | **168.89** | 3.82 | 1.66 | **4.05** | **0.00** | **678.25** | 7.44 | 4664.68 | 0.22 | **89876.80** | 3.92 | **0.95** | 0.91 | 10.24 | 0.65 |
-| 1464 | 6.50±13.12s | **perpetual (Rust)** 18/18 | 2.29 | 3.44 | 5.78 | 220.86 | 3.88 | 2.35 | 4.75 | 0.00 | 702.46 | 7.47 | 4533.55 | **0.21** | 91669.36 | 3.78 | 0.96 | 1.02 | 9.61 | 0.66 |
-| 1331 | 0.50±0.29s | **forust (Rust)** 18/18 | 2.45 | 3.14 | **5.59** | 173.06 | 3.94 | 1.73 | 4.43 | 0.00 | 744.09 | 7.44 | 5113.39 | 0.22 | 93768.85 | 3.96 | 1.01 | 0.92 | 9.87 | 0.66 |
-| 1230 | 11.47±17.45s | **grf\_rf** 18/18 | 2.36 | 3.27 | 8.26 | 228.61 | 4.44 | 2.78 | 6.49 | 599.99 | 698.28 | 7.54 | 4614.00 | 0.25 | 124261.13 | 4.00 | 0.98 | 1.01 | 11.01 | 0.69 |
-| 1217 | 0.23±0.37s | **CTBoost** 18/18 | 2.48 | 4.01 | 6.38 | 192.08 | 4.54 | 2.69 | 4.91 | 0.01 | 703.96 | 7.45 | **4508.58** | 0.23 | 107014.09 | 4.19 | 0.99 | 1.02 | 11.41 | 0.69 |
-| 980 | 13.89±27.18s | **lmtree** 16/18 | 2.32 | 4.05 | 7.64 | 237.92 | 4.27 | 2.87 | 6.64 | 876.88 | 718.84 | 7.51 | 4791.58 | 0.24 | 112822.63 | · | 1.04 | 1.12 | · | 0.71 |
-| 977 | 1.19±1.53s | **cubist** 18/18 | 2.31 | 3.98 | 6.81 | 204.32 | 4.57 | 2.43 | 6.14 | 608.85 | 739.27 | 7.53 | 4535.60 | 0.23 | 114392.73 | 4.43 | 1.02 | 1.11 | 12.01 | 0.72 |
-| 954 | 10.39±19.45s | **glmtree** 15/18 | 2.31 | 4.05 | 7.42 | 237.92 | 4.27 | 3.31 | 6.13 | 641.43 | 718.84 | 7.51 | 4791.58 | 0.24 | · | · | 1.03 | 1.12 | · | 0.71 |
-| 915 | 70.56±238.75s | **ModelTree(all)** 18/18 | 2.35 | 5.07 | 6.82 | 218.18 | 5.76 | 2.44 | 5.83 | **0.00** | 2317.30 | 7.46 | 4639.11 | 0.36 | 1536911.90 | 4.85 | 1.13 | 1.09 | 256.25 | 0.71 |
-| 892 | 17.77±44.25s | **modeltrees lmtree** 17/18 | 2.32 | 4.05 | 7.64 | 237.92 | 4.27 | 2.87 | 6.64 | 0.02 | 718.84 | 7.51 | 4791.58 | 0.24 | · | 4.85 | 1.04 | 1.12 | 81.75 | 0.71 |
-| 824 | 143.31±463.47s | **MARS (mars-earth)** 12/18 | 2.27 | 4.75 | 7.11 | · | 4.10 | 4.31 | 6.38 | **0.00** | 713.60 | · | 5853.26 | · | · | · | 0.99 | 1.30 | · | 0.73 |
-| 766 | 1.46±2.38s | **ctree** 18/18 | 2.43 | 4.02 | 9.76 | 276.40 | 4.26 | 3.58 | 7.10 | 603.51 | 788.02 | 7.87 | 4850.64 | 0.30 | 140881.71 | 4.59 | 1.08 | 1.15 | 13.60 | 0.75 |
-| 763 | 0.26±0.37s | **earth** 17/18 | **2.26** | 4.51 | 7.06 | · | 4.23 | 4.26 | 6.20 | 1094.57 | 714.05 | 7.99 | 5724.24 | 0.29 | 145755.85 | 5.03 | 1.00 | 1.30 | 18.59 | 0.73 |
-| 692 | 0.13±0.20s | **sklearn tree** 18/18 | 3.16 | 4.87 | 7.93 | 197.74 | 5.46 | 2.66 | 5.66 | **0.00** | 841.83 | 10.61 | 6404.11 | 0.32 | 146810.51 | 5.07 | 1.27 | 1.11 | 11.36 | 0.83 |
-| 651 | 56.32±225.98s | **ModelTree(winnow)** 18/18 | 2.35 | 5.07 | 6.82 | 231.47 | 5.58 | 2.39 | 5.83 | 0.05 | 989.82 | 7.86 | 4778.18 | 0.34 | 3415089.19 | 5.01 | 1.13 | 1.12 | 4877.49 | 0.73 |
-| 650 | 0.15±0.20s | **ModelTree(mean)** 18/18 | 2.54 | 3.97 | 9.77 | 262.32 | 4.62 | 4.69 | 10.39 | 0.23 | 793.48 | 7.88 | 4865.40 | 0.38 | 188718.13 | 5.36 | 1.13 | 1.27 | 18.06 | 0.76 |
-| 566 | 0.22±0.32s | **rpart** 18/18 | 2.59 | 4.31 | 9.07 | 279.94 | 4.71 | 4.43 | 9.79 | 1496.89 | 823.83 | 8.03 | 5088.41 | 0.38 | 192132.40 | 5.46 | 1.12 | 1.29 | 18.91 | 0.77 |
-| 546 | 0.86±1.22s | **ModelTree(path)** 18/18 | 2.34 | 4.40 | 11.38 | 270.69 | 5.78 | 4.12 | 8.65 | 0.27 | 990.49 | 7.86 | 6573.19 | 0.38 | 1230887.17 | 36.29 | 1.14 | 1.29 | 18.98 | 0.76 |
+<!-- generated by examples/elo_table.py - do not edit by hand -->
+
+
+<div id="elo-interactive">
+<style>
+#elo-interactive { overflow-x: auto; }
+#elo-interactive table { border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; font-family: var(--md-text-font-family, monospace); }
+#elo-interactive th, #elo-interactive td { padding: 2px 10px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #ddd); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
+#elo-interactive th { cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 2; }
+#elo-interactive th:hover { color: var(--md-accent-fg-color, #06c); }
+#elo-interactive td.n { text-align: right; }
+#elo-interactive tr:hover td { background: var(--md-default-fg-color--lightest, #f5f5f5); }
+/* freeze panes: the three key columns stay put while datasets scroll */
+#elo-interactive th.k1, #elo-interactive td:nth-child(1) { position: sticky; left: 0; z-index: 1; width: 72px; min-width: 72px; }
+#elo-interactive th.k2, #elo-interactive td:nth-child(2) { position: sticky; left: 72px; z-index: 1; width: 176px; min-width: 176px; }
+#elo-interactive th.k3, #elo-interactive td:nth-child(3) { position: sticky; left: 248px; z-index: 1; width: 200px; min-width: 200px; }
+#elo-interactive th.k1, #elo-interactive th.k2, #elo-interactive th.k3 { z-index: 3; }
+#elo-interactive .c { color: var(--md-default-fg-color--light, #999); font-size: 0.68rem; }
+</style>
+<table>
+<thead><tr>
+<th class='k1 k' data-t='0'>ELO</th>
+<th class='k2 k' data-t='1'>FIT TIME (±sd)</th>
+<th class='k3 k' data-t='2'>MODEL</th><th data-t='3'>abalone</th><th data-t='4'>boston</th><th data-t='5'>concrete</th><th data-t='6'>fc2008</th><th data-t='7'>ozone</th><th data-t='8'>airfoil</th><th data-t='9'>ta_concrete</th><th data-t='10'>diamonds</th><th data-t='11'>fiat500</th><th data-t='12'>food_delivery</th><th data-t='13'>healthcare</th><th data-t='14'>houses</th><th data-t='15'>miami</th><th data-t='16'>protein</th><th data-t='17'>qsar_fish</th><th data-t='18'>qsar_tid11</th><th data-t='19'>superconductivity</th><th data-t='20'>wine</th>
+</tr></thead>
+<tbody><tr><td class='k n'>1577</td><td class='k n'>15.41±24.59s</td><td class='k n'><b>grf_llf</b> <span class=c>17/18</span></td><td class=n>2.31</td><td class=n>3.75</td><td class=n>6.29</td><td class=n>·</td><td class=n><b>3.77</b></td><td class=n>2.03</td><td class=n>5.07</td><td class=n>536.61</td><td class=n>695.74</td><td class=n>7.55</td><td class=n>4564.69</td><td class=n>0.23</td><td class=n>102864.92</td><td class=n><b>3.59</b></td><td class=n>0.97</td><td class=n><b>0.86</b></td><td class=n><b>8.96</b></td><td class=n>0.64</td></tr><tr><td class='k n'>1526</td><td class='k n'>0.67±0.55s</td><td class='k n'><b>LightGBM(200)</b> <span class=c>18/18</span></td><td class=n>2.43</td><td class=n>3.47</td><td class=n>5.85</td><td class=n>196.57</td><td class=n>4.09</td><td class=n><b>1.62</b></td><td class=n>4.29</td><td class=n><b>0.00</b></td><td class=n>716.88</td><td class=n><b>7.42</b></td><td class=n>5121.26</td><td class=n>0.22</td><td class=n>93946.87</td><td class=n>3.92</td><td class=n>0.97</td><td class=n>0.90</td><td class=n>9.64</td><td class=n><b>0.63</b></td></tr><tr><td class='k n'>1481</td><td class='k n'>0.36±0.31s</td><td class='k n'><b>CatBoost(200)</b> <span class=c>18/18</span></td><td class=n>2.33</td><td class=n><b>2.54</b></td><td class=n>5.74</td><td class=n><b>168.89</b></td><td class=n>3.82</td><td class=n>1.66</td><td class=n><b>4.05</b></td><td class=n><b>0.00</b></td><td class=n><b>678.25</b></td><td class=n>7.44</td><td class=n>4664.68</td><td class=n>0.22</td><td class=n><b>89876.80</b></td><td class=n>3.92</td><td class=n><b>0.95</b></td><td class=n>0.91</td><td class=n>10.24</td><td class=n>0.65</td></tr><tr><td class='k n'>1464</td><td class='k n'>6.50±13.12s</td><td class='k n'><b>perpetual (Rust)</b> <span class=c>18/18</span></td><td class=n>2.29</td><td class=n>3.44</td><td class=n>5.78</td><td class=n>220.86</td><td class=n>3.88</td><td class=n>2.35</td><td class=n>4.75</td><td class=n>0.00</td><td class=n>702.46</td><td class=n>7.47</td><td class=n>4533.55</td><td class=n><b>0.21</b></td><td class=n>91669.36</td><td class=n>3.78</td><td class=n>0.96</td><td class=n>1.02</td><td class=n>9.61</td><td class=n>0.66</td></tr><tr><td class='k n'>1331</td><td class='k n'>0.50±0.29s</td><td class='k n'><b>forust (Rust)</b> <span class=c>18/18</span></td><td class=n>2.45</td><td class=n>3.14</td><td class=n><b>5.59</b></td><td class=n>173.06</td><td class=n>3.94</td><td class=n>1.73</td><td class=n>4.43</td><td class=n>0.00</td><td class=n>744.09</td><td class=n>7.44</td><td class=n>5113.39</td><td class=n>0.22</td><td class=n>93768.85</td><td class=n>3.96</td><td class=n>1.01</td><td class=n>0.92</td><td class=n>9.87</td><td class=n>0.66</td></tr><tr><td class='k n'>1230</td><td class='k n'>11.47±17.45s</td><td class='k n'><b>grf_rf</b> <span class=c>18/18</span></td><td class=n>2.36</td><td class=n>3.27</td><td class=n>8.26</td><td class=n>228.61</td><td class=n>4.44</td><td class=n>2.78</td><td class=n>6.49</td><td class=n>599.99</td><td class=n>698.28</td><td class=n>7.54</td><td class=n>4614.00</td><td class=n>0.25</td><td class=n>124261.13</td><td class=n>4.00</td><td class=n>0.98</td><td class=n>1.01</td><td class=n>11.01</td><td class=n>0.69</td></tr><tr><td class='k n'>1217</td><td class='k n'>0.23±0.37s</td><td class='k n'><b>CTBoost</b> <span class=c>18/18</span></td><td class=n>2.48</td><td class=n>4.01</td><td class=n>6.38</td><td class=n>192.08</td><td class=n>4.54</td><td class=n>2.69</td><td class=n>4.91</td><td class=n>0.01</td><td class=n>703.96</td><td class=n>7.45</td><td class=n><b>4508.58</b></td><td class=n>0.23</td><td class=n>107014.09</td><td class=n>4.19</td><td class=n>0.99</td><td class=n>1.02</td><td class=n>11.41</td><td class=n>0.69</td></tr><tr><td class='k n'>980</td><td class='k n'>13.89±27.18s</td><td class='k n'><b>lmtree</b> <span class=c>16/18</span></td><td class=n>2.32</td><td class=n>4.05</td><td class=n>7.64</td><td class=n>237.92</td><td class=n>4.27</td><td class=n>2.87</td><td class=n>6.64</td><td class=n>876.88</td><td class=n>718.84</td><td class=n>7.51</td><td class=n>4791.58</td><td class=n>0.24</td><td class=n>112822.63</td><td class=n>·</td><td class=n>1.04</td><td class=n>1.12</td><td class=n>·</td><td class=n>0.71</td></tr><tr><td class='k n'>977</td><td class='k n'>1.19±1.53s</td><td class='k n'><b>cubist</b> <span class=c>18/18</span></td><td class=n>2.31</td><td class=n>3.98</td><td class=n>6.81</td><td class=n>204.32</td><td class=n>4.57</td><td class=n>2.43</td><td class=n>6.14</td><td class=n>608.85</td><td class=n>739.27</td><td class=n>7.53</td><td class=n>4535.60</td><td class=n>0.23</td><td class=n>114392.73</td><td class=n>4.43</td><td class=n>1.02</td><td class=n>1.11</td><td class=n>12.01</td><td class=n>0.72</td></tr><tr><td class='k n'>954</td><td class='k n'>10.39±19.45s</td><td class='k n'><b>glmtree</b> <span class=c>15/18</span></td><td class=n>2.31</td><td class=n>4.05</td><td class=n>7.42</td><td class=n>237.92</td><td class=n>4.27</td><td class=n>3.31</td><td class=n>6.13</td><td class=n>641.43</td><td class=n>718.84</td><td class=n>7.51</td><td class=n>4791.58</td><td class=n>0.24</td><td class=n>·</td><td class=n>·</td><td class=n>1.03</td><td class=n>1.12</td><td class=n>·</td><td class=n>0.71</td></tr><tr><td class='k n'>915</td><td class='k n'>70.56±238.75s</td><td class='k n'><b>ModelTree(all)</b> <span class=c>18/18</span></td><td class=n>2.35</td><td class=n>5.07</td><td class=n>6.82</td><td class=n>218.18</td><td class=n>5.76</td><td class=n>2.44</td><td class=n>5.83</td><td class=n><b>0.00</b></td><td class=n>2317.30</td><td class=n>7.46</td><td class=n>4639.11</td><td class=n>0.36</td><td class=n>1536911.90</td><td class=n>4.85</td><td class=n>1.13</td><td class=n>1.09</td><td class=n>256.25</td><td class=n>0.71</td></tr><tr><td class='k n'>892</td><td class='k n'>17.77±44.25s</td><td class='k n'><b>modeltrees lmtree</b> <span class=c>17/18</span></td><td class=n>2.32</td><td class=n>4.05</td><td class=n>7.64</td><td class=n>237.92</td><td class=n>4.27</td><td class=n>2.87</td><td class=n>6.64</td><td class=n>0.02</td><td class=n>718.84</td><td class=n>7.51</td><td class=n>4791.58</td><td class=n>0.24</td><td class=n>·</td><td class=n>4.85</td><td class=n>1.04</td><td class=n>1.12</td><td class=n>81.75</td><td class=n>0.71</td></tr><tr><td class='k n'>824</td><td class='k n'>143.31±463.47s</td><td class='k n'><b>MARS (mars-earth)</b> <span class=c>12/18</span></td><td class=n>2.27</td><td class=n>4.75</td><td class=n>7.11</td><td class=n>·</td><td class=n>4.10</td><td class=n>4.31</td><td class=n>6.38</td><td class=n><b>0.00</b></td><td class=n>713.60</td><td class=n>·</td><td class=n>5853.26</td><td class=n>·</td><td class=n>·</td><td class=n>·</td><td class=n>0.99</td><td class=n>1.30</td><td class=n>·</td><td class=n>0.73</td></tr><tr><td class='k n'>766</td><td class='k n'>1.46±2.38s</td><td class='k n'><b>ctree</b> <span class=c>18/18</span></td><td class=n>2.43</td><td class=n>4.02</td><td class=n>9.76</td><td class=n>276.40</td><td class=n>4.26</td><td class=n>3.58</td><td class=n>7.10</td><td class=n>603.51</td><td class=n>788.02</td><td class=n>7.87</td><td class=n>4850.64</td><td class=n>0.30</td><td class=n>140881.71</td><td class=n>4.59</td><td class=n>1.08</td><td class=n>1.15</td><td class=n>13.60</td><td class=n>0.75</td></tr><tr><td class='k n'>763</td><td class='k n'>0.26±0.37s</td><td class='k n'><b>earth</b> <span class=c>17/18</span></td><td class=n><b>2.26</b></td><td class=n>4.51</td><td class=n>7.06</td><td class=n>·</td><td class=n>4.23</td><td class=n>4.26</td><td class=n>6.20</td><td class=n>1094.57</td><td class=n>714.05</td><td class=n>7.99</td><td class=n>5724.24</td><td class=n>0.29</td><td class=n>145755.85</td><td class=n>5.03</td><td class=n>1.00</td><td class=n>1.30</td><td class=n>18.59</td><td class=n>0.73</td></tr><tr><td class='k n'>692</td><td class='k n'>0.13±0.20s</td><td class='k n'><b>sklearn tree</b> <span class=c>18/18</span></td><td class=n>3.16</td><td class=n>4.87</td><td class=n>7.93</td><td class=n>197.74</td><td class=n>5.46</td><td class=n>2.66</td><td class=n>5.66</td><td class=n><b>0.00</b></td><td class=n>841.83</td><td class=n>10.61</td><td class=n>6404.11</td><td class=n>0.32</td><td class=n>146810.51</td><td class=n>5.07</td><td class=n>1.27</td><td class=n>1.11</td><td class=n>11.36</td><td class=n>0.83</td></tr><tr><td class='k n'>651</td><td class='k n'>56.32±225.98s</td><td class='k n'><b>ModelTree(winnow)</b> <span class=c>18/18</span></td><td class=n>2.35</td><td class=n>5.07</td><td class=n>6.82</td><td class=n>231.47</td><td class=n>5.58</td><td class=n>2.39</td><td class=n>5.83</td><td class=n>0.05</td><td class=n>989.82</td><td class=n>7.86</td><td class=n>4778.18</td><td class=n>0.34</td><td class=n>3415089.19</td><td class=n>5.01</td><td class=n>1.13</td><td class=n>1.12</td><td class=n>4877.49</td><td class=n>0.73</td></tr><tr><td class='k n'>650</td><td class='k n'>0.15±0.20s</td><td class='k n'><b>ModelTree(mean)</b> <span class=c>18/18</span></td><td class=n>2.54</td><td class=n>3.97</td><td class=n>9.77</td><td class=n>262.32</td><td class=n>4.62</td><td class=n>4.69</td><td class=n>10.39</td><td class=n>0.23</td><td class=n>793.48</td><td class=n>7.88</td><td class=n>4865.40</td><td class=n>0.38</td><td class=n>188718.13</td><td class=n>5.36</td><td class=n>1.13</td><td class=n>1.27</td><td class=n>18.06</td><td class=n>0.76</td></tr><tr><td class='k n'>566</td><td class='k n'>0.22±0.32s</td><td class='k n'><b>rpart</b> <span class=c>18/18</span></td><td class=n>2.59</td><td class=n>4.31</td><td class=n>9.07</td><td class=n>279.94</td><td class=n>4.71</td><td class=n>4.43</td><td class=n>9.79</td><td class=n>1496.89</td><td class=n>823.83</td><td class=n>8.03</td><td class=n>5088.41</td><td class=n>0.38</td><td class=n>192132.40</td><td class=n>5.46</td><td class=n>1.12</td><td class=n>1.29</td><td class=n>18.91</td><td class=n>0.77</td></tr><tr><td class='k n'>546</td><td class='k n'>0.86±1.22s</td><td class='k n'><b>ModelTree(path)</b> <span class=c>18/18</span></td><td class=n>2.34</td><td class=n>4.40</td><td class=n>11.38</td><td class=n>270.69</td><td class=n>5.78</td><td class=n>4.12</td><td class=n>8.65</td><td class=n>0.27</td><td class=n>990.49</td><td class=n>7.86</td><td class=n>6573.19</td><td class=n>0.38</td><td class=n>1230887.17</td><td class=n>36.29</td><td class=n>1.14</td><td class=n>1.29</td><td class=n>18.98</td><td class=n>0.76</td></tr></tbody>
+</table>
+<script>
+(function () {
+  var t = document.querySelector('#elo-interactive table');
+  if (!t) return;
+  var dir = {};
+  t.querySelectorAll('th').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var i = +th.dataset.t, d = dir[i] = -(dir[i] || 1);
+      var rows = Array.prototype.slice.call(t.tBodies[0].rows);
+      rows.sort(function (a, b) {
+        var x = a.cells[i].textContent.trim(), y = b.cells[i].textContent.trim();
+        var nx = parseFloat(x), ny = parseFloat(y);
+        return d * (isNaN(nx) || isNaN(ny) ? x.localeCompare(y) : nx - ny);
+      });
+      rows.forEach(function (r) { t.tBodies[0].appendChild(r); });
+    });
+  });
+})();
+</script>
+</div>
+
 
 ## Development rounds (ours vs the frozen field)
 
-The external field (R packages, LightGBM, CatBoost, CTBoost, forust, perpetual, MARS, sklearn, modeltrees) is scored **once** and frozen in `benchmarks/elo_baselines.csv` — *where we started*. Every development round re-scores only the ModelTree variants on the same prepared splits:
+The external field (R packages, LightGBM, CatBoost, CTBoost, forust,
+perpetual, MARS, sklearn, modeltrees) is scored **once** and frozen in
+`benchmarks/elo_baselines.csv` — *where we started*. Every development round
+re-scores only the ModelTree variants on the same prepared splits:
 
-```
+```bash
 uv run python examples/elo_round.py                 # all datasets
 ELO_DATASETS=abalone,boston uv run python examples/elo_round.py   # a subset
 uv run python examples/elo_round.py --freeze        # deliberately re-anchor
-```
+````
 
 Each round prints `started (frozen baseline) -> reached` Elo for every ModelTree flavor, with per-fit timings in the scores file — so progress across iterations is visible instead of silently overwritten. The full from-scratch rebuild (all models, groups of 5 datasets, shareable intermediate state after each group) is `bash examples/elo_run_groups.sh`.
 
