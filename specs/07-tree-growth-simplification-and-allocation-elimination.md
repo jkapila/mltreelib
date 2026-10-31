@@ -70,6 +70,37 @@ Intermediate tree nodes during recursive growth store only scalar moments:
 - `LeafStats` on intermediate nodes carries an empty digest or `None`.
 - Only when a node is finalized as a terminal leaf (upon reaching stopping criteria or pruning), if `leaf_digest == true` or `leaf == Quantile`, the 100-centroid t-digest is populated and flushed from the leaf's assigned rows.
 
+## Implementation Roadmap & Sequential TODOs
+
+The optimizations will be implemented and validated sequentially against TabArena benchmarks (`houses` for regression, `bank-marketing` for classification):
+
+- [x] **Phase 1: Split Search Decoupling** *(Completed in `8c7b838`)*:
+  - Decouple candidate split search from linear regression solves.
+  - Candidate split evaluation defaults to $O(1)$ scalar variance/deviance reduction (`SplitEval::Fast`).
+  - Terminal leaves fit regularized multivariate linear / GLM regression models.
+  - Retain `SplitEval::Exhaustive` for exact research comparisons.
+- [ ] **Phase 2A: Zero-Allocation Worker Scratch Buffers (`SplitScratch`)**:
+  - Introduce preallocated per-thread reusable vectors (`pairs`, `missing_yws`).
+  - Pass mutable scratch down the recursive growth stack, clearing capacities instead of re-allocating heap vectors.
+- [ ] **Phase 2B: Scalar Precomputed Moments for Categorical Splits**:
+  - Two-pass level moment aggregation $(w_k, wy_k, wy^2_k)$.
+  - Evaluate prefix and single-vs-rest splits via $O(1)$ scalar additions and subtractions.
+  - Eliminate `HashSet<usize>` and `Vec<(f64, f64)>` cloning in `scan_column_categorical`.
+- [ ] **Phase 2C: Lazy T-Digest Finalization**:
+  - Store only scalar moments ($N, \text{mean}, \text{variance}$) on internal tree nodes.
+  - Construct 100-centroid t-digests strictly on finalized terminal leaves when `leaf_digest=true`.
+- [ ] **Phase 3A: Pre-Sorted Index Partitioning**:
+  - Sort numeric features once at root node ($O(P \cdot N \log N)$).
+  - Partition active indices down tree levels in $O(N)$ linear time without re-sorting float values.
+- [ ] **Phase 3B: Iterative Flat-Array Queue Tree Building**:
+  - Replace recursive `fit_tree` call stack and cloned path vectors (`path.to_vec()`) with a flat index-addressed `Vec<Node>`.
+- [ ] **Phase 3C: Single-Pass Bottom-Up Cost-Complexity Pruning**:
+  - Compute effective alphas and prune subtrees in a single post-order traversal without repeated whole-tree traversals.
+- [ ] **Phase 3D: Conditional Surrogate Search**:
+  - Guard surrogate scanning: only scan surrogate features when the primary split feature has active missing values (`missing_count > 0`).
+- [ ] **Benchmark Validation Suite**:
+  - Establish `examples/bench_optimizations.py` to record fit time, memory, and accuracy on `houses` (20,640 rows, regression) and `bank-marketing` (45,211 rows, classification) after each incremental update.
+
 ## Testing Decisions
 
 ### Seam

@@ -1,0 +1,5 @@
+tag,dataset,task,rows,cols,fit_ms,leaves,splits,metric_name,metric_val
+Phase1-Baseline,houses,regression,20640,8,629.44,27,26,rmse,0.2957
+Phase1-Baseline,bank-marketing,classification,45211,13,1454.2,26,25,accuracy,0.8916
+Phase1-Decoupled,houses,regression,20640,8,625.42,27,26,rmse,0.2957
+Phase1-Decoupled,bank-marketing,classification,45211,13,1411.94,26,25,accuracy,0.8916
