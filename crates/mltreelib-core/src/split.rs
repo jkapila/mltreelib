@@ -84,6 +84,16 @@ pub enum CatSearch {
     Both,
 }
 
+/// Split evaluation strategy: fast scalar variance reduction (M5/Cubist style, default)
+/// vs historical exhaustive candidate-level multivariate regression.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SplitEval {
+    /// Fast scalar variance/deviance reduction (O(1) per threshold, M5/Cubist oracle).
+    Fast,
+    /// Exhaustive candidate-level linear Gram regression (historical research mode).
+    Exhaustive,
+}
+
 /// Work of one column scan, merged into the node profile.
 #[derive(Clone, Copy, Debug, Default)]
 struct ScanStats {
@@ -209,29 +219,32 @@ impl<'a> Grower<'a> {
         self.rng_counter += 1;
 
         // Parent score + mean design row are column-independent under the
-        // `all` leaf-column policy: hoisted from per-column to per-node.
-        let parent_pre: Option<ParentPre> = match self.params.leaf_cols {
-            LeafCols::All
-                if self.params.leaf_family == crate::family::LeafFamily::Gaussian
-                    && self.params.leaf == LeafKind::Linear =>
-            {
-                let chosen = self.chosen_cols(path);
-                let dim = 1 + 2 * chosen.len();
-                let (parent_sse, mean_row) = self.parent_stats(rows, &chosen, dim);
-                Some(ParentPre { parent_sse, mean_row })
-            }
-            LeafCols::All
-                if self.params.leaf_family != crate::family::LeafFamily::Gaussian
-                    && self.params.leaf == LeafKind::Linear
-                    && matches!(self.params.gain, GainFn::Sse | GainFn::Deviance) =>
-            {
-                let leaf = self.make_leaf_for_scan(rows, path);
-                Some(ParentPre {
-                    parent_sse: self.fitted_family_score(rows, &leaf),
-                    mean_row: Vec::new(),
-                })
-            }
-            _ => None,
+        // `all` leaf-column policy: hoisted from per-column to per-node (exhaustive mode only).
+        let parent_pre: Option<ParentPre> = match self.params.split_eval {
+            SplitEval::Exhaustive => match self.params.leaf_cols {
+                LeafCols::All
+                    if self.params.leaf_family == crate::family::LeafFamily::Gaussian
+                        && self.params.leaf == LeafKind::Linear =>
+                {
+                    let chosen = self.chosen_cols(path);
+                    let dim = 1 + 2 * chosen.len();
+                    let (parent_sse, mean_row) = self.parent_stats(rows, &chosen, dim);
+                    Some(ParentPre { parent_sse, mean_row })
+                }
+                LeafCols::All
+                    if self.params.leaf_family != crate::family::LeafFamily::Gaussian
+                        && self.params.leaf == LeafKind::Linear
+                        && matches!(self.params.gain, GainFn::Sse | GainFn::Deviance) =>
+                {
+                    let leaf = self.make_leaf_for_scan(rows, path);
+                    Some(ParentPre {
+                        parent_sse: self.fitted_family_score(rows, &leaf),
+                        mean_row: Vec::new(),
+                    })
+                }
+                _ => None,
+            },
+            SplitEval::Fast => None,
         };
 
         if work >= PAR_MIN_WORK {
@@ -315,19 +328,27 @@ impl<'a> Grower<'a> {
         path: &[usize],
         pre: Option<&ParentPre>,
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
-        if self.params.leaf_family != crate::family::LeafFamily::Gaussian
-            && self.params.leaf == LeafKind::Linear
-        {
-            return self.scan_column_family(rows, j, path, pre);
-        }
-        if self.col_type(j) == ColType::Categorical {
-            return self.scan_column_categorical(rows, j);
-        }
-        let (hit, st) = match self.params.leaf {
-            LeafKind::Linear => self.scan_column_linear(rows, j, path, pre),
-            // Constant leaves (mean/median/quantile/huber) share the stats
-            // scan; the `gain` knob picks the quality function.
-            _ => self.scan_column_mean(rows, j),
+        let (hit, st) = match self.params.split_eval {
+            SplitEval::Exhaustive => {
+                if self.params.leaf_family != crate::family::LeafFamily::Gaussian
+                    && self.params.leaf == LeafKind::Linear
+                {
+                    return self.scan_column_family(rows, j, path, pre);
+                }
+                if self.col_type(j) == ColType::Categorical {
+                    return self.scan_column_categorical(rows, j);
+                }
+                match self.params.leaf {
+                    LeafKind::Linear => self.scan_column_linear(rows, j, path, pre),
+                    _ => self.scan_column_mean(rows, j),
+                }
+            }
+            SplitEval::Fast => {
+                if self.col_type(j) == ColType::Categorical {
+                    return self.scan_column_categorical(rows, j);
+                }
+                self.scan_column_mean(rows, j)
+            }
         };
         (hit.map(|(g, s)| (g, s, None)), st)
     }

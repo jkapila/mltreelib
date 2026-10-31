@@ -39,6 +39,7 @@ use crate::prune::PruneCost;
 use crate::split::{CatOrder, CatSearch, ColType};
 
 pub use crate::node_stats::{LeafModel as NodeModel, LeafStats as NodeStats, LinearModel};
+pub use crate::split::SplitEval;
 
 /// Growth and leaf parameters.
 #[derive(Clone, Debug)]
@@ -165,6 +166,8 @@ pub struct ModelTreeParams {
     /// Purity gate: a node whose weighted target standard deviation is at
     /// most this stays a leaf (its signal is exhausted). `None` = off.
     pub purity_gate: Option<f64>,
+    /// Split evaluation strategy (fast scalar variance reduction vs exhaustive linear scan).
+    pub split_eval: SplitEval,
 }
 
 impl Default for ModelTreeParams {
@@ -214,6 +217,7 @@ impl Default for ModelTreeParams {
             minprob: 0.02,
             preselect: crate::preselect::Preselect::None,
             purity_gate: None,
+            split_eval: SplitEval::Fast,
         }
     }
 }

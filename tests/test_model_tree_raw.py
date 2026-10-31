@@ -34,3 +34,22 @@ def test_integer_and_float_cells_pass_through():
     m.fit(x, y, dtypes=["integer", "float", "categorical"])
     assert m.n_leaves() >= 1
     assert len(m.predict([[5, 2.5, "1"]])) == 1
+
+
+def test_split_eval_fast_and_exhaustive_modes():
+    x = [[float(i), float(i % 5)] for i in range(100)]
+    y = [2.0 * float(i) + 1.0 for i in range(100)]
+
+    # Fast mode (default, O(1) variance reduction)
+    m_fast = ModelTree(leaf="linear", split_eval="fast", l2=0.0, max_depth=2, min_rows=10)
+    m_fast.fit(x, y)
+    assert m_fast.n_leaves() >= 1
+    p_fast = m_fast.predict([[10.0, 0.0]])
+    assert abs(p_fast[0] - 21.0) < 1e-4
+
+    # Exhaustive mode (candidate linear solves)
+    m_exh = ModelTree(leaf="linear", split_eval="exhaustive", l2=0.0, max_depth=2, min_rows=10)
+    m_exh.fit(x, y)
+    assert m_exh.n_leaves() >= 1
+    p_exh = m_exh.predict([[10.0, 0.0]])
+    assert abs(p_exh[0] - 21.0) < 1e-4

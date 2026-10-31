@@ -148,6 +148,8 @@ catboost_info/
 # local tooling / scratch (never commit)
 .omp/
 .scratch/
+.agents/
+skills-lock.json
 home/
 .gitconfig
 

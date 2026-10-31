@@ -4,7 +4,7 @@
 
 use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
-use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, SplitEval};
 
 #[test]
 fn stump_is_global_ols() {
@@ -63,6 +63,7 @@ fn recovers_planted_split_and_leaf_models() {
         l2: 0.0,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -116,6 +117,7 @@ fn path_used_leaves_are_piecewise_linear() {
         l2: 0.0,
         leaf_cols: LeafCols::PathUsed,
         split_precision: None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -381,6 +383,7 @@ fn printer_matches_rpart_layout() {
         l2: 0.0,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -399,6 +402,7 @@ fn dot_export_names_nodes_and_edges() {
         l2: 0.0,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
@@ -1324,6 +1328,7 @@ fn honesty_fraction_controls_the_split() {
                 l2: 0.0,
                 honesty: true,
                 honesty_fraction: frac,
+                split_eval: SplitEval::Exhaustive,
                 ..Default::default()
             },
         )
@@ -2129,6 +2134,7 @@ fn oracle_agrees_on_random_signal() {
         l2: 0.0,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let yopt: Vec<Option<f64>> = y.iter().map(|&v| Some(v)).collect();
@@ -2181,6 +2187,7 @@ fn oracle_agrees_with_missing_weights_and_grid() {
         split_precision: Some(0.25),
         dtypes: dtypes.clone(),
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let yopt: Vec<Option<f64>> = y.iter().map(|&v| Some(v)).collect();
@@ -2230,6 +2237,7 @@ fn oracle_agrees_on_collinear_ridge() {
         l2: 0.5,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let yopt: Vec<Option<f64>> = y.iter().map(|&v| Some(v)).collect();
@@ -2270,6 +2278,7 @@ fn oracle_agrees_with_elastic_net() {
         l2: 0.5,
         split_precision: None,
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let yopt: Vec<Option<f64>> = y.iter().map(|&v| Some(v)).collect();
@@ -2336,6 +2345,7 @@ fn oracle_agrees_on_categorical_split() {
         split_precision: None,
         dtypes: dtypes.clone(),
         prune: PruneCost::None,
+        split_eval: SplitEval::Exhaustive,
         ..Default::default()
     };
     let yopt: Vec<Option<f64>> = y.iter().map(|&v| Some(v)).collect();
@@ -2592,7 +2602,7 @@ fn family_categorical_linear_deviance_refits_link_models() {
         l1: 0.0, l2: 0.0, split_cols: Some(vec![0]),
         dtypes: vec![ColType::Categorical, ColType::Float],
         leaf_family: LeafFamily::Binomial, gain: GainFn::Deviance,
-        prune: PruneCost::None, ..Default::default()
+        prune: PruneCost::None, split_eval: SplitEval::Exhaustive, ..Default::default()
     }).unwrap();
     let splits = tree.splits();
     assert_eq!(splits.len(), 1);
@@ -2683,7 +2693,7 @@ fn poisson_numeric_linear_deviance_refits_and_selects_missing_direction() {
         max_depth: 1, min_rows: 1, minprob: 0.0,
         l1: 0.0, l2: 0.0, split_cols: Some(vec![0]), split_precision: None,
         leaf_family: LeafFamily::Poisson, gain: GainFn::Deviance,
-        prune: PruneCost::None, ..Default::default()
+        prune: PruneCost::None, split_eval: SplitEval::Exhaustive, ..Default::default()
     }).unwrap();
     let splits = tree.splits();
     assert_eq!(splits.len(), 1);

@@ -18,7 +18,7 @@ use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
 use mltreelib_core::prune::PruneCost;
-use mltreelib_core::split::{CatOrder, CatSearch, ColType};
+use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
 use mltreelib_core::metrics::{
     classification_report, grouped_regression_report, regression_report, ClassificationReport,
     RegressionReport,
@@ -2149,7 +2149,7 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0, leaf_family = "gaussian"
+        verbose = 0, leaf_family = "gaussian", split_eval = "fast"
     ))]
     fn new(
         max_depth: usize,
@@ -2189,6 +2189,7 @@ impl PyModelTree {
         min_relevance: Option<f64>,
         verbose: u8,
         leaf_family: &str,
+        split_eval: &str,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2218,6 +2219,15 @@ impl PyModelTree {
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial' or 'poisson', got {other}"
+                )))
+            }
+        };
+        let eval_mode = match split_eval {
+            "fast" => SplitEval::Fast,
+            "exhaustive" => SplitEval::Exhaustive,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "split_eval must be 'fast' or 'exhaustive', got {other}"
                 )))
             }
         };
@@ -2366,6 +2376,7 @@ impl PyModelTree {
                 minprob,
                 preselect,
                 purity_gate,
+                split_eval: eval_mode,
             },
             inner: None,
             vocabs: Vec::new(),
