@@ -1,6 +1,6 @@
 # End-to-end walkthrough — churn
 
-The whole story on one real problem: predict who leaves the bank. **Typed ingest** throughout — `country` and `gender` enter the tree as **levels** (a distinct value is a level; the split search partitions level sets), NAs route as-is, and nothing is ever encoded for the tree. Strings are coded once by `IndexMapper` because the fit takes numbers — that mapping is a pipeline step, not a tree step. The tree is a regressor; fit on a 0/1 churn target it is a solid, fully interpretable baseline (threshold at 0.5).
+The whole story on one real problem: predict who leaves the bank. **Typed ingest** throughout — `country` and `gender` enter the tree as **levels** (a distinct value is a level; the split search partitions level sets), NAs route as-is, and nothing is ever encoded for the tree. `ModelTree` natively accepts raw string categoricals directly when `dtypes=["categorical", ...]` is specified, or strings can be pre-mapped using `IndexMapper` if building an explicit preprocessing pipeline. The tree is a regressor; fit on a 0/1 churn target it is a solid, fully interpretable baseline (threshold at 0.5).
 
 Script: [`examples/churn_demo.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/churn_demo.py>) (`uv run --with pandas --with pyarrow --with matplotlib python examples/churn_demo.py`).
 

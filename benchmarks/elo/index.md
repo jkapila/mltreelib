@@ -1,16 +1,36 @@
-# ELO
+# ELO Benchmark Arenas
 
-One scoreboard, one protocol, every model scored on the **same prepared data**.
+One scoreboard, one protocol, every model scored on the **same prepared data**. The arena evaluates models across **Rust, Python, and R** under a strict 300s process-group timeout.
 
-## The protocol
+Detailed runbook &amp; ModelTree experimentation guide: [`benchmarks/README.md`](<https://github.com/jkapila/mltreelib/blob/main/benchmarks/README.md>).
 
-- **Data**: the regression sets below, one 80/20 split (seed 7), identical numeric encodings for every scorer (prepared once by `examples/elo_prepare.py` — no per-model preprocessing luck).
-- **Matchups**: per dataset, every unordered pair of models "plays" once; the lower test RMSE wins (tie = draw).
-- **Ratings**: standard Elo, K=32, everyone starts at 1000, deterministic round-robin order. Ratings are field-relative — adding models moves numbers around, so compare within one run.
+---
 
-Reproduce: `uv run python examples/elo_report.py` (reads `benchmarks/elo_scores.csv`, written incrementally by the R, Python and Rust scorers).
+## The Protocols
 
-## The board
+### 1\. Regression Arena
+
+- **Data**: 18 regression benchmark datasets, one stratified 80/20 split (seed 7), prepared once by `examples/elo_prepare.py`.
+- **Matchups**: Per dataset, every unordered pair of models "plays" once; lower test RMSE wins (tie = draw).
+- **Scores**: Evaluates 36 models across Rust, Python, and R (`benchmarks/elo_scores.csv`).
+- **Reproduce**: `uv run python examples/elo_report.py` (or `bash examples/elo_run_resume.sh`).
+
+### 2\. Classification Arena
+
+- **Data**: 24 TabArena datasets (20 binary, 4 multiclass) from OpenML suite 457, stratified 80/20 split within class (seed 7), prepared once by `examples/elo_prepare_cla.py` with raw strings for categoricals and `<ds>.meta.json`.
+- **Matchups**: Per dataset, round-robin pairwise comparisons based on test **log loss** (cross-entropy), K=32, starting rating 1000.
+- **Scores**: Evaluates 28 models across Python, Rust, and R (`benchmarks/elo_cla_scores.csv`), including RuleQuest `C5.0 (tree)` and `C5.0 (rules)` in R, `HistGradientBoosting`, `sklearn GBM`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `ranger`, `bart`, `glmtree`. *(Note: ModelTree classification is currently undergoing internal development in Rust and will be attached once complete).*
+- **Reproduce**: `uv run python examples/elo_report_cla.py` (or `bash examples/elo_run_cla.sh`).
+
+---
+
+## Metadata Taxonomy
+
+Every score tracked in the arena includes two core architectural dimensions: - **`lang`**: Model implementation language — **`Rust`**, **`Python`**, or **`R`**. - **`cat_handling`**: - **`internal`** (*native / as-is*): Direct native consumption of categoricals without driver encoding (`ModelTree`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `HistGradientBoosting`, `modeltrees`, R factors like `rpart`, `cubist`, `C5.0`, `ctree`, `glmtree`). - **`external`** (*driver-encoded*): Requires driver-side ordinal encoding fit on train (`sklearn RF`, `sklearn GBM`, `ExtraTrees`, `sklearn tree`, `forust`, `perpetual`, `MARS`). - **`none`** (*numeric-only*): Strictly requires numeric matrices; refuses categorical columns (`statsmodels`, `trust-free`, R `grf`).
+
+---
+
+## The Regression Board
 
 ```
 == Elo (round-robin on per-dataset RMSE, K=32, start 1000) ==

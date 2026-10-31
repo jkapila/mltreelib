@@ -4,6 +4,9 @@
         <loc>https://jkapila.github.io/mltreelib/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/agents/docs-generation/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/agents/domain/</loc>
       </url>
       <url>
@@ -22,13 +25,25 @@
         <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_board/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/categorical-encoders/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/distributional-leaves/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/hpo/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/inspection/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/knob-tour/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
