@@ -211,11 +211,25 @@ impl<'a> Grower<'a> {
         // Parent score + mean design row are column-independent under the
         // `all` leaf-column policy: hoisted from per-column to per-node.
         let parent_pre: Option<ParentPre> = match self.params.leaf_cols {
-            LeafCols::All => {
+            LeafCols::All
+                if self.params.leaf_family == crate::family::LeafFamily::Gaussian
+                    && self.params.leaf == LeafKind::Linear =>
+            {
                 let chosen = self.chosen_cols(path);
                 let dim = 1 + 2 * chosen.len();
                 let (parent_sse, mean_row) = self.parent_stats(rows, &chosen, dim);
                 Some(ParentPre { parent_sse, mean_row })
+            }
+            LeafCols::All
+                if self.params.leaf_family != crate::family::LeafFamily::Gaussian
+                    && self.params.leaf == LeafKind::Linear
+                    && matches!(self.params.gain, GainFn::Sse | GainFn::Deviance) =>
+            {
+                let leaf = self.make_leaf_for_scan(rows, path);
+                Some(ParentPre {
+                    parent_sse: self.fitted_family_score(rows, &leaf),
+                    mean_row: Vec::new(),
+                })
             }
             _ => None,
         };
@@ -301,6 +315,11 @@ impl<'a> Grower<'a> {
         path: &[usize],
         pre: Option<&ParentPre>,
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        if self.params.leaf_family != crate::family::LeafFamily::Gaussian
+            && self.params.leaf == LeafKind::Linear
+        {
+            return self.scan_column_family(rows, j, path, pre);
+        }
         if self.col_type(j) == ColType::Categorical {
             return self.scan_column_categorical(rows, j);
         }
@@ -485,7 +504,7 @@ impl<'a> Grower<'a> {
                 {
                     continue;
                 }
-                let gain = gain_of(&self.params.gain, &ls, &rs);
+                let gain = self.partition_gain(&ls, &rs);
                 let gain = if self.params.imbalance_penalty > 0.0 {
                     gain - self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64)
                 } else {
@@ -634,7 +653,12 @@ impl<'a> Grower<'a> {
                     continue;
                 }
                 let gain = match self.params.gain {
-                    GainFn::Sse => {
+                    GainFn::Deviance if self.params.leaf_family != crate::family::LeafFamily::Gaussian => {
+                        self.constant_family_cost(tsw + msw, tswy + mswy)
+                            - self.constant_family_cost(alsw, alswy)
+                            - self.constant_family_cost(arsw, arswy)
+                    }
+                    GainFn::Sse | GainFn::Deviance => {
                         parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
                     }
                     ref gfn => {
@@ -907,6 +931,203 @@ impl<'a> Grower<'a> {
             }
         }
         st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (best, st)
+    }
+
+    fn fitted_family_score(&self, rows: &[usize], leaf: &crate::node_stats::LeafModel) -> f64 {
+        if matches!(self.params.gain, GainFn::Deviance) {
+            self.leaf_deviance(rows, leaf)
+        } else {
+            rows.iter().map(|&r| {
+                self.w[r] * (self.y[r] - leaf.predict_columns(self.cols, r)).powi(2)
+            }).sum()
+        }
+    }
+
+    /// Constant-family likelihood cost without the saturated-target term,
+    /// which cancels between parent and children. O(1) per numeric cut.
+    fn constant_family_cost(&self, sw: f64, sy: f64) -> f64 {
+        use crate::family::LeafFamily;
+        if sw <= 0.0 { return 0.0; }
+        let xlog = |mass: f64, mean: f64| {
+            if mass <= 0.0 { 0.0 } else { mass * mean.ln() }
+        };
+        let mean = sy / sw;
+        match self.params.leaf_family {
+            LeafFamily::Binomial => -2.0 * (
+                xlog(sy, mean) + xlog((sw - sy).max(0.0), 1.0 - mean)
+            ),
+            LeafFamily::Poisson => 2.0 * (sy - xlog(sy, mean)),
+            LeafFamily::Gaussian => unreachable!("Gaussian uses its SSE scan"),
+        }
+    }
+
+    fn partition_gain(&self, left: &[(f64, f64)], right: &[(f64, f64)]) -> f64 {
+        if matches!(self.params.gain, GainFn::Deviance)
+            && self.params.leaf_family != crate::family::LeafFamily::Gaussian
+        {
+            let sums = |rs: &[(f64, f64)]| rs.iter().fold(
+                (0.0, 0.0), |(sw, sy), &(y, w)| (sw + w, sy + w * y));
+            let (wl, yl) = sums(left);
+            let (wr, yr) = sums(right);
+            self.constant_family_cost(wl + wr, yl + yr)
+                - self.constant_family_cost(wl, yl) - self.constant_family_cost(wr, yr)
+        } else {
+            gain_of(&self.params.gain, left, right)
+        }
+    }
+    /// Distributional candidates refit the two child GLMs. Unlike Gaussian
+    /// least squares, their Hessians depend on the current fitted means:
+    /// one moving Gram cannot represent every IRLS iteration.
+    fn scan_column_family(
+        &self,
+        rows: &[usize],
+        j: usize,
+        path: &[usize],
+        pre: Option<&ParentPre>,
+    ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let t0 = Instant::now();
+        let categorical = self.col_type(j) == ColType::Categorical;
+        let grid = self.grid_for(j).filter(|p| *p > 0.0);
+        let mut observed: Vec<(f64, usize)> = rows.iter().filter_map(|&r| {
+            self.cols[j][r].map(|v| {
+                let v = if categorical { v } else {
+                    grid.map(|p| { let q = 1.0 / p; (v * q).round() / q }).unwrap_or(v)
+                };
+                (v, r)
+            })
+        }).collect();
+        observed.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let mut groups: Vec<(f64, Vec<usize>)> = Vec::new();
+        for (v, r) in observed {
+            match groups.last_mut() {
+                Some((last, rs)) if *last == v => rs.push(r),
+                _ => groups.push((v, vec![r])),
+            }
+        }
+        if groups.len() < 2 {
+            return (None, st);
+        }
+        if categorical {
+            let target_mean = |rs: &[usize]| {
+                let sw: f64 = rs.iter().map(|&r| self.w[r]).sum();
+                rs.iter().map(|&r| self.w[r] * self.y[r]).sum::<f64>() / sw
+            };
+            match &self.params.cat_order {
+                CatOrder::FrequencyDesc => groups.sort_by(|a, b| {
+                    b.1.len().cmp(&a.1.len()).then(a.0.total_cmp(&b.0))
+                }),
+                CatOrder::TargetMean => groups.sort_by(|a, b| {
+                    target_mean(&b.1).total_cmp(&target_mean(&a.1))
+                        .then(a.0.total_cmp(&b.0))
+                }),
+                CatOrder::Explicit(order) => groups.sort_by(|a, b| {
+                    let rank = |v| order.iter().position(|&o| o == v).unwrap_or(usize::MAX);
+                    rank(a.0).cmp(&rank(b.0))
+                        .then(b.1.len().cmp(&a.1.len())).then(a.0.total_cmp(&b.0))
+                }),
+            }
+        }
+        let missing: Vec<usize> = rows.iter().copied()
+            .filter(|&r| self.cols[j][r].is_none()).collect();
+        let m = self.min_child(rows.len());
+        let total_w: f64 = rows.iter().map(|&r| self.w[r]).sum();
+        let fitted_score = matches!(self.params.gain, GainFn::Deviance | GainFn::Sse);
+        let score = |rs: &[usize], leaf: &crate::node_stats::LeafModel| {
+            self.fitted_family_score(rs, leaf)
+        };
+        let parent_score = if !fitted_score { 0.0 } else if let Some(p) = pre {
+            p.parent_sse
+        } else {
+            score(rows, &self.make_leaf_for_scan(rows, path))
+        };
+        let mut left = Vec::with_capacity(rows.len());
+        let mut right = Vec::with_capacity(rows.len());
+        let mut ls = Vec::with_capacity(rows.len());
+        let mut rs = Vec::with_capacity(rows.len());
+        let mut boundary: Vec<Option<f64>> = self.cols.iter().map(|col| {
+            let mut sw = 0.0;
+            let mut sum = 0.0;
+            for &r in rows {
+                if let Some(v) = col[r] { sw += self.w[r]; sum += self.w[r] * v; }
+            }
+            (sw > 0.0).then(|| sum / sw)
+        }).collect();
+        st.group_ns = t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+        let mut best: Option<(f64, Split, Option<Vec<f64>>)> = None;
+        let k = groups.len();
+        let cumulative = !categorical || !matches!(self.params.cat_search, CatSearch::SingleVsRest);
+        let singles = categorical && !matches!(self.params.cat_search, CatSearch::Cumulative);
+        let n_cumulative = if cumulative { k - 1 } else { 0 };
+        for ci in 0..n_cumulative + if singles { k } else { 0 } {
+            let single = ci >= n_cumulative;
+            let cut = if single { ci - n_cumulative } else { ci };
+            let in_left = |gi: usize| if single { gi == cut } else { gi <= cut };
+            let threshold = if categorical { 0.0 } else {
+                if grid.is_some() { groups[cut].0 }
+                else { groups[cut].0 / 2.0 + groups[cut + 1].0 / 2.0 }
+            };
+            st.candidates += 1;
+            let variants: &[bool] = if missing.is_empty() { &[true] } else { &[true, false] };
+            for &missing_left in variants {
+                left.clear();
+                right.clear();
+                for (gi, (_, gr)) in groups.iter().enumerate() {
+                    if in_left(gi) { left.extend_from_slice(gr); }
+                    else { right.extend_from_slice(gr); }
+                }
+                if missing_left { left.extend_from_slice(&missing); }
+                else { right.extend_from_slice(&missing); }
+                if left.len() < m || right.len() < m { continue; }
+                let sw = |r: &[usize]| r.iter().map(|&i| self.w[i]).sum::<f64>();
+                let (wl, wr) = (sw(&left), sw(&right));
+                if wl < self.params.alpha * total_w || wr < self.params.alpha * total_w {
+                    continue;
+                }
+                let mean = |r: &[usize], w: f64| {
+                    r.iter().map(|&i| self.w[i] * self.y[i]).sum::<f64>() / w
+                };
+                if !categorical && !self.mono_ok(j, mean(&left, wl), mean(&right, wr)) {
+                    continue;
+                }
+                let constrained = !categorical && self.params.monotone.get(j)
+                    .copied().unwrap_or(0) != 0;
+                let fits = (fitted_score || constrained).then(|| (
+                    self.make_leaf_for_scan(&left, path),
+                    self.make_leaf_for_scan(&right, path),
+                ));
+                if constrained {
+                    boundary[j] = Some(threshold);
+                    let (l, r) = fits.as_ref().unwrap();
+                    if (l.predict(&boundary) - r.predict(&boundary))
+                        * self.params.monotone[j] as f64 > 1e-9 { continue; }
+                }
+                let gain = if fitted_score {
+                    let (l, r) = fits.as_ref().unwrap();
+                    parent_score - score(&left, l) - score(&right, r)
+                } else {
+                    ls.clear();
+                    rs.clear();
+                    ls.extend(left.iter().map(|&i| (self.y[i], self.w[i])));
+                    rs.extend(right.iter().map(|&i| (self.y[i], self.w[i])));
+                    gain_of(&self.params.gain, &ls, &rs)
+                };
+                let gain = gain - self.params.imbalance_penalty
+                    * (1.0 / left.len() as f64 + 1.0 / right.len() as f64);
+                if !gain.is_finite() || gain <= self.params.min_gain { continue; }
+                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                    let part = categorical.then(|| groups.iter().enumerate()
+                        .filter(|(gi, _)| in_left(*gi)).map(|(_, g)| g.0).collect());
+                    best = Some((gain, Split { col: j, threshold, missing_left,
+                        gain, cat: None, sur: None }, part));
+                }
+            }
+            if categorical && matches!(self.params.cat_search, CatSearch::SingleVsRest)
+                && best.is_some() { break; }
+        }
+        st.scan_ns = t1.elapsed().as_nanos() as u64;
         (best, st)
     }
 

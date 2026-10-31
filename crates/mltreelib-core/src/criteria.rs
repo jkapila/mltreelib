@@ -19,6 +19,10 @@ pub(crate) fn beats(gain: f64, best: f64) -> bool {
 pub enum GainFn {
     /// Variance reduction (weighted sum of squares). The regression default.
     Sse,
+    /// Fitted family deviance reduction (Gaussian: squared-error reduction).
+    /// Unlike entropy/Poisson constant-partition criteria, linear leaves
+    /// are refitted on each candidate side.
+    Deviance,
     /// Friedman's MSE proxy: `(w_l·w_r/w)·(mean_l − mean_r)^2` — the
     /// squared mean gap weighted by the child masses (sklearn's
     /// `friedman_mse`). Regression.
@@ -64,6 +68,7 @@ impl Clone for GainFn {
     fn clone(&self) -> Self {
         match self {
             GainFn::Sse => GainFn::Sse,
+            GainFn::Deviance => GainFn::Deviance,
             GainFn::FriedmanMse => GainFn::FriedmanMse,
             GainFn::AbsoluteError => GainFn::AbsoluteError,
             GainFn::Huber => GainFn::Huber,
@@ -82,6 +87,7 @@ impl std::fmt::Debug for GainFn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             GainFn::Sse => write!(f, "Sse"),
+            GainFn::Deviance => write!(f, "Deviance"),
             GainFn::FriedmanMse => write!(f, "FriedmanMse"),
             GainFn::AbsoluteError => write!(f, "AbsoluteError"),
             GainFn::Huber => write!(f, "Huber"),
@@ -111,7 +117,7 @@ impl std::fmt::Debug for GainFn {
             return 0.0;
         }
         match gfn {
-            GainFn::Sse => {
+            GainFn::Sse | GainFn::Deviance => {
                 let sse = |p: &[(f64, f64)]| {
                     let sw = wsum(p);
                     if sw <= 0.0 {

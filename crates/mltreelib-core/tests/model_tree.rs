@@ -2346,3 +2346,356 @@ fn oracle_agrees_on_categorical_split() {
     assert!(splits[0].cat.is_some(), "categorical partition handle");
     oracle_close(splits[0].gain, oracle_gain, 1e-9, "categorical gain");
 }
+
+// Family tests use the public fitted-tree seam: coefficients are on the
+// link scale; predictions are conditional response means.
+#[test]
+fn binomial_grouped_mle_recovers_log_odds_with_case_weights() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![vec![Some(0.0)], vec![Some(0.0)], vec![Some(1.0)], vec![Some(1.0)]];
+    let y = vec![Some(0.0), Some(1.0), Some(0.0), Some(1.0)];
+    let tree = ModelTree::fit_weighted(
+        &x, &y, &[3.0, 1.0, 1.0, 3.0],
+        ModelTreeParams {
+            max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+            leaf_family: LeafFamily::Binomial,
+            ..Default::default()
+        },
+    ).unwrap();
+    let leaves = tree.leaves();
+    let linear = leaves[0].0.linear.as_ref().unwrap();
+    assert!((linear.intercept + 3.0_f64.ln()).abs() < 1e-7, "{linear:?}");
+    assert!((linear.coef[0] - 2.0 * 3.0_f64.ln()).abs() < 1e-7, "{linear:?}");
+    let predicted = tree.predict(&[vec![Some(0.0)], vec![Some(1.0)]]);
+    assert!((predicted[0] - 0.25).abs() < 1e-8, "{predicted:?}");
+    assert!((predicted[1] - 0.75).abs() < 1e-8, "{predicted:?}");
+}
+
+#[test]
+fn poisson_grouped_mle_recovers_log_rate_and_missing_indicator() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![
+        vec![Some(0.0)], vec![Some(0.0)],
+        vec![Some(1.0)], vec![Some(1.0)],
+        vec![None], vec![None],
+    ];
+    // Weighted group means: 1, 4, 2. Missingness has its own log-rate.
+    let y = vec![Some(0.0), Some(2.0), Some(2.0), Some(5.0), Some(1.0), Some(3.0)];
+    let tree = ModelTree::fit_weighted(
+        &x, &y, &[1.0, 1.0, 1.0, 2.0, 1.0, 1.0],
+        ModelTreeParams {
+            max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+            leaf_family: LeafFamily::Poisson,
+            ..Default::default()
+        },
+    ).unwrap();
+    let leaves = tree.leaves();
+    let linear = leaves[0].0.linear.as_ref().unwrap();
+    assert!(linear.intercept.abs() < 1e-7, "{linear:?}");
+    assert!((linear.coef[0] - 4.0_f64.ln()).abs() < 1e-7, "{linear:?}");
+    assert!((linear.na_coef[0] - 2.0_f64.ln()).abs() < 1e-7, "{linear:?}");
+    let predicted = tree.predict(&[vec![Some(0.0)], vec![Some(1.0)], vec![None]]);
+    for (actual, expected) in predicted.iter().zip([1.0, 4.0, 2.0]) {
+        assert!((actual - expected).abs() < 1e-7, "{predicted:?}");
+    }
+}
+
+#[test]
+fn family_pure_targets_and_separation_produce_finite_response_means() {
+    use mltreelib_core::family::LeafFamily;
+    let x: Vec<_> = (0..12).map(|i| vec![Some((i % 2) as f64)]).collect();
+    for (family, target) in [
+        (LeafFamily::Binomial, 0.0),
+        (LeafFamily::Binomial, 1.0),
+        (LeafFamily::Poisson, 0.0),
+    ] {
+        let tree = ModelTree::fit(
+            &x, &vec![Some(target); x.len()],
+            ModelTreeParams {
+                max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+                leaf_family: family, ..Default::default()
+            },
+        ).unwrap();
+        assert_eq!(tree.predict(&[vec![Some(-1e6)], vec![None], vec![Some(1e6)]]), vec![target; 3]);
+    }
+    // Duplicate and constant predictors make this separated design singular.
+    let x: Vec<_> = (0..20).map(|i| {
+        let group = (i / 10) as f64;
+        vec![Some(group), Some(group), Some(1.0)]
+    }).collect();
+    let y: Vec<_> = (0..20).map(|i| Some((i / 10) as f64)).collect();
+    let tree = ModelTree::fit(
+        &x, &y, ModelTreeParams {
+            max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+            leaf_family: LeafFamily::Binomial, ..Default::default()
+        },
+    ).unwrap();
+    let predictions = tree.predict(&x);
+    assert!(predictions.iter().all(|p| p.is_finite() && *p >= 0.0 && *p <= 1.0));
+    assert!(predictions[0] < 1e-6 && predictions[19] > 1.0 - 1e-6, "{predictions:?}");
+    let leaves = tree.leaves();
+    let model = leaves[0].0.linear.as_ref().unwrap();
+    assert!(model.intercept.is_finite() && model.coef.iter().all(|b| b.is_finite()));
+}
+
+#[test]
+fn family_constant_predictions_and_conditional_cdfs_stay_on_response_scale() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![vec![Some(0.0)]; 4];
+    for (family, y, expected_mean, cdf_zero, cdf_one) in [
+        (LeafFamily::Binomial, vec![Some(0.0), Some(0.0), Some(0.0), Some(1.0)],
+            0.25, 0.75, 1.0),
+        (LeafFamily::Poisson, vec![Some(2.0), Some(4.0), Some(4.0), Some(6.0)],
+            4.0, (-4.0_f64).exp(), 5.0 * (-4.0_f64).exp()),
+    ] {
+        let tree = ModelTree::fit(
+            &x, &y, ModelTreeParams {
+                max_depth: 0, min_rows: 1, leaf: LeafKind::Mean,
+                leaf_family: family, ..Default::default()
+            },
+        ).unwrap();
+        assert_eq!(tree.predict(&x), vec![expected_mean; 4]);
+        assert_eq!(tree.cdf(&x, -0.1).unwrap(), vec![0.0; 4]);
+        assert_eq!(tree.cdf(&x, f64::INFINITY).unwrap(), vec![1.0; 4]);
+        for p in tree.cdf(&x, 0.9).unwrap() {
+            assert!((p - cdf_zero).abs() < 1e-12, "{family:?}: {p}");
+        }
+        for p in tree.cdf(&x, 1.9).unwrap() {
+            assert!((p - cdf_one).abs() < 1e-12, "{family:?}: {p}");
+        }
+    }
+}
+
+#[test]
+fn family_linear_penalties_and_monotone_constraints_are_effective() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![vec![Some(0.0)], vec![Some(0.0)], vec![Some(1.0)], vec![Some(1.0)]];
+    for (family, y, w) in [
+        (LeafFamily::Binomial, vec![Some(0.0), Some(1.0), Some(0.0), Some(1.0)],
+            vec![3.0, 1.0, 1.0, 3.0]),
+        (LeafFamily::Poisson, vec![Some(0.0), Some(2.0), Some(2.0), Some(6.0)],
+            vec![1.0; 4]),
+    ] {
+        let fit = |l1, l2, mono| {
+            ModelTree::fit_weighted(&x, &y, &w, ModelTreeParams {
+                max_depth: 0, min_rows: 1, l1, l2, monotone: mono,
+                leaf_family: family, ..Default::default()
+            }).unwrap()
+        };
+        let unpenalized = fit(0.0, 0.0, vec![]);
+        let ridge = fit(0.0, 10.0, vec![]);
+        let lasso = fit(100.0, 0.0, vec![]);
+        let increasing = fit(0.0, 0.0, vec![1]);
+        let decreasing = fit(0.0, 0.0, vec![-1]);
+        let coefficient = |tree: &ModelTree| tree.leaves()[0].0.linear.as_ref().unwrap().coef[0];
+        assert!(coefficient(&ridge) > 0.0 && coefficient(&ridge) < coefficient(&unpenalized));
+        assert!(coefficient(&lasso).abs() < 1e-10);
+        assert!((coefficient(&increasing) - coefficient(&unpenalized)).abs() < 1e-6);
+        assert!(coefficient(&decreasing).abs() < 1e-10);
+    }
+}
+
+#[test]
+fn family_leaf_column_policies_control_link_scale_design() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![vec![Some(0.0)], vec![Some(0.0)], vec![Some(1.0)], vec![Some(1.0)]];
+    let y = vec![Some(0.0), Some(1.0), Some(0.0), Some(1.0)];
+    for policy in [LeafCols::All, LeafCols::PathUsed] {
+        let tree = ModelTree::fit_weighted(&x, &y, &[3.0, 1.0, 1.0, 3.0], ModelTreeParams {
+            max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+            leaf_family: LeafFamily::Binomial, leaf_cols: policy,
+            ..Default::default()
+        }).unwrap();
+        let predicted = tree.predict(&[vec![Some(0.0)], vec![Some(1.0)]]);
+        let expected = if policy == LeafCols::All { [0.25, 0.75] } else { [0.5, 0.5] };
+        for (actual, expected) in predicted.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-7, "{policy:?}: {predicted:?}");
+        }
+    }
+}
+
+// Independent likelihood oracle for constant-response partitions. It does
+// not call family likelihood helpers or re-fit the implementation under test.
+fn oracle_family_constant_loss(binomial: bool, rows: &[usize], y: &[f64], w: &[f64]) -> f64 {
+    let sw: f64 = rows.iter().map(|&r| w[r]).sum();
+    let mean = rows.iter().map(|&r| w[r] * y[r]).sum::<f64>() / sw;
+    rows.iter().map(|&r| {
+        let loss = if binomial {
+            if y[r] == 1.0 { -2.0 * mean.ln() } else { -2.0 * (1.0 - mean).ln() }
+        } else if y[r] == 0.0 {
+            2.0 * mean
+        } else {
+            2.0 * (y[r] * (y[r] / mean).ln() - y[r] + mean)
+        };
+        w[r] * loss
+    }).sum()
+}
+
+#[test]
+fn family_numeric_deviance_scan_matches_weighted_brute_force_with_missing_directions() {
+    use mltreelib_core::family::LeafFamily;
+    let x: Vec<_> = [Some(0.0), Some(1.0), Some(2.0), Some(3.0), None]
+        .into_iter().flat_map(|value| [vec![value], vec![value]]).collect();
+    let w = vec![4.0, 1.0, 3.0, 1.0, 2.0, 3.0, 1.0, 4.0, 1.0, 4.0];
+    for (family, y) in [
+        (LeafFamily::Binomial, vec![0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]),
+        (LeafFamily::Poisson, vec![0.0, 2.0, 1.0, 3.0, 3.0, 8.0, 4.0, 10.0, 6.0, 12.0]),
+    ] {
+        let binomial = family == LeafFamily::Binomial;
+        let all: Vec<_> = (0..y.len()).collect();
+        let parent = oracle_family_constant_loss(binomial, &all, &y, &w);
+        let mut best = (f64::NEG_INFINITY, 0.0, false);
+        for threshold in [0.5, 1.5, 2.5] {
+            for missing_left in [true, false] {
+                let (left, right): (Vec<_>, Vec<_>) = all.iter().copied()
+                    .partition(|&r| x[r][0].map(|v| v < threshold).unwrap_or(missing_left));
+                let gain = parent - oracle_family_constant_loss(binomial, &left, &y, &w)
+                    - oracle_family_constant_loss(binomial, &right, &y, &w);
+                if gain > best.0 { best = (gain, threshold, missing_left); }
+            }
+        }
+        let tree = ModelTree::fit_weighted(
+            &x, &y.iter().copied().map(Some).collect::<Vec<_>>(), &w,
+            ModelTreeParams {
+                max_depth: 1, min_rows: 1, minprob: 0.0, split_precision: None,
+                leaf: LeafKind::Mean, leaf_family: family, gain: GainFn::Deviance,
+                prune: PruneCost::None, ..Default::default()
+            },
+        ).unwrap();
+        let splits = tree.splits();
+        assert_eq!(splits.len(), 1, "{family:?}");
+        assert_eq!(splits[0].threshold, best.1, "{family:?}");
+        assert_eq!(splits[0].missing_left, best.2, "{family:?}");
+        assert!((splits[0].gain - best.0).abs() < 1e-9, "{family:?}: {} vs {}", splits[0].gain, best.0);
+    }
+}
+
+#[test]
+fn family_categorical_linear_deviance_refits_link_models() {
+    use mltreelib_core::family::LeafFamily;
+    // Category separates two opposite x effects; global linear logit cannot
+    // represent the interaction. Codes are not silently one-hot encoded.
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    let mut w = Vec::new();
+    for category in 0..2 {
+        for value in 0..2 {
+            for target in 0..2 {
+                x.push(vec![Some(category as f64), Some(value as f64)]);
+                y.push(Some(target as f64));
+                w.push(if target == (category ^ value) { 3.0 } else { 1.0 });
+            }
+        }
+    }
+    let tree = ModelTree::fit_weighted(&x, &y, &w, ModelTreeParams {
+        max_depth: 1, min_rows: 1, minprob: 0.0,
+        l1: 0.0, l2: 0.0, split_cols: Some(vec![0]),
+        dtypes: vec![ColType::Categorical, ColType::Float],
+        leaf_family: LeafFamily::Binomial, gain: GainFn::Deviance,
+        prune: PruneCost::None, ..Default::default()
+    }).unwrap();
+    let splits = tree.splits();
+    assert_eq!(splits.len(), 1);
+    assert!(splits[0].cat.is_some());
+    // Four independent groups each contribute 4 Bernoulli observations:
+    // deviance improvement = 16 * 2 * (ln2 + .25ln.25 + .75ln.75).
+    let expected_gain = 32.0 * (2.0_f64.ln() + 0.25 * 0.25_f64.ln() + 0.75 * 0.75_f64.ln());
+    assert!((splits[0].gain - expected_gain).abs() < 1e-8, "{} vs {expected_gain}", splits[0].gain);
+    let predicted = tree.predict(&[
+        vec![Some(0.0), Some(0.0)], vec![Some(0.0), Some(1.0)],
+        vec![Some(1.0), Some(0.0)], vec![Some(1.0), Some(1.0)],
+    ]);
+    for (actual, expected) in predicted.iter().zip([0.25, 0.75, 0.75, 0.25]) {
+        assert!((actual - expected).abs() < 1e-7, "{predicted:?}");
+    }
+}
+
+#[test]
+fn family_cp_pruning_uses_deviance_not_squared_error() {
+    use mltreelib_core::family::LeafFamily;
+    let x = vec![vec![Some(0.0)], vec![Some(0.0)], vec![Some(1.0)], vec![Some(1.0)]];
+    let y = vec![Some(0.0), Some(1.0), Some(0.0), Some(1.0)];
+    // Weighted groups have p=.25 and p=.75. SSE reduction is .5,
+    // deviance reduction is 16*(ln2+.25ln.25+.75ln.75) = 2.09299...
+    for (alpha, expected_leaves) in [(1.0, 2), (3.0, 1)] {
+        let tree = ModelTree::fit_weighted(&x, &y, &[3.0, 1.0, 1.0, 3.0], ModelTreeParams {
+            max_depth: 1, min_rows: 1, minprob: 0.0,
+            leaf: LeafKind::Mean, leaf_family: LeafFamily::Binomial,
+            gain: GainFn::Deviance, prune: PruneCost::Cp, cp_alpha: alpha,
+            split_precision: None, ..Default::default()
+        }).unwrap();
+        assert_eq!(tree.n_leaves(), expected_leaves, "alpha={alpha}");
+    }
+}
+
+#[test]
+fn family_honesty_fits_estimation_distribution_and_predictions() {
+    use mltreelib_core::family::LeafFamily;
+    let x: Vec<_> = (0..200).map(|i| vec![Some((i % 2) as f64)]).collect();
+    for family in [LeafFamily::Binomial, LeafFamily::Poisson] {
+        let y: Vec<_> = (0..200).map(|i| Some(if family == LeafFamily::Binomial {
+            (i % 5 == 0) as u8 as f64
+        } else { (i % 7) as f64 })).collect();
+        let params = ModelTreeParams {
+            max_depth: 0, min_rows: 2, honesty: true, honesty_fraction: 0.25,
+            leaf: LeafKind::Mean, leaf_family: family,
+            ..Default::default()
+        };
+        let tree = ModelTree::fit(&x, &y, params.clone()).unwrap();
+        let leaves = tree.leaves();
+        assert_eq!(leaves[0].0.stats.n, 150);
+        assert_eq!(leaves[0].1, 50);
+        assert_eq!(tree.predict(&x), vec![leaves[0].0.stats.mean; 200]);
+        assert_eq!(tree.predict(&x), ModelTree::fit(&x, &y, params).unwrap().predict(&x));
+    }
+}
+
+#[test]
+fn family_numerical_failure_is_reported_instead_of_a_successful_constant_fit() {
+    use mltreelib_core::family::LeafFamily;
+    // Squared design entries overflow. Returning a plausible global mean
+    // here would conceal that the requested linear likelihood fit failed.
+    let x = vec![vec![Some(-1e300)], vec![Some(1e300)]];
+    for (family, y) in [
+        (LeafFamily::Binomial, vec![Some(0.0), Some(1.0)]),
+        (LeafFamily::Poisson, vec![Some(1.0), Some(4.0)]),
+    ] {
+        assert!(ModelTree::fit(&x, &y, ModelTreeParams {
+            max_depth: 0, min_rows: 1, l1: 0.0, l2: 0.0,
+            leaf_family: family, ..Default::default()
+        }).is_err(), "{family:?} must report an unrepresentable fit");
+    }
+}
+
+#[test]
+fn poisson_numeric_linear_deviance_refits_and_selects_missing_direction() {
+    use mltreelib_core::family::LeafFamily;
+    // A two-way count table with an interaction: group 0 and missing share
+    // rates (1,4), group 1 reverses them. A global additive log-rate model
+    // has MLE rates (1.5,3.5) in every group; split models fit all cells.
+    let x = vec![
+        vec![Some(0.0), Some(0.0)], vec![Some(0.0), Some(1.0)],
+        vec![Some(1.0), Some(0.0)], vec![Some(1.0), Some(1.0)],
+        vec![None, Some(0.0)], vec![None, Some(1.0)],
+    ];
+    let y = vec![Some(1.0), Some(4.0), Some(4.0), Some(1.0), Some(1.0), Some(4.0)];
+    let tree = ModelTree::fit_weighted(&x, &y, &[2.0, 2.0, 1.0, 1.0, 3.0, 3.0], ModelTreeParams {
+        max_depth: 1, min_rows: 1, minprob: 0.0,
+        l1: 0.0, l2: 0.0, split_cols: Some(vec![0]), split_precision: None,
+        leaf_family: LeafFamily::Poisson, gain: GainFn::Deviance,
+        prune: PruneCost::None, ..Default::default()
+    }).unwrap();
+    let splits = tree.splits();
+    assert_eq!(splits.len(), 1);
+    assert_eq!(splits[0].threshold, 0.5);
+    assert!(splits[0].missing_left, "missing group must join its matching log-rate model");
+    let expected_gain = 2.0 * (
+        5.0 * ((1.0_f64 / 1.5).ln() + 4.0 * (4.0_f64 / 3.5).ln())
+        + 4.0 * (4.0_f64 / 1.5).ln() + (1.0_f64 / 3.5).ln()
+    );
+    assert!((splits[0].gain - expected_gain).abs() < 1e-7, "{} vs {expected_gain}", splits[0].gain);
+    let predictions = tree.predict(&x);
+    for (actual, expected) in predictions.iter().zip([1.0, 4.0, 4.0, 1.0, 1.0, 4.0]) {
+        assert!((actual - expected).abs() < 1e-6, "{predictions:?}");
+    }
+}

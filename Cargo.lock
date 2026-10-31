@@ -561,6 +561,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_distr 0.4.3",
  "rayon",
+ "statrs",
  "tdigest",
 ]
 
@@ -1250,6 +1251,16 @@ dependencies = [
  "libc",
  "psm",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "statrs"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a3fe7c28c6512e766b0874335db33c94ad7b8f9054228ae1c2abd47ce7d335e"
+dependencies = [
+ "approx",
+ "num-traits",
 ]
 
 [[package]]

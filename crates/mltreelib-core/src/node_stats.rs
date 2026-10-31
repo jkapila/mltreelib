@@ -8,6 +8,7 @@
 //! reweighting and case weights work without touching the tree.
 
 use tdigest::TDigest;
+use crate::family::LeafFamily;
 
 /// Target summary stored at every leaf — mean nodes and model nodes alike.
 /// Weighted by sample weights (`w`); `std` is the weighted sample standard
@@ -57,10 +58,34 @@ impl LeafStats {
     pub fn quantile(&self, q: f64) -> Option<f64> {
         self.digest.estimate_quantile(q)
     }
+
+    /// Moments for split-candidate fits, without sorting targets or building
+    /// a digest. The stored empty digest is never exposed as a final leaf.
+    pub(crate) fn from_rows(y: &[f64], w: &[f64], rows: &[usize]) -> Self {
+        let frame = FrameStats::from_ty(y, w, rows);
+        let mut min = f64::INFINITY;
+        let mut max = f64::NEG_INFINITY;
+        for &r in rows {
+            if w[r] > 0.0 {
+                min = min.min(y[r]);
+                max = max.max(y[r]);
+            }
+        }
+        Self {
+            n: frame.n,
+            wsum: frame.wsum,
+            mean: frame.mean,
+            std: (frame.sse / frame.wsum).sqrt(),
+            min,
+            max,
+            digest: TDigest::new_with_size(1),
+        }
+    }
 }
 
-/// Fitted linear model: `intercept + Σ coef·x + Σ na_coef·1{missing}`.
-/// Missing predictors contribute nothing to the value terms and carry their
+/// Fitted link-scale linear predictor:
+/// `intercept + Σ coef·x + Σ na_coef·1{missing}`. Gaussian uses the identity
+/// link. Missing predictors contribute nothing to value terms and have their
 /// own indicator term — missingness is an effect, never a lost row.
 #[derive(Clone, Debug)]
 pub struct LinearModel {
@@ -93,10 +118,11 @@ impl LinearModel {
 /// leaves (`None` for mean/CART leaves).
 #[derive(Clone, Debug)]
 pub struct LeafModel {
+    pub family: LeafFamily,
     pub stats: LeafStats,
     pub linear: Option<LinearModel>,
-    /// Fitted constant for non-mean leaves (median / quantile / Huber
-    /// location). `None` = the weighted mean.
+    /// Fitted response-scale constant (robust Gaussian locations or exact
+    /// boundary family means). `None` = the weighted response mean.
     pub center: Option<f64>,
 }
 
@@ -104,11 +130,26 @@ impl LeafModel {
     /// Linear model when present, the fitted constant otherwise (weighted
     /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
-        self.linear
-            .as_ref()
-            .map(|m| m.predict(x))
-            .or(self.center)
-            .unwrap_or(self.stats.mean)
+        match &self.linear {
+            Some(model) => self.family.inverse_link(model.predict(x)),
+            None => self.center.unwrap_or(self.stats.mean),
+        }
+    }
+
+    /// Column-major prediction for training-row scoring, without allocating
+    /// or copying a row for every candidate leaf.
+    pub(crate) fn predict_columns(&self, cols: &[Vec<Option<f64>>], r: usize) -> f64 {
+        let Some(model) = &self.linear else {
+            return self.center.unwrap_or(self.stats.mean);
+        };
+        let mut eta = model.intercept;
+        for (k, &c) in model.cols.iter().enumerate() {
+            match cols[c][r] {
+                Some(value) => eta += model.coef[k] * value,
+                None => eta += model.na_coef.get(k).copied().unwrap_or(0.0),
+            }
+        }
+        self.family.inverse_link(eta)
     }
 }
 
@@ -765,6 +806,201 @@ impl LinearModel {
         }
         y
     }
+}
+
+/// Penalized canonical-link GLM by damped IRLS. The weighted least-squares
+/// step reuses the Gaussian Gram/faer solver; constrained/lasso steps use
+/// coordinate descent on the same Gram. L1 standardization is fixed from
+/// the original case-weighted design, not changed by IRLS working weights.
+///
+/// Fisher variances are floored at 1e-12, steps are backtracked against
+/// penalized deviance, and convergence requires relative objective change
+/// below 1e-11. Separation therefore approaches a finite numerical boundary;
+/// exact pure/zero leaves are handled by the caller. A failed or exhausted
+/// fit returns None, never a successful-looking constant fallback.
+pub(crate) fn fit_glm(
+    cols: &[Vec<Option<f64>>],
+    y: &[f64],
+    w: &[f64],
+    rows: &[usize],
+    chosen: &[usize],
+    with_indicators: bool,
+    mono: &[i8],
+    l1: f64,
+    l2: f64,
+    family: LeafFamily,
+    mean: f64,
+) -> Option<LinearModel> {
+    let nc = chosen.len();
+    let dim = 1 + nc + if with_indicators { nc } else { 0 };
+    let mut current = LinearModel {
+        cols: chosen.to_vec(),
+        coef: vec![0.0; nc],
+        na_coef: if with_indicators { vec![0.0; nc] } else { Vec::new() },
+        intercept: match family {
+            LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
+            LeafFamily::Poisson => mean.ln(),
+            LeafFamily::Gaussian => mean,
+        },
+    };
+    let mut gram = Gram::new(dim);
+    let mut row = vec![0.0; dim];
+    let mut scales = vec![1.0; dim];
+    if l1 > 0.0 {
+        for &r in rows {
+            design_row(&mut row, cols, r, chosen, with_indicators);
+            gram.add_row(&row, 0.0, w[r]);
+        }
+        for j in 1..dim {
+            let variance = gram.xtx[j * dim + j]
+                - gram.xtx[j] * gram.xtx[j] / gram.ws;
+            if variance > 1e-12 {
+                scales[j] = variance.sqrt();
+            }
+        }
+    }
+    let penalty = |model: &LinearModel| -> f64 {
+        model.coef.iter().chain(&model.na_coef).enumerate().map(|(j, &b)| {
+            let standardized = b * scales[j + 1];
+            l1 * standardized.abs() + 0.5 * l2 * standardized * standardized
+        }).sum()
+    };
+    let objective = |model: &LinearModel, row: &mut [f64]| -> f64 {
+        let mut loss = 0.0;
+        for &r in rows {
+            if w[r] <= 0.0 {
+                continue;
+            }
+            design_row(row, cols, r, chosen, with_indicators);
+            let mean = family.inverse_link(model.eval_design(row));
+            loss += 0.5 * w[r] * family.deviance(y[r], mean);
+        }
+        loss + penalty(model)
+    };
+    let constrained = chosen.iter().any(|&c| mono.get(c).copied().unwrap_or(0) != 0);
+    let mut old_objective = objective(&current, &mut row);
+    if !old_objective.is_finite() {
+        return None;
+    }
+    let mut beta = vec![0.0; dim];
+    for _ in 0..200 {
+        gram.xtx.fill(0.0);
+        gram.xty.fill(0.0);
+        gram.yty = 0.0;
+        gram.wy = 0.0;
+        gram.ws = 0.0;
+        gram.n = 0;
+        for &r in rows {
+            if w[r] <= 0.0 {
+                continue;
+            }
+            design_row(&mut row, cols, r, chosen, with_indicators);
+            let eta = current.eval_design(&row);
+            let mean = family.inverse_link(eta);
+            let variance = match family {
+                LeafFamily::Binomial => (mean * (1.0 - mean)).max(1e-12),
+                LeafFamily::Poisson => mean.max(1e-12),
+                LeafFamily::Gaussian => 1.0,
+            };
+            let working = eta + (y[r] - mean) / variance;
+            gram.add_row(&row, working, w[r] * variance);
+        }
+        if gram.xtx.iter().chain(&gram.xty).any(|value| !value.is_finite()) {
+            return None;
+        }
+        let mut candidate = if l1 == 0.0 && !constrained {
+            // Normalize working mass so the shared solver's rank threshold
+            // stays relative even when separation makes Fisher weights tiny.
+            let mass = gram.ws;
+            if !(mass > 0.0 && mass.is_finite()) {
+                return None;
+            }
+            for value in gram.xtx.iter_mut().chain(&mut gram.xty) {
+                *value /= mass;
+            }
+            gram.yty /= mass;
+            fit_linear(&gram, chosen, with_indicators, mono, 0.0, l2 / mass)
+        } else {
+            beta[0] = current.intercept;
+            beta[1..1 + nc].copy_from_slice(&current.coef);
+            if with_indicators {
+                beta[1 + nc..].copy_from_slice(&current.na_coef);
+            }
+            let mut converged = false;
+            for _ in 0..2000 {
+                let mut delta = 0.0_f64;
+                let mut magnitude = 1.0_f64;
+                for j in 0..dim {
+                    let ridge = if j == 0 { 0.0 } else { l2 * scales[j] * scales[j] };
+                    let diagonal = gram.xtx[j * dim + j] + ridge;
+                    if diagonal <= 0.0 {
+                        beta[j] = 0.0;
+                        continue;
+                    }
+                    let mut partial = gram.xty[j];
+                    for k in 0..dim {
+                        if j != k {
+                            partial -= gram.xtx[j * dim + k] * beta[k];
+                        }
+                    }
+                    let threshold = if j == 0 { 0.0 } else { l1 * scales[j] };
+                    let mut next = partial.signum() * (partial.abs() - threshold).max(0.0) / diagonal;
+                    if j > 0 && j <= nc {
+                        match mono.get(chosen[j - 1]).copied().unwrap_or(0) {
+                            1 => next = next.max(0.0),
+                            -1 => next = next.min(0.0),
+                            _ => {}
+                        }
+                    }
+                    delta = delta.max((next - beta[j]).abs() * scales[j]);
+                    magnitude = magnitude.max(next.abs() * scales[j]);
+                    beta[j] = next;
+                }
+                if delta <= 1e-10 * magnitude {
+                    converged = true;
+                    break;
+                }
+            }
+            if !converged {
+                return None;
+            }
+            LinearModel {
+                cols: chosen.to_vec(),
+                coef: beta[1..1 + nc].to_vec(),
+                na_coef: if with_indicators { beta[1 + nc..].to_vec() } else { Vec::new() },
+                intercept: beta[0],
+            }
+        };
+        if !candidate.intercept.is_finite()
+            || candidate.coef.iter().chain(&candidate.na_coef).any(|b| !b.is_finite())
+        {
+            return None;
+        }
+        let mut next_objective = objective(&candidate, &mut row);
+        for _ in 0..50 {
+            if next_objective.is_finite() && next_objective <= old_objective {
+                break;
+            }
+            candidate.intercept = 0.5 * (candidate.intercept + current.intercept);
+            for (new, old) in candidate.coef.iter_mut().zip(&current.coef) {
+                *new = 0.5 * (*new + old);
+            }
+            for (new, old) in candidate.na_coef.iter_mut().zip(&current.na_coef) {
+                *new = 0.5 * (*new + old);
+            }
+            next_objective = objective(&candidate, &mut row);
+        }
+        if !next_objective.is_finite() || next_objective > old_objective {
+            return None;
+        }
+        let improvement = old_objective - next_objective;
+        current = candidate;
+        if improvement <= 1e-11 * (1.0 + old_objective) {
+            return Some(current);
+        }
+        old_objective = next_objective;
+    }
+    None
 }
 
 /// Per-node frame statistics for printing (rpart's `frame`): count, weighted

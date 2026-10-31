@@ -65,8 +65,10 @@ family (cost-complexity / C5 pessimistic / cost-matrix),
 purity gate. Significance-gated splitting has **landed** (`split_test="chow"`
 + `split_alpha` + `bonferroni`: the scan's best split must beat the pooled
 node model in a Chow F test, else the node stays a leaf). Distributional
-leaves (`leaf_family`: binomial/poisson →
-probit/tobit/tweedie/softmax, `predict_proba`) are spec `#4`.
+leaves have landed for the first batch: `leaf_family="binomial"` (logit)
+and `"poisson"` (log), `gain="deviance"`, and `predict_proba` /
+`cdf` outputs (`examples/leaf_family.py`); probit, tobit, tweedie and
+softmax remain spec `#4` follow-ups.
 
 ## Dataset component
 
@@ -133,8 +135,10 @@ partykit/grf. Specs are published as GitHub issues (`ready-for-agent`).
       pruning (bic/mdl), balance knobs, budgets, training log)
 3. [ ] **Model-tree capability knobs** (issue #3) — significance splits, honesty,
       NA surrogates, pruning family, minsplit/minbucket/minprob, EFB, purity gate
-4. [ ] **Distributional leaves** (issue #4) — `leaf_family`: binomial/poisson →
-      probit/tobit/tweedie/softmax, `predict_proba`, IRLS on faer
+4. [ ] **Distributional leaves** (issue #4) — initial `leaf_family` batch:
+      binomial/logit and Poisson/log, `gain="deviance"`, `predict_proba`,
+      fitted `cdf`, weighted IRLS on faer; probit/tobit/tweedie/softmax
+      remain the follow-up family set
 5. [ ] **Forests & committees** — honesty + averaging (grf-lesson), Cubist-style
       committees + neighbor adjustment; the ensembles currently top the board
 6. [ ] C5.0 rulesets + committees; GritBot surprising-subgroup mining

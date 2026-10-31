@@ -13,6 +13,7 @@ use mltreelib_core::encode::{
 };
 use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::criteria::{CustomGain, GainFn};
+use mltreelib_core::family::LeafFamily;
 use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
@@ -1957,9 +1958,9 @@ impl CustomGain for PyGain {
     }
 }
 
-/// Model tree: greedy splits by fitted-leaf SSE reduction, OLS or mean
+/// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
-/// Task: regression.
+/// Task: regression, binary probability estimation, or count modeling.
 #[pyclass(name = "ModelTree")]
 pub struct PyModelTree {
     params: ModelTreeParams,
@@ -2058,9 +2059,9 @@ fn coerce_rows(
 
 #[pymethods]
 impl PyModelTree {
-    /// Create an unfitted model tree. Task: regression. Data is raw
-    /// (int / float / level values, None/NaN = missing) — the three data
-    /// handlers, no preprocessing.
+    /// Create an unfitted model tree for regression, binary probabilities,
+    /// or counts. Data is raw (int / float / level values, None/NaN = missing)
+    /// — the three data handlers, no preprocessing.
     ///
     /// Args (grouped by family):
     ///   GROWTH
@@ -2071,14 +2072,16 @@ impl PyModelTree {
     ///     minprob: minimum weight fraction of the node per leaf (0 = off).
     ///     max_leaf_nodes: leaf cap — stop splitting at this many leaves
     ///        (None = unlimited, bounded by max_depth).
-    ///     min_gain: minimum fitted-leaf SSE reduction to split.
+    ///     min_gain: minimum improvement in the selected split criterion.
     ///     purity_gate: a node whose weighted target std is at most this
     ///        stays a leaf (None = off).
     ///   SEARCH
-    ///     gain: split criterion — "sse", "friedman_mse", "absolute_error",
-    ///        "huber", "poisson" (regression), "entropy", "gini",
-    ///        "gain_ratio", "sdr", "twoing" (classification) or a callable
+    ///     gain: split criterion — "sse", "deviance", "friedman_mse",
+    ///        "absolute_error", "huber", "poisson", "entropy", "gini",
+    ///        "gain_ratio", "sdr", "twoing" or a callable
     ///        `gain_fn(left_y, right_y) -> float` (higher = better).
+    ///        "deviance" scores fitted leaf-family deviance and is recommended
+    ///        for binomial/Poisson; selecting a family does not change gain.
     ///     split_precision: float candidate grid for numeric columns;
     ///        None = exact unique-value scan.
     ///     split_cols: column indices eligible for the split search (None =
@@ -2087,12 +2090,17 @@ impl PyModelTree {
     ///     seed: seed for the per-node column subset.
     ///   LEAF
     ///     leaf: "linear", "mean", "median", "quantile" (with tau) or "huber".
+    ///        Non-Gaussian families support only "linear" and "mean".
+    ///     leaf_family: "gaussian" (default), "binomial" (logit link), or
+    ///        "poisson" (log link). Linear coefficients are on the link scale;
+    ///        predictions are response-scale means, never hard class labels.
     ///     tau: quantile in (0, 1) for leaf="quantile".
     ///     l1: lasso penalty on leaf coefficients (with l2 = elastic net).
     ///     l2: ridge penalty on leaf coefficients (intercept free).
     ///     leaf_cols: "all" (every column) or "path" (split-path columns).
-    ///     leaf_digest: keep each leaf's t-digest (quantile answers any
-    ///        tau post-fit; false = lean leaves).
+    ///     leaf_digest: keep each leaf's empirical target t-digest (quantile
+    ///        answers any tau post-fit; false = lean leaves). Quantiles are
+    ///        empirical, not inverse fitted-family CDFs.
     ///   CATEGORICAL
     ///     cat_order: "frequency_desc", "target_mean", or a level-code list.
     ///     cat_search: "cumulative", "single_vs_rest" or "both".
@@ -2113,7 +2121,7 @@ impl PyModelTree {
     ///     maxsurrogate: backup splits routing rows missing the split
     ///        column (rpart lineage; 0 = off).
     ///   GATES
-    ///     split_test: "none" or "chow" (significance-gated splitting).
+    ///     split_test: "none" or "chow" (Gaussian-only significance gate).
     ///     split_alpha: significance level for split_test.
     ///     bonferroni: divide split_alpha by the node's candidate count.
     ///   SCREENING
@@ -2141,7 +2149,7 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0
+        verbose = 0, leaf_family = "gaussian"
     ))]
     fn new(
         max_depth: usize,
@@ -2180,6 +2188,7 @@ impl PyModelTree {
         preselect: &str,
         min_relevance: Option<f64>,
         verbose: u8,
+        leaf_family: &str,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2202,12 +2211,23 @@ impl PyModelTree {
                 )))
             }
         };
+        let family = match leaf_family {
+            "gaussian" => LeafFamily::Gaussian,
+            "binomial" => LeafFamily::Binomial,
+            "poisson" => LeafFamily::Poisson,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "leaf_family must be 'gaussian', 'binomial' or 'poisson', got {other}"
+                )))
+            }
+        };
         let gain_fn = match &gain {
             None => GainFn::Sse,
             Some(g) => {
                 if let Ok(name) = g.extract::<String>() {
                     match name.as_str() {
                         "sse" => GainFn::Sse,
+                        "deviance" => GainFn::Deviance,
                         "friedman_mse" => GainFn::FriedmanMse,
                         "absolute_error" => GainFn::AbsoluteError,
                         "huber" => GainFn::Huber,
@@ -2219,7 +2239,7 @@ impl PyModelTree {
                         "twoing" => GainFn::Twoing,
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
                             )))
                         }
                     }
@@ -2314,6 +2334,7 @@ impl PyModelTree {
                 min_gain,
                 leaf_cols: policy,
                 leaf: kind,
+                leaf_family: family,
                 l2,
                 l1,
                 monotone,
@@ -2351,11 +2372,15 @@ impl PyModelTree {
         })
     }
 
-    /// Fit the tree on row-major data. Task: regression.
+    /// Fit the tree on row-major data using the selected leaf family.
     ///
     /// Args:
     ///     x: rows of predictors; `None` entries are missing (NA rows train).
-    ///     y: targets; `None` drops that row.
+    ///     y: targets; `None`/NaN drops that row for binomial/Poisson.
+    ///        Gaussian NaN handling follows the historical Gaussian path.
+    ///        Binomial targets are 0 or 1; Poisson targets are finite
+    ///        nonnegative counts or rates (including fractional values).
+    ///        Gaussian targets retain ordinary regression.
     ///     w: optional per-row sample weights (row weightage); zero-weight
     ///        rows are ignored.
     ///     dtypes: optional per-column types — "numeric" (default) or
@@ -2394,8 +2419,9 @@ impl PyModelTree {
         Ok(())
     }
 
-    /// Conditional quantile prediction from the leaves' t-digests: any tau
-    /// in [0, 1] after the fit. Task: regression.
+    /// Empirical conditional target quantiles from the leaves' t-digests:
+    /// any tau in [0, 1] after fitting. These are not quantiles of the fitted
+    /// binomial/Poisson distribution; use cdf for that distribution's CDF.
     ///
     /// Args:
     ///     x: rows of predictors (NA never blocks).
@@ -2421,23 +2447,64 @@ impl PyModelTree {
         Ok(self.tree()?.trace.clone())
     }
 
-    /// Predict for row-major data; NAs never block a prediction. Task: regression.
+    /// Predict response-scale means; NAs never block a prediction.
     ///
     /// Args:
     ///     x: rows of predictors; `None` entries are missing.
     ///
-    /// Returns: one predicted value per row.
+    /// Returns: one mean per row (binomial P(Y=1), Poisson expected count,
+    /// or Gaussian regression value). No thresholding into hard labels.
     fn predict(&mut self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.predict(&x))
     }
 
-    /// Fitted leaf models with their distribution stats. Task: regression.
+    /// Predict binomial P(Y=1), one probability per input row.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors, with the same missing/level handling as predict.
+    ///
+    /// Returns: one probability per row, not a two-column class matrix.
+    ///
+    /// Raises: ValueError unless the fitted leaf family is binomial.
+    fn predict_proba(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+    ) -> PyResult<Vec<f64>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        self.tree()?.predict_proba(&x).map_err(PyValueError::new_err)
+    }
+
+    /// Fitted binomial/Poisson CDF P(Y <= value), conditional on each row.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors, with the same missing/level handling as predict.
+    ///     value: response threshold; discrete CDFs use its integer floor.
+    ///
+    /// Returns: one fitted-distribution probability per row. Unlike quantile,
+    /// this uses the fitted family, not the empirical target t-digest.
+    ///
+    /// Raises: ValueError for Gaussian leaves or an invalid threshold.
+    fn cdf(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        value: f64,
+    ) -> PyResult<Vec<f64>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        self.tree()?.cdf(&x, value).map_err(PyValueError::new_err)
+    }
+
+    /// Fitted leaf models with their empirical target distribution stats.
     ///
     /// Args: none.
     ///
     /// Returns: one dict per leaf with `cols`, `coef`, `na_coef`,
-    /// `intercept`, `n`, `mean`, `std`, `min`, `max`, `quantiles`.
+    /// `intercept`, `response_constant`, `n`, `mean`, `std`, `min`, `max`,
+    /// `quantiles`.
+    /// Linear `coef`, `na_coef`, and `intercept` use the family's link scale
+    /// (identity, logit, or log); `mean` and other stats describe raw targets.
+    /// Constant leaves have no link-scale coefficient vector: `intercept`
+    /// is `None`, while `response_constant` is the response-scale constant.
     fn leaves(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
         let t = self.tree()?;
         let mut out = Vec::new();
@@ -2448,14 +2515,15 @@ impl PyModelTree {
                     m.cols.iter().map(|&j| t.col_names[j].clone()).collect::<Vec<_>>(),
                     m.coef.clone(),
                     m.na_coef.clone(),
-                    m.intercept,
+                    Some(m.intercept),
                 ),
-                None => (Vec::new(), Vec::new(), Vec::new(), leaf.stats.mean),
+                None => (Vec::new(), Vec::new(), Vec::new(), None),
             };
             d.set_item("cols", cols)?;
             d.set_item("coef", coef)?;
             d.set_item("na_coef", na_coef)?;
             d.set_item("intercept", intercept)?;
+            d.set_item("response_constant", leaf.center.unwrap_or(leaf.stats.mean))?;
             d.set_item("n", n)?;
             d.set_item("mean", leaf.stats.mean)?;
             d.set_item("std", leaf.stats.std)?;
@@ -2471,7 +2539,7 @@ impl PyModelTree {
         Ok(out)
     }
 
-    /// Per-level timing profile (group/sort, scan, leaf fit). Task: regression.
+    /// Per-level timing profile (group/sort, scan, leaf fit).
     ///
     /// Args: none.
     ///
@@ -2495,7 +2563,7 @@ impl PyModelTree {
         Ok(out)
     }
 
-    /// Learned splits. Task: regression.
+    /// Learned splits.
     ///
     /// Args: none.
     ///
@@ -2516,7 +2584,7 @@ impl PyModelTree {
     }
 
     /// Feature importance - each column's share of the total split gain
-    /// (rpart's variable importance). Task: regression.
+    /// (rpart's variable importance).
     ///
     /// Args: none.
     ///
@@ -2526,7 +2594,7 @@ impl PyModelTree {
         Ok(self.tree()?.feature_importances())
     }
 
-    /// DALEX-style break-down of one prediction. Task: regression.
+    /// DALEX-style break-down of one response-scale prediction.
     ///
     /// Args:
     ///     row: one row of predictors (`None` = missing).
@@ -2562,7 +2630,7 @@ impl PyModelTree {
         Ok(self.tree()?.to_dot())
     }
 
-    /// Split columns along each root-to-leaf path. Task: regression.
+    /// Split columns along each root-to-leaf path.
     ///
     /// Args: none.
     ///
@@ -2578,7 +2646,7 @@ impl PyModelTree {
             .collect())
     }
 
-    /// Number of leaves. Task: regression.
+    /// Number of leaves.
     ///
     /// Args: none.
     ///

@@ -5,6 +5,7 @@
 pub mod builder;
 pub mod criteria;
 pub mod encode;
+pub mod family;
 pub mod frame;
 pub mod gate;
 pub mod generator;

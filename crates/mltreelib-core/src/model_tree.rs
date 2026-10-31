@@ -30,6 +30,7 @@
 use std::time::Instant;
 
 use crate::criteria::GainFn;
+use crate::family::LeafFamily;
 use crate::gate::{GateNote, SplitTest};
 use crate::leaf::{LeafCols, LeafKind};
 use crate::node_stats::{FrameStats, LeafModel};
@@ -53,6 +54,9 @@ pub struct ModelTreeParams {
     pub leaf_cols: LeafCols,
     /// Leaf model kind.
     pub leaf: LeafKind,
+    /// Distribution fitted by each leaf; Gaussian preserves least squares.
+    /// Binomial (logit) and Poisson (log) support mean and linear shapes.
+    pub leaf_family: LeafFamily,
     /// Ridge penalty on leaf coefficients (intercept unpenalized).
     pub l2: f64,
     /// Lasso penalty on leaf coefficients (intercept unpenalized). With
@@ -178,6 +182,7 @@ impl Default for ModelTreeParams {
             min_gain: 1e-9,
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
+            leaf_family: LeafFamily::Gaussian,
             l2: 0.5,
             l1: 0.0,
             monotone: Vec::new(),
@@ -392,6 +397,14 @@ impl ModelTree {
         if params.cp_alpha < 0.0 {
             return Err("cp_alpha must be >= 0".to_string());
         }
+        if params.leaf_family != LeafFamily::Gaussian {
+            if !matches!(params.leaf, LeafKind::Mean | LeafKind::Linear) {
+                return Err("binomial and poisson families support only mean or linear leaves".into());
+            }
+            if params.split_test != SplitTest::None {
+                return Err("split_test='chow' requires the gaussian family".into());
+            }
+        }
 
         // Column-major; rows with missing targets or zero weight drop
         // (no signal to learn / explicitly absent).
@@ -403,11 +416,39 @@ impl ModelTree {
                 return Err("weights must be non-negative".to_string());
             }
             let Some(t) = y[r] else { continue };
+            if params.leaf_family != LeafFamily::Gaussian && t.is_nan() {
+                continue;
+            }
             if w[r] == 0.0 {
                 continue;
             }
+            if params.leaf_family != LeafFamily::Gaussian {
+                if !t.is_finite() || !w[r].is_finite() {
+                    return Err("distributional targets and weights must be finite".into());
+                }
+                match params.leaf_family {
+                    LeafFamily::Binomial if t != 0.0 && t != 1.0 => {
+                        return Err("binomial targets must be 0 or 1".into());
+                    }
+                    LeafFamily::Poisson if t < 0.0 => {
+                        return Err("poisson targets must be non-negative".into());
+                    }
+                    _ => {}
+                }
+            }
             for j in 0..d {
-                cols[j].push(row[j]);
+                let value = if params.leaf_family != LeafFamily::Gaussian {
+                    match row[j] {
+                        Some(v) if v.is_nan() => None,
+                        Some(v) if !v.is_finite() => {
+                            return Err("distributional predictors must be finite or missing".into());
+                        }
+                        value => value,
+                    }
+                } else {
+                    row[j]
+                };
+                cols[j].push(value);
             }
             yv.push(t);
             wv.push(w[r]);
@@ -545,6 +586,25 @@ impl ModelTree {
             mut trace,
             ..
         } = grower;
+        if params.leaf_family != LeafFamily::Gaussian {
+            let mut stack = vec![root];
+            while let Some(i) = stack.pop() {
+                let node = &nodes[i];
+                if let (Some(l), Some(r)) = (node.left, node.right) {
+                    stack.push(l);
+                    stack.push(r);
+                } else if let Some(leaf) = &node.leaf {
+                    let valid = leaf.center.map(|c| c.is_finite()).unwrap_or(true)
+                        && leaf.linear.as_ref().map(|m| {
+                            m.intercept.is_finite()
+                                && m.coef.iter().chain(&m.na_coef).all(|c| c.is_finite())
+                        }).unwrap_or(true);
+                    if !valid {
+                        return Err("distributional leaf fit failed to converge to finite coefficients".into());
+                    }
+                }
+            }
+        }
         if params.verbose > 0 {
             // Per-depth summary from the node profiles.
             let mut by_depth: std::collections::BTreeMap<usize, (usize, usize, usize, u64)> =
@@ -669,6 +729,28 @@ impl ModelTree {
                     .predict(row)
             })
             .collect()
+    }
+
+    /// One P(class 1) per row. Only binomial leaves define this output.
+    pub fn predict_proba(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
+        if self.params.leaf_family != LeafFamily::Binomial {
+            return Err("predict_proba requires leaf_family='binomial'".into());
+        }
+        Ok(self.predict(x))
+    }
+
+    /// Fitted conditional distribution P(Y <= value), not an empirical digest.
+    /// Defined for binomial and Poisson leaves; Gaussian keeps empirical quantiles.
+    pub fn cdf(&self, x: &[Vec<Option<f64>>], value: f64) -> Result<Vec<f64>, String> {
+        if self.params.leaf_family == LeafFamily::Gaussian {
+            return Err("cdf requires a binomial or poisson leaf family".into());
+        }
+        if value.is_nan() {
+            return Err("cdf value must not be NaN".into());
+        }
+        Ok(self.predict(x).into_iter()
+            .map(|mean| self.params.leaf_family.cdf(mean, value))
+            .collect())
     }
 
     /// All splits in the tree (introspection / structure recovery).
@@ -933,7 +1015,7 @@ impl<'a> Grower<'a> {
                 let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
                 prof.leaf_ns += t.elapsed().as_nanos() as u64;
                 self.profiles.push(prof);
-                let cost = self.leaf_cost(rows);
+                let cost = self.leaf_cost(rows, path);
                 self.add(Node {
                     split: None,
                     left: None,
@@ -966,7 +1048,7 @@ impl<'a> Grower<'a> {
                 if self.params.prune != PruneCost::None {
                     // Bottom-up cost pruning: keep the subtree only when it
                     // codes cheaper than this node as one leaf.
-                    let leaf_c = self.leaf_cost(rows);
+                    let leaf_c = self.leaf_cost(rows, path);
                     let split_bit = self.params.prune.split_bit(rows.len() as f64);
                     let sub_c = self.costs[l] + self.costs[r] + split_bit;
                     if leaf_c <= sub_c {

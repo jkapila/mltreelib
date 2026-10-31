@@ -1,8 +1,9 @@
 //! Leaves: what a leaf model is ([`LeafKind`]), which columns it may use
 //! ([`LeafCols`]), and fitting / evaluating it on a node's rows.
 
+use crate::family::LeafFamily;
 use crate::model_tree::Grower;
-use crate::node_stats::{design_row, fit_linear, Gram, LeafModel, LeafStats};
+use crate::node_stats::{design_row, fit_glm, fit_linear, Gram, LeafModel, LeafStats, LinearModel};
 use crate::stats::{huber_location, w_median, w_quantile};
 /// Which columns a leaf's linear model may use.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -98,15 +99,72 @@ impl<'a> Grower<'a> {
 
     /// Fit the leaf model for a node's rows.
     pub(crate) fn make_leaf(&self, rows: &[usize], path: &[usize]) -> LeafModel {
-        let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();
-        let wv: Vec<f64> = rows.iter().map(|&r| self.w[r]).collect();
-        let mut stats = LeafStats::from_targets(&yv, &wv);
-        if !self.params.leaf_digest {
-            // Lean leaves: drop the t-digest (`quantile` then returns NaN).
-            stats.digest = tdigest::TDigest::new_with_size(1);
+        self.fit_leaf(rows, path, self.params.leaf_digest)
+    }
+
+    /// Candidate fitting shares the payload fitter but does not sort targets
+    /// or allocate a target distribution. Never store this leaf in the tree.
+    pub(crate) fn make_leaf_for_scan(&self, rows: &[usize], path: &[usize]) -> LeafModel {
+        self.fit_leaf(rows, path, false)
+    }
+
+    /// Response-scale weighted deviance of an already fitted leaf.
+    pub(crate) fn leaf_deviance(&self, rows: &[usize], leaf: &LeafModel) -> f64 {
+        let mut total = 0.0;
+        for &r in rows {
+            if self.w[r] <= 0.0 {
+                continue;
+            }
+            let loss = leaf.family.deviance(self.y[r], leaf.predict_columns(self.cols, r));
+            if !loss.is_finite() {
+                return loss;
+            }
+            total += self.w[r] * loss;
+        }
+        total
+    }
+
+    fn fit_leaf(&self, rows: &[usize], path: &[usize], digest: bool) -> LeafModel {
+        let family = self.params.leaf_family;
+        let stats = if digest || family == LeafFamily::Gaussian {
+            let yv: Vec<f64> = rows.iter().map(|&r| self.y[r]).collect();
+            let wv: Vec<f64> = rows.iter().map(|&r| self.w[r]).collect();
+            let mut stats = LeafStats::from_targets(&yv, &wv);
+            if !digest {
+                // Lean Gaussian leaves retain historical stats semantics;
+                // only the digest is dropped.
+                stats.digest = tdigest::TDigest::new_with_size(1);
+            }
+            stats
+        } else {
+            LeafStats::from_rows(self.y, self.w, rows)
+        };
+        let family = self.params.leaf_family;
+        if family != LeafFamily::Gaussian
+            && (self.params.leaf == LeafKind::Mean
+                || (family == LeafFamily::Binomial && (stats.mean == 0.0 || stats.mean == 1.0))
+                || (family == LeafFamily::Poisson && stats.mean == 0.0))
+        {
+            return LeafModel { center: Some(stats.mean), stats, linear: None, family };
         }
         let linear = if self.params.leaf == LeafKind::Linear {
             let (chosen, any_missing, dim) = self.leaf_design(rows, path);
+            if family != LeafFamily::Gaussian {
+                let fitted = fit_glm(
+                    self.cols, self.y, self.w, rows, &chosen, any_missing,
+                    &self.params.monotone, self.params.l1, self.params.l2,
+                    family, stats.mean,
+                );
+                // The tree fit rejects nonfinite final models; scans reject
+                // their loss. A failed GLM must never masquerade as a mean fit.
+                let linear = fitted.unwrap_or_else(|| LinearModel {
+                    coef: vec![0.0; chosen.len()],
+                    na_coef: if any_missing { vec![0.0; chosen.len()] } else { Vec::new() },
+                    cols: chosen,
+                    intercept: f64::NAN,
+                });
+                return LeafModel { stats, linear: Some(linear), center: None, family };
+            }
             let mut g = Gram::new(dim);
             let mut row = vec![0.0; dim];
             for &r in rows {
@@ -126,18 +184,20 @@ impl<'a> Grower<'a> {
         };
         // Non-mean constant leaves: fit the center on the positive-weight
         // targets only (same population as the stats).
-        let yws: Vec<(f64, f64)> = yv
-            .iter()
-            .zip(wv.iter())
-            .map(|(&y, &w)| (y, w))
-            .filter(|&(_, w)| w > 0.0)
-            .collect();
+        let yws: Vec<(f64, f64)> = if matches!(
+            self.params.leaf, LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
+        ) {
+            rows.iter().filter(|&&r| self.w[r] > 0.0)
+                .map(|&r| (self.y[r], self.w[r])).collect()
+        } else {
+            Vec::new()
+        };
         let center = match self.params.leaf {
             LeafKind::Median => Some(w_median(&yws)),
             LeafKind::Quantile(t) => Some(w_quantile(&yws, t)),
             LeafKind::Huber => Some(huber_location(&yws)),
             _ => None,
         };
-        LeafModel { stats, linear, center }
+        LeafModel { stats, linear, center, family }
     }
 }

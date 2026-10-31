@@ -8,8 +8,9 @@ use crate::model_tree::Grower;
 pub enum PruneCost {
     /// No cost pruning (min_gain only).
     None,
-    /// Bayesian information criterion: `n·ln(SSE/n) + ln(n)` per leaf,
-    /// `ln(n)` per split — universal (regression and class targets).
+    /// Bayesian information criterion: `n·ln(SSE/n) + ln(n)` per leaf for
+    /// Gaussian, `family deviance + k·ln(n)` (k = fitted parameter count)
+    /// for distributional families.
     Bic,
     /// Mehta/Rissanen/Agrawal MDL node cost over y-as-class-labels.
     Mdl,
@@ -42,10 +43,28 @@ impl<'a> Grower<'a> {
     }
 
     /// Encoding cost of treating `rows` as one leaf (prune criterion).
-    pub(crate) fn leaf_cost(&self, rows: &[usize]) -> f64 {
+    pub(crate) fn leaf_cost(&self, rows: &[usize], path: &[usize]) -> f64 {
         let n = rows.len() as f64;
         if n <= 1.0 {
             return 0.0;
+        }
+        if self.params.leaf_family != crate::family::LeafFamily::Gaussian
+            && matches!(self.params.prune, PruneCost::Cp | PruneCost::Bic)
+        {
+            let leaf = self.make_leaf_for_scan(rows, path);
+            let deviance = self.leaf_deviance(rows, &leaf);
+            if deviance.is_nan() {
+                return f64::NAN;
+            }
+            return match self.params.prune {
+                PruneCost::Cp => deviance + self.params.cp_alpha,
+                PruneCost::Bic => {
+                    let k = leaf.linear.as_ref()
+                        .map(|m| 1 + m.coef.len() + m.na_coef.len()).unwrap_or(1);
+                    deviance + k as f64 * n.ln()
+                }
+                _ => unreachable!(),
+            };
         }
         match self.params.prune {
             PruneCost::None => 0.0,
