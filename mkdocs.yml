@@ -46,6 +46,7 @@ nav:
       - Model building & predictions: examples/model-building.md
       - Growth knob tour: examples/knob-tour.md
       - Distributional leaves: examples/distributional-leaves.md
+      - Hierarchical retrain & routing: examples/hierarchical-retrain.md
       - Categorical encoders: examples/categorical-encoders.md
       - Monotone & interaction constraints: examples/constraints.md
       - Missing data & routing: examples/missing-routing.md

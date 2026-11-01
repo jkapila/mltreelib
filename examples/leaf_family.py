@@ -26,11 +26,26 @@ assert all(abs(a - b) < 1e-6 for a, b in zip(mu, [1.0, 2.0, 4.0]))
 print("poisson means:", [round(v, 6) for v in mu])
 print("poisson P(Y <= 0):", [round(v, 6) for v in counts.cdf([[0.0], [1.0]], 0.0)])
 
-# Native level partitions and learned missing routing; no encoding.
-segments = ModelTree(leaf_family="binomial", leaf="mean", gain="deviance",
-                     min_rows=2, max_depth=1, prune="none")
-segments.fit([["low"]] * 8 + [["high"]] * 8 + [[None]] * 4,
-             [0.0] * 8 + [1.0] * 12, dtypes=["categorical"])
-p = segments.predict_proba([["low"], ["high"], [None]])
-assert p == [0.0, 1.0, 1.0]
-print("categorical + NA P(1):", p)
+# Probit binary probability estimation
+probit_tree = ModelTree(leaf_family="probit", gain="deviance", max_depth=0, min_rows=1, l2=0.0)
+probit_tree.fit([[0.0]] * 4 + [[1.0]] * 4, [0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0])
+p_probit = probit_tree.predict_proba([[0.0], [1.0]])
+print("probit P(1):", [round(v, 6) for v in p_probit])
+
+# Gamma strictly positive continuous (log link)
+gamma_tree = ModelTree(leaf_family="gamma", gain="deviance", max_depth=0, min_rows=1, l2=0.0)
+gamma_tree.fit([[0.0], [0.0], [1.0], [1.0]], [1.0, 1.0, 4.0, 4.0])
+p_gamma = gamma_tree.predict([[0.0], [0.5], [1.0]])
+print("gamma means:", [round(v, 6) for v in p_gamma])
+
+# Tweedie compound Poisson-Gamma (zero-inflated positive continuous)
+tweedie_tree = ModelTree(leaf_family="tweedie", gain="deviance", max_depth=0, min_rows=1, l2=1e-3)
+tweedie_tree.fit([[0.0], [0.0], [0.0], [1.0], [1.0], [1.0]], [0.0, 0.0, 1.0, 2.0, 5.0, 6.0])
+p_tweedie = tweedie_tree.predict([[0.0], [1.0]])
+print("tweedie means:", [round(v, 6) for v in p_tweedie])
+
+# Tobit left-censored continuous at zero
+tobit_tree = ModelTree(leaf_family="tobit", max_depth=0, min_rows=1, l2=0.0)
+tobit_tree.fit([[-1.0], [-0.5], [0.5], [1.0]], [0.0, 0.0, 0.5, 1.0])
+p_tobit = tobit_tree.predict([[-1.0], [1.0]])
+print("tobit latent means:", [round(v, 6) for v in p_tobit])
