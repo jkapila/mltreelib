@@ -666,9 +666,56 @@ impl ModelTree {
         self.retrain_weighted(x, y, &vec![1.0; n], control)
     }
 
+    /// Retrain all leaf models with explicit data column names.
+    pub fn retrain_named(
+        &mut self,
+        data_col_names: &[String],
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        control: LeafControl,
+    ) -> Result<(), String> {
+        let n = y.len();
+        self.retrain_weighted_named(data_col_names, x, y, &vec![1.0; n], control)
+    }
+
     /// Retrain all leaf models with sample weights.
     pub fn retrain_weighted(
         &mut self,
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        w: &[f64],
+        control: LeafControl,
+    ) -> Result<(), String> {
+        self.retrain_weighted_named(&self.col_names.clone(), x, y, w, control)
+    }
+
+    /// Check whether a column index is used in any split or surrogate in the reachable tree.
+    pub fn is_split_column(&self, col: usize) -> bool {
+        let reachable = self.reachable();
+        for (i, node) in self.nodes.iter().enumerate() {
+            if reachable[i] {
+                if let Some(sp) = &node.split {
+                    if sp.col == col {
+                        return true;
+                    }
+                    if let Some(si) = sp.sur {
+                        if self.sur_parts[si].iter().any(|s| s.col == col) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Retrain all leaf models with explicit data column names.
+    ///
+    /// Validates that all split columns are present in `data_col_names`.
+    /// Leaf models fit on `control.leaf_features` if provided, or `control.leaf_cols`.
+    pub fn retrain_weighted_named(
+        &mut self,
+        data_col_names: &[String],
         x: &[Vec<Option<f64>>],
         y: &[Option<f64>],
         w: &[f64],
@@ -678,21 +725,37 @@ impl ModelTree {
         if x.len() != n_all || w.len() != n_all {
             return Err("x, y and w length mismatch".to_string());
         }
-        let d = self.col_names.len();
+        let d = data_col_names.len();
         for r in x {
             if r.len() != d {
-                return Err("row width != number of column names".to_string());
+                return Err("row width != number of data column names".to_string());
             }
         }
         if control.l1 < 0.0 || control.l2 < 0.0 {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
-        if !control.monotone.is_empty() && control.monotone.len() != d {
-            return Err("monotone must have one entry per column".to_string());
-        }
         if control.family != LeafFamily::Gaussian {
             if !matches!(control.leaf, LeafKind::Mean | LeafKind::Linear) {
                 return Err("binomial and poisson families support only mean or linear leaves".into());
+            }
+        }
+
+        // Validate that all split columns exist in data_col_names
+        let mut col_map = vec![usize::MAX; self.col_names.len()];
+        for (j, name) in self.col_names.iter().enumerate() {
+            if let Some(pos) = data_col_names.iter().position(|c| c == name) {
+                col_map[j] = pos;
+            } else if self.is_split_column(j) {
+                return Err(format!("required split column '{name}' missing from retrain data"));
+            }
+        }
+
+        // Validate leaf_features if provided
+        if let Some(ref feats) = control.leaf_features {
+            for &f in feats {
+                if f >= d {
+                    return Err(format!("leaf_features column index {f} out of bounds for width {d}"));
+                }
             }
         }
 
@@ -744,7 +807,7 @@ impl ModelTree {
             yv.push(t);
             wv.push(w[r]);
 
-            let leaf_idx = self.leaf_index(row);
+            let leaf_idx = self.leaf_index_mapped(row, &col_map);
             leaf_assignments.push(leaf_idx);
         }
 
@@ -755,24 +818,32 @@ impl ModelTree {
             leaf_rows_map.entry(leaf_idx).or_default().push(i);
         }
 
-        // 2. Precompute root-to-node split paths
+        // 2. Precompute root-to-node split paths (mapped to data column indices)
         let mut node_paths = vec![Vec::new(); self.nodes.len()];
-        fn walk_paths(
+        fn walk_mapped_paths(
             nodes: &[Node],
             i: usize,
             cur: &mut Vec<usize>,
             node_paths: &mut [Vec<usize>],
+            col_map: &[usize],
         ) {
             node_paths[i] = cur.clone();
             let n = &nodes[i];
             if let (Some(sp), Some(l), Some(r)) = (&n.split, n.left, n.right) {
-                cur.push(sp.col);
-                walk_paths(nodes, l, cur, node_paths);
-                walk_paths(nodes, r, cur, node_paths);
-                cur.pop();
+                let mapped = col_map[sp.col];
+                if mapped != usize::MAX {
+                    cur.push(mapped);
+                }
+                walk_mapped_paths(nodes, l, cur, node_paths, col_map);
+                walk_mapped_paths(nodes, r, cur, node_paths, col_map);
+                if mapped != usize::MAX {
+                    cur.pop();
+                }
             }
         }
-        walk_paths(&self.nodes, self.root, &mut Vec::new(), &mut node_paths);
+        walk_mapped_paths(&self.nodes, self.root, &mut Vec::new(), &mut node_paths, &col_map);
+
+        let active_cols: Vec<usize> = (0..d).collect();
 
         // 3. For each active leaf in the tree, refit its LeafModel
         let reachable = self.reachable();
@@ -788,7 +859,7 @@ impl ModelTree {
                     &wv,
                     rows,
                     path,
-                    &self.active_cols,
+                    &active_cols,
                     &control,
                 );
                 // Validate finiteness for distributional leaf models
@@ -808,7 +879,23 @@ impl ModelTree {
             }
         }
 
-        // 4. Update tree parameters to reflect new leaf controls
+        // 4. Remap split columns in tree and update col_names
+        for node in self.nodes.iter_mut() {
+            if let Some(sp) = &mut node.split {
+                sp.col = col_map[sp.col];
+            }
+        }
+        for sur_list in self.sur_parts.iter_mut() {
+            for s in sur_list.iter_mut() {
+                if col_map[s.col] != usize::MAX {
+                    s.col = col_map[s.col];
+                }
+            }
+        }
+        self.col_names = data_col_names.to_vec();
+        self.active_cols = active_cols;
+
+        // 5. Update tree parameters to reflect new leaf controls
         self.params.leaf = control.leaf;
         self.params.leaf_family = control.family;
         self.params.leaf_cols = control.leaf_cols;
@@ -822,6 +909,70 @@ impl ModelTree {
         Ok(())
     }
 
+    /// Grid-aware test for surrogate split.
+    fn goes_left_surrogate(&self, s: &crate::surrogate::Surrogate, v: f64) -> bool {
+        match crate::split::grid_of(&self.params.dtypes, self.params.split_precision, s.col) {
+            Some(p) if p > 0.0 => {
+                let q = 1.0 / p;
+                (v * q).round() / q <= s.threshold
+            }
+            _ => v <= s.threshold,
+        }
+    }
+
+    /// Walk tree using column mapping from tree indices to row indices.
+    pub fn leaf_index_mapped(&self, row: &[Option<f64>], col_map: &[usize]) -> usize {
+        let mut node = self.root;
+        while let (Some(sp), Some(l), Some(r)) = (
+            &self.nodes[node].split,
+            self.nodes[node].left,
+            self.nodes[node].right,
+        ) {
+            let mapped_col = col_map[sp.col];
+            let go_left = match row.get(mapped_col).and_then(|v| *v) {
+                Some(v) => self.goes_left(sp, v),
+                None => self.surrogate_left_mapped(row, sp, col_map),
+            };
+            node = if go_left { l } else { r };
+        }
+        node
+    }
+
+    /// Return integer leaf ID for a row mapped by col_map.
+    pub fn leaf_id_mapped(&self, row: &[Option<f64>], col_map: &[usize]) -> usize {
+        let node_idx = self.leaf_index_mapped(row, col_map);
+        self.nodes[node_idx].leaf_id.unwrap_or(0)
+    }
+
+    /// Return row indices grouped by leaf_id: leaf_id -> [row_indices] with mapped columns.
+    pub fn leaf_samples_mapped(
+        &self,
+        x: &[Vec<Option<f64>>],
+        col_map: &[usize],
+    ) -> std::collections::BTreeMap<usize, Vec<usize>> {
+        let mut map = std::collections::BTreeMap::new();
+        for (i, row) in x.iter().enumerate() {
+            let leaf_id = self.leaf_id_mapped(row, col_map);
+            map.entry(leaf_id).or_insert_with(Vec::new).push(i);
+        }
+        map
+    }
+
+    fn surrogate_left_mapped(&self, row: &[Option<f64>], sp: &Split, col_map: &[usize]) -> bool {
+        if let Some(si) = sp.sur {
+            for s in &self.sur_parts[si] {
+                let mapped_col = col_map[s.col];
+                if mapped_col != usize::MAX {
+                    if let Some(v) = row.get(mapped_col).and_then(|v| *v) {
+                        let left = self.goes_left_surrogate(s, v);
+                        return if s.flip { !left } else { left };
+                    }
+                }
+            }
+        }
+        sp.missing_left
+    }
+
     /// Route a row missing the split column: the first observed surrogate
     /// decides (mirrored when `flip`), else the split's `missing_left`.
     /// Surrogate comparisons share the grid convention with `goes_left`.
@@ -829,17 +980,7 @@ impl ModelTree {
         if let Some(si) = sp.sur {
             for s in &self.sur_parts[si] {
                 if let Some(v) = row.get(s.col).and_then(|v| *v) {
-                    let left = match crate::split::grid_of(
-                        &self.params.dtypes,
-                        self.params.split_precision,
-                        s.col,
-                    ) {
-                        Some(p) if p > 0.0 => {
-                            let q = 1.0 / p;
-                            (v * q).round() / q <= s.threshold
-                        }
-                        _ => v <= s.threshold,
-                    };
+                    let left = self.goes_left_surrogate(s, v);
                     return if s.flip { !left } else { left };
                 }
             }

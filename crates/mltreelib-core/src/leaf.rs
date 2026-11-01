@@ -48,6 +48,10 @@ pub struct LeafControl {
     pub leaf_digest: bool,
     /// Monotone constraints (-1, 0, +1) per feature column.
     pub monotone: Vec<i8>,
+    /// Specific column subset for leaf models. If Some, overrides leaf_cols policy.
+    pub leaf_features: Option<Vec<usize>>,
+    /// Family-specific extra parameters (e.g. tweedie_p, tobit_threshold, etc.).
+    pub extra: std::collections::HashMap<String, f64>,
 }
 
 impl Default for LeafControl {
@@ -60,6 +64,8 @@ impl Default for LeafControl {
             l1: 0.0,
             leaf_digest: true,
             monotone: Vec::new(),
+            leaf_features: None,
+            extra: std::collections::HashMap::new(),
         }
     }
 }
@@ -74,6 +80,8 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             l1: p.l1,
             leaf_digest: p.leaf_digest,
             monotone: p.monotone.clone(),
+            leaf_features: None,
+            extra: std::collections::HashMap::new(),
         }
     }
 }
@@ -117,21 +125,47 @@ impl LeafControl {
         self.monotone = monotone;
         self
     }
+
+    pub fn with_leaf_features(mut self, features: Vec<usize>) -> Self {
+        self.leaf_features = Some(features);
+        self
+    }
+
+    pub fn with_param(mut self, key: impl Into<String>, val: f64) -> Self {
+        self.extra.insert(key.into(), val);
+        self
+    }
 }
 
 /// Helper to select active columns for a leaf under the given column policy.
-pub(crate) fn chosen_cols_policy(leaf_cols: LeafCols, active: &[usize], path: &[usize]) -> Vec<usize> {
-    match leaf_cols {
-        LeafCols::All => active.to_vec(),
-        LeafCols::PathUsed => {
-            let mut p: Vec<usize> = path
-                .iter()
-                .copied()
-                .filter(|c| active.contains(c))
-                .collect();
-            p.sort_unstable();
-            p.dedup();
-            p
+pub(crate) fn chosen_cols_policy(
+    leaf_cols: LeafCols,
+    leaf_features: Option<&[usize]>,
+    active: &[usize],
+    path: &[usize],
+) -> Vec<usize> {
+    if let Some(feats) = leaf_features {
+        let mut p: Vec<usize> = feats
+            .iter()
+            .copied()
+            .filter(|c| active.contains(c))
+            .collect();
+        p.sort_unstable();
+        p.dedup();
+        p
+    } else {
+        match leaf_cols {
+            LeafCols::All => active.to_vec(),
+            LeafCols::PathUsed => {
+                let mut p: Vec<usize> = path
+                    .iter()
+                    .copied()
+                    .filter(|c| active.contains(c))
+                    .collect();
+                p.sort_unstable();
+                p.dedup();
+                p
+            }
         }
     }
 }
@@ -175,7 +209,7 @@ pub fn fit_leaf_model(
         return LeafModel { center: Some(stats.mean), stats, linear: None, family };
     }
     let linear = if control.leaf == LeafKind::Linear {
-        let chosen = chosen_cols_policy(control.leaf_cols, active, path);
+        let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
         let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
         if family != LeafFamily::Gaussian {
             let fitted = fit_glm(
@@ -233,7 +267,7 @@ impl<'a> Grower<'a> {
     /// Columns a leaf model uses for a given root→leaf path (restricted to
     /// the pre-selected active columns).
     pub(crate) fn chosen_cols(&self, path: &[usize]) -> Vec<usize> {
-        chosen_cols_policy(self.params.leaf_cols, self.active, path)
+        chosen_cols_policy(self.params.leaf_cols, None, self.active, path)
     }
 
     /// Leaf design for a node: the leaf columns under the column policy,

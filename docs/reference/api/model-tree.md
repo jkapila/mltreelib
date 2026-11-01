@@ -47,7 +47,7 @@ Args: none.
 Returns: list of `(column_name, share)` sorted descending; shares
 sum to 1.
 ### ModelTree.fit
-```pythonfit((self, /, x, y, w=None, dtypes=None))```
+```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None))```
 Fit the tree on row-major data using the selected leaf family.
 
 Args:
@@ -65,13 +65,17 @@ Args:
 
 Returns: nothing; the fitted tree replaces the inner model.
 ### ModelTree.leaf_samples
-```pythonleaf_samples((self, /, x))```
-Return row indices grouped by leaf ID: {leaf_id: [row_indices]}.
+```pythonleaf_samples((self, /, x, id_col=None, col_names=None))```
+Return row indices or entity IDs grouped by leaf ID: {leaf_id: [indices_or_ids]}.
 
 Args:
     x: raw rows of predictors.
+    id_col: optional column name, column index, or list of IDs.
+        If None (default), returns integer row indices [0, 1, ...].
+        If provided, returns the corresponding entity ID values.
+    col_names: optional data column names when x has different layout than training data.
 
-Returns: dict mapping integer leaf_id to a list of row indices.
+Returns: dict mapping integer leaf_id to a list of row indices or entity IDs.
 ### ModelTree.leaves
 ```pythonleaves((self, /))```
 Fitted leaf models with their empirical target distribution stats.
@@ -151,14 +155,18 @@ Args:
 
 Returns: one quantile per row (NaN when a leaf's digest was dropped).
 ### ModelTree.retrain
-```pythonretrain((self, /, x, y, control=None, w=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))```
+```pythonretrain((self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))```
 Retrain all leaf models on new or existing data without altering tree topology or splits.
 
 Args:
     x: rows of predictors; `None` entries are missing.
     y: targets.
-    control: optional LeafControl instance. If None, derived from current parameters.
+    control: optional LeafControl instance or dict.
     w: optional sample weights.
+    mode: "internal" (updates self in place and returns self) or "external" (returns new ModelTree clone).
+    leaf_features: optional subset of column indices or names for leaf models.
+    retrain_cols: alias for leaf_features.
+    col_names: optional data column names to validate and remap splits.
     leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber").
     leaf_family: optional leaf distribution override ("gaussian", "binomial", "poisson").
     leaf_cols: optional leaf columns policy override ("all", "path_used").
@@ -167,7 +175,7 @@ Args:
     leaf_digest: optional bool whether to keep leaf t-digests.
     tau: optional quantile tau when leaf is "quantile" (default 0.5).
 
-Returns: nothing; leaves are updated in place.
+Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).
 ### ModelTree.split_paths
 ```pythonsplit_paths((self, /))```
 Split columns along each root-to-leaf path.
@@ -199,5 +207,5 @@ Args: none.
 
 Returns: log lines.
 ## LeafControl
-```pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5))```
+```pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None))```
 Parameter controls for fitting leaf models independently of tree topology.

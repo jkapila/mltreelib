@@ -1,7 +1,7 @@
 //! Thin PyO3 shell around `mltreelib-core`. Exposed to Python as
 //! `mltreelib._core`; the Python package in `python/mltreelib` re-exports it.
 
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyModule, PyModuleMethods};
 
@@ -1958,6 +1958,229 @@ impl CustomGain for PyGain {
     }
 }
 
+fn parse_feature_indices(
+    obj: &Bound<'_, PyAny>,
+    col_names: &[String],
+) -> PyResult<Vec<usize>> {
+    let mut indices = Vec::new();
+    if let Ok(seq) = obj.extract::<Vec<Bound<'_, PyAny>>>() {
+        for item in seq {
+            if let Ok(idx) = item.extract::<usize>() {
+                if idx >= col_names.len() && !col_names.is_empty() {
+                    return Err(PyValueError::new_err(format!(
+                        "leaf feature index {idx} out of bounds for width {}",
+                        col_names.len()
+                    )));
+                }
+                indices.push(idx);
+            } else if let Ok(name) = item.extract::<String>() {
+                match col_names.iter().position(|c| c == &name) {
+                    Some(idx) => indices.push(idx),
+                    None => {
+                        return Err(PyValueError::new_err(format!(
+                            "leaf feature column '{name}' not found in data columns"
+                        )))
+                    }
+                }
+            } else {
+                return Err(PyTypeError::new_err(
+                    "leaf feature items must be integers or column name strings",
+                ));
+            }
+        }
+    } else {
+        return Err(PyTypeError::new_err(
+            "leaf_features / retrain_cols must be a sequence of column names or indices",
+        ));
+    }
+    indices.sort_unstable();
+    indices.dedup();
+    Ok(indices)
+}
+
+fn extract_leaf_control<'py>(
+    _py: Python<'py>,
+    control: Option<Bound<'py, PyAny>>,
+    tree_params: &ModelTreeParams,
+    leaf: Option<&str>,
+    leaf_family: Option<&str>,
+    leaf_cols: Option<&str>,
+    l1: Option<f64>,
+    l2: Option<f64>,
+    leaf_digest: Option<bool>,
+    tau: Option<f64>,
+    leaf_features_arg: Option<Bound<'py, PyAny>>,
+    effective_col_names: &[String],
+) -> PyResult<mltreelib_core::leaf::LeafControl> {
+    let mut ctrl = match control {
+        Some(ref obj) => {
+            if let Ok(c) = obj.extract::<PyRef<PyLeafControl>>() {
+                c.inner.clone()
+            } else if let Ok(dict) = obj.extract::<Bound<'_, PyDict>>() {
+                let mut c = mltreelib_core::leaf::LeafControl::from(tree_params);
+                if let Some(item) = dict.get_item("leaf")? {
+                    let s = item.extract::<String>()?;
+                    c.leaf = match s.as_str() {
+                        "linear" => LeafKind::Linear,
+                        "mean" => LeafKind::Mean,
+                        "median" => LeafKind::Median,
+                        "quantile" => {
+                            let t = match dict.get_item("tau")? {
+                                Some(v) => v.extract::<f64>()?,
+                                None => 0.5,
+                            };
+                            if !(0.0..=1.0).contains(&t) {
+                                return Err(PyValueError::new_err("tau must be in [0, 1]"));
+                            }
+                            LeafKind::Quantile(t)
+                        }
+                        "huber" => LeafKind::Huber,
+                        other => {
+                            return Err(PyValueError::new_err(format!(
+                                "unrecognized leaf kind '{other}' in control dict"
+                            )))
+                        }
+                    };
+                }
+                let fam_item = match dict.get_item("leaf_family")? {
+                    Some(it) => Some(it),
+                    None => dict.get_item("family")?,
+                };
+                if let Some(item) = fam_item {
+                    let s = item.extract::<String>()?;
+                    c.family = match s.as_str() {
+                        "gaussian" => LeafFamily::Gaussian,
+                        "binomial" => LeafFamily::Binomial,
+                        "poisson" => LeafFamily::Poisson,
+                        other => {
+                            return Err(PyValueError::new_err(format!(
+                                "unrecognized leaf family '{other}' in control dict"
+                            )))
+                        }
+                    };
+                }
+                if let Some(item) = dict.get_item("leaf_cols")? {
+                    let s = item.extract::<String>()?;
+                    c.leaf_cols = match s.as_str() {
+                        "all" => LeafCols::All,
+                        "path_used" | "path" => LeafCols::PathUsed,
+                        other => {
+                            return Err(PyValueError::new_err(format!(
+                                "unrecognized leaf_cols '{other}' in control dict"
+                            )))
+                        }
+                    };
+                }
+                if let Some(item) = dict.get_item("l1")? {
+                    c.l1 = item.extract::<f64>()?;
+                }
+                if let Some(item) = dict.get_item("l2")? {
+                    c.l2 = item.extract::<f64>()?;
+                }
+                if let Some(item) = dict.get_item("leaf_digest")? {
+                    c.leaf_digest = item.extract::<bool>()?;
+                }
+                if let Some(item) = dict.get_item("tau")? {
+                    let t = item.extract::<f64>()?;
+                    if !(0.0..=1.0).contains(&t) {
+                        return Err(PyValueError::new_err("tau must be in [0, 1]"));
+                    }
+                    if matches!(c.leaf, LeafKind::Quantile(_)) {
+                        c.leaf = LeafKind::Quantile(t);
+                    }
+                }
+                let feat_item = match dict.get_item("leaf_features")? {
+                    Some(it) => Some(it),
+                    None => dict.get_item("retrain_cols")?,
+                };
+                if let Some(item) = feat_item {
+                    c.leaf_features = Some(parse_feature_indices(&item, effective_col_names)?);
+                }
+                for (k, v) in dict.iter() {
+                    let key = k.extract::<String>()?;
+                    if !matches!(
+                        key.as_str(),
+                        "leaf"
+                            | "family"
+                            | "leaf_family"
+                            | "leaf_cols"
+                            | "l1"
+                            | "l2"
+                            | "leaf_digest"
+                            | "tau"
+                            | "leaf_features"
+                            | "retrain_cols"
+                    ) {
+                        if let Ok(num) = v.extract::<f64>() {
+                            c.extra.insert(key, num);
+                        }
+                    }
+                }
+                c
+            } else {
+                return Err(PyTypeError::new_err(
+                    "control must be a LeafControl instance or dict",
+                ));
+            }
+        }
+        None => mltreelib_core::leaf::LeafControl::from(tree_params),
+    };
+
+    if let Some(l) = leaf {
+        ctrl.leaf = match l {
+            "linear" => LeafKind::Linear,
+            "mean" => LeafKind::Mean,
+            "median" => LeafKind::Median,
+            "quantile" => {
+                let t_val = tau.unwrap_or(0.5);
+                if !(0.0..=1.0).contains(&t_val) {
+                    return Err(PyValueError::new_err("tau must be in [0, 1]"));
+                }
+                LeafKind::Quantile(t_val)
+            }
+            "huber" => LeafKind::Huber,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
+        };
+    }
+    if let Some(fam) = leaf_family {
+        ctrl.family = match fam {
+            "gaussian" => LeafFamily::Gaussian,
+            "binomial" => LeafFamily::Binomial,
+            "poisson" => LeafFamily::Poisson,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
+        };
+    }
+    if let Some(lc) = leaf_cols {
+        ctrl.leaf_cols = match lc {
+            "all" => LeafCols::All,
+            "path_used" | "path" => LeafCols::PathUsed,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
+        };
+    }
+    if let Some(v) = l1 {
+        ctrl.l1 = v;
+    }
+    if let Some(v) = l2 {
+        ctrl.l2 = v;
+    }
+    if let Some(v) = leaf_digest {
+        ctrl.leaf_digest = v;
+    }
+    if let Some(t) = tau {
+        if !(0.0..=1.0).contains(&t) {
+            return Err(PyValueError::new_err("tau must be in [0, 1]"));
+        }
+        if matches!(ctrl.leaf, LeafKind::Quantile(_)) {
+            ctrl.leaf = LeafKind::Quantile(t);
+        }
+    }
+    if let Some(ref feat_obj) = leaf_features_arg {
+        ctrl.leaf_features = Some(parse_feature_indices(feat_obj, effective_col_names)?);
+    }
+
+    Ok(ctrl)
+}
+
 /// Parameter controls for fitting leaf models independently of tree topology.
 #[pyclass(name = "LeafControl")]
 #[derive(Clone, Debug)]
@@ -1977,8 +2200,9 @@ impl PyLeafControl {
     ///     l2: L2 ridge penalty.
     ///     leaf_digest: whether to build and store t-digests.
     ///     tau: target quantile level when leaf is "quantile" (in [0, 1]).
+    ///     leaf_features: optional list of column indices to use for leaf models.
     #[new]
-    #[pyo3(signature = (leaf = "linear", leaf_family = "gaussian", leaf_cols = "all", l1 = 0.0, l2 = 1e-3, leaf_digest = true, tau = 0.5))]
+    #[pyo3(signature = (leaf = "linear", leaf_family = "gaussian", leaf_cols = "all", l1 = 0.0, l2 = 1e-3, leaf_digest = true, tau = 0.5, leaf_features = None))]
     fn new(
         leaf: &str,
         leaf_family: &str,
@@ -1987,6 +2211,7 @@ impl PyLeafControl {
         l2: f64,
         leaf_digest: bool,
         tau: f64,
+        leaf_features: Option<Vec<usize>>,
     ) -> PyResult<Self> {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
@@ -2021,6 +2246,8 @@ impl PyLeafControl {
                 l2,
                 leaf_digest,
                 monotone: Vec::new(),
+                leaf_features,
+                extra: std::collections::HashMap::new(),
             },
         })
     }
@@ -2068,6 +2295,16 @@ impl PyLeafControl {
         self.inner.leaf_digest
     }
 
+    #[getter]
+    fn get_leaf_features(&self) -> Option<Vec<usize>> {
+        self.inner.leaf_features.clone()
+    }
+
+    #[getter]
+    fn get_extra(&self) -> std::collections::HashMap<String, f64> {
+        self.inner.extra.clone()
+    }
+
     fn __repr__(&self) -> String {
         format!(
             "LeafControl(leaf='{}', leaf_family='{}', leaf_cols='{}', l1={}, l2={}, leaf_digest={})",
@@ -2085,6 +2322,7 @@ impl PyLeafControl {
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
 #[pyclass(name = "ModelTree")]
+#[derive(Clone)]
 pub struct PyModelTree {
     params: ModelTreeParams,
     inner: Option<ModelTree>,
@@ -2149,7 +2387,7 @@ fn coerce_rows(
                             Some(f)
                         }
                     } else if let Ok(s) = cell.extract::<String>() {
-                        match &mut vocabs[j] {
+                        match vocabs.get_mut(j).and_then(|v| v.as_mut()) {
                             Some(vocab) => {
                                 if building {
                                     let next = vocab.len() as f64;
@@ -2525,14 +2763,40 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None))]
     fn fit(
         &mut self,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
         y: Vec<Option<f64>>,
         w: Option<Vec<f64>>,
         dtypes: Option<Vec<String>>,
+        control: Option<Bound<'_, PyAny>>,
+        id_col: Option<Bound<'_, PyAny>>,
+        col_names: Option<Vec<String>>,
     ) -> PyResult<()> {
+        let _ = id_col;
+        if let Some(ctrl_obj) = control {
+            let ctrl = extract_leaf_control(
+                ctrl_obj.py(),
+                Some(ctrl_obj),
+                &self.params,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                &[],
+            )?;
+            self.params.leaf = ctrl.leaf;
+            self.params.leaf_family = ctrl.family;
+            self.params.leaf_cols = ctrl.leaf_cols;
+            self.params.l1 = ctrl.l1;
+            self.params.l2 = ctrl.l2;
+            self.params.leaf_digest = ctrl.leaf_digest;
+        }
         if let Some(dts) = dtypes {
             self.params.dtypes = dts
                 .iter()
@@ -2547,11 +2811,23 @@ impl PyModelTree {
                 .collect::<PyResult<Vec<_>>>()?;
         }
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, true)?;
-        let tree = match w {
+        let mut tree = match w {
             Some(w) => ModelTree::fit_weighted(&x, &y, &w, self.params.clone()),
             None => ModelTree::fit(&x, &y, self.params.clone()),
         }
         .map_err(PyValueError::new_err)?;
+
+        if let Some(names) = col_names {
+            if names.len() != tree.col_names.len() {
+                return Err(PyValueError::new_err(format!(
+                    "col_names length ({}) does not match column count ({})",
+                    names.len(),
+                    tree.col_names.len()
+                )));
+            }
+            tree.col_names = names;
+        }
+
         self.inner = Some(tree);
         Ok(())
     }
@@ -2561,8 +2837,12 @@ impl PyModelTree {
     /// Args:
     ///     x: rows of predictors; `None` entries are missing.
     ///     y: targets.
-    ///     control: optional LeafControl instance. If None, derived from current parameters.
+    ///     control: optional LeafControl instance or dict.
     ///     w: optional sample weights.
+    ///     mode: "internal" (updates self in place and returns self) or "external" (returns new ModelTree clone).
+    ///     leaf_features: optional subset of column indices or names for leaf models.
+    ///     retrain_cols: alias for leaf_features.
+    ///     col_names: optional data column names to validate and remap splits.
     ///     leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber").
     ///     leaf_family: optional leaf distribution override ("gaussian", "binomial", "poisson").
     ///     leaf_cols: optional leaf columns policy override ("all", "path_used").
@@ -2571,14 +2851,34 @@ impl PyModelTree {
     ///     leaf_digest: optional bool whether to keep leaf t-digests.
     ///     tau: optional quantile tau when leaf is "quantile" (default 0.5).
     ///
-    /// Returns: nothing; leaves are updated in place.
-    #[pyo3(signature = (x, y, control = None, w = None, leaf = None, leaf_family = None, leaf_cols = None, l1 = None, l2 = None, leaf_digest = None, tau = None))]
-    fn retrain(
-        &mut self,
+    /// Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).
+    #[pyo3(signature = (
+        x,
+        y,
+        control = None,
+        w = None,
+        mode = "internal",
+        leaf_features = None,
+        retrain_cols = None,
+        col_names = None,
+        leaf = None,
+        leaf_family = None,
+        leaf_cols = None,
+        l1 = None,
+        l2 = None,
+        leaf_digest = None,
+        tau = None
+    ))]
+    fn retrain<'py>(
+        slf: &Bound<'py, PyModelTree>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
         y: Vec<Option<f64>>,
-        control: Option<&PyLeafControl>,
+        control: Option<Bound<'py, PyAny>>,
         w: Option<Vec<f64>>,
+        mode: Option<&str>,
+        leaf_features: Option<Bound<'py, PyAny>>,
+        retrain_cols: Option<Bound<'py, PyAny>>,
+        col_names: Option<Vec<String>>,
         leaf: Option<&str>,
         leaf_family: Option<&str>,
         leaf_cols: Option<&str>,
@@ -2586,68 +2886,103 @@ impl PyModelTree {
         l2: Option<f64>,
         leaf_digest: Option<bool>,
         tau: Option<f64>,
-    ) -> PyResult<()> {
-        let t = self.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
-        let mut ctrl = match control {
-            Some(c) => c.inner.clone(),
-            None => mltreelib_core::leaf::LeafControl::from(&t.params),
+    ) -> PyResult<Py<PyModelTree>> {
+        let is_external = match mode.unwrap_or("internal") {
+            "internal" | "update" => false,
+            "external" | "expose" | "new" => true,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unrecognized mode '{other}': expected 'internal' or 'external'"
+                )))
+            }
         };
 
-        if let Some(l) = leaf {
-            ctrl.leaf = match l {
-                "linear" => LeafKind::Linear,
-                "mean" => LeafKind::Mean,
-                "median" => LeafKind::Median,
-                "quantile" => {
-                    let t_val = tau.unwrap_or(0.5);
-                    if !(0.0..=1.0).contains(&t_val) {
-                        return Err(PyValueError::new_err("tau must be in [0, 1]"));
-                    }
-                    LeafKind::Quantile(t_val)
-                }
-                "huber" => LeafKind::Huber,
-                other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
-            };
-        }
-        if let Some(fam) = leaf_family {
-            ctrl.family = match fam {
-                "gaussian" => LeafFamily::Gaussian,
-                "binomial" => LeafFamily::Binomial,
-                "poisson" => LeafFamily::Poisson,
-                other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
-            };
-        }
-        if let Some(lc) = leaf_cols {
-            ctrl.leaf_cols = match lc {
-                "all" => LeafCols::All,
-                "path_used" => LeafCols::PathUsed,
-                other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
-            };
-        }
-        if let Some(v) = l1 {
-            ctrl.l1 = v;
-        }
-        if let Some(v) = l2 {
-            ctrl.l2 = v;
-        }
-        if let Some(v) = leaf_digest {
-            ctrl.leaf_digest = v;
-        }
+        let w_vec = match w {
+            Some(wv) => wv,
+            None => vec![1.0; y.len()],
+        };
 
-        let coerced_x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
-        match w {
-            Some(w_vec) => t.retrain_weighted(&coerced_x, &y, &w_vec, ctrl.clone()),
-            None => t.retrain(&coerced_x, &y, ctrl.clone()),
-        }.map_err(PyValueError::new_err)?;
-
-        self.params.leaf = ctrl.leaf;
-        self.params.leaf_family = ctrl.family;
-        self.params.leaf_cols = ctrl.leaf_cols;
-        self.params.l1 = ctrl.l1;
-        self.params.l2 = ctrl.l2;
-        self.params.leaf_digest = ctrl.leaf_digest;
-
-        Ok(())
+        if is_external {
+            let (mut new_tree, data_col_names, coerced_x, ctrl) = {
+                let b = slf.borrow();
+                let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+                let data_col_names = match col_names {
+                    Some(names) => names,
+                    None => t.col_names.clone(),
+                };
+                let ctrl = extract_leaf_control(
+                    slf.py(),
+                    control,
+                    &b.params,
+                    leaf,
+                    leaf_family,
+                    leaf_cols,
+                    l1,
+                    l2,
+                    leaf_digest,
+                    tau,
+                    leaf_features.or(retrain_cols),
+                    &data_col_names,
+                )?;
+                let mut vocabs = b.vocabs.clone();
+                let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
+                let mut new_tree = b.clone();
+                new_tree.vocabs = vocabs;
+                (new_tree, data_col_names, coerced_x, ctrl)
+            };
+            {
+                let t = new_tree.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+                t.retrain_weighted_named(&data_col_names, &coerced_x, &y, &w_vec, ctrl.clone())
+                    .map_err(PyValueError::new_err)?;
+            }
+            new_tree.params.leaf = ctrl.leaf;
+            new_tree.params.leaf_family = ctrl.family;
+            new_tree.params.leaf_cols = ctrl.leaf_cols;
+            new_tree.params.l1 = ctrl.l1;
+            new_tree.params.l2 = ctrl.l2;
+            new_tree.params.leaf_digest = ctrl.leaf_digest;
+            Py::new(slf.py(), new_tree)
+        } else {
+            let (data_col_names, coerced_x, vocabs, ctrl) = {
+                let b = slf.borrow();
+                let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+                let data_col_names = match col_names {
+                    Some(names) => names,
+                    None => t.col_names.clone(),
+                };
+                let ctrl = extract_leaf_control(
+                    slf.py(),
+                    control,
+                    &b.params,
+                    leaf,
+                    leaf_family,
+                    leaf_cols,
+                    l1,
+                    l2,
+                    leaf_digest,
+                    tau,
+                    leaf_features.or(retrain_cols),
+                    &data_col_names,
+                )?;
+                let mut vocabs = b.vocabs.clone();
+                let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
+                (data_col_names, coerced_x, vocabs, ctrl)
+            };
+            {
+                let mut b = slf.borrow_mut();
+                b.vocabs = vocabs;
+                let t = b.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+                t.retrain_weighted_named(&data_col_names, &coerced_x, &y, &w_vec, ctrl.clone())
+                    .map_err(PyValueError::new_err)?;
+                b.params.leaf = ctrl.leaf;
+                b.params.leaf_family = ctrl.family;
+                b.params.leaf_cols = ctrl.leaf_cols;
+                b.params.l1 = ctrl.l1;
+                b.params.l2 = ctrl.l2;
+                b.params.leaf_digest = ctrl.leaf_digest;
+            }
+            Ok(slf.clone().unbind())
+        }
     }
 
     /// Empirical conditional target quantiles from the leaves' t-digests:
@@ -2823,24 +3158,111 @@ impl PyModelTree {
         Ok(self.tree()?.apply(&x))
     }
 
-    /// Return row indices grouped by leaf ID: {leaf_id: [row_indices]}.
+    /// Return row indices or entity IDs grouped by leaf ID: {leaf_id: [indices_or_ids]}.
     ///
     /// Args:
     ///     x: raw rows of predictors.
+    ///     id_col: optional column name, column index, or list of IDs.
+    ///         If None (default), returns integer row indices [0, 1, ...].
+    ///         If provided, returns the corresponding entity ID values.
+    ///     col_names: optional data column names when x has different layout than training data.
     ///
-    /// Returns: dict mapping integer leaf_id to a list of row indices.
-    #[pyo3(signature = (x))]
+    /// Returns: dict mapping integer leaf_id to a list of row indices or entity IDs.
+    #[pyo3(signature = (x, id_col = None, col_names = None))]
     fn leaf_samples(
         &mut self,
         py: Python<'_>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        id_col: Option<Bound<'_, PyAny>>,
+        col_names: Option<Vec<String>>,
     ) -> PyResult<Py<PyAny>> {
-        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
-        let map = self.tree()?.leaf_samples(&x);
+        let t = self.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+        let n_rows = x.len();
+
+        let ids: Option<Vec<Py<PyAny>>> = match id_col {
+            None => None,
+            Some(id_obj) => {
+                if let Ok(name) = id_obj.extract::<String>() {
+                    let col_idx = match &col_names {
+                        Some(names) => names.iter().position(|c| c == &name),
+                        None => t.col_names.iter().position(|c| c == &name),
+                    };
+                    let idx = col_idx.ok_or_else(|| {
+                        PyValueError::new_err(format!("id_col '{name}' not found in columns"))
+                    })?;
+                    let mut extracted = Vec::with_capacity(n_rows);
+                    for row in &x {
+                        let id_val = row
+                            .get(idx)
+                            .and_then(|c| c.as_ref())
+                            .map(|c| c.clone().unbind())
+                            .unwrap_or_else(|| py.None());
+                        extracted.push(id_val);
+                    }
+                    Some(extracted)
+                } else if let Ok(idx) = id_obj.extract::<usize>() {
+                    let mut extracted = Vec::with_capacity(n_rows);
+                    for row in &x {
+                        let id_val = row
+                            .get(idx)
+                            .and_then(|c| c.as_ref())
+                            .map(|c| c.clone().unbind())
+                            .unwrap_or_else(|| py.None());
+                        extracted.push(id_val);
+                    }
+                    Some(extracted)
+                } else if let Ok(seq) = id_obj.extract::<Vec<Py<PyAny>>>() {
+                    if seq.len() != n_rows {
+                        return Err(PyValueError::new_err(format!(
+                            "id_col sequence length ({}) does not match number of rows ({})",
+                            seq.len(),
+                            n_rows
+                        )));
+                    }
+                    Some(seq)
+                } else {
+                    return Err(PyTypeError::new_err(
+                        "id_col must be a column name string, integer index, or list of IDs",
+                    ));
+                }
+            }
+        };
+
+        let coerced_x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let dict = PyDict::new(py);
-        for (leaf_id, indices) in map {
-            dict.set_item(leaf_id, indices)?;
+
+        let sample_map = match col_names {
+            Some(names) => {
+                let mut col_map = vec![usize::MAX; t.col_names.len()];
+                for (j, col_name) in t.col_names.iter().enumerate() {
+                    if let Some(pos) = names.iter().position(|c| c == col_name) {
+                        col_map[j] = pos;
+                    } else if t.is_split_column(j) {
+                        return Err(PyValueError::new_err(format!(
+                            "required split column '{col_name}' missing from data columns"
+                        )));
+                    }
+                }
+                t.leaf_samples_mapped(&coerced_x, &col_map)
+            }
+            None => t.leaf_samples(&coerced_x),
+        };
+
+        for (leaf_id, indices) in sample_map {
+            match &ids {
+                Some(id_vec) => {
+                    let leaf_ids: Vec<Py<PyAny>> = indices
+                        .into_iter()
+                        .map(|idx| id_vec[idx].clone_ref(py))
+                        .collect();
+                    dict.set_item(leaf_id, leaf_ids)?;
+                }
+                None => {
+                    dict.set_item(leaf_id, indices)?;
+                }
+            }
         }
+
         Ok(dict.into_any().unbind())
     }
 
