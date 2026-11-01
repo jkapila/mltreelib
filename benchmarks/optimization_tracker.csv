@@ -47,3 +47,9 @@ Phase3C-PruningMoments,credit-g,classification,1000,20,70.5,12,11,accuracy,0.75
 Phase3B-IterativeStack-LeafIndexing,houses,regression,20640,8,253.52,27,26,rmse,0.2957
 Phase3B-IterativeStack-LeafIndexing,bank-marketing,classification,45211,13,585.84,26,25,accuracy,0.8916
 Phase3B-IterativeStack-LeafIndexing,credit-g,classification,1000,20,28.57,12,11,accuracy,0.75
+Phase1-Decoupled,houses,regression,20640,8,242.68,27,26,rmse,0.2957
+Phase1-Decoupled,bank-marketing,classification,45211,13,585.91,26,25,accuracy,0.8916
+Phase1-Decoupled,credit-g,classification,1000,20,26.84,12,11,accuracy,0.75
+Phase3D-optimization,houses,regression,20640,8,240.72,27,26,rmse,0.2957
+Phase3D-optimization,bank-marketing,classification,45211,13,557.0,26,25,accuracy,0.8916
+Phase3D-optimization,credit-g,classification,1000,20,26.98,12,11,accuracy,0.75
