@@ -87,7 +87,7 @@ impl LeafStats {
 /// `intercept + Σ coef·x + Σ na_coef·1{missing}`. Gaussian uses the identity
 /// link. Missing predictors contribute nothing to value terms and have their
 /// own indicator term — missingness is an effect, never a lost row.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LinearModel {
     pub cols: Vec<usize>,
     pub coef: Vec<f64>,
@@ -114,6 +114,30 @@ impl LinearModel {
     }
 }
 
+/// Summary statistics for non-parametric survival curves (Nelson-Aalen / Kaplan-Meier).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SurvivalStats {
+    pub times: Vec<f64>,
+    pub cum_hazard: Vec<f64>,
+    pub survival: Vec<f64>,
+    pub median_time: f64,
+}
+
+/// Fitted multinomial softmax parameters for a leaf.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SoftmaxModel {
+    pub n_classes: usize,
+    pub probs: Vec<f64>,
+    pub linear_models: Option<Vec<LinearModel>>,
+}
+
+/// Fitted heteroscedastic location-scale parameters for a leaf.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HeteroscedasticModel {
+    pub scale: f64,
+    pub scale_linear: Option<LinearModel>,
+}
+
 /// Leaf payload: distribution stats always; a linear model for model-tree
 /// leaves (`None` for mean/CART leaves).
 #[derive(Clone, Debug)]
@@ -124,15 +148,54 @@ pub struct LeafModel {
     /// Fitted response-scale constant (robust Gaussian locations or exact
     /// boundary family means). `None` = the weighted response mean.
     pub center: Option<f64>,
+    pub softmax: Option<SoftmaxModel>,
+    pub survival: Option<SurvivalStats>,
+    pub heteroscedastic: Option<HeteroscedasticModel>,
 }
 
 impl LeafModel {
     /// Linear model when present, the fitted constant otherwise (weighted
     /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
-        match &self.linear {
-            Some(model) => self.family.inverse_link(model.predict(x)),
-            None => self.center.unwrap_or(self.stats.mean),
+        match self.family {
+            LeafFamily::Softmax => {
+                if let Some(sm) = &self.softmax {
+                    if let Some(models) = &sm.linear_models {
+                        let mut best_c = 0;
+                        let mut max_eta = f64::NEG_INFINITY;
+                        for (c, m) in models.iter().enumerate() {
+                            let eta = m.predict(x);
+                            if eta > max_eta {
+                                max_eta = eta;
+                                best_c = c;
+                            }
+                        }
+                        best_c as f64
+                    } else {
+                        sm.probs
+                            .iter()
+                            .enumerate()
+                            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .map(|(c, _)| c as f64)
+                            .unwrap_or(0.0)
+                    }
+                } else {
+                    self.center.unwrap_or(self.stats.mean)
+                }
+            }
+            LeafFamily::Survival => {
+                if let Some(surv) = &self.survival {
+                    surv.median_time
+                } else {
+                    self.center.unwrap_or(self.stats.mean)
+                }
+            }
+            _ => {
+                match &self.linear {
+                    Some(model) => self.family.inverse_link(model.predict(x)),
+                    None => self.center.unwrap_or(self.stats.mean),
+                }
+            }
         }
     }
 
@@ -150,6 +213,96 @@ impl LeafModel {
             }
         }
         self.family.inverse_link(eta)
+    }
+
+    /// Predict class probabilities for classification leaves (Softmax, Binomial, Probit).
+    pub fn predict_proba_row(&self, x: &[Option<f64>]) -> Vec<f64> {
+        match self.family {
+            LeafFamily::Softmax => {
+                if let Some(sm) = &self.softmax {
+                    if let Some(models) = &sm.linear_models {
+                        let etas: Vec<f64> = models.iter().map(|m| m.predict(x)).collect();
+                        let max_eta = etas.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+                        let exps: Vec<f64> = etas.iter().map(|&eta| (eta - max_eta).exp()).collect();
+                        let sum_exp: f64 = exps.iter().sum();
+                        if sum_exp > 0.0 {
+                            exps.iter().map(|&e| e / sum_exp).collect()
+                        } else {
+                            vec![1.0 / sm.n_classes as f64; sm.n_classes]
+                        }
+                    } else {
+                        sm.probs.clone()
+                    }
+                } else {
+                    vec![1.0]
+                }
+            }
+            LeafFamily::Binomial | LeafFamily::Probit => {
+                let p = self.predict(x);
+                vec![1.0 - p, p]
+            }
+            _ => {
+                let p = self.predict(x);
+                vec![p]
+            }
+        }
+    }
+
+    /// Predict survival step probabilities S(t) across a given time grid.
+    pub fn predict_survival_row(&self, times: &[f64]) -> Vec<f64> {
+        let Some(surv) = &self.survival else {
+            return vec![1.0; times.len()];
+        };
+        times
+            .iter()
+            .map(|&t| {
+                if surv.times.is_empty() || t < surv.times[0] {
+                    1.0
+                } else {
+                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                        Ok(exact) => exact,
+                        Err(ins) => ins.saturating_sub(1),
+                    };
+                    surv.survival[idx]
+                }
+            })
+            .collect()
+    }
+
+    /// Predict cumulative hazard Lambda(t) across a given time grid.
+    pub fn predict_hazard_row(&self, times: &[f64]) -> Vec<f64> {
+        let Some(surv) = &self.survival else {
+            return vec![0.0; times.len()];
+        };
+        times
+            .iter()
+            .map(|&t| {
+                if surv.times.is_empty() || t < surv.times[0] {
+                    0.0
+                } else {
+                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                        Ok(exact) => exact,
+                        Err(ins) => ins.saturating_sub(1),
+                    };
+                    surv.cum_hazard[idx]
+                }
+            })
+            .collect()
+    }
+
+    /// Predict location mu and dispersion sigma for heteroscedastic leaves.
+    pub fn predict_dist_row(&self, x: &[Option<f64>]) -> (f64, f64) {
+        let mu = self.predict(x);
+        let sigma = match &self.heteroscedastic {
+            Some(het) => {
+                match &het.scale_linear {
+                    Some(sm) => (0.5 * sm.predict(x)).exp().clamp(1e-6, 1e8),
+                    None => het.scale.max(1e-6),
+                }
+            }
+            None => self.stats.std.max(1e-6),
+        };
+        (mu, sigma)
     }
 }
 
@@ -841,7 +994,7 @@ pub(crate) fn fit_glm(
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
             LeafFamily::Probit => std_norm_inv_cdf(mean),
             LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
-            LeafFamily::Gaussian | LeafFamily::Tobit => mean,
+            LeafFamily::Gaussian | LeafFamily::Tobit | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => mean,
         },
     };
     let mut gram = Gram::new(dim);
@@ -936,7 +1089,7 @@ pub(crate) fn fit_glm(
                     };
                     gram.add_row(&row, y_latent, w[r]);
                 }
-                LeafFamily::Gaussian => {
+                LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => {
                     gram.add_row(&row, y[r], w[r]);
                 }
             }

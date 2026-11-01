@@ -3,7 +3,10 @@
 
 use crate::family::LeafFamily;
 use crate::model_tree::Grower;
-use crate::node_stats::{design_row, fit_glm, fit_linear, Gram, LeafModel, LeafStats, LinearModel};
+use crate::node_stats::{
+    design_row, fit_glm, fit_linear, Gram, HeteroscedasticModel, LeafModel, LeafStats,
+    LinearModel, SoftmaxModel, SurvivalStats,
+};
 use crate::stats::{huber_location, w_median, w_quantile};
 
 /// Which columns a leaf's linear model may use.
@@ -52,6 +55,10 @@ pub struct LeafControl {
     pub leaf_features: Option<Vec<usize>>,
     /// Family-specific extra parameters (e.g. tweedie_p, tobit_threshold, etc.).
     pub extra: std::collections::HashMap<String, f64>,
+    /// Optional event indicators (1=event, 0=censored) for survival leaves.
+    pub events: Option<Vec<f64>>,
+    /// Number of distinct classes for softmax targets.
+    pub n_classes: Option<usize>,
 }
 
 impl Default for LeafControl {
@@ -66,6 +73,8 @@ impl Default for LeafControl {
             monotone: Vec::new(),
             leaf_features: None,
             extra: std::collections::HashMap::new(),
+            events: None,
+            n_classes: None,
         }
     }
 }
@@ -82,6 +91,8 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             monotone: p.monotone.clone(),
             leaf_features: None,
             extra: std::collections::HashMap::new(),
+            events: p.events.clone(),
+            n_classes: p.n_classes,
         }
     }
 }
@@ -201,13 +212,251 @@ pub fn fit_leaf_model(
         LeafStats::from_rows(y, w, rows)
     };
     let family = control.family;
+    if family == LeafFamily::Softmax {
+        let n_classes = control.n_classes.unwrap_or_else(|| {
+            rows.iter()
+                .filter(|&&r| w[r] > 0.0)
+                .map(|&r| (y[r] as usize) + 1)
+                .max()
+                .unwrap_or(2)
+                .max(2)
+        });
+        let mut probs = vec![0.0; n_classes];
+        let mut total_w = 0.0;
+        for &r in rows {
+            if w[r] > 0.0 {
+                let c = y[r] as usize;
+                if c < n_classes {
+                    probs[c] += w[r];
+                    total_w += w[r];
+                }
+            }
+        }
+        if total_w > 0.0 {
+            for p in &mut probs {
+                *p /= total_w;
+            }
+        } else {
+            probs.fill(1.0 / n_classes as f64);
+        }
+        let best_c = probs
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(c, _)| c as f64)
+            .unwrap_or(0.0);
+
+        let linear_models = if control.leaf == LeafKind::Linear {
+            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let (any_missing, _) = compute_leaf_design(cols, rows, &chosen);
+            let mut models = Vec::with_capacity(n_classes);
+            for c in 0..n_classes {
+                let mut binary_y: Vec<f64> = Vec::with_capacity(y.len());
+                for (_r, &val) in y.iter().enumerate() {
+                    binary_y.push(if val as usize == c { 1.0 } else { 0.0 });
+                }
+                let mean_c = probs[c].clamp(1e-6, 1.0 - 1e-6);
+                let fitted = fit_glm(
+                    cols,
+                    &binary_y,
+                    w,
+                    rows,
+                    &chosen,
+                    any_missing,
+                    &control.monotone,
+                    control.l1,
+                    control.l2,
+                    LeafFamily::Binomial,
+                    mean_c,
+                );
+                let lm = fitted.unwrap_or_else(|| LinearModel {
+                    coef: vec![0.0; chosen.len()],
+                    na_coef: if any_missing { vec![0.0; chosen.len()] } else { Vec::new() },
+                    cols: chosen.clone(),
+                    intercept: mean_c.ln() - (1.0 - mean_c).ln(),
+                });
+                models.push(lm);
+            }
+            Some(models)
+        } else {
+            None
+        };
+
+        return LeafModel {
+            stats,
+            linear: None,
+            center: Some(best_c),
+            family,
+            softmax: Some(SoftmaxModel {
+                n_classes,
+                probs,
+                linear_models,
+            }),
+            survival: None,
+            heteroscedastic: None,
+        };
+    }
+
+    if family == LeafFamily::Survival {
+        let events = control.events.as_ref();
+        let mut records: Vec<(f64, f64, f64)> = rows
+            .iter()
+            .filter(|&&r| w[r] > 0.0 && y[r] >= 0.0 && y[r].is_finite())
+            .map(|&r| {
+                let e = events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                (y[r], e, w[r])
+            })
+            .collect();
+        records.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+        let mut distinct_event_times: Vec<f64> = Vec::new();
+        for &(t, e, _) in &records {
+            if e > 0.0
+                && (distinct_event_times.is_empty()
+                    || *distinct_event_times.last().unwrap() < t)
+            {
+                distinct_event_times.push(t);
+            }
+        }
+
+        let mut cum_hazard = Vec::with_capacity(distinct_event_times.len());
+        let mut survival = Vec::with_capacity(distinct_event_times.len());
+        let mut current_h = 0.0;
+        let mut current_s = 1.0;
+        let mut median_time = records.last().map(|r| r.0).unwrap_or(0.0);
+        let mut found_median = false;
+
+        for &tj in &distinct_event_times {
+            let mut dj = 0.0;
+            let mut nj = 0.0;
+            for &(ti, ei, wi) in &records {
+                if ti >= tj {
+                    nj += wi;
+                    if (ti - tj).abs() < 1e-9 && ei > 0.0 {
+                        dj += wi;
+                    }
+                }
+            }
+            if nj > 0.0 {
+                let hj = dj / nj;
+                current_h += hj;
+                current_s *= (1.0 - hj).clamp(0.0, 1.0);
+            }
+            cum_hazard.push(current_h);
+            survival.push(current_s);
+            if !found_median && current_s <= 0.5 {
+                median_time = tj;
+                found_median = true;
+            }
+        }
+
+        return LeafModel {
+            stats,
+            linear: None,
+            center: Some(median_time),
+            family,
+            softmax: None,
+            survival: Some(SurvivalStats {
+                times: distinct_event_times,
+                cum_hazard,
+                survival,
+                median_time,
+            }),
+            heteroscedastic: None,
+        };
+    }
+
+    if family == LeafFamily::Heteroscedastic {
+        let (linear, scale_linear, scale) = if control.leaf == LeafKind::Linear {
+            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
+            let mut g = Gram::new(dim);
+            let mut row = vec![0.0; dim];
+            for &r in rows {
+                design_row(&mut row, cols, r, &chosen, any_missing);
+                g.add_row(&row, y[r], w[r]);
+            }
+            let loc_model = fit_linear(
+                &g,
+                &chosen,
+                any_missing,
+                &control.monotone,
+                control.l1,
+                control.l2,
+            );
+
+            let mut g_scale = Gram::new(dim);
+            let mut sw = 0.0;
+            let mut s_res2 = 0.0;
+            for &r in rows {
+                if w[r] <= 0.0 {
+                    continue;
+                }
+                design_row(&mut row, cols, r, &chosen, any_missing);
+                let pred = loc_model.eval_design(&row);
+                let res2 = (y[r] - pred).powi(2);
+                sw += w[r];
+                s_res2 += w[r] * res2;
+                let log_res2 = (res2 + 1e-8).ln();
+                g_scale.add_row(&row, log_res2, w[r]);
+            }
+            let mut s_model = fit_linear(
+                &g_scale,
+                &chosen,
+                any_missing,
+                &vec![0; chosen.len()],
+                control.l1,
+                control.l2,
+            );
+            // Harvey (1976) bias correction for log chi-squared(1) residuals:
+            // E[ln(e_i^2)] = ln(sigma_i^2) + E[ln(chi_1^2)] where E[ln(chi_1^2)] = -1.2703628.
+            // Adding 1.2703628 to the intercept makes exp(0.5 * z'gamma) unbiased for sigma.
+            s_model.intercept += 1.2703628;
+            let raw_scale = if sw > 0.0 { (s_res2 / sw).sqrt().max(1e-6) } else { 1.0 };
+            (Some(loc_model), Some(s_model), raw_scale)
+        } else {
+            let mut sw = 0.0;
+            let mut s_res2 = 0.0;
+            for &r in rows {
+                if w[r] > 0.0 {
+                    sw += w[r];
+                    s_res2 += w[r] * (y[r] - stats.mean).powi(2);
+                }
+            }
+            let raw_scale = if sw > 0.0 { (s_res2 / sw).sqrt().max(1e-6) } else { stats.std.max(1e-6) };
+            (None, None, raw_scale)
+        };
+
+        let mean_val = stats.mean;
+        return LeafModel {
+            stats,
+            linear,
+            center: Some(mean_val),
+            family,
+            softmax: None,
+            survival: None,
+            heteroscedastic: Some(HeteroscedasticModel {
+                scale,
+                scale_linear,
+            }),
+        };
+    }
+
     if family != LeafFamily::Gaussian
         && (control.leaf == LeafKind::Mean
             || ((family == LeafFamily::Binomial || family == LeafFamily::Probit) && (stats.mean == 0.0 || stats.mean == 1.0))
             || ((family == LeafFamily::Poisson || family == LeafFamily::Tweedie) && stats.mean == 0.0)
             || (family == LeafFamily::Tobit && stats.mean <= 0.0))
     {
-        return LeafModel { center: Some(stats.mean), stats, linear: None, family };
+        return LeafModel {
+            center: Some(stats.mean),
+            stats,
+            linear: None,
+            family,
+            softmax: None,
+            survival: None,
+            heteroscedastic: None,
+        };
     }
     let linear = if control.leaf == LeafKind::Linear {
         let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
@@ -226,7 +475,15 @@ pub fn fit_leaf_model(
                 cols: chosen,
                 intercept: f64::NAN,
             });
-            return LeafModel { stats, linear: Some(linear), center: None, family };
+            return LeafModel {
+                stats,
+                linear: Some(linear),
+                center: None,
+                family,
+                softmax: None,
+                survival: None,
+                heteroscedastic: None,
+            };
         }
         let mut g = Gram::new(dim);
         let mut row = vec![0.0; dim];
@@ -261,7 +518,15 @@ pub fn fit_leaf_model(
         LeafKind::Huber => Some(huber_location(&yws)),
         _ => None,
     };
-    LeafModel { stats, linear, center, family }
+    LeafModel {
+        stats,
+        linear,
+        center,
+        family,
+        softmax: None,
+        survival: None,
+        heteroscedastic: None,
+    }
 }
 
 impl<'a> Grower<'a> {

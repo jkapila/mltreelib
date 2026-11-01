@@ -4,6 +4,7 @@
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyModule, PyModuleMethods};
+use pyo3::IntoPyObjectExt;
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
 use mltreelib_core::encode::{
@@ -2056,6 +2057,9 @@ fn extract_leaf_control<'py>(
                         "gamma" => LeafFamily::Gamma,
                         "tweedie" => LeafFamily::Tweedie,
                         "tobit" => LeafFamily::Tobit,
+                        "softmax" => LeafFamily::Softmax,
+                        "survival" => LeafFamily::Survival,
+                        "heteroscedastic" => LeafFamily::Heteroscedastic,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2155,6 +2159,9 @@ fn extract_leaf_control<'py>(
             "gamma" => LeafFamily::Gamma,
             "tweedie" => LeafFamily::Tweedie,
             "tobit" => LeafFamily::Tobit,
+            "softmax" => LeafFamily::Softmax,
+            "survival" => LeafFamily::Survival,
+            "heteroscedastic" => LeafFamily::Heteroscedastic,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2242,6 +2249,9 @@ impl PyLeafControl {
             "gamma" => LeafFamily::Gamma,
             "tweedie" => LeafFamily::Tweedie,
             "tobit" => LeafFamily::Tobit,
+            "softmax" => LeafFamily::Softmax,
+            "survival" => LeafFamily::Survival,
+            "heteroscedastic" => LeafFamily::Heteroscedastic,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let policy = match leaf_cols {
@@ -2260,6 +2270,8 @@ impl PyLeafControl {
                 monotone: Vec::new(),
                 leaf_features,
                 extra: std::collections::HashMap::new(),
+                events: None,
+                n_classes: None,
             },
         })
     }
@@ -2285,6 +2297,9 @@ impl PyLeafControl {
             LeafFamily::Gamma => "gamma".to_string(),
             LeafFamily::Tweedie => "tweedie".to_string(),
             LeafFamily::Tobit => "tobit".to_string(),
+            LeafFamily::Softmax => "softmax".to_string(),
+            LeafFamily::Survival => "survival".to_string(),
+            LeafFamily::Heteroscedastic => "heteroscedastic".to_string(),
         }
     }
 
@@ -2599,9 +2614,12 @@ impl PyModelTree {
             "gamma" => LeafFamily::Gamma,
             "tweedie" => LeafFamily::Tweedie,
             "tobit" => LeafFamily::Tobit,
+            "softmax" => LeafFamily::Softmax,
+            "survival" => LeafFamily::Survival,
+            "heteroscedastic" => LeafFamily::Heteroscedastic,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', or 'tobit', got {other}"
+                    "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
                 )))
             }
         };
@@ -2761,6 +2779,8 @@ impl PyModelTree {
                 purity_gate,
                 split_eval: eval_mode,
                 presort,
+                events: None,
+                n_classes: None,
             },
             inner: None,
             vocabs: Vec::new(),
@@ -2783,18 +2803,41 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None, event = None, n_classes = None))]
     fn fit(
         &mut self,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
-        y: Vec<Option<f64>>,
+        y: Bound<'_, PyAny>,
         w: Option<Vec<f64>>,
         dtypes: Option<Vec<String>>,
         control: Option<Bound<'_, PyAny>>,
         id_col: Option<Bound<'_, PyAny>>,
         col_names: Option<Vec<String>>,
+        event: Option<Vec<f64>>,
+        n_classes: Option<usize>,
     ) -> PyResult<()> {
         let _ = id_col;
+        let (y_vec, events_vec): (Vec<Option<f64>>, Option<Vec<f64>>) =
+            if let Ok(tup) = y.extract::<(Vec<Option<f64>>, Vec<f64>)>() {
+                (tup.0, Some(tup.1))
+            } else if let Ok(pairs) = y.extract::<Vec<(f64, f64)>>() {
+                let times = pairs.iter().map(|p| Some(p.0)).collect();
+                let evs = pairs.iter().map(|p| p.1).collect();
+                (times, Some(evs))
+            } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
+                (single, event)
+            } else {
+                return Err(PyTypeError::new_err(
+                    "y must be a list of floats, or a (times, events) tuple, or a list of (time, event) pairs",
+                ));
+            };
+
+        if let Some(evs) = events_vec {
+            self.params.events = Some(evs);
+        }
+        if let Some(nc) = n_classes {
+            self.params.n_classes = Some(nc);
+        }
         if let Some(ctrl_obj) = control {
             let ctrl = extract_leaf_control(
                 ctrl_obj.py(),
@@ -2816,6 +2859,12 @@ impl PyModelTree {
             self.params.l1 = ctrl.l1;
             self.params.l2 = ctrl.l2;
             self.params.leaf_digest = ctrl.leaf_digest;
+            if ctrl.events.is_some() {
+                self.params.events = ctrl.events;
+            }
+            if ctrl.n_classes.is_some() {
+                self.params.n_classes = ctrl.n_classes;
+            }
         }
         if let Some(dts) = dtypes {
             self.params.dtypes = dts
@@ -2832,8 +2881,8 @@ impl PyModelTree {
         }
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, true)?;
         let mut tree = match w {
-            Some(w) => ModelTree::fit_weighted(&x, &y, &w, self.params.clone()),
-            None => ModelTree::fit(&x, &y, self.params.clone()),
+            Some(w) => ModelTree::fit_weighted(&x, &y_vec, &w, self.params.clone()),
+            None => ModelTree::fit(&x, &y_vec, self.params.clone()),
         }
         .map_err(PyValueError::new_err)?;
 
@@ -2887,12 +2936,14 @@ impl PyModelTree {
         l1 = None,
         l2 = None,
         leaf_digest = None,
-        tau = None
+        tau = None,
+        event = None,
+        n_classes = None
     ))]
     fn retrain<'py>(
         slf: &Bound<'py, PyModelTree>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
-        y: Vec<Option<f64>>,
+        y: Bound<'_, PyAny>,
         control: Option<Bound<'py, PyAny>>,
         w: Option<Vec<f64>>,
         mode: Option<&str>,
@@ -2906,6 +2957,8 @@ impl PyModelTree {
         l2: Option<f64>,
         leaf_digest: Option<bool>,
         tau: Option<f64>,
+        event: Option<Vec<f64>>,
+        n_classes: Option<usize>,
     ) -> PyResult<Py<PyModelTree>> {
         let is_external = match mode.unwrap_or("internal") {
             "internal" | "update" => false,
@@ -2917,20 +2970,35 @@ impl PyModelTree {
             }
         };
 
+        let (y_vec, events_vec): (Vec<Option<f64>>, Option<Vec<f64>>) =
+            if let Ok(tup) = y.extract::<(Vec<Option<f64>>, Vec<f64>)>() {
+                (tup.0, Some(tup.1))
+            } else if let Ok(pairs) = y.extract::<Vec<(f64, f64)>>() {
+                let times = pairs.iter().map(|p| Some(p.0)).collect();
+                let evs = pairs.iter().map(|p| p.1).collect();
+                (times, Some(evs))
+            } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
+                (single, event)
+            } else {
+                return Err(PyTypeError::new_err(
+                    "y must be a list of floats, or a (times, events) tuple, or a list of (time, event) pairs",
+                ));
+            };
+
         let w_vec = match w {
             Some(wv) => wv,
-            None => vec![1.0; y.len()],
+            None => vec![1.0; y_vec.len()],
         };
 
         if is_external {
-            let (mut new_tree, data_col_names, coerced_x, ctrl) = {
+            let (mut new_tree, data_col_names, coerced_x, mut ctrl) = {
                 let b = slf.borrow();
                 let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
                 let data_col_names = match col_names {
                     Some(names) => names,
                     None => t.col_names.clone(),
                 };
-                let ctrl = extract_leaf_control(
+                let mut ctrl = extract_leaf_control(
                     slf.py(),
                     control,
                     &b.params,
@@ -2944,6 +3012,12 @@ impl PyModelTree {
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
+                if events_vec.is_some() {
+                    ctrl.events = events_vec.clone();
+                }
+                if n_classes.is_some() {
+                    ctrl.n_classes = n_classes;
+                }
                 let mut vocabs = b.vocabs.clone();
                 let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
                 let mut new_tree = b.clone();
@@ -2952,7 +3026,7 @@ impl PyModelTree {
             };
             {
                 let t = new_tree.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
-                t.retrain_weighted_named(&data_col_names, &coerced_x, &y, &w_vec, ctrl.clone())
+                t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl.clone())
                     .map_err(PyValueError::new_err)?;
             }
             new_tree.params.leaf = ctrl.leaf;
@@ -2961,16 +3035,18 @@ impl PyModelTree {
             new_tree.params.l1 = ctrl.l1;
             new_tree.params.l2 = ctrl.l2;
             new_tree.params.leaf_digest = ctrl.leaf_digest;
+            new_tree.params.events = ctrl.events;
+            new_tree.params.n_classes = ctrl.n_classes;
             Py::new(slf.py(), new_tree)
         } else {
-            let (data_col_names, coerced_x, vocabs, ctrl) = {
+            let (data_col_names, coerced_x, vocabs, mut ctrl) = {
                 let b = slf.borrow();
                 let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
                 let data_col_names = match col_names {
                     Some(names) => names,
                     None => t.col_names.clone(),
                 };
-                let ctrl = extract_leaf_control(
+                let mut ctrl = extract_leaf_control(
                     slf.py(),
                     control,
                     &b.params,
@@ -2984,6 +3060,12 @@ impl PyModelTree {
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
+                if events_vec.is_some() {
+                    ctrl.events = events_vec.clone();
+                }
+                if n_classes.is_some() {
+                    ctrl.n_classes = n_classes;
+                }
                 let mut vocabs = b.vocabs.clone();
                 let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
                 (data_col_names, coerced_x, vocabs, ctrl)
@@ -2992,7 +3074,7 @@ impl PyModelTree {
                 let mut b = slf.borrow_mut();
                 b.vocabs = vocabs;
                 let t = b.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
-                t.retrain_weighted_named(&data_col_names, &coerced_x, &y, &w_vec, ctrl.clone())
+                t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl.clone())
                     .map_err(PyValueError::new_err)?;
                 b.params.leaf = ctrl.leaf;
                 b.params.leaf_family = ctrl.family;
@@ -3000,6 +3082,8 @@ impl PyModelTree {
                 b.params.l1 = ctrl.l1;
                 b.params.l2 = ctrl.l2;
                 b.params.leaf_digest = ctrl.leaf_digest;
+                b.params.events = ctrl.events;
+                b.params.n_classes = ctrl.n_classes;
             }
             Ok(slf.clone().unbind())
         }
@@ -3033,32 +3117,76 @@ impl PyModelTree {
         Ok(self.tree()?.trace.clone())
     }
 
-    /// Predict response-scale means; NAs never block a prediction.
-    ///
-    /// Args:
-    ///     x: rows of predictors; `None` entries are missing.
-    ///
-    /// Returns: one mean per row (binomial P(Y=1), Poisson expected count,
-    /// or Gaussian regression value). No thresholding into hard labels.
-    fn predict(&mut self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+    /// Predict with flexible output kinds:
+    ///   kind="response" (default): expected value / class / median survival time.
+    ///   kind="proba": class probabilities ((N, C) matrix for Softmax, 1D float list for Binomial/Probit).
+    ///   kind="dist": (mean, std) location-scale tuples for Heteroscedastic.
+    ///   kind="survival": S(t) survival curve over times grid.
+    ///   kind="hazard": Lambda(t) cumulative hazard curve over times grid.
+    ///   kind="leaf_id": integer leaf ID per row.
+    #[pyo3(signature = (x, kind = "response", times = None))]
+    fn predict<'py>(
+        &mut self,
+        py: Python<'py>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        kind: Option<&str>,
+        times: Option<Vec<f64>>,
+    ) -> PyResult<Py<PyAny>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
-        Ok(self.tree()?.predict(&x))
+        let t = self.tree()?;
+        match kind.unwrap_or("response") {
+            "response" => {
+                let preds = t.predict(&x);
+                preds.into_py_any(py)
+            }
+            "proba" => {
+                match t.params.leaf_family {
+                    LeafFamily::Softmax => {
+                        let mat = t.predict_proba_matrix(&x).map_err(PyValueError::new_err)?;
+                        mat.into_py_any(py)
+                    }
+                    LeafFamily::Binomial | LeafFamily::Probit => {
+                        let vec = t.predict_proba(&x).map_err(PyValueError::new_err)?;
+                        vec.into_py_any(py)
+                    }
+                    other => {
+                        Err(PyValueError::new_err(format!(
+                            "kind='proba' requires 'softmax', 'binomial' or 'probit' family, got {other:?}"
+                        )))
+                    }
+                }
+            }
+            "dist" | "params" => {
+                let dist = t.predict_dist(&x).map_err(PyValueError::new_err)?;
+                dist.into_py_any(py)
+            }
+            "survival" => {
+                let t_grid = times.unwrap_or_else(|| vec![1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0]);
+                let surv = t.predict_survival(&x, &t_grid).map_err(PyValueError::new_err)?;
+                surv.into_py_any(py)
+            }
+            "hazard" => {
+                let t_grid = times.unwrap_or_else(|| vec![1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0]);
+                let haz = t.predict_hazard(&x, &t_grid).map_err(PyValueError::new_err)?;
+                haz.into_py_any(py)
+            }
+            "leaf_id" => {
+                let ids = t.apply(&x);
+                ids.into_py_any(py)
+            }
+            other => Err(PyValueError::new_err(format!(
+                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', or 'leaf_id'"
+            ))),
+        }
     }
 
-    /// Predict binomial P(Y=1), one probability per input row.
-    ///
-    /// Args:
-    ///     x: raw rows of predictors, with the same missing/level handling as predict.
-    ///
-    /// Returns: one probability per row, not a two-column class matrix.
-    ///
-    /// Raises: ValueError unless the fitted leaf family is binomial.
-    fn predict_proba(
+    /// Predict class probabilities (convenience alias for `predict(x, kind="proba")`).
+    fn predict_proba<'py>(
         &mut self,
+        py: Python<'py>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
-    ) -> PyResult<Vec<f64>> {
-        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
-        self.tree()?.predict_proba(&x).map_err(PyValueError::new_err)
+    ) -> PyResult<Py<PyAny>> {
+        self.predict(py, x, Some("proba"), None)
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -3158,6 +3286,19 @@ impl PyModelTree {
                 .map(|&q| leaf.stats.quantile(q))
                 .collect();
             d.set_item("quantiles", qs)?;
+            if let Some(sm) = &leaf.softmax {
+                d.set_item("softmax_probs", sm.probs.clone())?;
+                d.set_item("n_classes", sm.n_classes)?;
+            }
+            if let Some(surv) = &leaf.survival {
+                d.set_item("survival_times", surv.times.clone())?;
+                d.set_item("survival_probs", surv.survival.clone())?;
+                d.set_item("cum_hazard", surv.cum_hazard.clone())?;
+                d.set_item("median_time", surv.median_time)?;
+            }
+            if let Some(het) = &leaf.heteroscedastic {
+                d.set_item("scale", het.scale)?;
+            }
             out.push(d.into_any().unbind());
         }
         Ok(out)

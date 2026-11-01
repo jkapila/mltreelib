@@ -47,7 +47,7 @@ Args: none.
 Returns: list of `(column_name, share)` sorted descending; shares
 sum to 1.
 ### ModelTree.fit
-```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None))```
+```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None))```
 Fit the tree on row-major data using the selected leaf family.
 
 Args:
@@ -97,14 +97,14 @@ Args: none.
 
 Returns: leaf count.
 ### ModelTree.predict
-```pythonpredict((self, /, x))```
-Predict response-scale means; NAs never block a prediction.
-
-Args:
-    x: rows of predictors; `None` entries are missing.
-
-Returns: one mean per row (binomial P(Y=1), Poisson expected count,
-or Gaussian regression value). No thresholding into hard labels.
+```pythonpredict((self, /, x, kind='response', times=None))```
+Predict with flexible output kinds:
+kind="response" (default): expected value / class / median survival time.
+kind="proba": class probabilities ((N, C) matrix for Softmax, 1D float list for Binomial/Probit).
+kind="dist": (mean, std) location-scale tuples for Heteroscedastic.
+kind="survival": S(t) survival curve over times grid.
+kind="hazard": Lambda(t) cumulative hazard curve over times grid.
+kind="leaf_id": integer leaf ID per row.
 ### ModelTree.predict_interval
 ```pythonpredict_interval((self, /, x, coverage=0.9))```
 Empirical prediction interval `(lower, upper)` per row at the requested coverage.
@@ -127,14 +127,7 @@ Returns: one integer label (0 or 1) per row.
 Raises: ValueError unless the fitted leaf family is binomial.
 ### ModelTree.predict_proba
 ```pythonpredict_proba((self, /, x))```
-Predict binomial P(Y=1), one probability per input row.
-
-Args:
-    x: raw rows of predictors, with the same missing/level handling as predict.
-
-Returns: one probability per row, not a two-column class matrix.
-
-Raises: ValueError unless the fitted leaf family is binomial.
+Predict class probabilities (convenience alias for `predict(x, kind="proba")`).
 ### ModelTree.profile
 ```pythonprofile((self, /))```
 Per-level timing profile (group/sort, scan, leaf fit).
@@ -155,7 +148,7 @@ Args:
 
 Returns: one quantile per row (NaN when a leaf's digest was dropped).
 ### ModelTree.retrain
-```pythonretrain((self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))```
+```pythonretrain((self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, event=None, n_classes=None))```
 Retrain all leaf models on new or existing data without altering tree topology or splits.
 
 Args:

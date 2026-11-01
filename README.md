@@ -133,9 +133,9 @@ partykit/grf. Specs are published as GitHub issues (`ready-for-agent`).
 3. [ ] **Model-tree capability knobs** (issue #3) — significance splits, honesty,
       NA surrogates, pruning family, minsplit/minbucket/minprob, EFB, purity gate
 4. [ ] **Distributional leaves** (issue #4) — initial `leaf_family` batch:
-      binomial/logit and Poisson/log, `gain="deviance"`, `predict_proba`,
-      fitted `cdf`, weighted IRLS on faer; probit/tobit/tweedie/softmax
-      remain the follow-up family set
+      binomial/logit, Poisson/log, probit, tobit, tweedie, gamma; follow-up
+      distributional stump leaves landed: softmax, survival, heteroscedastic
+      with unified `predict(kind=...)`
 5. [ ] **Forests & committees** — honesty + averaging (grf-lesson), Cubist-style
       committees + neighbor adjustment; the ensembles currently top the board
 6. [ ] C5.0 rulesets + committees; GritBot surprising-subgroup mining

@@ -171,6 +171,10 @@ pub struct ModelTreeParams {
     pub split_eval: SplitEval,
     /// Upfront pre-sorting of numeric columns. Default `false` (in-place cache-local PDQsort in SplitScratch).
     pub presort: bool,
+    /// Optional event indicators for survival outcome pairs (T, E).
+    pub events: Option<Vec<f64>>,
+    /// Number of distinct classes for softmax targets.
+    pub n_classes: Option<usize>,
 }
 
 impl Default for ModelTreeParams {
@@ -222,6 +226,8 @@ impl Default for ModelTreeParams {
             purity_gate: None,
             split_eval: SplitEval::Fast,
             presort: false,
+            events: None,
+            n_classes: None,
         }
     }
 }
@@ -444,6 +450,12 @@ impl ModelTree {
                     }
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
+                    }
+                    LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
+                        return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());
+                    }
+                    LeafFamily::Survival if t < 0.0 => {
+                        return Err("survival durations must be non-negative".into());
                     }
                     _ => {}
                 }
@@ -793,6 +805,12 @@ impl ModelTree {
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
                     }
+                    LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
+                        return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());
+                    }
+                    LeafFamily::Survival if t < 0.0 => {
+                        return Err("survival durations must be non-negative".into());
+                    }
                     _ => {}
                 }
             }
@@ -908,6 +926,8 @@ impl ModelTree {
         self.params.l2 = control.l2;
         self.params.l1 = control.l1;
         self.params.leaf_digest = control.leaf_digest;
+        self.params.events = control.events.clone();
+        self.params.n_classes = control.n_classes;
         if !control.monotone.is_empty() {
             self.params.monotone = control.monotone;
         }
@@ -1060,12 +1080,73 @@ impl ModelTree {
             .collect()
     }
 
-    /// One P(class 1) per row. Only binomial leaves define this output.
+    /// One P(class 1) per row for binary families (Binomial, Probit).
     pub fn predict_proba(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
         if self.params.leaf_family != LeafFamily::Binomial && self.params.leaf_family != LeafFamily::Probit {
             return Err("predict_proba requires leaf_family='binomial' or 'probit'".into());
         }
         Ok(self.predict(x))
+    }
+
+    /// Full class probability distribution per row (supports Softmax, Binomial, Probit).
+    pub fn predict_proba_matrix(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<Vec<f64>>, String> {
+        if !matches!(self.params.leaf_family, LeafFamily::Softmax | LeafFamily::Binomial | LeafFamily::Probit) {
+            return Err("predict_proba_matrix requires leaf_family='softmax', 'binomial' or 'probit'".into());
+        }
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_proba_row(row)
+            })
+            .collect())
+    }
+
+    /// Survival step probabilities S(t) across a given time grid.
+    pub fn predict_survival(&self, x: &[Vec<Option<f64>>], times: &[f64]) -> Result<Vec<Vec<f64>>, String> {
+        if self.params.leaf_family != LeafFamily::Survival {
+            return Err("predict_survival requires leaf_family='survival'".into());
+        }
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_survival_row(times)
+            })
+            .collect())
+    }
+
+    /// Cumulative hazard Lambda(t) across a given time grid.
+    pub fn predict_hazard(&self, x: &[Vec<Option<f64>>], times: &[f64]) -> Result<Vec<Vec<f64>>, String> {
+        if self.params.leaf_family != LeafFamily::Survival {
+            return Err("predict_hazard requires leaf_family='survival'".into());
+        }
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_hazard_row(times)
+            })
+            .collect())
+    }
+
+    /// Predict location mu and dispersion sigma (mean, std) per row for heteroscedastic leaves.
+    pub fn predict_dist(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<(f64, f64)>, String> {
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_dist_row(row)
+            })
+            .collect())
     }
 
     /// Hard binary class labels (0 or 1) per row by thresholding binomial or probit probabilities.

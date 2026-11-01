@@ -2,6 +2,7 @@
 //! the two leaf-column policies, and NA-first behavior (learnable missing
 //! direction + NA-indicator leaf terms).
 
+use mltreelib_core::family::LeafFamily;
 use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, SplitEval};
@@ -2875,4 +2876,121 @@ fn retrain_refits_leaves_without_modifying_topology() {
     // Predictions differ from unpenalized/small-l2 linear fit
     assert_ne!(ridge_preds, orig_preds);
     assert_ne!(ridge_preds, mean_preds);
+}
+
+#[test]
+fn softmax_stump_predicts_probabilities_and_classes() {
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    // 3 classes: 0, 1, 2
+    for i in 0..90 {
+        let class = (i / 30) as f64;
+        let feat = class * 2.0 + 0.1 * (i as f64);
+        x.push(vec![Some(feat)]);
+        y.push(Some(class));
+    }
+
+    let tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 0,
+            leaf: LeafKind::Mean,
+            leaf_family: LeafFamily::Softmax,
+            n_classes: Some(3),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let probs = tree.predict_proba_matrix(&x).unwrap();
+    assert_eq!(probs.len(), 90);
+    for row_p in &probs {
+        assert_eq!(row_p.len(), 3);
+        let sum: f64 = row_p.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-6);
+        // Each class has 30/90 = 1/3 of the mass
+        assert!((row_p[0] - 1.0 / 3.0).abs() < 1e-4);
+        assert!((row_p[1] - 1.0 / 3.0).abs() < 1e-4);
+        assert!((row_p[2] - 1.0 / 3.0).abs() < 1e-4);
+    }
+}
+
+#[test]
+fn survival_stump_computes_nelson_aalen_and_kaplan_meier() {
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut times: Vec<Option<f64>> = Vec::new();
+    let mut events: Vec<f64> = Vec::new();
+
+    // 10 patients: times 1..10, alternating event and censored
+    for i in 1..=10 {
+        x.push(vec![Some(i as f64)]);
+        times.push(Some(i as f64));
+        events.push(if i % 2 == 0 { 1.0 } else { 0.0 });
+    }
+
+    let tree = ModelTree::fit(
+        &x,
+        &times,
+        ModelTreeParams {
+            max_depth: 0,
+            leaf: LeafKind::Mean,
+            leaf_family: LeafFamily::Survival,
+            events: Some(events),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let time_grid = vec![1.0, 2.0, 4.0, 6.0, 8.0, 10.0];
+    let surv_preds = tree.predict_survival(&x, &time_grid).unwrap();
+    assert_eq!(surv_preds.len(), 10);
+    for s_curve in &surv_preds {
+        assert_eq!(s_curve.len(), time_grid.len());
+        // Survival must be monotonically non-increasing
+        for w in s_curve.windows(2) {
+            assert!(w[0] >= w[1], "S(t) must be non-increasing: {} vs {}", w[0], w[1]);
+        }
+        assert!(s_curve[0] <= 1.0 && s_curve[0] >= 0.0);
+    }
+
+    let haz_preds = tree.predict_hazard(&x, &time_grid).unwrap();
+    for h_curve in &haz_preds {
+        // Cumulative hazard must be non-decreasing
+        for w in h_curve.windows(2) {
+            assert!(w[0] <= w[1], "Lambda(t) must be non-decreasing: {} vs {}", w[0], w[1]);
+        }
+    }
+}
+
+#[test]
+fn heteroscedastic_stump_estimates_location_and_scale() {
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+
+    for i in 0..100 {
+        let xi = (i as f64) / 10.0;
+        x.push(vec![Some(xi)]);
+        // Target with mean 50.0 and noise ~ 5.0
+        y.push(Some(50.0 + if i % 2 == 0 { 5.0 } else { -5.0 }));
+    }
+
+    let tree = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 0,
+            leaf: LeafKind::Mean,
+            leaf_family: LeafFamily::Heteroscedastic,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let dist_preds = tree.predict_dist(&x).unwrap();
+    assert_eq!(dist_preds.len(), 100);
+    for &(mu, sigma) in &dist_preds {
+        assert!((mu - 50.0).abs() < 1e-4);
+        assert!((sigma - 5.0).abs() < 1e-4, "scale must estimate residual std 5.0, got {sigma}");
+    }
 }

@@ -1245,7 +1245,9 @@ impl<'a> Grower<'a> {
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }
             LeafFamily::Tobit => 0.0,
-            LeafFamily::Gaussian => unreachable!("Gaussian uses its SSE scan"),
+            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => {
+                unreachable!("Gaussian, Softmax, Survival, and Heteroscedastic use SSE/custom scans")
+            }
         }
     }
 

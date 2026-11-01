@@ -34,6 +34,12 @@ pub enum LeafFamily {
     Tweedie,
     /// Censored continuous observations with lower bound (default 0).
     Tobit,
+    /// Multinomial categorical observations with softmax link.
+    Softmax,
+    /// Right-censored time-to-event pairs (T, E) with Nelson-Aalen / Kaplan-Meier hazard.
+    Survival,
+    /// Continuous observations with dual location-scale (mu, sigma) Gaussian NLL.
+    Heteroscedastic,
 }
 
 impl LeafFamily {
@@ -41,7 +47,7 @@ impl LeafFamily {
     /// prevent exponential overflow/underflow even when extrapolating.
     pub fn inverse_link(self, eta: f64) -> f64 {
         match self {
-            Self::Gaussian | Self::Tobit => eta,
+            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic => eta,
             Self::Binomial if eta >= 0.0 => 1.0 / (1.0 + (-eta).exp()),
             Self::Binomial => {
                 let e = eta.exp();
@@ -56,7 +62,7 @@ impl LeafFamily {
     /// means. Impossible events have infinite deviance, not a clipped loss.
     pub fn deviance(self, y: f64, mean: f64) -> f64 {
         if y.is_nan() || mean.is_nan()
-            || (self != Self::Gaussian && self != Self::Tobit
+            || (self != Self::Gaussian && self != Self::Tobit && self != Self::Heteroscedastic && self != Self::Softmax && self != Self::Survival
                 && (!y.is_finite() || !mean.is_finite() || mean < 0.0 || y < 0.0))
             || ((self == Self::Binomial || self == Self::Probit) && (mean > 1.0 || y > 1.0))
             || (self == Self::Gamma && (y <= 0.0 || mean <= 0.0))
@@ -64,7 +70,14 @@ impl LeafFamily {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian => (y - mean).powi(2),
+            Self::Gaussian | Self::Heteroscedastic | Self::Survival => (y - mean).powi(2),
+            Self::Softmax => {
+                if y < 0.0 || mean <= 0.0 {
+                    f64::NAN
+                } else {
+                    -2.0 * mean.max(1e-15).ln()
+                }
+            }
             Self::Binomial | Self::Probit => {
                 let success = if y == 0.0 { 0.0 } else { y * (y / mean).ln() };
                 let failure = if y == 1.0 {
@@ -108,7 +121,9 @@ impl LeafFamily {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian => f64::NAN,
+            Self::Gaussian | Self::Softmax => f64::NAN,
+            Self::Heteroscedastic => std_norm_cdf(value - mean),
+            Self::Survival => (1.0 - mean).clamp(0.0, 1.0),
             _ if value < 0.0 && self != Self::Tobit => 0.0,
             Self::Binomial | Self::Probit if value < 1.0 => 1.0 - mean,
             Self::Binomial | Self::Probit => 1.0,
