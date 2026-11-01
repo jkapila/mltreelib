@@ -3,6 +3,7 @@ site_url: https://jkapila.github.io/mltreelib/
 site_description: Tree-based machine learning with a Rust core
 theme:
   variant: modern
+  custom_dir: overrides
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
