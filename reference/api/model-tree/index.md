@@ -6,6 +6,14 @@ The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [
 
 `pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, interaction_groups=Ellipsis, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False))` Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log leaves, NA-aware (learned split directions + NA-indicator leaf terms). Task: regression, binary probability estimation, or count modeling.
 
+### ModelTree.apply
+
+`pythonapply((self, /, x))` Return the leaf ID (0..n\_leaves-1) for each input row.
+
+Args: x: raw rows of predictors.
+
+Returns: one integer leaf ID per row.
+
 ### ModelTree.break\_down
 
 `pythonbreak_down((self, /, row))` DALEX-style break-down of one response-scale prediction.
@@ -40,6 +48,14 @@ Args: x: rows of predictors; `None` entries are missing (NA rows train). y: targ
 
 Returns: nothing; the fitted tree replaces the inner model.
 
+### ModelTree.leaf\_samples
+
+`pythonleaf_samples((self, /, x))` Return row indices grouped by leaf ID: {leaf\_id: \[row\_indices\]}.
+
+Args: x: raw rows of predictors.
+
+Returns: dict mapping integer leaf\_id to a list of row indices.
+
 ### ModelTree.leaves
 
 `pythonleaves((self, /))` Fitted leaf models with their empirical target distribution stats.
@@ -63,6 +79,24 @@ Returns: leaf count.
 Args: x: rows of predictors; `None` entries are missing.
 
 Returns: one mean per row (binomial P(Y=1), Poisson expected count, or Gaussian regression value). No thresholding into hard labels.
+
+### ModelTree.predict\_interval
+
+`pythonpredict_interval((self, /, x, coverage=0.9))` Empirical prediction interval `(lower, upper)` per row at the requested coverage.
+
+Args: x: raw rows of predictors. coverage: coverage probability in (0, 1) (default 0.90 for a 90% interval).
+
+Returns: list of `(lower, upper)` tuples.
+
+### ModelTree.predict\_label
+
+`pythonpredict_label((self, /, x, threshold=0.5))` Hard binary class labels (0 or 1), one label per input row.
+
+Args: x: raw rows of predictors. threshold: probability threshold (default 0.5).
+
+Returns: one integer label (0 or 1) per row.
+
+Raises: ValueError unless the fitted leaf family is binomial.
 
 ### ModelTree.predict\_proba
 
@@ -89,6 +123,14 @@ Returns: one dict per depth level with `depth`, `nodes`, `rows`, `cols`, `candid
 Args: x: rows of predictors (NA never blocks). tau: quantile level.
 
 Returns: one quantile per row (NaN when a leaf's digest was dropped).
+
+### ModelTree.retrain
+
+`pythonretrain((self, /, x, y, control=None, w=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))` Retrain all leaf models on new or existing data without altering tree topology or splits.
+
+Args: x: rows of predictors; `None` entries are missing. y: targets. control: optional LeafControl instance. If None, derived from current parameters. w: optional sample weights. leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber"). leaf\_family: optional leaf distribution override ("gaussian", "binomial", "poisson"). leaf\_cols: optional leaf columns policy override ("all", "path\_used"). l1: optional lasso penalty override. l2: optional ridge penalty override. leaf\_digest: optional bool whether to keep leaf t-digests. tau: optional quantile tau when leaf is "quantile" (default 0.5).
+
+Returns: nothing; leaves are updated in place.
 
 ### ModelTree.split\_paths
 
@@ -117,3 +159,7 @@ Returns: one dict per split with `col`, `threshold`, `missing_left`, `gain` (goo
 Args: none.
 
 Returns: log lines.
+
+## LeafControl
+
+`pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5))` Parameter controls for fitting leaf models independently of tree topology.
