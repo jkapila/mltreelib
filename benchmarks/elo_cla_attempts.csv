@@ -1,0 +1,733 @@
+dataset,model,status,seconds
+credit-g,ModelTree(all),ok,6.5
+credit-g,ModelTree(mean),ok,5.9
+credit-g,ModelTree(path),ok,5.7
+credit-g,ModelTree(winnow),ok,6.3
+Bank_Customer_Churn,rpart,ok,1.1
+Bank_Customer_Churn,c50_tree,ok,3.2
+Bank_Customer_Churn,c50_rules,ok,2.9
+Bank_Customer_Churn,ctree,ok,2.5
+Bank_Customer_Churn,glmtree,ok,112.0
+Bank_Customer_Churn,earth,ok,1.1
+Bank_Customer_Churn,mboost,ok,6.1
+Bank_Customer_Churn,ranger,ok,5.9
+Bank_Customer_Churn,bart,ok,12.0
+Bank_Customer_Churn,grf_rf,error,0.6
+Bank_Customer_Churn,MARS (mars-earth),timeout,300.2
+Bank_Customer_Churn,ModelTree(all),ok,7.6
+Bank_Customer_Churn,ModelTree(mean),ok,6.1
+Bank_Customer_Churn,ModelTree(path),ok,6.4
+Bank_Customer_Churn,ModelTree(winnow),ok,6.7
+Bank_Customer_Churn,modeltrees glmtree,ok,152.8
+E-CommereShippingData,rpart,ok,1.1
+E-CommereShippingData,c50_tree,ok,4.0
+E-CommereShippingData,c50_rules,ok,5.5
+E-CommereShippingData,ctree,ok,4.1
+E-CommereShippingData,glmtree,ok,95.1
+E-CommereShippingData,earth,ok,1.3
+E-CommereShippingData,mboost,ok,6.6
+E-CommereShippingData,ranger,ok,6.9
+E-CommereShippingData,bart,ok,13.5
+E-CommereShippingData,grf_rf,error,0.7
+E-CommereShippingData,MARS (mars-earth),ok,136.9
+E-CommereShippingData,ModelTree(all),ok,7.6
+E-CommereShippingData,ModelTree(mean),ok,7.1
+E-CommereShippingData,ModelTree(path),ok,7.3
+E-CommereShippingData,ModelTree(winnow),error,7.5
+E-CommereShippingData,modeltrees glmtree,ok,59.8
+Fitness_Club,glmtree,error,2.9
+Fitness_Club,earth,error,0.6
+Fitness_Club,bart,error,2.1
+Fitness_Club,grf_rf,error,0.6
+Fitness_Club,MARS (mars-earth),error,5.7
+Fitness_Club,ModelTree(all),ok,6.0
+Fitness_Club,ModelTree(mean),ok,5.8
+Fitness_Club,ModelTree(path),ok,6.0
+Fitness_Club,ModelTree(winnow),ok,6.0
+Fitness_Club,modeltrees glmtree,timeout,300.2
+Is-this-a-good-customer,rpart,ok,0.7
+Is-this-a-good-customer,c50_tree,ok,3.2
+Is-this-a-good-customer,c50_rules,ok,2.6
+Is-this-a-good-customer,ctree,ok,2.9
+Is-this-a-good-customer,glmtree,ok,2.4
+Is-this-a-good-customer,earth,ok,0.8
+Is-this-a-good-customer,mboost,ok,39.6
+Is-this-a-good-customer,ranger,ok,2.4
+Is-this-a-good-customer,bart,ok,2.5
+Is-this-a-good-customer,grf_rf,error,0.6
+Is-this-a-good-customer,MARS (mars-earth),ok,13.4
+Is-this-a-good-customer,ModelTree(all),ok,6.5
+Is-this-a-good-customer,ModelTree(mean),ok,6.0
+Is-this-a-good-customer,ModelTree(path),ok,6.0
+Is-this-a-good-customer,ModelTree(winnow),ok,6.1
+Is-this-a-good-customer,modeltrees glmtree,ok,5.6
+Marketing_Campaign,rpart,ok,0.7
+Marketing_Campaign,c50_tree,ok,2.6
+Marketing_Campaign,c50_rules,ok,2.6
+Marketing_Campaign,ctree,error,10.7
+Marketing_Campaign,glmtree,error,17.7
+Marketing_Campaign,earth,error,0.8
+Marketing_Campaign,mboost,error,3.1
+Marketing_Campaign,ranger,ok,2.8
+Marketing_Campaign,bart,error,3.0
+Marketing_Campaign,grf_rf,error,0.6
+Marketing_Campaign,MARS (mars-earth),error,6.3
+Marketing_Campaign,ModelTree(all),error,9.9
+Marketing_Campaign,ModelTree(mean),ok,5.9
+Marketing_Campaign,ModelTree(path),ok,6.1
+Marketing_Campaign,ModelTree(winnow),ok,9.7
+Marketing_Campaign,modeltrees glmtree,timeout,300.2
+NATICUSdroid,rpart,ok,1.6
+NATICUSdroid,c50_tree,ok,4.0
+NATICUSdroid,c50_rules,ok,3.8
+NATICUSdroid,ctree,ok,3.8
+NATICUSdroid,glmtree,ok,4.0
+NATICUSdroid,earth,ok,2.3
+NATICUSdroid,mboost,ok,18.1
+NATICUSdroid,ranger,ok,6.6
+NATICUSdroid,bart,ok,8.6
+NATICUSdroid,grf_rf,error,1.1
+NATICUSdroid,MARS (mars-earth),timeout,300.2
+NATICUSdroid,ModelTree(all),ok,32.1
+NATICUSdroid,ModelTree(mean),ok,8.3
+NATICUSdroid,ModelTree(path),ok,8.4
+NATICUSdroid,ModelTree(winnow),ok,25.3
+NATICUSdroid,modeltrees glmtree,ok,17.6
+Bank_Customer_Churn,CTBoost,ok,5.9
+Bank_Customer_Churn,CatBoost(200),ok,8.1
+Bank_Customer_Churn,ChimeraBoost,ok,8.7
+Bank_Customer_Churn,EBM,ok,25.0
+Bank_Customer_Churn,ExtraTrees,ok,7.4
+Bank_Customer_Churn,HistGradientBoosting,ok,6.2
+Bank_Customer_Churn,KNN,ok,5.7
+Bank_Customer_Churn,LightGBM(200),ok,5.9
+Bank_Customer_Churn,forust (Rust),ok,6.9
+Bank_Customer_Churn,modeltrees multinomtree,timeout,180.1
+Bank_Customer_Churn,perpetual (Rust),ok,6.9
+Bank_Customer_Churn,sklearn GBM,ok,7.8
+Bank_Customer_Churn,sklearn LogReg,ok,6.3
+Bank_Customer_Churn,sklearn RF,ok,7.5
+Bank_Customer_Churn,sklearn tree,ok,5.9
+Bank_Customer_Churn,statsmodels MNLogit,error,5.6
+E-CommereShippingData,CTBoost,ok,5.8
+E-CommereShippingData,CatBoost(200),ok,7.8
+E-CommereShippingData,ChimeraBoost,ok,8.3
+E-CommereShippingData,EBM,ok,22.3
+E-CommereShippingData,ExtraTrees,ok,7.5
+E-CommereShippingData,HistGradientBoosting,ok,6.4
+E-CommereShippingData,KNN,ok,5.9
+E-CommereShippingData,LightGBM(200),ok,6.0
+E-CommereShippingData,forust (Rust),ok,9.0
+E-CommereShippingData,modeltrees multinomtree,ok,98.8
+E-CommereShippingData,perpetual (Rust),ok,6.1
+E-CommereShippingData,sklearn GBM,ok,7.5
+E-CommereShippingData,sklearn LogReg,ok,6.5
+E-CommereShippingData,sklearn RF,ok,7.7
+E-CommereShippingData,sklearn tree,ok,5.9
+E-CommereShippingData,statsmodels MNLogit,error,6.0
+Fitness_Club,CTBoost,ok,5.9
+Fitness_Club,CatBoost(200),ok,6.6
+Fitness_Club,ChimeraBoost,ok,6.7
+Fitness_Club,EBM,ok,16.1
+Fitness_Club,forust (Rust),ok,8.6
+Fitness_Club,modeltrees multinomtree,timeout,180.1
+Fitness_Club,perpetual (Rust),ok,5.7
+Fitness_Club,sklearn GBM,ok,5.8
+Fitness_Club,sklearn LogReg,ok,5.6
+Fitness_Club,sklearn RF,ok,5.8
+Fitness_Club,sklearn tree,ok,5.8
+Fitness_Club,statsmodels MNLogit,error,5.8
+Is-this-a-good-customer,CTBoost,ok,5.6
+Is-this-a-good-customer,CatBoost(200),ok,6.8
+Is-this-a-good-customer,ChimeraBoost,ok,7.5
+Is-this-a-good-customer,EBM,ok,18.6
+Is-this-a-good-customer,ExtraTrees,ok,6.1
+Is-this-a-good-customer,HistGradientBoosting,ok,6.2
+Is-this-a-good-customer,KNN,ok,5.9
+Is-this-a-good-customer,LightGBM(200),ok,6.0
+Is-this-a-good-customer,forust (Rust),ok,7.4
+Is-this-a-good-customer,modeltrees multinomtree,ok,5.8
+Is-this-a-good-customer,perpetual (Rust),ok,5.9
+Is-this-a-good-customer,sklearn GBM,ok,6.0
+Is-this-a-good-customer,sklearn LogReg,ok,6.0
+Is-this-a-good-customer,sklearn RF,ok,6.1
+Is-this-a-good-customer,sklearn tree,ok,5.9
+Is-this-a-good-customer,statsmodels MNLogit,error,5.5
+Marketing_Campaign,CTBoost,error,5.6
+Marketing_Campaign,CatBoost(200),ok,6.9
+Marketing_Campaign,ChimeraBoost,ok,7.2
+Marketing_Campaign,EBM,ok,74.4
+Marketing_Campaign,ExtraTrees,ok,6.3
+Marketing_Campaign,HistGradientBoosting,error,5.9
+Marketing_Campaign,KNN,ok,5.7
+Marketing_Campaign,LightGBM(200),ok,5.8
+Marketing_Campaign,forust (Rust),ok,6.0
+Marketing_Campaign,modeltrees multinomtree,timeout,180.1
+Marketing_Campaign,perpetual (Rust),ok,7.0
+Marketing_Campaign,sklearn GBM,ok,6.7
+Marketing_Campaign,sklearn LogReg,ok,5.8
+Marketing_Campaign,sklearn RF,ok,6.2
+Marketing_Campaign,sklearn tree,ok,5.8
+Marketing_Campaign,statsmodels MNLogit,error,5.6
+NATICUSdroid,CTBoost,ok,6.8
+NATICUSdroid,CatBoost(200),ok,7.3
+NATICUSdroid,ChimeraBoost,ok,8.2
+NATICUSdroid,EBM,ok,26.6
+NATICUSdroid,ExtraTrees,ok,7.5
+NATICUSdroid,HistGradientBoosting,ok,7.1
+NATICUSdroid,KNN,ok,6.4
+NATICUSdroid,LightGBM(200),ok,6.4
+NATICUSdroid,forust (Rust),ok,7.4
+NATICUSdroid,modeltrees multinomtree,timeout,180.1
+NATICUSdroid,perpetual (Rust),timeout,181.1
+NATICUSdroid,sklearn GBM,ok,8.9
+NATICUSdroid,sklearn LogReg,ok,7.4
+NATICUSdroid,sklearn RF,ok,7.2
+NATICUSdroid,sklearn tree,ok,6.3
+NATICUSdroid,statsmodels MNLogit,error,5.8
+SDSS17,rpart,timeout,180.1
+SDSS17,c50_tree,ok,27.1
+SDSS17,c50_rules,ok,24.9
+SDSS17,ctree,timeout,180.5
+SDSS17,glmtree,error,3.1
+SDSS17,earth,error,2.8
+SDSS17,mboost,timeout,670.5
+SDSS17,ranger,ok,80.9
+SDSS17,bart,error,2.7
+SDSS17,grf_rf,error,2.7
+SDSS17,CTBoost,error,9.3
+SDSS17,CatBoost(200),ok,17.2
+SDSS17,ChimeraBoost,ok,20.6
+SDSS17,EBM,timeout,180.4
+SDSS17,ExtraTrees,ok,14.8
+SDSS17,HistGradientBoosting,error,7.2
+SDSS17,KNN,ok,8.3
+SDSS17,LightGBM(200),ok,12.3
+SDSS17,MARS (mars-earth),timeout,180.2
+SDSS17,ModelTree(all),error,6.8
+SDSS17,ModelTree(mean),error,6.7
+SDSS17,ModelTree(path),error,6.7
+SDSS17,ModelTree(winnow),error,6.7
+SDSS17,forust (Rust),error,6.8
+SDSS17,modeltrees glmtree,error,6.7
+SDSS17,modeltrees multinomtree,timeout,180.9
+SDSS17,perpetual (Rust),error,9.7
+SDSS17,sklearn GBM,ok,127.0
+SDSS17,sklearn LogReg,ok,16.0
+SDSS17,sklearn RF,ok,38.6
+SDSS17,sklearn tree,ok,9.3
+SDSS17,statsmodels MNLogit,error,6.8
+bank-marketing,rpart,ok,3.0
+bank-marketing,c50_tree,ok,4.7
+bank-marketing,c50_rules,ok,4.5
+bank-marketing,ctree,ok,3.2
+bank-marketing,glmtree,timeout,180.2
+bank-marketing,earth,ok,3.5
+bank-marketing,mboost,ok,15.6
+bank-marketing,ranger,ok,19.4
+bank-marketing,bart,ok,51.9
+bank-marketing,grf_rf,error,1.0
+bank-marketing,CTBoost,ok,7.2
+bank-marketing,CatBoost(200),ok,11.7
+bank-marketing,ChimeraBoost,ok,10.5
+bank-marketing,EBM,ok,29.2
+bank-marketing,ExtraTrees,ok,11.2
+bank-marketing,HistGradientBoosting,ok,7.1
+bank-marketing,KNN,ok,7.2
+bank-marketing,LightGBM(200),ok,7.0
+bank-marketing,MARS (mars-earth),timeout,180.1
+bank-marketing,ModelTree(all),ok,15.3
+bank-marketing,ModelTree(mean),ok,7.8
+bank-marketing,ModelTree(path),ok,9.0
+bank-marketing,ModelTree(winnow),ok,12.4
+bank-marketing,forust (Rust),ok,9.2
+bank-marketing,modeltrees glmtree,timeout,180.2
+bank-marketing,modeltrees multinomtree,timeout,180.2
+bank-marketing,perpetual (Rust),ok,8.8
+bank-marketing,sklearn GBM,ok,12.2
+bank-marketing,sklearn LogReg,ok,22.9
+bank-marketing,sklearn RF,ok,12.3
+bank-marketing,sklearn tree,ok,7.1
+bank-marketing,statsmodels MNLogit,error,6.1
+blood-transfusion-service-center,rpart,ok,0.6
+blood-transfusion-service-center,c50_tree,ok,2.5
+blood-transfusion-service-center,c50_rules,ok,2.5
+blood-transfusion-service-center,ctree,ok,2.1
+blood-transfusion-service-center,glmtree,ok,2.3
+blood-transfusion-service-center,earth,ok,0.7
+blood-transfusion-service-center,mboost,ok,3.1
+blood-transfusion-service-center,ranger,ok,2.2
+blood-transfusion-service-center,bart,ok,1.5
+blood-transfusion-service-center,grf_rf,ok,2.4
+blood-transfusion-service-center,CTBoost,ok,5.6
+blood-transfusion-service-center,CatBoost(200),ok,5.8
+blood-transfusion-service-center,ChimeraBoost,ok,6.3
+blood-transfusion-service-center,EBM,ok,14.6
+blood-transfusion-service-center,ExtraTrees,ok,5.8
+blood-transfusion-service-center,HistGradientBoosting,ok,5.8
+blood-transfusion-service-center,KNN,ok,5.6
+blood-transfusion-service-center,LightGBM(200),ok,5.7
+blood-transfusion-service-center,MARS (mars-earth),ok,6.0
+blood-transfusion-service-center,ModelTree(all),ok,5.7
+blood-transfusion-service-center,ModelTree(mean),ok,5.7
+blood-transfusion-service-center,ModelTree(path),ok,5.6
+blood-transfusion-service-center,ModelTree(winnow),ok,5.6
+blood-transfusion-service-center,forust (Rust),ok,6.2
+blood-transfusion-service-center,modeltrees glmtree,ok,6.2
+blood-transfusion-service-center,modeltrees multinomtree,timeout,180.2
+blood-transfusion-service-center,perpetual (Rust),ok,5.6
+blood-transfusion-service-center,sklearn GBM,ok,5.8
+blood-transfusion-service-center,sklearn LogReg,ok,5.6
+blood-transfusion-service-center,sklearn RF,ok,5.9
+blood-transfusion-service-center,sklearn tree,ok,5.7
+blood-transfusion-service-center,statsmodels MNLogit,ok,5.7
+churn,rpart,ok,0.9
+churn,c50_tree,ok,2.8
+churn,c50_rules,ok,2.8
+churn,ctree,ok,2.5
+churn,glmtree,timeout,180.1
+churn,earth,ok,1.5
+churn,mboost,error,2.3
+churn,ranger,ok,3.6
+churn,bart,ok,5.3
+churn,grf_rf,error,0.6
+churn,CTBoost,ok,5.8
+churn,CatBoost(200),ok,7.5
+churn,ChimeraBoost,ok,8.2
+churn,EBM,ok,45.9
+churn,ExtraTrees,ok,6.4
+churn,HistGradientBoosting,ok,6.2
+churn,KNN,ok,6.0
+churn,LightGBM(200),ok,6.1
+churn,MARS (mars-earth),timeout,180.2
+churn,ModelTree(all),error,8.7
+churn,ModelTree(mean),ok,6.0
+churn,ModelTree(path),ok,6.0
+churn,ModelTree(winnow),ok,6.8
+churn,forust (Rust),ok,6.3
+churn,modeltrees glmtree,timeout,180.2
+churn,modeltrees multinomtree,timeout,180.2
+churn,perpetual (Rust),ok,11.0
+churn,sklearn GBM,ok,7.9
+churn,sklearn LogReg,ok,6.1
+churn,sklearn RF,ok,7.0
+churn,sklearn tree,ok,6.0
+churn,statsmodels MNLogit,error,5.7
+coil2000_insurance_policies,rpart,ok,1.4
+coil2000_insurance_policies,c50_tree,ok,4.2
+coil2000_insurance_policies,c50_rules,ok,4.2
+coil2000_insurance_policies,ctree,ok,3.0
+coil2000_insurance_policies,glmtree,ok,7.0
+coil2000_insurance_policies,earth,ok,3.2
+coil2000_insurance_policies,mboost,error,2.7
+coil2000_insurance_policies,ranger,ok,7.9
+coil2000_insurance_policies,bart,ok,11.5
+coil2000_insurance_policies,grf_rf,error,1.0
+coil2000_insurance_policies,CTBoost,ok,7.1
+coil2000_insurance_policies,CatBoost(200),ok,9.0
+coil2000_insurance_policies,ChimeraBoost,ok,9.7
+coil2000_insurance_policies,EBM,ok,27.8
+coil2000_insurance_policies,ExtraTrees,ok,8.0
+coil2000_insurance_policies,HistGradientBoosting,ok,7.2
+coil2000_insurance_policies,KNN,ok,6.5
+coil2000_insurance_policies,LightGBM(200),ok,6.9
+coil2000_insurance_policies,MARS (mars-earth),timeout,180.2
+coil2000_insurance_policies,ModelTree(all),ok,56.9
+coil2000_insurance_policies,ModelTree(mean),ok,6.8
+coil2000_insurance_policies,ModelTree(path),ok,7.2
+coil2000_insurance_policies,ModelTree(winnow),ok,17.2
+coil2000_insurance_policies,forust (Rust),ok,7.2
+coil2000_insurance_policies,modeltrees glmtree,ok,22.5
+coil2000_insurance_policies,modeltrees multinomtree,timeout,180.1
+coil2000_insurance_policies,perpetual (Rust),timeout,181.8
+coil2000_insurance_policies,sklearn GBM,ok,11.8
+coil2000_insurance_policies,sklearn LogReg,ok,18.8
+coil2000_insurance_policies,sklearn RF,ok,8.4
+coil2000_insurance_policies,sklearn tree,ok,6.7
+coil2000_insurance_policies,statsmodels MNLogit,error,6.2
+credit-g,grf_rf,error,0.6
+credit-g,statsmodels MNLogit,error,5.6
+diabetes,rpart,ok,0.6
+diabetes,c50_tree,ok,2.5
+diabetes,c50_rules,ok,2.5
+diabetes,ctree,ok,2.1
+diabetes,glmtree,ok,2.3
+diabetes,earth,ok,0.7
+diabetes,mboost,ok,3.5
+diabetes,ranger,ok,2.3
+diabetes,bart,ok,1.5
+diabetes,grf_rf,ok,2.6
+diabetes,CTBoost,ok,5.6
+diabetes,CatBoost(200),ok,6.0
+diabetes,ChimeraBoost,ok,6.4
+diabetes,EBM,ok,17.8
+diabetes,ExtraTrees,ok,5.9
+diabetes,HistGradientBoosting,ok,5.9
+diabetes,KNN,ok,5.6
+diabetes,LightGBM(200),ok,5.7
+diabetes,MARS (mars-earth),ok,9.3
+diabetes,ModelTree(all),ok,5.8
+diabetes,ModelTree(mean),ok,5.6
+diabetes,ModelTree(path),error,5.8
+diabetes,ModelTree(winnow),ok,5.7
+diabetes,forust (Rust),ok,6.0
+diabetes,modeltrees glmtree,ok,5.9
+diabetes,modeltrees multinomtree,ok,5.9
+diabetes,perpetual (Rust),ok,5.8
+diabetes,sklearn GBM,ok,5.9
+diabetes,sklearn LogReg,ok,5.6
+diabetes,sklearn RF,ok,5.8
+diabetes,sklearn tree,ok,5.8
+diabetes,statsmodels MNLogit,ok,5.6
+hazelnut-spread-contaminant-detection,rpart,ok,1.0
+hazelnut-spread-contaminant-detection,c50_tree,ok,2.8
+hazelnut-spread-contaminant-detection,c50_rules,ok,2.8
+hazelnut-spread-contaminant-detection,ctree,ok,2.5
+hazelnut-spread-contaminant-detection,glmtree,ok,45.8
+hazelnut-spread-contaminant-detection,earth,ok,1.1
+hazelnut-spread-contaminant-detection,mboost,ok,6.5
+hazelnut-spread-contaminant-detection,ranger,ok,3.5
+hazelnut-spread-contaminant-detection,bart,ok,3.1
+hazelnut-spread-contaminant-detection,grf_rf,ok,7.2
+hazelnut-spread-contaminant-detection,CTBoost,ok,5.8
+hazelnut-spread-contaminant-detection,CatBoost(200),ok,6.5
+hazelnut-spread-contaminant-detection,ChimeraBoost,ok,7.3
+hazelnut-spread-contaminant-detection,EBM,ok,94.7
+hazelnut-spread-contaminant-detection,ExtraTrees,ok,6.2
+hazelnut-spread-contaminant-detection,HistGradientBoosting,ok,6.2
+hazelnut-spread-contaminant-detection,KNN,ok,6.0
+hazelnut-spread-contaminant-detection,LightGBM(200),ok,6.1
+hazelnut-spread-contaminant-detection,MARS (mars-earth),timeout,180.2
+hazelnut-spread-contaminant-detection,ModelTree(all),ok,7.9
+hazelnut-spread-contaminant-detection,ModelTree(mean),ok,6.0
+hazelnut-spread-contaminant-detection,ModelTree(path),ok,6.1
+hazelnut-spread-contaminant-detection,ModelTree(winnow),ok,6.8
+hazelnut-spread-contaminant-detection,forust (Rust),ok,6.8
+hazelnut-spread-contaminant-detection,modeltrees glmtree,ok,28.2
+hazelnut-spread-contaminant-detection,modeltrees multinomtree,ok,49.3
+hazelnut-spread-contaminant-detection,perpetual (Rust),ok,82.9
+hazelnut-spread-contaminant-detection,sklearn GBM,ok,8.2
+hazelnut-spread-contaminant-detection,sklearn LogReg,ok,5.7
+hazelnut-spread-contaminant-detection,sklearn RF,ok,6.9
+hazelnut-spread-contaminant-detection,sklearn tree,ok,5.9
+hazelnut-spread-contaminant-detection,statsmodels MNLogit,ok,5.7
+heloc,rpart,ok,1.5
+heloc,c50_tree,ok,3.2
+heloc,c50_rules,ok,3.2
+heloc,ctree,ok,2.8
+heloc,glmtree,ok,14.5
+heloc,earth,ok,1.2
+heloc,mboost,ok,9.3
+heloc,ranger,ok,6.4
+heloc,bart,ok,10.6
+heloc,grf_rf,ok,18.5
+heloc,CTBoost,ok,6.2
+heloc,CatBoost(200),ok,6.8
+heloc,ChimeraBoost,ok,7.3
+heloc,EBM,ok,29.9
+heloc,ExtraTrees,ok,7.4
+heloc,HistGradientBoosting,ok,6.6
+heloc,KNN,ok,6.0
+heloc,LightGBM(200),ok,6.2
+heloc,MARS (mars-earth),timeout,180.1
+heloc,ModelTree(all),ok,12.1
+heloc,ModelTree(mean),ok,6.2
+heloc,ModelTree(path),ok,6.6
+heloc,ModelTree(winnow),ok,10.7
+heloc,forust (Rust),ok,6.7
+heloc,modeltrees glmtree,ok,9.2
+heloc,modeltrees multinomtree,ok,12.7
+heloc,perpetual (Rust),ok,18.3
+heloc,sklearn GBM,ok,9.1
+heloc,sklearn LogReg,ok,6.5
+heloc,sklearn RF,ok,8.1
+heloc,sklearn tree,ok,6.0
+heloc,statsmodels MNLogit,ok,5.8
+in_vehicle_coupon_recommendation,rpart,ok,1.5
+in_vehicle_coupon_recommendation,c50_tree,ok,3.4
+in_vehicle_coupon_recommendation,c50_rules,ok,4.0
+in_vehicle_coupon_recommendation,ctree,ok,5.7
+in_vehicle_coupon_recommendation,glmtree,ok,30.2
+in_vehicle_coupon_recommendation,earth,ok,3.6
+in_vehicle_coupon_recommendation,mboost,timeout,180.1
+in_vehicle_coupon_recommendation,ranger,ok,7.6
+in_vehicle_coupon_recommendation,bart,ok,14.1
+in_vehicle_coupon_recommendation,grf_rf,error,0.8
+in_vehicle_coupon_recommendation,CTBoost,ok,6.4
+in_vehicle_coupon_recommendation,CatBoost(200),ok,11.2
+in_vehicle_coupon_recommendation,ChimeraBoost,ok,7.7
+in_vehicle_coupon_recommendation,EBM,ok,63.6
+in_vehicle_coupon_recommendation,ExtraTrees,ok,8.2
+in_vehicle_coupon_recommendation,HistGradientBoosting,ok,6.8
+in_vehicle_coupon_recommendation,KNN,ok,6.3
+in_vehicle_coupon_recommendation,LightGBM(200),ok,6.5
+in_vehicle_coupon_recommendation,MARS (mars-earth),ok,36.6
+in_vehicle_coupon_recommendation,ModelTree(all),ok,12.4
+in_vehicle_coupon_recommendation,ModelTree(mean),ok,6.7
+in_vehicle_coupon_recommendation,ModelTree(path),ok,7.2
+in_vehicle_coupon_recommendation,ModelTree(winnow),ok,7.8
+in_vehicle_coupon_recommendation,forust (Rust),ok,7.6
+in_vehicle_coupon_recommendation,modeltrees glmtree,ok,52.4
+in_vehicle_coupon_recommendation,modeltrees multinomtree,timeout,180.1
+in_vehicle_coupon_recommendation,perpetual (Rust),ok,20.5
+in_vehicle_coupon_recommendation,sklearn GBM,ok,8.4
+in_vehicle_coupon_recommendation,sklearn LogReg,ok,6.8
+in_vehicle_coupon_recommendation,sklearn RF,ok,7.9
+in_vehicle_coupon_recommendation,sklearn tree,ok,6.3
+in_vehicle_coupon_recommendation,statsmodels MNLogit,error,6.0
+jm1,rpart,ok,1.0
+jm1,c50_tree,ok,3.5
+jm1,c50_rules,ok,3.5
+jm1,ctree,ok,2.6
+jm1,glmtree,error,162.1
+jm1,earth,error,0.8
+jm1,mboost,error,2.4
+jm1,ranger,error,2.2
+jm1,bart,error,0.8
+jm1,grf_rf,ok,18.7
+jm1,CTBoost,ok,6.1
+jm1,CatBoost(200),ok,6.9
+jm1,ChimeraBoost,ok,8.1
+jm1,EBM,ok,40.5
+jm1,ExtraTrees,ok,7.4
+jm1,HistGradientBoosting,ok,6.3
+jm1,KNN,ok,6.1
+jm1,LightGBM(200),ok,6.2
+jm1,MARS (mars-earth),error,6.0
+jm1,ModelTree(all),ok,16.0
+jm1,ModelTree(mean),ok,6.2
+jm1,ModelTree(path),ok,6.5
+jm1,ModelTree(winnow),ok,15.8
+jm1,forust (Rust),ok,7.0
+jm1,modeltrees glmtree,timeout,180.2
+jm1,modeltrees multinomtree,timeout,180.2
+jm1,perpetual (Rust),ok,10.7
+jm1,sklearn GBM,ok,9.9
+jm1,sklearn LogReg,ok,6.4
+jm1,sklearn RF,ok,8.7
+jm1,sklearn tree,ok,6.1
+jm1,statsmodels MNLogit,error,5.9
+maternal_health_risk,rpart,ok,0.7
+maternal_health_risk,c50_tree,ok,2.5
+maternal_health_risk,c50_rules,ok,2.6
+maternal_health_risk,ctree,ok,2.2
+maternal_health_risk,glmtree,error,0.5
+maternal_health_risk,earth,error,0.5
+maternal_health_risk,mboost,ok,2.7
+maternal_health_risk,ranger,ok,2.3
+maternal_health_risk,bart,error,0.5
+maternal_health_risk,grf_rf,ok,2.6
+maternal_health_risk,CTBoost,ok,5.5
+maternal_health_risk,CatBoost(200),ok,5.9
+maternal_health_risk,ChimeraBoost,ok,6.7
+maternal_health_risk,EBM,ok,25.8
+maternal_health_risk,ExtraTrees,ok,5.9
+maternal_health_risk,HistGradientBoosting,ok,6.5
+maternal_health_risk,KNN,ok,5.8
+maternal_health_risk,LightGBM(200),ok,6.0
+maternal_health_risk,MARS (mars-earth),ok,6.2
+maternal_health_risk,ModelTree(all),error,5.6
+maternal_health_risk,ModelTree(mean),error,5.6
+maternal_health_risk,ModelTree(path),error,5.5
+maternal_health_risk,ModelTree(winnow),error,5.8
+maternal_health_risk,forust (Rust),error,5.6
+maternal_health_risk,modeltrees glmtree,error,5.6
+maternal_health_risk,modeltrees multinomtree,ok,6.2
+maternal_health_risk,perpetual (Rust),error,5.6
+maternal_health_risk,sklearn GBM,ok,6.2
+maternal_health_risk,sklearn LogReg,ok,6.1
+maternal_health_risk,sklearn RF,ok,6.0
+maternal_health_risk,sklearn tree,ok,5.6
+maternal_health_risk,statsmodels MNLogit,ok,5.5
+online_shoppers_intention,rpart,ok,1.3
+online_shoppers_intention,c50_tree,ok,3.3
+online_shoppers_intention,c50_rules,ok,3.4
+online_shoppers_intention,ctree,error,2.2
+online_shoppers_intention,glmtree,error,2.2
+online_shoppers_intention,earth,error,0.8
+online_shoppers_intention,mboost,error,2.4
+online_shoppers_intention,ranger,ok,7.0
+online_shoppers_intention,bart,error,0.8
+online_shoppers_intention,grf_rf,error,0.7
+online_shoppers_intention,CTBoost,error,0.2
+online_shoppers_intention,CatBoost(200),error,0.2
+online_shoppers_intention,ChimeraBoost,error,0.2
+online_shoppers_intention,EBM,error,0.2
+online_shoppers_intention,ExtraTrees,error,0.2
+online_shoppers_intention,HistGradientBoosting,error,0.2
+online_shoppers_intention,KNN,error,0.2
+online_shoppers_intention,LightGBM(200),error,0.2
+online_shoppers_intention,MARS (mars-earth),error,0.2
+online_shoppers_intention,ModelTree(all),error,0.2
+online_shoppers_intention,ModelTree(mean),error,0.2
+online_shoppers_intention,ModelTree(path),error,0.2
+online_shoppers_intention,ModelTree(winnow),error,0.2
+online_shoppers_intention,forust (Rust),error,0.2
+online_shoppers_intention,modeltrees glmtree,error,0.2
+online_shoppers_intention,modeltrees multinomtree,error,0.2
+online_shoppers_intention,perpetual (Rust),error,0.2
+online_shoppers_intention,sklearn GBM,error,0.2
+online_shoppers_intention,sklearn LogReg,error,0.2
+online_shoppers_intention,sklearn RF,error,0.2
+online_shoppers_intention,sklearn tree,error,0.2
+online_shoppers_intention,statsmodels MNLogit,error,0.2
+qsar-biodeg,rpart,ok,0.8
+qsar-biodeg,c50_tree,ok,2.6
+qsar-biodeg,c50_rules,ok,2.6
+qsar-biodeg,ctree,ok,2.4
+qsar-biodeg,glmtree,ok,2.2
+qsar-biodeg,earth,ok,0.8
+qsar-biodeg,mboost,ok,6.7
+qsar-biodeg,ranger,ok,2.5
+qsar-biodeg,bart,ok,1.8
+qsar-biodeg,grf_rf,error,0.6
+qsar-biodeg,CTBoost,ok,5.9
+qsar-biodeg,CatBoost(200),ok,6.6
+qsar-biodeg,ChimeraBoost,ok,6.5
+qsar-biodeg,EBM,ok,45.2
+qsar-biodeg,ExtraTrees,ok,5.9
+qsar-biodeg,HistGradientBoosting,ok,6.5
+qsar-biodeg,KNN,ok,5.9
+qsar-biodeg,LightGBM(200),ok,6.0
+qsar-biodeg,MARS (mars-earth),timeout,180.2
+qsar-biodeg,ModelTree(all),ok,8.4
+qsar-biodeg,ModelTree(mean),ok,5.7
+qsar-biodeg,ModelTree(path),ok,5.8
+qsar-biodeg,ModelTree(winnow),ok,8.1
+qsar-biodeg,forust (Rust),ok,6.1
+qsar-biodeg,modeltrees glmtree,ok,5.7
+qsar-biodeg,modeltrees multinomtree,ok,5.8
+qsar-biodeg,perpetual (Rust),timeout,180.3
+qsar-biodeg,sklearn GBM,ok,6.4
+qsar-biodeg,sklearn LogReg,ok,5.8
+qsar-biodeg,sklearn RF,ok,6.1
+qsar-biodeg,sklearn tree,ok,5.8
+qsar-biodeg,statsmodels MNLogit,error,5.6
+seismic-bumps,rpart,ok,0.7
+seismic-bumps,c50_tree,ok,2.6
+seismic-bumps,c50_rules,ok,2.6
+seismic-bumps,ctree,ok,2.2
+seismic-bumps,glmtree,ok,8.2
+seismic-bumps,earth,ok,0.8
+seismic-bumps,mboost,ok,4.6
+seismic-bumps,ranger,ok,2.6
+seismic-bumps,bart,ok,3.1
+seismic-bumps,grf_rf,error,0.6
+seismic-bumps,CTBoost,ok,5.7
+seismic-bumps,CatBoost(200),ok,6.6
+seismic-bumps,ChimeraBoost,ok,6.9
+seismic-bumps,EBM,ok,24.6
+seismic-bumps,ExtraTrees,ok,6.0
+seismic-bumps,HistGradientBoosting,ok,6.0
+seismic-bumps,KNN,ok,5.7
+seismic-bumps,LightGBM(200),ok,5.9
+seismic-bumps,MARS (mars-earth),ok,105.3
+seismic-bumps,ModelTree(all),ok,6.6
+seismic-bumps,ModelTree(mean),ok,5.7
+seismic-bumps,ModelTree(path),ok,5.8
+seismic-bumps,ModelTree(winnow),ok,6.0
+seismic-bumps,forust (Rust),ok,6.2
+seismic-bumps,modeltrees glmtree,ok,73.2
+seismic-bumps,modeltrees multinomtree,ok,5.7
+seismic-bumps,perpetual (Rust),ok,6.1
+seismic-bumps,sklearn GBM,ok,6.2
+seismic-bumps,sklearn LogReg,ok,5.9
+seismic-bumps,sklearn RF,ok,6.1
+seismic-bumps,sklearn tree,ok,5.7
+seismic-bumps,statsmodels MNLogit,error,5.6
+splice,rpart,ok,0.9
+splice,c50_tree,ok,3.0
+splice,c50_rules,ok,3.0
+splice,ctree,ok,3.1
+splice,glmtree,error,0.6
+splice,earth,error,0.6
+splice,mboost,error,2.2
+splice,ranger,error,2.1
+splice,bart,error,0.6
+splice,grf_rf,error,0.6
+splice,CTBoost,ok,6.1
+splice,CatBoost(200),ok,18.4
+splice,ChimeraBoost,ok,9.6
+splice,EBM,ok,24.0
+splice,ExtraTrees,ok,6.5
+splice,HistGradientBoosting,ok,7.3
+splice,KNN,ok,6.0
+splice,LightGBM(200),ok,6.3
+splice,MARS (mars-earth),timeout,180.2
+splice,ModelTree(all),error,5.7
+splice,ModelTree(mean),error,5.7
+splice,ModelTree(path),error,5.8
+splice,ModelTree(winnow),error,5.7
+splice,forust (Rust),error,5.7
+splice,modeltrees glmtree,error,5.7
+splice,modeltrees multinomtree,ok,6.5
+splice,perpetual (Rust),error,5.7
+splice,sklearn GBM,ok,10.7
+splice,sklearn LogReg,ok,6.1
+splice,sklearn RF,ok,6.6
+splice,sklearn tree,ok,5.8
+splice,statsmodels MNLogit,error,5.6
+students_dropout_and_academic_success,rpart,timeout,180.1
+students_dropout_and_academic_success,c50_tree,ok,3.1
+students_dropout_and_academic_success,c50_rules,ok,3.2
+students_dropout_and_academic_success,ctree,error,5.4
+students_dropout_and_academic_success,glmtree,error,0.8
+students_dropout_and_academic_success,earth,error,0.8
+students_dropout_and_academic_success,mboost,ok,6.7
+students_dropout_and_academic_success,ranger,ok,4.0
+students_dropout_and_academic_success,bart,error,0.7
+students_dropout_and_academic_success,grf_rf,error,0.7
+students_dropout_and_academic_success,CTBoost,ok,6.0
+students_dropout_and_academic_success,CatBoost(200),ok,9.5
+students_dropout_and_academic_success,ChimeraBoost,ok,8.0
+students_dropout_and_academic_success,EBM,ok,41.9
+students_dropout_and_academic_success,ExtraTrees,ok,6.7
+students_dropout_and_academic_success,HistGradientBoosting,ok,7.3
+students_dropout_and_academic_success,KNN,ok,5.9
+students_dropout_and_academic_success,LightGBM(200),ok,7.0
+students_dropout_and_academic_success,MARS (mars-earth),timeout,180.2
+students_dropout_and_academic_success,ModelTree(all),error,5.8
+students_dropout_and_academic_success,ModelTree(mean),error,5.8
+students_dropout_and_academic_success,ModelTree(path),error,5.8
+students_dropout_and_academic_success,ModelTree(winnow),error,5.7
+students_dropout_and_academic_success,forust (Rust),error,5.8
+students_dropout_and_academic_success,modeltrees glmtree,error,5.8
+students_dropout_and_academic_success,modeltrees multinomtree,ok,6.8
+students_dropout_and_academic_success,perpetual (Rust),error,5.8
+students_dropout_and_academic_success,sklearn GBM,ok,10.4
+students_dropout_and_academic_success,sklearn LogReg,ok,6.6
+students_dropout_and_academic_success,sklearn RF,ok,7.1
+students_dropout_and_academic_success,sklearn tree,ok,6.0
+students_dropout_and_academic_success,statsmodels MNLogit,error,5.7
+taiwanese_bankruptcy_prediction,rpart,ok,6.0
+taiwanese_bankruptcy_prediction,c50_tree,ok,8.8
+taiwanese_bankruptcy_prediction,c50_rules,ok,8.9
+taiwanese_bankruptcy_prediction,ctree,ok,5.8
+taiwanese_bankruptcy_prediction,glmtree,ok,7.3
+taiwanese_bankruptcy_prediction,earth,ok,20.0
+taiwanese_bankruptcy_prediction,mboost,error,4.8
+taiwanese_bankruptcy_prediction,ranger,error,4.5
+taiwanese_bankruptcy_prediction,bart,error,2.9
+taiwanese_bankruptcy_prediction,grf_rf,ok,30.7
+taiwanese_bankruptcy_prediction,CTBoost,ok,8.7
+taiwanese_bankruptcy_prediction,CatBoost(200),ok,8.9
+taiwanese_bankruptcy_prediction,ChimeraBoost,ok,8.7
+taiwanese_bankruptcy_prediction,EBM,ok,115.9
+taiwanese_bankruptcy_prediction,ExtraTrees,ok,7.8
+taiwanese_bankruptcy_prediction,HistGradientBoosting,ok,7.9
+taiwanese_bankruptcy_prediction,KNN,ok,6.8
+taiwanese_bankruptcy_prediction,LightGBM(200),ok,7.5
+taiwanese_bankruptcy_prediction,MARS (mars-earth),timeout,180.2
+taiwanese_bankruptcy_prediction,ModelTree(all),timeout,180.2
+taiwanese_bankruptcy_prediction,ModelTree(mean),ok,7.4
+taiwanese_bankruptcy_prediction,ModelTree(path),ok,7.4
+taiwanese_bankruptcy_prediction,ModelTree(winnow),ok,53.0
+taiwanese_bankruptcy_prediction,forust (Rust),ok,9.7
+taiwanese_bankruptcy_prediction,modeltrees glmtree,ok,12.6
+taiwanese_bankruptcy_prediction,modeltrees multinomtree,timeout,180.1
+taiwanese_bankruptcy_prediction,perpetual (Rust),timeout,181.4
+taiwanese_bankruptcy_prediction,sklearn GBM,ok,30.7
+taiwanese_bankruptcy_prediction,sklearn LogReg,ok,19.7
+taiwanese_bankruptcy_prediction,sklearn RF,ok,11.7
+taiwanese_bankruptcy_prediction,sklearn tree,ok,8.2
+taiwanese_bankruptcy_prediction,statsmodels MNLogit,timeout,180.1
