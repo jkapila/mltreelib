@@ -53,3 +53,49 @@ def test_split_eval_fast_and_exhaustive_modes():
     assert m_exh.n_leaves() >= 1
     p_exh = m_exh.predict([[10.0, 0.0]])
     assert abs(p_exh[0] - 21.0) < 1e-4
+
+
+def test_model_tree_apply_and_leaf_samples():
+    x = [[float(i)] for i in range(40)]
+    y = [0.0 if i < 20 else 10.0 for i in range(40)]
+    m = ModelTree(max_depth=2, min_rows=5, prune="none")
+    m.fit(x, y)
+
+    leaves = m.leaves()
+    assert len(leaves) == 2
+    assert leaves[0]["id"] == 0
+    assert leaves[1]["id"] == 1
+    assert "node_id" in leaves[0]
+
+    applied = m.apply(x)
+    assert len(applied) == 40
+    assert applied[:20] == [0] * 20
+    assert applied[20:] == [1] * 20
+
+    samples = m.leaf_samples(x)
+    assert set(samples.keys()) == {0, 1}
+    assert samples[0] == list(range(20))
+    assert samples[1] == list(range(20, 40))
+
+
+def test_predict_label_and_interval():
+    # 1. predict_label on binomial
+    x = [[float(i)] for i in range(40)]
+    y_bin = [0.0 if i < 20 else 1.0 for i in range(40)]
+    m_bin = ModelTree(leaf_family="binomial", max_depth=1, min_rows=5, prune="none")
+    m_bin.fit(x, y_bin)
+
+    labels = m_bin.predict_label(x, threshold=0.5)
+    assert len(labels) == 40
+    assert labels[:20] == [0] * 20
+    assert labels[20:] == [1] * 20
+
+    # 2. predict_interval on regression with leaf_digest
+    y_reg = [float(i) * 3.0 for i in range(40)]
+    m_reg = ModelTree(max_depth=1, min_rows=5, leaf_digest=True, prune="none")
+    m_reg.fit(x, y_reg)
+
+    intervals = m_reg.predict_interval(x, coverage=0.90)
+    assert len(intervals) == 40
+    for lo, hi in intervals:
+        assert lo <= hi

@@ -2489,6 +2489,42 @@ impl PyModelTree {
         self.tree()?.predict_proba(&x).map_err(PyValueError::new_err)
     }
 
+    /// Hard binary class labels (0 or 1), one label per input row.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors.
+    ///     threshold: probability threshold (default 0.5).
+    ///
+    /// Returns: one integer label (0 or 1) per row.
+    ///
+    /// Raises: ValueError unless the fitted leaf family is binomial.
+    #[pyo3(signature = (x, threshold = 0.5))]
+    fn predict_label(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        threshold: f64,
+    ) -> PyResult<Vec<usize>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        self.tree()?.predict_label(&x, threshold).map_err(PyValueError::new_err)
+    }
+
+    /// Empirical prediction interval `(lower, upper)` per row at the requested coverage.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors.
+    ///     coverage: coverage probability in (0, 1) (default 0.90 for a 90% interval).
+    ///
+    /// Returns: list of `(lower, upper)` tuples.
+    #[pyo3(signature = (x, coverage = 0.90))]
+    fn predict_interval(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        coverage: f64,
+    ) -> PyResult<Vec<(f64, f64)>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        self.tree()?.predict_interval(&x, coverage).map_err(PyValueError::new_err)
+    }
+
     /// Fitted binomial/Poisson CDF P(Y <= value), conditional on each row.
     ///
     /// Args:
@@ -2522,8 +2558,10 @@ impl PyModelTree {
     fn leaves(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
         let t = self.tree()?;
         let mut out = Vec::new();
-        for (leaf, n) in t.leaves() {
+        for (leaf, n, leaf_id, node_id) in t.leaf_entries() {
             let d = PyDict::new(py);
+            d.set_item("id", leaf_id)?;
+            d.set_item("node_id", node_id)?;
             let (cols, coef, na_coef, intercept) = match &leaf.linear {
                 Some(m) => (
                     m.cols.iter().map(|&j| t.col_names[j].clone()).collect::<Vec<_>>(),
@@ -2551,6 +2589,42 @@ impl PyModelTree {
             out.push(d.into_any().unbind());
         }
         Ok(out)
+    }
+
+    /// Return the leaf ID (0..n_leaves-1) for each input row.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors.
+    ///
+    /// Returns: one integer leaf ID per row.
+    #[pyo3(signature = (x))]
+    fn apply(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+    ) -> PyResult<Vec<usize>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        Ok(self.tree()?.apply(&x))
+    }
+
+    /// Return row indices grouped by leaf ID: {leaf_id: [row_indices]}.
+    ///
+    /// Args:
+    ///     x: raw rows of predictors.
+    ///
+    /// Returns: dict mapping integer leaf_id to a list of row indices.
+    #[pyo3(signature = (x))]
+    fn leaf_samples(
+        &mut self,
+        py: Python<'_>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+    ) -> PyResult<Py<PyAny>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        let map = self.tree()?.leaf_samples(&x);
+        let dict = PyDict::new(py);
+        for (leaf_id, indices) in map {
+            dict.set_item(leaf_id, indices)?;
+        }
+        Ok(dict.into_any().unbind())
     }
 
     /// Per-level timing profile (group/sort, scan, leaf fit).

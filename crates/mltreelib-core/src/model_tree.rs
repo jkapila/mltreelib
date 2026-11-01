@@ -261,6 +261,7 @@ pub(crate) struct Node {
     pub(crate) split: Option<Split>,
     pub(crate) left: Option<usize>,
     pub(crate) right: Option<usize>,
+    pub(crate) leaf_id: Option<usize>,
     pub(crate) leaf: Option<LeafModel>,
     pub(crate) n: usize,
     pub(crate) stats: FrameStats,
@@ -583,7 +584,7 @@ impl ModelTree {
         }
 
         let cap = params.max_leaf_nodes.unwrap_or(usize::MAX);
-        let (root, _) = grower.grow(&rows, &est_rows, 0, &mut Vec::new(), cap);
+        let (root, _) = grower.grow_iterative(&rows, &est_rows, cap);
         // Destructure to release the borrows on params/active_cols before
         // moving them into the tree.
         let Grower {
@@ -635,7 +636,7 @@ impl ModelTree {
             lines.extend(trace);
             trace = lines;
         }
-        Ok(Self {
+        let mut tree = Self {
             col_names,
             params,
             active_cols,
@@ -645,7 +646,9 @@ impl ModelTree {
             cat_parts,
             sur_parts,
             trace,
-        })
+        };
+        tree.assign_leaf_ids();
+        Ok(tree)
     }
 
     /// Route a row missing the split column: the first observed surrogate
@@ -745,6 +748,45 @@ impl ModelTree {
             return Err("predict_proba requires leaf_family='binomial'".into());
         }
         Ok(self.predict(x))
+    }
+
+    /// Hard binary class labels (0 or 1) per row by thresholding binomial probabilities.
+    /// Default threshold is 0.5. Requires `leaf_family='binomial'`.
+    pub fn predict_label(&self, x: &[Vec<Option<f64>>], threshold: f64) -> Result<Vec<usize>, String> {
+        if self.params.leaf_family != LeafFamily::Binomial {
+            return Err("predict_label requires leaf_family='binomial'".into());
+        }
+        if threshold <= 0.0 || threshold >= 1.0 || threshold.is_nan() {
+            return Err("threshold must be in (0, 1)".into());
+        }
+        let probs = self.predict(x);
+        Ok(probs.into_iter()
+            .map(|p| if p >= threshold { 1 } else { 0 })
+            .collect())
+    }
+
+    /// Prediction interval `(lower, upper)` per row at the requested coverage level
+    /// (e.g. `coverage = 0.90` for a 90% interval, spanning [0.05, 0.95] quantiles).
+    /// Uses each leaf's t-digest. Returns `(NaN, NaN)` if leaf digest was dropped.
+    pub fn predict_interval(&self, x: &[Vec<Option<f64>>], coverage: f64) -> Result<Vec<(f64, f64)>, String> {
+        if coverage <= 0.0 || coverage >= 1.0 || coverage.is_nan() {
+            return Err("coverage must be in (0, 1)".into());
+        }
+        let alpha = (1.0 - coverage) / 2.0;
+        let lo_tau = alpha;
+        let hi_tau = 1.0 - alpha;
+        Ok(x.iter()
+            .map(|row| {
+                let idx = self.leaf_index(row);
+                let leaf = self.nodes[idx]
+                    .leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model");
+                let lo = leaf.stats.quantile(lo_tau).unwrap_or(f64::NAN);
+                let hi = leaf.stats.quantile(hi_tau).unwrap_or(f64::NAN);
+                (lo, hi)
+            })
+            .collect())
     }
 
     /// Fitted conditional distribution P(Y <= value), not an empirical digest.
@@ -862,6 +904,80 @@ impl ModelTree {
             .collect()
     }
 
+    /// Leaf models with their row counts, leaf IDs, and node indices:
+    /// `(leaf_model, n_rows, leaf_id, node_idx)`.
+    pub fn leaf_entries(&self) -> Vec<(&LeafModel, usize, usize, usize)> {
+        let seen = self.reachable();
+        let mut entries: Vec<_> = (0..self.nodes.len())
+            .filter(|&i| seen[i] && self.nodes[i].leaf.is_some())
+            .map(|i| {
+                (
+                    self.nodes[i].leaf.as_ref().unwrap(),
+                    self.nodes[i].n,
+                    self.nodes[i].leaf_id.unwrap_or(0),
+                    i,
+                )
+            })
+            .collect();
+        entries.sort_by_key(|e| e.2);
+        entries
+    }
+
+    /// Return the leaf_id (0..n_leaves-1) for each input row.
+    pub fn apply(&self, x: &[Vec<Option<f64>>]) -> Vec<usize> {
+        x.iter()
+            .map(|row| {
+                let node_idx = self.leaf_index(row);
+                self.nodes[node_idx].leaf_id.unwrap_or(0)
+            })
+            .collect()
+    }
+
+    /// Return row indices grouped by leaf_id: leaf_id -> [row_indices].
+    pub fn leaf_samples(&self, x: &[Vec<Option<f64>>]) -> std::collections::BTreeMap<usize, Vec<usize>> {
+        let mut map = std::collections::BTreeMap::new();
+        for (i, row) in x.iter().enumerate() {
+            let node_idx = self.leaf_index(row);
+            let leaf_id = self.nodes[node_idx].leaf_id.unwrap_or(0);
+            map.entry(leaf_id).or_insert_with(Vec::new).push(i);
+        }
+        map
+    }
+
+    /// Leaf IDs of all active leaves in canonical order.
+    pub fn leaf_ids(&self) -> Vec<usize> {
+        let seen = self.reachable();
+        (0..self.nodes.len())
+            .filter(|&i| seen[i] && self.nodes[i].leaf.is_some())
+            .map(|i| self.nodes[i].leaf_id.unwrap_or(0))
+            .collect()
+    }
+
+    /// Assign canonical 0-indexed leaf IDs (0..n_leaves-1) in left-to-right DFS order.
+    pub(crate) fn assign_leaf_ids(&mut self) {
+        let mut leaf_counter = 0;
+        let mut stack = vec![self.root];
+        let mut dfs_leaves = Vec::new();
+        while let Some(i) = stack.pop() {
+            let nd = &self.nodes[i];
+            match (nd.left, nd.right) {
+                (Some(l), Some(r)) => {
+                    stack.push(r);
+                    stack.push(l);
+                }
+                _ => {
+                    if nd.leaf.is_some() {
+                        dfs_leaves.push(i);
+                    }
+                }
+            }
+        }
+        for node_idx in dfs_leaves {
+            self.nodes[node_idx].leaf_id = Some(leaf_counter);
+            leaf_counter += 1;
+        }
+    }
+
     /// Number of leaves.
     pub fn n_leaves(&self) -> usize {
         self.leaves().len()
@@ -916,6 +1032,38 @@ pub(crate) struct Grower<'a> {
     pub(crate) rng_counter: u64,
 }
 
+enum GrowOp {
+    Grow {
+        depth: usize,
+        rows: Vec<usize>,
+        est: Vec<usize>,
+        budget: usize,
+        res_idx: usize,
+    },
+    AfterLeft {
+        depth: usize,
+        rows: Vec<usize>,
+        est: Vec<usize>,
+        rrows: Vec<usize>,
+        est_r: Vec<usize>,
+        sp: Split,
+        budget: usize,
+        prof: NodeProfile,
+        left_res_idx: usize,
+        right_res_idx: usize,
+        res_idx: usize,
+    },
+    FinishSplit {
+        rows: Vec<usize>,
+        est: Vec<usize>,
+        sp: Split,
+        prof: NodeProfile,
+        left_res_idx: usize,
+        right_res_idx: usize,
+        res_idx: usize,
+    },
+}
+
 impl<'a> Grower<'a> {
     /// Grid-aware left test (see `ModelTree::goes_left`).
     pub(crate) fn goes_left(&self, sp: &Split, v: f64) -> bool {
@@ -936,176 +1084,271 @@ impl<'a> Grower<'a> {
         self.nodes.len() - 1
     }
 
-    fn grow(
+    /// Iterative tree growth via an explicit work stack and bottom-up post-order pruning.
+    fn grow_iterative(
         &mut self,
-        rows: &[usize],
-        est: &[usize],
-        depth: usize,
-        path: &mut Vec<usize>,
+        root_rows: &[usize],
+        root_est: &[usize],
         budget: usize,
     ) -> (usize, usize) {
-        let mut prof = NodeProfile {
-            depth,
-            rows: rows.len(),
-            ..Default::default()
-        };
-        let mut best = if depth < self.params.max_depth {
-            self.best_split(rows, path, &mut prof)
-        } else {
-            None
-        };
-        // Statistical stopping gate (default off): the scan's chosen split
-        // must significantly beat the pooled node model — else the node
-        // stays a leaf. Bonferroni divides alpha by the number of
-        // candidate splits evaluated here (best-of-many multiplicity).
-        if self.params.split_test == SplitTest::Chow {
-            let gate = best
-                .as_ref()
-                .and_then(|(sp, lrows, rrows)| self.chow_test(rows, lrows, rrows, path, sp.col));
-            if let Some((f, p)) = gate {
-                let alpha = if self.params.bonferroni {
-                    self.params.split_alpha / prof.candidates.max(1) as f64
-                } else {
-                    self.params.split_alpha
-                };
-                let passed = p < alpha;
-                prof.gate = Some(GateNote {
-                    f,
-                    p,
-                    alpha,
-                    passed,
-                });
-                if !passed {
-                    best = None;
-                }
-            }
-        }
-        // Purity gate (default off): a node whose weighted target std is at
-        // most `purity_gate` has no signal left — it stays a leaf.
-        if let Some(t) = self.params.purity_gate {
-            let yws: Vec<(f64, f64)> =
-                rows.iter().map(|&r| (self.y[r], self.w[r])).collect();
-            if crate::stats::w_sd(&yws) <= t {
-                best = None;
-            }
-        }
-        // Leaf-cap budget (default off, budget = usize::MAX): a split
-        // needs room for at least two leaves; the left subtree reports its
-        // spend and the right gets the remainder -- exact bound.
-        if best.is_some() && budget < 2 {
-            best = None;
-        }
-        if self.params.verbose >= 2 {
-            let mut line = format!(
-                "node depth={} rows={} cols={} candidates={} scan_ms={} leaf_ms={}",
-                prof.depth,
-                prof.rows,
-                prof.cols,
-                prof.candidates,
-                prof.scan_ns / 1_000_000,
-                prof.leaf_ns / 1_000_000
-            );
-            if let Some(g) = &prof.gate {
-                line.push_str(&format!(
-                    " chow_f={:.4} chow_p={:.4} chow_alpha={:.4} chow={}",
-                    g.f,
-                    g.p,
-                    g.alpha,
-                    if g.passed { "pass" } else { "stop" }
-                ));
-            }
-            self.trace.push(line);
-        }
+        let mut path: Vec<usize> = Vec::new();
+        let mut results: Vec<(usize, usize)> = vec![(0, 0)];
+        let mut stack: Vec<GrowOp> = vec![GrowOp::Grow {
+            depth: 0,
+            rows: root_rows.to_vec(),
+            est: root_est.to_vec(),
+            budget,
+            res_idx: 0,
+        }];
 
-        match best {
-            None => {
-                let t = Instant::now();
-                let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
-                prof.leaf_ns += t.elapsed().as_nanos() as u64;
-                self.profiles.push(prof);
-                let stats = FrameStats::from_ty(self.y, self.w, rows);
-                let cost = if self.params.prune == PruneCost::None {
-                    0.0
-                } else {
-                    self.leaf_cost(rows, path, stats.sse)
-                };
-                self.add(Node {
-                    split: None,
-                    left: None,
-                    right: None,
-                    leaf: Some(leaf),
-                    n: rows.len(),
-                    stats,
-                });
-                self.costs.push(cost);
-                (self.nodes.len() - 1, 1)
-            }
-            Some((mut sp, lrows, rrows)) => {
-                // NA surrogate splits: backup routes for rows missing the
-                // split column (rpart lineage; off unless maxsurrogate > 0).
-                if self.params.maxsurrogate > 0 {
-                    let found = self.find_surrogates(rows, &sp, &lrows);
-                    if !found.is_empty() {
-                        sp.sur = Some(self.sur_parts.len());
-                        self.sur_parts.push(found);
+        while let Some(op) = stack.pop() {
+            match op {
+                GrowOp::Grow {
+                    depth,
+                    rows,
+                    est,
+                    budget,
+                    res_idx,
+                } => {
+                    let mut prof = NodeProfile {
+                        depth,
+                        rows: rows.len(),
+                        ..Default::default()
+                    };
+                    let mut best = if depth < self.params.max_depth {
+                        self.best_split(&rows, &path, &mut prof)
+                    } else {
+                        None
+                    };
+                    // Statistical stopping gate (default off): the scan's chosen split
+                    // must significantly beat the pooled node model — else the node
+                    // stays a leaf. Bonferroni divides alpha by the number of
+                    // candidate splits evaluated here (best-of-many multiplicity).
+                    if self.params.split_test == SplitTest::Chow {
+                        let gate = best
+                            .as_ref()
+                            .and_then(|(sp, lrows, rrows)| {
+                                self.chow_test(&rows, lrows, rrows, &path, sp.col)
+                            });
+                        if let Some((f, p)) = gate {
+                            let alpha = if self.params.bonferroni {
+                                self.params.split_alpha / prof.candidates.max(1) as f64
+                            } else {
+                                self.params.split_alpha
+                            };
+                            let passed = p < alpha;
+                            prof.gate = Some(GateNote {
+                                f,
+                                p,
+                                alpha,
+                                passed,
+                            });
+                            if !passed {
+                                best = None;
+                            }
+                        }
+                    }
+                    // Purity gate (default off): a node whose weighted target std is at
+                    // most `purity_gate` has no signal left — it stays a leaf.
+                    if let Some(t) = self.params.purity_gate {
+                        let yws: Vec<(f64, f64)> =
+                            rows.iter().map(|&r| (self.y[r], self.w[r])).collect();
+                        if crate::stats::w_sd(&yws) <= t {
+                            best = None;
+                        }
+                    }
+                    // Leaf-cap budget (default off, budget = usize::MAX): a split
+                    // needs room for at least two leaves; the left subtree reports its
+                    // spend and the right gets the remainder -- exact bound.
+                    if best.is_some() && budget < 2 {
+                        best = None;
+                    }
+                    if self.params.verbose >= 2 {
+                        let mut line = format!(
+                            "node depth={} rows={} cols={} candidates={} scan_ms={} leaf_ms={}",
+                            prof.depth,
+                            prof.rows,
+                            prof.cols,
+                            prof.candidates,
+                            prof.scan_ns / 1_000_000,
+                            prof.leaf_ns / 1_000_000
+                        );
+                        if let Some(g) = &prof.gate {
+                            line.push_str(&format!(
+                                " chow_f={:.4} chow_p={:.4} chow_alpha={:.4} chow={}",
+                                g.f,
+                                g.p,
+                                g.alpha,
+                                if g.passed { "pass" } else { "stop" }
+                            ));
+                        }
+                        self.trace.push(line);
+                    }
+
+                    match best {
+                        None => {
+                            let t = Instant::now();
+                            let leaf = self.make_leaf(self.leaf_rows(&rows, &est), &path);
+                            prof.leaf_ns += t.elapsed().as_nanos() as u64;
+                            self.profiles.push(prof);
+                            let stats = FrameStats::from_ty(self.y, self.w, &rows);
+                            let cost = if self.params.prune == PruneCost::None {
+                                0.0
+                            } else {
+                                self.leaf_cost(&rows, &path, stats.sse)
+                            };
+                            let node_idx = self.add(Node {
+                                split: None,
+                                left: None,
+                                right: None,
+                                leaf_id: None,
+                                leaf: Some(leaf),
+                                n: rows.len(),
+                                stats,
+                            });
+                            self.costs.push(cost);
+                            results[res_idx] = (node_idx, 1);
+                        }
+                        Some((mut sp, lrows, rrows)) => {
+                            // NA surrogate splits (Phase 3D: only search when the primary split
+                            // column has missing values in this node; off unless maxsurrogate > 0).
+                            if self.params.maxsurrogate > 0 && rows.iter().any(|&r| self.cols[sp.col][r].is_none()) {
+                                let found = self.find_surrogates(&rows, &sp, &lrows);
+                                if !found.is_empty() {
+                                    sp.sur = Some(self.sur_parts.len());
+                                    self.sur_parts.push(found);
+                                }
+                            }
+                            let (est_l, est_r) = self.partition_rows(&est, &sp);
+                            let left_res_idx = results.len();
+                            results.push((0, 0));
+                            let right_res_idx = results.len();
+                            results.push((0, 0));
+
+                            stack.push(GrowOp::AfterLeft {
+                                depth,
+                                rows,
+                                est,
+                                rrows,
+                                est_r,
+                                sp,
+                                budget,
+                                prof,
+                                left_res_idx,
+                                right_res_idx,
+                                res_idx,
+                            });
+                            path.push(sp.col);
+                            stack.push(GrowOp::Grow {
+                                depth: depth + 1,
+                                rows: lrows,
+                                est: est_l,
+                                budget: budget.saturating_sub(1),
+                                res_idx: left_res_idx,
+                            });
+                        }
                     }
                 }
-                let (est_l, est_r) = self.partition_rows(est, &sp);
-                path.push(sp.col);
-                let (l, lu) =
-                    self.grow(&lrows, &est_l, depth + 1, path, budget.saturating_sub(1));
-                let (r, ru) =
-                    self.grow(&rrows, &est_r, depth + 1, path, budget.saturating_sub(lu));
-                path.pop();
-                let used = lu + ru;
-                if self.params.prune != PruneCost::None {
-                    // Bottom-up cost pruning: keep the subtree only when it
-                    // codes cheaper than this node as one leaf.
-                    let stats = FrameStats::from_ty(self.y, self.w, rows);
-                    let leaf_c = self.leaf_cost(rows, path, stats.sse);
-                    let split_bit = self.params.prune.split_bit(rows.len() as f64);
-                    let sub_c = self.costs[l] + self.costs[r] + split_bit;
-                    if leaf_c <= sub_c {
-                        let t = Instant::now();
-                        let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
-                        prof.leaf_ns += t.elapsed().as_nanos() as u64;
+                GrowOp::AfterLeft {
+                    depth,
+                    rows,
+                    est,
+                    rrows,
+                    est_r,
+                    sp,
+                    budget,
+                    prof,
+                    left_res_idx,
+                    right_res_idx,
+                    res_idx,
+                } => {
+                    let (_l, lu) = results[left_res_idx];
+                    stack.push(GrowOp::FinishSplit {
+                        rows,
+                        est,
+                        sp,
+                        prof,
+                        left_res_idx,
+                        right_res_idx,
+                        res_idx,
+                    });
+                    stack.push(GrowOp::Grow {
+                        depth: depth + 1,
+                        rows: rrows,
+                        est: est_r,
+                        budget: budget.saturating_sub(lu),
+                        res_idx: right_res_idx,
+                    });
+                }
+                GrowOp::FinishSplit {
+                    rows,
+                    est,
+                    sp,
+                    mut prof,
+                    left_res_idx,
+                    right_res_idx,
+                    res_idx,
+                } => {
+                    path.pop();
+                    let (l, lu) = results[left_res_idx];
+                    let (r, ru) = results[right_res_idx];
+                    let used = lu + ru;
+                    if self.params.prune != PruneCost::None {
+                        // Bottom-up cost pruning: keep the subtree only when it
+                        // codes cheaper than this node as one leaf.
+                        let stats = FrameStats::from_ty(self.y, self.w, &rows);
+                        let leaf_c = self.leaf_cost(&rows, &path, stats.sse);
+                        let split_bit = self.params.prune.split_bit(rows.len() as f64);
+                        let sub_c = self.costs[l] + self.costs[r] + split_bit;
+                        if leaf_c <= sub_c {
+                            let t = Instant::now();
+                            let leaf = self.make_leaf(self.leaf_rows(&rows, &est), &path);
+                            prof.leaf_ns += t.elapsed().as_nanos() as u64;
+                            self.profiles.push(prof);
+                            let node_idx = self.add(Node {
+                                split: None,
+                                left: None,
+                                right: None,
+                                leaf_id: None,
+                                leaf: Some(leaf),
+                                n: rows.len(),
+                                stats,
+                            });
+                            self.costs.push(leaf_c);
+                            results[res_idx] = (node_idx, 1);
+                            continue;
+                        }
                         self.profiles.push(prof);
-                        self.add(Node {
-                            split: None,
-                            left: None,
-                            right: None,
-                            leaf: Some(leaf),
+                        let node_idx = self.add(Node {
+                            split: Some(sp),
+                            left: Some(l),
+                            right: Some(r),
+                            leaf_id: None,
+                            leaf: None,
                             n: rows.len(),
                             stats,
                         });
-                        self.costs.push(leaf_c);
-                        return (self.nodes.len() - 1, 1);
+                        self.costs.push(sub_c);
+                        results[res_idx] = (node_idx, used);
+                        continue;
                     }
                     self.profiles.push(prof);
-                    self.add(Node {
+                    let node_idx = self.add(Node {
                         split: Some(sp),
                         left: Some(l),
                         right: Some(r),
+                        leaf_id: None,
                         leaf: None,
                         n: rows.len(),
-                        stats,
+                        stats: FrameStats::from_ty(self.y, self.w, &rows),
                     });
-                    self.costs.push(sub_c);
-                    return (self.nodes.len() - 1, used);
+                    self.costs.push(0.0);
+                    results[res_idx] = (node_idx, used);
                 }
-                self.profiles.push(prof);
-                self.add(Node {
-                    split: Some(sp),
-                    left: Some(l),
-                    right: Some(r),
-                    leaf: None,
-                    n: rows.len(),
-                    stats: FrameStats::from_ty(self.y, self.w, rows),
-                });
-                self.costs.push(0.0);
-                (self.nodes.len() - 1, used)
             }
         }
+
+        results[0]
     }
 
 }

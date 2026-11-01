@@ -93,12 +93,14 @@ The optimizations will be implemented and validated sequentially against TabAren
   - Benchmarked pre-sorted index partitioning vs cache-local PDQsort in `SplitScratch`. Confirmed cache-local PDQsort is 2× faster on large sets (`bank-marketing`) due to zero heap churn.
   - Implemented single-pass moments accumulation and $O(1)$ missing deviance in split search.
   - Exposed `presort: bool` parameter in `ModelTreeParams` and Python bindings.
-- [ ] **Phase 3B: Iterative Flat-Array Queue Tree Building**:
-  - Replace recursive `fit_tree` call stack and cloned path vectors (`path.to_vec()`) with a flat index-addressed `Vec<Node>`.
+- [x] **Phase 3B: Iterative Flat-Array Queue Tree Building**:
+  - Replaced recursive `grow` call stack with an explicit LIFO work stack (`GrowOp`) and bottom-up post-order pruning.
+  - Eliminated transient path vector cloning (`path.to_vec()`) in favor of dynamic push/pop on descent/ascent.
+  - Implemented canonical 0-indexed leaf numbering (`leaf_id`), `.apply(X)`, and `.leaf_samples(X)` for row-to-leaf indexing and membership search.
 - [x] **Phase 3C: Single-Pass Bottom-Up Cost-Complexity Pruning**:
   - Compute node deviance and SSE in $O(1)$ scalar algebra using existing node stats rather than redundant $O(N)$ row re-scans.
-- [ ] **Phase 3D: Conditional Surrogate Search**:
-  - Guard surrogate scanning: only scan surrogate features when the primary split feature has active missing values (`missing_count > 0`).
+- [x] **Phase 3D: Conditional Surrogate Search**:
+  - Guarded surrogate scanning: only scan surrogate features when the primary split feature has active missing values in the node (`rows.iter().any(|&r| cols[sp.col][r].is_none())`).
 - [x] **Benchmark Validation Suite**:
   - Established `examples/bench_optimizations.py` tracking fit time, memory, and accuracy on `houses`, `bank-marketing`, and `credit-g` in `benchmarks/optimization_tracker.csv`.
 

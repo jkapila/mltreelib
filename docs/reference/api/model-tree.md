@@ -8,6 +8,14 @@ The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [
 Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 Task: regression, binary probability estimation, or count modeling.
+### ModelTree.apply
+```pythonapply((self, /, x))```
+Return the leaf ID (0..n_leaves-1) for each input row.
+
+Args:
+    x: raw rows of predictors.
+
+Returns: one integer leaf ID per row.
 ### ModelTree.break_down
 ```pythonbreak_down((self, /, row))```
 DALEX-style break-down of one response-scale prediction.
@@ -56,6 +64,14 @@ Args:
        partitions levels, no encoding).
 
 Returns: nothing; the fitted tree replaces the inner model.
+### ModelTree.leaf_samples
+```pythonleaf_samples((self, /, x))```
+Return row indices grouped by leaf ID: {leaf_id: [row_indices]}.
+
+Args:
+    x: raw rows of predictors.
+
+Returns: dict mapping integer leaf_id to a list of row indices.
 ### ModelTree.leaves
 ```pythonleaves((self, /))```
 Fitted leaf models with their empirical target distribution stats.
@@ -85,6 +101,26 @@ Args:
 
 Returns: one mean per row (binomial P(Y=1), Poisson expected count,
 or Gaussian regression value). No thresholding into hard labels.
+### ModelTree.predict_interval
+```pythonpredict_interval((self, /, x, coverage=0.9))```
+Empirical prediction interval `(lower, upper)` per row at the requested coverage.
+
+Args:
+    x: raw rows of predictors.
+    coverage: coverage probability in (0, 1) (default 0.90 for a 90% interval).
+
+Returns: list of `(lower, upper)` tuples.
+### ModelTree.predict_label
+```pythonpredict_label((self, /, x, threshold=0.5))```
+Hard binary class labels (0 or 1), one label per input row.
+
+Args:
+    x: raw rows of predictors.
+    threshold: probability threshold (default 0.5).
+
+Returns: one integer label (0 or 1) per row.
+
+Raises: ValueError unless the fitted leaf family is binomial.
 ### ModelTree.predict_proba
 ```pythonpredict_proba((self, /, x))```
 Predict binomial P(Y=1), one probability per input row.

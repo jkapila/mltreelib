@@ -2709,3 +2709,116 @@ fn poisson_numeric_linear_deviance_refits_and_selects_missing_direction() {
         assert!((actual - expected).abs() < 1e-6, "{predictions:?}");
     }
 }
+
+#[test]
+fn apply_and_leaf_samples_index_every_row() {
+    let x: Vec<Vec<Option<f64>>> = (0..20)
+        .map(|i| vec![Some(i as f64)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..20)
+        .map(|i| Some(if i < 10 { 0.0 } else { 10.0 }))
+        .collect();
+    let tree = ModelTree::fit(&x, &y, ModelTreeParams {
+        max_depth: 2,
+        min_rows: 5,
+        prune: PruneCost::None,
+        ..Default::default()
+    }).unwrap();
+
+    assert_eq!(tree.n_leaves(), 2);
+    let leaf_ids = tree.leaf_ids();
+    assert_eq!(leaf_ids, vec![0, 1]);
+
+    let applied = tree.apply(&x);
+    assert_eq!(applied.len(), 20);
+    for i in 0..10 {
+        assert_eq!(applied[i], 0);
+    }
+    for i in 10..20 {
+        assert_eq!(applied[i], 1);
+    }
+
+    let samples = tree.leaf_samples(&x);
+    assert_eq!(samples.len(), 2);
+    assert_eq!(samples.get(&0).unwrap(), &(0..10).collect::<Vec<_>>());
+    assert_eq!(samples.get(&1).unwrap(), &(10..20).collect::<Vec<_>>());
+
+    let entries = tree.leaf_entries();
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].2, 0); // leaf_id 0
+    assert_eq!(entries[0].1, 10); // n_rows 10
+    assert_eq!(entries[1].2, 1); // leaf_id 1
+    assert_eq!(entries[1].1, 10); // n_rows 10
+}
+
+#[test]
+fn predict_interval_and_label_work_as_expected() {
+    use mltreelib_core::family::LeafFamily;
+
+    let x: Vec<Vec<Option<f64>>> = (0..100)
+        .map(|i| vec![Some(i as f64)])
+        .collect();
+    let y_bin: Vec<Option<f64>> = (0..100)
+        .map(|i| Some(if i < 50 { 0.0 } else { 1.0 }))
+        .collect();
+
+    let tree_bin = ModelTree::fit(&x, &y_bin, ModelTreeParams {
+        max_depth: 1,
+        min_rows: 10,
+        leaf_family: LeafFamily::Binomial,
+        prune: PruneCost::None,
+        ..Default::default()
+    }).unwrap();
+
+    let labels = tree_bin.predict_label(&x, 0.5).unwrap();
+    assert_eq!(labels.len(), 100);
+    for i in 0..50 {
+        assert_eq!(labels[i], 0);
+    }
+    for i in 50..100 {
+        assert_eq!(labels[i], 1);
+    }
+
+    // Interval query on Gaussian regression tree with leaf_digest=true
+    let y_reg: Vec<Option<f64>> = (0..100)
+        .map(|i| Some((i as f64) * 2.0))
+        .collect();
+    let tree_reg = ModelTree::fit(&x, &y_reg, ModelTreeParams {
+        max_depth: 1,
+        min_rows: 10,
+        leaf_digest: true,
+        prune: PruneCost::None,
+        ..Default::default()
+    }).unwrap();
+
+    let intervals = tree_reg.predict_interval(&x, 0.90).unwrap();
+    assert_eq!(intervals.len(), 100);
+    for (lo, hi) in &intervals {
+        assert!(lo.is_finite());
+        assert!(hi.is_finite());
+        assert!(lo <= hi);
+    }
+}
+
+#[test]
+fn surrogate_search_guarded_when_no_missing_values() {
+    // Phase 3D: When data has no missing values, maxsurrogate > 0 skips search
+    let x_clean: Vec<Vec<Option<f64>>> = (0..100)
+        .map(|i| vec![Some(i as f64), Some((i as f64) + 1.0)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..100)
+        .map(|i| Some(if i < 50 { 0.0 } else { 5.0 }))
+        .collect();
+
+    let tree = ModelTree::fit(&x_clean, &y, ModelTreeParams {
+        max_depth: 1,
+        min_rows: 10,
+        maxsurrogate: 2,
+        ..Default::default()
+    }).unwrap();
+
+    let splits = tree.splits();
+    assert_eq!(splits.len(), 1);
+    // Split has no surrogate handle because primary column had 0 missing values
+    assert!(splits[0].sur.is_none(), "surrogate search must be skipped on clean column");
+}

@@ -44,3 +44,6 @@ Phase3-SinglePass-O1Missing,credit-g,classification,1000,20,66.37,12,11,accuracy
 Phase3C-PruningMoments,houses,regression,20640,8,575.78,27,26,rmse,0.2957
 Phase3C-PruningMoments,bank-marketing,classification,45211,13,1433.89,26,25,accuracy,0.8916
 Phase3C-PruningMoments,credit-g,classification,1000,20,70.5,12,11,accuracy,0.75
+Phase3B-IterativeStack-LeafIndexing,houses,regression,20640,8,253.52,27,26,rmse,0.2957
+Phase3B-IterativeStack-LeafIndexing,bank-marketing,classification,45211,13,585.84,26,25,accuracy,0.8916
+Phase3B-IterativeStack-LeafIndexing,credit-g,classification,1000,20,28.57,12,11,accuracy,0.75
