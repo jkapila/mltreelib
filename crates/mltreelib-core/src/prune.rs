@@ -32,18 +32,8 @@ impl PruneCost {
     }
 }
 impl<'a> Grower<'a> {
-    /// Weighted SSE of `rows` around their weighted mean — the node
-    /// deviance (rpart's convention, independent of leaf kind).
-    fn mean_sse(&self, rows: &[usize]) -> f64 {
-        let sw: f64 = rows.iter().map(|&r| self.w[r]).sum();
-        let mean = rows.iter().map(|&r| self.w[r] * self.y[r]).sum::<f64>() / sw.max(1e-300);
-        rows.iter()
-            .map(|&r| self.w[r] * (self.y[r] - mean) * (self.y[r] - mean))
-            .sum()
-    }
-
     /// Encoding cost of treating `rows` as one leaf (prune criterion).
-    pub(crate) fn leaf_cost(&self, rows: &[usize], path: &[usize]) -> f64 {
+    pub(crate) fn leaf_cost(&self, rows: &[usize], path: &[usize], sse: f64) -> f64 {
         let n = rows.len() as f64;
         if n <= 1.0 {
             return 0.0;
@@ -68,9 +58,8 @@ impl<'a> Grower<'a> {
         }
         match self.params.prune {
             PruneCost::None => 0.0,
-            PruneCost::Cp => self.mean_sse(rows) + self.params.cp_alpha,
+            PruneCost::Cp => sse + self.params.cp_alpha,
             PruneCost::Bic => {
-                let sse = self.mean_sse(rows);
                 n * (sse / n).max(1e-300).ln() + n.ln()
             }
             PruneCost::Mdl => {
@@ -91,5 +80,4 @@ impl<'a> Grower<'a> {
             }
         }
     }
-
 }

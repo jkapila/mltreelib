@@ -2149,7 +2149,8 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0, leaf_family = "gaussian", split_eval = "fast"
+        verbose = 0, leaf_family = "gaussian", split_eval = "fast",
+        presort = false
     ))]
     fn new(
         max_depth: usize,
@@ -2190,6 +2191,7 @@ impl PyModelTree {
         verbose: u8,
         leaf_family: &str,
         split_eval: &str,
+        presort: bool,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2377,6 +2379,7 @@ impl PyModelTree {
                 preselect,
                 purity_gate,
                 split_eval: eval_mode,
+                presort,
             },
             inner: None,
             vocabs: Vec::new(),

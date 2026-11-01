@@ -168,6 +168,8 @@ pub struct ModelTreeParams {
     pub purity_gate: Option<f64>,
     /// Split evaluation strategy (fast scalar variance reduction vs exhaustive linear scan).
     pub split_eval: SplitEval,
+    /// Upfront pre-sorting of numeric columns. Default `false` (in-place cache-local PDQsort in SplitScratch).
+    pub presort: bool,
 }
 
 impl Default for ModelTreeParams {
@@ -218,6 +220,7 @@ impl Default for ModelTreeParams {
             preselect: crate::preselect::Preselect::None,
             purity_gate: None,
             split_eval: SplitEval::Fast,
+            presort: false,
         }
     }
 }
@@ -1020,14 +1023,19 @@ impl<'a> Grower<'a> {
                 let leaf = self.make_leaf(self.leaf_rows(rows, est), path);
                 prof.leaf_ns += t.elapsed().as_nanos() as u64;
                 self.profiles.push(prof);
-                let cost = self.leaf_cost(rows, path);
+                let stats = FrameStats::from_ty(self.y, self.w, rows);
+                let cost = if self.params.prune == PruneCost::None {
+                    0.0
+                } else {
+                    self.leaf_cost(rows, path, stats.sse)
+                };
                 self.add(Node {
                     split: None,
                     left: None,
                     right: None,
                     leaf: Some(leaf),
                     n: rows.len(),
-                    stats: FrameStats::from_ty(self.y, self.w, rows),
+                    stats,
                 });
                 self.costs.push(cost);
                 (self.nodes.len() - 1, 1)
@@ -1053,7 +1061,8 @@ impl<'a> Grower<'a> {
                 if self.params.prune != PruneCost::None {
                     // Bottom-up cost pruning: keep the subtree only when it
                     // codes cheaper than this node as one leaf.
-                    let leaf_c = self.leaf_cost(rows, path);
+                    let stats = FrameStats::from_ty(self.y, self.w, rows);
+                    let leaf_c = self.leaf_cost(rows, path, stats.sse);
                     let split_bit = self.params.prune.split_bit(rows.len() as f64);
                     let sub_c = self.costs[l] + self.costs[r] + split_bit;
                     if leaf_c <= sub_c {
@@ -1067,7 +1076,7 @@ impl<'a> Grower<'a> {
                             right: None,
                             leaf: Some(leaf),
                             n: rows.len(),
-                            stats: FrameStats::from_ty(self.y, self.w, rows),
+                            stats,
                         });
                         self.costs.push(leaf_c);
                         return (self.nodes.len() - 1, 1);
@@ -1079,7 +1088,7 @@ impl<'a> Grower<'a> {
                         right: Some(r),
                         leaf: None,
                         n: rows.len(),
-                        stats: FrameStats::from_ty(self.y, self.w, rows),
+                        stats,
                     });
                     self.costs.push(sub_c);
                     return (self.nodes.len() - 1, used);
