@@ -1,8 +1,8 @@
-# Distributional leaves — GLM &amp; Censored Families
+# Distributional Leaves — GLM, Censored, Survival &amp; Volatility Families
 
-Real-world targets often violate Gaussian error assumptions. `ModelTree` provides native Rust implementations of six specialized distributional families: `leaf_family="binomial"`, `"probit"`, `"poisson"`, `"gamma"`, `"tweedie"`, and `"tobit"`. Pair with `gain="deviance"` so split searches score exact deviance reduction under the respective family.
+Real-world targets often violate Gaussian error assumptions. `ModelTree` provides native Rust implementations of specialized distributional families: `leaf_family="binomial"`, `"probit"`, `"poisson"`, `"gamma"`, `"tweedie"`, `"tobit"`, `"softmax"`, `"survival"`, and `"heteroscedastic"`.
 
-Script: [`examples/leaf_family.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py>) (`uv run python examples/leaf_family.py`).
+Scripts: - [`examples/leaf_family.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py>) - [`examples/stump_distributional_leaves.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py>) (`uv run python examples/stump_distributional_leaves.py`)
 
 ```
 binomial P(1): [0.25, 0.75]
@@ -92,3 +92,57 @@ latent_means = tobit_tree.predict(x_test)
 
 - Fits latent Gaussian expectations via Expectation-Maximization in iteratively reweighted least squares (IRLS).
 - Eliminates downward attenuation bias caused by standard linear regression on censored zeros.
+
+---
+
+## 6\. Softmax Multi-Class Probability Vectors
+
+For discrete targets with $C \\ge 3$ mutually exclusive classes:
+
+```
+m_softmax = ModelTree(max_depth=0, leaf_family="softmax", min_rows=10)
+m_softmax.fit(x_train, y_classes)
+
+# Query class probabilities or predicted class labels
+probs = m_softmax.predict(x_test, kind="proba")      # [[P(C_0), P(C_1), P(C_2)], ...]
+labels = m_softmax.predict(x_test, kind="response")   # [0, 1, 2, ...]
+```
+
+---
+
+## 7\. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)
+
+For right-censored time-to-event outcomes $(T, E)$ where $T$ is elapsed duration and $E \\in {0, 1}$ is event occurrence (1 = event, 0 = censored):
+
+```
+m_surv = ModelTree(max_depth=0, leaf_family="survival", min_rows=10)
+m_surv.fit(x_patients, times, event=events)
+
+# Inspect empirical survival curves and median survival
+leaf = m_surv.leaves()[0]
+print(f"Cohort Median Survival: {leaf['median_time']} days")
+
+# Predict survival probability S(t) and cumulative hazard H(t) at milestone horizons
+surv_curve = m_surv.predict(x_test, kind="survival", times=[30.0, 90.0, 180.0, 365.0])
+cum_hazard = m_surv.predict(x_test, kind="hazard", times=[30.0, 90.0, 180.0, 365.0])
+```
+
+---
+
+## 8\. Heteroscedastic Location &amp; Scale Modeling
+
+For continuous targets exhibiting conditional volatility or non-constant variance $\\sigma\_i^2 = \\exp(z\_i^\\top \\gamma)$:
+
+```
+m_het = ModelTree(max_depth=0, leaf_family="heteroscedastic", min_rows=10)
+m_het.fit(x_train, y_train)
+
+# Jointly predict location mu and scale sigma
+dists = m_het.predict(x_test, kind="dist")  # [(mu, sigma), ...]
+for mu, sigma in dists:
+    ci_low = mu - 1.96 * sigma
+    ci_high = mu + 1.96 * sigma
+```
+
+- Uses **Harvey (1976) bias correction** (+1.2703628 to log-variance intercept) to guarantee unbiased standard deviation estimation.
+- Enables conditional volatility bands and predictive intervals for risk reserves and financial volatility.
