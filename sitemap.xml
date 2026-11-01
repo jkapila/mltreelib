@@ -25,6 +25,9 @@
         <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_board/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_cla_board/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/categorical-encoders/</loc>
       </url>
       <url>
