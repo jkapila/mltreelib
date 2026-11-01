@@ -1958,6 +1958,129 @@ impl CustomGain for PyGain {
     }
 }
 
+/// Parameter controls for fitting leaf models independently of tree topology.
+#[pyclass(name = "LeafControl")]
+#[derive(Clone, Debug)]
+pub struct PyLeafControl {
+    pub(crate) inner: mltreelib_core::leaf::LeafControl,
+}
+
+#[pymethods]
+impl PyLeafControl {
+    /// Controls for leaf model refitting.
+    ///
+    /// Args:
+    ///     leaf: leaf kind ("linear", "mean", "median", "quantile", "huber").
+    ///     leaf_family: leaf distribution ("gaussian", "binomial", "poisson").
+    ///     leaf_cols: column policy ("all", "path_used").
+    ///     l1: L1 lasso penalty.
+    ///     l2: L2 ridge penalty.
+    ///     leaf_digest: whether to build and store t-digests.
+    ///     tau: target quantile level when leaf is "quantile" (in [0, 1]).
+    #[new]
+    #[pyo3(signature = (leaf = "linear", leaf_family = "gaussian", leaf_cols = "all", l1 = 0.0, l2 = 1e-3, leaf_digest = true, tau = 0.5))]
+    fn new(
+        leaf: &str,
+        leaf_family: &str,
+        leaf_cols: &str,
+        l1: f64,
+        l2: f64,
+        leaf_digest: bool,
+        tau: f64,
+    ) -> PyResult<Self> {
+        let kind = match leaf {
+            "linear" => LeafKind::Linear,
+            "mean" => LeafKind::Mean,
+            "median" => LeafKind::Median,
+            "quantile" => {
+                if !(0.0..=1.0).contains(&tau) {
+                    return Err(PyValueError::new_err("tau must be in [0, 1]"));
+                }
+                LeafKind::Quantile(tau)
+            }
+            "huber" => LeafKind::Huber,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
+        };
+        let family = match leaf_family {
+            "gaussian" => LeafFamily::Gaussian,
+            "binomial" => LeafFamily::Binomial,
+            "poisson" => LeafFamily::Poisson,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
+        };
+        let policy = match leaf_cols {
+            "all" => LeafCols::All,
+            "path_used" => LeafCols::PathUsed,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
+        };
+        Ok(Self {
+            inner: mltreelib_core::leaf::LeafControl {
+                leaf: kind,
+                family,
+                leaf_cols: policy,
+                l1,
+                l2,
+                leaf_digest,
+                monotone: Vec::new(),
+            },
+        })
+    }
+
+    #[getter]
+    fn get_leaf(&self) -> String {
+        match self.inner.leaf {
+            LeafKind::Linear => "linear".to_string(),
+            LeafKind::Mean => "mean".to_string(),
+            LeafKind::Median => "median".to_string(),
+            LeafKind::Quantile(t) => format!("quantile({t})"),
+            LeafKind::Huber => "huber".to_string(),
+        }
+    }
+
+    #[getter]
+    fn get_leaf_family(&self) -> String {
+        match self.inner.family {
+            LeafFamily::Gaussian => "gaussian".to_string(),
+            LeafFamily::Binomial => "binomial".to_string(),
+            LeafFamily::Poisson => "poisson".to_string(),
+        }
+    }
+
+    #[getter]
+    fn get_leaf_cols(&self) -> String {
+        match self.inner.leaf_cols {
+            LeafCols::All => "all".to_string(),
+            LeafCols::PathUsed => "path_used".to_string(),
+        }
+    }
+
+    #[getter]
+    fn get_l1(&self) -> f64 {
+        self.inner.l1
+    }
+
+    #[getter]
+    fn get_l2(&self) -> f64 {
+        self.inner.l2
+    }
+
+    #[getter]
+    fn get_leaf_digest(&self) -> bool {
+        self.inner.leaf_digest
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "LeafControl(leaf='{}', leaf_family='{}', leaf_cols='{}', l1={}, l2={}, leaf_digest={})",
+            self.get_leaf(),
+            self.get_leaf_family(),
+            self.get_leaf_cols(),
+            self.inner.l1,
+            self.inner.l2,
+            self.inner.leaf_digest
+        )
+    }
+}
+
 /// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
@@ -2433,6 +2556,100 @@ impl PyModelTree {
         Ok(())
     }
 
+    /// Retrain all leaf models on new or existing data without altering tree topology or splits.
+    ///
+    /// Args:
+    ///     x: rows of predictors; `None` entries are missing.
+    ///     y: targets.
+    ///     control: optional LeafControl instance. If None, derived from current parameters.
+    ///     w: optional sample weights.
+    ///     leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber").
+    ///     leaf_family: optional leaf distribution override ("gaussian", "binomial", "poisson").
+    ///     leaf_cols: optional leaf columns policy override ("all", "path_used").
+    ///     l1: optional lasso penalty override.
+    ///     l2: optional ridge penalty override.
+    ///     leaf_digest: optional bool whether to keep leaf t-digests.
+    ///     tau: optional quantile tau when leaf is "quantile" (default 0.5).
+    ///
+    /// Returns: nothing; leaves are updated in place.
+    #[pyo3(signature = (x, y, control = None, w = None, leaf = None, leaf_family = None, leaf_cols = None, l1 = None, l2 = None, leaf_digest = None, tau = None))]
+    fn retrain(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        y: Vec<Option<f64>>,
+        control: Option<&PyLeafControl>,
+        w: Option<Vec<f64>>,
+        leaf: Option<&str>,
+        leaf_family: Option<&str>,
+        leaf_cols: Option<&str>,
+        l1: Option<f64>,
+        l2: Option<f64>,
+        leaf_digest: Option<bool>,
+        tau: Option<f64>,
+    ) -> PyResult<()> {
+        let t = self.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+        let mut ctrl = match control {
+            Some(c) => c.inner.clone(),
+            None => mltreelib_core::leaf::LeafControl::from(&t.params),
+        };
+
+        if let Some(l) = leaf {
+            ctrl.leaf = match l {
+                "linear" => LeafKind::Linear,
+                "mean" => LeafKind::Mean,
+                "median" => LeafKind::Median,
+                "quantile" => {
+                    let t_val = tau.unwrap_or(0.5);
+                    if !(0.0..=1.0).contains(&t_val) {
+                        return Err(PyValueError::new_err("tau must be in [0, 1]"));
+                    }
+                    LeafKind::Quantile(t_val)
+                }
+                "huber" => LeafKind::Huber,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
+            };
+        }
+        if let Some(fam) = leaf_family {
+            ctrl.family = match fam {
+                "gaussian" => LeafFamily::Gaussian,
+                "binomial" => LeafFamily::Binomial,
+                "poisson" => LeafFamily::Poisson,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
+            };
+        }
+        if let Some(lc) = leaf_cols {
+            ctrl.leaf_cols = match lc {
+                "all" => LeafCols::All,
+                "path_used" => LeafCols::PathUsed,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
+            };
+        }
+        if let Some(v) = l1 {
+            ctrl.l1 = v;
+        }
+        if let Some(v) = l2 {
+            ctrl.l2 = v;
+        }
+        if let Some(v) = leaf_digest {
+            ctrl.leaf_digest = v;
+        }
+
+        let coerced_x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        match w {
+            Some(w_vec) => t.retrain_weighted(&coerced_x, &y, &w_vec, ctrl.clone()),
+            None => t.retrain(&coerced_x, &y, ctrl.clone()),
+        }.map_err(PyValueError::new_err)?;
+
+        self.params.leaf = ctrl.leaf;
+        self.params.leaf_family = ctrl.family;
+        self.params.leaf_cols = ctrl.leaf_cols;
+        self.params.l1 = ctrl.l1;
+        self.params.l2 = ctrl.l2;
+        self.params.leaf_digest = ctrl.leaf_digest;
+
+        Ok(())
+    }
+
     /// Empirical conditional target quantiles from the leaves' t-digests:
     /// any tau in [0, 1] after fitting. These are not quantiles of the fitted
     /// binomial/Poisson distribution; use cdf for that distribution's CDF.
@@ -2792,6 +3009,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLeaveOneOutEncoder>()?;
     m.add_class::<PyMEstimatorEncoder>()?;
     m.add_class::<PyMetrics>()?;
+    m.add_class::<PyLeafControl>()?;
     m.add_class::<PyModelTree>()?;
     m.add_class::<PyOneHotEncoder>()?;
     m.add_class::<PyQuantileEncoder>()?;

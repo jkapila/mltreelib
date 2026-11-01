@@ -99,3 +99,41 @@ def test_predict_label_and_interval():
     assert len(intervals) == 40
     for lo, hi in intervals:
         assert lo <= hi
+
+
+def test_retrain_and_leaf_control():
+    from mltreelib import LeafControl
+
+    x = [[float(i), float(i) * 0.2] for i in range(60)]
+    y = [float(i) * 2.0 if i < 30 else 100.0 + float(i) * 0.5 for i in range(60)]
+
+    m = ModelTree(max_depth=1, min_rows=10, leaf="linear", l2=1e-3, prune="none")
+    m.fit(x, y)
+
+    orig_splits = m.splits()
+    orig_preds = m.predict(x)
+    assert len(orig_splits) == 1
+
+    # 1. Retrain to Mean leaves via LeafControl instance
+    ctrl = LeafControl(leaf="mean")
+    m.retrain(x, y, control=ctrl)
+
+    # Topology preserved
+    new_splits = m.splits()
+    assert len(new_splits) == len(orig_splits)
+    assert new_splits[0]["col"] == orig_splits[0]["col"]
+    assert new_splits[0]["threshold"] == orig_splits[0]["threshold"]
+
+    # Mean predictions are constant per leaf
+    mean_preds = m.predict(x)
+    assert mean_preds != orig_preds
+    assert mean_preds[0] == mean_preds[15]
+    assert mean_preds[35] == mean_preds[55]
+
+    # 2. Retrain to Linear with high ridge penalty via kwargs
+    m.retrain(x, y, leaf="linear", l2=100.0)
+    ridge_splits = m.splits()
+    assert len(ridge_splits) == len(orig_splits)
+    ridge_preds = m.predict(x)
+    assert ridge_preds != orig_preds
+    assert ridge_preds != mean_preds

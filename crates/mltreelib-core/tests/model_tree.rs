@@ -2822,3 +2822,57 @@ fn surrogate_search_guarded_when_no_missing_values() {
     // Split has no surrogate handle because primary column had 0 missing values
     assert!(splits[0].sur.is_none(), "surrogate search must be skipped on clean column");
 }
+
+#[test]
+fn retrain_refits_leaves_without_modifying_topology() {
+    use mltreelib_core::leaf::{LeafControl, LeafKind};
+
+    // Planted data: x0 splits at 50, x1 is linear predictor
+    let x: Vec<Vec<Option<f64>>> = (0..100)
+        .map(|i| vec![Some(i as f64), Some((i as f64) * 0.1)])
+        .collect();
+    let y: Vec<Option<f64>> = (0..100)
+        .map(|i| Some(if i < 50 { (i as f64) * 2.0 } else { 100.0 + (i as f64) * 0.5 }))
+        .collect();
+
+    let mut tree = ModelTree::fit(&x, &y, ModelTreeParams {
+        max_depth: 1,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        l2: 1e-3,
+        ..Default::default()
+    }).unwrap();
+
+    let orig_splits = tree.splits();
+    assert_eq!(orig_splits.len(), 1);
+    let orig_preds = tree.predict(&x);
+
+    // 1. Retrain to constant Mean leaves
+    let ctrl_mean = LeafControl::default().with_leaf(LeafKind::Mean);
+    tree.retrain(&x, &y, ctrl_mean).unwrap();
+
+    // Verify splits are completely untouched
+    let new_splits = tree.splits();
+    assert_eq!(new_splits.len(), orig_splits.len());
+    assert_eq!(new_splits[0].col, orig_splits[0].col);
+    assert_eq!(new_splits[0].threshold, orig_splits[0].threshold);
+
+    // Verify predictions are piecewise constant per leaf
+    let mean_preds = tree.predict(&x);
+    assert_ne!(mean_preds, orig_preds);
+    assert_eq!(mean_preds[0], mean_preds[10]);
+    assert_eq!(mean_preds[60], mean_preds[80]);
+
+    // 2. Retrain back to Linear leaves with strong ridge penalty l2 = 100.0
+    let ctrl_ridge = LeafControl::default()
+        .with_leaf(LeafKind::Linear)
+        .with_l2(100.0);
+    tree.retrain(&x, &y, ctrl_ridge).unwrap();
+
+    let ridge_splits = tree.splits();
+    assert_eq!(ridge_splits.len(), orig_splits.len());
+    let ridge_preds = tree.predict(&x);
+    // Predictions differ from unpenalized/small-l2 linear fit
+    assert_ne!(ridge_preds, orig_preds);
+    assert_ne!(ridge_preds, mean_preds);
+}

@@ -32,7 +32,8 @@ use std::time::Instant;
 use crate::criteria::GainFn;
 use crate::family::LeafFamily;
 use crate::gate::{GateNote, SplitTest};
-use crate::leaf::{LeafCols, LeafKind};
+use crate::leaf::{fit_leaf_model, LeafCols, LeafKind};
+pub use crate::leaf::LeafControl;
 use crate::node_stats::{FrameStats, LeafModel};
 use crate::preselect;
 use crate::prune::PruneCost;
@@ -649,6 +650,176 @@ impl ModelTree {
         };
         tree.assign_leaf_ids();
         Ok(tree)
+    }
+
+    /// Retrain all leaf models on new or existing data without altering tree topology or splits.
+    ///
+    /// Rows are routed through the existing split decision graph down to their assigned leaves.
+    /// Each leaf's model is refitted according to the specified `control` parameters.
+    pub fn retrain(
+        &mut self,
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        control: LeafControl,
+    ) -> Result<(), String> {
+        let n = y.len();
+        self.retrain_weighted(x, y, &vec![1.0; n], control)
+    }
+
+    /// Retrain all leaf models with sample weights.
+    pub fn retrain_weighted(
+        &mut self,
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        w: &[f64],
+        control: LeafControl,
+    ) -> Result<(), String> {
+        let n_all = y.len();
+        if x.len() != n_all || w.len() != n_all {
+            return Err("x, y and w length mismatch".to_string());
+        }
+        let d = self.col_names.len();
+        for r in x {
+            if r.len() != d {
+                return Err("row width != number of column names".to_string());
+            }
+        }
+        if control.l1 < 0.0 || control.l2 < 0.0 {
+            return Err("penalties l1 and l2 must be non-negative".to_string());
+        }
+        if !control.monotone.is_empty() && control.monotone.len() != d {
+            return Err("monotone must have one entry per column".to_string());
+        }
+        if control.family != LeafFamily::Gaussian {
+            if !matches!(control.leaf, LeafKind::Mean | LeafKind::Linear) {
+                return Err("binomial and poisson families support only mean or linear leaves".into());
+            }
+        }
+
+        // 1. Filter rows and transpose to column vectors
+        let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(n_all); d];
+        let mut yv: Vec<f64> = Vec::with_capacity(n_all);
+        let mut wv: Vec<f64> = Vec::with_capacity(n_all);
+        let mut leaf_assignments: Vec<usize> = Vec::with_capacity(n_all);
+
+        for (r, row) in x.iter().enumerate() {
+            if w[r] < 0.0 {
+                return Err("weights must be non-negative".to_string());
+            }
+            let Some(t) = y[r] else { continue };
+            if control.family != LeafFamily::Gaussian && t.is_nan() {
+                continue;
+            }
+            if w[r] == 0.0 {
+                continue;
+            }
+            if control.family != LeafFamily::Gaussian {
+                if !t.is_finite() || !w[r].is_finite() {
+                    return Err("distributional targets and weights must be finite".into());
+                }
+                match control.family {
+                    LeafFamily::Binomial if t != 0.0 && t != 1.0 => {
+                        return Err("binomial targets must be 0 or 1".into());
+                    }
+                    LeafFamily::Poisson if t < 0.0 => {
+                        return Err("poisson targets must be non-negative".into());
+                    }
+                    _ => {}
+                }
+            }
+            for j in 0..d {
+                let value = if control.family != LeafFamily::Gaussian {
+                    match row[j] {
+                        Some(v) if v.is_nan() => None,
+                        Some(v) if !v.is_finite() => {
+                            return Err("distributional predictors must be finite or missing".into());
+                        }
+                        value => value,
+                    }
+                } else {
+                    row[j]
+                };
+                cols[j].push(value);
+            }
+            yv.push(t);
+            wv.push(w[r]);
+
+            let leaf_idx = self.leaf_index(row);
+            leaf_assignments.push(leaf_idx);
+        }
+
+        // Group valid row indices by leaf node index
+        let mut leaf_rows_map: std::collections::HashMap<usize, Vec<usize>> =
+            std::collections::HashMap::new();
+        for (i, &leaf_idx) in leaf_assignments.iter().enumerate() {
+            leaf_rows_map.entry(leaf_idx).or_default().push(i);
+        }
+
+        // 2. Precompute root-to-node split paths
+        let mut node_paths = vec![Vec::new(); self.nodes.len()];
+        fn walk_paths(
+            nodes: &[Node],
+            i: usize,
+            cur: &mut Vec<usize>,
+            node_paths: &mut [Vec<usize>],
+        ) {
+            node_paths[i] = cur.clone();
+            let n = &nodes[i];
+            if let (Some(sp), Some(l), Some(r)) = (&n.split, n.left, n.right) {
+                cur.push(sp.col);
+                walk_paths(nodes, l, cur, node_paths);
+                walk_paths(nodes, r, cur, node_paths);
+                cur.pop();
+            }
+        }
+        walk_paths(&self.nodes, self.root, &mut Vec::new(), &mut node_paths);
+
+        // 3. For each active leaf in the tree, refit its LeafModel
+        let reachable = self.reachable();
+        for i in 0..self.nodes.len() {
+            if !reachable[i] || self.nodes[i].leaf.is_none() {
+                continue;
+            }
+            if let Some(rows) = leaf_rows_map.get(&i) {
+                let path = &node_paths[i];
+                let leaf_model = fit_leaf_model(
+                    &cols,
+                    &yv,
+                    &wv,
+                    rows,
+                    path,
+                    &self.active_cols,
+                    &control,
+                );
+                // Validate finiteness for distributional leaf models
+                if control.family != LeafFamily::Gaussian {
+                    let valid = leaf_model.center.map(|c| c.is_finite()).unwrap_or(true)
+                        && leaf_model.linear.as_ref().map(|m| {
+                            m.intercept.is_finite()
+                                && m.coef.iter().chain(&m.na_coef).all(|c| c.is_finite())
+                        }).unwrap_or(true);
+                    if !valid {
+                        return Err("distributional leaf fit failed to converge to finite coefficients".into());
+                    }
+                }
+                self.nodes[i].stats = FrameStats::from_ty(&yv, &wv, rows);
+                self.nodes[i].n = rows.len();
+                self.nodes[i].leaf = Some(leaf_model);
+            }
+        }
+
+        // 4. Update tree parameters to reflect new leaf controls
+        self.params.leaf = control.leaf;
+        self.params.leaf_family = control.family;
+        self.params.leaf_cols = control.leaf_cols;
+        self.params.l2 = control.l2;
+        self.params.l1 = control.l1;
+        self.params.leaf_digest = control.leaf_digest;
+        if !control.monotone.is_empty() {
+            self.params.monotone = control.monotone;
+        }
+
+        Ok(())
     }
 
     /// Route a row missing the split column: the first observed surrogate

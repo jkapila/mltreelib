@@ -150,6 +150,24 @@ Args:
     tau: quantile level.
 
 Returns: one quantile per row (NaN when a leaf's digest was dropped).
+### ModelTree.retrain
+```pythonretrain((self, /, x, y, control=None, w=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))```
+Retrain all leaf models on new or existing data without altering tree topology or splits.
+
+Args:
+    x: rows of predictors; `None` entries are missing.
+    y: targets.
+    control: optional LeafControl instance. If None, derived from current parameters.
+    w: optional sample weights.
+    leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber").
+    leaf_family: optional leaf distribution override ("gaussian", "binomial", "poisson").
+    leaf_cols: optional leaf columns policy override ("all", "path_used").
+    l1: optional lasso penalty override.
+    l2: optional ridge penalty override.
+    leaf_digest: optional bool whether to keep leaf t-digests.
+    tau: optional quantile tau when leaf is "quantile" (default 0.5).
+
+Returns: nothing; leaves are updated in place.
 ### ModelTree.split_paths
 ```pythonsplit_paths((self, /))```
 Split columns along each root-to-leaf path.
@@ -180,3 +198,6 @@ depth/per node candidate counts, precision grid, timings.
 Args: none.
 
 Returns: log lines.
+## LeafControl
+```pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5))```
+Parameter controls for fitting leaf models independently of tree topology.

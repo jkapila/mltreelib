@@ -29,7 +29,7 @@ PAGES = [
      "Typed ingest, the synthetic generator, dataset helpers and column "
      "screening. Guide with real examples: [Data](../data.md)."),
     ("model-tree.md", "ModelTree",
-     ["ModelTree"], [],
+     ["ModelTree", "LeafControl"], [],
      "The model tree: typed fit, split-search knobs, quantiles, training "
      "log. Guide: [Model](../model.md)."),
     ("metrics.md", "Metrics",
