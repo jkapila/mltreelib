@@ -42,7 +42,7 @@ Returns: list of `(column_name, share)` sorted descending; shares sum to 1.
 
 ### ModelTree.fit
 
-`pythonfit((self, /, x, y, w=None, dtypes=None))` Fit the tree on row-major data using the selected leaf family.
+`pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None))` Fit the tree on row-major data using the selected leaf family.
 
 Args: x: rows of predictors; `None` entries are missing (NA rows train). y: targets; `None`/NaN drops that row for binomial/Poisson. Gaussian NaN handling follows the historical Gaussian path. Binomial targets are 0 or 1; Poisson targets are finite nonnegative counts or rates (including fractional values). Gaussian targets retain ordinary regression. w: optional per-row sample weights (row weightage); zero-weight rows are ignored. dtypes: optional per-column types — "numeric" (default) or "categorical" (values are level codes; the split search partitions levels, no encoding).
 
@@ -50,11 +50,11 @@ Returns: nothing; the fitted tree replaces the inner model.
 
 ### ModelTree.leaf\_samples
 
-`pythonleaf_samples((self, /, x))` Return row indices grouped by leaf ID: {leaf\_id: \[row\_indices\]}.
+`pythonleaf_samples((self, /, x, id_col=None, col_names=None))` Return row indices or entity IDs grouped by leaf ID: {leaf\_id: \[indices\_or\_ids\]}.
 
-Args: x: raw rows of predictors.
+Args: x: raw rows of predictors. id\_col: optional column name, column index, or list of IDs. If None (default), returns integer row indices \[0, 1, ...\]. If provided, returns the corresponding entity ID values. col\_names: optional data column names when x has different layout than training data.
 
-Returns: dict mapping integer leaf\_id to a list of row indices.
+Returns: dict mapping integer leaf\_id to a list of row indices or entity IDs.
 
 ### ModelTree.leaves
 
@@ -74,11 +74,7 @@ Returns: leaf count.
 
 ### ModelTree.predict
 
-`pythonpredict((self, /, x))` Predict response-scale means; NAs never block a prediction.
-
-Args: x: rows of predictors; `None` entries are missing.
-
-Returns: one mean per row (binomial P(Y=1), Poisson expected count, or Gaussian regression value). No thresholding into hard labels.
+`pythonpredict((self, /, x, kind='response', times=None))` Predict with flexible output kinds: kind="response" (default): expected value / class / median survival time. kind="proba": class probabilities ((N, C) matrix for Softmax, 1D float list for Binomial/Probit). kind="dist": (mean, std) location-scale tuples for Heteroscedastic. kind="survival": S(t) survival curve over times grid. kind="hazard": Lambda(t) cumulative hazard curve over times grid. kind="leaf\_id": integer leaf ID per row.
 
 ### ModelTree.predict\_interval
 
@@ -100,13 +96,7 @@ Raises: ValueError unless the fitted leaf family is binomial.
 
 ### ModelTree.predict\_proba
 
-`pythonpredict_proba((self, /, x))` Predict binomial P(Y=1), one probability per input row.
-
-Args: x: raw rows of predictors, with the same missing/level handling as predict.
-
-Returns: one probability per row, not a two-column class matrix.
-
-Raises: ValueError unless the fitted leaf family is binomial.
+`pythonpredict_proba((self, /, x))` Predict class probabilities (convenience alias for `predict(x, kind="proba")`).
 
 ### ModelTree.profile
 
@@ -126,11 +116,11 @@ Returns: one quantile per row (NaN when a leaf's digest was dropped).
 
 ### ModelTree.retrain
 
-`pythonretrain((self, /, x, y, control=None, w=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None))` Retrain all leaf models on new or existing data without altering tree topology or splits.
+`pythonretrain((self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, event=None, n_classes=None))` Retrain all leaf models on new or existing data without altering tree topology or splits.
 
-Args: x: rows of predictors; `None` entries are missing. y: targets. control: optional LeafControl instance. If None, derived from current parameters. w: optional sample weights. leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber"). leaf\_family: optional leaf distribution override ("gaussian", "binomial", "poisson"). leaf\_cols: optional leaf columns policy override ("all", "path\_used"). l1: optional lasso penalty override. l2: optional ridge penalty override. leaf\_digest: optional bool whether to keep leaf t-digests. tau: optional quantile tau when leaf is "quantile" (default 0.5).
+Args: x: rows of predictors; `None` entries are missing. y: targets. control: optional LeafControl instance or dict. w: optional sample weights. mode: "internal" (updates self in place and returns self) or "external" (returns new ModelTree clone). leaf\_features: optional subset of column indices or names for leaf models. retrain\_cols: alias for leaf\_features. col\_names: optional data column names to validate and remap splits. leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber"). leaf\_family: optional leaf distribution override ("gaussian", "binomial", "poisson"). leaf\_cols: optional leaf columns policy override ("all", "path\_used"). l1: optional lasso penalty override. l2: optional ridge penalty override. leaf\_digest: optional bool whether to keep leaf t-digests. tau: optional quantile tau when leaf is "quantile" (default 0.5).
 
-Returns: nothing; leaves are updated in place.
+Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).
 
 ### ModelTree.split\_paths
 
@@ -162,4 +152,4 @@ Returns: log lines.
 
 ## LeafControl
 
-`pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5))` Parameter controls for fitting leaf models independently of tree topology.
+`pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None))` Parameter controls for fitting leaf models independently of tree topology.
