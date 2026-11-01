@@ -4,7 +4,7 @@
 
 The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [Model](../model.md).
 ## ModelTree
-```pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, interaction_groups=Ellipsis, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian'))```
+```pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, interaction_groups=Ellipsis, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False))```
 Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 Task: regression, binary probability estimation, or count modeling.

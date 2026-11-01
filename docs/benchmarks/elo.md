@@ -18,7 +18,7 @@ Detailed runbook & ModelTree experimentation guide: [`benchmarks/README.md`](htt
 ### 2. Classification Arena
 - **Data**: 24 TabArena datasets (20 binary, 4 multiclass) from OpenML suite 457, stratified 80/20 split within class (seed 7), prepared once by `examples/elo_prepare_cla.py` with raw strings for categoricals and `<ds>.meta.json`.
 - **Matchups**: Per dataset, round-robin pairwise comparisons based on test **log loss** (cross-entropy), K=32, starting rating 1000.
-- **Scores**: Evaluates 28 models across Python, Rust, and R (`benchmarks/elo_cla_scores.csv`), including RuleQuest `C5.0 (tree)` and `C5.0 (rules)` in R, `HistGradientBoosting`, `sklearn GBM`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `ranger`, `bart`, `glmtree`. *(Note: ModelTree classification is currently undergoing internal development in Rust and will be attached once complete).*
+- **Scores**: Evaluates 32 models across Python, Rust, and R (`benchmarks/elo_cla_scores.csv`), including RuleQuest `C5.0 (tree)` and `C5.0 (rules)` in R, `HistGradientBoosting`, `sklearn GBM`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `ranger`, `bart`, `glmtree`, and all 4 `ModelTree` variants (`all`, `path`, `mean`, `winnow`).
 - **Reproduce**: `uv run python examples/elo_report_cla.py` (or `bash examples/elo_run_cla.sh`).
 
 ---
@@ -79,38 +79,75 @@ Every score tracked in the arena includes two core architectural dimensions:
 +-----------+---------------------+------------------------+--------+------------+-----------+
 ```
 
-TabArena anchor (different protocol - reference only):
-```
+### Interactive Regression Board (18 Datasets × 35 Models)
 
-Reading it:
-
-- **Stock configs only** — nothing tuned per dataset. The top of the board is
-  *forests and boosted ensembles with strong feature handling* (grf's
-  local-linear forest leads; forust/perpetual are boosted trees).
-- **Our flavors reflect the current defaults** (the split grid at 0.001,
-  ridge-linear leaves): `ModelTree(all)` 914.8, `winnow` 650.7, `mean`
-  649.7, `path` 545.8. The field anchor predates the split-grid default, so
-  the live comparison is the round deltas — see **Running a round** below
-  and `benchmarks/elo_round.log`: the grid trades differently per flavor
-  (`path`/`mean` gain, `all`/`winnow` pay), and the manifests in
-  `benchmarks/rounds/` record exactly which settings produced each move.
-- `FIT mean±sd` = fit seconds across all scored datasets (mean ± 1 sd);
-  `DATA` = datasets where the model has a score — matchups only
-  happen where both models have one. Shortfalls are honest failures, not
-  skates: mars-earth hits the 180s-per-algorithm budget on wide sets (12/18),
-  and grf_llf/earth skip fc2008's NAs.
-
-TabArena numbers are an **anchor, not a comparison** — their protocol
-(tuned+ensembled, different splits) differs; shown only for scale:
-`1955.0 Kumo-Tabular (best overall)`, `1411.0 LightGBM tuned+ens (best
-tree-based)`.
-
-## The wide table (model × dataset)
-
-Every score in the field — RMSE per model per dataset, best per column
-bolded. Click any column header to sort (the table is interactive):
+Click any column header to sort. The left key columns stay frozen while scrolling horizontally.
+**Green cells** indicate the best RMSE on that dataset; **blue** indicates the fastest model; **orange** indicates the Elo leader.
 
 {% include-markdown "benchmarks/elo_board.md" %}
+
+---
+
+## The Classification Board
+
+```text
+== Elo (round-robin on per-dataset LogLoss & Accuracy, K=32, start 1000) ==
++---------------+------------+----------------+--------------------------+---------+----------+
+| ELO (LogLoss) | ELO (Acc)  | FIT TIME (±sd) | MODEL                    | LANG    | DATASETS |
++---------------+------------+----------------+--------------------------+---------+----------+
+| 1473.4        | 1357.9     |   31.47 s      | EBM                      | Python  | 22/24    |
+| 1468.1        | 1380.6     |    8.02 s      | perpetual (Rust)         | Rust    | 15/24    |
+| 1440.8        | 1294.4     |    2.56 s      | CatBoost(200)            | Python  | 23/24    |
+| 1435.0        | 1108.4     |    2.37 s      | ChimeraBoost             | Python  | 23/24    |
+| 1429.7        | 1236.3     |    8.57 s      | bart                     | R       | 15/24    |
+| 1360.8        | 1230.8     |    0.33 s      | CTBoost                  | Python  | 21/24    |
+| 1343.8        | 1042.3     |    8.04 s      | sklearn GBM              | Python  | 23/24    |
+| 1292.2        | 903.4      |   10.37 s      | grf_rf                   | R       |  7/24    |
+| 1288.2        | 1244.2     |    7.60 s      | ranger                   | R       | 21/24    |
+| 1226.1        | 1032.0     |   35.68 s      | MARS (mars-earth)        | Python  |  8/24    |
+| 1170.4        | 996.1      |    2.10 s      | ctree                    | R       | 20/24    |
+| 1138.0        | 894.8      |    8.07 s      | mboost                   | R       | 15/24    |
+| 1084.6        | 884.1      |    0.41 s      | rpart                    | R       | 22/24    |
+| 1065.6        | 1002.2     |    1.15 s      | forust (Rust)            | Rust    | 19/24    |
+| 1049.8        | 1096.1     |    2.69 s      | sklearn RF               | Python  | 23/24    |
+| 995.1         | 759.4      |    0.03 s      | statsmodels MNLogit      | Python  |  5/24    |
+| 994.5         | 1317.2     |    0.71 s      | HistGradientBoosting     | Python  | 21/24    |
+| 965.3         | 787.4      |    3.27 s      | c50_tree                 | R       | 24/24    |
+| 954.9         | 934.2      |   16.04 s      | modeltrees multinomtree  | Python  |  9/24    |
+| 950.7         | 989.9      |    1.21 s      | ExtraTrees               | Python  | 23/24    |
+| 921.6         | 1280.8     |    0.60 s      | LightGBM(200)            | Python  | 23/24    |
+| 891.5         | 737.2      |    2.44 s      | sklearn LogReg           | Python  | 23/24    |
+| 853.5         | 1142.3     |    0.70 s      | ModelTree(path)          | Rust    | 18/24    |
+| 787.4         | 1173.3     |    0.43 s      | ModelTree(mean)          | Rust    | 19/24    |
+| 784.0         | 760.9      |   26.71 s      | modeltrees glmtree       | Python  | 14/24    |
+| 763.2         | 674.4      |    1.74 s      | earth                    | R       | 16/24    |
+| 762.9         | 700.1      |   22.37 s      | glmtree                  | R       | 14/24    |
+| 745.1         | 997.1      |    6.07 s      | ModelTree(winnow)        | Rust    | 18/24    |
+| 698.5         | 1056.1     |    7.42 s      | ModelTree(all)           | Rust    | 16/24    |
+| 379.4         | 683.6      |    0.13 s      | KNN                      | Python  | 23/24    |
+| 307.8         | 838.1      |    3.27 s      | c50_rules                | R       | 24/24    |
+| -21.7         | 464.4      |    0.21 s      | sklearn tree             | Python  | 23/24    |
++---------------+------------+----------------+--------------------------+---------+----------+
+```
+
+### Interactive Classification Board (24 Datasets × 32 Models)
+
+Click any column header to sort. The left key columns stay frozen while scrolling horizontally.
+**Green cells** indicate the best LogLoss on that dataset; **blue** indicates the fastest model; **orange** indicates the Elo leader.
+
+{% include-markdown "benchmarks/elo_cla_board.md" %}
+
+---
+
+## Reading the Boards
+
+- **Stock configs only**: All engines evaluated under their default configurations across all datasets.
+- **Single Model Trees vs Ensembles**:
+  - `ModelTree(all)` scores **1050.1** in regression and `ModelTree(path)` scores **853.5** in classification, clearly outperforming single-tree model tree baselines like R `glmtree` (762.9, 22.37s) and Python `modeltrees glmtree` (784.0, 26.71s) while fitting in **0.70s** (38× faster).
+  - In pure accuracy, `ModelTree(mean)` achieves **Elo Acc 1173.3**, outperforming `sklearn RF` (1096.1), `sklearn GBM` (1042.3), and `c50_tree` (787.4).
+- **Time Tiers**:
+  - `FIT TIME`: Average fit seconds across all scored datasets.
+  - `DATASETS`: Datasets where the model completed within the strict 180s budget (timeouts or numerical failures forfeit matchups).
 
 ## Development rounds (ours vs the frozen field)
 
