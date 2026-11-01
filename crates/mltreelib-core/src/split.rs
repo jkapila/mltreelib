@@ -189,6 +189,15 @@ impl<'a> Grower<'a> {
             return None;
         }
 
+        let (mut node_sw, mut node_swy, mut node_swy2) = (0.0, 0.0, 0.0);
+        for &r in rows {
+            let (y, w) = (self.y[r], self.w[r]);
+            node_sw += w;
+            node_swy += w * y;
+            node_swy2 += w * y * y;
+        }
+        let node_moments = (node_sw, node_swy, node_swy2);
+
         let mut child_path = path.to_vec();
         let mut candidates: Vec<(usize, Option<(f64, Split, Option<Vec<f64>>)>, ScanStats)> =
             Vec::new();
@@ -263,9 +272,21 @@ impl<'a> Grower<'a> {
                 .map_init(
                     SplitScratch::default,
                     |sc, &j| {
-                        let mut cp = path.to_vec();
-                        cp.push(j);
-                        let (found, st) = self.scan_column(rows, j, &cp, parent_pre.as_ref(), sc);
+                        let cp = if self.params.split_eval == SplitEval::Exhaustive {
+                            let mut p = path.to_vec();
+                            p.push(j);
+                            p
+                        } else {
+                            Vec::new()
+                        };
+                        let (found, st) = self.scan_column(
+                            rows,
+                            j,
+                            &cp,
+                            parent_pre.as_ref(),
+                            sc,
+                            node_moments,
+                        );
                         (j, found, st)
                     },
                 )
@@ -274,9 +295,23 @@ impl<'a> Grower<'a> {
             candidates = out;
         } else {
             for &j in &cols {
-                child_path.push(j);
-                let (found, st) = self.scan_column(rows, j, &child_path, parent_pre.as_ref(), &mut scratch);
-                child_path.pop();
+                let cp = if self.params.split_eval == SplitEval::Exhaustive {
+                    child_path.push(j);
+                    child_path.clone()
+                } else {
+                    Vec::new()
+                };
+                let (found, st) = self.scan_column(
+                    rows,
+                    j,
+                    &cp,
+                    parent_pre.as_ref(),
+                    &mut scratch,
+                    node_moments,
+                );
+                if self.params.split_eval == SplitEval::Exhaustive {
+                    child_path.pop();
+                }
                 candidates.push((j, found, st));
             }
         }
@@ -340,6 +375,7 @@ impl<'a> Grower<'a> {
         path: &[usize],
         pre: Option<&ParentPre>,
         scratch: &mut SplitScratch,
+        node_moments: (f64, f64, f64),
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
         let (hit, st) = match self.params.split_eval {
             SplitEval::Exhaustive => {
@@ -353,14 +389,14 @@ impl<'a> Grower<'a> {
                 }
                 match self.params.leaf {
                     LeafKind::Linear => self.scan_column_linear(rows, j, path, pre),
-                    _ => self.scan_column_mean(rows, j, scratch),
+                    _ => self.scan_column_mean(rows, j, scratch, node_moments),
                 }
             }
             SplitEval::Fast => {
                 if self.col_type(j) == ColType::Categorical {
                     return self.scan_column_categorical(rows, j, scratch);
                 }
-                self.scan_column_mean(rows, j, scratch)
+                self.scan_column_mean(rows, j, scratch, node_moments)
             }
         };
         (hit.map(|(g, s)| (g, s, None)), st)
@@ -368,13 +404,13 @@ impl<'a> Grower<'a> {
 
     /// Column type for the split search: `params.dtypes` when set, else
     /// float.
-    fn col_type(&self, j: usize) -> ColType {
+    pub(crate) fn col_type(&self, j: usize) -> ColType {
         self.params.dtypes.get(j).copied().unwrap_or(ColType::Float)
     }
 
     /// Precision grid for a column's scan: integer handlers scan exact
     /// unique values (no grid); float handlers use `split_precision`.
-    fn grid_for(&self, j: usize) -> Option<f64> {
+    pub(crate) fn grid_for(&self, j: usize) -> Option<f64> {
         grid_of(&self.params.dtypes, self.params.split_precision, j)
     }
 
@@ -783,58 +819,63 @@ impl<'a> Grower<'a> {
         rows: &[usize],
         j: usize,
         scratch: &mut SplitScratch,
+        node_moments: (f64, f64, f64),
     ) -> (Option<(f64, Split)>, ScanStats) {
         let mut st = ScanStats::default();
         let m = self.min_child(rows.len()) as f64;
         let t0 = Instant::now();
 
         scratch.pairs.clear();
+        let grid = self.grid_for(j);
+        let q = grid.filter(|&p| p > 0.0).map(|p| 1.0 / p);
+
+        let mut tn = 0usize;
+        let (mut tsw, mut tswy, mut tswy2) = (0.0, 0.0, 0.0);
+
         for &r in rows {
-            if let Some(v) = self.cols[j][r] {
-                scratch.pairs.push((v, self.y[r], self.w[r]));
+            if let Some(v_raw) = self.cols[j][r] {
+                let v = match q {
+                    Some(inv) => (v_raw * inv).round() / inv,
+                    None => v_raw,
+                };
+                let (y, w) = (self.y[r], self.w[r]);
+                scratch.pairs.push((v, y, w));
+                tn += 1;
+                tsw += w;
+                tswy += w * y;
+                tswy2 += w * y * y;
             }
         }
-        if scratch.pairs.len() < 2 {
+
+        let n_pairs = scratch.pairs.len();
+        if n_pairs < 2 {
             return (None, st);
         }
-        scratch.pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
 
-        if let Some(p) = self.grid_for(j) {
-            if p > 0.0 {
-                let q = 1.0 / p;
-                for t in scratch.pairs.iter_mut() {
-                    t.0 = (t.0 * q).round() / q;
-                }
-            }
-        }
+        scratch.pairs.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+
+        let (node_sw, node_swy, node_swy2) = node_moments;
+        let mn = rows.len().saturating_sub(tn);
+        let (msw, mswy, mswy2) = if mn == 0 {
+            (0.0, 0.0, 0.0)
+        } else {
+            (
+                (node_sw - tsw).max(0.0),
+                node_swy - tswy,
+                (node_swy2 - tswy2).max(0.0),
+            )
+        };
 
         let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
         if is_custom_gain {
             scratch.missing_yws.clear();
-        }
-
-        // Missing rows: one extra group, scored in both directions.
-        let mut mn = 0usize;
-        let (mut msw, mut mswy, mut mswy2) = (0.0, 0.0, 0.0);
-        for &r in rows {
-            if self.cols[j][r].is_none() {
-                mn += 1;
-                let (y, w) = (self.y[r], self.w[r]);
-                if is_custom_gain {
-                    scratch.missing_yws.push((y, w));
+            if mn > 0 {
+                for &r in rows {
+                    if self.cols[j][r].is_none() {
+                        scratch.missing_yws.push((self.y[r], self.w[r]));
+                    }
                 }
-                msw += w;
-                mswy += w * y;
-                mswy2 += w * y * y;
             }
-        }
-        let mut tn = 0usize;
-        let (mut tsw, mut tswy, mut tswy2) = (0.0, 0.0, 0.0);
-        for &(_, y, w) in scratch.pairs.iter() {
-            tn += 1;
-            tsw += w;
-            tswy += w * y;
-            tswy2 += w * y * y;
         }
 
         fn sse(sw: f64, swy: f64, swy2: f64) -> f64 {
@@ -851,7 +892,8 @@ impl<'a> Grower<'a> {
         let mut ln = 0usize;
         let (mut lsw, mut lswy, mut lswy2) = (0.0, 0.0, 0.0);
         let mut best: Option<(f64, Split)> = None;
-        let n_pairs = scratch.pairs.len();
+        let total_w = tsw + msw;
+
         for k in 0..n_pairs {
             let (v, y, w) = scratch.pairs[k];
             ln += 1;
@@ -862,7 +904,7 @@ impl<'a> Grower<'a> {
             if !is_boundary {
                 continue;
             }
-            let threshold = match self.grid_for(j) {
+            let threshold = match grid {
                 Some(_) => v,
                 None => (v + scratch.pairs[k + 1].0) / 2.0,
             };
@@ -883,8 +925,8 @@ impl<'a> Grower<'a> {
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
                 }
-                if self.params.alpha > 0.0 && (alsw < self.params.alpha * (tsw + msw)
-                    || arsw < self.params.alpha * (tsw + msw))
+                if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w
+                    || arsw < self.params.alpha * total_w)
                 {
                     continue;
                 }
@@ -939,6 +981,7 @@ impl<'a> Grower<'a> {
                 }
             }
         }
+
         st.scan_ns += t1.elapsed().as_nanos() as u64;
         (best, st)
     }

@@ -578,6 +578,7 @@ impl ModelTree {
                 params.leaf, params.leaf_digest
             ));
         }
+
         let cap = params.max_leaf_nodes.unwrap_or(usize::MAX);
         let (root, _) = grower.grow(&rows, &est_rows, 0, &mut Vec::new(), cap);
         // Destructure to release the borrows on params/active_cols before
