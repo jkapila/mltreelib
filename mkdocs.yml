@@ -55,6 +55,7 @@ nav:
       - Visualization: examples/visualization.md
       - Metrics & plots: examples/metrics-plots.md
       - Hyperparameter search: examples/hpo.md
+      - Explainable stumps & retrain: examples/stump-explainable.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -97,6 +98,7 @@ plugins:
           - examples/visualization.md
           - examples/metrics-plots.md
           - examples/hpo.md
+          - examples/stump-explainable.md
           - benchmarks/elo.md
           - benchmarks/datasets.md
           - field-notes.md
