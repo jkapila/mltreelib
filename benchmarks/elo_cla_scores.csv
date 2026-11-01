@@ -35,3 +35,559 @@ credit-g,c50_tree,R,internal,0.6779,0.7100,0.6119,0.5958,0.6184,2.0290
 credit-g,c50_rules,R,internal,6.7199,0.7150,0.6155,0.6244,0.6225,2.0780
 credit-g,HistGradientBoosting,Python,internal,0.6589,0.7450,0.6607,0.7377,0.6707,0.5140
 credit-g,sklearn GBM,Python,external,0.5388,0.7350,0.6583,0.7487,0.6658,0.2890
+credit-g,ModelTree(all),Rust,internal,1.0183,0.7000,0.6333,0.7094,0.6357,0.7530
+credit-g,ModelTree(mean),Rust,internal,0.8689,0.7300,0.5738,0.7249,0.5614,0.0740
+credit-g,ModelTree(path),Rust,internal,0.8678,0.7300,0.6310,0.7227,0.6400,0.1270
+credit-g,ModelTree(winnow),Rust,internal,0.9379,0.7400,0.6810,0.7386,0.6843,0.3430
+Bank_Customer_Churn,rpart,R,internal,0.3874,0.8575,0.7166,0.7638,0.7460,0.2940
+Bank_Customer_Churn,c50_tree,R,internal,0.3790,0.8640,0.7152,0.7661,0.7502,2.4750
+Bank_Customer_Churn,c50_rules,R,internal,3.0595,0.8640,0.7152,0.7587,0.7502,1.2430
+Bank_Customer_Churn,ctree,R,internal,0.3947,0.8390,0.6684,0.7878,0.6975,1.7940
+Bank_Customer_Churn,glmtree,R,internal,0.3245,0.8690,0.7403,0.8739,0.7700,108.0540
+Bank_Customer_Churn,earth,R,internal,0.3426,0.8605,0.7194,0.8588,0.7502,0.3650
+Bank_Customer_Churn,mboost,R,internal,0.3384,0.8645,0.7128,0.8667,0.7489,5.3680
+Bank_Customer_Churn,ranger,R,internal,0.3369,0.8600,0.7127,0.8656,0.7453,5.1240
+Bank_Customer_Churn,bart,R,internal,0.3206,0.8705,0.7385,0.8791,0.7703,11.3080
+Bank_Customer_Churn,ModelTree(all),Rust,internal,0.4303,0.8650,0.7223,0.8557,0.7556,1.9580
+Bank_Customer_Churn,ModelTree(mean),Rust,internal,0.3670,0.8525,0.6742,0.8379,0.7104,0.3180
+Bank_Customer_Churn,ModelTree(path),Rust,internal,0.3867,0.8590,0.7002,0.8541,0.7357,0.6860
+Bank_Customer_Churn,ModelTree(winnow),Rust,internal,0.3777,0.8645,0.7165,0.8628,0.7514,1.0830
+Bank_Customer_Churn,modeltrees glmtree,Python,internal,0.3245,0.8690,0.7403,0.8739,0.7700,146.6820
+E-CommereShippingData,rpart,R,internal,0.5160,0.6805,0.7222,0.7412,0.6786,0.3060
+E-CommereShippingData,c50_tree,R,internal,0.5119,0.6755,0.7109,0.7432,0.6748,3.0320
+E-CommereShippingData,c50_rules,R,internal,8.9765,0.6764,0.7093,0.7366,0.6760,4.3400
+E-CommereShippingData,ctree,R,internal,0.5052,0.6791,0.7220,0.7434,0.6769,2.4070
+E-CommereShippingData,glmtree,R,internal,0.5762,0.6723,0.7062,0.7279,0.6718,91.4930
+E-CommereShippingData,earth,R,internal,0.5217,0.6650,0.6811,0.7349,0.6642,0.5350
+E-CommereShippingData,mboost,R,internal,0.5241,0.6718,0.6885,0.7416,0.6711,5.8380
+E-CommereShippingData,ranger,R,internal,0.5177,0.6514,0.6664,0.7291,0.6504,5.0880
+E-CommereShippingData,bart,R,internal,0.5039,0.6809,0.7186,0.7456,0.6799,12.7060
+E-CommereShippingData,MARS (mars-earth),Python,external,0.5338,0.6491,0.6552,0.7259,0.6459,130.4890
+E-CommereShippingData,ModelTree(all),Rust,internal,0.5099,0.6745,0.7078,0.7398,0.6742,1.4290
+E-CommereShippingData,ModelTree(mean),Rust,internal,0.5047,0.6805,0.7222,0.7462,0.6786,0.4030
+E-CommereShippingData,ModelTree(path),Rust,internal,0.5075,0.6745,0.7136,0.7320,0.6732,0.6780
+E-CommereShippingData,modeltrees glmtree,Python,internal,0.5762,0.6723,0.7062,0.7279,0.6718,53.2820
+Fitness_Club,ModelTree(all),Rust,internal,0.4933,0.7667,0.6991,0.8156,0.7085,0.4090
+Fitness_Club,ModelTree(mean),Rust,internal,0.4402,0.7933,0.7307,0.8414,0.7418,0.0880
+Fitness_Club,ModelTree(path),Rust,internal,0.4545,0.8067,0.7372,0.8389,0.7528,0.1900
+Fitness_Club,ModelTree(winnow),Rust,internal,0.4534,0.7933,0.7152,0.8292,0.7315,0.2430
+Is-this-a-good-customer,rpart,R,internal,0.3358,0.8808,0.5414,0.6615,0.5496,0.0670
+Is-this-a-good-customer,c50_tree,R,internal,0.3308,0.8837,0.5543,0.6567,0.5687,2.5330
+Is-this-a-good-customer,c50_rules,R,internal,4.0161,0.8837,0.5543,0.5543,0.5687,1.9490
+Is-this-a-good-customer,ctree,R,internal,0.3220,0.8866,0.5000,0.7238,0.4700,2.2340
+Is-this-a-good-customer,glmtree,R,internal,0.3213,0.8808,0.4967,0.7328,0.4683,1.6840
+Is-this-a-good-customer,earth,R,internal,0.3447,0.8837,0.5319,0.6901,0.5341,0.2230
+Is-this-a-good-customer,mboost,R,internal,0.3222,0.8866,0.5224,0.7211,0.5163,38.2780
+Is-this-a-good-customer,ranger,R,internal,0.3413,0.8866,0.5112,0.6856,0.4943,1.7630
+Is-this-a-good-customer,bart,R,internal,0.3172,0.8837,0.4984,0.7380,0.4691,1.8630
+Is-this-a-good-customer,MARS (mars-earth),Python,external,0.3190,0.8924,0.5368,0.7288,0.5411,7.3560
+Is-this-a-good-customer,ModelTree(all),Rust,internal,0.4823,0.8808,0.5638,0.7080,0.5809,0.7280
+Is-this-a-good-customer,ModelTree(mean),Rust,internal,0.4292,0.8866,0.5000,0.7033,0.4700,0.0910
+Is-this-a-good-customer,ModelTree(path),Rust,internal,0.4491,0.8866,0.5000,0.6662,0.4700,0.2310
+Is-this-a-good-customer,ModelTree(winnow),Rust,internal,0.4440,0.8895,0.5464,0.7210,0.5574,0.4540
+Is-this-a-good-customer,modeltrees glmtree,Python,internal,0.3213,0.8808,0.4967,0.7328,0.4683,0.1020
+Marketing_Campaign,rpart,R,internal,1.6782,0.7768,0.5797,0.5731,0.5767,0.1120
+Marketing_Campaign,c50_tree,R,internal,0.3891,0.8571,0.6085,0.6085,0.6334,1.9960
+Marketing_Campaign,c50_rules,R,internal,4.9341,0.8571,0.6085,0.6085,0.6334,1.3110
+Marketing_Campaign,ranger,R,internal,0.2915,0.8817,0.6598,0.8875,0.6991,2.1280
+Marketing_Campaign,ModelTree(mean),Rust,internal,0.3171,0.8705,0.6533,0.8372,0.6845,0.2030
+Marketing_Campaign,ModelTree(path),Rust,internal,0.3262,0.8728,0.6669,0.8292,0.6975,0.2980
+Marketing_Campaign,ModelTree(winnow),Rust,internal,0.3506,0.8571,0.7007,0.8533,0.7083,2.5800
+NATICUSdroid,rpart,R,internal,0.2909,0.8932,0.8954,0.9318,0.8854,0.6490
+NATICUSdroid,c50_tree,R,internal,0.2352,0.9212,0.9152,0.9523,0.9138,3.0200
+NATICUSdroid,c50_rules,R,internal,2.5049,0.9199,0.9116,0.9188,0.9119,2.9480
+NATICUSdroid,ctree,R,internal,0.2615,0.9085,0.9072,0.9582,0.9010,2.8720
+NATICUSdroid,glmtree,R,internal,0.2107,0.9259,0.9188,0.9733,0.9187,3.1100
+NATICUSdroid,earth,R,internal,0.2009,0.9199,0.9155,0.9730,0.9126,1.4520
+NATICUSdroid,mboost,R,internal,0.2194,0.9166,0.9130,0.9690,0.9092,16.4040
+NATICUSdroid,ranger,R,internal,0.1861,0.9352,0.9274,0.9778,0.9287,5.6420
+NATICUSdroid,bart,R,internal,0.1770,0.9332,0.9276,0.9788,0.9268,7.5930
+NATICUSdroid,ModelTree(all),Rust,internal,0.2001,0.9312,0.9247,0.9777,0.9245,25.4420
+NATICUSdroid,ModelTree(mean),Rust,internal,0.2890,0.8945,0.9021,0.9550,0.8878,1.7630
+NATICUSdroid,ModelTree(path),Rust,internal,0.2890,0.8945,0.9021,0.9550,0.8878,1.9690
+NATICUSdroid,ModelTree(winnow),Rust,internal,0.1994,0.9319,0.9270,0.9776,0.9255,19.0190
+NATICUSdroid,modeltrees glmtree,Python,internal,0.2107,0.9259,0.9188,0.9733,0.9187,11.2170
+Bank_Customer_Churn,CTBoost,Python,internal,0.3314,0.8660,0.7247,0.8723,0.7580,0.1590
+Bank_Customer_Churn,CatBoost(200),Python,internal,0.3268,0.8675,0.7348,0.8718,0.7655,2.3620
+Bank_Customer_Churn,ChimeraBoost,Python,internal,0.3279,0.8670,0.7446,0.8712,0.7707,2.4380
+Bank_Customer_Churn,EBM,Python,internal,0.3260,0.8700,0.7373,0.8708,0.7691,18.4530
+Bank_Customer_Churn,ExtraTrees,Python,external,0.4133,0.8580,0.7188,0.8501,0.7478,1.0990
+Bank_Customer_Churn,HistGradientBoosting,Python,internal,0.3354,0.8625,0.7289,0.8635,0.7578,0.4930
+Bank_Customer_Churn,KNN,Python,external,2.5187,0.7640,0.5080,0.5286,0.4900,0.0340
+Bank_Customer_Churn,LightGBM(200),Python,internal,0.3486,0.8595,0.7307,0.8561,0.7564,0.3110
+Bank_Customer_Churn,forust (Rust),Rust,external,0.3461,0.8610,0.7262,0.8585,0.7549,1.1120
+Bank_Customer_Churn,perpetual (Rust),Rust,external,0.3346,0.8660,0.7275,0.8639,0.7598,0.9510
+Bank_Customer_Churn,sklearn GBM,Python,external,0.3291,0.8685,0.7245,0.8700,0.7599,1.7920
+Bank_Customer_Churn,sklearn LogReg,Python,external,0.4421,0.8075,0.5810,0.7437,0.5923,0.4310
+Bank_Customer_Churn,sklearn RF,Python,external,0.3430,0.8590,0.7158,0.8586,0.7466,1.6210
+Bank_Customer_Churn,sklearn tree,Python,external,7.3913,0.7860,0.6928,0.6928,0.6841,0.0640
+E-CommereShippingData,CTBoost,Python,internal,0.5252,0.6682,0.7006,0.7376,0.6678,0.1270
+E-CommereShippingData,CatBoost(200),Python,internal,0.5171,0.6623,0.6838,0.7290,0.6621,2.0840
+E-CommereShippingData,ChimeraBoost,Python,internal,0.5088,0.6714,0.7057,0.7370,0.6708,2.2440
+E-CommereShippingData,EBM,Python,internal,0.5094,0.6682,0.6966,0.7356,0.6681,15.4520
+E-CommereShippingData,ExtraTrees,Python,external,0.5453,0.6550,0.6579,0.7255,0.6506,1.4360
+E-CommereShippingData,HistGradientBoosting,Python,internal,0.5169,0.6650,0.6809,0.7356,0.6642,0.4890
+E-CommereShippingData,KNN,Python,external,1.8542,0.6455,0.6410,0.7184,0.6376,0.0350
+E-CommereShippingData,LightGBM(200),Python,internal,0.5389,0.6468,0.6560,0.7262,0.6446,0.3020
+E-CommereShippingData,forust (Rust),Rust,external,0.5451,0.6632,0.6717,0.7310,0.6607,2.5960
+E-CommereShippingData,modeltrees multinomtree,Python,internal,0.5674,0.6741,0.7094,0.7337,0.6734,92.5950
+E-CommereShippingData,perpetual (Rust),Rust,external,0.5125,0.6745,0.7144,0.7416,0.6731,0.2960
+E-CommereShippingData,sklearn GBM,Python,external,0.5082,0.6682,0.7012,0.7412,0.6678,1.5590
+E-CommereShippingData,sklearn LogReg,Python,external,0.5562,0.6364,0.6279,0.7094,0.6261,0.5820
+E-CommereShippingData,sklearn RF,Python,external,0.5276,0.6536,0.6636,0.7272,0.6516,1.6740
+E-CommereShippingData,sklearn tree,Python,external,11.9944,0.6527,0.6403,0.6403,0.6400,0.0650
+Fitness_Club,CTBoost,Python,internal,0.4505,0.7933,0.7307,0.8409,0.7418,0.0180
+Fitness_Club,CatBoost(200),Python,internal,0.4437,0.7967,0.7424,0.8353,0.7505,0.9050
+Fitness_Club,ChimeraBoost,Python,internal,0.4383,0.7900,0.7159,0.8491,0.7305,0.9620
+Fitness_Club,EBM,Python,internal,0.4358,0.8000,0.7386,0.8450,0.7502,9.3310
+Fitness_Club,forust (Rust),Rust,external,0.5717,0.7667,0.6991,0.7985,0.7085,2.0300
+Fitness_Club,perpetual (Rust),Rust,external,0.4458,0.7800,0.7118,0.8370,0.7231,0.1550
+Fitness_Club,sklearn GBM,Python,external,0.4429,0.8000,0.7386,0.8366,0.7502,0.2510
+Fitness_Club,sklearn LogReg,Python,external,0.4347,0.8000,0.7169,0.8531,0.7357,0.0320
+Fitness_Club,sklearn RF,Python,external,0.8004,0.7833,0.7421,0.8020,0.7429,0.3310
+Fitness_Club,sklearn tree,Python,external,10.1314,0.7067,0.6747,0.6747,0.6666,0.0080
+Is-this-a-good-customer,CTBoost,Python,internal,0.3253,0.8866,0.5000,0.7225,0.4700,0.0330
+Is-this-a-good-customer,CatBoost(200),Python,internal,0.3251,0.8866,0.5224,0.7305,0.5163,1.0980
+Is-this-a-good-customer,ChimeraBoost,Python,internal,0.3156,0.8866,0.5000,0.7595,0.4700,1.7150
+Is-this-a-good-customer,EBM,Python,internal,0.3127,0.8837,0.4984,0.7580,0.4691,11.9260
+Is-this-a-good-customer,ExtraTrees,Python,external,0.4512,0.8866,0.5224,0.6360,0.5163,0.2860
+Is-this-a-good-customer,HistGradientBoosting,Python,internal,0.4219,0.8663,0.5109,0.7303,0.5039,0.4850
+Is-this-a-good-customer,KNN,Python,external,2.1325,0.8721,0.5365,0.5084,0.5423,0.0080
+Is-this-a-good-customer,LightGBM(200),Python,internal,0.5874,0.8605,0.4852,0.6749,0.4625,0.2580
+Is-this-a-good-customer,forust (Rust),Rust,external,0.4786,0.8576,0.5060,0.6839,0.4992,1.4370
+Is-this-a-good-customer,modeltrees multinomtree,Python,internal,0.3213,0.8808,0.4967,0.7328,0.4683,0.1450
+Is-this-a-good-customer,perpetual (Rust),Rust,external,0.3289,0.8895,0.5128,0.7185,0.4957,0.1450
+Is-this-a-good-customer,sklearn GBM,Python,external,0.3391,0.8779,0.5174,0.7116,0.5108,0.3480
+Is-this-a-good-customer,sklearn LogReg,Python,external,0.3198,0.8866,0.5000,0.7249,0.4700,0.1870
+Is-this-a-good-customer,sklearn RF,Python,external,0.5268,0.8837,0.5095,0.6570,0.4928,0.3410
+Is-this-a-good-customer,sklearn tree,Python,external,6.3254,0.8169,0.5725,0.5725,0.5684,0.0100
+Marketing_Campaign,CatBoost(200),Python,internal,0.2510,0.9018,0.7270,0.9082,0.7684,1.3210
+Marketing_Campaign,ChimeraBoost,Python,internal,0.2597,0.8906,0.6835,0.9092,0.7266,1.5950
+Marketing_Campaign,EBM,Python,internal,0.2696,0.8862,0.7363,0.9008,0.7564,67.9760
+Marketing_Campaign,ExtraTrees,Python,external,0.7134,0.8728,0.6792,0.8904,0.7069,0.3890
+Marketing_Campaign,KNN,Python,external,2.4678,0.8304,0.5374,0.5996,0.5397,0.0790
+Marketing_Campaign,LightGBM(200),Python,internal,0.3670,0.8884,0.7499,0.9000,0.7660,0.3170
+Marketing_Campaign,forust (Rust),Rust,external,0.3593,0.8415,0.6854,0.8678,0.6866,0.3890
+Marketing_Campaign,perpetual (Rust),Rust,external,0.2977,0.8772,0.6572,0.8768,0.6931,1.1390
+Marketing_Campaign,sklearn GBM,Python,external,0.3149,0.8594,0.6836,0.8640,0.6990,0.8590
+Marketing_Campaign,sklearn LogReg,Python,external,0.3836,0.8348,0.5831,0.7650,0.5975,0.2130
+Marketing_Campaign,sklearn RF,Python,external,0.3037,0.8750,0.6805,0.8740,0.7098,0.5980
+Marketing_Campaign,sklearn tree,Python,external,6.7915,0.8013,0.6372,0.6406,0.6297,0.0290
+NATICUSdroid,CTBoost,Python,internal,0.1790,0.9352,0.9313,0.9781,0.9292,0.9410
+NATICUSdroid,CatBoost(200),Python,internal,0.1661,0.9413,0.9368,0.9805,0.9357,1.2810
+NATICUSdroid,ChimeraBoost,Python,internal,0.1833,0.9279,0.9191,0.9765,0.9205,2.0240
+NATICUSdroid,EBM,Python,internal,0.1766,0.9346,0.9295,0.9793,0.9283,19.4800
+NATICUSdroid,ExtraTrees,Python,external,0.8989,0.9259,0.9193,0.9486,0.9187,1.0040
+NATICUSdroid,HistGradientBoosting,Python,internal,0.1740,0.9339,0.9281,0.9792,0.9275,1.0160
+NATICUSdroid,KNN,Python,external,0.7701,0.9166,0.9121,0.9614,0.9090,0.0940
+NATICUSdroid,LightGBM(200),Python,internal,0.1856,0.9359,0.9296,0.9787,0.9296,0.3800
+NATICUSdroid,forust (Rust),Rust,external,0.1765,0.9372,0.9293,0.9786,0.9308,1.0580
+NATICUSdroid,sklearn GBM,Python,external,0.1852,0.9332,0.9298,0.9755,0.9271,1.4690
+NATICUSdroid,sklearn LogReg,Python,external,0.1933,0.9286,0.9209,0.9742,0.9215,0.8840
+NATICUSdroid,sklearn RF,Python,external,0.2385,0.9266,0.9211,0.9709,0.9196,0.8240
+NATICUSdroid,sklearn tree,Python,external,3.2861,0.8992,0.8895,0.8962,0.8893,0.0380
+SDSS17,c50_tree,R,internal,0.1042,0.9730,0.9627,,0.9671,23.0000
+SDSS17,c50_rules,R,internal,0.8572,0.9735,0.9627,,0.9678,21.9920
+SDSS17,ranger,R,internal,0.0831,0.9792,0.9715,,0.9749,77.3920
+SDSS17,CatBoost(200),Python,internal,0.0759,0.9771,0.9700,,0.9726,10.2360
+SDSS17,ChimeraBoost,Python,internal,0.0714,0.9777,0.9707,,0.9734,13.3660
+SDSS17,ExtraTrees,Python,external,0.1308,0.9737,0.9665,,0.9689,7.4500
+SDSS17,KNN,Python,external,4.2668,0.6768,0.5246,,0.5485,1.0050
+SDSS17,LightGBM(200),Python,internal,0.1249,0.9747,0.9671,,0.9695,5.1590
+SDSS17,sklearn GBM,Python,external,0.0767,0.9771,0.9670,,0.9722,119.1720
+SDSS17,sklearn LogReg,Python,external,0.6412,0.7798,0.7091,,0.7250,8.7120
+SDSS17,sklearn RF,Python,external,0.1211,0.9794,0.9712,,0.9750,31.1710
+SDSS17,sklearn tree,Python,external,1.2014,0.9652,0.9607,,0.9587,1.9730
+bank-marketing,rpart,R,internal,0.3297,0.8946,0.5935,0.5935,0.6254,1.7710
+bank-marketing,c50_tree,R,internal,0.3279,0.8940,0.5936,0.6009,0.6252,3.4920
+bank-marketing,c50_rules,R,internal,3.6188,0.8943,0.5945,0.5950,0.6265,3.4290
+bank-marketing,ctree,R,internal,0.3109,0.8947,0.5923,0.7358,0.6241,2.0760
+bank-marketing,earth,R,internal,0.3060,0.8938,0.5902,0.7559,0.6209,2.3120
+bank-marketing,mboost,R,internal,0.3080,0.8945,0.5824,0.7481,0.6113,14.4130
+bank-marketing,ranger,R,internal,0.3045,0.8949,0.5896,0.7559,0.6208,16.9460
+bank-marketing,bart,R,internal,0.3017,0.8947,0.5886,0.7615,0.6195,48.1270
+bank-marketing,CTBoost,Python,internal,0.3004,0.8956,0.5891,0.7630,0.6206,0.7580
+bank-marketing,CatBoost(200),Python,internal,0.3028,0.8928,0.5929,0.7634,0.6237,5.1450
+bank-marketing,ChimeraBoost,Python,internal,0.3027,0.8939,0.5886,0.7606,0.6190,4.0730
+bank-marketing,EBM,Python,internal,0.3006,0.8946,0.5886,0.7661,0.6193,21.8360
+bank-marketing,ExtraTrees,Python,external,0.8471,0.8760,0.5973,0.6971,0.6189,4.4030
+bank-marketing,HistGradientBoosting,Python,internal,0.3018,0.8953,0.5894,0.7599,0.6207,0.7600
+bank-marketing,KNN,Python,external,1.9276,0.8754,0.5482,0.6179,0.5588,0.2920
+bank-marketing,LightGBM(200),Python,internal,0.3070,0.8936,0.5921,0.7529,0.6232,0.4960
+bank-marketing,ModelTree(all),Rust,internal,0.3107,0.8937,0.5840,0.7470,0.6130,8.9480
+bank-marketing,ModelTree(mean),Rust,internal,0.3123,0.8945,0.5856,0.7310,0.6155,1.5110
+bank-marketing,ModelTree(path),Rust,internal,0.3107,0.8947,0.5866,0.7353,0.6169,2.7870
+bank-marketing,ModelTree(winnow),Rust,internal,0.3118,0.8949,0.5814,0.7398,0.6102,6.0990
+bank-marketing,forust (Rust),Rust,external,0.3066,0.8915,0.5901,0.7556,0.6195,2.3420
+bank-marketing,perpetual (Rust),Rust,external,0.3043,0.8945,0.5873,0.7558,0.6176,1.7990
+bank-marketing,sklearn GBM,Python,external,0.3020,0.8945,0.5848,0.7639,0.6145,5.4270
+bank-marketing,sklearn LogReg,Python,external,0.3343,0.8827,0.5019,0.7092,0.4735,15.9260
+bank-marketing,sklearn RF,Python,external,0.4844,0.8875,0.5964,0.7153,0.6246,5.5290
+bank-marketing,sklearn tree,Python,external,6.2648,0.8186,0.5931,0.5929,0.5872,0.2750
+blood-transfusion-service-center,rpart,R,internal,0.5664,0.7267,0.5731,0.6916,0.5782,0.0280
+blood-transfusion-service-center,c50_tree,R,internal,0.5363,0.7333,0.5870,0.6796,0.5934,1.9020
+blood-transfusion-service-center,c50_rules,R,internal,9.2103,0.7333,0.5870,0.5870,0.5934,1.9600
+blood-transfusion-service-center,ctree,R,internal,0.5349,0.7333,0.5965,0.6957,0.6028,1.5270
+blood-transfusion-service-center,glmtree,R,internal,0.4997,0.7600,0.5950,0.7426,0.6048,1.7240
+blood-transfusion-service-center,earth,R,internal,0.4931,0.7800,0.6462,0.7339,0.6605,0.0830
+blood-transfusion-service-center,mboost,R,internal,0.5187,0.7600,0.6330,0.6999,0.6425,2.4370
+blood-transfusion-service-center,ranger,R,internal,0.5496,0.7467,0.6338,0.6943,0.6387,1.6570
+blood-transfusion-service-center,bart,R,internal,0.4910,0.7667,0.6089,0.7236,0.6210,0.8620
+blood-transfusion-service-center,grf_rf,R,none,0.5004,0.7667,0.6279,0.7124,0.6399,1.8390
+blood-transfusion-service-center,CTBoost,Python,internal,0.5062,0.7600,0.5000,0.6977,0.4318,0.0080
+blood-transfusion-service-center,CatBoost(200),Python,internal,0.5220,0.7667,0.6374,0.7009,0.6484,0.2740
+blood-transfusion-service-center,ChimeraBoost,Python,internal,0.4981,0.7400,0.5724,0.7159,0.5776,0.6470
+blood-transfusion-service-center,EBM,Python,internal,0.5007,0.7600,0.5855,0.7102,0.5935,7.9440
+blood-transfusion-service-center,ExtraTrees,Python,external,3.4490,0.7067,0.5694,0.6239,0.5726,0.2490
+blood-transfusion-service-center,HistGradientBoosting,Python,internal,0.6451,0.7133,0.6213,0.6750,0.6178,0.3040
+blood-transfusion-service-center,KNN,Python,external,2.4323,0.7733,0.6228,0.6681,0.6366,0.0540
+blood-transfusion-service-center,LightGBM(200),Python,internal,0.6843,0.7133,0.6023,0.6725,0.6033,0.1500
+blood-transfusion-service-center,MARS (mars-earth),Python,external,0.4924,0.7667,0.6374,0.7377,0.6484,0.2800
+blood-transfusion-service-center,ModelTree(all),Rust,internal,0.5286,0.7667,0.6564,0.7226,0.6637,0.0880
+blood-transfusion-service-center,ModelTree(mean),Rust,internal,0.5379,0.7333,0.5870,0.6796,0.5934,0.0100
+blood-transfusion-service-center,ModelTree(path),Rust,internal,0.5238,0.7667,0.6564,0.7266,0.6637,0.0490
+blood-transfusion-service-center,ModelTree(winnow),Rust,internal,0.5035,0.7533,0.5716,0.7102,0.5760,0.0600
+blood-transfusion-service-center,forust (Rust),Rust,external,0.6562,0.7067,0.5885,0.6484,0.5901,0.5510
+blood-transfusion-service-center,modeltrees glmtree,Python,internal,0.4997,0.7600,0.5950,0.7426,0.6048,0.4960
+blood-transfusion-service-center,perpetual (Rust),Rust,external,0.5016,0.7600,0.6330,0.7085,0.6425,0.0370
+blood-transfusion-service-center,sklearn GBM,Python,external,0.5581,0.7467,0.5958,0.6689,0.6042,0.2110
+blood-transfusion-service-center,sklearn LogReg,Python,external,0.4858,0.7533,0.5336,0.7365,0.5163,0.0620
+blood-transfusion-service-center,sklearn RF,Python,external,0.8268,0.7333,0.6250,0.6728,0.6273,0.2960
+blood-transfusion-service-center,sklearn tree,Python,external,10.2388,0.6600,0.5387,0.5471,0.5384,0.0510
+blood-transfusion-service-center,statsmodels MNLogit,Python,none,0.4858,0.7533,0.5336,0.7365,0.5163,0.0210
+churn,rpart,R,internal,0.2038,0.9400,0.8406,0.8897,0.8665,0.2840
+churn,c50_tree,R,internal,0.1949,0.9440,0.8400,0.8905,0.8729,2.1120
+churn,c50_rules,R,internal,1.6888,0.9400,0.8465,0.8568,0.8682,2.1600
+churn,ctree,R,internal,0.2219,0.9410,0.8471,0.8889,0.8700,1.8160
+churn,earth,R,internal,0.2861,0.8740,0.6806,0.8738,0.7038,0.8110
+churn,ranger,R,internal,0.1812,0.9520,0.8565,0.9112,0.8910,2.9700
+churn,bart,R,internal,0.1896,0.9460,0.8500,0.8987,0.8790,4.5970
+churn,CTBoost,Python,internal,0.1947,0.9450,0.8435,0.8983,0.8756,0.1200
+churn,CatBoost(200),Python,internal,0.1579,0.9620,0.8830,0.9083,0.9149,1.6890
+churn,ChimeraBoost,Python,internal,0.1642,0.9600,0.8759,0.8988,0.9098,2.4200
+churn,EBM,Python,internal,0.1722,0.9580,0.8718,0.9081,0.9053,39.2540
+churn,ExtraTrees,Python,external,0.2434,0.9430,0.8097,0.8986,0.8616,0.6030
+churn,HistGradientBoosting,Python,internal,0.1894,0.9560,0.8766,0.9065,0.9027,0.5490
+churn,KNN,Python,external,2.0772,0.8890,0.6568,0.6757,0.6983,0.0860
+churn,LightGBM(200),Python,internal,0.2383,0.9610,0.8795,0.9021,0.9124,0.3600
+churn,ModelTree(mean),Rust,internal,0.2711,0.9340,0.8341,0.8926,0.8551,0.2080
+churn,ModelTree(path),Rust,internal,0.2666,0.9410,0.8382,0.8920,0.8674,0.3730
+churn,ModelTree(winnow),Rust,internal,0.2352,0.9360,0.8145,0.8933,0.8517,0.9800
+churn,forust (Rust),Rust,external,0.1913,0.9580,0.8807,0.9005,0.9072,0.5570
+churn,perpetual (Rust),Rust,external,0.1739,0.9530,0.8630,0.9034,0.8944,5.2050
+churn,sklearn GBM,Python,external,0.1719,0.9530,0.8630,0.9084,0.8944,2.1340
+churn,sklearn LogReg,Python,external,0.3326,0.8650,0.5865,0.7978,0.6093,0.3120
+churn,sklearn RF,Python,external,0.2131,0.9530,0.8630,0.9059,0.8944,1.3700
+churn,sklearn tree,Python,external,2.5213,0.9270,0.8597,0.8597,0.8524,0.0880
+coil2000_insurance_policies,rpart,R,internal,0.2258,0.9404,0.5000,0.5000,0.4846,0.2970
+coil2000_insurance_policies,c50_tree,R,internal,0.2258,0.9404,0.5000,0.5000,0.4846,3.1300
+coil2000_insurance_policies,c50_rules,R,internal,0.6931,0.9404,0.5000,0.5000,0.4846,3.1200
+coil2000_insurance_policies,ctree,R,internal,0.2101,0.9404,0.5000,0.7006,0.4846,1.9380
+coil2000_insurance_policies,glmtree,R,internal,0.2146,0.9384,0.5069,0.7254,0.5001,5.9410
+coil2000_insurance_policies,earth,R,internal,0.2072,0.9384,0.5069,0.7419,0.5001,2.2360
+coil2000_insurance_policies,ranger,R,internal,0.2285,0.9399,0.5077,0.6749,0.5009,6.8310
+coil2000_insurance_policies,bart,R,internal,0.2031,0.9409,0.5043,0.7554,0.4933,10.4800
+coil2000_insurance_policies,CTBoost,Python,internal,0.2059,0.9404,0.5040,0.7473,0.4930,0.6950
+coil2000_insurance_policies,CatBoost(200),Python,internal,0.2086,0.9384,0.4989,0.7473,0.4841,2.4130
+coil2000_insurance_policies,ChimeraBoost,Python,internal,0.2034,0.9399,0.4997,0.7613,0.4845,3.0210
+coil2000_insurance_policies,EBM,Python,internal,0.2081,0.9389,0.5072,0.7488,0.5004,20.4270
+coil2000_insurance_policies,ExtraTrees,Python,external,0.8885,0.9262,0.5124,0.6443,0.5130,1.5750
+coil2000_insurance_policies,HistGradientBoosting,Python,internal,0.2268,0.9374,0.5304,0.7344,0.5413,0.8470
+coil2000_insurance_policies,KNN,Python,external,1.4400,0.9343,0.5008,0.5701,0.4906,0.1130
+coil2000_insurance_policies,LightGBM(200),Python,internal,0.2601,0.9297,0.5223,0.7080,0.5278,0.3980
+coil2000_insurance_policies,ModelTree(all),Rust,internal,0.3054,0.9272,0.5290,0.6886,0.5369,50.8670
+coil2000_insurance_policies,ModelTree(mean),Rust,internal,0.2243,0.9404,0.5000,0.7322,0.4846,0.7390
+coil2000_insurance_policies,ModelTree(path),Rust,internal,0.2250,0.9399,0.5037,0.7451,0.4928,1.1130
+coil2000_insurance_policies,ModelTree(winnow),Rust,internal,0.2585,0.9323,0.5237,0.7075,0.5300,11.0730
+coil2000_insurance_policies,forust (Rust),Rust,external,0.2325,0.9333,0.5322,0.7244,0.5431,0.8130
+coil2000_insurance_policies,modeltrees glmtree,Python,internal,0.2146,0.9384,0.5069,0.7254,0.5001,16.1690
+coil2000_insurance_policies,sklearn GBM,Python,external,0.2078,0.9389,0.5032,0.7506,0.4924,4.5140
+coil2000_insurance_policies,sklearn LogReg,Python,external,0.2123,0.9389,0.5072,0.7248,0.5004,12.0700
+coil2000_insurance_policies,sklearn RF,Python,external,0.5612,0.9302,0.5186,0.6382,0.5221,1.7780
+coil2000_insurance_policies,sklearn tree,Python,external,3.4238,0.8971,0.5330,0.5498,0.5336,0.2040
+diabetes,rpart,R,internal,0.8569,0.7208,0.6870,0.7139,0.6893,0.0400
+diabetes,c50_tree,R,internal,0.7720,0.7013,0.6465,0.6994,0.6519,1.8950
+diabetes,c50_rules,R,internal,6.5162,0.7013,0.6635,0.6789,0.6661,1.9190
+diabetes,ctree,R,internal,1.8834,0.7143,0.6735,0.6810,0.6775,1.5500
+diabetes,glmtree,R,internal,0.5756,0.7078,0.6643,0.7606,0.6685,1.6700
+diabetes,earth,R,internal,0.5852,0.6883,0.6407,0.7596,0.6446,0.0870
+diabetes,mboost,R,internal,0.5870,0.6948,0.6457,0.7486,0.6502,2.9130
+diabetes,ranger,R,internal,0.5892,0.7273,0.6793,0.7350,0.6857,1.6930
+diabetes,bart,R,internal,0.5728,0.7013,0.6465,0.7472,0.6519,0.9130
+diabetes,grf_rf,R,none,0.5617,0.7013,0.6507,0.7450,0.6558,1.9420
+diabetes,CTBoost,Python,internal,0.6094,0.7143,0.6607,0.7020,0.6671,0.0160
+diabetes,CatBoost(200),Python,internal,0.6114,0.7013,0.6550,0.7370,0.6594,0.3620
+diabetes,ChimeraBoost,Python,internal,0.5764,0.7273,0.6920,0.7379,0.6951,0.6600
+diabetes,EBM,Python,internal,0.5630,0.6688,0.6172,0.7674,0.6204,11.2930
+diabetes,ExtraTrees,Python,external,0.5736,0.6948,0.6415,0.7387,0.6464,0.2680
+diabetes,HistGradientBoosting,Python,internal,0.9311,0.6948,0.6543,0.7141,0.6572,0.3290
+diabetes,KNN,Python,external,3.1200,0.7013,0.6550,0.6733,0.6594,0.0500
+diabetes,LightGBM(200),Python,internal,1.3212,0.7078,0.6643,0.7094,0.6685,0.1870
+diabetes,MARS (mars-earth),Python,external,0.5489,0.7143,0.6650,0.7798,0.6707,3.5890
+diabetes,ModelTree(all),Rust,internal,1.0428,0.6688,0.6300,0.6576,0.6315,0.1630
+diabetes,ModelTree(mean),Rust,internal,2.2639,0.7208,0.6657,0.6933,0.6727,0.0210
+diabetes,ModelTree(winnow),Rust,internal,0.9795,0.6883,0.6450,0.6681,0.6482,0.1350
+diabetes,forust (Rust),Rust,external,1.0151,0.7143,0.6820,0.7150,0.6835,0.4220
+diabetes,modeltrees glmtree,Python,internal,0.5756,0.7078,0.6643,0.7606,0.6685,0.1340
+diabetes,modeltrees multinomtree,Python,internal,0.5756,0.7078,0.6643,0.7606,0.6685,0.3050
+diabetes,perpetual (Rust),Rust,external,0.6322,0.6883,0.6365,0.7437,0.6408,0.2700
+diabetes,sklearn GBM,Python,external,0.6107,0.7078,0.6685,0.7522,0.6718,0.2980
+diabetes,sklearn LogReg,Python,external,0.5203,0.7078,0.6643,0.7961,0.6685,0.0850
+diabetes,sklearn RF,Python,external,0.6056,0.7013,0.6550,0.7290,0.6594,0.3150
+diabetes,sklearn tree,Python,external,10.7653,0.6883,0.6450,0.6450,0.6482,0.0590
+diabetes,statsmodels MNLogit,Python,none,0.5200,0.7143,0.6693,0.7961,0.6742,0.0140
+hazelnut-spread-contaminant-detection,rpart,R,internal,0.4245,0.8292,0.8292,0.8716,0.8291,0.2900
+hazelnut-spread-contaminant-detection,c50_tree,R,internal,0.3981,0.8438,0.8438,0.9195,0.8436,2.1490
+hazelnut-spread-contaminant-detection,c50_rules,R,internal,3.3393,0.8646,0.8646,0.8857,0.8645,2.1560
+hazelnut-spread-contaminant-detection,ctree,R,internal,0.4551,0.8229,0.8229,0.8988,0.8229,1.8660
+hazelnut-spread-contaminant-detection,glmtree,R,internal,0.8699,0.9250,0.9250,0.9523,0.9250,42.6240
+hazelnut-spread-contaminant-detection,earth,R,internal,0.2218,0.9021,0.9021,0.9689,0.9021,0.3360
+hazelnut-spread-contaminant-detection,mboost,R,internal,0.2834,0.9000,0.9000,0.9628,0.9000,5.8030
+hazelnut-spread-contaminant-detection,ranger,R,internal,0.2734,0.9104,0.9104,0.9671,0.9104,2.8300
+hazelnut-spread-contaminant-detection,bart,R,internal,0.2035,0.9333,0.9333,0.9796,0.9333,2.4080
+hazelnut-spread-contaminant-detection,grf_rf,R,none,0.3324,0.8875,0.8875,0.9498,0.8875,6.4950
+hazelnut-spread-contaminant-detection,CTBoost,Python,internal,0.3404,0.8833,0.8833,0.9418,0.8833,0.1660
+hazelnut-spread-contaminant-detection,CatBoost(200),Python,internal,0.1927,0.9500,0.9500,0.9803,0.9500,0.7910
+hazelnut-spread-contaminant-detection,ChimeraBoost,Python,internal,0.1357,0.9563,0.9563,0.9893,0.9562,1.5230
+hazelnut-spread-contaminant-detection,EBM,Python,internal,0.1234,0.9521,0.9521,0.9884,0.9521,88.0190
+hazelnut-spread-contaminant-detection,ExtraTrees,Python,external,0.2632,0.9146,0.9146,0.9704,0.9146,0.4740
+hazelnut-spread-contaminant-detection,HistGradientBoosting,Python,internal,0.1475,0.9354,0.9354,0.9847,0.9354,0.5720
+hazelnut-spread-contaminant-detection,KNN,Python,external,1.3218,0.8396,0.8396,0.9147,0.8391,0.1330
+hazelnut-spread-contaminant-detection,LightGBM(200),Python,internal,0.1489,0.9583,0.9583,0.9875,0.9583,0.3940
+hazelnut-spread-contaminant-detection,ModelTree(all),Rust,internal,0.5444,0.7833,0.7833,0.8549,0.7828,1.2780
+hazelnut-spread-contaminant-detection,ModelTree(mean),Rust,internal,0.5444,0.7771,0.7771,0.8465,0.7769,0.1540
+hazelnut-spread-contaminant-detection,ModelTree(path),Rust,internal,0.5444,0.8000,0.8000,0.8475,0.7994,0.2290
+hazelnut-spread-contaminant-detection,ModelTree(winnow),Rust,internal,0.5444,0.7812,0.7812,0.8545,0.7807,1.1340
+hazelnut-spread-contaminant-detection,forust (Rust),Rust,external,0.1385,0.9542,0.9542,0.9864,0.9542,0.9930
+hazelnut-spread-contaminant-detection,modeltrees glmtree,Python,internal,0.8699,0.9250,0.9250,0.9523,0.9250,22.4580
+hazelnut-spread-contaminant-detection,modeltrees multinomtree,Python,internal,0.8743,0.9250,0.9250,0.9527,0.9250,43.6660
+hazelnut-spread-contaminant-detection,perpetual (Rust),Rust,external,0.2798,0.9437,0.9437,0.9857,0.9437,77.2460
+hazelnut-spread-contaminant-detection,sklearn GBM,Python,external,0.2308,0.9146,0.9146,0.9741,0.9146,2.5330
+hazelnut-spread-contaminant-detection,sklearn LogReg,Python,external,0.6926,0.6667,0.6667,0.5601,0.6327,0.0530
+hazelnut-spread-contaminant-detection,sklearn RF,Python,external,0.3309,0.9146,0.9146,0.9675,0.9146,1.1760
+hazelnut-spread-contaminant-detection,sklearn tree,Python,external,4.6771,0.8646,0.8646,0.8646,0.8645,0.1500
+hazelnut-spread-contaminant-detection,statsmodels MNLogit,Python,none,0.2124,0.9187,0.9187,0.9733,0.9187,0.0340
+heloc,rpart,R,internal,0.6104,0.6998,0.6959,0.6959,0.6955,0.6500
+heloc,c50_tree,R,internal,0.5900,0.7084,0.7062,0.7522,0.7064,2.4620
+heloc,c50_rules,R,internal,8.9939,0.7132,0.7109,0.7215,0.7112,2.4970
+heloc,ctree,R,internal,0.5775,0.6974,0.6927,0.7652,0.6916,2.0380
+heloc,glmtree,R,internal,0.5550,0.7266,0.7238,0.7927,0.7241,13.7210
+heloc,earth,R,internal,0.5423,0.7309,0.7284,0.8023,0.7288,0.4260
+heloc,mboost,R,internal,0.5441,0.7266,0.7241,0.7988,0.7244,7.2270
+heloc,ranger,R,internal,0.5470,0.7290,0.7255,0.7994,0.7256,5.5920
+heloc,bart,R,internal,0.5418,0.7357,0.7329,0.8015,0.7332,9.8000
+heloc,grf_rf,R,none,0.5531,0.7165,0.7134,0.7933,0.7135,16.2850
+heloc,CTBoost,Python,internal,0.5486,0.7280,0.7248,0.7976,0.7250,0.2590
+heloc,CatBoost(200),Python,internal,0.5470,0.7218,0.7191,0.7964,0.7193,0.9020
+heloc,ChimeraBoost,Python,internal,0.5447,0.7256,0.7224,0.7999,0.7226,1.3810
+heloc,EBM,Python,internal,0.5404,0.7290,0.7264,0.8019,0.7267,23.0550
+heloc,ExtraTrees,Python,external,0.5527,0.7237,0.7201,0.7927,0.7200,1.5290
+heloc,HistGradientBoosting,Python,internal,0.5485,0.7232,0.7207,0.7957,0.7210,0.5260
+heloc,KNN,Python,external,2.0477,0.6625,0.6631,0.7183,0.6624,0.1580
+heloc,LightGBM(200),Python,internal,0.5635,0.7175,0.7149,0.7900,0.7152,0.3290
+heloc,ModelTree(all),Rust,internal,0.6894,0.7103,0.7086,0.7589,0.7089,6.3090
+heloc,ModelTree(mean),Rust,internal,0.5832,0.7012,0.6996,0.7602,0.6998,0.3400
+heloc,ModelTree(path),Rust,internal,0.5810,0.7084,0.7065,0.7703,0.7067,0.6880
+heloc,ModelTree(winnow),Rust,internal,0.6723,0.7036,0.7018,0.7600,0.7020,5.0080
+heloc,forust (Rust),Rust,external,0.5702,0.7161,0.7141,0.7860,0.7144,0.7910
+heloc,modeltrees glmtree,Python,internal,0.5550,0.7266,0.7238,0.7927,0.7241,3.4370
+heloc,modeltrees multinomtree,Python,internal,0.5561,0.7280,0.7255,0.7929,0.7258,6.7250
+heloc,perpetual (Rust),Rust,external,0.5469,0.7242,0.7215,0.7964,0.7218,12.4950
+heloc,sklearn GBM,Python,external,0.5441,0.7299,0.7271,0.7988,0.7275,3.2580
+heloc,sklearn LogReg,Python,external,0.5747,0.6936,0.6921,0.7723,0.6924,0.5890
+heloc,sklearn RF,Python,external,0.5508,0.7285,0.7252,0.7964,0.7253,2.2530
+heloc,sklearn tree,Python,external,12.3033,0.6214,0.6205,0.6248,0.6205,0.2020
+heloc,statsmodels MNLogit,Python,none,0.5633,0.7141,0.7121,0.7835,0.7124,0.0440
+in_vehicle_coupon_recommendation,rpart,R,internal,0.6051,0.6882,0.6845,0.7178,0.6836,0.4670
+in_vehicle_coupon_recommendation,c50_tree,R,internal,0.6025,0.7233,0.7131,0.7437,0.7148,2.4750
+in_vehicle_coupon_recommendation,c50_rules,R,internal,3.0689,0.7300,0.7156,0.7625,0.7183,1.7870
+in_vehicle_coupon_recommendation,ctree,R,internal,0.5935,0.7138,0.7002,0.7601,0.7025,4.7740
+in_vehicle_coupon_recommendation,glmtree,R,internal,0.5636,0.7237,0.7118,0.7785,0.7140,28.0100
+in_vehicle_coupon_recommendation,earth,R,internal,0.5885,0.6996,0.6872,0.7488,0.6890,2.6600
+in_vehicle_coupon_recommendation,ranger,R,internal,0.5293,0.7568,0.7430,0.8267,0.7464,5.3290
+in_vehicle_coupon_recommendation,bart,R,internal,0.4975,0.7718,0.7604,0.8342,0.7635,13.1450
+in_vehicle_coupon_recommendation,CTBoost,Python,internal,0.5154,0.7572,0.7452,0.8303,0.7481,0.4060
+in_vehicle_coupon_recommendation,CatBoost(200),Python,internal,0.4787,0.7785,0.7665,0.8483,0.7699,5.2150
+in_vehicle_coupon_recommendation,ChimeraBoost,Python,internal,0.5389,0.7391,0.7236,0.8004,0.7268,1.6170
+in_vehicle_coupon_recommendation,EBM,Python,internal,0.4926,0.7667,0.7562,0.8340,0.7588,56.6470
+in_vehicle_coupon_recommendation,ExtraTrees,Python,external,0.6884,0.7379,0.7281,0.8026,0.7300,1.8160
+in_vehicle_coupon_recommendation,HistGradientBoosting,Python,internal,0.4881,0.7734,0.7617,0.8404,0.7649,0.7570
+in_vehicle_coupon_recommendation,KNN,Python,external,1.5845,0.6204,0.6096,0.6466,0.6101,0.1170
+in_vehicle_coupon_recommendation,LightGBM(200),Python,internal,0.4679,0.7828,0.7729,0.8538,0.7757,0.4610
+in_vehicle_coupon_recommendation,MARS (mars-earth),Python,external,0.5873,0.6926,0.6786,0.7501,0.6804,30.3920
+in_vehicle_coupon_recommendation,ModelTree(all),Rust,internal,0.5592,0.7288,0.7166,0.7774,0.7190,6.5520
+in_vehicle_coupon_recommendation,ModelTree(mean),Rust,internal,0.5699,0.7115,0.6996,0.7642,0.7015,0.9160
+in_vehicle_coupon_recommendation,ModelTree(path),Rust,internal,0.5654,0.7071,0.6935,0.7690,0.6956,1.2860
+in_vehicle_coupon_recommendation,ModelTree(winnow),Rust,internal,0.5623,0.7201,0.7027,0.7726,0.7054,1.9190
+in_vehicle_coupon_recommendation,forust (Rust),Rust,external,0.4827,0.7730,0.7623,0.8412,0.7651,1.4300
+in_vehicle_coupon_recommendation,modeltrees glmtree,Python,internal,0.5636,0.7237,0.7118,0.7785,0.7140,46.3570
+in_vehicle_coupon_recommendation,perpetual (Rust),Rust,external,0.4975,0.7777,0.7636,0.8377,0.7677,14.2470
+in_vehicle_coupon_recommendation,sklearn GBM,Python,external,0.5427,0.7406,0.7264,0.8013,0.7294,2.0880
+in_vehicle_coupon_recommendation,sklearn LogReg,Python,external,0.6393,0.6267,0.6034,0.6685,0.6012,0.5930
+in_vehicle_coupon_recommendation,sklearn RF,Python,external,0.5221,0.7596,0.7492,0.8216,0.7516,1.7090
+in_vehicle_coupon_recommendation,sklearn tree,Python,external,10.9737,0.6819,0.6797,0.6797,0.6781,0.0850
+jm1,rpart,R,internal,0.4911,0.8066,0.5000,0.5000,0.4465,0.1310
+jm1,c50_tree,R,internal,0.4816,0.8126,0.5263,0.5286,0.5022,1.3600
+jm1,c50_rules,R,internal,6.4420,0.8126,0.5263,0.5286,0.5022,2.6640
+jm1,ctree,R,internal,0.4395,0.8107,0.5134,0.7196,0.4749,1.7790
+jm1,grf_rf,R,none,0.4230,0.8163,0.5502,0.7555,0.5465,17.7140
+jm1,CTBoost,Python,internal,0.4295,0.8176,0.5556,0.7423,0.5554,0.2360
+jm1,CatBoost(200),Python,internal,0.4248,0.8190,0.5736,0.7511,0.5835,1.0420
+jm1,ChimeraBoost,Python,internal,0.4241,0.8204,0.5690,0.7505,0.5766,1.9280
+jm1,EBM,Python,internal,0.4244,0.8190,0.5700,0.7470,0.5782,33.8480
+jm1,ExtraTrees,Python,external,0.6669,0.8190,0.6070,0.7506,0.6265,1.5400
+jm1,HistGradientBoosting,Python,internal,0.4252,0.8227,0.5885,0.7470,0.6045,0.5100
+jm1,KNN,Python,external,2.3157,0.7850,0.5589,0.6370,0.5646,0.1660
+jm1,LightGBM(200),Python,internal,0.4345,0.8204,0.5988,0.7428,0.6173,0.3910
+jm1,ModelTree(all),Rust,internal,0.5108,0.8062,0.5647,0.7147,0.5715,10.1220
+jm1,ModelTree(mean),Rust,internal,0.4412,0.8098,0.5517,0.7257,0.5509,0.3510
+jm1,ModelTree(path),Rust,internal,0.4411,0.8098,0.5471,0.7225,0.5434,0.7070
+jm1,ModelTree(winnow),Rust,internal,0.5108,0.8062,0.5647,0.7147,0.5715,9.9680
+jm1,forust (Rust),Rust,external,0.4376,0.8153,0.6002,0.7384,0.6179,1.0830
+jm1,perpetual (Rust),Rust,external,0.4239,0.8209,0.5639,0.7501,0.5684,4.8340
+jm1,sklearn GBM,Python,external,0.4284,0.8140,0.5587,0.7444,0.5614,4.0120
+jm1,sklearn LogReg,Python,external,0.5410,0.8052,0.5434,0.5356,0.5385,0.6000
+jm1,sklearn RF,Python,external,0.6168,0.8181,0.6019,0.7482,0.6204,2.8140
+jm1,sklearn tree,Python,external,8.2862,0.7529,0.6048,0.5938,0.6046,0.2350
+maternal_health_risk,rpart,R,internal,0.7855,0.6139,0.6197,,0.6035,0.0360
+maternal_health_risk,c50_tree,R,internal,0.6176,0.7475,0.7449,,0.7431,1.9080
+maternal_health_risk,c50_rules,R,internal,6.4979,0.7475,0.7475,,0.7460,1.9500
+maternal_health_risk,ctree,R,internal,0.8016,0.6188,0.6239,,0.6072,1.5880
+maternal_health_risk,mboost,R,internal,0.8939,0.5495,0.5214,,0.4444,2.1010
+maternal_health_risk,ranger,R,internal,0.5146,0.8069,0.8053,,0.8050,1.7160
+maternal_health_risk,grf_rf,R,none,0.6382,0.6782,0.6758,,0.6598,1.9990
+maternal_health_risk,CTBoost,Python,internal,0.6840,0.7277,0.7218,,0.7185,0.0270
+maternal_health_risk,CatBoost(200),Python,internal,0.4910,0.7970,0.8021,,0.7994,0.2910
+maternal_health_risk,ChimeraBoost,Python,internal,0.5266,0.7327,0.7379,,0.7282,0.9540
+maternal_health_risk,EBM,Python,internal,0.5638,0.7525,0.7540,,0.7470,19.0790
+maternal_health_risk,ExtraTrees,Python,external,0.9700,0.8069,0.8094,,0.8048,0.2660
+maternal_health_risk,HistGradientBoosting,Python,internal,0.4441,0.8168,0.8220,,0.8190,0.8920
+maternal_health_risk,KNN,Python,external,1.8605,0.6733,0.6779,,0.6606,0.0560
+maternal_health_risk,LightGBM(200),Python,internal,0.4657,0.8267,0.8305,,0.8270,0.4340
+maternal_health_risk,MARS (mars-earth),Python,external,0.8448,0.5792,0.5825,,0.5672,0.5760
+maternal_health_risk,modeltrees multinomtree,Python,internal,0.6544,0.6584,0.6649,,0.6559,0.5440
+maternal_health_risk,sklearn GBM,Python,external,0.5722,0.7327,0.7347,,0.7293,0.6130
+maternal_health_risk,sklearn LogReg,Python,external,0.8314,0.5941,0.5861,,0.5877,0.3150
+maternal_health_risk,sklearn RF,Python,external,0.4221,0.8069,0.8112,,0.8064,0.3250
+maternal_health_risk,sklearn tree,Python,external,2.4182,0.8020,0.8074,,0.7994,0.0510
+maternal_health_risk,statsmodels MNLogit,Python,none,0.8303,0.5693,0.5680,,0.5655,0.0160
+online_shoppers_intention,rpart,R,internal,0.2489,0.9031,0.7823,0.8804,0.8018,0.4200
+online_shoppers_intention,c50_tree,R,internal,0.2567,0.9002,0.7764,0.8760,0.7957,2.4880
+online_shoppers_intention,c50_rules,R,internal,1.5397,0.8994,0.7652,0.8829,0.7895,2.5790
+online_shoppers_intention,ranger,R,internal,0.2228,0.9067,0.7759,0.9341,0.8034,6.1810
+qsar-biodeg,rpart,R,internal,0.4270,0.8389,0.8057,0.8529,0.8141,0.1240
+qsar-biodeg,c50_tree,R,internal,0.4727,0.8341,0.8021,0.8549,0.8094,1.9930
+qsar-biodeg,c50_rules,R,internal,2.7704,0.8578,0.8234,0.8748,0.8346,1.9980
+qsar-biodeg,ctree,R,internal,0.4150,0.8341,0.8056,0.8609,0.8109,1.8190
+qsar-biodeg,glmtree,R,internal,0.3486,0.8483,0.8232,0.9175,0.8277,1.5970
+qsar-biodeg,earth,R,internal,0.3880,0.8673,0.8375,0.8911,0.8469,0.1580
+qsar-biodeg,mboost,R,internal,0.3306,0.8626,0.8201,0.9239,0.8367,4.6940
+qsar-biodeg,ranger,R,internal,0.2974,0.8768,0.8447,0.9425,0.8567,1.8570
+qsar-biodeg,bart,R,internal,0.3106,0.8531,0.8233,0.9326,0.8312,1.1340
+qsar-biodeg,CTBoost,Python,internal,0.3269,0.8768,0.8412,0.9290,0.8555,0.1210
+qsar-biodeg,CatBoost(200),Python,internal,0.3014,0.8768,0.8481,0.9343,0.8578,0.9850
+qsar-biodeg,ChimeraBoost,Python,internal,0.3269,0.8720,0.8411,0.9307,0.8518,0.7050
+qsar-biodeg,EBM,Python,internal,0.3047,0.8720,0.8446,0.9368,0.8530,38.6450
+qsar-biodeg,ExtraTrees,Python,external,0.4388,0.8768,0.8551,0.9397,0.8600,0.2490
+qsar-biodeg,HistGradientBoosting,Python,internal,0.3654,0.8768,0.8551,0.9391,0.8600,0.6560
+qsar-biodeg,KNN,Python,external,0.7807,0.8294,0.8159,0.9058,0.8115,0.0740
+qsar-biodeg,LightGBM(200),Python,internal,0.5431,0.8720,0.8515,0.9431,0.8552,0.3320
+qsar-biodeg,ModelTree(all),Rust,internal,0.5979,0.8910,0.8797,0.9123,0.8784,2.7660
+qsar-biodeg,ModelTree(mean),Rust,internal,0.5298,0.8341,0.8021,0.8867,0.8094,0.1030
+qsar-biodeg,ModelTree(path),Rust,internal,0.5107,0.8531,0.8268,0.8990,0.8325,0.1510
+qsar-biodeg,ModelTree(winnow),Rust,internal,0.5403,0.8768,0.8586,0.9163,0.8610,2.3130
+qsar-biodeg,forust (Rust),Rust,external,0.3704,0.8673,0.8410,0.9358,0.8481,0.4340
+qsar-biodeg,modeltrees glmtree,Python,internal,0.3486,0.8483,0.8232,0.9175,0.8277,0.1140
+qsar-biodeg,modeltrees multinomtree,Python,internal,0.3486,0.8483,0.8232,0.9175,0.8277,0.1240
+qsar-biodeg,sklearn GBM,Python,external,0.3343,0.8673,0.8306,0.9189,0.8444,0.7050
+qsar-biodeg,sklearn LogReg,Python,external,0.3364,0.8578,0.8269,0.9217,0.8360,0.1850
+qsar-biodeg,sklearn RF,Python,external,0.3064,0.8578,0.8304,0.9358,0.8373,0.3650
+qsar-biodeg,sklearn tree,Python,external,5.8929,0.8294,0.8228,0.8228,0.8138,0.0210
+seismic-bumps,rpart,R,internal,0.2425,0.9342,0.5000,0.5000,0.4830,0.0370
+seismic-bumps,c50_tree,R,internal,0.2425,0.9342,0.5000,0.5000,0.4830,1.9730
+seismic-bumps,c50_rules,R,internal,0.6931,0.9342,0.5000,0.5000,0.4830,1.9500
+seismic-bumps,ctree,R,internal,0.2304,0.9342,0.5000,0.6982,0.4830,1.5630
+seismic-bumps,glmtree,R,internal,0.2648,0.9246,0.5085,0.6257,0.5048,7.6060
+seismic-bumps,earth,R,internal,0.2715,0.9207,0.5201,0.6473,0.5237,0.1780
+seismic-bumps,mboost,R,internal,0.2340,0.9304,0.4979,0.6817,0.4820,2.6130
+seismic-bumps,ranger,R,internal,0.2547,0.9304,0.4979,0.6550,0.4820,1.9590
+seismic-bumps,bart,R,internal,0.2418,0.9342,0.5000,0.6638,0.4830,2.4420
+seismic-bumps,CTBoost,Python,internal,0.2442,0.9342,0.5000,0.6621,0.4830,0.0800
+seismic-bumps,CatBoost(200),Python,internal,0.2481,0.9304,0.5253,0.6640,0.5319,0.9840
+seismic-bumps,ChimeraBoost,Python,internal,0.2408,0.9342,0.5000,0.6675,0.4830,1.0880
+seismic-bumps,EBM,Python,internal,0.2442,0.9323,0.4990,0.6735,0.4825,18.0660
+seismic-bumps,ExtraTrees,Python,external,0.7345,0.9207,0.5338,0.6373,0.5431,0.3120
+seismic-bumps,HistGradientBoosting,Python,internal,0.3494,0.9149,0.5170,0.6442,0.5194,0.4720
+seismic-bumps,KNN,Python,external,1.5179,0.9207,0.4928,0.5568,0.4794,0.0120
+seismic-bumps,LightGBM(200),Python,internal,0.4502,0.9207,0.5338,0.6718,0.5431,0.3110
+seismic-bumps,MARS (mars-earth),Python,external,0.2407,0.9323,0.4990,0.6643,0.4825,99.4220
+seismic-bumps,ModelTree(all),Rust,internal,0.4486,0.9265,0.5369,0.6576,0.5490,0.8800
+seismic-bumps,ModelTree(mean),Rust,internal,0.4748,0.9342,0.5000,0.6670,0.4830,0.1020
+seismic-bumps,ModelTree(path),Rust,internal,0.4388,0.9284,0.4969,0.6177,0.4814,0.1940
+seismic-bumps,ModelTree(winnow),Rust,internal,0.4062,0.9304,0.5116,0.7010,0.5082,0.3580
+seismic-bumps,forust (Rust),Rust,external,0.3327,0.9110,0.5149,0.6362,0.5166,0.4850
+seismic-bumps,modeltrees glmtree,Python,internal,0.3378,0.9226,0.4938,0.6559,0.4799,67.5630
+seismic-bumps,modeltrees multinomtree,Python,internal,0.3455,0.9265,0.4959,0.6256,0.4809,0.1210
+seismic-bumps,perpetual (Rust),Rust,external,0.2372,0.9342,0.5000,0.6777,0.4830,0.3240
+seismic-bumps,sklearn GBM,Python,external,0.2512,0.9226,0.4938,0.6791,0.4799,0.5910
+seismic-bumps,sklearn LogReg,Python,external,0.2647,0.9226,0.4938,0.5479,0.4799,0.2200
+seismic-bumps,sklearn RF,Python,external,0.6638,0.9226,0.4938,0.6300,0.4799,0.4290
+seismic-bumps,sklearn tree,Python,external,3.6075,0.8956,0.5613,0.5613,0.5630,0.0170
+splice,rpart,R,internal,0.2339,0.9357,0.9296,,0.9248,0.1970
+splice,c50_tree,R,internal,0.2963,0.9279,0.9141,,0.9146,2.2770
+splice,c50_rules,R,internal,1.3356,0.9342,0.9193,,0.9212,2.2670
+splice,ctree,R,internal,0.3467,0.9404,0.9361,,0.9315,2.4130
+splice,CTBoost,Python,internal,0.1358,0.9639,0.9582,,0.9588,0.4000
+splice,CatBoost(200),Python,internal,0.1486,0.9483,0.9400,,0.9394,12.6360
+splice,ChimeraBoost,Python,internal,0.1464,0.9592,0.9563,,0.9542,3.6510
+splice,EBM,Python,internal,0.1977,0.9498,0.9456,,0.9441,17.2790
+splice,ExtraTrees,Python,external,0.3964,0.9373,0.9225,,0.9295,0.6490
+splice,HistGradientBoosting,Python,internal,0.2684,0.9483,0.9412,,0.9401,1.5460
+splice,KNN,Python,external,2.3340,0.6505,0.6769,,0.6384,0.0830
+splice,LightGBM(200),Python,internal,0.1451,0.9577,0.9507,,0.9518,0.4440
+splice,modeltrees multinomtree,Python,internal,nan,0.2398,0.3333,,0.1290,0.8690
+splice,sklearn GBM,Python,external,0.1550,0.9530,0.9477,,0.9471,4.7170
+splice,sklearn LogReg,Python,external,0.4419,0.8260,0.8254,,0.8152,0.2920
+splice,sklearn RF,Python,external,0.3151,0.9389,0.9305,,0.9299,0.6610
+splice,sklearn tree,Python,external,3.0316,0.9122,0.9051,,0.9027,0.0380
+students_dropout_and_academic_success,c50_tree,R,internal,0.7281,0.7446,0.6567,,0.6646,2.3060
+students_dropout_and_academic_success,c50_rules,R,internal,7.0721,0.7435,0.6472,,0.6572,2.3510
+students_dropout_and_academic_success,mboost,R,internal,0.8065,0.7198,0.5689,,0.5224,5.9140
+students_dropout_and_academic_success,ranger,R,internal,0.5874,0.7831,0.6842,,0.6968,3.2100
+students_dropout_and_academic_success,CTBoost,Python,internal,0.6112,0.7695,0.6751,,0.6853,0.2260
+students_dropout_and_academic_success,CatBoost(200),Python,internal,0.5745,0.7831,0.6982,,0.7084,3.6890
+students_dropout_and_academic_success,ChimeraBoost,Python,internal,0.5732,0.7661,0.6773,,0.6871,2.0230
+students_dropout_and_academic_success,EBM,Python,internal,0.5712,0.7819,0.6976,,0.7083,35.0310
+students_dropout_and_academic_success,ExtraTrees,Python,external,0.5959,0.7650,0.6693,,0.6795,0.7860
+students_dropout_and_academic_success,HistGradientBoosting,Python,internal,0.6272,0.7944,0.7210,,0.7325,1.4430
+students_dropout_and_academic_success,KNN,Python,external,4.2081,0.6249,0.5271,,0.5298,0.0800
+students_dropout_and_academic_success,LightGBM(200),Python,internal,0.6555,0.7864,0.7109,,0.7207,0.9670
+students_dropout_and_academic_success,modeltrees multinomtree,Python,internal,nan,0.3209,0.3333,,0.1620,0.9250
+students_dropout_and_academic_success,sklearn GBM,Python,external,0.5700,0.7672,0.6740,,0.6835,4.4490
+students_dropout_and_academic_success,sklearn LogReg,Python,external,0.5967,0.7706,0.6665,,0.6718,0.7260
+students_dropout_and_academic_success,sklearn RF,Python,external,0.6945,0.7763,0.6836,,0.6961,0.9880
+students_dropout_and_academic_success,sklearn tree,Python,external,11.2007,0.6757,0.6026,,0.6032,0.0570
+taiwanese_bankruptcy_prediction,rpart,R,internal,0.1102,0.9670,0.5875,0.8275,0.6227,2.7270
+taiwanese_bankruptcy_prediction,c50_tree,R,internal,0.1165,0.9648,0.5424,0.7286,0.5624,4.4930
+taiwanese_bankruptcy_prediction,c50_rules,R,internal,1.0173,0.9670,0.5436,0.5537,0.5671,5.9880
+taiwanese_bankruptcy_prediction,ctree,R,internal,0.0954,0.9692,0.5227,0.9080,0.5356,2.8390
+taiwanese_bankruptcy_prediction,glmtree,R,internal,1.5193,0.9560,0.7136,0.7136,0.6886,4.4010
+taiwanese_bankruptcy_prediction,earth,R,internal,1.3674,0.9604,0.7379,0.7379,0.7142,15.7490
+taiwanese_bankruptcy_prediction,grf_rf,R,none,0.0807,0.9677,0.5000,0.9569,0.4918,26.2820
+taiwanese_bankruptcy_prediction,CTBoost,Python,internal,0.0753,0.9721,0.6011,0.9524,0.6536,1.9290
+taiwanese_bankruptcy_prediction,CatBoost(200),Python,internal,0.0746,0.9736,0.6129,0.9575,0.6718,2.0370
+taiwanese_bankruptcy_prediction,ChimeraBoost,Python,internal,0.0787,0.9707,0.5784,0.9571,0.6222,1.7510
+taiwanese_bankruptcy_prediction,EBM,Python,internal,0.0711,0.9765,0.6913,0.9569,0.7516,107.9710
+taiwanese_bankruptcy_prediction,ExtraTrees,Python,external,0.1004,0.9707,0.5564,0.9395,0.5925,0.9090
+taiwanese_bankruptcy_prediction,HistGradientBoosting,Python,internal,0.1165,0.9743,0.6242,0.9603,0.6864,0.9880
+taiwanese_bankruptcy_prediction,KNN,Python,external,0.8273,0.9685,0.5114,0.5924,0.5142,0.1530
+taiwanese_bankruptcy_prediction,LightGBM(200),Python,internal,0.1683,0.9736,0.6348,0.9617,0.6933,0.8040
+taiwanese_bankruptcy_prediction,ModelTree(mean),Rust,internal,0.1188,0.9729,0.6674,0.9368,0.7169,0.6880
+taiwanese_bankruptcy_prediction,ModelTree(path),Rust,internal,0.1183,0.9736,0.6678,0.9388,0.7205,0.8410
+taiwanese_bankruptcy_prediction,ModelTree(winnow),Rust,internal,0.1908,0.9692,0.5886,0.8936,0.6301,46.5050
+taiwanese_bankruptcy_prediction,forust (Rust),Rust,external,0.0972,0.9721,0.6231,0.9615,0.6762,2.9070
+taiwanese_bankruptcy_prediction,modeltrees glmtree,Python,internal,1.2154,0.9648,0.6852,0.6852,0.6982,5.8400
+taiwanese_bankruptcy_prediction,sklearn GBM,Python,external,0.0855,0.9707,0.6333,0.9501,0.6800,23.6350
+taiwanese_bankruptcy_prediction,sklearn LogReg,Python,external,0.1852,0.9641,0.5091,0.6653,0.5105,12.8560
+taiwanese_bankruptcy_prediction,sklearn RF,Python,external,0.0968,0.9714,0.5788,0.9490,0.6248,4.9170
+taiwanese_bankruptcy_prediction,sklearn tree,Python,external,1.5699,0.9545,0.6470,0.6470,0.6438,1.1310

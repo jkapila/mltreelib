@@ -103,12 +103,16 @@ def main():
         r_models = R_MODELS_CLA
         models_to_run = r_models + py_models
 
+    models_env = [s.strip() for s in os.environ.get("ELO_MODELS", "").split(",") if s.strip()]
+    if models_env:
+        models_to_run = [m for m in models_to_run if any(x in m for x in models_env)]
+
     exclude = [s.strip() for s in os.environ.get("ELO_EXCLUDE", "").split(",") if s.strip()]
     if exclude:
         models_to_run = [m for m in models_to_run if not any(x in m for x in exclude)]
 
     sheet = ScoreSheet(scores_csv, columns)
-    attempts = AttemptsLedger()
+    attempts = AttemptsLedger(Path("benchmarks/elo_attempts.csv") if task == "reg" else Path("benchmarks/elo_cla_attempts.csv"))
 
     done = sheet.done_pairs()
     if not os.environ.get("ELO_RETRY"):

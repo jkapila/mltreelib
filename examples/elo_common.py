@@ -22,8 +22,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Standardized time tiers across the field
 SLOW_S = 30.0        # TabArena-toppers line warning
-CRITICAL_S = 180.0    # Critical slow warning
-BUDGET_S = 300.0      # Hard kill deadline
+CRITICAL_S = 120.0   # Critical slow warning (2 mins)
+BUDGET_S = float(os.environ.get("ELO_BUDGET", "180.0"))  # Hard kill deadline (default 3 mins / 180s)
 
 
 def setup_logging(name: str, log_file: str = "benchmarks/elo_run.log") -> logging.Logger:

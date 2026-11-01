@@ -13,8 +13,8 @@ PY_DEPS=(--with pandas --with pyarrow --with numpy --with lightgbm --with catboo
 datasets=${ELO_DATASETS:-$(ls benchmarks/elo_cla_data/*_train.csv | sed 's|.*/||;s|_train.csv||' | sort | tr '\n' ',' | sed 's|,$||')}
 
 {
-  echo "=== budgeted classification field run: 300s per model per dataset ==="
-  ELO_DATASETS="$datasets" uv run "${PY_DEPS[@]}" python -u examples/elo_score_all.py --task cla
+  echo "=== budgeted classification field run: 180s (3 mins) per model per dataset ==="
+  ELO_DATASETS="$datasets" uv run "${PY_DEPS[@]}" python -u examples/elo_score_all.py --task cla --budget 180
   echo "=== board ==="
   uv run python examples/elo_report_cla.py | sed -n '/== Board (/,$p' | tail -25
 } 2>&1 | tee -a "$LOG"

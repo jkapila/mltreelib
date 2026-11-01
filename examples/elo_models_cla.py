@@ -85,8 +85,40 @@ def make_models(meta: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
                 raise RuntimeError(err_msg)
             ms[name] = f
 
-    # Note: ModelTree is deliberately omitted for classification while classification-specific
-    # behaviors are being built in Rust core (will be attached to the Elo board later).
+    # 0. ModelTree variants (mltreelib)
+    from mltreelib import ModelTree
+
+    def make_mt(leaf: str, leaf_cols: str = "all", min_relevance: Optional[float] = None):
+        def run(xtr, ytr, xte):
+            if len(classes) != 2:
+                raise TypeError(f"ModelTree binomial classification requires exactly 2 classes (got {len(classes)})")
+            p = len(xtr[0])
+            dtypes = roles if roles and len(roles) == p else [("categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric") for j in range(p)]
+            pos_label = str(classes[1])
+            y_bin = [1.0 if str(y) == pos_label else 0.0 for y in ytr]
+
+            kw = {
+                "leaf": leaf,
+                "leaf_family": "binomial",
+                "gain": "deviance",
+                "leaf_cols": leaf_cols,
+                "seed": 42,
+            }
+            if min_relevance is not None:
+                kw["min_relevance"] = min_relevance
+            m = ModelTree(**kw)
+            t0 = time.perf_counter()
+            m.fit(xtr, y_bin, dtypes=dtypes)
+            probs = m.predict_proba(xte)
+            fit_s = time.perf_counter() - t0
+            aligned = [[1.0 - p, p] for p in probs]
+            return aligned, fit_s
+        return run
+
+    ms["ModelTree(all)"] = make_mt("linear", "all")
+    ms["ModelTree(path)"] = make_mt("linear", "path")
+    ms["ModelTree(mean)"] = make_mt("mean", "all")
+    ms["ModelTree(winnow)"] = make_mt("linear", "all", min_relevance=0.05)
 
     # 1. LightGBM
     def lgbm():
