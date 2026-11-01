@@ -1,5 +1,14 @@
 # mltreelib — Machine Learning with Tree Based Library
 
+[![CI](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml/badge.svg)](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml)
+[![Docs](https://github.com/jkapila/mltreelib/actions/workflows/deploy.yaml/badge.svg)](https://jkapila.github.io/mltreelib/)
+[![Version](https://img.shields.io/badge/version-0.2.0-informational)](Cargo.toml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue)](pyproject.toml)
+[![Rust](https://img.shields.io/badge/rust-2021-orange.svg?logo=rust)](crates/mltreelib-core/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
+[![Zero Sklearn](https://img.shields.io/badge/dependencies-zero--sklearn-brightgreen)](#)
+[![Missing Data](https://img.shields.io/badge/missing--data-first--class-blueviolet)](#)
+
 Tree-based machine learning with a **Rust core** and thin **Python** (and, next, **R**) frontends. Evolved from the attempt to make the *right* kind of **Decision Trees**, after Hastie, Tibshirani, Friedman, Quinlan, Loh, Chaudhari.
 
 The bet: tree/ensemble methods are under-studied relative to tabular foundation models, and the information hidden in **categorical, grouped and hierarchical structure** is exactly what flat learners lose. We build the classics properly in Rust (CART → C4.5 → C5.0 → Cubist → GritBot), measure them honestly on data where that structure matters, and only then mix and extend.
