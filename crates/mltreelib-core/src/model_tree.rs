@@ -436,11 +436,14 @@ impl ModelTree {
                     return Err("distributional targets and weights must be finite".into());
                 }
                 match params.leaf_family {
-                    LeafFamily::Binomial if t != 0.0 && t != 1.0 => {
-                        return Err("binomial targets must be 0 or 1".into());
+                    LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
+                        return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson if t < 0.0 => {
-                        return Err("poisson targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
+                        return Err("poisson and tweedie targets must be non-negative".into());
+                    }
+                    LeafFamily::Gamma if t <= 0.0 => {
+                        return Err("gamma targets must be strictly positive".into());
                     }
                     _ => {}
                 }
@@ -781,11 +784,14 @@ impl ModelTree {
                     return Err("distributional targets and weights must be finite".into());
                 }
                 match control.family {
-                    LeafFamily::Binomial if t != 0.0 && t != 1.0 => {
-                        return Err("binomial targets must be 0 or 1".into());
+                    LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
+                        return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson if t < 0.0 => {
-                        return Err("poisson targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
+                        return Err("poisson and tweedie targets must be non-negative".into());
+                    }
+                    LeafFamily::Gamma if t <= 0.0 => {
+                        return Err("gamma targets must be strictly positive".into());
                     }
                     _ => {}
                 }
@@ -1056,17 +1062,17 @@ impl ModelTree {
 
     /// One P(class 1) per row. Only binomial leaves define this output.
     pub fn predict_proba(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
-        if self.params.leaf_family != LeafFamily::Binomial {
-            return Err("predict_proba requires leaf_family='binomial'".into());
+        if self.params.leaf_family != LeafFamily::Binomial && self.params.leaf_family != LeafFamily::Probit {
+            return Err("predict_proba requires leaf_family='binomial' or 'probit'".into());
         }
         Ok(self.predict(x))
     }
 
-    /// Hard binary class labels (0 or 1) per row by thresholding binomial probabilities.
-    /// Default threshold is 0.5. Requires `leaf_family='binomial'`.
+    /// Hard binary class labels (0 or 1) per row by thresholding binomial or probit probabilities.
+    /// Default threshold is 0.5. Requires `leaf_family='binomial'` or `'probit'`.
     pub fn predict_label(&self, x: &[Vec<Option<f64>>], threshold: f64) -> Result<Vec<usize>, String> {
-        if self.params.leaf_family != LeafFamily::Binomial {
-            return Err("predict_label requires leaf_family='binomial'".into());
+        if self.params.leaf_family != LeafFamily::Binomial && self.params.leaf_family != LeafFamily::Probit {
+            return Err("predict_label requires leaf_family='binomial' or 'probit'".into());
         }
         if threshold <= 0.0 || threshold >= 1.0 || threshold.is_nan() {
             return Err("threshold must be in (0, 1)".into());

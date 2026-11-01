@@ -203,8 +203,9 @@ pub fn fit_leaf_model(
     let family = control.family;
     if family != LeafFamily::Gaussian
         && (control.leaf == LeafKind::Mean
-            || (family == LeafFamily::Binomial && (stats.mean == 0.0 || stats.mean == 1.0))
-            || (family == LeafFamily::Poisson && stats.mean == 0.0))
+            || ((family == LeafFamily::Binomial || family == LeafFamily::Probit) && (stats.mean == 0.0 || stats.mean == 1.0))
+            || ((family == LeafFamily::Poisson || family == LeafFamily::Tweedie) && stats.mean == 0.0)
+            || (family == LeafFamily::Tobit && stats.mean <= 0.0))
     {
         return LeafModel { center: Some(stats.mean), stats, linear: None, family };
     }

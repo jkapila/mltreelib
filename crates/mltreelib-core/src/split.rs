@@ -1234,10 +1234,17 @@ impl<'a> Grower<'a> {
         };
         let mean = sy / sw;
         match self.params.leaf_family {
-            LeafFamily::Binomial => -2.0 * (
+            LeafFamily::Binomial | LeafFamily::Probit => -2.0 * (
                 xlog(sy, mean) + xlog((sw - sy).max(0.0), 1.0 - mean)
             ),
             LeafFamily::Poisson => 2.0 * (sy - xlog(sy, mean)),
+            LeafFamily::Gamma => -2.0 * sw * mean.max(1e-12).ln(),
+            LeafFamily::Tweedie => {
+                let p = 1.5;
+                let m = mean.max(1e-12);
+                -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
+            }
+            LeafFamily::Tobit => 0.0,
             LeafFamily::Gaussian => unreachable!("Gaussian uses its SSE scan"),
         }
     }

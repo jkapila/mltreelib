@@ -2052,6 +2052,10 @@ fn extract_leaf_control<'py>(
                         "gaussian" => LeafFamily::Gaussian,
                         "binomial" => LeafFamily::Binomial,
                         "poisson" => LeafFamily::Poisson,
+                        "probit" => LeafFamily::Probit,
+                        "gamma" => LeafFamily::Gamma,
+                        "tweedie" => LeafFamily::Tweedie,
+                        "tobit" => LeafFamily::Tobit,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2147,6 +2151,10 @@ fn extract_leaf_control<'py>(
             "gaussian" => LeafFamily::Gaussian,
             "binomial" => LeafFamily::Binomial,
             "poisson" => LeafFamily::Poisson,
+            "probit" => LeafFamily::Probit,
+            "gamma" => LeafFamily::Gamma,
+            "tweedie" => LeafFamily::Tweedie,
+            "tobit" => LeafFamily::Tobit,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2230,6 +2238,10 @@ impl PyLeafControl {
             "gaussian" => LeafFamily::Gaussian,
             "binomial" => LeafFamily::Binomial,
             "poisson" => LeafFamily::Poisson,
+            "probit" => LeafFamily::Probit,
+            "gamma" => LeafFamily::Gamma,
+            "tweedie" => LeafFamily::Tweedie,
+            "tobit" => LeafFamily::Tobit,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let policy = match leaf_cols {
@@ -2269,6 +2281,10 @@ impl PyLeafControl {
             LeafFamily::Gaussian => "gaussian".to_string(),
             LeafFamily::Binomial => "binomial".to_string(),
             LeafFamily::Poisson => "poisson".to_string(),
+            LeafFamily::Probit => "probit".to_string(),
+            LeafFamily::Gamma => "gamma".to_string(),
+            LeafFamily::Tweedie => "tweedie".to_string(),
+            LeafFamily::Tobit => "tobit".to_string(),
         }
     }
 
@@ -2579,9 +2595,13 @@ impl PyModelTree {
             "gaussian" => LeafFamily::Gaussian,
             "binomial" => LeafFamily::Binomial,
             "poisson" => LeafFamily::Poisson,
+            "probit" => LeafFamily::Probit,
+            "gamma" => LeafFamily::Gamma,
+            "tweedie" => LeafFamily::Tweedie,
+            "tobit" => LeafFamily::Tobit,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "leaf_family must be 'gaussian', 'binomial' or 'poisson', got {other}"
+                    "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', or 'tobit', got {other}"
                 )))
             }
         };

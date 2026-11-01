@@ -91,7 +91,7 @@ def test_invalid_observed_targets_are_rejected(family, target):
 
 def test_unknown_family_is_rejected():
     with pytest.raises(ValueError, match="leaf_family"):
-        ModelTree(leaf_family="gamma")
+        ModelTree(leaf_family="unknown_family")
 
 
 @pytest.mark.parametrize("family", ["binomial", "poisson"])

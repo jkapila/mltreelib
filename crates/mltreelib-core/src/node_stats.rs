@@ -8,7 +8,7 @@
 //! reweighting and case weights work without touching the tree.
 
 use tdigest::TDigest;
-use crate::family::LeafFamily;
+use crate::family::{std_norm_cdf, std_norm_inv_cdf, std_norm_pdf, LeafFamily};
 
 /// Target summary stored at every leaf — mean nodes and model nodes alike.
 /// Weighted by sample weights (`w`); `std` is the weighted sample standard
@@ -839,8 +839,9 @@ pub(crate) fn fit_glm(
         na_coef: if with_indicators { vec![0.0; nc] } else { Vec::new() },
         intercept: match family {
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
-            LeafFamily::Poisson => mean.ln(),
-            LeafFamily::Gaussian => mean,
+            LeafFamily::Probit => std_norm_inv_cdf(mean),
+            LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
+            LeafFamily::Gaussian | LeafFamily::Tobit => mean,
         },
     };
     let mut gram = Gram::new(dim);
@@ -897,13 +898,48 @@ pub(crate) fn fit_glm(
             design_row(&mut row, cols, r, chosen, with_indicators);
             let eta = current.eval_design(&row);
             let mean = family.inverse_link(eta);
-            let variance = match family {
-                LeafFamily::Binomial => (mean * (1.0 - mean)).max(1e-12),
-                LeafFamily::Poisson => mean.max(1e-12),
-                LeafFamily::Gaussian => 1.0,
-            };
-            let working = eta + (y[r] - mean) / variance;
-            gram.add_row(&row, working, w[r] * variance);
+            match family {
+                LeafFamily::Binomial => {
+                    let variance = (mean * (1.0 - mean)).max(1e-12);
+                    let working = eta + (y[r] - mean) / variance;
+                    gram.add_row(&row, working, w[r] * variance);
+                }
+                LeafFamily::Probit => {
+                    let phi = std_norm_pdf(eta).max(1e-12);
+                    let variance = (mean * (1.0 - mean)).max(1e-12);
+                    let weight = w[r] * (phi * phi) / variance;
+                    let working = eta + (y[r] - mean) / phi;
+                    gram.add_row(&row, working, weight.max(1e-12));
+                }
+                LeafFamily::Poisson => {
+                    let variance = mean.max(1e-12);
+                    let working = eta + (y[r] - mean) / variance;
+                    gram.add_row(&row, working, w[r] * variance);
+                }
+                LeafFamily::Gamma => {
+                    let working = eta + (y[r] - mean) / mean.max(1e-12);
+                    gram.add_row(&row, working, w[r]);
+                }
+                LeafFamily::Tweedie => {
+                    let p = 1.5;
+                    let weight = w[r] * mean.max(1e-12).powf(2.0 - p);
+                    let working = eta + (y[r] - mean) / mean.max(1e-12);
+                    gram.add_row(&row, working, weight.max(1e-12));
+                }
+                LeafFamily::Tobit => {
+                    let y_latent = if y[r] <= 0.0 {
+                        let cdf = std_norm_cdf(-eta).max(1e-12);
+                        let pdf = std_norm_pdf(-eta);
+                        eta - pdf / cdf
+                    } else {
+                        y[r]
+                    };
+                    gram.add_row(&row, y_latent, w[r]);
+                }
+                LeafFamily::Gaussian => {
+                    gram.add_row(&row, y[r], w[r]);
+                }
+            }
         }
         if gram.xtx.iter().chain(&gram.xty).any(|value| !value.is_finite()) {
             return None;
