@@ -14,8 +14,10 @@ def main():
         print(f"Dataset not found at {path}")
         return
 
-    table = pq.read_table(path)
-    df = table.to_pandas()
+    # Use PyArrow ParquetFile with context manager
+    with pq.ParquetFile(path) as pf:
+        table = pf.read()
+        df = table.to_pandas()
 
     num_cols = [
         "credit_score",
