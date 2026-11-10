@@ -17,6 +17,7 @@ from mltreelib._core import (
     ExtendedIsolationTree,
     GritBot,
     GroupedScaler,
+    HDBSCAN,
     HalfSpaceTree,
     HashingEncoder,
     IndexMapper,
@@ -34,6 +35,7 @@ from mltreelib._core import (
     TargetEncoder,
     TfidfEncoder,
     TrieKNN,
+    UnsupervisedRandomForest,
     VariableScaler,
     WoEEncoder,
     calendar_features,
@@ -62,6 +64,7 @@ __all__ = [
     "ExtendedIsolationTree",
     "GritBot",
     "GroupedScaler",
+    "HDBSCAN",
     "HalfSpaceTree",
     "HashingEncoder",
     "IndexMapper",
@@ -79,6 +82,7 @@ __all__ = [
     "TargetEncoder",
     "TfidfEncoder",
     "TrieKNN",
+    "UnsupervisedRandomForest",
     "VariableScaler",
     "WoEEncoder",
     "calendar_features",
@@ -94,4 +98,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.8"
+__version__ = "0.2.9"

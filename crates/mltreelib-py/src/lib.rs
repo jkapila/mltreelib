@@ -4314,8 +4314,126 @@ impl PyClTree {
     }
 }
 
+#[pyclass(name = "HDBSCAN")]
+pub struct PyHdbscanTree {
+    inner: mltreelib_core::cluster::HdbscanTree,
+}
+
+#[pymethods]
+impl PyHdbscanTree {
+    #[new]
+    #[pyo3(signature = (min_cluster_size=5, min_samples=5))]
+    fn new(min_cluster_size: usize, min_samples: usize) -> Self {
+        PyHdbscanTree {
+            inner: mltreelib_core::cluster::HdbscanTree::new(min_cluster_size, min_samples),
+        }
+    }
+
+    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
+        self.inner.fit(&data);
+        Ok(())
+    }
+
+    fn predict(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Option<usize>>> {
+        Ok(data.iter().map(|r| self.inner.predict(r)).collect())
+    }
+
+    #[getter]
+    fn labels(&self) -> Vec<Option<usize>> {
+        self.inner.labels.clone()
+    }
+
+    #[getter]
+    fn outlier_scores(&self) -> Vec<f64> {
+        self.inner.outlier_scores.clone()
+    }
+
+    #[getter]
+    fn n_clusters(&self) -> usize {
+        self.inner.n_clusters
+    }
+
+    fn condensed_tree<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
+        let mut list = Vec::new();
+        for node in &self.inner.condensed_nodes {
+            let dict = PyDict::new(py);
+            dict.set_item("node_id", node.node_id)?;
+            dict.set_item("parent_id", node.parent_id)?;
+            dict.set_item("lambda_birth", node.lambda_birth)?;
+            dict.set_item("lambda_death", node.lambda_death)?;
+            dict.set_item("size", node.size)?;
+            dict.set_item("stability", node.stability)?;
+            dict.set_item("selected", node.selected)?;
+            list.push(dict);
+        }
+        Ok(list)
+    }
+}
+
+#[pyclass(name = "UnsupervisedRandomForest")]
+pub struct PyUnsupervisedProximityForest {
+    inner: mltreelib_core::cluster::UnsupervisedProximityForest,
+}
+
+#[pymethods]
+impl PyUnsupervisedProximityForest {
+    #[new]
+    #[pyo3(signature = (n_trees=50, max_depth=6, min_samples_leaf=2, seed=42))]
+    fn new(n_trees: usize, max_depth: usize, min_samples_leaf: usize, seed: u64) -> Self {
+        PyUnsupervisedProximityForest {
+            inner: mltreelib_core::cluster::UnsupervisedProximityForest::new(
+                n_trees,
+                max_depth,
+                min_samples_leaf,
+                seed,
+            ),
+        }
+    }
+
+    #[pyo3(signature = (data, n_clusters=2))]
+    fn fit(&mut self, data: Vec<Vec<f64>>, n_clusters: usize) -> PyResult<()> {
+        self.inner.fit(&data, n_clusters);
+        Ok(())
+    }
+
+    #[getter]
+    fn proximity_matrix(&self) -> Vec<Vec<f64>> {
+        self.inner.proximity_matrix.clone()
+    }
+
+    fn pairwise_distances(&self) -> Vec<Vec<f64>> {
+        self.inner.pairwise_distances()
+    }
+
+    #[getter]
+    fn labels(&self) -> Vec<usize> {
+        self.inner.cluster_labels.clone()
+    }
+
+    #[getter]
+    fn outlier_scores(&self) -> Vec<f64> {
+        self.inner.outlier_scores.clone()
+    }
+
+    #[getter]
+    fn n_clusters(&self) -> usize {
+        self.inner.n_clusters
+    }
+
+    fn apply(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Vec<usize>>> {
+        let mut res = Vec::with_capacity(data.len());
+        for row in &data {
+            let row_leaves: Vec<usize> = self.inner.trees.iter().map(|t| t.apply(row)).collect();
+            res.push(row_leaves);
+        }
+        Ok(res)
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyHdbscanTree>()?;
+    m.add_class::<PyUnsupervisedProximityForest>()?;
     m.add_class::<PyClTree>()?;
     m.add_class::<PyPredictiveClusteringTree>()?;
     m.add_class::<PyTrieKnn>()?;
