@@ -164,9 +164,20 @@ pub struct ModelTreeParams {
     /// `boruta`) — see [`crate::preselect::Preselect`]. The winnow
     /// threshold is `min_relevance`.
     pub preselect: crate::preselect::Preselect,
-    /// Purity gate: a node whose weighted target standard deviation is at
+    /// Purity gate: a node whose weighted target variation is at
     /// most this stays a leaf (its signal is exhausted). `None` = off.
     pub purity_gate: Option<f64>,
+    /// Metric evaluated by the purity gate: "sd" (weighted standard deviation)
+    /// or "cv" (coefficient of variation: w_sd / |w_mean|).
+    pub purity_gate_metric: PurityMetric,
+    /// Tail quantile threshold for extrema protection (e.g. 0.05). If set,
+    /// nodes containing targets in the lower (<= tau) or upper (>= 1 - tau)
+    /// quantiles bypass the purity gate so extrema are always trained.
+    pub tail_quantile: Option<f64>,
+    /// Power parameter for Tweedie deviance (default 1.5, with 1 < p < 2).
+    pub tweedie_p: f64,
+    /// Censoring threshold for Tobit response (default 0.0).
+    pub tobit_threshold: f64,
     /// Split evaluation strategy (fast scalar variance reduction vs exhaustive linear scan).
     pub split_eval: SplitEval,
     /// Upfront pre-sorting of numeric columns. Default `false` (in-place cache-local PDQsort in SplitScratch).
@@ -175,6 +186,16 @@ pub struct ModelTreeParams {
     pub events: Option<Vec<f64>>,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
+}
+
+/// Metric evaluated by the leaf purity gate.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PurityMetric {
+    /// Weighted standard deviation (absolute scale).
+    #[default]
+    Sd,
+    /// Coefficient of variation (scale-invariant: w_sd / |w_mean|).
+    Cv,
 }
 
 impl Default for ModelTreeParams {
@@ -224,6 +245,10 @@ impl Default for ModelTreeParams {
             minprob: 0.02,
             preselect: crate::preselect::Preselect::None,
             purity_gate: None,
+            purity_gate_metric: PurityMetric::Sd,
+            tail_quantile: None,
+            tweedie_p: 1.5,
+            tobit_threshold: 0.0,
             split_eval: SplitEval::Fast,
             presort: false,
             events: None,
@@ -587,6 +612,21 @@ impl ModelTree {
         } else {
             (all_rows.clone(), all_rows)
         };
+        let tail_bounds = if let Some(tau) = params.tail_quantile {
+            if tau > 0.0 && tau < 0.5 && !yv.is_empty() {
+                let mut sorted_y: Vec<f64> = yv.clone();
+                sorted_y.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let idx_low = ((sorted_y.len() as f64) * tau).floor() as usize;
+                let idx_high = ((sorted_y.len() as f64) * (1.0 - tau)).floor() as usize;
+                let y_low = sorted_y[idx_low.min(sorted_y.len() - 1)];
+                let y_high = sorted_y[idx_high.min(sorted_y.len() - 1)];
+                Some((y_low, y_high))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         let mut grower = Grower {
             cols: &cols,
             y: &yv,
@@ -600,6 +640,7 @@ impl ModelTree {
             trace: Vec::new(),
             costs: Vec::new(),
             rng_counter: 0,
+            tail_bounds,
         };
         if params.verbose > 0 {
             grower.trace.push(format!(
@@ -1658,6 +1699,8 @@ pub(crate) struct Grower<'a> {
     pub(crate) costs: Vec<f64>,
     /// Per-node counter for the random column subset (seeded, deterministic).
     pub(crate) rng_counter: u64,
+    /// Tail bounds (lower, upper) for extrema protection.
+    pub(crate) tail_bounds: Option<(f64, f64)>,
 }
 
 enum GrowOp {
@@ -1776,13 +1819,36 @@ impl<'a> Grower<'a> {
                             }
                         }
                     }
-                    // Purity gate (default off): a node whose weighted target std is at
+                    // Purity gate (default off): a node whose target variation is at
                     // most `purity_gate` has no signal left — it stays a leaf.
                     if let Some(t) = self.params.purity_gate {
-                        let yws: Vec<(f64, f64)> =
-                            rows.iter().map(|&r| (self.y[r], self.w[r])).collect();
-                        if crate::stats::w_sd(&yws) <= t {
-                            best = None;
+                        let mut is_extrema = false;
+                        if let Some((y_low, y_high)) = self.tail_bounds {
+                            for &r in &rows {
+                                if self.y[r] <= y_low || self.y[r] >= y_high {
+                                    is_extrema = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if !is_extrema {
+                            let yws: Vec<(f64, f64)> =
+                                rows.iter().map(|&r| (self.y[r], self.w[r])).collect();
+                            let sd = crate::stats::w_sd(&yws);
+                            let score = match self.params.purity_gate_metric {
+                                PurityMetric::Sd => sd,
+                                PurityMetric::Cv => {
+                                    let mean = crate::stats::w_mean(&yws);
+                                    if mean.abs() < 1e-12 {
+                                        if sd < 1e-12 { 0.0 } else { f64::INFINITY }
+                                    } else {
+                                        sd / mean.abs()
+                                    }
+                                }
+                            };
+                            if score <= t {
+                                best = None;
+                            }
                         }
                     }
                     // Leaf-cap budget (default off, budget = usize::MAX): a split

@@ -1240,7 +1240,7 @@ impl<'a> Grower<'a> {
             LeafFamily::Poisson => 2.0 * (sy - xlog(sy, mean)),
             LeafFamily::Gamma => -2.0 * sw * mean.max(1e-12).ln(),
             LeafFamily::Tweedie => {
-                let p = 1.5;
+                let p = self.params.tweedie_p;
                 let m = mean.max(1e-12);
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }

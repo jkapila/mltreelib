@@ -61,6 +61,11 @@ impl LeafFamily {
     /// Unit deviance (Gaussian: squared error), including exact boundary
     /// means. Impossible events have infinite deviance, not a clipped loss.
     pub fn deviance(self, y: f64, mean: f64) -> f64 {
+        self.deviance_with_params(y, mean, 1.5, 0.0)
+    }
+
+    /// Unit deviance with configurable Tweedie power parameter p and Tobit threshold.
+    pub fn deviance_with_params(self, y: f64, mean: f64, tweedie_p: f64, tobit_threshold: f64) -> f64 {
         if y.is_nan() || mean.is_nan()
             || (self != Self::Gaussian && self != Self::Tobit && self != Self::Heteroscedastic && self != Self::Softmax && self != Self::Survival
                 && (!y.is_finite() || !mean.is_finite() || mean < 0.0 || y < 0.0))
@@ -93,15 +98,15 @@ impl LeafFamily {
                 2.0 * (-(y / mean).ln() + (y - mean) / mean).max(0.0)
             }
             Self::Tweedie => {
-                let p = 1.5;
+                let p = tweedie_p;
                 let term1 = if y == 0.0 { 0.0 } else { y.powf(2.0 - p) / ((1.0 - p) * (2.0 - p)) };
                 let term2 = if y == 0.0 { 0.0 } else { y * mean.powf(1.0 - p) / (1.0 - p) };
                 let term3 = mean.powf(2.0 - p) / (2.0 - p);
                 2.0 * (term1 - term2 + term3).max(0.0)
             }
             Self::Tobit => {
-                if y <= 0.0 {
-                    let p_cens = std_norm_cdf(-mean).max(1e-15);
+                if y <= tobit_threshold {
+                    let p_cens = std_norm_cdf(tobit_threshold - mean).max(1e-15);
                     -2.0 * p_cens.ln()
                 } else {
                     (y - mean).powi(2)

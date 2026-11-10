@@ -217,6 +217,15 @@ pub(crate) fn class_total_variation(left: &[(f64, f64)], right: &[(f64, f64)]) -
         .sum()
 }
 
+/// Weighted sample mean.
+pub(crate) fn w_mean(p: &[(f64, f64)]) -> f64 {
+    let sw: f64 = p.iter().map(|&(_, w)| w).sum();
+    if sw <= 0.0 {
+        return 0.0;
+    }
+    p.iter().map(|&(y, w)| w * y).sum::<f64>() / sw
+}
+
 /// Weighted sample standard deviation (M5's SDR ingredient).
 pub(crate) fn w_sd(p: &[(f64, f64)]) -> f64 {
     let sw: f64 = p.iter().map(|&(_, w)| w).sum();

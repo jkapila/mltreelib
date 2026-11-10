@@ -2529,6 +2529,7 @@ impl PyModelTree {
     #[pyo3(signature = (
         max_depth = 5, min_rows = 50, minsplit = None, minbucket = None,
         minprob = 0.02, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
+        purity_gate_metric = "sd", tail_quantile = None,
         gain = None, split_precision = Some(0.001), split_cols = None,
         col_sample = None, seed = 42,
         leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.5,
@@ -2542,7 +2543,8 @@ impl PyModelTree {
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
         verbose = 0, leaf_family = "gaussian", split_eval = "fast",
-        presort = false
+        presort = false, events = None, n_classes = None,
+        tweedie_p = 1.5, tobit_threshold = 0.0
     ))]
     fn new(
         max_depth: usize,
@@ -2553,6 +2555,8 @@ impl PyModelTree {
         max_leaf_nodes: Option<usize>,
         min_gain: f64,
         purity_gate: Option<f64>,
+        purity_gate_metric: &str,
+        tail_quantile: Option<f64>,
         gain: Option<Bound<'_, PyAny>>,
         split_precision: Option<f64>,
         split_cols: Option<Vec<usize>>,
@@ -2584,6 +2588,10 @@ impl PyModelTree {
         leaf_family: &str,
         split_eval: &str,
         presort: bool,
+        events: Option<Vec<f64>>,
+        n_classes: Option<usize>,
+        tweedie_p: f64,
+        tobit_threshold: f64,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2738,6 +2746,15 @@ impl PyModelTree {
                 )))
             }
         };
+        let purity_metric = match purity_gate_metric {
+            "sd" => mltreelib_core::model_tree::PurityMetric::Sd,
+            "cv" => mltreelib_core::model_tree::PurityMetric::Cv,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "purity_gate_metric must be 'sd' or 'cv', got {other}"
+                )))
+            }
+        };
         Ok(Self {
             params: ModelTreeParams {
                 max_depth,
@@ -2777,10 +2794,14 @@ impl PyModelTree {
                 minprob,
                 preselect,
                 purity_gate,
+                purity_gate_metric: purity_metric,
+                tail_quantile,
+                tweedie_p,
+                tobit_threshold,
                 split_eval: eval_mode,
                 presort,
-                events: None,
-                n_classes: None,
+                events,
+                n_classes,
             },
             inner: None,
             vocabs: Vec::new(),
@@ -4548,8 +4569,74 @@ impl PyUnsupervisedProximityForest {
     }
 }
 
+/// Multivariate Adaptive Regression Splines (MARS / Friedman 1991, `earth` compatible).
+#[pyclass(name = "MarsRegressor")]
+pub struct PyMarsRegressor {
+    inner: mltreelib_core::mars::MarsRegressor,
+}
+
+#[pymethods]
+impl PyMarsRegressor {
+    #[new]
+    #[pyo3(signature = (degree = 1, max_terms = 21, penalty = 2.0))]
+    fn new(degree: usize, max_terms: usize, penalty: f64) -> Self {
+        PyMarsRegressor {
+            inner: mltreelib_core::mars::MarsRegressor::new(degree, max_terms, penalty),
+        }
+    }
+
+    fn fit(&mut self, x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<()> {
+        self.inner.fit(&x, &y).map_err(PyValueError::new_err)
+    }
+
+    fn predict(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        self.inner.predict(&x).map_err(PyValueError::new_err)
+    }
+
+    #[getter]
+    fn n_terms(&self) -> PyResult<usize> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
+        Ok(m.n_terms())
+    }
+
+    #[getter]
+    fn rss(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
+        Ok(m.rss)
+    }
+
+    #[getter]
+    fn gcv(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
+        Ok(m.gcv)
+    }
+
+    #[pyo3(signature = (col_names = None))]
+    fn equation(&self, col_names: Option<Vec<String>>) -> PyResult<String> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
+        Ok(m.equation(col_names.as_deref()))
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyMarsRegressor>()?;
     m.add_class::<PyHdbscanTree>()?;
     m.add_class::<PyUnsupervisedProximityForest>()?;
     m.add_class::<PyClTree>()?;

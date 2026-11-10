@@ -81,6 +81,9 @@ impl Default for LeafControl {
 
 impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
     fn from(p: &crate::model_tree::ModelTreeParams) -> Self {
+        let mut extra = std::collections::HashMap::new();
+        extra.insert("tweedie_p".to_string(), p.tweedie_p);
+        extra.insert("tobit_threshold".to_string(), p.tobit_threshold);
         Self {
             leaf: p.leaf,
             family: p.leaf_family,
@@ -90,7 +93,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             leaf_digest: p.leaf_digest,
             monotone: p.monotone.clone(),
             leaf_features: None,
-            extra: std::collections::HashMap::new(),
+            extra,
             events: p.events.clone(),
             n_classes: p.n_classes,
         }
@@ -268,6 +271,7 @@ pub fn fit_leaf_model(
                     control.l2,
                     LeafFamily::Binomial,
                     mean_c,
+                    Some(&control.extra),
                 );
                 let lm = fitted.unwrap_or_else(|| LinearModel {
                     coef: vec![0.0; chosen.len()],
@@ -466,6 +470,7 @@ pub fn fit_leaf_model(
                 cols, y, w, rows, &chosen, any_missing,
                 &control.monotone, control.l1, control.l2,
                 family, stats.mean,
+                Some(&control.extra),
             );
             // The tree fit rejects nonfinite final models; scans reject
             // their loss. A failed GLM must never masquerade as a mean fit.

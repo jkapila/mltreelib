@@ -1626,6 +1626,69 @@ fn purity_gate_stops_noisy_pure_nodes() {
 }
 
 #[test]
+fn purity_gate_cv_and_tail_quantile_extrema_protection() {
+    use mltreelib_core::model_tree::PurityMetric;
+    // Mean = 100.0, sd ≈ 1.0 => CV = 0.01.
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..200 {
+        x.push(vec![Some(i as f64)]);
+        // Step signal at 100 with small variance
+        let val = if i < 100 { 99.0 } else { 101.0 };
+        y.push(Some(val + 0.1 * noise(i)));
+    }
+    // Gated by CV: threshold 0.05 should collapse the tree since CV ~ 0.01 <= 0.05
+    let tree_cv = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 5,
+            leaf: LeafKind::Mean,
+            purity_gate: Some(0.05),
+            purity_gate_metric: PurityMetric::Cv,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(tree_cv.n_leaves(), 1, "CV <= 0.05 must collapse pure node into single leaf");
+
+    // But with Sd metric and threshold 0.05: sd ≈ 1.0 > 0.05, so it splits!
+    let tree_sd = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 5,
+            leaf: LeafKind::Mean,
+            purity_gate: Some(0.05),
+            purity_gate_metric: PurityMetric::Sd,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(tree_sd.n_leaves() > 1, "SD > 0.05 allows split to occur");
+
+    // Tail quantile protection:
+    // If tail_quantile is set to 0.10, rows in lower 10% or upper 10% bypass the purity gate
+    let tree_tail = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 3,
+            min_rows: 5,
+            leaf: LeafKind::Mean,
+            purity_gate: Some(0.05),
+            purity_gate_metric: PurityMetric::Cv,
+            tail_quantile: Some(0.10),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(tree_tail.n_leaves() > 1, "tail_quantile extrema protection must bypass purity gate");
+}
+
+#[test]
 fn preselect_family_screens_noise_columns() {
     // one signal column among five noise columns; both strategies must
     // drop the noise columns (all splits land on the signal).

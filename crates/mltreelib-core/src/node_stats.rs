@@ -983,6 +983,7 @@ pub(crate) fn fit_glm(
     l2: f64,
     family: LeafFamily,
     mean: f64,
+    extra: Option<&std::collections::HashMap<String, f64>>,
 ) -> Option<LinearModel> {
     let nc = chosen.len();
     let dim = 1 + nc + if with_indicators { nc } else { 0 };
@@ -1074,15 +1075,17 @@ pub(crate) fn fit_glm(
                     gram.add_row(&row, working, w[r]);
                 }
                 LeafFamily::Tweedie => {
-                    let p = 1.5;
+                    let p = extra.and_then(|m| m.get("tweedie_p")).copied().unwrap_or(1.5);
                     let weight = w[r] * mean.max(1e-12).powf(2.0 - p);
                     let working = eta + (y[r] - mean) / mean.max(1e-12);
                     gram.add_row(&row, working, weight.max(1e-12));
                 }
                 LeafFamily::Tobit => {
-                    let y_latent = if y[r] <= 0.0 {
-                        let cdf = std_norm_cdf(-eta).max(1e-12);
-                        let pdf = std_norm_pdf(-eta);
+                    let tobit_thresh = extra.and_then(|m| m.get("tobit_threshold")).copied().unwrap_or(0.0);
+                    let y_latent = if y[r] <= tobit_thresh {
+                        let delta = tobit_thresh - eta;
+                        let cdf = std_norm_cdf(delta).max(1e-12);
+                        let pdf = std_norm_pdf(delta);
                         eta - pdf / cdf
                     } else {
                         y[r]
