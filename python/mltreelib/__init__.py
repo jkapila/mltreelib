@@ -10,6 +10,7 @@ from mltreelib._core import (
     CountEncoder,
     DatasetBuilder,
     EmbeddingEncoder,
+    GritBot,
     GroupedScaler,
     HashingEncoder,
     IndexMapper,
@@ -45,6 +46,7 @@ __all__ = [
     "CountEncoder",
     "DatasetBuilder",
     "EmbeddingEncoder",
+    "GritBot",
     "GroupedScaler",
     "HashingEncoder",
     "IndexMapper",
@@ -74,4 +76,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.3"

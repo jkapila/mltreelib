@@ -3632,8 +3632,127 @@ fn winnow(
     Ok(d.unbind())
 }
 
+#[pyclass(name = "GritBot")]
+pub struct PyGritBot {
+    inner: mltreelib_core::gritbot::GritBot,
+}
+
+#[pymethods]
+impl PyGritBot {
+    #[new]
+    #[pyo3(signature = (min_items=None, max_norm=None, sig_threshold=None, max_depth=None, check_cols=None))]
+    fn new(
+        min_items: Option<usize>,
+        max_norm: Option<f64>,
+        sig_threshold: Option<f64>,
+        max_depth: Option<usize>,
+        check_cols: Option<Vec<usize>>,
+    ) -> Self {
+        let mut bot = mltreelib_core::gritbot::GritBot::new();
+        if let Some(m) = min_items {
+            bot.min_items = Some(m);
+        }
+        if let Some(z) = max_norm {
+            bot.max_norm = z;
+        }
+        if let Some(alpha) = sig_threshold {
+            bot.sig_threshold = alpha;
+        }
+        if let Some(d) = max_depth {
+            bot.max_depth = d;
+        }
+        if let Some(cols) = check_cols {
+            bot.check_cols = Some(cols);
+        }
+        PyGritBot { inner: bot }
+    }
+
+    #[pyo3(signature = (x, col_names=None, dtypes=None))]
+    fn scan(
+        &self,
+        py: Python<'_>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        col_names: Option<Vec<String>>,
+        dtypes: Option<Vec<String>>,
+    ) -> PyResult<Vec<Py<PyDict>>> {
+        let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+        let names = match col_names {
+            Some(n) => n,
+            None => (0..n_cols).map(|i| format!("col_{}", i)).collect(),
+        };
+        let resolved_dtypes: Vec<ColType> = match dtypes {
+            Some(dt_strings) => dt_strings
+                .into_iter()
+                .map(|s| match s.to_lowercase().as_str() {
+                    "cat" | "categorical" => ColType::Categorical,
+                    "int" | "integer" => ColType::Integer,
+                    _ => ColType::Float,
+                })
+                .collect(),
+            None => (0..n_cols)
+                .map(|j| {
+                    let is_str = x.iter().any(|r| {
+                        r.get(j)
+                            .and_then(|c| c.as_ref())
+                            .map(|v| v.extract::<String>().is_ok())
+                            .unwrap_or(false)
+                    });
+                    if is_str {
+                        ColType::Categorical
+                    } else {
+                        ColType::Float
+                    }
+                })
+                .collect(),
+        };
+
+        let mut vocabs = Vec::new();
+        let coerced = coerce_rows(x, &resolved_dtypes, &mut vocabs, true)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+
+        let anomalies = self.inner.scan(&data, &names, &resolved_dtypes);
+        let mut out = Vec::with_capacity(anomalies.len());
+        for a in anomalies {
+            let d = PyDict::new(py);
+            d.set_item("case_id", a.case_id)?;
+            d.set_item("attribute", a.attribute)?;
+            d.set_item("attribute_name", a.attribute_name)?;
+            d.set_item("actual_value", a.actual_value)?;
+            d.set_item("expected_value", a.expected_value)?;
+            d.set_item("std_dev", a.std_dev)?;
+            d.set_item("z_score", a.z_score)?;
+            d.set_item("significance", a.significance)?;
+            d.set_item("subgroup_size", a.subgroup_size)?;
+            d.set_item("normal_limit", a.normal_limit)?;
+            d.set_item("normal_fraction", a.normal_fraction)?;
+            d.set_item("global_z", a.global_z)?;
+            d.set_item("context_ratio", a.context_ratio)?;
+            d.set_item("density_score", a.density_score)?;
+            d.set_item("is_pure_contextual", a.is_pure_contextual)?;
+            d.set_item("summary", a.summary)?;
+
+            let cond_list = pyo3::types::PyList::empty(py);
+            for c in a.conditions {
+                let cd = PyDict::new(py);
+                cd.set_item("col", c.col)?;
+                cd.set_item("display", c.display_str())?;
+                cd.set_item("col_name", c.col_name)?;
+                cd.set_item("actual_val", c.actual_val)?;
+                cond_list.append(cd)?;
+            }
+            d.set_item("conditions", cond_list)?;
+            out.push(d.unbind());
+        }
+        Ok(out)
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyGritBot>()?;
     m.add_class::<PyBaseNEncoder>()?;
     m.add_class::<PyCatBoostEncoder>()?;
     m.add_class::<PyCountEncoder>()?;

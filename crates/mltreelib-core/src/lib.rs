@@ -9,6 +9,7 @@ pub mod family;
 pub mod frame;
 pub mod gate;
 pub mod generator;
+pub mod gritbot;
 pub mod leaf;
 pub mod metrics;
 pub mod model_tree;
