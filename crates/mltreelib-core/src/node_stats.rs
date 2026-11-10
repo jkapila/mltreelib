@@ -151,12 +151,18 @@ pub struct LeafModel {
     pub softmax: Option<SoftmaxModel>,
     pub survival: Option<SurvivalStats>,
     pub heteroscedastic: Option<HeteroscedasticModel>,
+    pub mars: Option<crate::mars::MarsModel>,
+    pub mars_cols: Option<Vec<usize>>,
 }
 
 impl LeafModel {
     /// Linear model when present, the fitted constant otherwise (weighted
     /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
+        if let (Some(mars), Some(chosen)) = (&self.mars, &self.mars_cols) {
+            let row_f64: Vec<f64> = chosen.iter().map(|&c| x.get(c).and_then(|&v| v).unwrap_or(0.0)).collect();
+            return mars.predict_row(&row_f64);
+        }
         match self.family {
             LeafFamily::Softmax => {
                 if let Some(sm) = &self.softmax {
@@ -202,6 +208,10 @@ impl LeafModel {
     /// Column-major prediction for training-row scoring, without allocating
     /// or copying a row for every candidate leaf.
     pub(crate) fn predict_columns(&self, cols: &[Vec<Option<f64>>], r: usize) -> f64 {
+        if let (Some(mars), Some(chosen)) = (&self.mars, &self.mars_cols) {
+            let row_f64: Vec<f64> = chosen.iter().map(|&c| cols[c][r].unwrap_or(0.0)).collect();
+            return mars.predict_row(&row_f64);
+        }
         let Some(model) = &self.linear else {
             return self.center.unwrap_or(self.stats.mean);
         };

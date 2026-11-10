@@ -186,6 +186,12 @@ pub struct ModelTreeParams {
     pub events: Option<Vec<f64>>,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
+    /// Maximum degree of interaction for MARS leaves (default 1).
+    pub mars_degree: usize,
+    /// Maximum number of terms for MARS leaves (default 10).
+    pub mars_terms: usize,
+    /// GCV penalty for MARS leaves (default 2.0).
+    pub mars_penalty: f64,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -253,6 +259,9 @@ impl Default for ModelTreeParams {
             presort: false,
             events: None,
             n_classes: None,
+            mars_degree: 1,
+            mars_terms: 10,
+            mars_penalty: 2.0,
         }
     }
 }
@@ -448,8 +457,8 @@ impl ModelTree {
             return Err("cp_alpha must be >= 0".to_string());
         }
         if params.leaf_family != LeafFamily::Gaussian {
-            if !matches!(params.leaf, LeafKind::Mean | LeafKind::Linear) {
-                return Err("binomial and poisson families support only mean or linear leaves".into());
+            if !matches!(params.leaf, LeafKind::Mean | LeafKind::Linear | LeafKind::Mars) {
+                return Err("binomial and poisson families support only mean, linear, or mars leaves".into());
             }
             if params.split_test != SplitTest::None {
                 return Err("split_test='chow' requires the gaussian family".into());
@@ -801,8 +810,8 @@ impl ModelTree {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
         if control.family != LeafFamily::Gaussian {
-            if !matches!(control.leaf, LeafKind::Mean | LeafKind::Linear) {
-                return Err("binomial and poisson families support only mean or linear leaves".into());
+            if !matches!(control.leaf, LeafKind::Mean | LeafKind::Linear | LeafKind::Mars) {
+                return Err("binomial and poisson families support only mean, linear, or mars leaves".into());
             }
         }
 

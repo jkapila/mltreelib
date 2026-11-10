@@ -32,6 +32,8 @@ pub enum LeafKind {
     Quantile(f64),
     /// Huber M-location (quadratic near the center, linear in the tails).
     Huber,
+    /// Piecewise MARS splines (earth models fit at the leaf).
+    Mars,
 }
 
 /// Parameter controls for fitting leaf models independently of tree topology.
@@ -84,6 +86,9 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         let mut extra = std::collections::HashMap::new();
         extra.insert("tweedie_p".to_string(), p.tweedie_p);
         extra.insert("tobit_threshold".to_string(), p.tobit_threshold);
+        extra.insert("mars_degree".to_string(), p.mars_degree as f64);
+        extra.insert("mars_terms".to_string(), p.mars_terms as f64);
+        extra.insert("mars_penalty".to_string(), p.mars_penalty);
         Self {
             leaf: p.leaf,
             family: p.leaf_family,
@@ -298,6 +303,8 @@ pub fn fit_leaf_model(
             }),
             survival: None,
             heteroscedastic: None,
+            mars: None,
+            mars_cols: None,
         };
     }
 
@@ -367,6 +374,8 @@ pub fn fit_leaf_model(
                 median_time,
             }),
             heteroscedastic: None,
+            mars: None,
+            mars_cols: None,
         };
     }
 
@@ -443,6 +452,45 @@ pub fn fit_leaf_model(
                 scale,
                 scale_linear,
             }),
+            mars: None,
+            mars_cols: None,
+        };
+    }
+
+    if control.leaf == LeafKind::Mars {
+        let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+        let mut x_mat: Vec<Vec<f64>> = Vec::with_capacity(rows.len());
+        let mut y_vec: Vec<f64> = Vec::with_capacity(rows.len());
+        let mut w_vec: Vec<f64> = Vec::with_capacity(rows.len());
+        for &r in rows {
+            let mut row_vals = Vec::with_capacity(chosen.len());
+            for &c in &chosen {
+                row_vals.push(cols[c][r].unwrap_or(0.0));
+            }
+            x_mat.push(row_vals);
+            y_vec.push(y[r]);
+            w_vec.push(w[r]);
+        }
+        let mars_degree = control.extra.get("mars_degree").map(|&d| d as usize).unwrap_or(1);
+        let mars_terms = control.extra.get("mars_terms").map(|&t| t as usize).unwrap_or(10);
+        let mars_penalty = control.extra.get("mars_penalty").copied().unwrap_or(2.0);
+        let mut reg = crate::mars::MarsRegressor::new(mars_degree, mars_terms, mars_penalty);
+        if family == LeafFamily::Binomial {
+            reg.params.glm = crate::mars::MarsGlmFamily::Binomial;
+        } else if family == LeafFamily::Poisson {
+            reg.params.glm = crate::mars::MarsGlmFamily::Poisson;
+        }
+        let _ = reg.fit_weighted(&x_mat, &y_vec, Some(&w_vec));
+        return LeafModel {
+            stats,
+            linear: None,
+            center: None,
+            family,
+            softmax: None,
+            survival: None,
+            heteroscedastic: None,
+            mars: reg.model,
+            mars_cols: Some(chosen),
         };
     }
 
@@ -460,6 +508,8 @@ pub fn fit_leaf_model(
             softmax: None,
             survival: None,
             heteroscedastic: None,
+            mars: None,
+            mars_cols: None,
         };
     }
     let linear = if control.leaf == LeafKind::Linear {
@@ -488,6 +538,8 @@ pub fn fit_leaf_model(
                 softmax: None,
                 survival: None,
                 heteroscedastic: None,
+                mars: None,
+                mars_cols: None,
             };
         }
         let mut g = Gram::new(dim);
@@ -531,6 +583,8 @@ pub fn fit_leaf_model(
         softmax: None,
         survival: None,
         heteroscedastic: None,
+        mars: None,
+        mars_cols: None,
     }
 }
 
@@ -556,10 +610,10 @@ impl<'a> Grower<'a> {
     /// predictions (the gate then skips).
     pub(crate) fn node_rss(&self, rows: &[usize], path: &[usize]) -> (f64, usize) {
         let leaf = self.make_leaf(rows, path);
-        let k = if self.params.leaf == LeafKind::Linear {
-            self.leaf_design(rows, path).2
-        } else {
-            1
+        let k = match self.params.leaf {
+            LeafKind::Linear => self.leaf_design(rows, path).2,
+            LeafKind::Mars => leaf.mars.as_ref().map(|m| m.n_terms()).unwrap_or(1),
+            _ => 1,
         };
         let mut xrow = vec![None; self.cols.len()];
         let mut rss = 0.0;

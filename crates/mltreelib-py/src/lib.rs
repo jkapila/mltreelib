@@ -2036,6 +2036,7 @@ fn extract_leaf_control<'py>(
                             LeafKind::Quantile(t)
                         }
                         "huber" => LeafKind::Huber,
+                        "mars" => LeafKind::Mars,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf kind '{other}' in control dict"
@@ -2147,6 +2148,7 @@ fn extract_leaf_control<'py>(
                 LeafKind::Quantile(t_val)
             }
             "huber" => LeafKind::Huber,
+            "mars" => LeafKind::Mars,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
         };
     }
@@ -2239,6 +2241,7 @@ impl PyLeafControl {
                 LeafKind::Quantile(tau)
             }
             "huber" => LeafKind::Huber,
+            "mars" => LeafKind::Mars,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
         };
         let family = match leaf_family {
@@ -2284,6 +2287,7 @@ impl PyLeafControl {
             LeafKind::Median => "median".to_string(),
             LeafKind::Quantile(t) => format!("quantile({t})"),
             LeafKind::Huber => "huber".to_string(),
+            LeafKind::Mars => "mars".to_string(),
         }
     }
 
@@ -2544,7 +2548,8 @@ impl PyModelTree {
         preselect = "none", min_relevance = None,
         verbose = 0, leaf_family = "gaussian", split_eval = "fast",
         presort = false, events = None, n_classes = None,
-        tweedie_p = 1.5, tobit_threshold = 0.0
+        tweedie_p = 1.5, tobit_threshold = 0.0,
+        mars_degree = 1, mars_terms = 10, mars_penalty = 2.0
     ))]
     fn new(
         max_depth: usize,
@@ -2592,6 +2597,9 @@ impl PyModelTree {
         n_classes: Option<usize>,
         tweedie_p: f64,
         tobit_threshold: f64,
+        mars_degree: usize,
+        mars_terms: usize,
+        mars_penalty: f64,
     ) -> PyResult<Self> {
         let policy = match leaf_cols {
             "all" => LeafCols::All,
@@ -2608,6 +2616,7 @@ impl PyModelTree {
             "median" => LeafKind::Median,
             "quantile" => LeafKind::Quantile(tau),
             "huber" => LeafKind::Huber,
+            "mars" => LeafKind::Mars,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf must be 'linear', 'mean', 'median', 'quantile' or 'huber', got {other}"
@@ -2802,6 +2811,9 @@ impl PyModelTree {
                 presort,
                 events,
                 n_classes,
+                mars_degree,
+                mars_terms,
+                mars_penalty,
             },
             inner: None,
             vocabs: Vec::new(),

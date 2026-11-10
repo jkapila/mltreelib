@@ -72,7 +72,6 @@ def test_mars_linpreds_and_sample_weights():
 def test_mars_glm_binomial_classification():
     x = np.linspace(0.0, 10.0, 100)
     X = x.reshape(-1, 1)
-    # y = 1 if x > 5.0 else 0
     y = (x > 5.0).astype(np.float64)
 
     clf = MarsRegressor(degree=1, max_terms=8, glm="binomial")
@@ -88,3 +87,25 @@ def test_mars_glm_binomial_classification():
 
     eq = clf.equation(["feat"])
     assert eq.startswith("logit(p) = ")
+
+def test_model_tree_with_mars_leaf():
+    from mltreelib import ModelTree
+    rng = np.random.default_rng(42)
+    # 2 regimes partitioned by x0:
+    # regime 1: x0 < 0: y = 2.0 * x1 + 3.0 * max(0, x2 - 2.0)
+    # regime 2: x0 >= 0: y = -5.0 + 4.0 * max(0, x2 - 5.0)
+    X = rng.uniform(-10.0, 10.0, size=(300, 3))
+    y = np.where(
+        X[:, 0] < 0,
+        2.0 * X[:, 1] + 3.0 * np.maximum(0.0, X[:, 2] - 2.0),
+        -5.0 + 4.0 * np.maximum(0.0, X[:, 2] - 5.0),
+    )
+    tree = ModelTree(leaf="mars", max_depth=2, min_rows=30, mars_degree=1, mars_terms=8)
+    tree.fit(X, y)
+    assert tree.n_leaves() >= 2
+    preds = np.asarray(tree.predict(X))
+    rmse = float(np.sqrt(np.mean((y - preds) ** 2)))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r2 = 1.0 - (rmse ** 2 * len(y)) / ss_tot
+    assert rmse < 5.0
+    assert r2 > 0.85

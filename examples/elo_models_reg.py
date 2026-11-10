@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 def make_models(meta: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
     import numpy as np
     import pandas as pd
-    from mltreelib import ModelTree
+    from mltreelib import ModelTree, MarsRegressor
 
     roles = list(meta["columns"].values()) if (meta and "columns" in meta) else None
     
@@ -43,24 +43,22 @@ def make_models(meta: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
         return df_tr, df_te
 
     def encoded_mats(xtr: List[List[Any]], xte: List[List[Any]], cat_cols: List[int]) -> Tuple[np.ndarray, np.ndarray]:
-        from sklearn.preprocessing import OrdinalEncoder
         p = len(xtr[0])
         cat_set = set(cat_cols)
-        enc = None
-        if cat_cols:
-            enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
-            enc.fit([[str(row[j]) for j in cat_cols] for row in xtr])
+        cat_maps = {}
+        for j in cat_cols:
+            uniq = sorted({str(row[j]) for row in xtr if row[j] is not None})
+            cat_maps[j] = {val: float(i) for i, val in enumerate(uniq)}
 
         def to_mat(rows):
             mat = np.empty((len(rows), p), dtype=np.float64)
             for i, r in enumerate(rows):
                 for j in range(p):
-                    if j not in cat_set:
+                    if j in cat_set:
+                        val = "" if r[j] is None else str(r[j])
+                        mat[i, j] = cat_maps[j].get(val, -1.0)
+                    else:
                         mat[i, j] = np.nan if r[j] is None else float(r[j])
-            if enc is not None:
-                codes = enc.transform([[str(row[j]) for j in cat_cols] for row in rows])
-                for idx, j in enumerate(cat_cols):
-                    mat[:, j] = codes[:, idx]
             return mat
 
         return to_mat(xtr), to_mat(xte)
@@ -102,6 +100,35 @@ def make_models(meta: Optional[Dict[str, Any]] = None) -> Dict[str, Callable]:
     ms["ModelTree(path)"] = make_mt("linear", "path")
     ms["ModelTree(mean)"] = make_mt("mean", "all")
     ms["ModelTree(winnow)"] = make_mt("linear", "all", min_relevance=0.05)
+
+    def make_mt_mars(mars_degree: int = 1, max_depth: int = 3):
+        def run(xtr, ytr, xte):
+            p = len(xtr[0])
+            dtypes = roles if roles and len(roles) == p else [("categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric") for j in range(p)]
+            m = ModelTree(leaf="mars", max_depth=max_depth, mars_degree=mars_degree)
+            t0 = time.perf_counter()
+            m.fit(xtr, [float(y) for y in ytr], dtypes=dtypes)
+            pred = m.predict(xte)
+            return pred, time.perf_counter() - t0
+        return run
+
+    ms["ModelTree(leaf=mars,deg=1)"] = make_mt_mars(mars_degree=1)
+    ms["ModelTree(leaf=mars,deg=2)"] = make_mt_mars(mars_degree=2)
+
+    def make_native_mars(degree: int = 1):
+        def run(xtr, ytr, xte):
+            p = len(xtr[0])
+            cat_cols = get_cat_indices(p)
+            xa, xe = encoded_mats(xtr, xte, cat_cols)
+            t0 = time.perf_counter()
+            m = MarsRegressor(degree=degree)
+            m.fit(xa, [float(y) for y in ytr])
+            pred = m.predict(xe)
+            return pred, time.perf_counter() - t0
+        return run
+
+    ms["mltreelib MARS(deg=1)"] = make_native_mars(degree=1)
+    ms["mltreelib MARS(deg=2)"] = make_native_mars(degree=2)
 
     # 2. LightGBM
     def lgbm():

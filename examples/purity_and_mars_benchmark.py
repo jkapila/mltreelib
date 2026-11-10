@@ -117,6 +117,33 @@ def run_benchmark_on_dataset(name, path, target_col):
             print(f"   ... ({len(lines) - 4} more terms)")
         print()
 
+    # -------------------------------------------------------------
+    # 3. Tree-Structured MARS (Piecewise MARS Leaves)
+    # -------------------------------------------------------------
+    print("--- 3. Tree-Structured MARS (ModelTree with leaf='mars') ---")
+    tree_mars_configs = [
+        ("Tree-MARS depth=2 (degree=1, terms=8)", dict(leaf="mars", max_depth=2, min_rows=30, mars_degree=1, mars_terms=8)),
+        ("Tree-MARS depth=3 (degree=1, terms=8)", dict(leaf="mars", max_depth=3, min_rows=25, mars_degree=1, mars_terms=8)),
+        ("Tree-MARS depth=2 + Purity CV 0.25", dict(leaf="mars", max_depth=2, min_rows=30, mars_degree=1, mars_terms=8, purity_gate=0.25, purity_gate_metric="cv")),
+        ("Tree-MARS depth=2 (degree=2, terms=10)", dict(leaf="mars", max_depth=2, min_rows=30, mars_degree=2, mars_terms=10)),
+    ]
+
+    print(f"{'Configuration':<42} | {'Leaves':<7} | {'Fit (ms)':<9} | {'Test RMSE':<10} | {'Test R²':<8} | {'Tail RMSE':<10}")
+    print("-" * 97)
+
+    for label, kwargs in tree_mars_configs:
+        t0 = time.perf_counter()
+        tree = ModelTree(**kwargs)
+        tree.fit(X_train, y_train)
+        fit_ms = (time.perf_counter() - t0) * 1000.0
+
+        preds = tree.predict(X_test)
+        rmse, r2, tail_rmse = compute_metrics(y_test, preds)
+        n_leaves = tree.n_leaves()
+
+        print(f"{label:<42} | {n_leaves:<7} | {fit_ms:<9.2f} | {rmse:<10.3f} | {r2:<8.4f} | {tail_rmse:<10.3f}")
+    print()
+
 def main():
     datasets = [
         ("Concrete Compressive Strength", "datasets/concrete_compressive_strength.parquet", "ConcreteCompressiveStrength"),
