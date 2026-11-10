@@ -4163,8 +4163,125 @@ impl PyTrieKnn {
     }
 }
 
+#[pyclass(name = "PredictiveClusteringTree")]
+pub struct PyPredictiveClusteringTree {
+    inner: mltreelib_core::cluster::PredictiveClusteringTree,
+    vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
+    dtypes: Vec<ColType>,
+}
+
+#[pymethods]
+impl PyPredictiveClusteringTree {
+    #[new]
+    #[pyo3(signature = (max_depth=6, min_samples_split=10, min_samples_leaf=5, min_variance_reduction=1e-4))]
+    fn new(
+        max_depth: usize,
+        min_samples_split: usize,
+        min_samples_leaf: usize,
+        min_variance_reduction: f64,
+    ) -> Self {
+        let mut pct = mltreelib_core::cluster::PredictiveClusteringTree::new(
+            max_depth,
+            min_samples_split,
+            min_samples_leaf,
+        );
+        pct.min_variance_reduction = min_variance_reduction;
+        PyPredictiveClusteringTree {
+            inner: pct,
+            vocabs: Vec::new(),
+            dtypes: Vec::new(),
+        }
+    }
+
+    #[pyo3(signature = (x, y=None, col_names=None, dtypes=None, target_names=None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        y: Option<Vec<Vec<f64>>>,
+        col_names: Option<Vec<String>>,
+        dtypes: Option<Vec<String>>,
+        target_names: Option<Vec<String>>,
+    ) -> PyResult<()> {
+        let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+        let names = match col_names {
+            Some(n) => n,
+            None => (0..n_cols).map(|i| format!("col_{}", i)).collect(),
+        };
+        let resolved_dtypes: Vec<ColType> = match dtypes {
+            Some(dt_strings) => dt_strings
+                .into_iter()
+                .map(|s| match s.to_lowercase().as_str() {
+                    "cat" | "categorical" => ColType::Categorical,
+                    "int" | "integer" => ColType::Integer,
+                    _ => ColType::Float,
+                })
+                .collect(),
+            None => (0..n_cols)
+                .map(|j| {
+                    let is_str = x.iter().any(|r| {
+                        r.get(j)
+                            .and_then(|c| c.as_ref())
+                            .map(|v| v.extract::<String>().is_ok())
+                            .unwrap_or(false)
+                    });
+                    if is_str { ColType::Categorical } else { ColType::Float }
+                })
+                .collect(),
+        };
+
+        let mut vocabs = Vec::new();
+        let coerced = coerce_rows(x, &resolved_dtypes, &mut vocabs, true)?;
+        self.vocabs = vocabs;
+        self.dtypes = resolved_dtypes.clone();
+
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+
+        self.inner.fit(
+            &data,
+            y.as_deref(),
+            Some(&names),
+            Some(&resolved_dtypes),
+            target_names.as_deref(),
+        );
+        Ok(())
+    }
+
+    fn predict_cluster(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<usize>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict_cluster(r)).collect())
+    }
+
+    fn predict_prototype(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<Vec<f64>>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict_prototype(r)).collect())
+    }
+
+    fn cluster_rules(&self) -> Vec<(usize, String, Vec<f64>, usize)> {
+        self.inner.cluster_rules()
+    }
+
+    #[getter]
+    fn n_clusters(&self) -> usize {
+        self.inner.n_clusters
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyPredictiveClusteringTree>()?;
     m.add_class::<PyTrieKnn>()?;
     m.add_class::<PyDensityEstimationTree>()?;
     m.add_class::<PyExtendedIsolationTree>()?;

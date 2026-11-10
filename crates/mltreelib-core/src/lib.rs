@@ -4,6 +4,7 @@
 
 pub mod anomaly;
 pub mod builder;
+pub mod cluster;
 pub mod criteria;
 pub mod encode;
 pub mod family;

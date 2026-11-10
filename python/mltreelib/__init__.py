@@ -26,6 +26,7 @@ from mltreelib._core import (
     Metrics,
     ModelTree,
     OneHotEncoder,
+    PredictiveClusteringTree,
     QuantileEncoder,
     RandomCutTree,
     SumEncoder,
@@ -69,6 +70,7 @@ __all__ = [
     "Metrics",
     "ModelTree",
     "OneHotEncoder",
+    "PredictiveClusteringTree",
     "QuantileEncoder",
     "RandomCutTree",
     "SumEncoder",
@@ -90,4 +92,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.6"
+__version__ = "0.2.7"
