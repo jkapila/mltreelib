@@ -38,14 +38,9 @@ this uses the fitted family, not the empirical target t-digest.
 
 Raises: ValueError for Gaussian leaves or an invalid threshold.
 ### ModelTree.feature_importance
-```pythonfeature_importance((self, /))```
-Feature importance - each column's share of the total split gain
-(rpart's variable importance).
-
-Args: none.
-
-Returns: list of `(column_name, share)` sorted descending; shares
-sum to 1.
+```pythonfeature_importance((self, /, method='gain', x=None, y=None, metric=None, n_repeats=None, seed=None))```
+Feature importance — supports `"gain"` (default, rpart split gain share),
+`"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
 ### ModelTree.fit
 ```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None))```
 Fit the tree on row-major data using the selected leaf family.
@@ -96,6 +91,10 @@ Number of leaves.
 Args: none.
 
 Returns: leaf count.
+### ModelTree.permutation_importance
+```pythonpermutation_importance((self, /, x, y, metric='rmse', n_repeats=5, seed=42))```
+Permutation feature importance: per-column validation loss degradation
+when the column is shuffled across rows.
 ### ModelTree.predict
 ```pythonpredict((self, /, x, kind='response', times=None))```
 Predict with flexible output kinds:
@@ -169,6 +168,10 @@ Args:
     tau: optional quantile tau when leaf is "quantile" (default 0.5).
 
 Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).
+### ModelTree.shapley
+```pythonshapley((self, /, row))```
+Exact TreeSHAP feature attributions for a single row prediction:
+efficiency invariant: `base_value + \sum values == prediction`.
 ### ModelTree.split_paths
 ```pythonsplit_paths((self, /))```
 Split columns along each root-to-leaf path.

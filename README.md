@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml/badge.svg)](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml)
 [![Docs](https://github.com/jkapila/mltreelib/actions/workflows/deploy.yaml/badge.svg)](https://jkapila.github.io/mltreelib/)
-[![Version](https://img.shields.io/badge/version-0.2.0-informational)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.2.9-informational)](Cargo.toml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue)](pyproject.toml)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg?logo=rust)](crates/mltreelib-core/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
@@ -78,6 +78,45 @@ leaves have landed for the first batch: `leaf_family="binomial"` (logit)
 and `"poisson"` (log), `gain="deviance"`, and `predict_proba` /
 `cdf` outputs (`examples/leaf_family.py`); probit, tobit, tweedie and
 softmax remain spec `#4` follow-ups.
+
+## Tree-based clustering & mixed search
+
+Modular tree spine with pluggable split criteria, termination policies, and leaf prototypes:
+
+- **TrieKNN**: Jitin Kapila (2018/2025) non-binary categorical prefix branching + leaf numerical KNN with hierarchical parent back-off for mixed-type tabular data.
+- **Predictive Clustering Trees (PCT / CLUS)**: Multi-target variance reduction clustering with transparent rule extraction.
+- **CLTree**: Bing Liu et al. (KDD 2000) decision tree clustering via analytical background non-data.
+- **HDBSCAN Condensed Tree**: Mutual reachability MST, single-linkage dendrogram, condensed cluster hierarchy, Excess of Mass stability selection, and GLOSH outlier scores.
+- **Unsupervised Random Forest (URF)**: Breiman/Shi-Horvath synthetic marginal scrambling, leaf proximity matrix $P(i, j)$, Lance-Williams average-linkage agglomerative clustering on $D = \sqrt{1 - P}$, and proximity outlier scores.
+
+```python
+from mltreelib import TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest
+
+# HDBSCAN density clustering & GLOSH outliers
+hdb = HDBSCAN(min_cluster_size=20, min_samples=10)
+hdb.fit(x)
+labels = hdb.labels                 # None = noise / outlier
+outliers = hdb.outlier_scores       # GLOSH score in [0, 1]
+tree = hdb.condensed_tree()         # cluster birth, death, stability
+
+# Unsupervised Random Forest proximity
+urf = UnsupervisedRandomForest(n_trees=50, max_depth=6)
+urf.fit(x, n_clusters=3)
+prox = urf.proximity_matrix         # [N x N] leaf co-occurrence in [0, 1]
+labels = urf.labels                 # agglomerative clusters on sqrt(1 - P)
+```
+
+## Base anomaly & density trees
+
+High-throughput, explainable outlier detection algorithms implemented in pure Rust:
+
+- **DensityEstimationTree (DET)**: Integrated Squared Error (ISE) density estimation and negative log-density scoring.
+- **ExtendedIsolationTree (EIF)**: Oblique hyperplane cuts eliminating axis-aligned ghost artifacts + native categorical projection.
+- **HalfSpaceTree (HST)**: High-speed streaming mass estimation and fixed-depth online updating.
+- **RandomCutTree (RCT)**: Streaming tree computing Collusive Displacement (CoDisp) to catch tightly clustered / masked anomalies.
+- **ActiveAnomalyTree (AAD)**: Human-in-the-loop active learning updating leaf importance weights from nominal/anomaly feedback.
+- **ContextAnomalyTree (CAT)**: Sequential categorical transition tracking scoring temporal surprise in bits ($-\log_2 P$).
+- **GritBot**: RuleQuest-style surprising condition-dependent subgroup anomaly mining with context preservation.
 
 ## Dataset component
 

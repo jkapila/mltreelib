@@ -15,3 +15,5 @@ code. Narrative guides with verified examples:
 | [Metrics](metrics/) | Metrics | — |
 | [Encoders & scalers](encoders/) | IndexMapper, VariableScaler, GroupedScaler, BaseNEncoder, CatBoostEncoder, CountEncoder, EmbeddingEncoder, HashingEncoder, JamesSteinEncoder, LeaveOneOutEncoder, MEstimatorEncoder, OneHotEncoder, QuantileEncoder, SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder | — |
 | [Feature functions](features/) | — | grouped_scale, grouped_transform, trended_transform, windowed_transform, lag_by_days, decomposed_transform, calendar_features |
+| [Clustering trees](cluster/) | TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
+| [Anomaly & density trees](anomaly/) | GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |

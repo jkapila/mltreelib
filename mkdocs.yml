@@ -67,6 +67,8 @@ nav:
       - Overview: reference/api/index.md
       - Data: reference/api/data.md
       - ModelTree: reference/api/model-tree.md
+      - Clustering trees: reference/api/cluster.md
+      - Anomaly & density trees: reference/api/anomaly.md
       - Metrics: reference/api/metrics.md
       - Encoders & scalers: reference/api/encoders.md
       - Feature functions: reference/api/features.md
