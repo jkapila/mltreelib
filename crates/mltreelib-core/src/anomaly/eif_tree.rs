@@ -100,6 +100,8 @@ pub struct ExtendedIsolationTree {
     pub max_depth: Option<usize>,
     /// Extension level: 0 = axis-aligned, None = fully oblique (all features).
     pub extension_level: Option<usize>,
+    /// Optional subsample size for fitting (standard isolation forest uses e.g. 256).
+    pub subsample_size: Option<usize>,
     /// RNG seed for deterministic splits.
     pub seed: u64,
     pub nodes: Vec<IsolationNode>,
@@ -114,6 +116,7 @@ impl Default for ExtendedIsolationTree {
         Self {
             max_depth: None,
             extension_level: None,
+            subsample_size: None,
             seed: 42,
             nodes: Vec::new(),
             n_train: 0,
@@ -162,7 +165,19 @@ impl ExtendedIsolationTree {
         });
 
         let mut rng = LcgRng::new(self.seed);
-        let all_indices: Vec<usize> = (0..n).collect();
+        let all_indices: Vec<usize> = if let Some(sub_n) = self.subsample_size {
+            let k = sub_n.min(n).max(1);
+            let mut pool: Vec<usize> = (0..n).collect();
+            let mut chosen = Vec::with_capacity(k);
+            for i in 0..k {
+                let pick = i + (rng.next_u64() as usize) % (n - i);
+                pool.swap(i, pick);
+                chosen.push(pool[i]);
+            }
+            chosen
+        } else {
+            (0..n).collect()
+        };
 
         let root_idx = self.nodes.len();
         self.nodes.push(IsolationNode {
@@ -170,7 +185,7 @@ impl ExtendedIsolationTree {
             split: None,
             left_child: None,
             right_child: None,
-            size: n,
+            size: all_indices.len(),
             depth: 0,
         });
 

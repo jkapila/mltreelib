@@ -51,12 +51,21 @@ pub enum KnnWeights {
     Distance,
 }
 
+/// Distance metric used for leaf numerical KNN.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KnnMetric {
+    Euclidean,
+    Manhattan,
+}
+
 /// TrieKNN model for mixed-type tabular classification and regression.
 #[derive(Clone, Debug)]
 pub struct TrieKnn {
     pub task: TrieKnnTask,
     pub k: usize,
     pub weights: KnnWeights,
+    pub metric: KnnMetric,
+    pub leaf_min_size: Option<usize>,
     pub cat_cols: Vec<usize>,
     pub num_cols: Vec<usize>,
     pub nodes: Vec<TrieKnnNode>,
@@ -80,6 +89,8 @@ impl TrieKnn {
             task,
             k: k.max(1),
             weights,
+            metric: KnnMetric::Euclidean,
+            leaf_min_size: None,
             cat_cols,
             num_cols,
             nodes: vec![TrieKnnNode::new(0, None)],
@@ -189,6 +200,7 @@ impl TrieKnn {
         let mut gathered = Vec::new();
         let mut seen = std::collections::HashSet::new();
         let mut curr = Some(start_node);
+        let min_target = self.leaf_min_size.unwrap_or(self.k);
 
         while let Some(idx) = curr {
             for &sample_idx in &self.nodes[idx].sample_indices {
@@ -196,13 +208,34 @@ impl TrieKnn {
                     gathered.push(sample_idx);
                 }
             }
-            if gathered.len() >= self.k {
+            if gathered.len() >= min_target {
                 break;
             }
             curr = self.nodes[idx].parent;
         }
 
         gathered
+    }
+
+    /// Compute distance between two numeric vectors according to KnnMetric.
+    pub fn compute_dist(&self, a: &[f64], b: &[f64]) -> f64 {
+        match self.metric {
+            KnnMetric::Euclidean => {
+                let mut d2 = 0.0f64;
+                for i in 0..a.len() {
+                    let diff = a[i] - b[i];
+                    d2 += diff * diff;
+                }
+                d2.sqrt()
+            }
+            KnnMetric::Manhattan => {
+                let mut sum = 0.0f64;
+                for i in 0..a.len() {
+                    sum += (a[i] - b[i]).abs();
+                }
+                sum
+            }
+        }
     }
 
     /// Predict probabilities for classification query.
@@ -232,17 +265,8 @@ impl TrieKnn {
         let mut dists: Vec<(usize, f64)> = candidates
             .iter()
             .map(|&idx| {
-                let mut d2 = 0.0f64;
-                for (dim, &q_val) in query_num.iter().enumerate() {
-                    let tr_val = self.num_data[idx][dim];
-                    let diff = if q_val.is_nan() || tr_val.is_nan() {
-                        0.0
-                    } else {
-                        q_val - tr_val
-                    };
-                    d2 += diff * diff;
-                }
-                (idx, d2.sqrt())
+                let d = self.compute_dist(&query_num, &self.num_data[idx]);
+                (idx, d)
             })
             .collect();
 
@@ -308,17 +332,8 @@ impl TrieKnn {
                 let mut dists: Vec<(usize, f64)> = candidates
                     .iter()
                     .map(|&idx| {
-                        let mut d2 = 0.0f64;
-                        for (dim, &q_val) in query_num.iter().enumerate() {
-                            let tr_val = self.num_data[idx][dim];
-                            let diff = if q_val.is_nan() || tr_val.is_nan() {
-                                0.0
-                            } else {
-                                q_val - tr_val
-                            };
-                            d2 += diff * diff;
-                        }
-                        (idx, d2.sqrt())
+                        let d = self.compute_dist(&query_num, &self.num_data[idx]);
+                        (idx, d)
                     })
                     .collect();
 

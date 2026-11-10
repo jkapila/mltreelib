@@ -43,3 +43,32 @@ def test_hdbscan_two_clusters_and_outlier():
     assert len(preds) == 3
     # Near cluster points should be assigned to clusters
     assert preds[0] is not None or preds[1] is not None
+
+
+def test_hdbscan_knobs():
+    data = []
+    for i in range(20):
+        data.append([float(i * 0.1), float(i * 0.1)])
+    for i in range(20):
+        data.append([10.0 + float(i * 0.1), 10.0 + float(i * 0.1)])
+
+    # 1. Leaf selection method
+    hdb_leaf = HDBSCAN(min_cluster_size=5, cluster_selection_method="leaf")
+    hdb_leaf.fit(data)
+    assert hdb_leaf.n_clusters >= 1
+
+    # 2. Manhattan metric
+    hdb_manhattan = HDBSCAN(min_cluster_size=5, metric="manhattan")
+    hdb_manhattan.fit(data)
+    assert hdb_manhattan.n_clusters >= 1
+
+    # 3. Allow single cluster
+    hdb_single = HDBSCAN(min_cluster_size=5, allow_single_cluster=True)
+    hdb_single.fit(data)
+    assert hdb_single.n_clusters >= 1
+
+    # 4. Epsilon flat cutoff (large epsilon prevents splitting, keeping them merged)
+    hdb_eps = HDBSCAN(min_cluster_size=5, cluster_selection_epsilon=20.0, allow_single_cluster=True)
+    hdb_eps.fit(data)
+    assert hdb_eps.n_clusters >= 1
+

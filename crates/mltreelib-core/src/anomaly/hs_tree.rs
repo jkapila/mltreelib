@@ -22,6 +22,8 @@ pub struct HsNode {
 #[derive(Clone, Debug)]
 pub struct HalfSpaceTree {
     pub max_depth: usize,
+    pub window_size: usize,
+    pub initial_mass: f64,
     pub seed: u64,
     pub nodes: Vec<HsNode>,
     pub bounds: Vec<(f64, f64)>,
@@ -32,6 +34,8 @@ impl Default for HalfSpaceTree {
     fn default() -> Self {
         Self {
             max_depth: 8,
+            window_size: 250,
+            initial_mass: 0.0,
             seed: 42,
             nodes: Vec::new(),
             bounds: Vec::new(),
@@ -45,9 +49,7 @@ impl HalfSpaceTree {
         Self {
             max_depth,
             seed,
-            nodes: Vec::new(),
-            bounds: Vec::new(),
-            n_samples: 0,
+            ..Default::default()
         }
     }
 

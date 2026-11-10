@@ -58,6 +58,8 @@ nav:
       - Metrics & plots: examples/metrics-plots.md
       - Hyperparameter search: examples/hpo.md
       - Explainable stumps & retrain: examples/stump-explainable.md
+      - Clustering comparison: examples/clustering-comparison.md
+      - Anomaly detection suite: examples/anomaly-comparison.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -103,6 +105,8 @@ plugins:
           - examples/metrics-plots.md
           - examples/hpo.md
           - examples/stump-explainable.md
+          - examples/clustering-comparison.md
+          - examples/anomaly-comparison.md
           - benchmarks/elo.md
           - benchmarks/datasets.md
           - field-notes.md
@@ -117,3 +121,5 @@ plugins:
           - reference/api/metrics.md
           - reference/api/encoders.md
           - reference/api/features.md
+          - reference/api/cluster.md
+          - reference/api/anomaly.md

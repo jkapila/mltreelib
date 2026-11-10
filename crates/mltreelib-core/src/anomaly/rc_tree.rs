@@ -28,6 +28,7 @@ pub struct RcNode {
 #[derive(Clone, Debug)]
 pub struct RandomCutTree {
     pub seed: u64,
+    pub sample_size: usize,
     pub nodes: Vec<RcNode>,
     pub root: Option<usize>,
     pub n_points: usize,
@@ -37,6 +38,7 @@ impl Default for RandomCutTree {
     fn default() -> Self {
         Self {
             seed: 42,
+            sample_size: 256,
             nodes: Vec::new(),
             root: None,
             n_points: 0,
@@ -48,9 +50,7 @@ impl RandomCutTree {
     pub fn new(seed: u64) -> Self {
         Self {
             seed,
-            nodes: Vec::new(),
-            root: None,
-            n_points: 0,
+            ..Default::default()
         }
     }
 
@@ -64,7 +64,19 @@ impl RandomCutTree {
         self.n_points = n;
 
         let mut rng = self.seed.wrapping_add(1);
-        let indices: Vec<usize> = (0..n).collect();
+        let indices: Vec<usize> = if self.sample_size < n && self.sample_size > 0 {
+            let mut pool: Vec<usize> = (0..n).collect();
+            let mut chosen = Vec::with_capacity(self.sample_size);
+            for i in 0..self.sample_size {
+                rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                let pick = i + (rng as usize) % (n - i);
+                pool.swap(i, pick);
+                chosen.push(pool[i]);
+            }
+            chosen
+        } else {
+            (0..n).collect()
+        };
         self.root = Some(self.build_recursive(&indices, data, &mut rng));
     }
 

@@ -108,3 +108,37 @@ def test_context_anomaly_tree():
     surprise_expected = cat.surprise_score([1, 2], 3)
     surprise_unexpected = cat.surprise_score([1, 2], 99)
     assert surprise_unexpected > surprise_expected, "Surprise in bits must be higher for rare transition"
+
+
+def test_anomaly_knobs_configuration():
+    # Test DET knobs
+    det = DensityEstimationTree(max_depth=4, min_density_gain=0.01, alpha=0.05)
+    det.fit([[1.0], [2.0], [3.0]], col_names=["x"], dtypes=["float"])
+    assert len(det.predict_density([[2.0]])) == 1
+
+    # Test EIF subsample_size
+    eif = ExtendedIsolationTree(max_depth=4, extension_level=1, subsample_size=10, seed=42)
+    eif.fit([[float(i)] for i in range(100)], col_names=["x"], dtypes=["float"])
+    assert len(eif.anomaly_score([[50.0]])) == 1
+
+    # Test HST window_size and initial_mass
+    hst = HalfSpaceTree(max_depth=4, window_size=100, initial_mass=1.0, seed=42)
+    hst.fit([[1.0, 2.0], [2.0, 3.0]])
+    assert len(hst.anomaly_score([[1.5, 2.5]])) == 1
+
+    # Test RCT sample_size
+    rct = RandomCutTree(sample_size=32, seed=42)
+    rct.fit([[float(i), float(i)] for i in range(100)])
+    assert len(rct.codisp([[50.0, 50.0]])) == 1
+
+    # Test AAD eta and prior_weight
+    aad = ActiveAnomalyTree(max_depth=4, eta=0.2, prior_weight=2.0, seed=42)
+    aad.fit([[1.0], [2.0], [3.0]])
+    assert len(aad.anomaly_score([[2.0]])) == 1
+
+    # Test CAT smoothing_discount
+    cat = ContextAnomalyTree(max_depth=3, alphabet_size=20, smoothing_discount=0.2)
+    cat.fit([[1, 2, 3]])
+    prob = cat.conditional_prob([1, 2], 3)
+    assert 0.0 < prob <= 1.0
+

@@ -53,6 +53,8 @@ pub struct DensityEstimationTree {
     pub max_depth: usize,
     pub min_samples_split: usize,
     pub min_leaf_samples: usize,
+    pub min_density_gain: f64,
+    pub alpha: f64,
     pub max_leaves: Option<usize>,
     pub nodes: Vec<DetNode>,
     /// Total training samples N.
@@ -73,6 +75,8 @@ impl Default for DensityEstimationTree {
             max_depth: 8,
             min_samples_split: 10,
             min_leaf_samples: 5,
+            min_density_gain: 0.0,
+            alpha: 0.0,
             max_leaves: None,
             nodes: Vec::new(),
             n_train: 0,
@@ -205,7 +209,7 @@ impl DensityEstimationTree {
 
         // Find split maximizing ISE gain ΔR = (N_L² / V_L) + (N_R² / V_R) - (N_P² / V_P)
         let parent_term = ((n_node * n_node) as f64) / rel_vol.max(1e-15);
-        let mut best_gain = 0.0f64;
+        let mut best_gain = self.min_density_gain + self.alpha;
         let mut best_split = None;
         let mut best_left_idxs = Vec::new();
         let mut best_right_idxs = Vec::new();

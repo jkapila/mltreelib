@@ -25,6 +25,7 @@ pub struct ContextNode {
 pub struct ContextAnomalyTree {
     pub max_depth: usize,
     pub alphabet_size: usize,
+    pub smoothing_discount: f64,
     pub nodes: Vec<ContextNode>,
 }
 
@@ -33,6 +34,7 @@ impl Default for ContextAnomalyTree {
         Self {
             max_depth: 5,
             alphabet_size: 10,
+            smoothing_discount: 0.5,
             nodes: vec![ContextNode::default()],
         }
     }
@@ -43,6 +45,7 @@ impl ContextAnomalyTree {
         Self {
             max_depth,
             alphabet_size: alphabet_size.max(2),
+            smoothing_discount: 0.5,
             nodes: vec![ContextNode::default()],
         }
     }
@@ -101,8 +104,9 @@ impl ContextAnomalyTree {
         let sym_cnt = node.symbol_counts.get(&symbol).copied().unwrap_or(0) as f64;
         let tot_cnt = node.total_count as f64;
         let alph = self.alphabet_size as f64;
+        let beta = self.smoothing_discount.clamp(1e-4, 1.0);
 
-        (sym_cnt + 0.5) / (tot_cnt + 0.5 * alph)
+        (sym_cnt + beta) / (tot_cnt + beta * alph)
     }
 
     /// Compute surprise anomaly score in bits: -log2 P_KT(symbol | context).

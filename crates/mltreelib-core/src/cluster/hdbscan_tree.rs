@@ -11,6 +11,23 @@
 
 use std::cmp::Ordering;
 
+/// Method for extracting flat clusters from the condensed tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClusterSelectionMethod {
+    /// Excess of Mass: selects most persistent subtrees maximizing stability.
+    Eom,
+    /// Leaf: selects leaves of the condensed tree (finer, more homogeneous clusters).
+    Leaf,
+}
+
+/// Distance metric used for core distance and reachability graphs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Metric {
+    Euclidean,
+    Manhattan,
+    Chebyshev,
+}
+
 /// An edge in the Minimum Spanning Tree or Dendrogram.
 #[derive(Clone, Copy, Debug)]
 pub struct MstEdge {
@@ -40,6 +57,11 @@ pub struct CondensedNode {
 pub struct HdbscanTree {
     pub min_cluster_size: usize,
     pub min_samples: usize,
+    pub cluster_selection_method: ClusterSelectionMethod,
+    pub cluster_selection_epsilon: f64,
+    pub allow_single_cluster: bool,
+    pub max_cluster_size: Option<usize>,
+    pub metric: Metric,
     pub condensed_nodes: Vec<CondensedNode>,
     /// Cluster label for each training point: Some(cluster_id) or None (-1 for noise).
     pub labels: Vec<Option<usize>>,
@@ -55,6 +77,11 @@ impl Default for HdbscanTree {
         Self {
             min_cluster_size: 5,
             min_samples: 5,
+            cluster_selection_method: ClusterSelectionMethod::Eom,
+            cluster_selection_epsilon: 0.0,
+            allow_single_cluster: false,
+            max_cluster_size: None,
+            metric: Metric::Euclidean,
             condensed_nodes: Vec::new(),
             labels: Vec::new(),
             outlier_scores: Vec::new(),
@@ -94,7 +121,7 @@ impl HdbscanTree {
             let mut dists = Vec::with_capacity(n - 1);
             for j in 0..n {
                 if i != j {
-                    dists.push(Self::euclidean_dist(&data[i], &data[j]));
+                    dists.push(self.compute_dist(&data[i], &data[j]));
                 }
             }
             dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
@@ -136,7 +163,7 @@ impl HdbscanTree {
 
             for v in 0..n {
                 if !in_tree[v] {
-                    let d_raw = Self::euclidean_dist(&data[u], &data[v]);
+                    let d_raw = self.compute_dist(&data[u], &data[v]);
                     let mreach = core_dists[u].max(core_dists[v]).max(d_raw);
                     if mreach < min_edge[v] {
                         min_edge[v] = mreach;
@@ -239,7 +266,13 @@ impl HdbscanTree {
             1e12
         };
 
-        if left_size >= self.min_cluster_size && right_size >= self.min_cluster_size {
+        let lambda_eps = if self.cluster_selection_epsilon > 0.0 {
+            1.0 / self.cluster_selection_epsilon
+        } else {
+            f64::INFINITY
+        };
+
+        if left_size >= self.min_cluster_size && right_size >= self.min_cluster_size && lambda <= lambda_eps {
             // True cluster split: spawn 2 new condensed clusters
             self.condensed_nodes[current_cluster].lambda_death = lambda;
 
@@ -274,20 +307,20 @@ impl HdbscanTree {
 
             self.condense_recursive(left_idx, left_c_id, lambda, dendro);
             self.condense_recursive(right_idx, right_c_id, lambda, dendro);
-        } else if left_size >= self.min_cluster_size {
+        } else if left_size >= self.min_cluster_size && lambda <= lambda_eps {
             // Right child dissolves: shed right points as noise
             for &pt in &dendro[right_idx].members {
                 self.condensed_nodes[current_cluster].points.push((pt, lambda));
             }
             self.condense_recursive(left_idx, current_cluster, lambda, dendro);
-        } else if right_size >= self.min_cluster_size {
+        } else if right_size >= self.min_cluster_size && lambda <= lambda_eps {
             // Left child dissolves: shed left points as noise
             for &pt in &dendro[left_idx].members {
                 self.condensed_nodes[current_cluster].points.push((pt, lambda));
             }
             self.condense_recursive(right_idx, current_cluster, lambda, dendro);
         } else {
-            // Both children dissolve
+            // Both children dissolve or distance below epsilon
             for &pt in &dendro[left_idx].members {
                 self.condensed_nodes[current_cluster].points.push((pt, lambda));
             }
@@ -300,37 +333,80 @@ impl HdbscanTree {
 
     fn select_clusters(&mut self) {
         let n_nodes = self.condensed_nodes.len();
-        let mut subtree_stability = vec![0.0f64; n_nodes];
-
-        // Bottom-up traversal
-        for i in (0..n_nodes).rev() {
-            let child_stab_sum: f64 = self.condensed_nodes[i]
-                .children
-                .iter()
-                .map(|&c| subtree_stability[c])
-                .sum();
-
-            if self.condensed_nodes[i].stability >= child_stab_sum && !self.condensed_nodes[i].children.is_empty() {
-                subtree_stability[i] = self.condensed_nodes[i].stability;
-                self.condensed_nodes[i].selected = true;
-                // Unselect descendants
-                Self::unselect_subtree(&mut self.condensed_nodes, i);
-            } else if self.condensed_nodes[i].children.is_empty() {
-                subtree_stability[i] = self.condensed_nodes[i].stability;
-                self.condensed_nodes[i].selected = true;
-            } else {
-                subtree_stability[i] = child_stab_sum;
-                self.condensed_nodes[i].selected = false;
-            }
+        if n_nodes == 0 {
+            return;
         }
 
-        // If root is selected, but has selected children, keep children
-        let selected_count = self.condensed_nodes.iter().filter(|n| n.selected).count();
-        if selected_count == 1 && self.condensed_nodes[0].selected && !self.condensed_nodes[0].children.is_empty() {
-            self.condensed_nodes[0].selected = false;
-            let root_children = self.condensed_nodes[0].children.clone();
-            for child in root_children {
-                self.condensed_nodes[child].selected = true;
+        match self.cluster_selection_method {
+            ClusterSelectionMethod::Leaf => {
+                for node in &mut self.condensed_nodes {
+                    node.selected = false;
+                }
+                for i in 0..n_nodes {
+                    let is_leaf = self.condensed_nodes[i].children.is_empty();
+                    let sz_ok = self
+                        .max_cluster_size
+                        .map_or(true, |mx| self.condensed_nodes[i].size <= mx);
+                    if is_leaf && sz_ok {
+                        self.condensed_nodes[i].selected = true;
+                    }
+                }
+                if !self.allow_single_cluster && self.condensed_nodes[0].selected {
+                    let selected_count = self.condensed_nodes.iter().filter(|n| n.selected).count();
+                    if selected_count == 1 {
+                        self.condensed_nodes[0].selected = false;
+                    }
+                }
+            }
+            ClusterSelectionMethod::Eom => {
+                let mut subtree_stability = vec![0.0f64; n_nodes];
+
+                // Bottom-up traversal
+                for i in (0..n_nodes).rev() {
+                    let child_stab_sum: f64 = self.condensed_nodes[i]
+                        .children
+                        .iter()
+                        .map(|&c| subtree_stability[c])
+                        .sum();
+
+                    let sz_ok = self
+                        .max_cluster_size
+                        .map_or(true, |mx| self.condensed_nodes[i].size <= mx);
+
+                    if sz_ok
+                        && self.condensed_nodes[i].stability >= child_stab_sum
+                        && !self.condensed_nodes[i].children.is_empty()
+                    {
+                        subtree_stability[i] = self.condensed_nodes[i].stability;
+                        self.condensed_nodes[i].selected = true;
+                        // Unselect descendants
+                        Self::unselect_subtree(&mut self.condensed_nodes, i);
+                    } else if sz_ok && self.condensed_nodes[i].children.is_empty() {
+                        subtree_stability[i] = self.condensed_nodes[i].stability;
+                        self.condensed_nodes[i].selected = true;
+                    } else {
+                        subtree_stability[i] = child_stab_sum;
+                        self.condensed_nodes[i].selected = false;
+                    }
+                }
+
+                // If root is selected, but has selected children, keep children
+                let selected_count = self.condensed_nodes.iter().filter(|n| n.selected).count();
+                if selected_count == 1
+                    && self.condensed_nodes[0].selected
+                    && !self.condensed_nodes[0].children.is_empty()
+                {
+                    self.condensed_nodes[0].selected = false;
+                    let root_children = self.condensed_nodes[0].children.clone();
+                    for child in root_children {
+                        self.condensed_nodes[child].selected = true;
+                    }
+                } else if selected_count == 1
+                    && self.condensed_nodes[0].selected
+                    && !self.allow_single_cluster
+                {
+                    self.condensed_nodes[0].selected = false;
+                }
             }
         }
     }
@@ -421,7 +497,7 @@ impl HdbscanTree {
         let mut best_pt = 0;
 
         for (i, train_pt) in self.train_data.iter().enumerate() {
-            let d = Self::euclidean_dist(query, train_pt);
+            let d = self.compute_dist(query, train_pt);
             if d < best_dist {
                 best_dist = d;
                 best_pt = i;
@@ -429,6 +505,30 @@ impl HdbscanTree {
         }
 
         self.labels[best_pt]
+    }
+
+    /// Compute pairwise distance according to selected metric.
+    pub fn compute_dist(&self, a: &[f64], b: &[f64]) -> f64 {
+        match self.metric {
+            Metric::Euclidean => Self::euclidean_dist(a, b),
+            Metric::Manhattan => {
+                let mut sum = 0.0f64;
+                for i in 0..a.len() {
+                    sum += (a[i] - b[i]).abs();
+                }
+                sum
+            }
+            Metric::Chebyshev => {
+                let mut max_diff = 0.0f64;
+                for i in 0..a.len() {
+                    let d = (a[i] - b[i]).abs();
+                    if d > max_diff {
+                        max_diff = d;
+                    }
+                }
+                max_diff
+            }
+        }
     }
 
     fn euclidean_dist(a: &[f64], b: &[f64]) -> f64 {

@@ -21,6 +21,8 @@ pub struct AadNode {
 #[derive(Clone, Debug)]
 pub struct ActiveAnomalyTree {
     pub max_depth: usize,
+    pub eta: f64,
+    pub prior_weight: f64,
     pub seed: u64,
     pub nodes: Vec<AadNode>,
     /// Active node weights w_v.
@@ -32,6 +34,8 @@ impl Default for ActiveAnomalyTree {
     fn default() -> Self {
         Self {
             max_depth: 8,
+            eta: 0.1,
+            prior_weight: 1.0,
             seed: 42,
             nodes: Vec::new(),
             weights: Vec::new(),
@@ -45,9 +49,7 @@ impl ActiveAnomalyTree {
         Self {
             max_depth,
             seed,
-            nodes: Vec::new(),
-            weights: Vec::new(),
-            n_samples: 0,
+            ..Default::default()
         }
     }
 

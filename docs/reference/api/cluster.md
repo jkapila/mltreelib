@@ -4,7 +4,7 @@
 
 Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF).
 ## TrieKNN
-```pythonclass TrieKNN((task='classification', k=5, weights='distance'))```
+```pythonclass TrieKNN((task='classification', k=5, weights='distance', metric='euclidean', leaf_min_size=None))```
 ### TrieKNN.fit
 ```pythonfit((self, /, x, y, col_names=None, dtypes=None))```
 ### TrieKNN.predict
@@ -12,7 +12,7 @@ Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), CLTree, HDBSCA
 ### TrieKNN.predict_proba
 ```pythonpredict_proba((self, /, x))```
 ## PredictiveClusteringTree
-```pythonclass PredictiveClusteringTree((max_depth=6, min_samples_split=10, min_samples_leaf=5, min_variance_reduction=0.0001))```
+```pythonclass PredictiveClusteringTree((max_depth=6, min_samples_split=10, min_samples_leaf=5, min_variance_reduction=0.0001, target_weights=None))```
 ### PredictiveClusteringTree.cluster_rules
 ```pythoncluster_rules((self, /))```
 ### PredictiveClusteringTree.fit
@@ -30,7 +30,7 @@ Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), CLTree, HDBSCA
 ### CLTree.predict_cluster
 ```pythonpredict_cluster((self, /, data))```
 ## HDBSCAN
-```pythonclass HDBSCAN((min_cluster_size=5, min_samples=5))```
+```pythonclass HDBSCAN((min_cluster_size=5, min_samples=None, cluster_selection_epsilon=0.0, max_cluster_size=None, metric='euclidean', cluster_selection_method='eom', allow_single_cluster=False))```
 ### HDBSCAN.condensed_tree
 ```pythoncondensed_tree((self, /))```
 ### HDBSCAN.fit
@@ -38,7 +38,7 @@ Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), CLTree, HDBSCA
 ### HDBSCAN.predict
 ```pythonpredict((self, /, data))```
 ## UnsupervisedRandomForest
-```pythonclass UnsupervisedRandomForest((n_trees=50, max_depth=6, min_samples_leaf=2, seed=42))```
+```pythonclass UnsupervisedRandomForest((n_trees=50, max_depth=6, min_samples_leaf=2, max_features=None, linkage='average', seed=42))```
 ### UnsupervisedRandomForest.apply
 ```pythonapply((self, /, data))```
 ### UnsupervisedRandomForest.fit

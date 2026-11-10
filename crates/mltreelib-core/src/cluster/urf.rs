@@ -12,6 +12,14 @@
 
 use std::cmp::Ordering;
 
+/// Linkage criterion for agglomerative clustering on proximity distances.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UrfLinkage {
+    Average,
+    Single,
+    Complete,
+}
+
 /// A node in an individual Unsupervised Proximity Tree.
 #[derive(Clone, Debug)]
 pub struct ProximityTreeNode {
@@ -28,15 +36,17 @@ pub struct ProximityTreeNode {
 pub struct ProximityTree {
     pub max_depth: usize,
     pub min_samples_leaf: usize,
+    pub max_features: Option<usize>,
     pub nodes: Vec<ProximityTreeNode>,
     pub n_leaves: usize,
 }
 
 impl ProximityTree {
-    pub fn new(max_depth: usize, min_samples_leaf: usize) -> Self {
+    pub fn new(max_depth: usize, min_samples_leaf: usize, max_features: Option<usize>) -> Self {
         Self {
             max_depth,
             min_samples_leaf: min_samples_leaf.max(1),
+            max_features,
             nodes: Vec::new(),
             n_leaves: 0,
         }
@@ -94,8 +104,12 @@ impl ProximityTree {
         let p_parent = (n_pos as f64) / (n as f64);
         let parent_gini = 1.0 - (p_parent * p_parent + (1.0 - p_parent) * (1.0 - p_parent));
 
-        // Subsample features: mt = sqrt(d)
-        let m_try = ((d as f64).sqrt().ceil() as usize).max(1).min(d);
+        // Subsample features: mt = max_features or sqrt(d)
+        let m_try = self
+            .max_features
+            .unwrap_or_else(|| (d as f64).sqrt().ceil() as usize)
+            .max(1)
+            .min(d);
         let mut best_gain = 1e-5;
         let mut best_dim = 0;
         let mut best_val = 0.0;
@@ -236,6 +250,8 @@ pub struct UnsupervisedProximityForest {
     pub n_trees: usize,
     pub max_depth: usize,
     pub min_samples_leaf: usize,
+    pub max_features: Option<usize>,
+    pub linkage: UrfLinkage,
     pub seed: u64,
     pub trees: Vec<ProximityTree>,
     /// Pairwise proximity matrix for training instances: [N x N].
@@ -251,6 +267,8 @@ impl Default for UnsupervisedProximityForest {
             n_trees: 50,
             max_depth: 6,
             min_samples_leaf: 4,
+            max_features: None,
+            linkage: UrfLinkage::Average,
             seed: 42,
             trees: Vec::new(),
             proximity_matrix: Vec::new(),
@@ -316,7 +334,7 @@ impl UnsupervisedProximityForest {
         // 2. Grow Ensemble of Proximity Trees
         self.trees.clear();
         for _ in 0..self.n_trees {
-            let mut tree = ProximityTree::new(self.max_depth, self.min_samples_leaf);
+            let mut tree = ProximityTree::new(self.max_depth, self.min_samples_leaf, self.max_features);
             tree.fit(&combined_data, &combined_labels, &mut rng);
             self.trees.push(tree);
         }
@@ -369,10 +387,10 @@ impl UnsupervisedProximityForest {
         }
         self.outlier_scores = outlier_scores;
 
-        // 5. Cluster via Average-Linkage Agglomeration on Proximity Distances
+        // 5. Cluster via Lance-Williams Agglomeration on Proximity Distances
         let target_k = n_clusters.clamp(1, n);
         self.n_clusters = target_k;
-        self.cluster_labels = Self::hierarchical_cluster(&prox, target_k);
+        self.cluster_labels = Self::hierarchical_cluster(&prox, target_k, self.linkage);
     }
 
     /// Compute pairwise distance matrix D = sqrt(1 - P).
@@ -387,8 +405,8 @@ impl UnsupervisedProximityForest {
         dist
     }
 
-    /// Agglomerative hierarchical clustering on distance matrix D = sqrt(1 - P) via Lance-Williams average linkage.
-    fn hierarchical_cluster(prox: &[Vec<f64>], target_k: usize) -> Vec<usize> {
+    /// Agglomerative hierarchical clustering on distance matrix D = sqrt(1 - P) via Lance-Williams update.
+    fn hierarchical_cluster(prox: &[Vec<f64>], target_k: usize, linkage: UrfLinkage) -> Vec<usize> {
         let n = prox.len();
         if n == 0 {
             return Vec::new();
@@ -429,11 +447,14 @@ impl UnsupervisedProximityForest {
             let s2 = sizes[c2] as f64;
             let s_new = s1 + s2;
 
-            // Lance-Williams update for average linkage:
-            // D(c1+c2, k) = (s1 * D(c1, k) + s2 * D(c2, k)) / (s1 + s2)
+            // Lance-Williams update for selected linkage
             for k in 0..k_curr {
                 if k != c1 && k != c2 {
-                    let d_new = (s1 * cluster_dist[c1][k] + s2 * cluster_dist[c2][k]) / s_new;
+                    let d_new = match linkage {
+                        UrfLinkage::Average => (s1 * cluster_dist[c1][k] + s2 * cluster_dist[c2][k]) / s_new,
+                        UrfLinkage::Single => cluster_dist[c1][k].min(cluster_dist[c2][k]),
+                        UrfLinkage::Complete => cluster_dist[c1][k].max(cluster_dist[c2][k]),
+                    };
                     cluster_dist[c1][k] = d_new;
                     cluster_dist[k][c1] = d_new;
                 }

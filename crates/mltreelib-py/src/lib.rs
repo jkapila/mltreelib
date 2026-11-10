@@ -3759,12 +3759,20 @@ pub struct PyDensityEstimationTree {
 #[pymethods]
 impl PyDensityEstimationTree {
     #[new]
-    #[pyo3(signature = (max_depth=8, min_samples_split=10, min_leaf_samples=5))]
-    fn new(max_depth: usize, min_samples_split: usize, min_leaf_samples: usize) -> Self {
+    #[pyo3(signature = (max_depth=8, min_samples_split=10, min_leaf_samples=5, min_density_gain=0.0, alpha=0.0))]
+    fn new(
+        max_depth: usize,
+        min_samples_split: usize,
+        min_leaf_samples: usize,
+        min_density_gain: f64,
+        alpha: f64,
+    ) -> Self {
         let mut det = mltreelib_core::anomaly::det::DensityEstimationTree::new();
         det.max_depth = max_depth;
         det.min_samples_split = min_samples_split;
         det.min_leaf_samples = min_leaf_samples;
+        det.min_density_gain = min_density_gain;
+        det.alpha = alpha;
         PyDensityEstimationTree {
             inner: det,
             vocabs: Vec::new(),
@@ -3847,11 +3855,17 @@ pub struct PyExtendedIsolationTree {
 #[pymethods]
 impl PyExtendedIsolationTree {
     #[new]
-    #[pyo3(signature = (max_depth=None, extension_level=None, seed=42))]
-    fn new(max_depth: Option<usize>, extension_level: Option<usize>, seed: u64) -> Self {
+    #[pyo3(signature = (max_depth=None, extension_level=None, subsample_size=None, seed=42))]
+    fn new(
+        max_depth: Option<usize>,
+        extension_level: Option<usize>,
+        subsample_size: Option<usize>,
+        seed: u64,
+    ) -> Self {
         let mut eif = mltreelib_core::anomaly::eif_tree::ExtendedIsolationTree::new(seed);
         eif.max_depth = max_depth;
         eif.extension_level = extension_level;
+        eif.subsample_size = subsample_size;
         PyExtendedIsolationTree {
             inner: eif,
             vocabs: Vec::new(),
@@ -3933,10 +3947,13 @@ pub struct PyHalfSpaceTree {
 #[pymethods]
 impl PyHalfSpaceTree {
     #[new]
-    #[pyo3(signature = (max_depth=6, seed=42))]
-    fn new(max_depth: usize, seed: u64) -> Self {
+    #[pyo3(signature = (max_depth=6, window_size=250, initial_mass=0.0, seed=42))]
+    fn new(max_depth: usize, window_size: usize, initial_mass: f64, seed: u64) -> Self {
+        let mut hst = mltreelib_core::anomaly::hs_tree::HalfSpaceTree::new(max_depth, seed);
+        hst.window_size = window_size;
+        hst.initial_mass = initial_mass;
         PyHalfSpaceTree {
-            inner: mltreelib_core::anomaly::hs_tree::HalfSpaceTree::new(max_depth, seed),
+            inner: hst,
         }
     }
 
@@ -3967,10 +3984,12 @@ pub struct PyRandomCutTree {
 #[pymethods]
 impl PyRandomCutTree {
     #[new]
-    #[pyo3(signature = (seed=42))]
-    fn new(seed: u64) -> Self {
+    #[pyo3(signature = (sample_size=256, seed=42))]
+    fn new(sample_size: usize, seed: u64) -> Self {
+        let mut rct = mltreelib_core::anomaly::rc_tree::RandomCutTree::new(seed);
+        rct.sample_size = sample_size;
         PyRandomCutTree {
-            inner: mltreelib_core::anomaly::rc_tree::RandomCutTree::new(seed),
+            inner: rct,
         }
     }
 
@@ -3992,10 +4011,13 @@ pub struct PyActiveAnomalyTree {
 #[pymethods]
 impl PyActiveAnomalyTree {
     #[new]
-    #[pyo3(signature = (max_depth=8, seed=42))]
-    fn new(max_depth: usize, seed: u64) -> Self {
+    #[pyo3(signature = (max_depth=8, eta=0.1, prior_weight=1.0, seed=42))]
+    fn new(max_depth: usize, eta: f64, prior_weight: f64, seed: u64) -> Self {
+        let mut aad = mltreelib_core::anomaly::aad_tree::ActiveAnomalyTree::new(max_depth, seed);
+        aad.eta = eta;
+        aad.prior_weight = prior_weight;
         PyActiveAnomalyTree {
-            inner: mltreelib_core::anomaly::aad_tree::ActiveAnomalyTree::new(max_depth, seed),
+            inner: aad,
         }
     }
 
@@ -4023,10 +4045,12 @@ pub struct PyContextAnomalyTree {
 #[pymethods]
 impl PyContextAnomalyTree {
     #[new]
-    #[pyo3(signature = (max_depth=5, alphabet_size=256))]
-    fn new(max_depth: usize, alphabet_size: usize) -> Self {
+    #[pyo3(signature = (max_depth=5, alphabet_size=256, smoothing_discount=0.5))]
+    fn new(max_depth: usize, alphabet_size: usize, smoothing_discount: f64) -> Self {
+        let mut cat = mltreelib_core::anomaly::context_tree::ContextAnomalyTree::new(max_depth, alphabet_size);
+        cat.smoothing_discount = smoothing_discount;
         PyContextAnomalyTree {
-            inner: mltreelib_core::anomaly::context_tree::ContextAnomalyTree::new(max_depth, alphabet_size),
+            inner: cat,
         }
     }
 
@@ -4059,8 +4083,14 @@ pub struct PyTrieKnn {
 #[pymethods]
 impl PyTrieKnn {
     #[new]
-    #[pyo3(signature = (task="classification", k=5, weights="distance"))]
-    fn new(task: &str, k: usize, weights: &str) -> Self {
+    #[pyo3(signature = (task="classification", k=5, weights="distance", metric="euclidean", leaf_min_size=None))]
+    fn new(
+        task: &str,
+        k: usize,
+        weights: &str,
+        metric: &str,
+        leaf_min_size: Option<usize>,
+    ) -> PyResult<Self> {
         let task_enum = if task.to_lowercase().starts_with("reg") {
             mltreelib_core::trie_knn::TrieKnnTask::Regression
         } else {
@@ -4071,12 +4101,32 @@ impl PyTrieKnn {
         } else {
             mltreelib_core::trie_knn::KnnWeights::Uniform
         };
+        let metric_enum = match metric.to_lowercase().as_str() {
+            "euclidean" | "l2" => mltreelib_core::trie_knn::KnnMetric::Euclidean,
+            "manhattan" | "l1" => mltreelib_core::trie_knn::KnnMetric::Manhattan,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown metric '{}', expected 'euclidean' or 'manhattan'",
+                    other
+                )))
+            }
+        };
 
-        PyTrieKnn {
-            inner: mltreelib_core::trie_knn::TrieKnn::new(task_enum, k, weights_enum, Vec::new(), Vec::new()),
+        let mut inner = mltreelib_core::trie_knn::TrieKnn::new(
+            task_enum,
+            k,
+            weights_enum,
+            Vec::new(),
+            Vec::new(),
+        );
+        inner.metric = metric_enum;
+        inner.leaf_min_size = leaf_min_size;
+
+        Ok(PyTrieKnn {
+            inner,
             vocabs: Vec::new(),
             dtypes: Vec::new(),
-        }
+        })
     }
 
     #[pyo3(signature = (x, y, col_names=None, dtypes=None))]
@@ -4173,12 +4223,13 @@ pub struct PyPredictiveClusteringTree {
 #[pymethods]
 impl PyPredictiveClusteringTree {
     #[new]
-    #[pyo3(signature = (max_depth=6, min_samples_split=10, min_samples_leaf=5, min_variance_reduction=1e-4))]
+    #[pyo3(signature = (max_depth=6, min_samples_split=10, min_samples_leaf=5, min_variance_reduction=1e-4, target_weights=None))]
     fn new(
         max_depth: usize,
         min_samples_split: usize,
         min_samples_leaf: usize,
         min_variance_reduction: f64,
+        target_weights: Option<Vec<f64>>,
     ) -> Self {
         let mut pct = mltreelib_core::cluster::PredictiveClusteringTree::new(
             max_depth,
@@ -4186,6 +4237,7 @@ impl PyPredictiveClusteringTree {
             min_samples_leaf,
         );
         pct.min_variance_reduction = min_variance_reduction;
+        pct.target_weights = target_weights;
         PyPredictiveClusteringTree {
             inner: pct,
             vocabs: Vec::new(),
@@ -4322,11 +4374,52 @@ pub struct PyHdbscanTree {
 #[pymethods]
 impl PyHdbscanTree {
     #[new]
-    #[pyo3(signature = (min_cluster_size=5, min_samples=5))]
-    fn new(min_cluster_size: usize, min_samples: usize) -> Self {
-        PyHdbscanTree {
-            inner: mltreelib_core::cluster::HdbscanTree::new(min_cluster_size, min_samples),
-        }
+    #[pyo3(signature = (
+        min_cluster_size=5,
+        min_samples=None,
+        cluster_selection_epsilon=0.0,
+        max_cluster_size=None,
+        metric="euclidean",
+        cluster_selection_method="eom",
+        allow_single_cluster=false,
+    ))]
+    fn new(
+        min_cluster_size: usize,
+        min_samples: Option<usize>,
+        cluster_selection_epsilon: f64,
+        max_cluster_size: Option<usize>,
+        metric: &str,
+        cluster_selection_method: &str,
+        allow_single_cluster: bool,
+    ) -> PyResult<Self> {
+        let actual_min_samples = min_samples.unwrap_or(min_cluster_size);
+        let mut inner =
+            mltreelib_core::cluster::HdbscanTree::new(min_cluster_size, actual_min_samples);
+        inner.cluster_selection_epsilon = cluster_selection_epsilon;
+        inner.max_cluster_size = max_cluster_size;
+        inner.allow_single_cluster = allow_single_cluster;
+        inner.cluster_selection_method = match cluster_selection_method.to_lowercase().as_str() {
+            "leaf" => mltreelib_core::cluster::ClusterSelectionMethod::Leaf,
+            "eom" | "excess_of_mass" => mltreelib_core::cluster::ClusterSelectionMethod::Eom,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown cluster_selection_method '{}', expected 'eom' or 'leaf'",
+                    other
+                )))
+            }
+        };
+        inner.metric = match metric.to_lowercase().as_str() {
+            "euclidean" | "l2" => mltreelib_core::cluster::HdbscanMetric::Euclidean,
+            "manhattan" | "l1" | "cityblock" => mltreelib_core::cluster::HdbscanMetric::Manhattan,
+            "chebyshev" | "linf" | "infinity" => mltreelib_core::cluster::HdbscanMetric::Chebyshev,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown metric '{}', expected 'euclidean', 'manhattan', or 'chebyshev'",
+                    other
+                )))
+            }
+        };
+        Ok(PyHdbscanTree { inner })
     }
 
     fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
@@ -4378,16 +4471,41 @@ pub struct PyUnsupervisedProximityForest {
 #[pymethods]
 impl PyUnsupervisedProximityForest {
     #[new]
-    #[pyo3(signature = (n_trees=50, max_depth=6, min_samples_leaf=2, seed=42))]
-    fn new(n_trees: usize, max_depth: usize, min_samples_leaf: usize, seed: u64) -> Self {
-        PyUnsupervisedProximityForest {
-            inner: mltreelib_core::cluster::UnsupervisedProximityForest::new(
-                n_trees,
-                max_depth,
-                min_samples_leaf,
-                seed,
-            ),
-        }
+    #[pyo3(signature = (
+        n_trees=50,
+        max_depth=6,
+        min_samples_leaf=2,
+        max_features=None,
+        linkage="average",
+        seed=42,
+    ))]
+    fn new(
+        n_trees: usize,
+        max_depth: usize,
+        min_samples_leaf: usize,
+        max_features: Option<usize>,
+        linkage: &str,
+        seed: u64,
+    ) -> PyResult<Self> {
+        let mut inner = mltreelib_core::cluster::UnsupervisedProximityForest::new(
+            n_trees,
+            max_depth,
+            min_samples_leaf,
+            seed,
+        );
+        inner.max_features = max_features;
+        inner.linkage = match linkage.to_lowercase().as_str() {
+            "average" | "avg" => mltreelib_core::cluster::UrfLinkage::Average,
+            "single" => mltreelib_core::cluster::UrfLinkage::Single,
+            "complete" | "max" => mltreelib_core::cluster::UrfLinkage::Complete,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown linkage '{}', expected 'average', 'single', or 'complete'",
+                    other
+                )))
+            }
+        };
+        Ok(PyUnsupervisedProximityForest { inner })
     }
 
     #[pyo3(signature = (data, n_clusters=2))]

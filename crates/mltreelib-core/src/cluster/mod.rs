@@ -12,7 +12,7 @@ pub mod pct;
 pub mod urf;
 
 pub use cltree::{ClTree, ClTreeNode};
-pub use hdbscan_tree::{CondensedNode, HdbscanTree};
+pub use hdbscan_tree::{ClusterSelectionMethod, CondensedNode, HdbscanTree, Metric as HdbscanMetric};
 pub use pct::{PctNode, PredictiveClusteringTree};
-pub use urf::{ProximityTree, UnsupervisedProximityForest};
+pub use urf::{ProximityTree, UnsupervisedProximityForest, UrfLinkage};
 

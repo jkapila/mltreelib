@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml/badge.svg)](https://github.com/jkapila/mltreelib/actions/workflows/test.yaml)
 [![Docs](https://github.com/jkapila/mltreelib/actions/workflows/deploy.yaml/badge.svg)](https://jkapila.github.io/mltreelib/)
-[![Version](https://img.shields.io/badge/version-0.2.9-informational)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.3.0-informational)](Cargo.toml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue)](pyproject.toml)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg?logo=rust)](crates/mltreelib-core/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
