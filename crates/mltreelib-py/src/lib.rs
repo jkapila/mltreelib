@@ -3925,10 +3925,138 @@ impl PyExtendedIsolationTree {
     }
 }
 
+#[pyclass(name = "HalfSpaceTree")]
+pub struct PyHalfSpaceTree {
+    inner: mltreelib_core::anomaly::hs_tree::HalfSpaceTree,
+}
+
+#[pymethods]
+impl PyHalfSpaceTree {
+    #[new]
+    #[pyo3(signature = (max_depth=6, seed=42))]
+    fn new(max_depth: usize, seed: u64) -> Self {
+        PyHalfSpaceTree {
+            inner: mltreelib_core::anomaly::hs_tree::HalfSpaceTree::new(max_depth, seed),
+        }
+    }
+
+    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
+        self.inner.fit(&data);
+        Ok(())
+    }
+
+    fn anomaly_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        Ok(data.iter().map(|r| self.inner.anomaly_score(r)).collect())
+    }
+
+    fn mass_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        Ok(data.iter().map(|r| self.inner.mass_score(r)).collect())
+    }
+
+    fn insert(&mut self, point: Vec<f64>) -> PyResult<()> {
+        self.inner.insert(&point);
+        Ok(())
+    }
+}
+
+#[pyclass(name = "RandomCutTree")]
+pub struct PyRandomCutTree {
+    inner: mltreelib_core::anomaly::rc_tree::RandomCutTree,
+}
+
+#[pymethods]
+impl PyRandomCutTree {
+    #[new]
+    #[pyo3(signature = (seed=42))]
+    fn new(seed: u64) -> Self {
+        PyRandomCutTree {
+            inner: mltreelib_core::anomaly::rc_tree::RandomCutTree::new(seed),
+        }
+    }
+
+    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
+        self.inner.fit(&data);
+        Ok(())
+    }
+
+    fn codisp(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        Ok(data.iter().map(|r| self.inner.codisp(r)).collect())
+    }
+}
+
+#[pyclass(name = "ActiveAnomalyTree")]
+pub struct PyActiveAnomalyTree {
+    inner: mltreelib_core::anomaly::aad_tree::ActiveAnomalyTree,
+}
+
+#[pymethods]
+impl PyActiveAnomalyTree {
+    #[new]
+    #[pyo3(signature = (max_depth=8, seed=42))]
+    fn new(max_depth: usize, seed: u64) -> Self {
+        PyActiveAnomalyTree {
+            inner: mltreelib_core::anomaly::aad_tree::ActiveAnomalyTree::new(max_depth, seed),
+        }
+    }
+
+    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
+        self.inner.fit(&data);
+        Ok(())
+    }
+
+    fn anomaly_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        Ok(data.iter().map(|r| self.inner.score(r)).collect())
+    }
+
+    #[pyo3(signature = (point, is_anomaly, eta=0.5))]
+    fn update_feedback(&mut self, point: Vec<f64>, is_anomaly: bool, eta: f64) -> PyResult<()> {
+        self.inner.update_feedback(&point, is_anomaly, eta);
+        Ok(())
+    }
+}
+
+#[pyclass(name = "ContextAnomalyTree")]
+pub struct PyContextAnomalyTree {
+    inner: mltreelib_core::anomaly::context_tree::ContextAnomalyTree,
+}
+
+#[pymethods]
+impl PyContextAnomalyTree {
+    #[new]
+    #[pyo3(signature = (max_depth=5, alphabet_size=256))]
+    fn new(max_depth: usize, alphabet_size: usize) -> Self {
+        PyContextAnomalyTree {
+            inner: mltreelib_core::anomaly::context_tree::ContextAnomalyTree::new(max_depth, alphabet_size),
+        }
+    }
+
+    fn fit(&mut self, sequences: Vec<Vec<u64>>) -> PyResult<()> {
+        self.inner.fit(&sequences);
+        Ok(())
+    }
+
+    fn insert(&mut self, context: Vec<u64>, symbol: u64) -> PyResult<()> {
+        self.inner.insert(&context, symbol);
+        Ok(())
+    }
+
+    fn surprise_score(&self, context: Vec<u64>, symbol: u64) -> PyResult<f64> {
+        Ok(self.inner.surprise_score(&context, symbol))
+    }
+
+    fn conditional_prob(&self, context: Vec<u64>, symbol: u64) -> PyResult<f64> {
+        Ok(self.inner.conditional_prob(&context, symbol))
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDensityEstimationTree>()?;
     m.add_class::<PyExtendedIsolationTree>()?;
+    m.add_class::<PyHalfSpaceTree>()?;
+    m.add_class::<PyRandomCutTree>()?;
+    m.add_class::<PyActiveAnomalyTree>()?;
+    m.add_class::<PyContextAnomalyTree>()?;
     m.add_class::<PyGritBot>()?;
     m.add_class::<PyBaseNEncoder>()?;
     m.add_class::<PyCatBoostEncoder>()?;

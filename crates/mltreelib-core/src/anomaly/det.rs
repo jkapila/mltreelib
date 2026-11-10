@@ -407,6 +407,17 @@ impl DensityEstimationTree {
             return 0.0;
         }
 
+        // Support check: outside bounding support, density is 0.0
+        for (j, &(lo, hi)) in self.bounds.iter().enumerate() {
+            if j < row.len() && !row[j].is_nan() {
+                if self.dtypes.get(j) != Some(&ColType::Categorical) {
+                    if row[j] < lo || row[j] > hi {
+                        return 0.0;
+                    }
+                }
+            }
+        }
+
         let mut curr = 0;
         while !self.nodes[curr].is_leaf {
             let split = self.nodes[curr].split.as_ref().unwrap();

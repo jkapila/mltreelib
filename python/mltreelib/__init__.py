@@ -5,8 +5,10 @@ with a scikit-learn-shaped API without depending on scikit-learn.
 """
 
 from mltreelib._core import (
+    ActiveAnomalyTree,
     BaseNEncoder,
     CatBoostEncoder,
+    ContextAnomalyTree,
     CountEncoder,
     DatasetBuilder,
     DensityEstimationTree,
@@ -14,6 +16,7 @@ from mltreelib._core import (
     ExtendedIsolationTree,
     GritBot,
     GroupedScaler,
+    HalfSpaceTree,
     HashingEncoder,
     IndexMapper,
     JamesSteinEncoder,
@@ -24,6 +27,7 @@ from mltreelib._core import (
     ModelTree,
     OneHotEncoder,
     QuantileEncoder,
+    RandomCutTree,
     SumEncoder,
     TargetEncoder,
     TfidfEncoder,
@@ -43,8 +47,10 @@ from mltreelib._core import (
 from mltreelib.datasets import list_datasets, load_dataset
 
 __all__ = [
+    "ActiveAnomalyTree",
     "BaseNEncoder",
     "CatBoostEncoder",
+    "ContextAnomalyTree",
     "CountEncoder",
     "DatasetBuilder",
     "DensityEstimationTree",
@@ -52,6 +58,7 @@ __all__ = [
     "ExtendedIsolationTree",
     "GritBot",
     "GroupedScaler",
+    "HalfSpaceTree",
     "HashingEncoder",
     "IndexMapper",
     "JamesSteinEncoder",
@@ -62,6 +69,7 @@ __all__ = [
     "ModelTree",
     "OneHotEncoder",
     "QuantileEncoder",
+    "RandomCutTree",
     "SumEncoder",
     "TargetEncoder",
     "TfidfEncoder",
@@ -80,4 +88,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.4"
+__version__ = "0.2.5"
