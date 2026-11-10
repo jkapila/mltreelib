@@ -264,7 +264,7 @@ pub fn classification_report(
     let mut logloss = f64::NAN;
     let mut brier = f64::NAN;
     let mut auc = f64::NAN;
-    if let Some(probs) = probs {
+    if probs.is_some() {
         let rows: Vec<(usize, f64)> = pairs
             .iter()
             .zip(prob_pairs.iter())
@@ -1216,7 +1216,7 @@ pub fn pairwise_distances(
                 let d = u.len() as f64;
                 let mu = u.iter().sum::<f64>() / d;
                 let mv = v.iter().sum::<f64>() / d;
-                let (mut cu, mut cv) = (0.0f64, 0.0f64);
+                let mut cu = 0.0f64;
                 let (mut su, mut sv) = (0.0f64, 0.0f64);
                 for (x, y) in u.iter().zip(v) {
                     cu += (x - mu) * (y - mv);

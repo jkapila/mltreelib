@@ -3750,8 +3750,185 @@ impl PyGritBot {
     }
 }
 
+#[pyclass(name = "DensityEstimationTree")]
+pub struct PyDensityEstimationTree {
+    inner: mltreelib_core::anomaly::det::DensityEstimationTree,
+    vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
+}
+
+#[pymethods]
+impl PyDensityEstimationTree {
+    #[new]
+    #[pyo3(signature = (max_depth=8, min_samples_split=10, min_leaf_samples=5))]
+    fn new(max_depth: usize, min_samples_split: usize, min_leaf_samples: usize) -> Self {
+        let mut det = mltreelib_core::anomaly::det::DensityEstimationTree::new();
+        det.max_depth = max_depth;
+        det.min_samples_split = min_samples_split;
+        det.min_leaf_samples = min_leaf_samples;
+        PyDensityEstimationTree {
+            inner: det,
+            vocabs: Vec::new(),
+        }
+    }
+
+    #[pyo3(signature = (x, col_names=None, dtypes=None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        col_names: Option<Vec<String>>,
+        dtypes: Option<Vec<String>>,
+    ) -> PyResult<()> {
+        let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+        let names = match col_names {
+            Some(n) => n,
+            None => (0..n_cols).map(|i| format!("col_{}", i)).collect(),
+        };
+        let resolved_dtypes: Vec<ColType> = match dtypes {
+            Some(dt_strings) => dt_strings
+                .into_iter()
+                .map(|s| match s.to_lowercase().as_str() {
+                    "cat" | "categorical" => ColType::Categorical,
+                    "int" | "integer" => ColType::Integer,
+                    _ => ColType::Float,
+                })
+                .collect(),
+            None => (0..n_cols)
+                .map(|j| {
+                    let is_str = x.iter().any(|r| {
+                        r.get(j)
+                            .and_then(|c| c.as_ref())
+                            .map(|v| v.extract::<String>().is_ok())
+                            .unwrap_or(false)
+                    });
+                    if is_str { ColType::Categorical } else { ColType::Float }
+                })
+                .collect(),
+        };
+
+        let mut vocabs = Vec::new();
+        let coerced = coerce_rows(x, &resolved_dtypes, &mut vocabs, true)?;
+        self.vocabs = vocabs;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+
+        self.inner.fit(&data, &names, &resolved_dtypes);
+        Ok(())
+    }
+
+    fn predict_density(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict_density(r)).collect())
+    }
+
+    fn predict_anomaly_score(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict_anomaly_score(r)).collect())
+    }
+}
+
+#[pyclass(name = "ExtendedIsolationTree")]
+pub struct PyExtendedIsolationTree {
+    inner: mltreelib_core::anomaly::eif_tree::ExtendedIsolationTree,
+    vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
+}
+
+#[pymethods]
+impl PyExtendedIsolationTree {
+    #[new]
+    #[pyo3(signature = (max_depth=None, extension_level=None, seed=42))]
+    fn new(max_depth: Option<usize>, extension_level: Option<usize>, seed: u64) -> Self {
+        let mut eif = mltreelib_core::anomaly::eif_tree::ExtendedIsolationTree::new(seed);
+        eif.max_depth = max_depth;
+        eif.extension_level = extension_level;
+        PyExtendedIsolationTree {
+            inner: eif,
+            vocabs: Vec::new(),
+        }
+    }
+
+    #[pyo3(signature = (x, col_names=None, dtypes=None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        col_names: Option<Vec<String>>,
+        dtypes: Option<Vec<String>>,
+    ) -> PyResult<()> {
+        let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+        let names = match col_names {
+            Some(n) => n,
+            None => (0..n_cols).map(|i| format!("col_{}", i)).collect(),
+        };
+        let resolved_dtypes: Vec<ColType> = match dtypes {
+            Some(dt_strings) => dt_strings
+                .into_iter()
+                .map(|s| match s.to_lowercase().as_str() {
+                    "cat" | "categorical" => ColType::Categorical,
+                    "int" | "integer" => ColType::Integer,
+                    _ => ColType::Float,
+                })
+                .collect(),
+            None => (0..n_cols)
+                .map(|j| {
+                    let is_str = x.iter().any(|r| {
+                        r.get(j)
+                            .and_then(|c| c.as_ref())
+                            .map(|v| v.extract::<String>().is_ok())
+                            .unwrap_or(false)
+                    });
+                    if is_str { ColType::Categorical } else { ColType::Float }
+                })
+                .collect(),
+        };
+
+        let mut vocabs = Vec::new();
+        let coerced = coerce_rows(x, &resolved_dtypes, &mut vocabs, true)?;
+        self.vocabs = vocabs;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+
+        self.inner.fit(&data, &names, &resolved_dtypes);
+        Ok(())
+    }
+
+    fn path_length(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.path_length(r)).collect())
+    }
+
+    fn anomaly_score(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.anomaly_score(r)).collect())
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyDensityEstimationTree>()?;
+    m.add_class::<PyExtendedIsolationTree>()?;
     m.add_class::<PyGritBot>()?;
     m.add_class::<PyBaseNEncoder>()?;
     m.add_class::<PyCatBoostEncoder>()?;

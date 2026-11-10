@@ -9,7 +9,9 @@ from mltreelib._core import (
     CatBoostEncoder,
     CountEncoder,
     DatasetBuilder,
+    DensityEstimationTree,
     EmbeddingEncoder,
+    ExtendedIsolationTree,
     GritBot,
     GroupedScaler,
     HashingEncoder,
@@ -45,7 +47,9 @@ __all__ = [
     "CatBoostEncoder",
     "CountEncoder",
     "DatasetBuilder",
+    "DensityEstimationTree",
     "EmbeddingEncoder",
+    "ExtendedIsolationTree",
     "GritBot",
     "GroupedScaler",
     "HashingEncoder",
@@ -76,4 +80,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.3"
+__version__ = "0.2.4"

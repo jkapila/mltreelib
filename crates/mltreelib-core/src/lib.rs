@@ -2,6 +2,7 @@
 //! generator) and, next, the tree learners. Pure Rust; the Python and R
 //! bindings stay thin shells around this crate.
 
+pub mod anomaly;
 pub mod builder;
 pub mod criteria;
 pub mod encode;

@@ -14,7 +14,6 @@ fn ln_gamma(x: f64) -> f64 {
         0.120_865_097_386_617_9e-2,
         -0.539_523_938_495_3e-5,
     ];
-    let mut x = x;
     let mut y = x;
     let mut tmp = x + 5.5;
     tmp -= (x + 0.5) * tmp.ln();
