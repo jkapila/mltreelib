@@ -34,11 +34,7 @@ Raises: ValueError for Gaussian leaves or an invalid threshold.
 
 ### ModelTree.feature\_importance
 
-`pythonfeature_importance((self, /))` Feature importance - each column's share of the total split gain (rpart's variable importance).
-
-Args: none.
-
-Returns: list of `(column_name, share)` sorted descending; shares sum to 1.
+`pythonfeature_importance((self, /, method='gain', x=None, y=None, metric=None, n_repeats=None, seed=None))` Feature importance — supports `"gain"` (default, rpart split gain share), `"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
 
 ### ModelTree.fit
 
@@ -71,6 +67,10 @@ Returns: one dict per leaf with `cols`, `coef`, `na_coef`, `intercept`, `respons
 Args: none.
 
 Returns: leaf count.
+
+### ModelTree.permutation\_importance
+
+`pythonpermutation_importance((self, /, x, y, metric='rmse', n_repeats=5, seed=42))` Permutation feature importance: per-column validation loss degradation when the column is shuffled across rows.
 
 ### ModelTree.predict
 
@@ -121,6 +121,10 @@ Returns: one quantile per row (NaN when a leaf's digest was dropped).
 Args: x: rows of predictors; `None` entries are missing. y: targets. control: optional LeafControl instance or dict. w: optional sample weights. mode: "internal" (updates self in place and returns self) or "external" (returns new ModelTree clone). leaf\_features: optional subset of column indices or names for leaf models. retrain\_cols: alias for leaf\_features. col\_names: optional data column names to validate and remap splits. leaf: optional leaf kind override ("linear", "mean", "median", "quantile", "huber"). leaf\_family: optional leaf distribution override ("gaussian", "binomial", "poisson"). leaf\_cols: optional leaf columns policy override ("all", "path\_used"). l1: optional lasso penalty override. l2: optional ridge penalty override. leaf\_digest: optional bool whether to keep leaf t-digests. tau: optional quantile tau when leaf is "quantile" (default 0.5).
 
 Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).
+
+### ModelTree.shapley
+
+`pythonshapley((self, /, row))` Exact TreeSHAP feature attributions for a single row prediction: efficiency invariant: `base_value + \sum values == prediction`.
 
 ### ModelTree.split\_paths
 

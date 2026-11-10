@@ -28,7 +28,13 @@
         <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_cla_board/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/anomaly-comparison/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/categorical-encoders/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
@@ -86,6 +92,12 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/anomaly/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/cluster/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/data/</loc>
