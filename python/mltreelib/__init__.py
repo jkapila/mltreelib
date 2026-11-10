@@ -31,6 +31,7 @@ from mltreelib._core import (
     SumEncoder,
     TargetEncoder,
     TfidfEncoder,
+    TrieKNN,
     VariableScaler,
     WoEEncoder,
     calendar_features,
@@ -73,6 +74,7 @@ __all__ = [
     "SumEncoder",
     "TargetEncoder",
     "TfidfEncoder",
+    "TrieKNN",
     "VariableScaler",
     "WoEEncoder",
     "calendar_features",
@@ -88,4 +90,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.5"
+__version__ = "0.2.6"

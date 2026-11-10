@@ -4049,8 +4049,123 @@ impl PyContextAnomalyTree {
     }
 }
 
+#[pyclass(name = "TrieKNN")]
+pub struct PyTrieKnn {
+    inner: mltreelib_core::trie_knn::TrieKnn,
+    vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
+    dtypes: Vec<ColType>,
+}
+
+#[pymethods]
+impl PyTrieKnn {
+    #[new]
+    #[pyo3(signature = (task="classification", k=5, weights="distance"))]
+    fn new(task: &str, k: usize, weights: &str) -> Self {
+        let task_enum = if task.to_lowercase().starts_with("reg") {
+            mltreelib_core::trie_knn::TrieKnnTask::Regression
+        } else {
+            mltreelib_core::trie_knn::TrieKnnTask::Classification
+        };
+        let weights_enum = if weights.to_lowercase().starts_with("dist") {
+            mltreelib_core::trie_knn::KnnWeights::Distance
+        } else {
+            mltreelib_core::trie_knn::KnnWeights::Uniform
+        };
+
+        PyTrieKnn {
+            inner: mltreelib_core::trie_knn::TrieKnn::new(task_enum, k, weights_enum, Vec::new(), Vec::new()),
+            vocabs: Vec::new(),
+            dtypes: Vec::new(),
+        }
+    }
+
+    #[pyo3(signature = (x, y, col_names=None, dtypes=None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        y: Vec<f64>,
+        col_names: Option<Vec<String>>,
+        dtypes: Option<Vec<String>>,
+    ) -> PyResult<()> {
+        let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+        let _names = match col_names {
+            Some(n) => n,
+            None => (0..n_cols).map(|i| format!("col_{}", i)).collect(),
+        };
+        let resolved_dtypes: Vec<ColType> = match dtypes {
+            Some(dt_strings) => dt_strings
+                .into_iter()
+                .map(|s| match s.to_lowercase().as_str() {
+                    "cat" | "categorical" => ColType::Categorical,
+                    "int" | "integer" => ColType::Integer,
+                    _ => ColType::Float,
+                })
+                .collect(),
+            None => (0..n_cols)
+                .map(|j| {
+                    let is_str = x.iter().any(|r| {
+                        r.get(j)
+                            .and_then(|c| c.as_ref())
+                            .map(|v| v.extract::<String>().is_ok())
+                            .unwrap_or(false)
+                    });
+                    if is_str { ColType::Categorical } else { ColType::Float }
+                })
+                .collect(),
+        };
+
+        let mut vocabs = Vec::new();
+        let coerced = coerce_rows(x, &resolved_dtypes, &mut vocabs, true)?;
+        self.vocabs = vocabs;
+        self.dtypes = resolved_dtypes.clone();
+
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+
+        let cat_cols: Vec<usize> = (0..n_cols)
+            .filter(|&j| resolved_dtypes[j] == ColType::Categorical)
+            .collect();
+        let num_cols: Vec<usize> = (0..n_cols)
+            .filter(|&j| resolved_dtypes[j] != ColType::Categorical)
+            .collect();
+
+        self.inner.cat_cols = cat_cols;
+        self.inner.num_cols = num_cols;
+        self.inner.fit(&data, &y);
+        Ok(())
+    }
+
+    fn predict(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict(r)).collect())
+    }
+
+    fn predict_proba(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<Vec<f64>>> {
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(x, &self.dtypes, &mut vocabs, false)?;
+        let data: Vec<Vec<f64>> = coerced
+            .into_iter()
+            .map(|row| row.into_iter().map(|opt| opt.unwrap_or(f64::NAN)).collect())
+            .collect();
+        Ok(data.iter().map(|r| self.inner.predict_proba(r)).collect())
+    }
+
+    #[getter]
+    fn classes(&self) -> Vec<i64> {
+        self.inner.classes.clone()
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyTrieKnn>()?;
     m.add_class::<PyDensityEstimationTree>()?;
     m.add_class::<PyExtendedIsolationTree>()?;
     m.add_class::<PyHalfSpaceTree>()?;

@@ -26,3 +26,4 @@ pub mod index;
 pub mod schema;
 pub mod timefeat;
 pub mod transform;
+pub mod trie_knn;
