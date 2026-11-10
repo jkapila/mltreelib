@@ -2991,7 +2991,7 @@ impl PyModelTree {
         };
 
         if is_external {
-            let (mut new_tree, data_col_names, coerced_x, mut ctrl) = {
+            let (mut new_tree, data_col_names, coerced_x, ctrl) = {
                 let b = slf.borrow();
                 let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
                 let data_col_names = match col_names {
@@ -3039,7 +3039,7 @@ impl PyModelTree {
             new_tree.params.n_classes = ctrl.n_classes;
             Py::new(slf.py(), new_tree)
         } else {
-            let (data_col_names, coerced_x, vocabs, mut ctrl) = {
+            let (data_col_names, coerced_x, vocabs, ctrl) = {
                 let b = slf.borrow();
                 let t = b.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
                 let data_col_names = match col_names {
@@ -3471,15 +3471,69 @@ impl PyModelTree {
         Ok(out)
     }
 
-    /// Feature importance - each column's share of the total split gain
-    /// (rpart's variable importance).
-    ///
-    /// Args: none.
-    ///
-    /// Returns: list of `(column_name, share)` sorted descending; shares
-    /// sum to 1.
-    fn feature_importance(&self) -> PyResult<Vec<(String, f64)>> {
-        Ok(self.tree()?.feature_importances())
+    /// Feature importance — supports `"gain"` (default, rpart split gain share),
+    /// `"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
+    #[pyo3(signature = (method="gain", x=None, y=None, metric=None, n_repeats=None, seed=None))]
+    fn feature_importance(
+        &self,
+        method: &str,
+        x: Option<Vec<Vec<Option<f64>>>>,
+        y: Option<Vec<Option<f64>>>,
+        metric: Option<&str>,
+        n_repeats: Option<usize>,
+        seed: Option<u64>,
+    ) -> PyResult<Vec<(String, f64)>> {
+        let t = self.tree()?;
+        match method {
+            "gain" => Ok(t.feature_importances()),
+            "shapley" => {
+                let x_data = x.ok_or_else(|| PyValueError::new_err("feature_importance(method='shapley') requires x"))?;
+                Ok(t.shapley_importance(&x_data))
+            }
+            "permutation" => {
+                let x_data = x.ok_or_else(|| PyValueError::new_err("feature_importance(method='permutation') requires x"))?;
+                let y_data = y.ok_or_else(|| PyValueError::new_err("feature_importance(method='permutation') requires y"))?;
+                t.permutation_importance(&x_data, &y_data, metric.unwrap_or("rmse"), n_repeats.unwrap_or(5), seed.unwrap_or(42))
+                    .map_err(PyValueError::new_err)
+            }
+            other => Err(PyValueError::new_err(format!(
+                "unknown importance method '{other}'; expected 'gain', 'shapley', or 'permutation'"
+            ))),
+        }
+    }
+
+    /// Permutation feature importance: per-column validation loss degradation
+    /// when the column is shuffled across rows.
+    #[pyo3(signature = (x, y, metric="rmse", n_repeats=5, seed=42))]
+    fn permutation_importance(
+        &self,
+        x: Vec<Vec<Option<f64>>>,
+        y: Vec<Option<f64>>,
+        metric: &str,
+        n_repeats: usize,
+        seed: u64,
+    ) -> PyResult<Vec<(String, f64)>> {
+        self.tree()?
+            .permutation_importance(&x, &y, metric, n_repeats, seed)
+            .map_err(PyValueError::new_err)
+    }
+
+    /// Exact TreeSHAP feature attributions for a single row prediction:
+    /// efficiency invariant: `base_value + \sum values == prediction`.
+    fn shapley(&self, py: Python<'_>, row: Vec<Option<f64>>) -> PyResult<Py<PyDict>> {
+        let t = self.tree()?;
+        let sh = t.shapley(&row);
+        let d = PyDict::new(py);
+        d.set_item("base_value", sh.base_value)?;
+        d.set_item(
+            "values",
+            sh.values
+                .into_iter()
+                .map(|(c, v)| (t.col_names[c].clone(), v))
+                .collect::<Vec<_>>(),
+        )?;
+        d.set_item("prediction", sh.prediction)?;
+        Ok(d.unbind())
     }
 
     /// DALEX-style break-down of one response-scale prediction.

@@ -263,6 +263,16 @@ pub struct BreakDown {
     pub prediction: f64,
 }
 
+/// Exact TreeSHAP feature attributions for a single prediction.
+#[derive(Clone, Debug)]
+pub struct Shapley {
+    /// Expected value across the training data (base value).
+    pub base_value: f64,
+    /// `(column, attribution)` for all features. Efficiency: base_value + Σ values == prediction.
+    pub values: Vec<(usize, f64)>,
+    pub prediction: f64,
+}
+
 #[derive(Clone, Debug)]
 pub(crate) struct Node {
     pub(crate) split: Option<Split>,
@@ -1268,6 +1278,225 @@ impl ModelTree {
         }
     }
 
+    /// Exact TreeSHAP feature attributions for a single row prediction.
+    ///
+    /// Computes exact Shapley values $\phi_j$ in $O(L \cdot D^2)$ time:
+    /// efficiency invariant: `base_value + \sum \phi_j == prediction`.
+    pub fn shapley(&self, x: &[Option<f64>]) -> Shapley {
+        let seen = self.reachable();
+        let mut ev = 0.0;
+        let mut total_w = 0.0;
+        for (i, nd) in self.nodes.iter().enumerate() {
+            if seen[i] && nd.left.is_none() && nd.right.is_none() {
+                if let Some(leaf) = &nd.leaf {
+                    let n = nd.n as f64;
+                    ev += n * leaf.predict(x);
+                    total_w += n;
+                }
+            }
+        }
+        let base_value = if total_w > 0.0 { ev / total_w } else { self.nodes[self.root].stats.mean };
+
+        let mut phi = vec![0.0f64; self.col_names.len()];
+        let path = TreeShapPath::new();
+        tree_shap_recurse(self, self.root, path, x, &mut phi);
+
+        let prediction = self.predict(&[x.to_vec()])[0];
+        let values: Vec<(usize, f64)> = (0..self.col_names.len())
+            .map(|j| (j, phi[j]))
+            .collect();
+
+        Shapley {
+            base_value,
+            values,
+            prediction,
+        }
+    }
+
+    /// Mean absolute Shapley feature importance across a dataset:
+    /// $\frac{1}{N} \sum_{i=1}^N |\phi_{i, j}|$, sorted descending by importance.
+    pub fn shapley_importance(&self, x: &[Vec<Option<f64>>]) -> Vec<(String, f64)> {
+        if x.is_empty() {
+            return self.col_names.iter().map(|n| (n.clone(), 0.0)).collect();
+        }
+        let mut sum_abs = vec![0.0f64; self.col_names.len()];
+        for row in x {
+            let sh = self.shapley(row);
+            for &(col, val) in &sh.values {
+                sum_abs[col] += val.abs();
+            }
+        }
+        let n = x.len() as f64;
+        let mut out: Vec<(String, f64)> = self
+            .col_names
+            .iter()
+            .enumerate()
+            .map(|(j, name)| (name.clone(), sum_abs[j] / n))
+            .collect();
+        out.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        out
+    }
+
+    /// Permutation feature importance: per-column validation loss degradation
+    /// when the column is shuffled across rows. Returns `(column_name, degradation)`
+    /// sorted descending.
+    pub fn permutation_importance(
+        &self,
+        x: &[Vec<Option<f64>>],
+        y: &[Option<f64>],
+        metric: &str,
+        n_repeats: usize,
+        seed: u64,
+    ) -> Result<Vec<(String, f64)>, String> {
+        let n = x.len();
+        if n == 0 || y.len() != n {
+            return Err("x and y must have equal non-zero length".to_string());
+        }
+        let n_cols = self.col_names.len();
+        let base_preds = self.predict(x);
+
+        let loss_fn = |preds: &[f64]| -> Result<f64, String> {
+            match metric {
+                "rmse" => {
+                    let mut sum_sq = 0.0;
+                    let mut count = 0.0;
+                    for (&t, &p) in y.iter().zip(preds.iter()) {
+                        if let Some(act) = t {
+                            sum_sq += (act - p).powi(2);
+                            count += 1.0;
+                        }
+                    }
+                    if count == 0.0 {
+                        return Err("no valid targets".into());
+                    }
+                    Ok((sum_sq / count).sqrt())
+                }
+                "mae" => {
+                    let mut sum_abs = 0.0;
+                    let mut count = 0.0;
+                    for (&t, &p) in y.iter().zip(preds.iter()) {
+                        if let Some(act) = t {
+                            sum_abs += (act - p).abs();
+                            count += 1.0;
+                        }
+                    }
+                    if count == 0.0 {
+                        return Err("no valid targets".into());
+                    }
+                    Ok(sum_abs / count)
+                }
+                "r2" => {
+                    let mut sum_y = 0.0;
+                    let mut count = 0.0;
+                    for &t in y {
+                        if let Some(act) = t {
+                            sum_y += act;
+                            count += 1.0;
+                        }
+                    }
+                    let mean_y = sum_y / count;
+                    let mut ss_tot = 0.0;
+                    let mut ss_res = 0.0;
+                    for (&t, &p) in y.iter().zip(preds.iter()) {
+                        if let Some(act) = t {
+                            ss_tot += (act - mean_y).powi(2);
+                            ss_res += (act - p).powi(2);
+                        }
+                    }
+                    if ss_tot == 0.0 {
+                        Ok(1.0)
+                    } else {
+                        Ok(1.0 - ss_res / ss_tot)
+                    }
+                }
+                "logloss" => {
+                    let mut loss = 0.0;
+                    let mut count = 0.0;
+                    for (&t, &p) in y.iter().zip(preds.iter()) {
+                        if let Some(act) = t {
+                            let p_clamped = p.clamp(1e-15, 1.0 - 1e-15);
+                            loss += -act * p_clamped.ln() - (1.0 - act) * (1.0 - p_clamped).ln();
+                            count += 1.0;
+                        }
+                    }
+                    if count == 0.0 {
+                        return Err("no valid targets".into());
+                    }
+                    Ok(loss / count)
+                }
+                other => Err(format!("unknown permutation metric: '{other}'")),
+            }
+        };
+
+        let base_loss = loss_fn(&base_preds)?;
+        let mut total_deg = vec![0.0f64; n_cols];
+        let repeats = n_repeats.max(1);
+
+        for j in 0..n_cols {
+            for r in 0..repeats {
+                // Deterministic Fisher-Yates shuffle of column j
+                let mut perm_indices: Vec<usize> = (0..n).collect();
+                let mut state = seed.wrapping_add((j as u64 + 1) * 31337).wrapping_add(r as u64 * 7919);
+                for i in (1..n).rev() {
+                    // xorshift64
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    state ^= state << 17;
+                    let pick = (state as usize) % (i + 1);
+                    perm_indices.swap(i, pick);
+                }
+
+                // Construct permuted column inputs on-the-fly
+                let mut perm_x = x.to_vec();
+                for i in 0..n {
+                    perm_x[i][j] = x[perm_indices[i]][j];
+                }
+                let perm_preds = self.predict(&perm_x);
+                let perm_loss = loss_fn(&perm_preds)?;
+
+                let deg = if metric == "r2" {
+                    base_loss - perm_loss // For R2: degradation is drop in R2
+                } else {
+                    perm_loss - base_loss // For loss: degradation is increase in loss
+                };
+                total_deg[j] += deg;
+            }
+        }
+
+        let mut out: Vec<(String, f64)> = self
+            .col_names
+            .iter()
+            .enumerate()
+            .map(|(j, name)| (name.clone(), total_deg[j] / repeats as f64))
+            .collect();
+        out.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        Ok(out)
+    }
+
+    /// Unified feature importance accessor: `method` in `["gain", "shapley", "permutation"]`.
+    pub fn feature_importance_by(
+        &self,
+        method: &str,
+        x: Option<&[Vec<Option<f64>>]>,
+        y: Option<&[Option<f64>]>,
+    ) -> Result<Vec<(String, f64)>, String> {
+        match method {
+            "gain" => Ok(self.feature_importances()),
+            "shapley" => {
+                let x_data = x.ok_or_else(|| "feature_importance(method='shapley') requires X".to_string())?;
+                Ok(self.shapley_importance(x_data))
+            }
+            "permutation" => {
+                let x_data = x.ok_or_else(|| "feature_importance(method='permutation') requires X".to_string())?;
+                let y_data = y.ok_or_else(|| "feature_importance(method='permutation') requires y".to_string())?;
+                self.permutation_importance(x_data, y_data, "rmse", 5, 42)
+            }
+            other => Err(format!(
+                "unknown importance method '{other}'; expected 'gain', 'shapley', or 'permutation'"
+            )),
+        }
+    }
+
     /// Split columns along each root→leaf path — introspection for
     /// constraint checking (interaction groups: every path must stay within
     /// one group) and structure recovery.
@@ -1749,6 +1978,135 @@ impl<'a> Grower<'a> {
 
         results[0]
     }
-
 }
+
+// ---------------------------------------------------------------- TreeSHAP helpers
+
+#[derive(Clone, Debug)]
+struct TreeShapPath {
+    features: Vec<usize>,
+    zero_fractions: Vec<f64>,
+    one_fractions: Vec<f64>,
+    weights: Vec<f64>,
+}
+
+impl TreeShapPath {
+    fn new() -> Self {
+        Self {
+            features: Vec::new(),
+            zero_fractions: Vec::new(),
+            one_fractions: Vec::new(),
+            weights: vec![1.0],
+        }
+    }
+
+    fn extend(&mut self, feature: usize, zero_frac: f64, one_frac: f64) {
+        let l = self.features.len();
+        self.features.push(feature);
+        self.zero_fractions.push(zero_frac);
+        self.one_fractions.push(one_frac);
+
+        let mut next_w = vec![0.0; l + 2];
+        for i in 0..=l {
+            let wi = self.weights[i];
+            let p_o_step = (i + 1) as f64 / (l + 1) as f64;
+            let p_z_step = (l + 1 - i) as f64 / (l + 1) as f64;
+            next_w[i + 1] += one_frac * wi * p_o_step;
+            next_w[i] += zero_frac * wi * p_z_step;
+        }
+        self.weights = next_w;
+    }
+
+    fn unwind_feature(&self, idx: usize) -> (Vec<f64>, f64, f64) {
+        let n = self.features.len();
+        let p_z = self.zero_fractions[idx];
+        let p_o = self.one_fractions[idx];
+        let mut unwound = vec![0.0; n];
+
+        if p_o != 0.0 {
+            unwound[n - 1] = self.weights[n] / p_o;
+            for j in (0..n - 1).rev() {
+                let t = self.weights[j + 1] - unwound[j + 1] * p_z * ((n - 1 - j) as f64 / n as f64);
+                unwound[j] = t * (n as f64) / ((j + 1) as f64 * p_o);
+            }
+        } else if p_z != 0.0 {
+            unwound[0] = self.weights[0] / p_z;
+            for j in 1..n {
+                let t = self.weights[j] - unwound[j - 1] * p_o * (j as f64 / n as f64);
+                unwound[j] = t * (n as f64) / ((n - j) as f64 * p_z);
+            }
+        }
+        (unwound, p_z, p_o)
+    }
+}
+
+fn tree_shap_recurse(
+    tree: &ModelTree,
+    node_idx: usize,
+    path: TreeShapPath,
+    x: &[Option<f64>],
+    phi: &mut [f64],
+) {
+    let node = &tree.nodes[node_idx];
+    if let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
+        let left_child = &tree.nodes[l];
+        let right_child = &tree.nodes[r];
+        let n_parent = node.n as f64;
+        let p_z_left = if n_parent > 0.0 { left_child.n as f64 / n_parent } else { 0.5 };
+        let p_z_right = if n_parent > 0.0 { right_child.n as f64 / n_parent } else { 0.5 };
+
+        let goes_left = match x.get(sp.col).and_then(|v| *v) {
+            Some(v) => tree.goes_left(sp, v),
+            None => tree.surrogate_left(x, sp),
+        };
+        let p_o_left = if goes_left { 1.0 } else { 0.0 };
+        let p_o_right = if goes_left { 0.0 } else { 1.0 };
+
+        if let Some(existing_idx) = path.features.iter().position(|&f| f == sp.col) {
+            let (unwound_w, old_pz, old_po) = path.unwind_feature(existing_idx);
+            let mut base_path = path.clone();
+            base_path.features.remove(existing_idx);
+            base_path.zero_fractions.remove(existing_idx);
+            base_path.one_fractions.remove(existing_idx);
+            base_path.weights = unwound_w;
+
+            let new_po_left = old_po * p_o_left;
+            let new_po_right = old_po * p_o_right;
+
+            if p_z_left > 0.0 || new_po_left > 0.0 {
+                let mut left_path = base_path.clone();
+                left_path.extend(sp.col, old_pz * p_z_left, new_po_left);
+                tree_shap_recurse(tree, l, left_path, x, phi);
+            }
+            if p_z_right > 0.0 || new_po_right > 0.0 {
+                let mut right_path = base_path;
+                right_path.extend(sp.col, old_pz * p_z_right, new_po_right);
+                tree_shap_recurse(tree, r, right_path, x, phi);
+            }
+        } else {
+            if p_z_left > 0.0 || p_o_left > 0.0 {
+                let mut left_path = path.clone();
+                left_path.extend(sp.col, p_z_left, p_o_left);
+                tree_shap_recurse(tree, l, left_path, x, phi);
+            }
+            if p_z_right > 0.0 || p_o_right > 0.0 {
+                let mut right_path = path;
+                right_path.extend(sp.col, p_z_right, p_o_right);
+                tree_shap_recurse(tree, r, right_path, x, phi);
+            }
+        }
+    } else {
+        let val = node.leaf.as_ref().map(|m| m.predict(x)).unwrap_or(node.stats.mean);
+        let m = path.features.len() as f64;
+        if m > 0.0 {
+            for k in 0..path.features.len() {
+                let feat = path.features[k];
+                let (unwound_w, p_z, p_o) = path.unwind_feature(k);
+                let sum_w: f64 = unwound_w.iter().sum();
+                phi[feat] += (sum_w / m) * (p_o - p_z) * val;
+            }
+        }
+    }
+}
+
 

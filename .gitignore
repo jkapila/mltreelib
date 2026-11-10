@@ -152,6 +152,19 @@ catboost_info/
 skills-lock.json
 home/
 .gitconfig
+.claude/
+.codebuddy/
+.cursorrules
+.gemini/
+.github/instructions/
+.kiro/
+.mcp.json
+.qoder/
+.windsurfrules
+CODEBUDDY.md
+GEMINI.md
+QODER.md
+opencode.jsonc
 
 # vendored legacy material and local experiments
 legacy/
@@ -161,3 +174,9 @@ benchmarks/cla_preds/
 
 /churn_tree.svg
 /churn_tree.dot
+
+# Added by code-review-graph
+.code-review-graph/
+.codegraph/
+*.png
+

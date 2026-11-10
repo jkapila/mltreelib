@@ -2994,3 +2994,92 @@ fn heteroscedastic_stump_estimates_location_and_scale() {
         assert!((sigma - 5.0).abs() < 1e-4, "scale must estimate residual std 5.0, got {sigma}");
     }
 }
+
+#[test]
+fn treeshap_satisfies_efficiency_and_dummy_property() {
+    let x: Vec<Vec<Option<f64>>> = (0..200)
+        .map(|i| {
+            vec![
+                Some((i % 20) as f64 / 20.0),
+                Some(((i * 7) % 13) as f64 / 13.0),
+                // dummy column
+                Some(1.0),
+            ]
+        })
+        .collect();
+    let y: Vec<Option<f64>> = (0..200)
+        .map(|i| Some(2.0 * (i % 20) as f64 / 20.0 + if i % 20 > 10 { 3.0 } else { 0.0 }))
+        .collect();
+
+    for leaf in [LeafKind::Mean, LeafKind::Linear] {
+        let p = ModelTreeParams {
+            max_depth: 3,
+            min_rows: 10,
+            l1: 0.0,
+            l2: 0.0,
+            leaf,
+            ..Default::default()
+        };
+        let tree = ModelTree::fit(&x, &y, p).unwrap();
+        for row in x.iter().step_by(11) {
+            let sh = tree.shapley(row);
+            let pred = tree.predict(&[row.clone()])[0];
+            let sum_phi: f64 = sh.values.iter().map(|(_, v)| *v).sum();
+            assert!(
+                (sh.base_value + sum_phi - pred).abs() < 1e-7,
+                "Efficiency violated for {leaf:?}: base={}, sum_phi={}, pred={}",
+                sh.base_value,
+                sum_phi,
+                pred
+            );
+            // Dummy feature (column 2 was constant 1.0, unused by splits) must have 0 attribution
+            let dummy_phi = sh.values.iter().find(|(c, _)| *c == 2).map(|(_, v)| *v).unwrap_or(0.0);
+            assert!(
+                dummy_phi.abs() < 1e-7,
+                "Dummy feature 2 must have 0 attribution, got {dummy_phi}"
+            );
+        }
+
+        // Shapley importance over the dataset
+        let imp = tree.shapley_importance(&x);
+        assert_eq!(imp.len(), 3);
+        assert_eq!(imp[0].0, "x0", "x0 must be the most important feature");
+        // Dummy feature importance must be 0
+        let dummy_imp = imp.iter().find(|(name, _)| name == "x2").unwrap().1;
+        assert!(dummy_imp.abs() < 1e-7, "Dummy feature importance must be 0");
+    }
+}
+
+#[test]
+fn treeshap_multi_split_same_feature_satisfies_efficiency() {
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..300 {
+        let a = (i % 30) as f64 / 30.0;
+        let b = ((i * 3) % 17) as f64 / 17.0;
+        x.push(vec![Some(a), Some(b)]);
+        y.push(Some(if a > 0.6 { 10.0 } else if a > 0.3 { 5.0 } else if b > 0.5 { 2.0 } else { 0.0 }));
+    }
+    let p = ModelTreeParams {
+        max_depth: 4,
+        min_rows: 10,
+        leaf: LeafKind::Mean,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    println!("MULTI-SPLIT TREE:\n{}", tree);
+    for row in x.iter().step_by(15) {
+        let sh = tree.shapley(row);
+        let pred = tree.predict(&[row.clone()])[0];
+        let sum_phi: f64 = sh.values.iter().map(|(_, v)| *v).sum();
+        println!("ROW: {:?}, PRED: {}, BASE: {}, SUM_PHI: {}, DIFF: {}", row, pred, sh.base_value, sum_phi, (sh.base_value + sum_phi - pred));
+        assert!(
+            (sh.base_value + sum_phi - pred).abs() < 1e-7,
+            "Efficiency violated: base={}, sum_phi={}, pred={}",
+            sh.base_value,
+            sum_phi,
+            pred
+        );
+    }
+}
+
