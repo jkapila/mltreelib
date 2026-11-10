@@ -4279,8 +4279,44 @@ impl PyPredictiveClusteringTree {
     }
 }
 
+#[pyclass(name = "CLTree")]
+pub struct PyClTree {
+    inner: mltreelib_core::cluster::ClTree,
+}
+
+#[pymethods]
+impl PyClTree {
+    #[new]
+    #[pyo3(signature = (max_depth=6, min_samples_leaf=5, min_density=0.6))]
+    fn new(max_depth: usize, min_samples_leaf: usize, min_density: f64) -> Self {
+        PyClTree {
+            inner: mltreelib_core::cluster::ClTree::new(max_depth, min_samples_leaf, min_density),
+        }
+    }
+
+    #[pyo3(signature = (data, col_names=None))]
+    fn fit(&mut self, data: Vec<Vec<f64>>, col_names: Option<Vec<String>>) -> PyResult<()> {
+        self.inner.fit(&data, col_names.as_deref());
+        Ok(())
+    }
+
+    fn predict_cluster(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Option<usize>>> {
+        Ok(data.iter().map(|r| self.inner.predict_cluster(r)).collect())
+    }
+
+    fn cluster_bounding_boxes(&self) -> PyResult<Vec<(usize, Vec<(f64, f64)>, usize, f64)>> {
+        Ok(self.inner.cluster_bounding_boxes())
+    }
+
+    #[getter]
+    fn n_clusters(&self) -> usize {
+        self.inner.n_clusters
+    }
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyClTree>()?;
     m.add_class::<PyPredictiveClusteringTree>()?;
     m.add_class::<PyTrieKnn>()?;
     m.add_class::<PyDensityEstimationTree>()?;

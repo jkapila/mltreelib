@@ -7,6 +7,7 @@ with a scikit-learn-shaped API without depending on scikit-learn.
 from mltreelib._core import (
     ActiveAnomalyTree,
     BaseNEncoder,
+    CLTree,
     CatBoostEncoder,
     ContextAnomalyTree,
     CountEncoder,
@@ -51,6 +52,7 @@ from mltreelib.datasets import list_datasets, load_dataset
 __all__ = [
     "ActiveAnomalyTree",
     "BaseNEncoder",
+    "CLTree",
     "CatBoostEncoder",
     "ContextAnomalyTree",
     "CountEncoder",
@@ -92,4 +94,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.2.7"
+__version__ = "0.2.8"
