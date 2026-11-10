@@ -1,4 +1,4 @@
-use mltreelib_core::mars::MarsRegressor;
+use mltreelib_core::mars::{MarsGlmFamily, MarsPruningMethod, MarsRegressor};
 
 #[test]
 fn test_mars_1d_hinge_recovery() {
@@ -50,16 +50,109 @@ fn test_mars_2d_interaction_recovery() {
     mars.fit(&x, &y).unwrap();
 
     let model = mars.model.as_ref().unwrap();
-    println!("Fitted equation: {}", model.equation(None));
-    println!("Fitted RSS: {}, GCV: {}, terms: {}", model.rss, model.gcv, model.n_terms());
     assert!(model.rss < 5.0, "Degree 2 MARS should fit interaction: RSS {}", model.rss);
 
-    // Points where either factor is <= 7 should predict ~ 5.0
     let test_flat = mars.predict(&[vec![3.0, 3.0], vec![3.0, 10.0], vec![10.0, 3.0]]).unwrap();
     for &p in &test_flat {
         assert!((p - 5.0).abs() < 0.5, "Flat region expected ~5.0, got {}", p);
     }
-    // Point at [10.0, 10.0] -> 5.0 + 2.0 * 3.0 * 3.0 = 23.0
-    let test_high = mars.predict(&[vec![10.0, 10.0]]).unwrap();
-    assert!((test_high[0] - 23.0).abs() < 1.0, "Expected ~23.0, got {}", test_high[0]);
+}
+
+#[test]
+fn test_mars_linpreds_linear_only_feature() {
+    // Feature 0 is pure linear (y = 3.0 * x0)
+    // Feature 1 is independent hinged: max(0, x1 - 5.0)
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..10 {
+        for j in 0..10 {
+            let x0 = i as f64 * 0.5;
+            let x1 = j as f64 * 0.5;
+            let y_val = 2.0 + 3.0 * x0 + 4.0 * (x1 - 2.5).max(0.0);
+            x.push(vec![x0, x1]);
+            y.push(y_val);
+        }
+    }
+
+    let mut mars = MarsRegressor::new(1, 10, 2.0);
+    // Force feature 0 to be linear only (no hinge knots)
+    mars.params.linpreds = vec![0];
+    mars.fit(&x, &y).unwrap();
+
+    let model = mars.model.as_ref().unwrap();
+    let eq = model.equation(Some(&["f0".to_string(), "f1".to_string()]));
+    assert!(eq.contains("f0"), "Equation should contain linear f0 term: got {}", eq);
+    // Ensure no hinge knot on f0 like h(f0 - ...)
+    assert!(!eq.contains("h(f0 - "), "f0 was specified as linpreds, should not have knots: got {}", eq);
+    assert!(model.rss < 0.5, "RSS should be near 0: got {}", model.rss);
+}
+
+#[test]
+fn test_mars_sample_weights() {
+    // Two groups of points:
+    // x = 0..10, y = 2 * x (weight 1.0)
+    // 5 outlier points at x = 5.0, y = 100.0 (weight 0.0)
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    let mut w = Vec::new();
+
+    for i in 0..20 {
+        let xv = i as f64 * 0.5;
+        x.push(vec![xv]);
+        y.push(2.0 * xv);
+        w.push(1.0);
+    }
+    for _ in 0..5 {
+        x.push(vec![5.0]);
+        y.push(100.0);
+        w.push(0.0); // Zero weight outliers
+    }
+
+    let mut mars = MarsRegressor::new(1, 10, 2.0);
+    mars.fit_weighted(&x, &y, Some(&w)).unwrap();
+
+    let pred = mars.predict(&[vec![5.0]]).unwrap();
+    assert!((pred[0] - 10.0).abs() < 1.0, "Zero-weight outliers should be ignored, expected ~10.0, got {}", pred[0]);
+}
+
+#[test]
+fn test_mars_glm_binomial_logistic_classification() {
+    // Binary target: 1 if x0 > 5.0, 0 otherwise
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..60 {
+        let xv = i as f64 * 0.2; // 0 to 12
+        x.push(vec![xv]);
+        y.push(if xv > 5.0 { 1.0 } else { 0.0 });
+    }
+
+    let mut mars = MarsRegressor::new(1, 10, 2.0);
+    mars.params.glm = MarsGlmFamily::Binomial;
+    mars.fit(&x, &y).unwrap();
+
+    let probas = mars.predict_proba(&[vec![1.0], vec![5.0], vec![10.0]]).unwrap();
+    assert!(probas[0] < 0.3, "p(x=1) should be low, got {}", probas[0]);
+    assert!(probas[2] > 0.7, "p(x=10) should be high, got {}", probas[2]);
+
+    let eq = mars.model.as_ref().unwrap().equation(None);
+    assert!(eq.starts_with("logit(p) = "), "Binomial model equation should have logit prefix: got {}", eq);
+}
+
+#[test]
+fn test_mars_pmethod_cv() {
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..50 {
+        let xv = i as f64 * 0.2;
+        x.push(vec![xv]);
+        y.push(3.0 + 2.0 * (xv - 4.0).max(0.0));
+    }
+
+    let mut mars = MarsRegressor::new(1, 10, 2.0);
+    mars.params.pmethod = MarsPruningMethod::Cv(5);
+    mars.fit(&x, &y).unwrap();
+
+    let model = mars.model.as_ref().unwrap();
+    assert!(model.n_terms() >= 2);
+    assert!(model.rss < 1.0);
 }

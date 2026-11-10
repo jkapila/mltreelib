@@ -4578,19 +4578,68 @@ pub struct PyMarsRegressor {
 #[pymethods]
 impl PyMarsRegressor {
     #[new]
-    #[pyo3(signature = (degree = 1, max_terms = 21, penalty = 2.0))]
-    fn new(degree: usize, max_terms: usize, penalty: f64) -> Self {
-        PyMarsRegressor {
-            inner: mltreelib_core::mars::MarsRegressor::new(degree, max_terms, penalty),
-        }
+    #[pyo3(signature = (
+        degree = 1,
+        max_terms = 21,
+        penalty = 2.0,
+        thresh = 0.001,
+        minspan = 0,
+        endspan = 0,
+        linpreds = None,
+        fast_k = 10,
+        pmethod = "backward",
+        glm = "gaussian",
+        allowed = None
+    ))]
+    fn new(
+        degree: usize,
+        max_terms: usize,
+        penalty: f64,
+        thresh: f64,
+        minspan: usize,
+        endspan: usize,
+        linpreds: Option<Vec<usize>>,
+        fast_k: usize,
+        pmethod: &str,
+        glm: &str,
+        allowed: Option<Vec<Vec<bool>>>,
+    ) -> PyResult<Self> {
+        let pm = mltreelib_core::mars::MarsPruningMethod::from_str(pmethod)
+            .map_err(PyValueError::new_err)?;
+        let gm = mltreelib_core::mars::MarsGlmFamily::from_str(glm)
+            .map_err(PyValueError::new_err)?;
+
+        let mut reg = mltreelib_core::mars::MarsRegressor::new(degree, max_terms, penalty);
+        reg.params.thresh = thresh;
+        reg.params.minspan = minspan;
+        reg.params.endspan = endspan;
+        reg.params.linpreds = linpreds.unwrap_or_default();
+        reg.params.fast_k = fast_k;
+        reg.params.pmethod = pm;
+        reg.params.glm = gm;
+        reg.params.allowed = allowed;
+
+        Ok(PyMarsRegressor { inner: reg })
     }
 
-    fn fit(&mut self, x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<()> {
-        self.inner.fit(&x, &y).map_err(PyValueError::new_err)
+    #[pyo3(signature = (x, y, sample_weights = None))]
+    fn fit(
+        &mut self,
+        x: Vec<Vec<f64>>,
+        y: Vec<f64>,
+        sample_weights: Option<Vec<f64>>,
+    ) -> PyResult<()> {
+        self.inner
+            .fit_weighted(&x, &y, sample_weights.as_deref())
+            .map_err(PyValueError::new_err)
     }
 
     fn predict(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
         self.inner.predict(&x).map_err(PyValueError::new_err)
+    }
+
+    fn predict_proba(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        self.inner.predict_proba(&x).map_err(PyValueError::new_err)
     }
 
     #[getter]
