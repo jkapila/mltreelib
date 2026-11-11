@@ -59,6 +59,9 @@ Args:
        partitions levels, no encoding).
 
 Returns: nothing; the fitted tree replaces the inner model.
+### ModelTree.get_params
+```pythonget_params((self, /, deep=True))```
+Return all hyperparameter values as a dict (scikit-learn compatible).
 ### ModelTree.leaf_samples
 ```pythonleaf_samples((self, /, x, id_col=None, col_names=None))```
 Return row indices or entity IDs grouped by leaf ID: {leaf_id: [indices_or_ids]}.

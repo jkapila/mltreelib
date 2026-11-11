@@ -1,7 +1,7 @@
 //! Thin PyO3 shell around `mltreelib-core`. Exposed to Python as
 //! `mltreelib._core`; the Python package in `python/mltreelib` re-exports it.
 
-use pyo3::exceptions::{PyTypeError, PyValueError};
+use pyo3::exceptions::{PyAttributeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyModule, PyModuleMethods};
 use pyo3::IntoPyObjectExt;
@@ -17,7 +17,7 @@ use mltreelib_core::criteria::{CustomGain, GainFn};
 use mltreelib_core::family::LeafFamily;
 use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
-use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, PurityMetric};
 use mltreelib_core::prune::PruneCost;
 use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
 use mltreelib_core::metrics::{
@@ -2469,8 +2469,10 @@ impl PyModelTree {
     ///     max_leaf_nodes: leaf cap — stop splitting at this many leaves
     ///        (None = unlimited, bounded by max_depth).
     ///     min_gain: minimum improvement in the selected split criterion.
-    ///     purity_gate: a node whose weighted target std is at most this
+    ///     purity_gate: a node whose weighted target variation is at most this
     ///        stays a leaf (None = off).
+    ///     purity_gate_metric: "sd" (weighted std dev) or "cv" (coefficient of variation).
+    ///     tail_quantile: extrema protection quantile (e.g. 0.05). Extrema nodes bypass purity gate.
     ///   SEARCH
     ///     gain: split criterion — "sse", "deviance", "friedman_mse",
     ///        "absolute_error", "huber", "poisson", "entropy", "gini",
@@ -2484,19 +2486,25 @@ impl PyModelTree {
     ///        all). Splits only — leaves see all columns.
     ///     col_sample: per-node random column subset fraction (None = all).
     ///     seed: seed for the per-node column subset.
+    ///     split_eval: split evaluation mode — "fast" (default) or "exhaustive".
+    ///     presort: upfront numeric column sorting (default false).
     ///   LEAF
-    ///     leaf: "linear", "mean", "median", "quantile" (with tau) or "huber".
-    ///        Non-Gaussian families support only "linear" and "mean".
-    ///     leaf_family: "gaussian" (default), "binomial" (logit link), or
-    ///        "poisson" (log link). Linear coefficients are on the link scale;
-    ///        predictions are response-scale means, never hard class labels.
+    ///     leaf: "linear", "mean", "median", "quantile" (with tau), "huber", or "mars".
+    ///     leaf_family: "gaussian" (default), "binomial" (logit link), "poisson" (log link),
+    ///        "probit", "gamma", "tweedie", "tobit", "softmax", "survival", or "heteroscedastic".
     ///     tau: quantile in (0, 1) for leaf="quantile".
     ///     l1: lasso penalty on leaf coefficients (with l2 = elastic net).
     ///     l2: ridge penalty on leaf coefficients (intercept free).
     ///     leaf_cols: "all" (every column) or "path" (split-path columns).
     ///     leaf_digest: keep each leaf's empirical target t-digest (quantile
-    ///        answers any tau post-fit; false = lean leaves). Quantiles are
-    ///        empirical, not inverse fitted-family CDFs.
+    ///        answers any tau post-fit; false = lean leaves).
+    ///     mars_degree: maximum degree of interaction for MARS leaves (default 1).
+    ///     mars_terms: maximum number of terms for MARS leaves (default 10).
+    ///     mars_penalty: GCV penalty per knot for MARS leaves (default 2.0).
+    ///     tweedie_p: Tweedie power parameter (default 1.5, with 1 < p < 2).
+    ///     tobit_threshold: censoring threshold for Tobit response (default 0.0).
+    ///     events: optional event indicators for survival analysis.
+    ///     n_classes: number of distinct classes for softmax leaf family.
     ///   CATEGORICAL
     ///     cat_order: "frequency_desc", "target_mean", or a level-code list.
     ///     cat_search: "cumulative", "single_vs_rest" or "both".
@@ -3332,6 +3340,17 @@ impl PyModelTree {
             if let Some(het) = &leaf.heteroscedastic {
                 d.set_item("scale", het.scale)?;
             }
+            if let Some(m) = &leaf.mars {
+                let m_cols: Vec<String> = leaf
+                    .mars_cols
+                    .as_ref()
+                    .map(|cols| cols.iter().map(|&j| t.col_names[j].clone()).collect())
+                    .unwrap_or_default();
+                d.set_item("mars_cols", m_cols)?;
+                d.set_item("mars_terms", m.n_terms())?;
+                d.set_item("mars_rss", m.rss)?;
+                d.set_item("mars_gcv", m.gcv)?;
+            }
             out.push(d.into_any().unbind());
         }
         Ok(out)
@@ -3628,6 +3647,129 @@ impl PyModelTree {
     /// Returns: leaf count.
     fn n_leaves(&self) -> PyResult<usize> {
         Ok(self.tree()?.n_leaves())
+    }
+
+    /// Return all hyperparameter values as a dict (scikit-learn compatible).
+    #[pyo3(signature = (deep = true))]
+    fn get_params(&self, py: Python<'_>, deep: bool) -> PyResult<Py<PyDict>> {
+        let _ = deep;
+        let d = PyDict::new(py);
+        d.set_item("max_depth", self.params.max_depth)?;
+        d.set_item("min_rows", self.params.min_rows)?;
+        d.set_item("minsplit", self.params.minsplit)?;
+        d.set_item("minbucket", self.params.minbucket)?;
+        d.set_item("minprob", self.params.minprob)?;
+        d.set_item("max_leaf_nodes", self.params.max_leaf_nodes)?;
+        d.set_item("min_gain", self.params.min_gain)?;
+        d.set_item("purity_gate", self.params.purity_gate)?;
+        d.set_item(
+            "purity_gate_metric",
+            match self.params.purity_gate_metric {
+                PurityMetric::Sd => "sd",
+                PurityMetric::Cv => "cv",
+            },
+        )?;
+        d.set_item("tail_quantile", self.params.tail_quantile)?;
+        d.set_item("split_precision", self.params.split_precision)?;
+        d.set_item("split_cols", self.params.split_cols.clone())?;
+        d.set_item("col_sample", self.params.col_sample)?;
+        d.set_item("seed", self.params.seed)?;
+        d.set_item(
+            "leaf",
+            match &self.params.leaf {
+                LeafKind::Linear => "linear",
+                LeafKind::Mean => "mean",
+                LeafKind::Median => "median",
+                LeafKind::Quantile(_) => "quantile",
+                LeafKind::Huber => "huber",
+                LeafKind::Mars => "mars",
+            },
+        )?;
+        if let LeafKind::Quantile(tau) = self.params.leaf {
+            d.set_item("tau", tau)?;
+        }
+        d.set_item(
+            "leaf_family",
+            match self.params.leaf_family {
+                LeafFamily::Gaussian => "gaussian",
+                LeafFamily::Binomial => "binomial",
+                LeafFamily::Poisson => "poisson",
+                LeafFamily::Probit => "probit",
+                LeafFamily::Gamma => "gamma",
+                LeafFamily::Tweedie => "tweedie",
+                LeafFamily::Tobit => "tobit",
+                LeafFamily::Softmax => "softmax",
+                LeafFamily::Survival => "survival",
+                LeafFamily::Heteroscedastic => "heteroscedastic",
+            },
+        )?;
+        d.set_item("l1", self.params.l1)?;
+        d.set_item("l2", self.params.l2)?;
+        d.set_item(
+            "leaf_cols",
+            match self.params.leaf_cols {
+                LeafCols::All => "all",
+                LeafCols::PathUsed => "path",
+            },
+        )?;
+        d.set_item("leaf_digest", self.params.leaf_digest)?;
+        d.set_item("alpha", self.params.alpha)?;
+        d.set_item("imbalance_penalty", self.params.imbalance_penalty)?;
+        d.set_item(
+            "prune",
+            match self.params.prune {
+                PruneCost::None => "none",
+                PruneCost::Bic => "bic",
+                PruneCost::Mdl => "mdl",
+                PruneCost::Cp => "cp",
+            },
+        )?;
+        d.set_item("cp_alpha", self.params.cp_alpha)?;
+        d.set_item("honesty", self.params.honesty)?;
+        d.set_item("honesty_fraction", self.params.honesty_fraction)?;
+        d.set_item("maxsurrogate", self.params.maxsurrogate)?;
+        d.set_item(
+            "split_test",
+            match self.params.split_test {
+                SplitTest::None => "none",
+                SplitTest::Chow => "chow",
+            },
+        )?;
+        d.set_item("split_alpha", self.params.split_alpha)?;
+        d.set_item("bonferroni", self.params.bonferroni)?;
+        d.set_item("min_relevance", self.params.min_relevance)?;
+        d.set_item("verbose", self.params.verbose)?;
+        d.set_item(
+            "split_eval",
+            match self.params.split_eval {
+                SplitEval::Fast => "fast",
+                SplitEval::Exhaustive => "exhaustive",
+            },
+        )?;
+        d.set_item("presort", self.params.presort)?;
+        d.set_item("events", self.params.events.clone())?;
+        d.set_item("n_classes", self.params.n_classes)?;
+        d.set_item("tweedie_p", self.params.tweedie_p)?;
+        d.set_item("tobit_threshold", self.params.tobit_threshold)?;
+        d.set_item("mars_degree", self.params.mars_degree)?;
+        d.set_item("mars_terms", self.params.mars_terms)?;
+        d.set_item("mars_penalty", self.params.mars_penalty)?;
+        Ok(d.into())
+    }
+
+    fn __getattr__(&self, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
+        if name == "params" {
+            let p = self.get_params(py, true)?;
+            return Ok(p.into_any());
+        }
+        let params = self.get_params(py, true)?;
+        let dict = params.bind(py);
+        if let Some(val) = dict.get_item(name)? {
+            return Ok(val.into_any().unbind());
+        }
+        Err(PyAttributeError::new_err(format!(
+            "'ModelTree' object has no attribute '{name}'"
+        )))
     }
 }
 
