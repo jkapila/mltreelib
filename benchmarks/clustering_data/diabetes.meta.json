@@ -1,0 +1,19 @@
+{
+  "dataset": "diabetes",
+  "columns": {
+    "Pregnancies": "numeric",
+    "Glucose": "numeric",
+    "BloodPressure": "numeric",
+    "SkinThickness": "numeric",
+    "Insulin": "numeric",
+    "BMI": "numeric",
+    "DiabetesPedigreeFunction": "numeric",
+    "Age": "numeric"
+  },
+  "task": "clustering",
+  "n_features": 8,
+  "classes": [
+    "No",
+    "Yes"
+  ]
+}

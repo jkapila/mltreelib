@@ -1,0 +1,31 @@
+{
+  "dataset": "credit-g",
+  "columns": {
+    "checking_status": "categorical",
+    "duration_months": "numeric",
+    "credit_history": "categorical",
+    "credit_purpose": "categorical",
+    "credit_amount": "numeric",
+    "savings_status": "categorical",
+    "employment_since": "categorical",
+    "installment_rate_percent": "numeric",
+    "personal_status_sex": "categorical",
+    "other_debtors": "categorical",
+    "residence_since": "numeric",
+    "property": "categorical",
+    "age_years": "numeric",
+    "other_installment_plans": "categorical",
+    "housing": "categorical",
+    "existing_credits_count": "numeric",
+    "job": "categorical",
+    "people_liable": "numeric",
+    "telephone": "categorical",
+    "foreign_worker": "categorical"
+  },
+  "task": "clustering",
+  "n_features": 20,
+  "classes": [
+    "bad",
+    "good"
+  ]
+}

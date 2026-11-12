@@ -43,6 +43,7 @@ nav:
   - Quickstart: quickstart.md
   - Examples:
       - End-to-end walkthrough: examples/walkthrough.md
+      - Two-Control & 0D Formulations: examples/two-controls-and-0d.md
       - Data Processing: examples/data-processing.md
       - Model building & predictions: examples/model-building.md
       - Growth knob tour: examples/knob-tour.md
@@ -91,6 +92,7 @@ plugins:
           - installation.md
           - quickstart.md
           - examples/walkthrough.md
+          - examples/two-controls-and-0d.md
           - examples/data-processing.md
           - examples/model-building.md
           - examples/knob-tour.md

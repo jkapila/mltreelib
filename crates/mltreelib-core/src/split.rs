@@ -128,10 +128,13 @@ impl<'a> Grower<'a> {
     /// Monotone check: a split on constrained column j must order the
     /// children's (weighted) target means in the constraint's direction.
     fn mono_ok(&self, j: usize, mean_l: f64, mean_r: f64) -> bool {
-        if self.params.monotone.is_empty() {
-            return true;
-        }
-        let m = self.params.monotone[j];
+        let m = if !self.params.tree_monotone.is_empty() {
+            self.params.tree_monotone.get(j).copied().unwrap_or(0)
+        } else if !self.params.monotone.is_empty() {
+            self.params.monotone.get(j).copied().unwrap_or(0)
+        } else {
+            0
+        };
         m == 0 || (mean_l - mean_r) * (m as f64) <= 0.0
     }
 
@@ -222,15 +225,36 @@ impl<'a> Grower<'a> {
             if k < cols.len() {
                 let mut rng = self.params.seed
                     ^ (self.rng_counter as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-                for i in 0..k {
-                    rng ^= rng << 13;
-                    rng ^= rng >> 7;
-                    rng ^= rng << 17;
-                    let j = i + (rng as usize) % (cols.len() - i);
-                    cols.swap(i, j);
+                match &self.params.col_weights {
+                    Some(cw) => {
+                        let mut weighted_cols: Vec<(f64, usize)> = cols
+                            .iter()
+                            .map(|&j| {
+                                let w = cw.get(j).copied().unwrap_or(1.0).max(1e-6);
+                                rng ^= rng << 13;
+                                rng ^= rng >> 7;
+                                rng ^= rng << 17;
+                                let u = ((rng >> 11) as f64 + 1.0) / ((1u64 << 53) as f64 + 1.0);
+                                let key = u.powf(1.0 / w);
+                                (key, j)
+                            })
+                            .collect();
+                        weighted_cols.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+                        cols = weighted_cols.into_iter().take(k).map(|(_, j)| j).collect();
+                        cols.sort_unstable();
+                    }
+                    None => {
+                        for i in 0..k {
+                            rng ^= rng << 13;
+                            rng ^= rng >> 7;
+                            rng ^= rng << 17;
+                            let j = i + (rng as usize) % (cols.len() - i);
+                            cols.swap(i, j);
+                        }
+                        cols.truncate(k);
+                        cols.sort_unstable(); // deterministic scan order
+                    }
                 }
-                cols.truncate(k);
-                cols.sort_unstable(); // deterministic scan order
             }
         }
         self.rng_counter += 1;
@@ -322,7 +346,12 @@ impl<'a> Grower<'a> {
             prof.group_ns += st.group_ns;
             prof.scan_ns += st.scan_ns;
             prof.candidates += st.candidates;
-            if let Some((gain, sp, part)) = found {
+            if let Some((mut gain, sp, part)) = found {
+                if let Some(cw) = &self.params.col_weights {
+                    if let Some(&w) = cw.get(j) {
+                        gain *= w;
+                    }
+                }
                 let better = match &best {
                     None => true,
                     Some((g, _, _, bj, bt)) => {

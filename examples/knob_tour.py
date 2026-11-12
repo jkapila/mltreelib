@@ -112,12 +112,19 @@ print(f"  planted regime -> leaves={m.n_leaves()} (gate must pass)")
 for line in m.training_log():
     print("   ", line)
 
-print("== monotone constraint (y increases with x) ==")
+print("== monotone constraints (dual: tree_monotone & leaf_monotone) ==")
 for mono in [[], [1]]:
-    m = ModelTree(monotone=mono, max_depth=3, min_rows=10, leaf="mean")
+    m = ModelTree(tree_monotone=mono, max_depth=3, min_rows=10, leaf="mean")
     m.fit(reg_x, reg_y, dtypes=["numeric"])
     p = [m.predict([[v]])[0] for v in (0.2, 0.5, 0.8)]
-    print(f"  monotone={str(mono):<4} preds={p}")
+    print(f"  tree_monotone={str(mono):<4} preds={p}")
+
+print("== column weights (col_weights split priority) ==")
+for cw in [None, [10.0, 0.1]]:
+    m = ModelTree(col_weights=cw, max_depth=2, min_rows=10)
+    m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
+    cols = sorted({s['col'] for s in m.splits()})
+    print(f"  col_weights={str(cw):<12} split_columns={cols}")
 
 print("== split_cols (split-search column subset; leaves stay full) ==")
 for sc in [None, [1]]:

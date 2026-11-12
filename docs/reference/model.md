@@ -14,13 +14,15 @@ ModelTree(
     # Search
     gain=None, split_precision=0.001, split_cols=None,
     col_sample=None, seed=42,
-    # Leaf & family
+    # Leaf & family (or pass control=LeafControl(...))
     leaf="linear", leaf_family="gaussian", tau=0.5, l1=0.0, l2=0.5,
     leaf_cols="all", leaf_digest=True,
+    control=None, leaf_control=None,
     # Categorical
     cat_order=None, cat_search="cumulative",
-    # Constraints
-    monotone=[], interaction_groups=[],
+    # Constraints & weights
+    tree_monotone=None, leaf_monotone=None, col_weights=None,
+    interaction_groups=None,
     # Balance (grf)
     alpha=0.0, imbalance_penalty=0.0,
     # Pruning
@@ -34,6 +36,27 @@ ModelTree(
     # Diagnostics
     verbose=0,
 )
+```
+
+### Two-Control Architecture: `LeafControl`
+
+Leaf models can be independently configured or retrained via `LeafControl`:
+
+```python
+from mltreelib import ModelTree, LeafControl
+
+# Define leaf model controls separately:
+leaf_ctrl = LeafControl(
+    leaf="linear",           # "linear", "mean", "median", "quantile", "huber", "mars", "prob", "odds", "log_odds"
+    leaf_family="gaussian",   # "gaussian", "binomial", "poisson", "probit", "gamma", "tweedie", "tobit", "softmax"
+    l1=0.0, l2=1e-3,
+    leaf_cols="all",         # "all" or "path_used"
+    leaf_monotone=[1, -1],   # local slope sign constraints per feature
+    mars_degree=1, mars_terms=10,
+)
+
+# Pass control directly to constructor without parameter bloat:
+model = ModelTree(max_depth=4, control=leaf_ctrl)
 ```
 
 The gain family is **sample-weight aware end to end**: weighted class
@@ -97,52 +120,37 @@ Pair with `gain="deviance"` so split search maximizes deviance reduction under t
 
 | method | returns | notes |
 |---|---|---|
-| `fit(x, y, w=None, dtypes=None)` | `self` | rows of `float`/`str`/`None` (`None` = missing); `w` = row weights; `dtypes` = per column `"numeric"`/`"categorical"`; strings in categorical columns ingested natively |
-| `predict(x)` | `list[float]` | response-scale predictions (regression mean, binomial P(1), Poisson expected count); NAs route by learned NA direction |
-| `predict_proba(x)` | `list[float]` | response probability P(Y=1) for `leaf_family="binomial"` |
+| `fit(x, y, w=None, dtypes=None, ...)` | `self` | rows of `float`/`str`/`None` (`None` = missing); `w` / `sample_weight` / `row_weights` = row weights; `col_weights` = column split priority; `dtypes` = per column `"numeric"`/`"categorical"` |
+| `predict(x, kind="response")` | `list[float]` or `list[dict]` | `kind="response"` (default), `kind="prob"`, `kind="odds"`, `kind="log_odds"`, `kind="median"`, or `kind="stats"` (full 0D stats dict per row) |
+| `predict_proba(x)` | `list[float]` or `matrix` | response probability P(Y=1) for binomial/probit, or (N, C) probability matrix for softmax |
 | `cdf(x, value)` | `list[float]` | conditional fitted-distribution CDF P(Y <= value) for binomial/Poisson |
 | `quantile(x, tau)` | `list[float]` | empirical conditional τ-quantile from leaf t-digests (`leaf_digest=True`) |
 
-## Reading the model
+## Reading the model & 0D Leaf Formulations
 
 | method | returns | notes |
 |---|---|---|
 | `__repr__()` | `str` | rpart-style text (`print(model)`); refuses to print an unfitted tree |
 | `to_dot()` | `str` | Graphviz DOT — render with pygraphviz/graphviz (layout is graphviz's job) |
 | `splits()` | `list[dict]` | `{col, threshold, missing_left, gain}` per split (`col` is the column **name**) |
-| `leaves()` | `list[dict]` | one flat dict per leaf: `cols, coef, na_coef, intercept, n, mean, std, min, max, quantiles` |
+| `leaves()` | `list[dict]` | one flat dict per leaf: `cols, coef, na_coef, intercept, n, mean, std, var, median, mad, iqr, min, max, skew, kurtosis, prob, odds, log_odds, majority_class, entropy, gini, zero_fraction, dispersion, stats, quantiles` |
+| `leaf_stats()` | `list[dict]` | list of 0D stats dictionaries across all leaves: `{mean, std, var, median, mad, iqr, min, max, skew, kurtosis, prob, odds, log_odds, majority_class, entropy, gini, zero_fraction, dispersion}` |
 | `split_paths()` | `list[list[str]]` | split column names per root→leaf path (constraint verification) |
 | `n_leaves()` | `int` | terminal node count |
 | `profile()` | `list[dict]` | per-**depth** fit diagnostics: `depth, nodes, rows, cols, candidates, group_ns, scan_ns, leaf_ns` |
 
-## Explaining predictions
+## Constraints & Weights
 
-| method | returns | notes |
-|---|---|---|
-| `break_down(row)` | `dict` | DALEX-style decomposition of one prediction: `{"baseline", "steps": [[column, contribution], ...], "residual", "prediction"}` |
-| `feature_importance()` | `list[(name, share)]` | each column's share of total split gain (rpart's variable importance); sorted descending, shares sum to 1 |
-
-**Break-down contract**: `baseline` is the training mean; each split on the
-row's route contributes (child node mean − parent node mean) to its column in
-decision-path order; `residual` is the within-leaf model adjustment (0 for
-mean leaves). They telescope exactly:
-
-```
-baseline + sum(contributions) + residual == prediction
-```
-
-Routing in `break_down` is identical to `predict` (inclusive threshold
-comparison; missing cells follow the split's learned missing direction), so
-the explanation always matches the prediction.
-
-## Constraints
-
-- `monotone[j] = +1` → predictions never decrease in column `j` (`-1`: never
-  increase). Enforced at split choice **and** in leaf coefficients (linear
-  leaves carry effects in their coefficients; split checks alone don't fire
-  when there are no splits).
-- `interaction_groups` → every root-to-leaf path splits only columns of one
-  group (LightGBM-style interaction constraints).
+- **Dual Monotonicity**:
+  - `tree_monotone`: Enforces directional ordering on split child target means across tree splits: $(\bar{y}_L - \bar{y}_R) \cdot m \le 0$.
+  - `leaf_monotone` (or in `LeafControl`): Enforces sign bounds on local linear leaf slopes ($\beta_j \ge 0$ for $+1$, $\le 0$ for $-1$).
+  - `monotone`: Sets both tree and leaf monotonicity simultaneously.
+- **Interaction Constraints (`interaction_groups`)**:
+  - Restricts root-to-leaf paths to features within the same group (LightGBM-style).
+  - Supports column names (e.g. `[["age", "income"], ["city", "zip"]]`) as well as numeric column indices.
+- **Weights (Row & Column)**:
+  - **Row weights**: Pass via `w`, `sample_weight`, or `row_weights` to `fit()` or `retrain()`.
+  - **Column weights**: `col_weights` scales candidate split gains ($gain \times W_j$) and weights random feature subset sampling during `col_sample`.
 
 Both are validated against reference implementations in
 `examples/constraints_check.py` (R `gbm`'s `var.monotone`, LightGBM's

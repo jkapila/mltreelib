@@ -34,12 +34,18 @@ pub enum LeafKind {
     Huber,
     /// Piecewise MARS splines (earth models fit at the leaf).
     Mars,
+    /// 0D Class probability: P(Y=1) in [0, 1] for binary classification.
+    Prob,
+    /// 0D Odds ratio: p / (1 - p).
+    Odds,
+    /// 0D Log-odds (logit): ln(p / (1 - p)).
+    LogOdds,
 }
 
 /// Parameter controls for fitting leaf models independently of tree topology.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LeafControl {
-    /// Leaf model kind (Linear, Mean, Median, Quantile(t), Huber).
+    /// Leaf model kind (Linear, Mean, Median, Quantile(t), Huber, Mars, Prob, Odds, LogOdds).
     pub leaf: LeafKind,
     /// Distribution / link function for the leaf model.
     pub family: LeafFamily,
@@ -51,16 +57,28 @@ pub struct LeafControl {
     pub l1: f64,
     /// Keep each leaf's t-digest for quantile / interval prediction.
     pub leaf_digest: bool,
-    /// Monotone constraints (-1, 0, +1) per feature column.
+    /// Monotone constraints (-1, 0, +1) per feature column for linear leaf models.
+    pub leaf_monotone: Vec<i8>,
+    /// Legacy combined monotone constraints (-1, 0, +1).
     pub monotone: Vec<i8>,
     /// Specific column subset for leaf models. If Some, overrides leaf_cols policy.
     pub leaf_features: Option<Vec<usize>>,
-    /// Family-specific extra parameters (e.g. tweedie_p, tobit_threshold, etc.).
+    /// Family-specific extra parameters.
     pub extra: std::collections::HashMap<String, f64>,
     /// Optional event indicators (1=event, 0=censored) for survival leaves.
     pub events: Option<Vec<f64>>,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
+    /// Maximum degree of interaction for MARS leaves (default 1).
+    pub mars_degree: usize,
+    /// Maximum number of terms for MARS leaves (default 10).
+    pub mars_terms: usize,
+    /// GCV penalty per knot for MARS leaves (default 2.0).
+    pub mars_penalty: f64,
+    /// Power parameter for Tweedie deviance (default 1.5).
+    pub tweedie_p: f64,
+    /// Censoring threshold for Tobit response (default 0.0).
+    pub tobit_threshold: f64,
 }
 
 impl Default for LeafControl {
@@ -72,11 +90,17 @@ impl Default for LeafControl {
             l2: 1e-3,
             l1: 0.0,
             leaf_digest: true,
+            leaf_monotone: Vec::new(),
             monotone: Vec::new(),
             leaf_features: None,
             extra: std::collections::HashMap::new(),
             events: None,
             n_classes: None,
+            mars_degree: 1,
+            mars_terms: 10,
+            mars_penalty: 2.0,
+            tweedie_p: 1.5,
+            tobit_threshold: 0.0,
         }
     }
 }
@@ -89,6 +113,11 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         extra.insert("mars_degree".to_string(), p.mars_degree as f64);
         extra.insert("mars_terms".to_string(), p.mars_terms as f64);
         extra.insert("mars_penalty".to_string(), p.mars_penalty);
+        let leaf_monotone = if !p.leaf_monotone.is_empty() {
+            p.leaf_monotone.clone()
+        } else {
+            p.monotone.clone()
+        };
         Self {
             leaf: p.leaf,
             family: p.leaf_family,
@@ -96,11 +125,17 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             l2: p.l2,
             l1: p.l1,
             leaf_digest: p.leaf_digest,
+            leaf_monotone,
             monotone: p.monotone.clone(),
             leaf_features: None,
             extra,
             events: p.events.clone(),
             n_classes: p.n_classes,
+            mars_degree: p.mars_degree,
+            mars_terms: p.mars_terms,
+            mars_penalty: p.mars_penalty,
+            tweedie_p: p.tweedie_p,
+            tobit_threshold: p.tobit_threshold,
         }
     }
 }
@@ -108,6 +143,14 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
 impl LeafControl {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn effective_leaf_monotone(&self) -> &[i8] {
+        if !self.leaf_monotone.is_empty() {
+            &self.leaf_monotone
+        } else {
+            &self.monotone
+        }
     }
 
     pub fn with_leaf(mut self, leaf: LeafKind) -> Self {
@@ -393,7 +436,7 @@ pub fn fit_leaf_model(
                 &g,
                 &chosen,
                 any_missing,
-                &control.monotone,
+                control.effective_leaf_monotone(),
                 control.l1,
                 control.l2,
             );
@@ -471,9 +514,9 @@ pub fn fit_leaf_model(
             y_vec.push(y[r]);
             w_vec.push(w[r]);
         }
-        let mars_degree = control.extra.get("mars_degree").map(|&d| d as usize).unwrap_or(1);
-        let mars_terms = control.extra.get("mars_terms").map(|&t| t as usize).unwrap_or(10);
-        let mars_penalty = control.extra.get("mars_penalty").copied().unwrap_or(2.0);
+        let mars_degree = control.extra.get("mars_degree").map(|&d| d as usize).unwrap_or(control.mars_degree);
+        let mars_terms = control.extra.get("mars_terms").map(|&t| t as usize).unwrap_or(control.mars_terms);
+        let mars_penalty = control.extra.get("mars_penalty").copied().unwrap_or(control.mars_penalty);
         let mut reg = crate::mars::MarsRegressor::new(mars_degree, mars_terms, mars_penalty);
         if family == LeafFamily::Binomial {
             reg.params.glm = crate::mars::MarsGlmFamily::Binomial;
@@ -518,7 +561,7 @@ pub fn fit_leaf_model(
         if family != LeafFamily::Gaussian {
             let fitted = fit_glm(
                 cols, y, w, rows, &chosen, any_missing,
-                &control.monotone, control.l1, control.l2,
+                control.effective_leaf_monotone(), control.l1, control.l2,
                 family, stats.mean,
                 Some(&control.extra),
             );
@@ -552,7 +595,7 @@ pub fn fit_leaf_model(
             &g,
             &chosen,
             any_missing,
-            &control.monotone,
+            control.effective_leaf_monotone(),
             control.l1,
             control.l2,
         ))
@@ -573,6 +616,9 @@ pub fn fit_leaf_model(
         LeafKind::Median => Some(w_median(&yws)),
         LeafKind::Quantile(t) => Some(w_quantile(&yws, t)),
         LeafKind::Huber => Some(huber_location(&yws)),
+        LeafKind::Prob => Some(stats.prob()),
+        LeafKind::Odds => Some(stats.odds()),
+        LeafKind::LogOdds => Some(stats.log_odds()),
         _ => None,
     };
     LeafModel {

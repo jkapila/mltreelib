@@ -1,0 +1,12 @@
+{
+  "dataset": "blood-transfusion-service-center",
+  "columns": {
+    "MonthsSinceLastDonation": "numeric",
+    "NumberOfDonations": "numeric",
+    "TotalBloodDonated": "numeric",
+    "MonthsSinceFirstDonation": "numeric"
+  },
+  "task": "anomaly_detection",
+  "n_features": 4,
+  "minority_class": "Yes"
+}

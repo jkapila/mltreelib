@@ -2037,6 +2037,9 @@ fn extract_leaf_control<'py>(
                         }
                         "huber" => LeafKind::Huber,
                         "mars" => LeafKind::Mars,
+                        "prob" => LeafKind::Prob,
+                        "odds" => LeafKind::Odds,
+                        "log_odds" | "logit" => LeafKind::LogOdds,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf kind '{other}' in control dict"
@@ -2149,6 +2152,9 @@ fn extract_leaf_control<'py>(
             }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "prob" => LeafKind::Prob,
+            "odds" => LeafKind::Odds,
+            "log_odds" | "logit" => LeafKind::LogOdds,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
         };
     }
@@ -2219,7 +2225,25 @@ impl PyLeafControl {
     ///     tau: target quantile level when leaf is "quantile" (in [0, 1]).
     ///     leaf_features: optional list of column indices to use for leaf models.
     #[new]
-    #[pyo3(signature = (leaf = "linear", leaf_family = "gaussian", leaf_cols = "all", l1 = 0.0, l2 = 1e-3, leaf_digest = true, tau = 0.5, leaf_features = None))]
+    #[pyo3(signature = (
+        leaf = "linear",
+        leaf_family = "gaussian",
+        leaf_cols = "all",
+        l1 = 0.0,
+        l2 = 1e-3,
+        leaf_digest = true,
+        tau = 0.5,
+        leaf_features = None,
+        leaf_monotone = None,
+        monotone = None,
+        mars_degree = 1,
+        mars_terms = 10,
+        mars_penalty = 2.0,
+        tweedie_p = 1.5,
+        tobit_threshold = 0.0,
+        events = None,
+        n_classes = None
+    ))]
     fn new(
         leaf: &str,
         leaf_family: &str,
@@ -2229,6 +2253,15 @@ impl PyLeafControl {
         leaf_digest: bool,
         tau: f64,
         leaf_features: Option<Vec<usize>>,
+        leaf_monotone: Option<Vec<i8>>,
+        monotone: Option<Vec<i8>>,
+        mars_degree: usize,
+        mars_terms: usize,
+        mars_penalty: f64,
+        tweedie_p: f64,
+        tobit_threshold: f64,
+        events: Option<Vec<f64>>,
+        n_classes: Option<usize>,
     ) -> PyResult<Self> {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
@@ -2242,6 +2275,9 @@ impl PyLeafControl {
             }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "prob" => LeafKind::Prob,
+            "odds" => LeafKind::Odds,
+            "log_odds" | "logit" => LeafKind::LogOdds,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
         };
         let family = match leaf_family {
@@ -2259,9 +2295,10 @@ impl PyLeafControl {
         };
         let policy = match leaf_cols {
             "all" => LeafCols::All,
-            "path_used" => LeafCols::PathUsed,
+            "path_used" | "path" => LeafCols::PathUsed,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
         };
+        let mono = leaf_monotone.or(monotone).unwrap_or_default();
         Ok(Self {
             inner: mltreelib_core::leaf::LeafControl {
                 leaf: kind,
@@ -2270,11 +2307,17 @@ impl PyLeafControl {
                 l1,
                 l2,
                 leaf_digest,
-                monotone: Vec::new(),
+                leaf_monotone: mono.clone(),
+                monotone: mono,
                 leaf_features,
                 extra: std::collections::HashMap::new(),
-                events: None,
-                n_classes: None,
+                events,
+                n_classes,
+                mars_degree,
+                mars_terms,
+                mars_penalty,
+                tweedie_p,
+                tobit_threshold,
             },
         })
     }
@@ -2288,6 +2331,9 @@ impl PyLeafControl {
             LeafKind::Quantile(t) => format!("quantile({t})"),
             LeafKind::Huber => "huber".to_string(),
             LeafKind::Mars => "mars".to_string(),
+            LeafKind::Prob => "prob".to_string(),
+            LeafKind::Odds => "odds".to_string(),
+            LeafKind::LogOdds => "log_odds".to_string(),
         }
     }
 
@@ -2336,19 +2382,160 @@ impl PyLeafControl {
     }
 
     #[getter]
+    fn get_mars_degree(&self) -> usize {
+        self.inner.mars_degree
+    }
+
+    #[getter]
+    fn get_mars_terms(&self) -> usize {
+        self.inner.mars_terms
+    }
+
+    #[getter]
+    fn get_mars_penalty(&self) -> f64 {
+        self.inner.mars_penalty
+    }
+
+    #[getter]
+    fn get_tweedie_p(&self) -> f64 {
+        self.inner.tweedie_p
+    }
+
+    #[getter]
+    fn get_tobit_threshold(&self) -> f64 {
+        self.inner.tobit_threshold
+    }
+
+    #[getter]
+    fn get_leaf_monotone(&self) -> Vec<i8> {
+        self.inner.leaf_monotone.clone()
+    }
+
+    #[getter]
     fn get_extra(&self) -> std::collections::HashMap<String, f64> {
         self.inner.extra.clone()
     }
 
+    #[pyo3(signature = (
+        leaf = None,
+        leaf_family = None,
+        leaf_cols = None,
+        l1 = None,
+        l2 = None,
+        leaf_digest = None,
+        tau = None,
+        leaf_features = None,
+        leaf_monotone = None,
+        mars_degree = None,
+        mars_terms = None,
+        mars_penalty = None,
+        tweedie_p = None,
+        tobit_threshold = None
+    ))]
+    fn with_params(
+        &self,
+        leaf: Option<&str>,
+        leaf_family: Option<&str>,
+        leaf_cols: Option<&str>,
+        l1: Option<f64>,
+        l2: Option<f64>,
+        leaf_digest: Option<bool>,
+        tau: Option<f64>,
+        leaf_features: Option<Vec<usize>>,
+        leaf_monotone: Option<Vec<i8>>,
+        mars_degree: Option<usize>,
+        mars_terms: Option<usize>,
+        mars_penalty: Option<f64>,
+        tweedie_p: Option<f64>,
+        tobit_threshold: Option<f64>,
+    ) -> PyResult<Self> {
+        let mut copy = self.clone();
+        if let Some(l) = leaf {
+            copy.inner.leaf = match l {
+                "linear" => LeafKind::Linear,
+                "mean" => LeafKind::Mean,
+                "median" => LeafKind::Median,
+                "quantile" => LeafKind::Quantile(tau.unwrap_or(0.5)),
+                "huber" => LeafKind::Huber,
+                "mars" => LeafKind::Mars,
+                "prob" => LeafKind::Prob,
+                "odds" => LeafKind::Odds,
+                "log_odds" | "logit" => LeafKind::LogOdds,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf kind '{other}'"))),
+            };
+        }
+        if let Some(fam) = leaf_family {
+            copy.inner.family = match fam {
+                "gaussian" => LeafFamily::Gaussian,
+                "binomial" => LeafFamily::Binomial,
+                "poisson" => LeafFamily::Poisson,
+                "probit" => LeafFamily::Probit,
+                "gamma" => LeafFamily::Gamma,
+                "tweedie" => LeafFamily::Tweedie,
+                "tobit" => LeafFamily::Tobit,
+                "softmax" => LeafFamily::Softmax,
+                "survival" => LeafFamily::Survival,
+                "heteroscedastic" => LeafFamily::Heteroscedastic,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
+            };
+        }
+        if let Some(lc) = leaf_cols {
+            copy.inner.leaf_cols = match lc {
+                "all" => LeafCols::All,
+                "path_used" | "path" => LeafCols::PathUsed,
+                other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols '{other}'"))),
+            };
+        }
+        if let Some(val) = l1 {
+            copy.inner.l1 = val;
+        }
+        if let Some(val) = l2 {
+            copy.inner.l2 = val;
+        }
+        if let Some(val) = leaf_digest {
+            copy.inner.leaf_digest = val;
+        }
+        if let Some(t) = tau {
+            if matches!(copy.inner.leaf, LeafKind::Quantile(_)) {
+                copy.inner.leaf = LeafKind::Quantile(t);
+            }
+        }
+        if leaf_features.is_some() {
+            copy.inner.leaf_features = leaf_features;
+        }
+        if let Some(lm) = leaf_monotone {
+            copy.inner.leaf_monotone = lm.clone();
+            copy.inner.monotone = lm;
+        }
+        if let Some(d) = mars_degree {
+            copy.inner.mars_degree = d;
+        }
+        if let Some(t) = mars_terms {
+            copy.inner.mars_terms = t;
+        }
+        if let Some(p) = mars_penalty {
+            copy.inner.mars_penalty = p;
+        }
+        if let Some(tp) = tweedie_p {
+            copy.inner.tweedie_p = tp;
+        }
+        if let Some(tt) = tobit_threshold {
+            copy.inner.tobit_threshold = tt;
+        }
+        Ok(copy)
+    }
+
     fn __repr__(&self) -> String {
         format!(
-            "LeafControl(leaf='{}', leaf_family='{}', leaf_cols='{}', l1={}, l2={}, leaf_digest={})",
+            "LeafControl(leaf='{}', leaf_family='{}', leaf_cols='{}', l1={}, l2={}, leaf_digest={}, mars_degree={}, mars_terms={})",
             self.get_leaf(),
             self.get_leaf_family(),
             self.get_leaf_cols(),
             self.inner.l1,
             self.inner.l2,
-            self.inner.leaf_digest
+            self.inner.leaf_digest,
+            self.inner.mars_degree,
+            self.inner.mars_terms
         )
     }
 }
@@ -2365,6 +2552,7 @@ pub struct PyModelTree {
     /// string cells at fit): identity codes, first-seen order. `None` for
     /// columns whose values were already numeric level codes.
     vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
+    interaction_group_names: Option<Vec<Vec<String>>>,
 }
 
 impl PyModelTree {
@@ -2547,7 +2735,8 @@ impl PyModelTree {
         leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.5,
         leaf_cols = "all", leaf_digest = true,
         cat_order = None, cat_search = "cumulative",
-        monotone = vec![], interaction_groups = vec![],
+        monotone = vec![], tree_monotone = None, leaf_monotone = None,
+        col_weights = None, interaction_groups = None,
         alpha = 0.0, imbalance_penalty = 0.0,
         prune = "cp", cp_alpha = 5.0,
         honesty = false, honesty_fraction = 0.5,
@@ -2557,7 +2746,8 @@ impl PyModelTree {
         verbose = 0, leaf_family = "gaussian", split_eval = "fast",
         presort = false, events = None, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
-        mars_degree = 1, mars_terms = 10, mars_penalty = 2.0
+        mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
+        control = None, leaf_control = None
     ))]
     fn new(
         max_depth: usize,
@@ -2584,7 +2774,10 @@ impl PyModelTree {
         cat_order: Option<Bound<'_, PyAny>>,
         cat_search: &str,
         monotone: Vec<i8>,
-        interaction_groups: Vec<Vec<usize>>,
+        tree_monotone: Option<Vec<i8>>,
+        leaf_monotone: Option<Vec<i8>>,
+        col_weights: Option<Vec<f64>>,
+        interaction_groups: Option<Bound<'_, PyAny>>,
         alpha: f64,
         imbalance_penalty: f64,
         prune: &str,
@@ -2608,7 +2801,27 @@ impl PyModelTree {
         mars_degree: usize,
         mars_terms: usize,
         mars_penalty: f64,
+        control: Option<Bound<'_, PyAny>>,
+        leaf_control: Option<Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
+        let (tree_mono, leaf_mono) = {
+            let tm = tree_monotone.unwrap_or_else(|| monotone.clone());
+            let lm = leaf_monotone.unwrap_or_else(|| monotone.clone());
+            (tm, lm)
+        };
+        let mut ig_indices = Vec::new();
+        let mut ig_names = None;
+        if let Some(ref ig_obj) = interaction_groups {
+            if let Ok(idx_groups) = ig_obj.extract::<Vec<Vec<usize>>>() {
+                ig_indices = idx_groups;
+            } else if let Ok(name_groups) = ig_obj.extract::<Vec<Vec<String>>>() {
+                ig_names = Some(name_groups);
+            } else {
+                return Err(PyValueError::new_err(
+                    "interaction_groups must be a list of lists of column indices (ints) or column names (strings)"
+                ));
+            }
+        }
         let policy = match leaf_cols {
             "all" => LeafCols::All,
             "path" => LeafCols::PathUsed,
@@ -2625,9 +2838,12 @@ impl PyModelTree {
             "quantile" => LeafKind::Quantile(tau),
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "prob" => LeafKind::Prob,
+            "odds" => LeafKind::Odds,
+            "log_odds" | "logit" => LeafKind::LogOdds,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "leaf must be 'linear', 'mean', 'median', 'quantile' or 'huber', got {other}"
+                    "leaf must be 'linear', 'mean', 'median', 'quantile', 'huber', 'mars', 'prob', 'odds', or 'log_odds', got {other}"
                 )))
             }
         };
@@ -2772,59 +2988,100 @@ impl PyModelTree {
                 )))
             }
         };
+        let mut params = ModelTreeParams {
+            max_depth,
+            min_rows,
+            min_gain,
+            leaf_cols: policy,
+            leaf: kind,
+            leaf_family: family,
+            l2,
+            l1,
+            tree_monotone: tree_mono,
+            leaf_monotone: leaf_mono,
+            monotone,
+            interaction_groups: ig_indices,
+            col_weights,
+            min_relevance,
+            dtypes: Vec::new(),
+            gain: gain_fn,
+            split_precision,
+            cat_order: order,
+            cat_search: search,
+            leaf_digest,
+            verbose,
+            alpha,
+            imbalance_penalty,
+            col_sample,
+            seed,
+            prune: prune_cost,
+            split_test: split_gate,
+            split_alpha,
+            bonferroni,
+            split_cols,
+            honesty,
+            honesty_fraction,
+            maxsurrogate,
+            cp_alpha,
+            max_leaf_nodes,
+            minsplit,
+            minbucket,
+            minprob,
+            preselect,
+            purity_gate,
+            purity_gate_metric: purity_metric,
+            tail_quantile,
+            tweedie_p,
+            tobit_threshold,
+            split_eval: eval_mode,
+            presort,
+            events,
+            n_classes,
+            mars_degree,
+            mars_terms,
+            mars_penalty,
+        };
+        if let Some(ctrl_obj) = leaf_control.or(control) {
+            let ctrl = extract_leaf_control(
+                ctrl_obj.py(),
+                Some(ctrl_obj),
+                &params,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                &[],
+            )?;
+            params.leaf = ctrl.leaf;
+            params.leaf_family = ctrl.family;
+            params.leaf_cols = ctrl.leaf_cols;
+            params.l1 = ctrl.l1;
+            params.l2 = ctrl.l2;
+            params.leaf_digest = ctrl.leaf_digest;
+            if !ctrl.leaf_monotone.is_empty() {
+                params.leaf_monotone = ctrl.leaf_monotone;
+            }
+            if ctrl.events.is_some() {
+                params.events = ctrl.events;
+            }
+            if ctrl.n_classes.is_some() {
+                params.n_classes = ctrl.n_classes;
+            }
+            params.mars_degree = ctrl.mars_degree;
+            params.mars_terms = ctrl.mars_terms;
+            params.mars_penalty = ctrl.mars_penalty;
+            params.tweedie_p = ctrl.tweedie_p;
+            params.tobit_threshold = ctrl.tobit_threshold;
+        }
         Ok(Self {
-            params: ModelTreeParams {
-                max_depth,
-                min_rows,
-                min_gain,
-                leaf_cols: policy,
-                leaf: kind,
-                leaf_family: family,
-                l2,
-                l1,
-                monotone,
-                interaction_groups,
-                min_relevance,
-                dtypes: Vec::new(),
-                gain: gain_fn,
-                split_precision,
-                cat_order: order,
-                cat_search: search,
-                leaf_digest,
-                verbose,
-                alpha,
-                imbalance_penalty,
-                col_sample,
-                seed,
-                prune: prune_cost,
-                split_test: split_gate,
-                split_alpha,
-                bonferroni,
-                split_cols,
-                honesty,
-                honesty_fraction,
-                maxsurrogate,
-                cp_alpha,
-                max_leaf_nodes,
-                minsplit,
-                minbucket,
-                minprob,
-                preselect,
-                purity_gate,
-                purity_gate_metric: purity_metric,
-                tail_quantile,
-                tweedie_p,
-                tobit_threshold,
-                split_eval: eval_mode,
-                presort,
-                events,
-                n_classes,
-                mars_degree,
-                mars_terms,
-                mars_penalty,
-            },
+            params,
             inner: None,
             vocabs: Vec::new(),
+            interaction_group_names: ig_names,
         })
     }
 
@@ -2844,7 +3101,7 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None, event = None, n_classes = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None, event = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None))]
     fn fit(
         &mut self,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
@@ -2856,8 +3113,33 @@ impl PyModelTree {
         col_names: Option<Vec<String>>,
         event: Option<Vec<f64>>,
         n_classes: Option<usize>,
+        sample_weight: Option<Vec<f64>>,
+        row_weights: Option<Vec<f64>>,
+        col_weights: Option<Vec<f64>>,
+        feature_weights: Option<Vec<f64>>,
     ) -> PyResult<()> {
         let _ = id_col;
+        let effective_w = w.or(sample_weight).or(row_weights);
+        if let Some(cw) = col_weights.or(feature_weights) {
+            self.params.col_weights = Some(cw);
+        }
+        if let (Some(names_groups), Some(cols)) = (&self.interaction_group_names, &col_names) {
+            let mut resolved = Vec::new();
+            for grp in names_groups {
+                let mut idx_grp = Vec::new();
+                for col_name in grp {
+                    if let Some(pos) = cols.iter().position(|c| c == col_name) {
+                        idx_grp.push(pos);
+                    } else {
+                        return Err(PyValueError::new_err(format!(
+                            "interaction group column '{col_name}' not found in col_names"
+                        )));
+                    }
+                }
+                resolved.push(idx_grp);
+            }
+            self.params.interaction_groups = resolved;
+        }
         let (y_vec, events_vec): (Vec<Option<f64>>, Option<Vec<f64>>) =
             if let Ok(tup) = y.extract::<(Vec<Option<f64>>, Vec<f64>)>() {
                 (tup.0, Some(tup.1))
@@ -2921,7 +3203,7 @@ impl PyModelTree {
                 .collect::<PyResult<Vec<_>>>()?;
         }
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, true)?;
-        let mut tree = match w {
+        let mut tree = match effective_w {
             Some(w) => ModelTree::fit_weighted(&x, &y_vec, &w, self.params.clone()),
             None => ModelTree::fit(&x, &y_vec, self.params.clone()),
         }
@@ -3180,7 +3462,7 @@ impl PyModelTree {
                 let preds = t.predict(&x);
                 preds.into_py_any(py)
             }
-            "proba" => {
+            "proba" | "prob" => {
                 match t.params.leaf_family {
                     LeafFamily::Softmax => {
                         let mat = t.predict_proba_matrix(&x).map_err(PyValueError::new_err)?;
@@ -3190,12 +3472,124 @@ impl PyModelTree {
                         let vec = t.predict_proba(&x).map_err(PyValueError::new_err)?;
                         vec.into_py_any(py)
                     }
-                    other => {
-                        Err(PyValueError::new_err(format!(
-                            "kind='proba' requires 'softmax', 'binomial' or 'probit' family, got {other:?}"
-                        )))
+                    _ => {
+                        match t.params.leaf {
+                            LeafKind::Prob => {
+                                let preds = t.predict(&x);
+                                preds.into_py_any(py)
+                            }
+                            LeafKind::Odds => {
+                                let odds = t.predict(&x);
+                                let probs: Vec<f64> = odds.iter().map(|&o| o / (1.0 + o)).collect();
+                                probs.into_py_any(py)
+                            }
+                            LeafKind::LogOdds => {
+                                let log_odds = t.predict(&x);
+                                let probs: Vec<f64> = log_odds.iter().map(|&lo| 1.0 / (1.0 + (-lo).exp())).collect();
+                                probs.into_py_any(py)
+                            }
+                            _ => {
+                                return Err(PyValueError::new_err(format!(
+                                    "kind='proba' requires 'binomial', 'probit', or 'softmax' family, got {:?}",
+                                    t.params.leaf_family
+                                )));
+                            }
+                        }
                     }
                 }
+            }
+            "odds" => {
+                match t.params.leaf {
+                    LeafKind::Odds => {
+                        let preds = t.predict(&x);
+                        preds.into_py_any(py)
+                    }
+                    LeafKind::LogOdds => {
+                        let preds = t.predict(&x);
+                        let odds: Vec<f64> = preds.iter().map(|&lo| lo.exp()).collect();
+                        odds.into_py_any(py)
+                    }
+                    _ => {
+                        let probs = if matches!(t.params.leaf_family, LeafFamily::Binomial | LeafFamily::Probit) {
+                            t.predict_proba(&x).map_err(PyValueError::new_err)?
+                        } else {
+                            t.predict(&x).into_iter().map(|p| p.clamp(1e-6, 1.0 - 1e-6)).collect()
+                        };
+                        let odds: Vec<f64> = probs.iter().map(|&p| {
+                            let p_sm = p.clamp(1e-6, 1.0 - 1e-6);
+                            p_sm / (1.0 - p_sm)
+                        }).collect();
+                        odds.into_py_any(py)
+                    }
+                }
+            }
+            "log_odds" | "logit" => {
+                match t.params.leaf {
+                    LeafKind::LogOdds => {
+                        let preds = t.predict(&x);
+                        preds.into_py_any(py)
+                    }
+                    LeafKind::Odds => {
+                        let preds = t.predict(&x);
+                        let log_odds: Vec<f64> = preds.iter().map(|&o| o.max(1e-6).ln()).collect();
+                        log_odds.into_py_any(py)
+                    }
+                    _ => {
+                        let probs = if matches!(t.params.leaf_family, LeafFamily::Binomial | LeafFamily::Probit) {
+                            t.predict_proba(&x).map_err(PyValueError::new_err)?
+                        } else {
+                            t.predict(&x).into_iter().map(|p| p.clamp(1e-6, 1.0 - 1e-6)).collect()
+                        };
+                        let log_odds: Vec<f64> = probs.iter().map(|&p| {
+                            let p_sm = p.clamp(1e-6, 1.0 - 1e-6);
+                            (p_sm / (1.0 - p_sm)).ln()
+                        }).collect();
+                        log_odds.into_py_any(py)
+                    }
+                }
+            }
+            "median" => {
+                let leaf_ids = t.apply(&x);
+                let entries = t.leaf_entries();
+                let medians: Vec<f64> = leaf_ids.iter().map(|&lid| {
+                    entries.get(lid).map(|e| e.0.stats.median).unwrap_or(0.0)
+                }).collect();
+                medians.into_py_any(py)
+            }
+            "stats" | "leaf_stats" => {
+                let leaf_ids = t.apply(&x);
+                let entries = t.leaf_entries();
+                let mut list = Vec::with_capacity(x.len());
+                for &lid in &leaf_ids {
+                    let st = if let Some(e) = entries.get(lid) {
+                        &e.0.stats
+                    } else if let Some(first) = entries.first() {
+                        &first.0.stats
+                    } else {
+                        return Err(PyValueError::new_err("ModelTree has no leaves"));
+                    };
+                    let d = PyDict::new(py);
+                    d.set_item("mean", st.mean)?;
+                    d.set_item("std", st.std)?;
+                    d.set_item("var", st.var)?;
+                    d.set_item("median", st.median)?;
+                    d.set_item("mad", st.mad)?;
+                    d.set_item("iqr", st.iqr)?;
+                    d.set_item("min", st.min)?;
+                    d.set_item("max", st.max)?;
+                    d.set_item("skew", st.skew)?;
+                    d.set_item("kurtosis", st.kurtosis)?;
+                    d.set_item("prob", st.prob)?;
+                    d.set_item("odds", st.odds)?;
+                    d.set_item("log_odds", st.log_odds)?;
+                    d.set_item("majority_class", st.majority_class)?;
+                    d.set_item("entropy", st.entropy)?;
+                    d.set_item("gini", st.gini)?;
+                    d.set_item("zero_fraction", st.zero_fraction)?;
+                    d.set_item("dispersion", st.dispersion)?;
+                    list.push(d);
+                }
+                list.into_py_any(py)
             }
             "dist" | "params" => {
                 let dist = t.predict_dist(&x).map_err(PyValueError::new_err)?;
@@ -3318,10 +3712,45 @@ impl PyModelTree {
             d.set_item("intercept", intercept)?;
             d.set_item("response_constant", leaf.center.unwrap_or(leaf.stats.mean))?;
             d.set_item("n", n)?;
-            d.set_item("mean", leaf.stats.mean)?;
-            d.set_item("std", leaf.stats.std)?;
-            d.set_item("min", leaf.stats.min)?;
-            d.set_item("max", leaf.stats.max)?;
+            let st = &leaf.stats;
+            d.set_item("mean", st.mean)?;
+            d.set_item("std", st.std)?;
+            d.set_item("var", st.var)?;
+            d.set_item("median", st.median)?;
+            d.set_item("mad", st.mad)?;
+            d.set_item("iqr", st.iqr)?;
+            d.set_item("min", st.min)?;
+            d.set_item("max", st.max)?;
+            d.set_item("skew", st.skew)?;
+            d.set_item("kurtosis", st.kurtosis)?;
+            d.set_item("prob", st.prob)?;
+            d.set_item("odds", st.odds)?;
+            d.set_item("log_odds", st.log_odds)?;
+            d.set_item("majority_class", st.majority_class)?;
+            d.set_item("entropy", st.entropy)?;
+            d.set_item("gini", st.gini)?;
+            d.set_item("zero_fraction", st.zero_fraction)?;
+            d.set_item("dispersion", st.dispersion)?;
+            let stats_dict = PyDict::new(py);
+            stats_dict.set_item("mean", st.mean)?;
+            stats_dict.set_item("std", st.std)?;
+            stats_dict.set_item("var", st.var)?;
+            stats_dict.set_item("median", st.median)?;
+            stats_dict.set_item("mad", st.mad)?;
+            stats_dict.set_item("iqr", st.iqr)?;
+            stats_dict.set_item("min", st.min)?;
+            stats_dict.set_item("max", st.max)?;
+            stats_dict.set_item("skew", st.skew)?;
+            stats_dict.set_item("kurtosis", st.kurtosis)?;
+            stats_dict.set_item("prob", st.prob)?;
+            stats_dict.set_item("odds", st.odds)?;
+            stats_dict.set_item("log_odds", st.log_odds)?;
+            stats_dict.set_item("majority_class", st.majority_class)?;
+            stats_dict.set_item("entropy", st.entropy)?;
+            stats_dict.set_item("gini", st.gini)?;
+            stats_dict.set_item("zero_fraction", st.zero_fraction)?;
+            stats_dict.set_item("dispersion", st.dispersion)?;
+            d.set_item("stats", stats_dict)?;
             let qs: Vec<Option<f64>> = [0.1, 0.25, 0.5, 0.75, 0.9]
                 .iter()
                 .map(|&q| leaf.stats.quantile(q))
@@ -3352,6 +3781,37 @@ impl PyModelTree {
                 d.set_item("mars_gcv", m.gcv)?;
             }
             out.push(d.into_any().unbind());
+        }
+        Ok(out)
+    }
+
+    /// Return the list of 0D stats dictionaries for all leaves.
+    fn leaf_stats<'py>(&self, py: Python<'py>) -> PyResult<Vec<Py<PyDict>>> {
+        let t = self.tree()?;
+        let leaves = t.leaves();
+        let mut out = Vec::with_capacity(leaves.len());
+        for (leaf, _) in leaves {
+            let st = &leaf.stats;
+            let d = PyDict::new(py);
+            d.set_item("mean", st.mean)?;
+            d.set_item("std", st.std)?;
+            d.set_item("var", st.var)?;
+            d.set_item("median", st.median)?;
+            d.set_item("mad", st.mad)?;
+            d.set_item("iqr", st.iqr)?;
+            d.set_item("min", st.min)?;
+            d.set_item("max", st.max)?;
+            d.set_item("skew", st.skew)?;
+            d.set_item("kurtosis", st.kurtosis)?;
+            d.set_item("prob", st.prob)?;
+            d.set_item("odds", st.odds)?;
+            d.set_item("log_odds", st.log_odds)?;
+            d.set_item("majority_class", st.majority_class)?;
+            d.set_item("entropy", st.entropy)?;
+            d.set_item("gini", st.gini)?;
+            d.set_item("zero_fraction", st.zero_fraction)?;
+            d.set_item("dispersion", st.dispersion)?;
+            out.push(d.unbind());
         }
         Ok(out)
     }
@@ -3683,6 +4143,9 @@ impl PyModelTree {
                 LeafKind::Quantile(_) => "quantile",
                 LeafKind::Huber => "huber",
                 LeafKind::Mars => "mars",
+                LeafKind::Prob => "prob",
+                LeafKind::Odds => "odds",
+                LeafKind::LogOdds => "log_odds",
             },
         )?;
         if let LeafKind::Quantile(tau) = self.params.leaf {
@@ -3713,6 +4176,11 @@ impl PyModelTree {
             },
         )?;
         d.set_item("leaf_digest", self.params.leaf_digest)?;
+        d.set_item("tree_monotone", self.params.tree_monotone.clone())?;
+        d.set_item("leaf_monotone", self.params.leaf_monotone.clone())?;
+        d.set_item("monotone", self.params.monotone.clone())?;
+        d.set_item("col_weights", self.params.col_weights.clone())?;
+        d.set_item("interaction_groups", self.params.interaction_groups.clone())?;
         d.set_item("alpha", self.params.alpha)?;
         d.set_item("imbalance_penalty", self.params.imbalance_penalty)?;
         d.set_item(

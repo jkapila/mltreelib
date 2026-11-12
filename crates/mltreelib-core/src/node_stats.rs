@@ -21,8 +21,22 @@ pub struct LeafStats {
     pub wsum: f64,
     pub mean: f64,
     pub std: f64,
+    pub var: f64,
+    pub skew: f64,
+    pub kurtosis: f64,
+    pub median: f64,
+    pub mad: f64,
+    pub iqr: f64,
     pub min: f64,
     pub max: f64,
+    pub prob: f64,
+    pub odds: f64,
+    pub log_odds: f64,
+    pub majority_class: usize,
+    pub entropy: f64,
+    pub gini: f64,
+    pub zero_fraction: f64,
+    pub dispersion: f64,
     pub digest: TDigest,
 }
 
@@ -34,22 +48,84 @@ impl LeafStats {
         assert!(!idx.is_empty(), "leaf must have positive-weight rows");
         let wsum: f64 = idx.iter().map(|&i| w[i]).sum();
         let mean = idx.iter().map(|&i| w[i] * y[i]).sum::<f64>() / wsum;
-        let var = idx
-            .iter()
-            .map(|&i| w[i] * (y[i] - mean) * (y[i] - mean))
-            .sum::<f64>()
-            / wsum;
+        let mut m2 = 0.0;
+        let mut m3 = 0.0;
+        let mut m4 = 0.0;
+        let mut w_zero = 0.0;
+        for &i in &idx {
+            let diff = y[i] - mean;
+            let diff2 = diff * diff;
+            m2 += w[i] * diff2;
+            m3 += w[i] * diff2 * diff;
+            m4 += w[i] * diff2 * diff2;
+            if y[i].abs() < 1e-9 {
+                w_zero += w[i];
+            }
+        }
+        let var = m2 / wsum;
+        let std = var.sqrt();
+        let skew = if std > 1e-9 { (m3 / wsum) / (var * std) } else { 0.0 };
+        let kurtosis = if std > 1e-9 { (m4 / wsum) / (var * var) - 3.0 } else { 0.0 };
+        let zero_fraction = w_zero / wsum;
+        let dispersion = if mean.abs() > 1e-9 { var / mean.abs() } else { 0.0 };
+
         idx.sort_by(|&a, &b| y[a].partial_cmp(&y[b]).expect("NaN in target"));
         let mut digest = TDigest::new_with_size(100);
         digest.extend_values(idx.iter().map(|&i| y[i]));
         digest.flush();
+
+        let q25 = digest.estimate_quantile(0.25).unwrap_or(mean);
+        let q50 = digest.estimate_quantile(0.5).unwrap_or(mean);
+        let q75 = digest.estimate_quantile(0.75).unwrap_or(mean);
+        let median = q50;
+        let iqr = q75 - q25;
+
+        let mut abs_devs: Vec<(f64, f64)> = idx.iter().map(|&i| ((y[i] - median).abs(), w[i])).collect();
+        abs_devs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        let mut cum_w = 0.0;
+        let half_w = wsum * 0.5;
+        let mut mad = 0.0;
+        for &(dev, wi) in &abs_devs {
+            cum_w += wi;
+            if cum_w >= half_w {
+                mad = dev;
+                break;
+            }
+        }
+
+        let p_clamped = mean.clamp(0.0, 1.0);
+        let p_smooth = mean.clamp(1e-6, 1.0 - 1e-6);
+        let odds = p_smooth / (1.0 - p_smooth);
+        let log_odds = odds.ln();
+        let majority_class = if p_clamped >= 0.5 { 1 } else { 0 };
+        let entropy = if p_clamped > 0.0 && p_clamped < 1.0 {
+            -p_clamped * p_clamped.ln() - (1.0 - p_clamped) * (1.0 - p_clamped).ln()
+        } else {
+            0.0
+        };
+        let gini = 2.0 * p_clamped * (1.0 - p_clamped);
+
         Self {
             n: idx.len(),
             wsum,
             mean,
-            std: var.sqrt(),
+            std,
+            var,
+            skew,
+            kurtosis,
+            median,
+            mad,
+            iqr,
             min: y[idx[0]],
             max: y[*idx.last().unwrap()],
+            prob: p_clamped,
+            odds,
+            log_odds,
+            majority_class,
+            entropy,
+            gini,
+            zero_fraction,
+            dispersion,
             digest,
         }
     }
@@ -57,6 +133,26 @@ impl LeafStats {
     /// Quantile estimate from the leaf's t-digest (q in 0..=1).
     pub fn quantile(&self, q: f64) -> Option<f64> {
         self.digest.estimate_quantile(q)
+    }
+
+    /// Class probability P(Y=1) for binary targets (clamped to [0, 1]).
+    pub fn prob(&self) -> f64 {
+        self.prob
+    }
+
+    /// Odds ratio p / (1 - p), with epsilon smoothing to prevent division by zero.
+    pub fn odds(&self) -> f64 {
+        self.odds
+    }
+
+    /// Log-odds (logit) ln(p / (1 - p)).
+    pub fn log_odds(&self) -> f64 {
+        self.log_odds
+    }
+
+    /// Majority class label (1 if prob >= 0.5, else 0).
+    pub fn majority_class(&self) -> usize {
+        self.majority_class
     }
 
     /// Moments for split-candidate fits, without sorting targets or building
@@ -71,13 +167,31 @@ impl LeafStats {
                 max = max.max(y[r]);
             }
         }
+        let var = if frame.wsum > 0.0 { frame.sse / frame.wsum } else { 0.0 };
+        let p_clamped = frame.mean.clamp(0.0, 1.0);
+        let p_smooth = frame.mean.clamp(1e-6, 1.0 - 1e-6);
+        let odds = p_smooth / (1.0 - p_smooth);
         Self {
             n: frame.n,
             wsum: frame.wsum,
             mean: frame.mean,
-            std: (frame.sse / frame.wsum).sqrt(),
+            std: var.sqrt(),
+            var,
+            skew: 0.0,
+            kurtosis: 0.0,
+            median: frame.mean,
+            mad: 0.0,
+            iqr: 0.0,
             min,
             max,
+            prob: p_clamped,
+            odds,
+            log_odds: odds.ln(),
+            majority_class: if frame.mean >= 0.5 { 1 } else { 0 },
+            entropy: 0.0,
+            gini: 2.0 * p_clamped * (1.0 - p_clamped),
+            zero_fraction: 0.0,
+            dispersion: if frame.mean.abs() > 1e-9 { var / frame.mean.abs() } else { 0.0 },
             digest: TDigest::new_with_size(1),
         }
     }

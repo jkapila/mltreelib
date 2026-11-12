@@ -43,7 +43,7 @@ model.fit(X, y)
 
 The resulting leaf predictions and conditional quantiles are unbiased out-of-sample estimates for the leaf's sub-population.
 
-### Sample weights (`w=weights`)
+### Sample weights (`w`, `sample_weight`, `row_weights`)
 
 Pass a 1D sequence of non-negative weights to `ModelTree.fit()`:
 
@@ -54,10 +54,20 @@ from mltreelib import ModelTree
 weights = [10.0 if is_critical(i) else 1.0 for i in range(len(X))]
 
 model = ModelTree(max_depth=3, leaf="mean")
-model.fit(X, y, w=weights)
+model.fit(X, y, sample_weight=weights)  # or w=weights / row_weights=weights
 ```
 
 `w` weights observations across:
 - Impurity score and gain calculations during split search.
 - Leaf means and weighted least-squares linear fits.
 - Weighted IRLS for binomial (`leaf_family="binomial"`) and Poisson (`leaf_family="poisson"`) models.
+
+### Column / Feature weights (`col_weights`)
+
+Pass feature importance weights to scale candidate split gains and bias feature subsampling during `col_sample`:
+
+```python
+# Scale split gain on column 0 by 2x, column 1 by 0.5x:
+model = ModelTree(max_depth=3, col_weights=[2.0, 0.5])
+model.fit(X, y)
+```

@@ -1,0 +1,16 @@
+{
+  "dataset": "diabetes",
+  "columns": {
+    "Pregnancies": "numeric",
+    "Glucose": "numeric",
+    "BloodPressure": "numeric",
+    "SkinThickness": "numeric",
+    "Insulin": "numeric",
+    "BMI": "numeric",
+    "DiabetesPedigreeFunction": "numeric",
+    "Age": "numeric"
+  },
+  "task": "anomaly_detection",
+  "n_features": 8,
+  "minority_class": "Yes"
+}

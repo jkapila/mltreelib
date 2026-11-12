@@ -4,7 +4,7 @@
 
 The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [Model](../model.md).
 ## ModelTree
-```pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, interaction_groups=Ellipsis, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False, events=None, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0))```
+```pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, tree_monotone=None, leaf_monotone=None, col_weights=None, interaction_groups=None, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False, events=None, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0, control=None, leaf_control=None))```
 Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 Task: regression, binary probability estimation, or count modeling.
@@ -42,7 +42,7 @@ Raises: ValueError for Gaussian leaves or an invalid threshold.
 Feature importance — supports `"gain"` (default, rpart split gain share),
 `"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
 ### ModelTree.fit
-```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None))```
+```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None))```
 Fit the tree on row-major data using the selected leaf family.
 
 Args:
@@ -74,6 +74,9 @@ Args:
     col_names: optional data column names when x has different layout than training data.
 
 Returns: dict mapping integer leaf_id to a list of row indices or entity IDs.
+### ModelTree.leaf_stats
+```pythonleaf_stats((self, /))```
+Return the list of 0D stats dictionaries for all leaves.
 ### ModelTree.leaves
 ```pythonleaves((self, /))```
 Fitted leaf models with their empirical target distribution stats.
@@ -206,5 +209,7 @@ Args: none.
 
 Returns: log lines.
 ## LeafControl
-```pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None))```
+```pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None, leaf_monotone=None, monotone=None, mars_degree=1, mars_terms=10, mars_penalty=2.0, tweedie_p=1.5, tobit_threshold=0.0, events=None, n_classes=None))```
 Parameter controls for fitting leaf models independently of tree topology.
+### LeafControl.with_params
+```pythonwith_params((self, /, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, leaf_features=None, leaf_monotone=None, mars_degree=None, mars_terms=None, mars_penalty=None, tweedie_p=None, tobit_threshold=None))```

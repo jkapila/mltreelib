@@ -64,14 +64,21 @@ pub struct ModelTreeParams {
     /// Lasso penalty on leaf coefficients (intercept unpenalized). With
     /// `l2` this is the elastic net. 0 = off.
     pub l1: f64,
-    /// Per-column monotone direction: -1 / 0 / +1 (indexed like `x`'s
-    /// columns). A split on a constrained column must order the children's
-    /// target means accordingly (XGBoost-style leaf-output constraint).
+    /// Per-column monotone direction for tree splits: -1 / 0 / +1. A split on
+    /// a constrained column must order children's target means accordingly.
+    pub tree_monotone: Vec<i8>,
+    /// Per-column monotone direction for leaf linear coefficients: -1 / 0 / +1.
+    pub leaf_monotone: Vec<i8>,
+    /// Legacy combined monotone direction (defaults both tree_monotone and leaf_monotone).
     pub monotone: Vec<i8>,
     /// Interaction groups: features that may interact with each other
     /// (LightGBM-style). Empty = unconstrained. Groups are disjoint; a
     /// path may only use columns from one group.
     pub interaction_groups: Vec<Vec<usize>>,
+    /// Per-column importance / priority weights for the split search:
+    /// candidate split gains on column j are multiplied by `col_weights[j]`.
+    /// Also weights column selection during random `col_sample`. None = uniform 1.0.
+    pub col_weights: Option<Vec<f64>>,
     /// Pre-selection: keep only columns whose winnowing-style relevance
     /// (|weighted correlation with y|) reaches this value. `None` = off.
     /// Dropped columns cannot split or enter leaves.
@@ -222,8 +229,11 @@ impl Default for ModelTreeParams {
             leaf_family: LeafFamily::Gaussian,
             l2: 0.5,
             l1: 0.0,
+            tree_monotone: Vec::new(),
+            leaf_monotone: Vec::new(),
             monotone: Vec::new(),
             interaction_groups: Vec::new(),
+            col_weights: None,
             min_relevance: None,
             dtypes: Vec::new(),
             gain: GainFn::Sse,
@@ -442,11 +452,32 @@ impl ModelTree {
         if params.min_rows == 0 {
             return Err("min_rows must be >= 1".to_string());
         }
-        if params.monotone.iter().any(|&m| m < -1 || m > 1) {
-            return Err("monotone entries must be -1, 0 or 1".to_string());
+        let mut params = params;
+        if params.tree_monotone.is_empty() && !params.monotone.is_empty() {
+            params.tree_monotone = params.monotone.clone();
         }
-        if !params.monotone.is_empty() && params.monotone.len() != d {
-            return Err("monotone must have one entry per column".to_string());
+        if params.leaf_monotone.is_empty() && !params.monotone.is_empty() {
+            params.leaf_monotone = params.monotone.clone();
+        }
+        if params.tree_monotone.iter().any(|&m| m < -1 || m > 1) {
+            return Err("tree_monotone entries must be -1, 0 or 1".to_string());
+        }
+        if !params.tree_monotone.is_empty() && params.tree_monotone.len() != d {
+            return Err("tree_monotone must have one entry per column".to_string());
+        }
+        if params.leaf_monotone.iter().any(|&m| m < -1 || m > 1) {
+            return Err("leaf_monotone entries must be -1, 0 or 1".to_string());
+        }
+        if !params.leaf_monotone.is_empty() && params.leaf_monotone.len() != d {
+            return Err("leaf_monotone must have one entry per column".to_string());
+        }
+        if let Some(cw) = &params.col_weights {
+            if cw.len() != d {
+                return Err("col_weights must have one entry per column".to_string());
+            }
+            if cw.iter().any(|&w| w < 0.0 || !w.is_finite()) {
+                return Err("col_weights entries must be non-negative finite floats".to_string());
+            }
         }
         if let Some(sc) = &params.split_cols {
             if sc.iter().any(|&j| j >= d) {
@@ -457,8 +488,16 @@ impl ModelTree {
             return Err("cp_alpha must be >= 0".to_string());
         }
         if params.leaf_family != LeafFamily::Gaussian {
-            if !matches!(params.leaf, LeafKind::Mean | LeafKind::Linear | LeafKind::Mars) {
-                return Err("binomial and poisson families support only mean, linear, or mars leaves".into());
+            if !matches!(
+                params.leaf,
+                LeafKind::Mean
+                    | LeafKind::Linear
+                    | LeafKind::Mars
+                    | LeafKind::Prob
+                    | LeafKind::Odds
+                    | LeafKind::LogOdds
+            ) {
+                return Err("non-gaussian families support mean, linear, mars, prob, odds, or log_odds leaves".into());
             }
             if params.split_test != SplitTest::None {
                 return Err("split_test='chow' requires the gaussian family".into());
@@ -475,7 +514,7 @@ impl ModelTree {
                 return Err("weights must be non-negative".to_string());
             }
             let Some(t) = y[r] else { continue };
-            if params.leaf_family != LeafFamily::Gaussian && t.is_nan() {
+            if t.is_nan() {
                 continue;
             }
             if w[r] == 0.0 {
@@ -505,16 +544,12 @@ impl ModelTree {
                 }
             }
             for j in 0..d {
-                let value = if params.leaf_family != LeafFamily::Gaussian {
-                    match row[j] {
-                        Some(v) if v.is_nan() => None,
-                        Some(v) if !v.is_finite() => {
-                            return Err("distributional predictors must be finite or missing".into());
-                        }
-                        value => value,
+                let value = match row[j] {
+                    Some(v) if v.is_nan() => None,
+                    Some(v) if !v.is_finite() && params.leaf_family != LeafFamily::Gaussian => {
+                        return Err("distributional predictors must be finite or missing".into());
                     }
-                } else {
-                    row[j]
+                    value => value,
                 };
                 cols[j].push(value);
             }
@@ -523,6 +558,11 @@ impl ModelTree {
         }
         if yv.is_empty() {
             return Err("no rows with an observed target and positive weight".to_string());
+        }
+
+        if params.leaf_family == LeafFamily::Softmax && params.n_classes.is_none() {
+            let max_c = yv.iter().map(|&y| y as usize).max().unwrap_or(1);
+            params.n_classes = Some(max_c + 1);
         }
 
         // Pre-selection family: which columns enter the split search
@@ -810,8 +850,16 @@ impl ModelTree {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
         if control.family != LeafFamily::Gaussian {
-            if !matches!(control.leaf, LeafKind::Mean | LeafKind::Linear | LeafKind::Mars) {
-                return Err("binomial and poisson families support only mean, linear, or mars leaves".into());
+            if !matches!(
+                control.leaf,
+                LeafKind::Mean
+                    | LeafKind::Linear
+                    | LeafKind::Mars
+                    | LeafKind::Prob
+                    | LeafKind::Odds
+                    | LeafKind::LogOdds
+            ) {
+                return Err("non-gaussian families support mean, linear, mars, prob, odds, or log_odds leaves".into());
             }
         }
 
@@ -845,7 +893,7 @@ impl ModelTree {
                 return Err("weights must be non-negative".to_string());
             }
             let Some(t) = y[r] else { continue };
-            if control.family != LeafFamily::Gaussian && t.is_nan() {
+            if t.is_nan() {
                 continue;
             }
             if w[r] == 0.0 {
@@ -875,16 +923,12 @@ impl ModelTree {
                 }
             }
             for j in 0..d {
-                let value = if control.family != LeafFamily::Gaussian {
-                    match row[j] {
-                        Some(v) if v.is_nan() => None,
-                        Some(v) if !v.is_finite() => {
-                            return Err("distributional predictors must be finite or missing".into());
-                        }
-                        value => value,
+                let value = match row[j] {
+                    Some(v) if v.is_nan() => None,
+                    Some(v) if !v.is_finite() && control.family != LeafFamily::Gaussian => {
+                        return Err("distributional predictors must be finite or missing".into());
                     }
-                } else {
-                    row[j]
+                    value => value,
                 };
                 cols[j].push(value);
             }
@@ -893,6 +937,12 @@ impl ModelTree {
 
             let leaf_idx = self.leaf_index_mapped(row, &col_map);
             leaf_assignments.push(leaf_idx);
+        }
+
+        let mut control = control.clone();
+        if control.family == LeafFamily::Softmax && control.n_classes.is_none() {
+            let max_c = yv.iter().map(|&y| y as usize).max().unwrap_or(1);
+            control.n_classes = Some(max_c + 1);
         }
 
         // Group valid row indices by leaf node index
@@ -988,6 +1038,11 @@ impl ModelTree {
         self.params.leaf_digest = control.leaf_digest;
         self.params.events = control.events.clone();
         self.params.n_classes = control.n_classes;
+        self.params.mars_degree = control.mars_degree;
+        self.params.mars_terms = control.mars_terms;
+        self.params.mars_penalty = control.mars_penalty;
+        self.params.tweedie_p = control.tweedie_p;
+        self.params.tobit_threshold = control.tobit_threshold;
         if !control.monotone.is_empty() {
             self.params.monotone = control.monotone;
         }

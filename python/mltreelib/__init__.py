@@ -51,12 +51,15 @@ from mltreelib._core import (
     winnow,
 )
 from mltreelib.datasets import list_datasets, load_dataset
+from mltreelib.models import AnomalyTree, ClusterTree
 
 __all__ = [
     "ActiveAnomalyTree",
+    "AnomalyTree",
     "BaseNEncoder",
     "CLTree",
     "CatBoostEncoder",
+    "ClusterTree",
     "ContextAnomalyTree",
     "CountEncoder",
     "DatasetBuilder",
@@ -100,4 +103,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.3.2"
+__version__ = "0.3.3"
