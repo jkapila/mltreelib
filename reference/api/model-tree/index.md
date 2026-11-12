@@ -4,7 +4,7 @@ The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [
 
 ## ModelTree
 
-`pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, interaction_groups=Ellipsis, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False, events=None, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0))` Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log leaves, NA-aware (learned split directions + NA-indicator leaf terms). Task: regression, binary probability estimation, or count modeling.
+`pythonclass ModelTree((max_depth=5, min_rows=50, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, tree_monotone=None, leaf_monotone=None, col_weights=None, interaction_groups=None, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', split_eval='fast', presort=False, events=None, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0, control=None, leaf_control=None))` Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log leaves, NA-aware (learned split directions + NA-indicator leaf terms). Task: regression, binary probability estimation, or count modeling.
 
 ### ModelTree.apply
 
@@ -38,11 +38,15 @@ Raises: ValueError for Gaussian leaves or an invalid threshold.
 
 ### ModelTree.fit
 
-`pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None))` Fit the tree on row-major data using the selected leaf family.
+`pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, col_names=None, event=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None))` Fit the tree on row-major data using the selected leaf family.
 
 Args: x: rows of predictors; `None` entries are missing (NA rows train). y: targets; `None`/NaN drops that row for binomial/Poisson. Gaussian NaN handling follows the historical Gaussian path. Binomial targets are 0 or 1; Poisson targets are finite nonnegative counts or rates (including fractional values). Gaussian targets retain ordinary regression. w: optional per-row sample weights (row weightage); zero-weight rows are ignored. dtypes: optional per-column types — "numeric" (default) or "categorical" (values are level codes; the split search partitions levels, no encoding).
 
 Returns: nothing; the fitted tree replaces the inner model.
+
+### ModelTree.get\_params
+
+`pythonget_params((self, /, deep=True))` Return all hyperparameter values as a dict (scikit-learn compatible).
 
 ### ModelTree.leaf\_samples
 
@@ -51,6 +55,10 @@ Returns: nothing; the fitted tree replaces the inner model.
 Args: x: raw rows of predictors. id\_col: optional column name, column index, or list of IDs. If None (default), returns integer row indices \[0, 1, ...\]. If provided, returns the corresponding entity ID values. col\_names: optional data column names when x has different layout than training data.
 
 Returns: dict mapping integer leaf\_id to a list of row indices or entity IDs.
+
+### ModelTree.leaf\_stats
+
+`pythonleaf_stats((self, /))` Return the list of 0D stats dictionaries for all leaves.
 
 ### ModelTree.leaves
 
@@ -156,4 +164,8 @@ Returns: log lines.
 
 ## LeafControl
 
-`pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None))` Parameter controls for fitting leaf models independently of tree topology.
+`pythonclass LeafControl((leaf='linear', leaf_family='gaussian', leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None, leaf_monotone=None, monotone=None, mars_degree=1, mars_terms=10, mars_penalty=2.0, tweedie_p=1.5, tobit_threshold=0.0, events=None, n_classes=None))` Parameter controls for fitting leaf models independently of tree topology.
+
+### LeafControl.with\_params
+
+`pythonwith_params((self, /, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, leaf_features=None, leaf_monotone=None, mars_degree=None, mars_terms=None, mars_penalty=None, tweedie_p=None, tobit_threshold=None))`

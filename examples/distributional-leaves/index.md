@@ -146,3 +146,33 @@ for mu, sigma in dists:
 
 - Uses **Harvey (1976) bias correction** (+1.2703628 to log-variance intercept) to guarantee unbiased standard deviation estimation.
 - Enables conditional volatility bands and predictive intervals for risk reserves and financial volatility.
+
+---
+
+## 9\. 0D Leaf Formulations &amp; Stats Dictionaries
+
+For non-parametric or summary leaves, `ModelTree` computes a comprehensive 0D distributional summary at every terminal node:
+
+- **0D Leaf Formulations**: `leaf="prob"`, `leaf="odds"`, `leaf="log_odds"`, `leaf="median"`, `leaf="huber"`, `leaf="quantile"`, `leaf="mean"`.
+- **Leaf Stats Dictionary**: Every leaf dictionary contains a nested `stats` dict and direct fields: `prob`, `odds`, `log_odds`, `majority_class`, `entropy`, `gini`, `var`, `skew`, `kurtosis`, `median`, `mad`, `iqr`, `zero_fraction`, `dispersion`.
+
+```
+from mltreelib import ModelTree, LeafControl
+
+# Binary classification with 0D probability leaves:
+m = ModelTree(leaf="prob", max_depth=3, min_rows=10)
+m.fit(X, y)
+
+# 1. Inspect all 0D stats across leaves:
+for st in m.leaf_stats():
+    print(f"Prob: {st['prob']:.3f}, Odds: {st['odds']:.3f}, Gini: {st['gini']:.3f}")
+
+# 2. Predict specific 0D metrics directly on test data:
+p_prob = m.predict(X_test, kind="prob")
+p_odds = m.predict(X_test, kind="odds")
+p_lo   = m.predict(X_test, kind="log_odds")
+p_med  = m.predict(X_test, kind="median")
+
+# 3. Predict full stats dictionary per row:
+per_row_stats = m.predict(X_test, kind="stats")
+```

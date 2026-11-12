@@ -8,6 +8,7 @@
 - [Installation](<https://jkapila.github.io/mltreelib/installation/index.md>)
 - [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>)
 - [End-to-end walkthrough](<https://jkapila.github.io/mltreelib/examples/walkthrough/index.md>)
+- [Two-Control &amp; 0D Formulations](<https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/index.md>)
 - [Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>)
 - [Model building &amp; predictions](<https://jkapila.github.io/mltreelib/examples/model-building/index.md>)
 - [Growth knob tour](<https://jkapila.github.io/mltreelib/examples/knob-tour/index.md>)
