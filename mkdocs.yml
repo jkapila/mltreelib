@@ -4,6 +4,8 @@ site_description: Tree-based machine learning with a Rust core
 theme:
   variant: modern
   custom_dir: overrides
+  logo: assets/mltreelib-icon.svg
+  favicon: assets/mltreelib-icon.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

@@ -1,5 +1,12 @@
 # mltreelib
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mltreelib-logo-dark.svg">
+    <img src="assets/mltreelib-logo.svg" alt="mltreelib logo" width="320">
+  </picture>
+</p>
+
 **Tree-based machine learning with a Rust core.** A data & feature layer that
 treats missing data as first-class, an adjustable benchmark generator with known
 ground truth, and a tree learner that handles categoricals and missing values
