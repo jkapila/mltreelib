@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 64 64" width="64" height="64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mtid-title mtid-desc">
+  <title id="mtid-title">mltreelib Icon (Dark)</title>
+  <desc id="mtid-desc">Minimal model tree icon for dark backgrounds: cream trunk splitting into three branches with three nodes representing data, core, and metrics, crowned by three sloped cognac linear model segments at the leaves.</desc>
+  <style>
+    .tree-branch { fill: none; stroke: #f2ece1; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .tree-node { fill: #f2ece1; }
+    .leaf-model { fill: none; stroke: #c68a57; stroke-width: 3.6; stroke-linecap: round; }
+  </style>
+
+  <!-- Base Trunk -->
+  <line x1="32" y1="56" x2="32" y2="44" class="tree-branch" />
+
+  <!-- Node 1: Data Ingest (Root) -->
+  <circle cx="32" cy="44" r="3.2" class="tree-node" />
+
+  <!-- Middle Trunk: Data to Core -->
+  <line x1="32" y1="44" x2="32" y2="30" class="tree-branch" />
+
+  <!-- Node 2: Rust Core Engine (Split) -->
+  <circle cx="32" cy="30" r="3.6" class="tree-node" />
+
+  <!-- Branches -->
+  <!-- Left Branch -->
+  <path d="M 32 30 Q 22 28 15 18" class="tree-branch" />
+  <!-- Center Branch -->
+  <line x1="32" y1="30" x2="32" y2="15" class="tree-branch" />
+  <!-- Right Branch -->
+  <path d="M 32 30 Q 42 28 49 18" class="tree-branch" />
+
+  <!-- Linear Model Leaves (Warm Cognac Sloped Segments) -->
+  <!-- Left Leaf Model: Local linear fit slope -->
+  <line x1="9" y1="22" x2="21" y2="14" class="leaf-model" />
+
+  <!-- Center Leaf Model: Local linear fit slope -->
+  <line x1="26" y1="18" x2="38" y2="12" class="leaf-model" />
+
+  <!-- Right Leaf Model: Local linear fit slope -->
+  <line x1="43" y1="14" x2="55" y2="22" class="leaf-model" />
+</svg>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 240 64" width="240" height="64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mtld-title mtld-desc">
+  <title id="mtld-title">mltreelib Logo (Dark)</title>
+  <desc id="mtld-desc">mltreelib brand logo lockup for dark backgrounds: minimal model tree icon beside the monospace wordmark mltreelib.</desc>
+  <style>
+    .tree-branch { fill: none; stroke: #f2ece1; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .tree-node { fill: #f2ece1; }
+    .leaf-model { fill: none; stroke: #c68a57; stroke-width: 3.6; stroke-linecap: round; }
+    .wordmark { font: 700 27px 'Source Code Pro', 'Fira Code', 'JetBrains Mono', 'Segoe UI Mono', monospace; letter-spacing: -0.03em; }
+    .wordmark-base { fill: #f2ece1; }
+    .wordmark-accent { fill: #c68a57; }
+  </style>
+
+  <!-- Left: 64x64 Icon Mark -->
+  <g transform="translate(0, 0)">
+    <!-- Base Trunk -->
+    <line x1="32" y1="56" x2="32" y2="44" class="tree-branch" />
+    <!-- Node 1: Data Ingest (Root) -->
+    <circle cx="32" cy="44" r="3.2" class="tree-node" />
+    <!-- Middle Trunk -->
+    <line x1="32" y1="44" x2="32" y2="30" class="tree-branch" />
+    <!-- Node 2: Rust Core Engine -->
+    <circle cx="32" cy="30" r="3.6" class="tree-node" />
+    <!-- Branches -->
+    <path d="M 32 30 Q 22 28 15 18" class="tree-branch" />
+    <line x1="32" y1="30" x2="32" y2="15" class="tree-branch" />
+    <path d="M 32 30 Q 42 28 49 18" class="tree-branch" />
+    <!-- Linear Model Leaves -->
+    <line x1="9" y1="22" x2="21" y2="14" class="leaf-model" />
+    <line x1="26" y1="18" x2="38" y2="12" class="leaf-model" />
+    <line x1="43" y1="14" x2="55" y2="22" class="leaf-model" />
+  </g>
+
+  <!-- Right: Wordmark -->
+  <text x="72" y="42" class="wordmark">
+    <tspan class="wordmark-base">mltree</tspan><tspan class="wordmark-accent">lib</tspan>
+  </text>
+</svg>
