@@ -50,6 +50,13 @@ pub enum GainFn {
     /// Breiman twoing rule: `2·P_L·P_R·(Σ_j |p_L(j) - p_R(j)|)^2` over
     /// class frequencies — favors balanced splits with contrasting sides.
     Twoing,
+    /// Causal / uplift splitting criterion (Athey & Imbens 2016):
+    /// maximizes treatment effect heterogeneity between children:
+    /// `(w_l·w_r / (w_l + w_r)) · (tau_l - tau_r)^2`.
+    Causal,
+    /// Log-rank test statistic for survival trees (Leblanc & Crowley 1992):
+    /// compares observed vs expected survival events between partitions.
+    LogRank,
     /// User criterion. Receives lazy `(y, w)` slices of the two sides per
     /// candidate split and returns the split quality (higher = better).
     /// Pinball/quantile losses and anything exotic live here.
@@ -78,6 +85,8 @@ impl Clone for GainFn {
             GainFn::GainRatio => GainFn::GainRatio,
             GainFn::Sdr => GainFn::Sdr,
             GainFn::Twoing => GainFn::Twoing,
+            GainFn::Causal => GainFn::Causal,
+            GainFn::LogRank => GainFn::LogRank,
             GainFn::Custom(f) => GainFn::Custom(f.clone()),
         }
     }
@@ -97,6 +106,8 @@ impl std::fmt::Debug for GainFn {
             GainFn::GainRatio => write!(f, "GainRatio"),
             GainFn::Sdr => write!(f, "Sdr"),
             GainFn::Twoing => write!(f, "Twoing"),
+            GainFn::Causal => write!(f, "Causal"),
+            GainFn::LogRank => write!(f, "LogRank"),
             GainFn::Custom(_) => write!(f, "Custom(<fn>)"),
         }
     }
@@ -169,6 +180,15 @@ impl std::fmt::Debug for GainFn {
             GainFn::Twoing => {
                 let tv = class_total_variation(left, right);
                 2.0 * (wl / w) * (wr / w) * tv * tv
+            }
+            GainFn::Causal | GainFn::LogRank => {
+                // Specialized fast-scan criteria: auxiliary channels (treatment/event)
+                // are scored directly in scan_column. Lazy slice fallback defaults to Friedman MSE.
+                let mean = |p: &[(f64, f64)]| {
+                    let sw = wsum(p);
+                    if sw <= 0.0 { 0.0 } else { p.iter().map(|&(y, wt)| wt * y).sum::<f64>() / sw }
+                };
+                (wl * wr / w) * (mean(left) - mean(right)).powi(2)
             }
             GainFn::Custom(f) => f.gain(left, right),
         }

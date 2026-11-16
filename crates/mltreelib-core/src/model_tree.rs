@@ -191,6 +191,12 @@ pub struct ModelTreeParams {
     pub presort: bool,
     /// Optional event indicators for survival outcome pairs (T, E).
     pub events: Option<Vec<f64>>,
+    /// Optional treatment indicators (1=treated, 0=control) for causal outcome pairs (Y, W/T).
+    pub treatments: Option<Vec<f64>>,
+    /// Whether group columns are eligible for tree building (default true). If false, group columns are dropped.
+    pub train_groups: bool,
+    /// Whether row ID columns are eligible for tree building (default false). If false, ID columns are dropped.
+    pub train_ids: bool,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
     /// Maximum degree of interaction for MARS leaves (default 1).
@@ -268,6 +274,9 @@ impl Default for ModelTreeParams {
             split_eval: SplitEval::Fast,
             presort: false,
             events: None,
+            treatments: None,
+            train_groups: true,
+            train_ids: false,
             n_classes: None,
             mars_degree: 1,
             mars_terms: 10,
@@ -680,6 +689,7 @@ impl ModelTree {
             cols: &cols,
             y: &yv,
             w: &wv,
+            treatments: params.treatments.as_deref(),
             params: &params,
             active: &active_cols,
             nodes: Vec::new(),
@@ -1251,6 +1261,19 @@ impl ModelTree {
             .collect())
     }
 
+    /// Individual treatment effect (CATE / uplift) tau = E[Y|T=1, X] - E[Y|T=0, X] per row.
+    pub fn predict_uplift(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_uplift()
+            })
+            .collect())
+    }
+
     /// Predict location mu and dispersion sigma (mean, std) per row for heteroscedastic leaves.
     pub fn predict_dist(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<(f64, f64)>, String> {
         Ok(x.iter()
@@ -1748,6 +1771,7 @@ pub(crate) struct Grower<'a> {
     pub(crate) cols: &'a [Vec<Option<f64>>],
     pub(crate) y: &'a [f64],
     pub(crate) w: &'a [f64],
+    pub(crate) treatments: Option<&'a [f64]>,
     pub(crate) params: &'a ModelTreeParams,
     pub(crate) active: &'a [usize],
     pub(crate) nodes: Vec<Node>,

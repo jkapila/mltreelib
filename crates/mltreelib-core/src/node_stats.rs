@@ -252,6 +252,19 @@ pub struct HeteroscedasticModel {
     pub scale_linear: Option<LinearModel>,
 }
 
+/// Fitted causal / treatment effect parameters for a leaf.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CausalStats {
+    /// Estimated Conditional Average Treatment Effect (CATE): `mean_treated - mean_control`.
+    pub tau: f64,
+    pub mean_treated: f64,
+    pub mean_control: f64,
+    pub n_treated: usize,
+    pub n_control: usize,
+    pub w_treated: f64,
+    pub w_control: f64,
+}
+
 /// Leaf payload: distribution stats always; a linear model for model-tree
 /// leaves (`None` for mean/CART leaves).
 #[derive(Clone, Debug)]
@@ -265,6 +278,7 @@ pub struct LeafModel {
     pub softmax: Option<SoftmaxModel>,
     pub survival: Option<SurvivalStats>,
     pub heteroscedastic: Option<HeteroscedasticModel>,
+    pub causal: Option<CausalStats>,
     pub mars: Option<crate::mars::MarsModel>,
     pub mars_cols: Option<Vec<usize>>,
 }
@@ -317,6 +331,11 @@ impl LeafModel {
                 }
             }
         }
+    }
+
+    /// Conditional Average Treatment Effect (CATE) / uplift prediction at this leaf.
+    pub fn predict_uplift(&self) -> f64 {
+        self.causal.as_ref().map(|c| c.tau).unwrap_or(0.0)
     }
 
     /// Column-major prediction for training-row scoring, without allocating

@@ -2242,6 +2242,7 @@ impl PyLeafControl {
         tweedie_p = 1.5,
         tobit_threshold = 0.0,
         events = None,
+        treatments = None,
         n_classes = None
     ))]
     fn new(
@@ -2261,6 +2262,7 @@ impl PyLeafControl {
         tweedie_p: f64,
         tobit_threshold: f64,
         events: Option<Vec<f64>>,
+        treatments: Option<Vec<f64>>,
         n_classes: Option<usize>,
     ) -> PyResult<Self> {
         let kind = match leaf {
@@ -2312,6 +2314,7 @@ impl PyLeafControl {
                 leaf_features,
                 extra: std::collections::HashMap::new(),
                 events,
+                treatments,
                 n_classes,
                 mars_degree,
                 mars_terms,
@@ -2744,7 +2747,7 @@ impl PyModelTree {
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
         verbose = 0, leaf_family = "gaussian", split_eval = "fast",
-        presort = false, events = None, n_classes = None,
+        presort = false, events = None, treatments = None, train_groups = true, train_ids = false, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
         control = None, leaf_control = None
@@ -2795,6 +2798,9 @@ impl PyModelTree {
         split_eval: &str,
         presort: bool,
         events: Option<Vec<f64>>,
+        treatments: Option<Vec<f64>>,
+        train_groups: bool,
+        train_ids: bool,
         n_classes: Option<usize>,
         tweedie_p: f64,
         tobit_threshold: f64,
@@ -2889,9 +2895,11 @@ impl PyModelTree {
                         "gain_ratio" => GainFn::GainRatio,
                         "sdr" => GainFn::Sdr,
                         "twoing" => GainFn::Twoing,
+                        "causal" | "uplift" => GainFn::Causal,
+                        "logrank" | "log_rank" => GainFn::LogRank,
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank' or a callable, got {other}"
                             )))
                         }
                     }
@@ -3036,6 +3044,9 @@ impl PyModelTree {
             split_eval: eval_mode,
             presort,
             events,
+            treatments,
+            train_groups,
+            train_ids,
             n_classes,
             mars_degree,
             mars_terms,
@@ -3101,24 +3112,80 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, col_names = None, event = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None))]
     fn fit(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        mut x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
         y: Bound<'_, PyAny>,
         w: Option<Vec<f64>>,
-        dtypes: Option<Vec<String>>,
+        mut dtypes: Option<Vec<String>>,
         control: Option<Bound<'_, PyAny>>,
         id_col: Option<Bound<'_, PyAny>>,
-        col_names: Option<Vec<String>>,
+        group_col: Option<Bound<'_, PyAny>>,
+        mut col_names: Option<Vec<String>>,
         event: Option<Vec<f64>>,
+        treatment: Option<Vec<f64>>,
         n_classes: Option<usize>,
         sample_weight: Option<Vec<f64>>,
         row_weights: Option<Vec<f64>>,
         col_weights: Option<Vec<f64>>,
         feature_weights: Option<Vec<f64>>,
+        train_groups: Option<bool>,
+        train_ids: Option<bool>,
     ) -> PyResult<()> {
-        let _ = id_col;
+        if let Some(tg) = train_groups {
+            self.params.train_groups = tg;
+        }
+        if let Some(ti) = train_ids {
+            self.params.train_ids = ti;
+        }
+        if let Some(tr) = treatment {
+            self.params.treatments = Some(tr);
+            if matches!(self.params.gain, GainFn::Sse) {
+                self.params.gain = GainFn::Causal;
+            }
+        }
+
+        let mut drop_indices = std::collections::HashSet::new();
+        let resolve_col = |spec: &Bound<'_, PyAny>, names: Option<&[String]>| -> Option<usize> {
+            if let Ok(idx) = spec.extract::<usize>() {
+                Some(idx)
+            } else if let Ok(name) = spec.extract::<String>() {
+                names.and_then(|ns| ns.iter().position(|n| n == &name))
+            } else {
+                None
+            }
+        };
+
+        if !self.params.train_ids {
+            if let Some(ref id_spec) = id_col {
+                if let Some(idx) = resolve_col(id_spec, col_names.as_deref()) {
+                    drop_indices.insert(idx);
+                }
+            }
+        }
+        if !self.params.train_groups {
+            if let Some(ref grp_spec) = group_col {
+                if let Some(idx) = resolve_col(grp_spec, col_names.as_deref()) {
+                    drop_indices.insert(idx);
+                }
+            }
+        }
+
+        if !drop_indices.is_empty() {
+            let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
+            let keep_indices: Vec<usize> = (0..n_cols).filter(|i| !drop_indices.contains(i)).collect();
+            x = x.into_iter()
+                .map(|row| keep_indices.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
+                .collect();
+            if let Some(names) = col_names.take() {
+                col_names = Some(keep_indices.iter().filter_map(|&i| names.get(i).cloned()).collect());
+            }
+            if let Some(dts) = dtypes.take() {
+                dtypes = Some(keep_indices.iter().filter_map(|&i| dts.get(i).cloned()).collect());
+            }
+        }
+
         let effective_w = w.or(sample_weight).or(row_weights);
         if let Some(cw) = col_weights.or(feature_weights) {
             self.params.col_weights = Some(cw);
@@ -3140,7 +3207,7 @@ impl PyModelTree {
             }
             self.params.interaction_groups = resolved;
         }
-        let (y_vec, events_vec): (Vec<Option<f64>>, Option<Vec<f64>>) =
+        let (y_vec, aux_vec): (Vec<Option<f64>>, Option<Vec<f64>>) =
             if let Ok(tup) = y.extract::<(Vec<Option<f64>>, Vec<f64>)>() {
                 (tup.0, Some(tup.1))
             } else if let Ok(pairs) = y.extract::<Vec<(f64, f64)>>() {
@@ -3148,14 +3215,23 @@ impl PyModelTree {
                 let evs = pairs.iter().map(|p| p.1).collect();
                 (times, Some(evs))
             } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
-                (single, event)
+                (single, None)
             } else {
                 return Err(PyTypeError::new_err(
-                    "y must be a list of floats, or a (times, events) tuple, or a list of (time, event) pairs",
+                    "y must be a list of floats, or a 2-tuple (values, aux) e.g. (times, events) or (outcomes, treatments)",
                 ));
             };
 
-        if let Some(evs) = events_vec {
+        if let Some(aux) = aux_vec {
+            if matches!(self.params.gain, GainFn::Causal) || self.params.treatments.is_some() {
+                self.params.treatments = Some(aux);
+                self.params.gain = GainFn::Causal;
+            } else if self.params.leaf_family == LeafFamily::Survival || event.is_some() {
+                self.params.events = Some(aux);
+            } else {
+                self.params.events = Some(aux);
+            }
+        } else if let Some(evs) = event {
             self.params.events = Some(evs);
         }
         if let Some(nc) = n_classes {
@@ -3605,12 +3681,16 @@ impl PyModelTree {
                 let haz = t.predict_hazard(&x, &t_grid).map_err(PyValueError::new_err)?;
                 haz.into_py_any(py)
             }
+            "uplift" | "cate" => {
+                let uplift = t.predict_uplift(&x).map_err(PyValueError::new_err)?;
+                uplift.into_py_any(py)
+            }
             "leaf_id" => {
                 let ids = t.apply(&x);
                 ids.into_py_any(py)
             }
             other => Err(PyValueError::new_err(format!(
-                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', or 'leaf_id'"
+                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'uplift', or 'leaf_id'"
             ))),
         }
     }

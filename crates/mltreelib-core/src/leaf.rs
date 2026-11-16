@@ -67,6 +67,8 @@ pub struct LeafControl {
     pub extra: std::collections::HashMap<String, f64>,
     /// Optional event indicators (1=event, 0=censored) for survival leaves.
     pub events: Option<Vec<f64>>,
+    /// Optional treatment indicators (1=treated, 0=control) for causal / uplift leaves.
+    pub treatments: Option<Vec<f64>>,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
     /// Maximum degree of interaction for MARS leaves (default 1).
@@ -95,6 +97,7 @@ impl Default for LeafControl {
             leaf_features: None,
             extra: std::collections::HashMap::new(),
             events: None,
+            treatments: None,
             n_classes: None,
             mars_degree: 1,
             mars_terms: 10,
@@ -130,6 +133,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             leaf_features: None,
             extra,
             events: p.events.clone(),
+            treatments: p.treatments.clone(),
             n_classes: p.n_classes,
             mars_degree: p.mars_degree,
             mars_terms: p.mars_terms,
@@ -262,6 +266,45 @@ pub fn fit_leaf_model(
     } else {
         LeafStats::from_rows(y, w, rows)
     };
+    let causal = if let Some(treat) = control.treatments.as_ref() {
+        let mut n_treated = 0usize;
+        let mut n_control = 0usize;
+        let mut w_treated = 0.0;
+        let mut w_control = 0.0;
+        let mut swy_treated = 0.0;
+        let mut swy_control = 0.0;
+        for &r in rows {
+            let wt = w[r];
+            if wt <= 0.0 {
+                continue;
+            }
+            let t = treat.get(r).copied().unwrap_or(0.0);
+            let y_val = y[r];
+            if t > 0.0 {
+                n_treated += 1;
+                w_treated += wt;
+                swy_treated += wt * y_val;
+            } else {
+                n_control += 1;
+                w_control += wt;
+                swy_control += wt * y_val;
+            }
+        }
+        let mean_treated = if w_treated > 0.0 { swy_treated / w_treated } else { 0.0 };
+        let mean_control = if w_control > 0.0 { swy_control / w_control } else { 0.0 };
+        let tau = mean_treated - mean_control;
+        Some(crate::node_stats::CausalStats {
+            tau,
+            mean_treated,
+            mean_control,
+            n_treated,
+            n_control,
+            w_treated,
+            w_control,
+        })
+    } else {
+        None
+    };
     let family = control.family;
     if family == LeafFamily::Softmax {
         let n_classes = control.n_classes.unwrap_or_else(|| {
@@ -346,6 +389,7 @@ pub fn fit_leaf_model(
             }),
             survival: None,
             heteroscedastic: None,
+            causal,
             mars: None,
             mars_cols: None,
         };
@@ -417,6 +461,7 @@ pub fn fit_leaf_model(
                 median_time,
             }),
             heteroscedastic: None,
+            causal,
             mars: None,
             mars_cols: None,
         };
@@ -495,6 +540,7 @@ pub fn fit_leaf_model(
                 scale,
                 scale_linear,
             }),
+            causal,
             mars: None,
             mars_cols: None,
         };
@@ -532,6 +578,7 @@ pub fn fit_leaf_model(
             softmax: None,
             survival: None,
             heteroscedastic: None,
+            causal,
             mars: reg.model,
             mars_cols: Some(chosen),
         };
@@ -551,6 +598,7 @@ pub fn fit_leaf_model(
             softmax: None,
             survival: None,
             heteroscedastic: None,
+            causal,
             mars: None,
             mars_cols: None,
         };
@@ -581,6 +629,7 @@ pub fn fit_leaf_model(
                 softmax: None,
                 survival: None,
                 heteroscedastic: None,
+                causal,
                 mars: None,
                 mars_cols: None,
             };
@@ -629,6 +678,7 @@ pub fn fit_leaf_model(
         softmax: None,
         survival: None,
         heteroscedastic: None,
+        causal,
         mars: None,
         mars_cols: None,
     }

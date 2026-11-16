@@ -55,6 +55,9 @@ nav:
               - Model Building & Predictions: examples/model-building.md
               - Growth Knob Tour: examples/knob-tour.md
               - Distributional Leaves: examples/distributional-leaves.md
+              - Causal & Uplift Modeling: examples/causal-uplift.md
+              - Tobit & Censored Regression: examples/tobit-regression.md
+              - Survival Trees & Hazard Estimation: examples/survival-trees.md
               - Hierarchical Retrain & Routing: examples/hierarchical-retrain.md
               - Monotone & Interaction Constraints: examples/constraints.md
               - Honest Trees & Causal Weights: examples/honesty-weights.md

@@ -3146,3 +3146,47 @@ fn treeshap_multi_split_same_feature_satisfies_efficiency() {
     }
 }
 
+#[test]
+fn causal_tree_splits_on_treatment_heterogeneity_and_predicts_uplift() {
+    use mltreelib_core::criteria::GainFn;
+
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    let mut treat: Vec<f64> = Vec::new();
+
+    // 200 samples: x in [-1.0, 1.0].
+    // If x < 0.0: baseline Y = 2.0, treatment effect tau = +10.0 (T=1 -> Y=12.0, T=0 -> Y=2.0)
+    // If x >= 0.0: baseline Y = 2.0, treatment effect tau = -5.0 (T=1 -> Y=-3.0, T=0 -> Y=2.0)
+    for i in 0..200 {
+        let x_val = -1.0 + (i as f64) * (2.0 / 199.0);
+        let t = if i % 2 == 0 { 1.0 } else { 0.0 };
+        let tau = if x_val < 0.0 { 10.0 } else { -5.0 };
+        let y_val = 2.0 + t * tau;
+
+        x.push(vec![Some(x_val)]);
+        y.push(Some(y_val));
+        treat.push(t);
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        leaf: LeafKind::Mean,
+        gain: GainFn::Causal,
+        treatments: Some(treat),
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("causal tree fit succeeds");
+    assert!(tree.n_leaves() >= 2, "tree must split on causal effect heterogeneity");
+
+    let test_x = vec![
+        vec![Some(-0.5)],
+        vec![Some(0.5)],
+    ];
+    let uplifts = tree.predict_uplift(&test_x).expect("predict_uplift succeeds");
+    assert_eq!(uplifts.len(), 2);
+    assert!((uplifts[0] - 10.0).abs() < 1e-3, "left regime uplift should be ~10.0, got {}", uplifts[0]);
+    assert!((uplifts[1] - (-5.0)).abs() < 1e-3, "right regime uplift should be ~ -5.0, got {}", uplifts[1]);
+}
+

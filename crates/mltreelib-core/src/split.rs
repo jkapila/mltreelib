@@ -108,6 +108,8 @@ pub(crate) struct SplitScratch {
     pub pairs: Vec<(f64, f64, f64)>,
     pub missing_yws: Vec<(f64, f64)>,
     pub level_moments: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, swy, swy2)
+    pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
+    pub level_causal: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw_t, swy_t, sw_c, swy_c)
 }
 
 impl<'a> Grower<'a> {
@@ -406,6 +408,14 @@ impl<'a> Grower<'a> {
         scratch: &mut SplitScratch,
         node_moments: (f64, f64, f64),
     ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        if matches!(self.params.gain, GainFn::Causal) {
+            return if self.col_type(j) == ColType::Categorical {
+                self.scan_column_categorical_causal(rows, j, scratch)
+            } else {
+                let (hit, st) = self.scan_column_causal(rows, j, scratch);
+                (hit.map(|(g, s)| (g, s, None)), st)
+            };
+        }
         let (hit, st) = match self.params.split_eval {
             SplitEval::Exhaustive => {
                 if self.params.leaf_family != crate::family::LeafFamily::Gaussian
@@ -1013,6 +1023,345 @@ impl<'a> Grower<'a> {
 
         st.scan_ns += t1.elapsed().as_nanos() as u64;
         (best, st)
+    }
+
+    /// Fast O(1) causal split scan maximizing treatment effect divergence between partitions.
+    fn scan_column_causal(
+        &self,
+        rows: &[usize],
+        j: usize,
+        scratch: &mut SplitScratch,
+    ) -> (Option<(f64, Split)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let Some(treat) = self.treatments else {
+            return (None, st);
+        };
+        let m = self.min_child(rows.len()) as f64;
+        let t0 = Instant::now();
+
+        scratch.pairs_causal.clear();
+        let grid = self.grid_for(j);
+        let q = grid.filter(|&p| p > 0.0).map(|p| 1.0 / p);
+
+        let (mut tn_t, mut tn_c) = (0usize, 0usize);
+        let (mut tsw_t, mut tswy_t) = (0.0, 0.0);
+        let (mut tsw_c, mut tswy_c) = (0.0, 0.0);
+
+        for &r in rows {
+            if let Some(v_raw) = self.cols[j][r] {
+                let v = match q {
+                    Some(inv) => (v_raw * inv).round() / inv,
+                    None => v_raw,
+                };
+                let (y, w) = (self.y[r], self.w[r]);
+                let tr = treat.get(r).copied().unwrap_or(0.0);
+                scratch.pairs_causal.push((v, y, w, tr));
+                if tr > 0.0 {
+                    tn_t += 1;
+                    tsw_t += w;
+                    tswy_t += w * y;
+                } else {
+                    tn_c += 1;
+                    tsw_c += w;
+                    tswy_c += w * y;
+                }
+            }
+        }
+
+        let n_pairs = scratch.pairs_causal.len();
+        if n_pairs < 2 || tsw_t <= 0.0 || tsw_c <= 0.0 {
+            return (None, st);
+        }
+
+        scratch.pairs_causal.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+
+        let (mut mn_t, mut mn_c) = (0usize, 0usize);
+        let (mut msw_t, mut mswy_t) = (0.0, 0.0);
+        let (mut msw_c, mut mswy_c) = (0.0, 0.0);
+        if rows.len() > n_pairs {
+            for &r in rows {
+                if self.cols[j][r].is_none() {
+                    let (y, w) = (self.y[r], self.w[r]);
+                    let tr = treat.get(r).copied().unwrap_or(0.0);
+                    if tr > 0.0 {
+                        mn_t += 1;
+                        msw_t += w;
+                        mswy_t += w * y;
+                    } else {
+                        mn_c += 1;
+                        msw_c += w;
+                        mswy_c += w * y;
+                    }
+                }
+            }
+        }
+
+        st.group_ns += t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+
+        let (mut ln_t, mut ln_c) = (0usize, 0usize);
+        let (mut lsw_t, mut lswy_t) = (0.0, 0.0);
+        let (mut lsw_c, mut lswy_c) = (0.0, 0.0);
+        let mut best: Option<(f64, Split)> = None;
+        let total_w = tsw_t + tsw_c + msw_t + msw_c;
+
+        for k in 0..n_pairs {
+            let (v, y, w, tr) = scratch.pairs_causal[k];
+            if tr > 0.0 {
+                ln_t += 1;
+                lsw_t += w;
+                lswy_t += w * y;
+            } else {
+                ln_c += 1;
+                lsw_c += w;
+                lswy_c += w * y;
+            }
+            let is_boundary = k + 1 < n_pairs && scratch.pairs_causal[k + 1].0 != v;
+            if !is_boundary {
+                continue;
+            }
+            let threshold = match grid {
+                Some(_) => v,
+                None => (v + scratch.pairs_causal[k + 1].0) / 2.0,
+            };
+            let (rn_t, rn_c) = (tn_t - ln_t, tn_c - ln_c);
+            let (rsw_t, rswy_t) = (tsw_t - lsw_t, tswy_t - lswy_t);
+            let (rsw_c, rswy_c) = (tsw_c - lsw_c, tswy_c - lswy_c);
+            st.candidates += 1;
+
+            for missing_left in [true, false] {
+                let (aln_t, aln_c, alsw_t, alswy_t, alsw_c, alswy_c) = if missing_left {
+                    (ln_t + mn_t, ln_c + mn_c, lsw_t + msw_t, lswy_t + mswy_t, lsw_c + msw_c, lswy_c + mswy_c)
+                } else {
+                    (ln_t, ln_c, lsw_t, lswy_t, lsw_c, lswy_c)
+                };
+                let (arn_t, arn_c, arsw_t, arswy_t, arsw_c, arswy_c) = if missing_left {
+                    (rn_t, rn_c, rsw_t, rswy_t, rsw_c, rswy_c)
+                } else {
+                    (rn_t + mn_t, rn_c + mn_c, rsw_t + msw_t, rswy_t + mswy_t, rsw_c + msw_c, rswy_c + mswy_c)
+                };
+                let aln = aln_t + aln_c;
+                let arn = arn_t + arn_c;
+                if (aln as f64) < m || (arn as f64) < m {
+                    continue;
+                }
+                let alsw = alsw_t + alsw_c;
+                let arsw = arsw_t + arsw_c;
+                if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w) {
+                    continue;
+                }
+                // Both child sides must have positive treated and control masses
+                if alsw_t <= 0.0 || alsw_c <= 0.0 || arsw_t <= 0.0 || arsw_c <= 0.0 {
+                    continue;
+                }
+                let tau_l = (alswy_t / alsw_t) - (alswy_c / alsw_c);
+                let tau_r = (arswy_t / arsw_t) - (arswy_c / arsw_c);
+                let mut gain = (alsw * arsw / (alsw + arsw)) * (tau_l - tau_r).powi(2);
+                if self.params.imbalance_penalty > 0.0 {
+                    gain -= self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64);
+                }
+                if gain <= self.params.min_gain {
+                    continue;
+                }
+                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                    best = Some((
+                        gain,
+                        Split {
+                            col: j,
+                            threshold,
+                            missing_left,
+                            gain,
+                            cat: None,
+                            sur: None,
+                        },
+                    ));
+                }
+            }
+        }
+
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (best, st)
+    }
+
+    /// Fast O(1) categorical causal split scan maximizing treatment effect divergence.
+    fn scan_column_categorical_causal(
+        &self,
+        rows: &[usize],
+        j: usize,
+        scratch: &mut SplitScratch,
+    ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let Some(treat) = self.treatments else {
+            return (None, st);
+        };
+        let t0 = Instant::now();
+
+        let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64, f64)> =
+            std::collections::HashMap::new();
+        let (mut mn_t, mut mn_c) = (0usize, 0usize);
+        let (mut msw_t, mut mswy_t) = (0.0, 0.0);
+        let (mut msw_c, mut mswy_c) = (0.0, 0.0);
+
+        for &r in rows {
+            let (y, w) = (self.y[r], self.w[r]);
+            let tr = treat.get(r).copied().unwrap_or(0.0);
+            match self.cols[j][r] {
+                Some(v) => {
+                    let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0, 0.0));
+                    e.0 += 1;
+                    if tr > 0.0 {
+                        e.1 += w;
+                        e.2 += w * y;
+                    } else {
+                        e.3 += w;
+                        e.4 += w * y;
+                    }
+                }
+                None => {
+                    if tr > 0.0 {
+                        mn_t += 1;
+                        msw_t += w;
+                        mswy_t += w * y;
+                    } else {
+                        mn_c += 1;
+                        msw_c += w;
+                        mswy_c += w * y;
+                    }
+                }
+            }
+        }
+        if by_level.len() < 2 {
+            st.group_ns = t0.elapsed().as_nanos() as u64;
+            return (None, st);
+        }
+
+        scratch.level_causal.clear();
+        for (b, (n, sw_t, swy_t, sw_c, swy_c)) in by_level {
+            scratch.level_causal.push((f64::from_bits(b), n, sw_t, swy_t, sw_c, swy_c));
+        }
+
+        scratch.level_causal.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+                .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+        });
+
+        st.group_ns += t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+
+        let k = scratch.level_causal.len();
+        let m = self.min_child(rows.len()) as f64;
+        let (mut tsw_t, mut tswy_t) = (0.0, 0.0);
+        let (mut tsw_c, mut tswy_c) = (0.0, 0.0);
+        for &(_, _, sw_t, swy_t, sw_c, swy_c) in scratch.level_causal.iter() {
+            tsw_t += sw_t;
+            tswy_t += swy_t;
+            tsw_c += sw_c;
+            tswy_c += swy_c;
+        }
+        let total_w = tsw_t + tsw_c + msw_t + msw_c;
+
+        let mut best: Option<(f64, Vec<usize>, bool)> = None;
+
+        let mut eval_split = |left_indices: &[usize], best: &mut Option<(f64, Vec<usize>, bool)>| {
+            let mut lsw_t = 0.0;
+            let mut lswy_t = 0.0;
+            let mut lsw_c = 0.0;
+            let mut lswy_c = 0.0;
+            let mut ln = 0usize;
+            for &idx in left_indices {
+                let (_, n, sw_t, swy_t, sw_c, swy_c) = scratch.level_causal[idx];
+                ln += n;
+                lsw_t += sw_t;
+                lswy_t += swy_t;
+                lsw_c += sw_c;
+                lswy_c += swy_c;
+            }
+            let rn = rows.len().saturating_sub(ln + mn_t + mn_c);
+            if (ln as f64) < m || (rn as f64) < m {
+                return;
+            }
+            let rsw_t = tsw_t - lsw_t;
+            let rswy_t = tswy_t - lswy_t;
+            let rsw_c = tsw_c - lsw_c;
+            let rswy_c = tswy_c - lswy_c;
+            st.candidates += 1;
+
+            for missing_left in [true, false] {
+                let (alsw_t, alswy_t, alsw_c, alswy_c) = if missing_left {
+                    (lsw_t + msw_t, lswy_t + mswy_t, lsw_c + msw_c, lswy_c + mswy_c)
+                } else {
+                    (lsw_t, lswy_t, lsw_c, lswy_c)
+                };
+                let (arsw_t, arswy_t, arsw_c, arswy_c) = if missing_left {
+                    (rsw_t, rswy_t, rsw_c, rswy_c)
+                } else {
+                    (rsw_t + msw_t, rswy_t + mswy_t, rsw_c + msw_c, rswy_c + mswy_c)
+                };
+                let aln = if missing_left { ln + mn_t + mn_c } else { ln };
+                let arn = if missing_left { rn } else { rn + mn_t + mn_c };
+                if (aln as f64) < m || (arn as f64) < m {
+                    continue;
+                }
+                let alsw = alsw_t + alsw_c;
+                let arsw = arsw_t + arsw_c;
+                if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w) {
+                    continue;
+                }
+                if alsw_t <= 0.0 || alsw_c <= 0.0 || arsw_t <= 0.0 || arsw_c <= 0.0 {
+                    continue;
+                }
+                let tau_l = (alswy_t / alsw_t) - (alswy_c / alsw_c);
+                let tau_r = (arswy_t / arsw_t) - (arswy_c / arsw_c);
+                let mut gain = (alsw * arsw / (alsw + arsw)) * (tau_l - tau_r).powi(2);
+                if self.params.imbalance_penalty > 0.0 {
+                    gain -= self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64);
+                }
+                if gain <= self.params.min_gain {
+                    continue;
+                }
+                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                    *best = Some((gain, left_indices.to_vec(), missing_left));
+                }
+            }
+        };
+
+        match self.params.cat_search {
+            CatSearch::Cumulative => {
+                for i in 1..k {
+                    let left_idx: Vec<usize> = (0..i).collect();
+                    eval_split(&left_idx, &mut best);
+                }
+            }
+            CatSearch::SingleVsRest => {
+                for i in 0..k {
+                    eval_split(&[i], &mut best);
+                }
+            }
+            CatSearch::Both => {
+                for i in 1..k {
+                    let left_idx: Vec<usize> = (0..i).collect();
+                    eval_split(&left_idx, &mut best);
+                }
+                for i in 0..k {
+                    eval_split(&[i], &mut best);
+                }
+            }
+        }
+
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        let Some((gain, left_indices, missing_left)) = best else {
+            return (None, st);
+        };
+        let left_levels: Vec<f64> = left_indices.iter().map(|&idx| scratch.level_causal[idx].0).collect();
+        let split = Split {
+            col: j,
+            threshold: 0.0,
+            missing_left,
+            gain,
+            cat: None,
+            sur: None,
+        };
+        (Some((gain, split, Some(left_levels))), st)
     }
 
     /// Linear-leaf scan — LightGBM's histogram shape: one weighted Gram per
