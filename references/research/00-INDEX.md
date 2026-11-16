@@ -57,6 +57,15 @@
 23. [2026-11-01-cross-paradigm-ai-trees-survey.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-cross-paradigm-ai-trees-survey.md): Trees across Reinforcement Learning (FQI, RLT, VIPER), Causal Inference (Honest IV-Forests), Symbolic Logic (TILDE), Operations Research (MIP Learn-to-Branch), and Probabilistic Circuits (Generative Forests GeFs).
 24. [2026-11-01-tree-based-clustering-frontiers.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-tree-based-clustering-frontiers.md): Unsupervised Random Forest Proximities, Predictive Clustering Trees (PCT), Jitin's Evidence Tree Clustering (Polychoric Odds), and Random Projection Trees.
 
+### Pillar 6: Ecosystem, Positioning, Audits & Search Intent
+25. [2026-11-12-mltreelib-relevance-and-ecosystem.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-mltreelib-relevance-and-ecosystem.md): Competitive landscape vs LightGBM, CatBoost, Scikit-learn, and TabNet.
+26. [2026-11-12-microprediction-positioning-patterns.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-microprediction-positioning-patterns.md): Streaming prediction patterns and micro-forecasting integrations.
+27. [2026-11-12-modularity-coverage-audit.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-modularity-coverage-audit.md): Codebase modularity, dependency boundaries, and test coverage audit.
+28. [2026-11-16-seo-keyword-volume-and-search-intent.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-seo-keyword-volume-and-search-intent.md): Live Google US search volumes via `treg` (Serpstat) and high-intent keyword mapping for mltreelib.
+29. [2026-11-16-tree-use-cases-prediction-explanation-intervention.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-tree-use-cases-prediction-explanation-intervention.md): Use-case keyword volumes across Prediction (risk/fraud/churn), Explanation (glass-box/rules/auditing), and Intervention (uplift/CATE/policy learning).
+30. [2026-11-16-global-regional-search-volumes-and-commercial-pockets.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-global-regional-search-volumes-and-commercial-pockets.md): Regional search volume and commercial intent analysis across India, UK, Germany, UAE, and Australia.
+31. [2026-11-16-competitor-landscape-and-bowling-pin-strategy.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-competitor-landscape-and-bowling-pin-strategy.md): Competitor vulnerabilities (Scikit-Learn, LightGBM, XGBoost, CatBoost) and the staged Bowling Pin Wedge Strategy.
+
 ---
 
 ## 2. Top 10 High-Impact Implementations for `mltreelib`

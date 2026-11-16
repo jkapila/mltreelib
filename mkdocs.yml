@@ -44,25 +44,37 @@ nav:
   - Installation: installation.md
   - Quickstart: quickstart.md
   - Examples:
-      - End-to-end walkthrough: examples/walkthrough.md
-      - Two-Control & 0D Formulations: examples/two-controls-and-0d.md
-      - Data Processing: examples/data-processing.md
-      - Model building & predictions: examples/model-building.md
-      - Growth knob tour: examples/knob-tour.md
-      - Distributional leaves: examples/distributional-leaves.md
-      - Hierarchical retrain & routing: examples/hierarchical-retrain.md
-      - Categorical encoders: examples/categorical-encoders.md
-      - Monotone & interaction constraints: examples/constraints.md
-      - Missing data & routing: examples/missing-routing.md
-      - Honest trees & weights: examples/honesty-weights.md
-      - Time series forecasting: examples/timeseries-forecasting.md
-      - Inspection: examples/inspection.md
-      - Visualization: examples/visualization.md
-      - Metrics & plots: examples/metrics-plots.md
-      - Hyperparameter search: examples/hpo.md
-      - Explainable stumps & retrain: examples/stump-explainable.md
-      - Clustering comparison: examples/clustering-comparison.md
-      - Anomaly detection suite: examples/anomaly-comparison.md
+      - Data:
+          - Data Processing: examples/data-processing.md
+          - Categorical Encoders: examples/categorical-encoders.md
+          - Missing Data & Routing: examples/missing-routing.md
+          - Time Series Forecasting: examples/timeseries-forecasting.md
+          - Synthetic Controls & Ground Truth: examples/two-controls-and-0d.md
+      - ML Models:
+          - Supervised & Classical Trees:
+              - Model Building & Predictions: examples/model-building.md
+              - Growth Knob Tour: examples/knob-tour.md
+              - Distributional Leaves: examples/distributional-leaves.md
+              - Hierarchical Retrain & Routing: examples/hierarchical-retrain.md
+              - Monotone & Interaction Constraints: examples/constraints.md
+              - Honest Trees & Causal Weights: examples/honesty-weights.md
+              - Explainable Stumps & Retrain: examples/stump-explainable.md
+              - Hyperparameter Search: examples/hpo.md
+          - Clustering:
+              - Clustering Comparison: examples/clustering-comparison.md
+          - Anomaly Detection:
+              - Anomaly Detection Suite: examples/anomaly-comparison.md
+      - Metrics & Diagnostics:
+          - Metrics & Plots: examples/metrics-plots.md
+          - Tree Inspection: examples/inspection.md
+          - Visualization: examples/visualization.md
+          - End-to-End Walkthrough: examples/walkthrough.md
+  - Blog:
+      - Overview: blog/index.md
+      - Credit Scoring & Glass-Box: blog/why-credit-scoring-needs-glass-box-trees.md
+      - Zero-Imputation Maintenance: blog/zero-imputation-predictive-maintenance.md
+      - Causal Uplift Modeling: blog/uplift-modeling-with-causal-trees.md
+      - Modernizing Quinlan in Rust: blog/modernizing-quinlan-classics-in-rust.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -114,6 +126,11 @@ plugins:
           - benchmarks/elo.md
           - benchmarks/datasets.md
           - field-notes.md
+          - blog/index.md
+          - blog/why-credit-scoring-needs-glass-box-trees.md
+          - blog/zero-imputation-predictive-maintenance.md
+          - blog/uplift-modeling-with-causal-trees.md
+          - blog/modernizing-quinlan-classics-in-rust.md
           - reference/data.md
           - reference/model.md
           - reference/metrics.md
