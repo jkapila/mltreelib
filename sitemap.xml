@@ -49,6 +49,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/categorical-encoders/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/causal-uplift/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
       </url>
       <url>
@@ -88,7 +91,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/stump-explainable/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/survival-trees/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/timeseries-forecasting/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/tobit-regression/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
