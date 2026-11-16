@@ -179,4 +179,6 @@ benchmarks/cla_preds/
 .code-review-graph/
 .codegraph/
 *.png
+!docs/assets/*.png
+!docs/assets/**/*.png
 
