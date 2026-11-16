@@ -11,6 +11,38 @@ authors = [{ name = "Jitin Kapila" }]
 readme = "README.md"
 license = "Apache-2.0"
 dependencies = ["pyarrow>=14"]
+keywords = [
+    "tree",
+    "decision-trees",
+    "causal-inference",
+    "uplift-modeling",
+    "model-trees",
+    "cubist",
+    "c50",
+    "interpretable-ml",
+    "rust",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/jkapila/mltreelib"
+Documentation = "https://jkapila.github.io/mltreelib/"
+Repository = "https://github.com/jkapila/mltreelib"
+Issues = "https://github.com/jkapila/mltreelib/issues"
 
 [project.optional-dependencies]
 # Charts and diagrams: the rendering wheels we borrow instead of reinventing.
