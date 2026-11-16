@@ -197,6 +197,94 @@ impl LeafStats {
     }
 }
 
+/// Single coefficient statistics matching R summary(lm) and statsmodels.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CoeffStats {
+    pub col_idx: Option<usize>,
+    pub estimate: f64,
+    pub std_err: f64,
+    pub t_value: f64,
+    pub p_value: f64,
+}
+
+/// Goodness-of-fit and hypothesis testing summary for a leaf regression model.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RegressionSummary {
+    pub n: usize,
+    pub df_residuals: usize,
+    pub r_squared: f64,
+    pub adj_r_squared: f64,
+    pub sigma: f64,
+    pub f_statistic: f64,
+    pub f_p_value: f64,
+    pub coefficients: Vec<CoeffStats>,
+}
+
+impl RegressionSummary {
+    /// Format as standard R summary(lm) / Python statsmodels table.
+    pub fn to_r_format(&self, title: &str, col_names: &[String]) -> String {
+        let mut out = String::new();
+        out.push_str("======================================================================\n");
+        out.push_str(&format!("{}\n", title));
+        out.push_str("----------------------------------------------------------------------\n");
+        out.push_str(&format!(
+            "Residual standard error: {:.4} on {} degrees of freedom\n",
+            self.sigma, self.df_residuals
+        ));
+        out.push_str(&format!(
+            "Multiple R-squared:  {:.4},  Adjusted R-squared:  {:.4}\n",
+            self.r_squared, self.adj_r_squared
+        ));
+        let f_p_str = if self.f_p_value < 2.2e-16 {
+            "< 2.2e-16".to_string()
+        } else {
+            format!("{:.4e}", self.f_p_value)
+        };
+        let p_df = self.coefficients.len().saturating_sub(1).max(1);
+        out.push_str(&format!(
+            "F-statistic: {:.2} on {} and {} DF,  p-value: {}\n\n",
+            self.f_statistic, p_df, self.df_residuals, f_p_str
+        ));
+        out.push_str("Coefficients:\n");
+        out.push_str(&format!(
+            "{:<18} {:>12} {:>12} {:>10} {:>12} \n",
+            "", "Estimate", "Std. Error", "t value", "Pr(>|t|)"
+        ));
+
+        for c in &self.coefficients {
+            let name = match c.col_idx {
+                None => "(Intercept)".to_string(),
+                Some(idx) => col_names.get(idx).cloned().unwrap_or_else(|| format!("x{}", idx)),
+            };
+            let p_str = if c.p_value < 2e-16 {
+                "< 2e-16".to_string()
+            } else if c.p_value < 0.001 {
+                format!("{:.3e}", c.p_value)
+            } else {
+                format!("{:.4}", c.p_value)
+            };
+            let stars = if c.p_value < 0.001 {
+                "***"
+            } else if c.p_value < 0.01 {
+                "**"
+            } else if c.p_value < 0.05 {
+                "*"
+            } else if c.p_value < 0.10 {
+                "."
+            } else {
+                " "
+            };
+            out.push_str(&format!(
+                "{:<18} {:>12.4} {:>12.4} {:>10.2} {:>12} {:<3}\n",
+                name, c.estimate, c.std_err, c.t_value, p_str, stars
+            ));
+        }
+        out.push_str("---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n");
+        out.push_str("======================================================================\n");
+        out
+    }
+}
+
 /// Fitted link-scale linear predictor:
 /// `intercept + Σ coef·x + Σ na_coef·1{missing}`. Gaussian uses the identity
 /// link. Missing predictors contribute nothing to value terms and have their
@@ -207,9 +295,19 @@ pub struct LinearModel {
     pub coef: Vec<f64>,
     pub na_coef: Vec<f64>,
     pub intercept: f64,
+    pub summary: Option<RegressionSummary>,
 }
 
 impl LinearModel {
+    pub fn new(cols: Vec<usize>, coef: Vec<f64>, na_coef: Vec<f64>, intercept: f64) -> Self {
+        Self {
+            cols,
+            coef,
+            na_coef,
+            intercept,
+            summary: None,
+        }
+    }
     /// Predict for one row (`None` = missing). Always returns a value; a row
     /// shorter than the fit-time width treats absent cells as missing (an NA
     /// never blocks a prediction, and never panics).
@@ -1075,6 +1173,7 @@ pub fn fit_linear(
             _ => {}
         }
     }
+    let summary = compute_regression_summary(&g.xtx, &g.xty, g.yty, g.n, &sol[..1 + nc], chosen);
     LinearModel {
         cols: chosen.to_vec(),
         coef: sol[1..1 + nc].to_vec(),
@@ -1084,7 +1183,93 @@ pub fn fit_linear(
             Vec::new()
         },
         intercept: sol[0],
+        summary,
     }
+}
+
+pub fn compute_regression_summary(
+    xtx: &[f64],
+    xty: &[f64],
+    yty: f64,
+    n: usize,
+    sol: &[f64],
+    chosen: &[usize],
+) -> Option<RegressionSummary> {
+    let p = sol.len();
+    if n <= p {
+        return None;
+    }
+    let df_residuals = n - p;
+
+    let mut beta_xtx_beta = 0.0;
+    for i in 0..p {
+        let mut row_sum = 0.0;
+        for j in 0..p {
+            row_sum += xtx[i * p + j] * sol[j];
+        }
+        beta_xtx_beta += sol[i] * row_sum;
+    }
+    let mut beta_xty = 0.0;
+    for i in 0..p {
+        beta_xty += sol[i] * xty[i];
+    }
+    let rss = (yty - 2.0 * beta_xty + beta_xtx_beta).max(0.0);
+    let sigma2 = rss / (df_residuals as f64);
+    let sigma = sigma2.sqrt();
+
+    let y_mean = xty[0] / (n as f64);
+    let tss = (yty - (n as f64) * y_mean * y_mean).max(1e-12);
+    let r_squared = (1.0 - rss / tss).max(0.0).min(1.0);
+    let adj_r_squared = (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
+
+    let p_pred = p.saturating_sub(1);
+    let f_statistic = if p_pred > 0 && rss > 1e-12 {
+        ((tss - rss) / (p_pred as f64)) / (rss / (df_residuals as f64))
+    } else {
+        0.0
+    };
+    let f_p_value = crate::stats::f_sf(f_statistic, p_pred as u32, df_residuals as u32);
+
+    let mut m = faer::Mat::<f64>::zeros(p, p);
+    for i in 0..p {
+        for j in 0..p {
+            m[(i, j)] = xtx[i * p + j];
+            if i == j && i > 0 {
+                m[(i, j)] += 1e-6;
+            }
+        }
+    }
+    use faer::linalg::solvers::DenseSolveCore;
+    let inv = m.as_ref().partial_piv_lu().inverse();
+
+    let mut coefficients = Vec::new();
+    for i in 0..p {
+        let col_idx = if i == 0 { None } else { chosen.get(i - 1).copied() };
+        let var_beta = (inv[(i, i)] * sigma2).max(1e-12);
+        let std_err = var_beta.sqrt();
+        let est = sol[i];
+        let t_val = est / std_err;
+        let p_val = 2.0 * (1.0 - crate::family::std_norm_cdf(t_val.abs()));
+
+        coefficients.push(CoeffStats {
+            col_idx,
+            estimate: est,
+            std_err,
+            t_value: t_val,
+            p_value: p_val,
+        });
+    }
+
+    Some(RegressionSummary {
+        n,
+        df_residuals,
+        r_squared,
+        adj_r_squared,
+        sigma,
+        f_statistic,
+        f_p_value,
+        coefficients,
+    })
 }
 
 impl LinearModel {
@@ -1140,6 +1325,7 @@ pub(crate) fn fit_glm(
             LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
             LeafFamily::Gaussian | LeafFamily::Tobit | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => mean,
         },
+        summary: None,
     };
     let mut gram = Gram::new(dim);
     let mut row = vec![0.0; dim];
@@ -1304,6 +1490,7 @@ pub(crate) fn fit_glm(
                 coef: beta[1..1 + nc].to_vec(),
                 na_coef: if with_indicators { beta[1 + nc..].to_vec() } else { Vec::new() },
                 intercept: beta[0],
+                summary: None,
             }
         };
         if !candidate.intercept.is_finite()

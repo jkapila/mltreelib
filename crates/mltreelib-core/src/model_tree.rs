@@ -364,6 +364,15 @@ pub struct DepthProfile {
     pub leaf_ns: u64,
 }
 
+/// Compact training sample memory for Cubist's signature k-NN neighbor adjustment.
+#[derive(Clone, Debug)]
+pub struct TrainingMemory {
+    pub x: Vec<Vec<Option<f64>>>,
+    pub y: Vec<f64>,
+    pub base_preds: Vec<f64>,
+    pub col_stds: Vec<f64>,
+}
+
 /// A fitted model tree.
 #[derive(Clone, Debug)]
 pub struct ModelTree {
@@ -380,6 +389,8 @@ pub struct ModelTree {
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
     /// Training log (populated when `params.verbose > 0`).
     pub trace: Vec<String>,
+    /// Training memory for nearest-neighbor adjustments.
+    pub training_memory: Option<TrainingMemory>,
 }
 
 impl ModelTree {
@@ -772,8 +783,48 @@ impl ModelTree {
             cat_parts,
             sur_parts,
             trace,
+            training_memory: None,
         };
         tree.assign_leaf_ids();
+
+        let n_train = yv.len();
+        let mut col_stds = vec![1.0; d];
+        for j in 0..d {
+            let mut sum = 0.0;
+            let mut sum_sq = 0.0;
+            let mut count = 0.0;
+            for &val_opt in &cols[j] {
+                if let Some(v) = val_opt {
+                    if v.is_finite() {
+                        sum += v;
+                        sum_sq += v * v;
+                        count += 1.0;
+                    }
+                }
+            }
+            if count > 1.0 {
+                let mean = sum / count;
+                let var = (sum_sq - count * mean * mean) / (count - 1.0);
+                if var > 1e-12 {
+                    col_stds[j] = var.sqrt();
+                }
+            }
+        }
+
+        let mut train_rows = vec![vec![None; d]; n_train];
+        for j in 0..d {
+            for i in 0..n_train {
+                train_rows[i][j] = cols[j][i];
+            }
+        }
+        let base_preds = tree.predict(&train_rows);
+        tree.training_memory = Some(TrainingMemory {
+            x: train_rows,
+            y: yv,
+            base_preds,
+            col_stds,
+        });
+
         Ok(tree)
     }
 
@@ -1764,6 +1815,363 @@ impl ModelTree {
             l.leaf_ns += p.leaf_ns;
         }
         levels
+    }
+
+    /// Extract a C5.0-style rule set from this fitted tree.
+    ///
+    /// Each path from root to leaf becomes an IF-THEN rule.
+    /// When training data `x` and `y` are provided, empirical coverage and error
+    /// rates are computed, and preconditions can be greedily pruned using Quinlan's
+    /// pessimistic error rate upper bound (binomial confidence interval with `cf`).
+    pub fn extract_rules(
+        &self,
+        x: Option<&[Vec<Option<f64>>]>,
+        y: Option<&[f64]>,
+        prune: bool,
+        cf: f64,
+    ) -> crate::rules::RuleSet {
+        use crate::rules::{cf_to_z, pessimistic_error_bound, Rule, RuleCondition, RuleSet};
+
+        let mut raw_rules: Vec<Rule> = Vec::new();
+        let mut path: Vec<RuleCondition> = Vec::new();
+
+        self.traverse_for_rules(self.root, &mut path, &mut raw_rules);
+
+        let default_prediction = self.nodes[self.root]
+            .leaf
+            .as_ref()
+            .map(|l| l.predict(&[]))
+            .unwrap_or(0.0);
+
+        let z = cf_to_z(cf);
+
+        let mut final_rules: Vec<Rule> = Vec::new();
+        for (idx, mut rule) in raw_rules.into_iter().enumerate() {
+            rule.id = idx + 1;
+            rule.simplify_conditions();
+
+            if let (Some(x_data), Some(y_data)) = (x, y) {
+                let mut cover = 0;
+                let mut errors = 0;
+                let is_classifier = self.params.leaf_family == LeafFamily::Binomial
+                    || self.params.leaf_family == LeafFamily::Probit;
+
+                for (row, &target) in x_data.iter().zip(y_data.iter()) {
+                    if rule.matches(row) {
+                        cover += 1;
+                        if is_classifier {
+                            let pred_class: f64 = if rule.prediction >= 0.5 { 1.0 } else { 0.0 };
+                            let true_class: f64 = if target >= 0.5 { 1.0 } else { 0.0 };
+                            if (pred_class - true_class).abs() > 1e-9 {
+                                errors += 1;
+                            }
+                        } else {
+                            let tol = (rule.prediction * 0.15).abs().max(1.0);
+                            if (rule.prediction - target).abs() > tol {
+                                errors += 1;
+                            }
+                        }
+                    }
+                }
+
+                rule.cover = cover;
+                rule.errors = errors;
+                let base_pessimistic = pessimistic_error_bound(errors, cover, z);
+                rule.confidence = (1.0 - base_pessimistic).max(0.01);
+
+                // Precondition pruning: greedily test dropping individual conditions
+                if prune && rule.conditions.len() > 1 {
+                    let mut current_conditions = rule.conditions.clone();
+                    let mut current_err = base_pessimistic;
+
+                    let mut i = 0;
+                    while i < current_conditions.len() {
+                        let mut trial_conditions = current_conditions.clone();
+                        trial_conditions.remove(i);
+
+                        let mut t_cover = 0;
+                        let mut t_errors = 0;
+                        for (row, &target) in x_data.iter().zip(y_data.iter()) {
+                            let matches = trial_conditions.iter().all(|c| c.matches(row));
+                            if matches {
+                                t_cover += 1;
+                                if is_classifier {
+                                    let pred_class: f64 = if rule.prediction >= 0.5 { 1.0 } else { 0.0 };
+                                    let true_class: f64 = if target >= 0.5 { 1.0 } else { 0.0 };
+                                    if (pred_class - true_class).abs() > 1e-9 {
+                                        t_errors += 1;
+                                    }
+                                } else {
+                                    let tol = (rule.prediction * 0.15).abs().max(1.0);
+                                    if (rule.prediction - target).abs() > tol {
+                                        t_errors += 1;
+                                    }
+                                }
+                            }
+                        }
+
+                        let trial_pessimistic = pessimistic_error_bound(t_errors, t_cover, z);
+                        if t_cover > 0 && trial_pessimistic <= current_err {
+                            current_conditions = trial_conditions;
+                            current_err = trial_pessimistic;
+                            rule.cover = t_cover;
+                            rule.errors = t_errors;
+                            rule.confidence = (1.0 - trial_pessimistic).max(0.01);
+                        } else {
+                            i += 1;
+                        }
+                    }
+                    rule.conditions = current_conditions;
+                }
+            }
+
+            final_rules.push(rule);
+        }
+
+        final_rules.sort_by(|a, b| {
+            b.confidence
+                .partial_cmp(&a.confidence)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| b.cover.cmp(&a.cover))
+        });
+
+        for (i, r) in final_rules.iter_mut().enumerate() {
+            r.id = i + 1;
+        }
+
+        let default_conf = if let Some(y_data) = y {
+            let total = y_data.len();
+            if total > 0 {
+                let matches_default = y_data
+                    .iter()
+                    .filter(|&&val| (val - default_prediction).abs() < 0.5)
+                    .count();
+                matches_default as f64 / total as f64
+            } else {
+                0.5
+            }
+        } else {
+            0.5
+        };
+
+        RuleSet {
+            rules: final_rules,
+            default_prediction,
+            default_confidence: default_conf,
+            col_names: self.col_names.clone(),
+        }
+    }
+
+    fn traverse_for_rules(
+        &self,
+        node_idx: usize,
+        path: &mut Vec<crate::rules::RuleCondition>,
+        rules: &mut Vec<crate::rules::Rule>,
+    ) {
+        use crate::rules::{ConditionOp, Rule, RuleCondition};
+
+        let node = &self.nodes[node_idx];
+        match (&node.split, node.left, node.right) {
+            (Some(sp), Some(left_idx), Some(right_idx)) => {
+                let col_name = self
+                    .col_names
+                    .get(sp.col)
+                    .cloned()
+                    .unwrap_or_else(|| format!("x{}", sp.col));
+
+                let left_cond = if let Some(cat_idx) = sp.cat {
+                    let set = self.cat_parts.get(cat_idx).cloned().unwrap_or_default();
+                    RuleCondition {
+                        col: sp.col,
+                        col_name: col_name.clone(),
+                        op: ConditionOp::InSet(set),
+                        threshold: 0.0,
+                    }
+                } else {
+                    RuleCondition {
+                        col: sp.col,
+                        col_name: col_name.clone(),
+                        op: ConditionOp::LessOrEqual,
+                        threshold: sp.threshold,
+                    }
+                };
+
+                let right_cond = if let Some(cat_idx) = sp.cat {
+                    let set = self.cat_parts.get(cat_idx).cloned().unwrap_or_default();
+                    RuleCondition {
+                        col: sp.col,
+                        col_name,
+                        op: ConditionOp::NotInSet(set),
+                        threshold: 0.0,
+                    }
+                } else {
+                    RuleCondition {
+                        col: sp.col,
+                        col_name,
+                        op: ConditionOp::GreaterThan,
+                        threshold: sp.threshold,
+                    }
+                };
+
+                path.push(left_cond);
+                self.traverse_for_rules(left_idx, path, rules);
+                path.pop();
+
+                path.push(right_cond);
+                self.traverse_for_rules(right_idx, path, rules);
+                path.pop();
+            }
+            _ => {
+                let prediction = node.leaf.as_ref().map(|l| l.predict(&[])).unwrap_or(0.0);
+                let leaf_id = node.leaf_id.unwrap_or(0);
+                rules.push(Rule {
+                    id: rules.len() + 1,
+                    conditions: path.clone(),
+                    prediction,
+                    cover: node.n,
+                    errors: 0,
+                    confidence: 0.95,
+                    leaf_id,
+                });
+            }
+        }
+    }
+
+    /// Predict with Cubist-style k-NN sample neighbor adjustment.
+    ///
+    /// For each query row x_0:
+    /// 1. Compute tree base prediction y_hat(x_0).
+    /// 2. If neighbors > 0 and training memory is available, find the k nearest
+    ///    training instances using normalized Manhattan distance.
+    /// 3. Compute distance-weighted mean of training residuals:
+    ///    w_i = 1 / (d(x_0, x_i) + 1e-5), delta = sum(w_i * (y_i - y_hat(x_i))) / sum(w_i).
+    /// 4. Return y_hat(x_0) + delta.
+    pub fn predict_adjusted(&self, x: &[Vec<Option<f64>>], neighbors: usize) -> Vec<f64> {
+        let base_preds = self.predict(x);
+        if neighbors == 0 {
+            return base_preds;
+        }
+        let mem = match &self.training_memory {
+            Some(m) if !m.x.is_empty() => m,
+            _ => return base_preds,
+        };
+
+        let k = neighbors.min(mem.x.len());
+        let d_cols = self.col_names.len();
+        let mut adjusted = Vec::with_capacity(x.len());
+
+        for (row_idx, row) in x.iter().enumerate() {
+            let base_pred = base_preds[row_idx];
+            if !base_pred.is_finite() {
+                adjusted.push(base_pred);
+                continue;
+            }
+
+            // Compute distance from `row` to each training sample in `mem`
+            let mut dists: Vec<(f64, usize)> = mem
+                .x
+                .iter()
+                .enumerate()
+                .map(|(train_idx, train_row)| {
+                    let mut dist_sum = 0.0;
+                    let mut p_count = 0.0;
+                    for j in 0..d_cols {
+                        let scale = mem.col_stds.get(j).copied().unwrap_or(1.0);
+                        match (row.get(j).and_then(|&v| v), train_row.get(j).and_then(|&v| v)) {
+                            (Some(a), Some(b)) => {
+                                dist_sum += (a - b).abs() / scale;
+                                p_count += 1.0;
+                            }
+                            (None, None) => {}
+                            _ => {
+                                dist_sum += 1.0;
+                                p_count += 1.0;
+                            }
+                        }
+                    }
+                    let avg_dist = if p_count > 0.0 { dist_sum / p_count } else { 1.0 };
+                    (avg_dist, train_idx)
+                })
+                .collect();
+
+            // Select top-k smallest distances
+            dists.select_nth_unstable_by(k - 1, |a, b| {
+                a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            let mut w_sum = 0.0;
+            let mut weighted_res_sum = 0.0;
+            for i in 0..k {
+                let (dist, train_idx) = dists[i];
+                let weight = 1.0 / (dist + 1e-5);
+                let residual = mem.y[train_idx] - mem.base_preds[train_idx];
+                weighted_res_sum += weight * residual;
+                w_sum += weight;
+            }
+
+            let delta = if w_sum > 0.0 {
+                weighted_res_sum / w_sum
+            } else {
+                0.0
+            };
+
+            adjusted.push(base_pred + delta);
+        }
+
+        adjusted
+    }
+
+    /// Format a leaf's regression model as an R `summary(lm)` / Python `statsmodels` table.
+    pub fn leaf_summary(&self, leaf_id: usize) -> Result<String, String> {
+        let entries = self.leaf_entries();
+        for (leaf_model, n_rows, id, node_idx) in entries {
+            if id == leaf_id {
+                let title = format!("Leaf Node {} (Leaf ID {}) [n={}]", node_idx, id, n_rows);
+                if let Some(lm) = &leaf_model.linear {
+                    if let Some(s) = &lm.summary {
+                        return Ok(s.to_r_format(&title, &self.col_names));
+                    } else {
+                        return Ok(format!(
+                            "{}\nLinear model: intercept={:.4}, {} coefficients (summary covariance not computed).",
+                            title, lm.intercept, lm.coef.len()
+                        ));
+                    }
+                } else {
+                    let mean = leaf_model.center.unwrap_or(leaf_model.stats.mean);
+                    return Ok(format!(
+                        "======================================================================\n\
+                         {}\n\
+                         ----------------------------------------------------------------------\n\
+                         Mean leaf model: {:.4} (n={}, std={:.4})\n\
+                         ======================================================================",
+                        title, mean, n_rows, leaf_model.stats.std
+                    ));
+                }
+            }
+        }
+        Err(format!("Leaf ID {} not found", leaf_id))
+    }
+
+    /// Print comprehensive summary of all leaf models across the tree.
+    pub fn summary(&self) -> String {
+        let mut out = String::new();
+        out.push_str("======================================================================\n");
+        out.push_str("                        mltreelib ModelTree Summary                   \n");
+        out.push_str(&format!(
+            "Depth: {}, Total Nodes: {}, Active Features: {}\n",
+            self.params.max_depth,
+            self.nodes.len(),
+            self.active_cols.len()
+        ));
+        out.push_str("======================================================================\n\n");
+        let entries = self.leaf_entries();
+        for (_, _, leaf_id, _) in entries {
+            if let Ok(leaf_str) = self.leaf_summary(leaf_id) {
+                out.push_str(&leaf_str);
+                out.push_str("\n\n");
+            }
+        }
+        out
     }
 }
 

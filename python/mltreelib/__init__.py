@@ -28,6 +28,8 @@ from mltreelib._core import (
     MarsRegressor,
     Metrics,
     ModelTree,
+    Rule,
+    RuleSet,
     OneHotEncoder,
     PredictiveClusteringTree,
     QuantileEncoder,
@@ -79,6 +81,8 @@ __all__ = [
     "MarsRegressor",
     "Metrics",
     "ModelTree",
+    "Rule",
+    "RuleSet",
     "OneHotEncoder",
     "PredictiveClusteringTree",
     "QuantileEncoder",
@@ -103,4 +107,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.3.3"
+__version__ = "0.4.1"

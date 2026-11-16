@@ -369,6 +369,7 @@ pub fn fit_leaf_model(
                     na_coef: if any_missing { vec![0.0; chosen.len()] } else { Vec::new() },
                     cols: chosen.clone(),
                     intercept: mean_c.ln() - (1.0 - mean_c).ln(),
+                    summary: None,
                 });
                 models.push(lm);
             }
@@ -620,6 +621,7 @@ pub fn fit_leaf_model(
                 na_coef: if any_missing { vec![0.0; chosen.len()] } else { Vec::new() },
                 cols: chosen,
                 intercept: f64::NAN,
+                summary: None,
             });
             return LeafModel {
                 stats,

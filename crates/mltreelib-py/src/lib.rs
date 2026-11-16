@@ -2543,6 +2543,101 @@ impl PyLeafControl {
     }
 }
 
+/// An individual IF-THEN rule extracted from a ModelTree.
+#[pyclass(name = "Rule")]
+#[derive(Clone)]
+pub struct PyRule {
+    inner: mltreelib_core::rules::Rule,
+}
+
+#[pymethods]
+impl PyRule {
+    #[getter]
+    fn id(&self) -> usize {
+        self.inner.id
+    }
+
+    #[getter]
+    fn prediction(&self) -> f64 {
+        self.inner.prediction
+    }
+
+    #[getter]
+    fn cover(&self) -> usize {
+        self.inner.cover
+    }
+
+    #[getter]
+    fn errors(&self) -> usize {
+        self.inner.errors
+    }
+
+    #[getter]
+    fn confidence(&self) -> f64 {
+        self.inner.confidence
+    }
+
+    #[getter]
+    fn leaf_id(&self) -> usize {
+        self.inner.leaf_id
+    }
+
+    #[getter]
+    fn conditions(&self) -> Vec<String> {
+        self.inner.conditions.iter().map(|c| c.to_string()).collect()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", self.inner)
+    }
+}
+
+/// An ordered set of IF-THEN rules with fallback default prediction.
+#[pyclass(name = "RuleSet")]
+#[derive(Clone)]
+pub struct PyRuleSet {
+    inner: mltreelib_core::rules::RuleSet,
+}
+
+#[pymethods]
+impl PyRuleSet {
+    #[getter]
+    fn default_prediction(&self) -> f64 {
+        self.inner.default_prediction
+    }
+
+    #[getter]
+    fn default_confidence(&self) -> f64 {
+        self.inner.default_confidence
+    }
+
+    #[getter]
+    fn rules(&self) -> Vec<PyRule> {
+        self.inner.rules.iter().cloned().map(|r| PyRule { inner: r }).collect()
+    }
+
+    fn __len__(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    #[pyo3(signature = (x))]
+    fn predict(&self, x: Vec<Vec<Option<f64>>>) -> Vec<f64> {
+        self.inner.predict(&x)
+    }
+}
+
 /// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
@@ -3523,19 +3618,24 @@ impl PyModelTree {
     ///   kind="survival": S(t) survival curve over times grid.
     ///   kind="hazard": Lambda(t) cumulative hazard curve over times grid.
     ///   kind="leaf_id": integer leaf ID per row.
-    #[pyo3(signature = (x, kind = "response", times = None))]
+    #[pyo3(signature = (x, kind = "response", times = None, neighbors = None))]
     fn predict<'py>(
         &mut self,
         py: Python<'py>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
         kind: Option<&str>,
         times: Option<Vec<f64>>,
+        neighbors: Option<usize>,
     ) -> PyResult<Py<PyAny>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         match kind.unwrap_or("response") {
             "response" => {
-                let preds = t.predict(&x);
+                let preds = if let Some(k) = neighbors {
+                    t.predict_adjusted(&x, k)
+                } else {
+                    t.predict(&x)
+                };
                 preds.into_py_any(py)
             }
             "proba" | "prob" => {
@@ -3701,7 +3801,7 @@ impl PyModelTree {
         py: Python<'py>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
     ) -> PyResult<Py<PyAny>> {
-        self.predict(py, x, Some("proba"), None)
+        self.predict(py, x, Some("proba"), None, None)
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -3721,6 +3821,55 @@ impl PyModelTree {
     ) -> PyResult<Vec<usize>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.predict_label(&x, threshold).map_err(PyValueError::new_err)
+    }
+
+    /// Predict with Cubist-style k-NN sample neighbor adjustment.
+    #[pyo3(signature = (x, neighbors = 5))]
+    fn predict_adjusted<'py>(
+        &mut self,
+        py: Python<'py>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        neighbors: usize,
+    ) -> PyResult<Py<PyAny>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        let t = self.tree()?;
+        let preds = t.predict_adjusted(&x, neighbors);
+        preds.into_py_any(py)
+    }
+
+    /// Extract a C5.0-style rule set from this fitted tree.
+    #[pyo3(signature = (x = None, y = None, prune = true, cf = 0.25))]
+    fn extract_rules(
+        &mut self,
+        x: Option<Vec<Vec<Option<Bound<'_, PyAny>>>>>,
+        y: Option<Vec<f64>>,
+        prune: Option<bool>,
+        cf: Option<f64>,
+    ) -> PyResult<PyRuleSet> {
+        let x_coerced = match x {
+            Some(rows) => Some(coerce_rows(rows, &self.params.dtypes, &mut self.vocabs, false)?),
+            None => None,
+        };
+        let t = self.tree()?;
+        let ruleset = t.extract_rules(
+            x_coerced.as_deref(),
+            y.as_deref(),
+            prune.unwrap_or(true),
+            cf.unwrap_or(0.25),
+        );
+        Ok(PyRuleSet { inner: ruleset })
+    }
+
+    /// Format a leaf's regression model as an R summary(lm) / Python statsmodels table.
+    fn leaf_summary(&self, leaf_id: usize) -> PyResult<String> {
+        let t = self.tree()?;
+        t.leaf_summary(leaf_id).map_err(PyValueError::new_err)
+    }
+
+    /// Print comprehensive summary of all leaf models across the tree.
+    fn summary(&self) -> PyResult<String> {
+        let t = self.tree()?;
+        Ok(t.summary())
     }
 
     /// Empirical prediction interval `(lower, upper)` per row at the requested coverage.
@@ -5414,6 +5563,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMetrics>()?;
     m.add_class::<PyLeafControl>()?;
     m.add_class::<PyModelTree>()?;
+    m.add_class::<PyRule>()?;
+    m.add_class::<PyRuleSet>()?;
     m.add_class::<PyOneHotEncoder>()?;
     m.add_class::<PyQuantileEncoder>()?;
     m.add_class::<PySumEncoder>()?;
