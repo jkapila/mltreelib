@@ -164,3 +164,58 @@ def test_blog_predictive_maintenance():
 
     reg = Metrics().regression(y[400:], preds)
     assert reg["r2"] > 0.60
+
+
+def test_blog_quinlan_classics():
+    """Verify modernizing-quinlan-classics-in-rust.md blog examples."""
+    random.seed(42)
+    n = 150
+    X: list[list[float]] = []
+    y: list[float] = []
+
+    for _ in range(n):
+        sqft = random.uniform(800.0, 3000.0)
+        beds = float(random.randint(1, 4))
+        age = random.uniform(1.0, 40.0)
+        tax = random.uniform(1.0, 3.0)
+
+        # Non-linear localized surface
+        val = 80.0 + 0.12 * sqft + 15.0 * beds - 0.8 * age - 3.0 * tax
+        val += 25.0 * math.sin(sqft / 300.0)
+        val += random.gauss(0.0, 3.0)
+
+        X.append([sqft, beds, age, tax])
+        y.append(val)
+
+    tree = ModelTree(
+        leaf="linear",
+        leaf_cols="all",
+        max_depth=2,
+        min_rows=20,
+        seed=42,
+    )
+    col_names = ["sqft", "beds", "age", "tax_rate"]
+    tree.fit(X[:100], y[:100], col_names=col_names)
+
+    # 1. Test Leaf Summary
+    summary = tree.leaf_summary(0)
+    assert "Residual standard error:" in summary
+    assert "Multiple R-squared:" in summary
+    assert "Coefficients:" in summary
+    assert "Estimate" in summary
+
+    # 2. Test Rule Extraction
+    ruleset = tree.extract_rules(X[:100], y[:100], prune=True, cf=0.25)
+    assert len(ruleset) > 0
+    rule_preds = ruleset.predict(X[100:])
+    assert len(rule_preds) == 50
+
+    # 3. Test Cubist k-NN Adjustment
+    base_preds = tree.predict(X[100:])
+    adj_preds = tree.predict(X[100:], neighbors=5)
+    assert len(base_preds) == 50
+    assert len(adj_preds) == 50
+
+    base_mse = sum((p - t) ** 2 for p, t in zip(base_preds, y[100:])) / 50
+    adj_mse = sum((p - t) ** 2 for p, t in zip(adj_preds, y[100:])) / 50
+    assert adj_mse < base_mse
