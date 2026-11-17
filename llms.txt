@@ -25,7 +25,7 @@
 - [Explainable Stumps &amp; Retrain](<https://jkapila.github.io/mltreelib/examples/stump-explainable/index.md>)
 - [Clustering Comparison](<https://jkapila.github.io/mltreelib/examples/clustering-comparison/index.md>)
 - [Anomaly Detection Suite](<https://jkapila.github.io/mltreelib/examples/anomaly-comparison/index.md>)
-- [ELO](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)
+- [Overview](<https://jkapila.github.io/mltreelib/benchmarks/elo/index.md>)
 - [DataSets](<https://jkapila.github.io/mltreelib/benchmarks/datasets/index.md>)
 - [Field notes](<https://jkapila.github.io/mltreelib/field-notes/index.md>)
 - [Overview](<https://jkapila.github.io/mltreelib/blog/index.md>)
