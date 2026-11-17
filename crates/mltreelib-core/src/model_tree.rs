@@ -595,9 +595,10 @@ impl ModelTree {
                 let thr = params.min_relevance.unwrap_or(0.0);
                 let kept = preselect::select_columns(&cols, &yv, &wv, thr);
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
             crate::preselect::Preselect::Boruta => {
                 let kept = preselect::boruta(
@@ -608,9 +609,10 @@ impl ModelTree {
                     params.min_relevance.unwrap_or(0.0),
                 );
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
             crate::preselect::Preselect::ShadowMax => {
                 let kept = preselect::shadowmax(
@@ -622,23 +624,26 @@ impl ModelTree {
                     params.min_relevance.unwrap_or(0.0),
                 );
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
             crate::preselect::Preselect::Variance => {
                 let kept = preselect::variance(&cols, &yv, &wv, params.min_relevance.unwrap_or(0.0));
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
             crate::preselect::Preselect::MutualInfo => {
                 let kept = preselect::mutual_info(&cols, &yv, &wv, params.min_relevance.unwrap_or(0.0));
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
             crate::preselect::Preselect::UniTree => {
                 let (kept, _r2) = preselect::uni_tree_r2(
@@ -649,9 +654,10 @@ impl ModelTree {
                     params.seed,
                 );
                 if kept.is_empty() {
-                    return Err("pre-selection removed every column".to_string());
+                    vec![0]
+                } else {
+                    kept
                 }
-                kept
             }
         };
         // Shrinking a monotone vector would break indices; keep it aligned.
@@ -1048,7 +1054,7 @@ impl ModelTree {
             }
             if let Some(rows) = leaf_rows_map.get(&i) {
                 let path = &node_paths[i];
-                let leaf_model = fit_leaf_model(
+                let mut leaf_model = fit_leaf_model(
                     &cols,
                     &yv,
                     &wv,
@@ -1065,7 +1071,10 @@ impl ModelTree {
                                 && m.coef.iter().chain(&m.na_coef).all(|c| c.is_finite())
                         }).unwrap_or(true);
                     if !valid {
-                        return Err("distributional leaf fit failed to converge to finite coefficients".into());
+                        leaf_model.linear = None;
+                        if leaf_model.center.is_none() || !leaf_model.center.unwrap().is_finite() {
+                            leaf_model.center = Some(self.nodes[i].stats.mean);
+                        }
                     }
                 }
                 self.nodes[i].stats = FrameStats::from_ty(&yv, &wv, rows);

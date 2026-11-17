@@ -72,11 +72,17 @@ pub fn select_columns(
     min_relevance: f64,
 ) -> Vec<usize> {
     let rel = relevance(cols, y, w);
-    rel.iter()
+    let mut kept: Vec<usize> = rel.iter()
         .enumerate()
         .filter(|(_, &r)| r >= min_relevance)
         .map(|(j, _)| j)
-        .collect()
+        .collect();
+    if kept.is_empty() && !cols.is_empty() {
+        if let Some((best_idx, _)) = rel.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal)) {
+            kept.push(best_idx);
+        }
+    }
+    kept
 }
 
 /// Preselection strategy family — which columns enter the split search.

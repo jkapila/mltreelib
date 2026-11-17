@@ -212,6 +212,19 @@ truth = data["truth"]["variance"]   # Realized variance shares per latent compon
 
 ---
 
+## Technical Articles & Case Studies
+
+In-depth technical perspectives and domain use cases:
+
+- **[Why India's Digital Lending Boom Needs Glass-Box Trees Over Black-Box Boosters](https://jkapila.github.io/mltreelib/blog/why-credit-scoring-needs-glass-box-trees/)**: Monotonic shape constraints, WOE binning, and auditable credit scorecards.
+- **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/)**: Why synthetic imputation corrupts sensor failure dynamics, and how native surrogate routing and linear leaves solve sensor dropouts.
+- **[Uplift Modeling from Scratch: Maximizing ROI with Honest Causal Trees](https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/)**: Why standard response modeling fails, and how sample-split honest trees isolate incremental treatment uplift.
+- **[Why We Rebuilt Quinlan's Cubist and C5.0 in Rust](https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/)**: Modernizing 1990s C rule engines with memory-safe SIMD Cholesky factorization in Rust.
+- **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/)**: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
+- **[Breaking the Step Function: Why Model Trees Beat Gradient Boosters on Continuous Physics](https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/)**: Overcoming orthogonal step staircases on continuous physical manifolds with piecewise linear leaves and hierarchical smoothing.
+
+---
+
 ## TabArena Benchmarks & Elo Arena
 
 `mltreelib` is measured against competitive tabular baselines across **Rust, Python, and R**:
@@ -240,6 +253,9 @@ Every entry tracks native categorical handling and execution resources under str
   - [x] Causal / uplift treatment effect heterogeneity.
   - [x] Survival Log-Rank statistic.
 - [x] **Unsupervised & Anomaly Trees**: HDBSCAN, URF, CLTree, TrieKNN, PCT, DET, EIF, HST, RCT, AAD, CAT.
+- [ ] **Modern Leaf Optimization**: Quasi-Newton L-BFGS and Cyclic Coordinate Descent GLM solvers replacing iterative IRLS for high-dimensional leaves.
+- [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
+- [ ] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
 - [ ] **R Frontend Package**: CRAN package wrapping `mltreelib-core`.
 

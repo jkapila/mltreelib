@@ -424,7 +424,14 @@ impl LeafModel {
             }
             _ => {
                 match &self.linear {
-                    Some(model) => self.family.inverse_link(model.predict(x)),
+                    Some(model) => {
+                        let has_na = model.cols.iter().any(|&j| x.get(j).copied().flatten().is_none());
+                        if has_na && model.na_coef.is_empty() && self.center.is_some() {
+                            self.center.unwrap()
+                        } else {
+                            self.family.inverse_link(model.predict(x))
+                        }
+                    }
                     None => self.center.unwrap_or(self.stats.mean),
                 }
             }
@@ -446,6 +453,10 @@ impl LeafModel {
         let Some(model) = &self.linear else {
             return self.center.unwrap_or(self.stats.mean);
         };
+        let has_na = model.cols.iter().any(|&c| cols[c][r].is_none());
+        if has_na && model.na_coef.is_empty() && self.center.is_some() {
+            return self.center.unwrap();
+        }
         let mut eta = model.intercept;
         for (k, &c) in model.cols.iter().enumerate() {
             match cols[c][r] {
@@ -1367,7 +1378,7 @@ pub(crate) fn fit_glm(
         return None;
     }
     let mut beta = vec![0.0; dim];
-    for _ in 0..200 {
+    for _ in 0..100 {
         gram.xtx.fill(0.0);
         gram.xty.fill(0.0);
         gram.yty = 0.0;
@@ -1499,7 +1510,7 @@ pub(crate) fn fit_glm(
             return None;
         }
         let mut next_objective = objective(&candidate, &mut row);
-        for _ in 0..50 {
+        for _ in 0..20 {
             if next_objective.is_finite() && next_objective <= old_objective {
                 break;
             }

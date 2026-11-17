@@ -70,9 +70,20 @@ predictions = model.predict(X_test)
 
 ---
 
+## Empirical Comparison: Continuous Curve Benchmark
+
+To directly see the architectural differences across real data, we benchmarked a continuous non-linear physics curve ($N=160$ samples) using `matplotlib` following the [scikit-learn tree regression benchmark](https://scikit-learn.org/stable/auto_examples/tree/plot_tree_regression.html):
+
+![Continuous Regression Benchmark: Step Functions vs Model Tree](../assets/plot_tree_regression_comparison.png)
+
+- **Left Panel (CART Step Staircase)**: A depth-2 decision tree produces 4 flat step blocks (RMSE = 0.364). Deepening it to depth 5 introduces 32 discontinuous cliff edges (RMSE = 0.285) that oscillate around noise. In contrast, a **depth-2 `ModelTree`** fits piecewise linear slopes directly across the 4 partitions, cutting RMSE to **0.163** ($2.2\times$ lower error with zero cliff edges).
+- **Right Panel (GBDT Ensemble vs Single ModelTree)**: While an ensemble of 30 LightGBM (RMSE = 0.187) or CatBoost (RMSE = 0.201) trees must combine dozens of small staircases to approximate the slope, a **single depth-2 Model Tree** outperforms both ensembles (RMSE = 0.163) while remaining fully inspectable.
+
+---
+
 ## Empirical Comparison: NASA Airfoil Acoustic Benchmark
 
-We benchmarked a shallow `mltreelib` Model Tree against a standard CART / GBDT tree on the standard NASA Airfoil Self-Noise dataset ($N=1,503$ aerodynamic wind-tunnel runs):
+We also benchmarked a shallow `mltreelib` Model Tree against a standard CART / GBDT tree on the standard NASA Airfoil Self-Noise dataset ($N=1,503$ aerodynamic wind-tunnel runs):
 
 ![Model Tree vs GBDT Step Function Diagnostics](../assets/blog_model_tree_vs_step.svg)
 

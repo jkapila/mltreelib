@@ -59,11 +59,28 @@ CL_TASKS = {
     "NATICUSdroid": "binary",
     "coil2000_insurance_policies": "binary",
     "in_vehicle_coupon_recommendation": "binary",
-    # Multiclass datasets
+    # Multiclass datasets (previously 4)
     "maternal_health_risk": "multiclass",
     "students_dropout_and_academic_success": "multiclass",
     "SDSS17": "multiclass",
     "splice": "multiclass",
+    # Batch 1: Small (< 5,000 rows)
+    "anneal": "multiclass",
+    "website_phishing": "multiclass",
+    "MIC": "multiclass",
+    "Bioresponse": "binary",
+    "hiva_agnostic": "multiclass",
+    # Batch 2: Medium (5,000 - 50,000 rows)
+    "polish_companies_bankruptcy": "binary",
+    "HR_Analytics_Job_Change_of_Data_Scientists": "binary",
+    "credit_card_clients_default": "binary",
+    "Amazon_employee_access": "binary",
+    "kddcup09_appetency": "binary",
+    # Batch 3: Large (> 50,000 rows)
+    "Diabetes130US": "binary",
+    "APSFailure": "binary",
+    "customer_satisfaction_in_airline": "binary",
+    "GiveMeSomeCredit": "binary",
 }
 
 

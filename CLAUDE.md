@@ -7,10 +7,13 @@ Comprehensive agent guide: see [AGENTS.md](AGENTS.md).
 - **Commands**:
   - `uv sync` — venv + build extension (maturin backend)
   - `cargo test` — Rust core tests (`crates/mltreelib-core/tests/`)
-  - `uv run maturin develop` — rebuild PyO3 extension after Rust edits
+  - `uv run maturin develop --release` — rebuild PyO3 extension with release optimizations
   - `uv run pytest tests/ -q` — Python behavior tests
+  - `uv run python <script.py>` — run scripts/benchmarks via the venv Python
+  - `uv run python -u examples/elo_score_all.py` — run unbuffered Elo arena benchmarks
   - `uv run zensical build` — build documentation site (`docs/` -> `site/`)
   - `uv run python examples/gen_api_doc.py` — regenerate API docs
+  - *Note*: Always use `uv run python ...` for script execution. Ensure binary at `/home/jkapila/.cargo/bin/uv` if sandbox PATH lacks `uv`.
 - **Key Rules**:
   - Zero `scikit-learn` dependency (sklearn-compatible API shape only).
   - Missing data first-class (`None` and `NaN` normalized at ingestion; missing in -> missing out, never panics).

@@ -153,6 +153,26 @@ pub(crate) fn class_entropy_w(p: &[(f64, f64)]) -> f64 {
     if total <= 0.0 {
         return 0.0;
     }
+    let mut stack_counts = [0.0f64; 32];
+    let mut is_small_int = true;
+    for &(y, w) in p {
+        if y >= 0.0 && y < 32.0 && y.fract() == 0.0 {
+            stack_counts[y as usize] += w;
+        } else {
+            is_small_int = false;
+            break;
+        }
+    }
+    if is_small_int {
+        let mut ent = 0.0;
+        for &c in &stack_counts {
+            if c > 0.0 {
+                let q = c / total;
+                ent -= q * q.log2();
+            }
+        }
+        return ent;
+    }
     let mut counts: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
     for &(y, w) in p {
         *counts.entry(y.to_bits()).or_insert(0.0) += w;
@@ -175,6 +195,26 @@ pub(crate) fn class_gini_w(p: &[(f64, f64)]) -> f64 {
     let total: f64 = p.iter().map(|&(_, w)| w).sum();
     if total <= 0.0 {
         return 0.0;
+    }
+    let mut stack_counts = [0.0f64; 32];
+    let mut is_small_int = true;
+    for &(y, w) in p {
+        if y >= 0.0 && y < 32.0 && y.fract() == 0.0 {
+            stack_counts[y as usize] += w;
+        } else {
+            is_small_int = false;
+            break;
+        }
+    }
+    if is_small_int {
+        let mut sum_sq = 0.0;
+        for &c in &stack_counts {
+            if c > 0.0 {
+                let q = c / total;
+                sum_sq += q * q;
+            }
+        }
+        return 1.0 - sum_sq;
     }
     let mut counts: std::collections::HashMap<u64, f64> = std::collections::HashMap::new();
     for &(y, w) in p {

@@ -171,6 +171,9 @@ legacy/
 playground/
 tmp/
 benchmarks/cla_preds/
+benchmarks/elo_cla_data/
+benchmarks/elo_reg_data/
+
 
 /churn_tree.svg
 /churn_tree.dot

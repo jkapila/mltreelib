@@ -42,13 +42,104 @@ Design docs and research live in `references/` (start with
 ## Commands
 
 ```sh
-uv sync                      # venv + build the Rust extension (maturin backend)
-cargo test                   # Rust tests (crates/mltreelib-core/tests/)
-uv run maturin develop       # rebuild the extension after Rust changes
-uv run pytest tests/ -q      # Python behavior tests
-uv run zensical build        # docs site (docs/ -> site/)
-uv run python examples/gen_api_doc.py  # regenerate docs/reference/api/*.md after API changes
+uv sync                                    # venv + build the Rust extension (maturin backend)
+cargo test                                 # Rust tests (crates/mltreelib-core/tests/)
+uv run maturin develop --release           # rebuild the extension with release optimizations
+uv run pytest tests/ -q                    # Python behavior tests
+uv run python <script.py>                  # run scripts/benchmarks via the venv Python
+uv run python -u examples/elo_score_all.py # run unbuffered Elo arena benchmarks
+uv run zensical build                      # docs site (docs/ -> site/)
+uv run python examples/gen_api_doc.py      # regenerate docs/reference/api/*.md after API changes
 ```
+
+> **Execution Note**: Always use `uv run python ...` to invoke scripts so dependencies and the editable `mltreelib` extension from `.venv` are cleanly loaded. If `uv` is not on standard sandbox PATH, it resides at `/home/jkapila/.cargo/bin/uv` or `/home/jkapila/.local/bin/uv`. Always build extension with `--release` for benchmarks.
+
+
+
+## Writing Modes
+
+### Mode A — Publication / Human Voice
+Use when drafting articles, blog posts, social copy, intros, or any text
+meant for a human audience to enjoy reading.
+
+**Rhythm**
+- Vary sentence length deliberately (short, long, medium).
+- Vary paragraph length. Let one be a single line. Let the next be dense.
+- Scan only the first two words of each sentence in a row. If "The",
+  "It is", or "This" repeats more than once in four sentences, rewrite.
+  Mix in a question, a subordinate-clause opener, or a bare fragment.
+
+**Voice & Register**
+- Use contractions (it's, don't, you'll) and conversational transitions.
+- Shift register at least once per section: a technical sentence,
+  then a wry aside, then back.
+- Inject one clear point of view per paragraph.
+- Drop in a parenthetical or one-line tangent and come back.
+  Let a sentence redirect itself: "Actually, no — it's more like…"
+
+**Structure**
+- Open with a specific detail, anecdote, or opinion — not a definition.
+- Break the triplet: use two or four items in a list, not three.
+  If a list has three, merge or split it.
+- Go one level deeper on one point instead of three flat parallels:
+  claim → reasoning → limitation, or rule → conditional exception.
+- End on a new observation, question, or concrete next step.
+  Never restate the intro in a summary paragraph.
+
+**Precision**
+- Use specific numbers over round ones: "4 years and 3 months" not
+  "about five years." "37 of 40 users" not "most users."
+- Kill hedging stacks: delete "very, really, basically, extremely,
+  quite, somewhat." One qualifier max per sentence, usually zero.
+
+**Cuts**
+- Remove: "Furthermore", "In conclusion", "It is worth noting",
+  "It's important to", "delve", "leverage", "landscape", "game-changer".
+- Prefer plain, concrete nouns over abstract compounds.
+- Read-aloud test: if a sentence sounds like it was generated, rewrite it.
+
+**Fabrication guard**
+- Where a personal story, sensory detail, or specific number belongs,
+  insert `[YOUR STORY HERE]` instead of inventing one.
+  The human fills those in.
+
+
+### Mode B — Technical / Agent-Facing (80% ASD-STE100)
+Use for explanations, summaries, code reviews, instructions, error messages,
+tool descriptions, inter-agent text, and any text another system or a
+non-native reader will parse.
+
+**Sentence rules**
+- Instructions / procedures: max 20 words per sentence.
+- Descriptions / explanations: max 25 words per sentence.
+- One instruction per sentence. Split compound actions.
+- One topic per paragraph; max 6 sentences per paragraph.
+
+**Grammar rules**
+- Active voice. Name the actor.
+- Simple tenses only: present, past, future, infinitive, imperative.
+  No perfect tenses ("has done" → "did").
+- No contractions.
+- No semicolons.
+- Condition before command: "If the flag is set, run X."
+
+**Word rules**
+- One word, one meaning, one part of speech.
+  - "close" = shut (verb). Use "near" for the adjective.
+  - "make sure" not "ensure".
+  - "check" not "verify / confirm / validate".
+  - "use" not "utilize".
+- No hedging: replace "should / would / may / might" with
+  "must" (requirement) or "can" (option).
+- Multi-word nouns: max 3 words.
+- Keep articles (a, an, the) and "that". No telegraph-style fragments.
+- Pick one verb for one action and reuse it; do not rotate synonyms.
+
+**Scope**
+- Keep product names, code identifiers, and domain terms verbatim.
+  Do not "simplify" them.
+- When the two modes conflict, the task context decides which applies.
+  When unsure, default to Mode B.   
 
 ## Rules
 

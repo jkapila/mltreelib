@@ -242,9 +242,9 @@ pub(crate) fn compute_leaf_design(
     rows: &[usize],
     chosen: &[usize],
 ) -> (bool, usize) {
-    let any_missing = rows
+    let any_missing = chosen
         .iter()
-        .any(|&r| chosen.iter().any(|&c| cols[c][r].is_none()));
+        .any(|&c| rows.iter().any(|&r| cols[c][r].is_none()));
     let dim = 1 + chosen.len() + if any_missing { chosen.len() } else { 0 };
     (any_missing, dim)
 }

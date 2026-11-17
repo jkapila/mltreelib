@@ -33,6 +33,9 @@
 8. [2026-11-01-top5-and-earth-architectural-analysis.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-top5-and-earth-architectural-analysis.md): Architectural benchmark of Earth, EBM, C5.0, Cubist, and GritBot.
 9. [knob-gap-review.md](file:///mnt/d/Programs/mltreelib/references/research/knob-gap-review.md): Parameter mapping and feature parity across C5.0, Cubist, and XGBoost/LightGBM.
 10. [2026-11-01-gold-standard-hierarchical-macro-micro-routing.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-gold-standard-hierarchical-macro-micro-routing.md): **Gold Standard Architecture**: Two-tier macro-tree segmentation with decoupled micro-leaf retrain and primary-key entity routing.
+11. [2026-11-17-ranger-and-grf-forest-mechanisms.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-17-ranger-and-grf-forest-mechanisms.md): **Ranger and GRF Mechanics**: Probability Estimation Trees, zero-copy pointer partitioning, Fisher target-ordered splits, Adaptive Kernel Weights, Honest Partitioning, and Gradient-Based Splitting.
+12. [2026-11-17-modern-glm-solvers-and-optimization-landscape.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-17-modern-glm-solvers-and-optimization-landscape.md): **Modern GLM Solvers & Optimization Landscape**: Beyond naive IRLS to L-BFGS, Coordinate Descent, and FastGLM for high-dimensional leaf model fitting.
+13. [2026-11-17-multiclass-split-optimization-methods.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-17-multiclass-split-optimization-methods.md): **Multiclass Tree Split Optimization**: From Naive $O(N^2)$ to Streaming Histograms, Binned Gradients, and Softmax Quantization.
 
 ### Pillar 2: Distributional, Survival & Specialized Split Families
 10. [split-criteria-survey.md](file:///mnt/d/Programs/mltreelib/references/research/split-criteria-survey.md): Comprehensive survey of tree splitting criteria (Gini, Entropy, MSE, Poisson, Gamma).

@@ -84,6 +84,8 @@ nav:
       - Zero-Imputation Maintenance: blog/zero-imputation-predictive-maintenance.md
       - Causal Uplift Modeling: blog/uplift-modeling-with-causal-trees.md
       - Modernizing Quinlan in Rust: blog/modernizing-quinlan-classics-in-rust.md
+      - Beyond MSE (Distributional): blog/beyond-mse-distributional-trees.md
+      - Breaking Step Functions: blog/breaking-step-functions-model-trees-vs-gbdt.md
   - Benchmarks:
       - ELO: benchmarks/elo.md
       - DataSets: benchmarks/datasets.md
@@ -140,6 +142,8 @@ plugins:
           - blog/zero-imputation-predictive-maintenance.md
           - blog/uplift-modeling-with-causal-trees.md
           - blog/modernizing-quinlan-classics-in-rust.md
+          - blog/beyond-mse-distributional-trees.md
+          - blog/breaking-step-functions-model-trees-vs-gbdt.md
           - reference/data.md
           - reference/model.md
           - reference/metrics.md

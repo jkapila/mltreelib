@@ -106,6 +106,7 @@ struct ScanStats {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct SplitScratch {
     pub pairs: Vec<(f64, f64, f64)>,
+    pub pairs_yw: Vec<(f64, f64)>,
     pub missing_yws: Vec<(f64, f64)>,
     pub level_moments: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, swy, swy2)
     pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
@@ -907,6 +908,8 @@ impl<'a> Grower<'a> {
 
         let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
         if is_custom_gain {
+            scratch.pairs_yw.clear();
+            scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w)| (y, w)));
             scratch.missing_yws.clear();
             if mn > 0 {
                 for &r in rows {
@@ -982,7 +985,7 @@ impl<'a> Grower<'a> {
                         parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
                     }
                     ref gfn => {
-                        let yws_sorted: Vec<(f64, f64)> = scratch.pairs.iter().map(|&(_, y, w)| (y, w)).collect();
+                        let yws_sorted = &scratch.pairs_yw;
                         if scratch.missing_yws.is_empty() {
                             gain_of(gfn, &yws_sorted[..k + 1], &yws_sorted[k + 1..])
                         } else {

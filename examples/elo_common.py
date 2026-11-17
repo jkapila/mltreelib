@@ -93,7 +93,14 @@ def read_xy(path: Path, meta: Optional[Dict[str, Any]] = None, is_classification
                 if role == "categorical":
                     cells.append(val)
                 elif role == "numeric":
-                    cells.append(None if val in ("", "N/A", "?", "nan", "NaN") else float(val))
+                    if val in ("", "N/A", "?", "nan", "NaN"):
+                        cells.append(None)
+                    elif str(val).strip().lower() == "true":
+                        cells.append(1.0)
+                    elif str(val).strip().lower() == "false":
+                        cells.append(0.0)
+                    else:
+                        cells.append(float(val))
                 else:
                     # Inferred role: try float, fallback to str
                     if val in ("", "N/A", "?", "nan", "NaN"):
