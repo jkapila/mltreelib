@@ -12,10 +12,10 @@ Run:
     uv run python examples/stump_distributional_leaves.py
 """
 
-import math
 import random
 import time
-from mltreelib import ModelTree, LeafControl
+
+from mltreelib import ModelTree
 
 
 def showcase_softmax():
@@ -52,7 +52,9 @@ def showcase_softmax():
 
     for i, (feat, lbl, probs) in enumerate(zip(test_X, pred_labels, pred_probs)):
         prob_str = ", ".join(f"{classes[c]}: {probs[c]:.3f}" for c in range(3))
-        print(f"Sample {i+1} {feat} -> Predicted Class {int(lbl)} ({classes[int(lbl)]}) | Probabilities: [{prob_str}]")
+        print(
+            f"Sample {i + 1} {feat} -> Predicted Class {int(lbl)} ({classes[int(lbl)]}) | Probabilities: [{prob_str}]"
+        )
 
 
 def showcase_survival():
@@ -96,7 +98,7 @@ def showcase_survival():
     # Evaluate survival probability and cumulative hazard across key milestones
     eval_horizons = [30.0, 90.0, 180.0, 365.0]
     test_patient = [[50.0, 60.0]]  # Karnofsky score 50, Age 60
-    
+
     surv_probs = tree.predict(test_patient, kind="survival", times=eval_horizons)[0]
     hazards = tree.predict(test_patient, kind="hazard", times=eval_horizons)[0]
 
@@ -128,7 +130,7 @@ def showcase_heteroscedastic():
     leaf = tree.leaves()[0]
     mu_hat = leaf["mean"]
     sigma_hat = leaf["scale"]
-    print(f"True Process:   mu = 15.000, sigma = 3.500")
+    print("True Process:   mu = 15.000, sigma = 3.500")
     print(f"Estimated Leaf: mu = {mu_hat:.3f}, sigma = {sigma_hat:.3f}")
 
     # Unified predict(kind="dist")
@@ -162,9 +164,15 @@ def showcase_retrain_benchmark():
     retrain_time = (time.perf_counter() - t1) * 1000.0
 
     leaf = tree.leaves()[0]
-    print(f"Initial fit on 10,000 rows:   {fit_time:.3f} ms (mu={leaf['mean']:.2f}, sigma={leaf['scale']:.2f})")
-    print(f"Retrain on 10,000 rows:       {retrain_time:.3f} ms (mu={leaf['mean']:.2f}, sigma={leaf['scale']:.2f})")
-    print("Zero-allocation frozen topology refits leaves instantaneously for streaming & hierarchical routing.")
+    print(
+        f"Initial fit on 10,000 rows:   {fit_time:.3f} ms (mu={leaf['mean']:.2f}, sigma={leaf['scale']:.2f})"
+    )
+    print(
+        f"Retrain on 10,000 rows:       {retrain_time:.3f} ms (mu={leaf['mean']:.2f}, sigma={leaf['scale']:.2f})"
+    )
+    print(
+        "Zero-allocation frozen topology refits leaves instantaneously for streaming & hierarchical routing."
+    )
     print("=" * 78)
 
 

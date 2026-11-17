@@ -16,7 +16,6 @@ import datetime
 import json
 import logging
 import multiprocessing as mp
-import math
 import os
 import subprocess
 import sys
@@ -37,26 +36,50 @@ def setup_logging():
     """Standard file+console logging for Elo runs (the pattern the rest of
     the codebase adopts later)."""
     log.setLevel(logging.INFO)
-    fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S")
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
     fh = logging.FileHandler(LOG, encoding="utf-8")
     fh.setFormatter(fmt)
     sh = logging.StreamHandler()
     sh.setFormatter(fmt)
     log.handlers = [fh, sh]
+
+
 OURS = [
-    "ModelTree(all)", "ModelTree(path)", "ModelTree(mean)", "ModelTree(winnow)",
-    "ModelTree(alpha0)", "ModelTree(alpha.03)",
+    "ModelTree(all)",
+    "ModelTree(path)",
+    "ModelTree(mean)",
+    "ModelTree(winnow)",
+    "ModelTree(alpha0)",
+    "ModelTree(alpha.03)",
 ]
 
 # The exact settings this round scores — the round manifest records this
 # dict verbatim, and `variants()` builds from it, so the record can never
 # drift from what produced the numbers.
 _BASE = dict(
-    max_depth=4, min_rows=10, min_gain=1e-9, leaf_cols="all", leaf="linear",
-    l2=0.1, l1=0.0, monotone=[], interaction_groups=[], min_relevance=None,
-    gain="sse", split_precision=0.001, cat_order="frequency_desc",
-    cat_search="cumulative", leaf_digest=True, verbose=0, alpha=0.0,
-    imbalance_penalty=0.0, col_sample=None, seed=42, prune="none",
+    max_depth=4,
+    min_rows=10,
+    min_gain=1e-9,
+    leaf_cols="all",
+    leaf="linear",
+    l2=0.1,
+    l1=0.0,
+    monotone=[],
+    interaction_groups=[],
+    min_relevance=None,
+    gain="sse",
+    split_precision=0.001,
+    cat_order="frequency_desc",
+    cat_search="cumulative",
+    leaf_digest=True,
+    verbose=0,
+    alpha=0.0,
+    imbalance_penalty=0.0,
+    col_sample=None,
+    seed=42,
+    prune="none",
 )
 SETTINGS = {
     "ModelTree(all)": dict(_BASE),
@@ -67,15 +90,27 @@ SETTINGS = {
     # alpha variants; the round decides which becomes the default.
     "ModelTree(alpha0)": dict(
         _BASE,
-        max_depth=12, min_rows=6, l2=6.0, split_precision=None,
-        leaf="linear", gain="sse", prune="bic",
-        imbalance_penalty=0.06, alpha=0.0,
+        max_depth=12,
+        min_rows=6,
+        l2=6.0,
+        split_precision=None,
+        leaf="linear",
+        gain="sse",
+        prune="bic",
+        imbalance_penalty=0.06,
+        alpha=0.0,
     ),
     "ModelTree(alpha.03)": dict(
         _BASE,
-        max_depth=12, min_rows=6, l2=6.0, split_precision=None,
-        leaf="linear", gain="sse", prune="bic",
-        imbalance_penalty=0.06, alpha=0.03,
+        max_depth=12,
+        min_rows=6,
+        l2=6.0,
+        split_precision=None,
+        leaf="linear",
+        gain="sse",
+        prune="bic",
+        imbalance_penalty=0.06,
+        alpha=0.03,
     ),
 }
 
@@ -160,7 +195,9 @@ def main():
     log.info("round start: %d flavors, settings in this run's manifest", len(SETTINGS))
     rows = list(csv.DictReader(open(OUT)))
     if not rows:
-        raise SystemExit("elo_scores.csv is empty - run examples/elo_run_groups.sh first")
+        raise SystemExit(
+            "elo_scores.csv is empty - run examples/elo_run_groups.sh first"
+        )
 
     # Freeze the anchor exactly once (or on demand with --freeze).
     if not BASE.exists() or "--freeze" in sys.argv:
@@ -183,16 +220,30 @@ def main():
         for name, m in variants().items():
             got = fit_predict_budgeted(m, xtr, ytr, xte)
             if got is None or got[0] != "ok":
-                reason = "TIMEOUT (300s, killed)" if got is None else f"FAILED ({got[1][:60]})"
+                reason = (
+                    "TIMEOUT (300s, killed)"
+                    if got is None
+                    else f"FAILED ({got[1][:60]})"
+                )
                 log.warning("%-24s%-20s %s - keeping previous row", ds, name, reason)
                 continue
             _, pred, fit_s = got
             if fit_s > CRITICAL_S:
-                log.warning("%-24s%-20s CRITICAL fit=%.1fs (budget %.0fs)",
-                            ds, name, fit_s, BUDGET_S)
+                log.warning(
+                    "%-24s%-20s CRITICAL fit=%.1fs (budget %.0fs)",
+                    ds,
+                    name,
+                    fit_s,
+                    BUDGET_S,
+                )
             elif fit_s > SLOW_S:
-                log.info("%-24s%-20s slow fit=%.1fs (TabArena line %.0fs)",
-                         ds, name, fit_s, SLOW_S)
+                log.info(
+                    "%-24s%-20s slow fit=%.1fs (TabArena line %.0fs)",
+                    ds,
+                    name,
+                    fit_s,
+                    SLOW_S,
+                )
             reg = Metrics().regression(yte, pred)
             by[(ds, name)] = {
                 "dataset": ds,
@@ -232,9 +283,7 @@ def main():
         "elo_after": {m: c_elo.get(m) for m in OURS},
     }
     (rdir / "settings.json").write_text(json.dumps(manifest, indent=2))
-    deltas = " ".join(
-        f"{m}:{b_elo.get(m, 0):.0f}->{c_elo.get(m, 0):.0f}" for m in OURS
-    )
+    deltas = " ".join(f"{m}:{b_elo.get(m, 0):.0f}->{c_elo.get(m, 0):.0f}" for m in OURS)
     log.info("round %s sha=%s datasets=%d %s", stamp, sha, len(datasets), deltas)
     log.info("round manifest: %s", rdir / "settings.json")
 

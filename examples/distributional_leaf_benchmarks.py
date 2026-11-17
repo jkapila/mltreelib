@@ -7,7 +7,6 @@ Datasets:
 4. Tobit: Wooldridge Mroz (female labor supply hours censored at zero)
 """
 
-import os
 import pandas as pd
 from mltreelib import ModelTree
 
@@ -166,7 +165,9 @@ def run_tobit_benchmark():
     print(f"Leaves: {tobit_tree.n_leaves()}")
     for l_tobit, l_ols in zip(tobit_tree.leaves(), ols_tree.leaves()):
         print(f"  Leaf {l_tobit['id']} (n={l_tobit['n']}):")
-        print(f"    Tobit intercept: {l_tobit['intercept']:.2f} | OLS intercept: {l_ols['intercept']:.2f}")
+        print(
+            f"    Tobit intercept: {l_tobit['intercept']:.2f} | OLS intercept: {l_ols['intercept']:.2f}"
+        )
         for cname, c_tob, c_ols in zip(cols, l_tobit["coef"], l_ols["coef"]):
             print(f"      {cname:12s} -> Tobit: {c_tob:+8.2f} | OLS: {c_ols:+8.2f}")
 

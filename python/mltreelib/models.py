@@ -7,19 +7,35 @@ Provides unified, scikit-learn-compatible facades:
   CLTree, HDBSCAN, and Unsupervised Random Forest (URF) clustering.
 """
 
-from typing import Any, Dict, List, Optional, Sequence, Union
-import math
+from collections.abc import Sequence
+from typing import Any
 
 from mltreelib._core import (
-    ActiveAnomalyTree,
-    CLTree as _CLTree,
-    ContextAnomalyTree,
-    DensityEstimationTree as _DET,
-    ExtendedIsolationTree as _EIF,
     HDBSCAN as _HDBSCAN,
+)
+from mltreelib._core import (
+    ActiveAnomalyTree,
+    ContextAnomalyTree,
+)
+from mltreelib._core import (
+    CLTree as _CLTree,
+)
+from mltreelib._core import (
+    DensityEstimationTree as _DET,
+)
+from mltreelib._core import (
+    ExtendedIsolationTree as _EIF,
+)
+from mltreelib._core import (
     HalfSpaceTree as _HST,
+)
+from mltreelib._core import (
     PredictiveClusteringTree as _PCT,
+)
+from mltreelib._core import (
     RandomCutTree as _RCT,
+)
+from mltreelib._core import (
     UnsupervisedRandomForest as _URF,
 )
 
@@ -55,7 +71,7 @@ class AnomalyTree:
     def __init__(
         self,
         kind: str = "eif",
-        max_depth: Optional[int] = None,
+        max_depth: int | None = None,
         min_rows: int = 10,
         contamination: float = 0.05,
         seed: int = 42,
@@ -67,7 +83,7 @@ class AnomalyTree:
         self.contamination = contamination
         self.seed = seed
         self.params = params
-        self._threshold: Optional[float] = None
+        self._threshold: float | None = None
         self._fitted = False
         self._inner: Any = None
 
@@ -78,18 +94,34 @@ class AnomalyTree:
         if k in ("eif", "isolation", "extended_isolation"):
             ext = self.params.get("extension_level", None)
             sub = self.params.get("subsample_size", None)
-            self._inner = _EIF(max_depth=self.max_depth, extension_level=ext, subsample_size=sub, seed=self.seed)
+            self._inner = _EIF(
+                max_depth=self.max_depth,
+                extension_level=ext,
+                subsample_size=sub,
+                seed=self.seed,
+            )
         elif k in ("det", "density", "density_estimation"):
             depth = self.max_depth or 8
             min_split = self.params.get("min_samples_split", self.min_rows * 2)
             alpha = self.params.get("alpha", 0.0)
             min_gain = self.params.get("min_density_gain", 0.0)
-            self._inner = _DET(max_depth=depth, min_samples_split=min_split, min_leaf_samples=self.min_rows, min_density_gain=min_gain, alpha=alpha)
+            self._inner = _DET(
+                max_depth=depth,
+                min_samples_split=min_split,
+                min_leaf_samples=self.min_rows,
+                min_density_gain=min_gain,
+                alpha=alpha,
+            )
         elif k in ("hst", "half_space"):
             depth = self.max_depth or 6
             wsize = self.params.get("window_size", 250)
             init_mass = self.params.get("initial_mass", 0.0)
-            self._inner = _HST(max_depth=depth, window_size=wsize, initial_mass=init_mass, seed=self.seed)
+            self._inner = _HST(
+                max_depth=depth,
+                window_size=wsize,
+                initial_mass=init_mass,
+                seed=self.seed,
+            )
         elif k in ("rct", "random_cut"):
             ssize = self.params.get("sample_size", 256)
             self._inner = _RCT(sample_size=ssize, seed=self.seed)
@@ -97,28 +129,41 @@ class AnomalyTree:
             depth = self.max_depth or 8
             eta = self.params.get("eta", 0.1)
             pw = self.params.get("prior_weight", 1.0)
-            self._inner = ActiveAnomalyTree(max_depth=depth, eta=eta, prior_weight=pw, seed=self.seed)
+            self._inner = ActiveAnomalyTree(
+                max_depth=depth, eta=eta, prior_weight=pw, seed=self.seed
+            )
         elif k in ("context", "sequence"):
             depth = self.max_depth or 5
             asize = self.params.get("alphabet_size", 256)
             smooth = self.params.get("smoothing_discount", 0.5)
-            self._inner = ContextAnomalyTree(max_depth=depth, alphabet_size=asize, smoothing_discount=smooth)
+            self._inner = ContextAnomalyTree(
+                max_depth=depth, alphabet_size=asize, smoothing_discount=smooth
+            )
         else:
             valid = ["eif", "det", "hst", "rct", "active", "context"]
-            raise ValueError(f"Unknown anomaly tree kind '{self.kind}', expected one of {valid}")
+            raise ValueError(
+                f"Unknown anomaly tree kind '{self.kind}', expected one of {valid}"
+            )
 
     def fit(
         self,
         x: Sequence[Sequence[Any]],
-        col_names: Optional[Sequence[str]] = None,
-        dtypes: Optional[Sequence[str]] = None,
+        col_names: Sequence[str] | None = None,
+        dtypes: Sequence[str] | None = None,
     ) -> "AnomalyTree":
         """Fit the anomaly model on training data.
 
         Accepts native python lists (floats, ints, strings, None for missing values).
         """
         k = self.kind
-        if k in ("eif", "isolation", "extended_isolation", "det", "density", "density_estimation"):
+        if k in (
+            "eif",
+            "isolation",
+            "extended_isolation",
+            "det",
+            "density",
+            "density_estimation",
+        ):
             cnames = list(col_names) if col_names is not None else None
             dts = list(dtypes) if dtypes is not None else None
             self._inner.fit(x, col_names=cnames, dtypes=dts)
@@ -144,7 +189,7 @@ class AnomalyTree:
 
         return self
 
-    def score_samples(self, x: Sequence[Sequence[Any]]) -> List[float]:
+    def score_samples(self, x: Sequence[Sequence[Any]]) -> list[float]:
         """Compute continuous anomaly scores for data points.
 
         Higher scores indicate greater degree of anomalousness.
@@ -167,10 +212,12 @@ class AnomalyTree:
             float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
             return self._inner.anomaly_score(float_mat)
         elif k in ("context", "sequence"):
-            raise ValueError("Use surprise_score(context, symbol) for ContextAnomalyTree")
+            raise ValueError(
+                "Use surprise_score(context, symbol) for ContextAnomalyTree"
+            )
         return []
 
-    def predict(self, x: Sequence[Sequence[Any]]) -> List[int]:
+    def predict(self, x: Sequence[Sequence[Any]]) -> list[int]:
         """Predict binary anomaly labels (1 = anomaly, 0 = inlier / normal)."""
         scores = self.score_samples(x)
         if self._threshold is not None:
@@ -178,14 +225,16 @@ class AnomalyTree:
             return [1 if s >= self._threshold else 0 for s in scores]
         return [1 if s >= 0.5 else 0 for s in scores]
 
-    def predict_density(self, x: Sequence[Sequence[Any]]) -> List[float]:
+    def predict_density(self, x: Sequence[Sequence[Any]]) -> list[float]:
         """Compute estimated probability density (only for density trees)."""
         if not hasattr(self._inner, "predict_density"):
-            raise ValueError(f"predict_density is not supported by {self.kind} anomaly tree")
+            raise ValueError(
+                f"predict_density is not supported by {self.kind} anomaly tree"
+            )
         return self._inner.predict_density(x)
 
     @property
-    def threshold(self) -> Optional[float]:
+    def threshold(self) -> float | None:
         """Contamination threshold score separating normal points from anomalies."""
         return self._threshold
 
@@ -224,7 +273,7 @@ class ClusterTree:
     def __init__(
         self,
         kind: str = "pct",
-        n_clusters: Optional[int] = None,
+        n_clusters: int | None = None,
         max_depth: int = 6,
         min_rows: int = 5,
         metric: str = "euclidean",
@@ -240,7 +289,7 @@ class ClusterTree:
         self.params = params
         self._fitted = False
         self._inner: Any = None
-        self._labels: Optional[List[Optional[int]]] = None
+        self._labels: list[int | None] | None = None
 
         self._init_inner()
 
@@ -259,7 +308,11 @@ class ClusterTree:
             )
         elif k in ("cltree", "density"):
             min_density = self.params.get("min_density", 0.6)
-            self._inner = _CLTree(max_depth=self.max_depth, min_samples_leaf=self.min_rows, min_density=min_density)
+            self._inner = _CLTree(
+                max_depth=self.max_depth,
+                min_samples_leaf=self.min_rows,
+                min_density=min_density,
+            )
         elif k in ("hdbscan", "hierarchical"):
             eps = self.params.get("cluster_selection_epsilon", 0.0)
             max_c = self.params.get("max_cluster_size", None)
@@ -288,15 +341,17 @@ class ClusterTree:
             )
         else:
             valid = ["pct", "cltree", "hdbscan", "urf"]
-            raise ValueError(f"Unknown cluster tree kind '{self.kind}', expected one of {valid}")
+            raise ValueError(
+                f"Unknown cluster tree kind '{self.kind}', expected one of {valid}"
+            )
 
     def fit(
         self,
         x: Sequence[Sequence[Any]],
-        y: Optional[Sequence[Sequence[float]]] = None,
-        col_names: Optional[Sequence[str]] = None,
-        dtypes: Optional[Sequence[str]] = None,
-        target_names: Optional[Sequence[str]] = None,
+        y: Sequence[Sequence[float]] | None = None,
+        col_names: Sequence[str] | None = None,
+        dtypes: Sequence[str] | None = None,
+        target_names: Sequence[str] | None = None,
     ) -> "ClusterTree":
         """Fit the clustering tree on dataset x (and optional targets y for PCT)."""
         k = self.kind
@@ -305,7 +360,9 @@ class ClusterTree:
             dts = list(dtypes) if dtypes is not None else None
             tnames = list(target_names) if target_names is not None else None
             y_mat = [list(r) for r in y] if y is not None else None
-            self._inner.fit(x, y=y_mat, col_names=cnames, dtypes=dts, target_names=tnames)
+            self._inner.fit(
+                x, y=y_mat, col_names=cnames, dtypes=dts, target_names=tnames
+            )
             self._labels = self._inner.predict_cluster(x)
         elif k in ("cltree", "density"):
             float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
@@ -326,7 +383,7 @@ class ClusterTree:
         self._fitted = True
         return self
 
-    def predict(self, x: Sequence[Sequence[Any]]) -> List[Optional[int]]:
+    def predict(self, x: Sequence[Sequence[Any]]) -> list[int | None]:
         """Predict cluster index for query points x."""
         if not self._fitted:
             raise ValueError("ClusterTree is not fitted yet.")
@@ -344,7 +401,7 @@ class ClusterTree:
             float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
             if hasattr(self, "_train_encodings") and self._labels:
                 query_enc = self._inner.apply(float_mat)
-                preds: List[Optional[int]] = []
+                preds: list[int | None] = []
                 for q in query_enc:
                     best_match = 0
                     best_prox = -1
@@ -356,12 +413,12 @@ class ClusterTree:
                     preds.append(self._labels[best_match])
                 return preds
             if len(float_mat) == len(self._labels or []):
-                return self._labels
+                return self._labels or []
             return [0] * len(float_mat)
         return []
 
     @property
-    def labels_(self) -> List[Optional[int]]:
+    def labels_(self) -> list[int | None]:
         """Cluster labels for each training sample (-1 / None = noise)."""
         if not self._fitted:
             raise ValueError("ClusterTree is not fitted yet.")
@@ -377,14 +434,25 @@ class ClusterTree:
             return len(valid)
         return self.n_clusters or 0
 
-    def rules(self) -> List[Dict[str, Any]]:
+    def rules(self) -> list[dict[str, Any]]:
         """Extract interpretable cluster rule descriptions (PCT / CLTree)."""
         if hasattr(self._inner, "cluster_rules"):
             raw = self._inner.cluster_rules()
-            return [{"cluster_id": r[0], "rule": r[1], "prototype": r[2], "size": r[3]} for r in raw]
+            return [
+                {"cluster_id": r[0], "rule": r[1], "prototype": r[2], "size": r[3]}
+                for r in raw
+            ]
         if hasattr(self._inner, "cluster_bounding_boxes"):
             raw = self._inner.cluster_bounding_boxes()
-            return [{"cluster_id": r[0], "bounding_box": r[1], "size": r[2], "density": r[3]} for r in raw]
+            return [
+                {
+                    "cluster_id": r[0],
+                    "bounding_box": r[1],
+                    "size": r[2],
+                    "density": r[3],
+                }
+                for r in raw
+            ]
         return []
 
     def __repr__(self) -> str:

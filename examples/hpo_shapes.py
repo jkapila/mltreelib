@@ -22,7 +22,6 @@ import time
 
 import optuna
 import pandas as pd
-
 from mltreelib import ModelTree
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -50,12 +49,25 @@ N_TRIALS = 10
 
 SPACE = {
     "max_depth": lambda t: {"max_depth": t.suggest_int("max_depth", 1, 12)},
-    "min_rows": lambda t: {"min_rows": t.suggest_categorical("min_rows", [2, 5, 10, 25, 50, 100, 250, 500])},
-    "split_precision": lambda t: {"split_precision": t.suggest_categorical("split_precision", [None, 0.1, 0.01, 0.001, 0.0001])},
-    "leaf": lambda t: {"leaf": t.suggest_categorical("leaf", ["mean", "linear", "median", "huber"])},
+    "min_rows": lambda t: {
+        "min_rows": t.suggest_categorical("min_rows", [2, 5, 10, 25, 50, 100, 250, 500])
+    },
+    "split_precision": lambda t: {
+        "split_precision": t.suggest_categorical(
+            "split_precision", [None, 0.1, 0.01, 0.001, 0.0001]
+        )
+    },
+    "leaf": lambda t: {
+        "leaf": t.suggest_categorical("leaf", ["mean", "linear", "median", "huber"])
+    },
     "l2": lambda t: {"l2": t.suggest_float("l2", 1e-4, 10.0, log=True)},
-    "prune/cp_alpha": lambda t: {"prune": "cp", "cp_alpha": t.suggest_float("cp_alpha", 1e-4, 10.0, log=True)},
-    "col_sample": lambda t: {"col_sample": t.suggest_categorical("col_sample", [None, 0.25, 0.5, 0.75])},
+    "prune/cp_alpha": lambda t: {
+        "prune": "cp",
+        "cp_alpha": t.suggest_float("cp_alpha", 1e-4, 10.0, log=True),
+    },
+    "col_sample": lambda t: {
+        "col_sample": t.suggest_categorical("col_sample", [None, 0.25, 0.5, 0.75])
+    },
 }
 
 
@@ -85,8 +97,13 @@ def load(name, ycol):
     rng.shuffle(idx)
     cut = int(0.8 * len(idx))
     tr, te = idx[:cut], idx[cut:]
-    return ([x[i] for i in tr], [y[i] for i in tr],
-            [x[i] for i in te], [y[i] for i in te], dtypes)
+    return (
+        [x[i] for i in tr],
+        [y[i] for i in tr],
+        [x[i] for i in te],
+        [y[i] for i in te],
+        dtypes,
+    )
 
 
 def run_study(label, xtr, ytr, xte, yte, dtypes, param):
@@ -95,7 +112,9 @@ def run_study(label, xtr, ytr, xte, yte, dtypes, param):
     def objective(trial):
         kw = SPACE[param](trial)
         parent, child = ctx.Pipe(duplex=False)
-        p = ctx.Process(target=_trial_worker, args=(child, xtr, ytr, xte, yte, dtypes, kw))
+        p = ctx.Process(
+            target=_trial_worker, args=(child, xtr, ytr, xte, yte, dtypes, kw)
+        )
         p.start()
         p.join(TRIAL_CAP_S)
         if p.is_alive():

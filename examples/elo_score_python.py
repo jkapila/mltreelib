@@ -9,11 +9,10 @@ CatBoost, CTBoost — stock configs, no HPO (Optuna is a later phase).
 """
 
 import csv
+import logging
 import math
 import time
 from pathlib import Path
-
-import logging
 
 # Standard run logging: file + console (the AGENTS.md logging pattern).
 logging.basicConfig(
@@ -35,6 +34,7 @@ OUT = Path("benchmarks/elo_scores.csv")
 # touching the scorers.
 DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
 import os
+
 if os.environ.get("ELO_DATASETS"):  # groups-of-5 runs: score a subset
     _only = set(os.environ["ELO_DATASETS"].split(","))
     DATASETS = [d for d in DATASETS if d in _only]
@@ -75,8 +75,7 @@ def append_row(ds, model, rmse, mae, fit):
             rows = [r for r in rdr if not (r[0] == ds and r[1] == model)]
     with open(OUT, "w") as fh:
         fh.write("dataset,model,rmse,mae,fit_s\n")
-        for r in rows:
-            fh.write(",".join(r) + "\n")
+        fh.writelines(",".join(r) + "\n" for r in rows)
         fh.write(f"{ds},{model},{rmse:.4f},{mae:.4f},{fit:.3f}\n")
 
 
@@ -85,8 +84,12 @@ def make_models():
     import pandas as pd
 
     ms = {
-        "ModelTree(all)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "linear", "all"),
-        "ModelTree(path)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "linear", "path"),
+        "ModelTree(all)": lambda xtr, ytr, xte: run_tree(
+            xtr, ytr, xte, "linear", "all"
+        ),
+        "ModelTree(path)": lambda xtr, ytr, xte: run_tree(
+            xtr, ytr, xte, "linear", "path"
+        ),
         "ModelTree(mean)": lambda xtr, ytr, xte: run_tree(xtr, ytr, xte, "mean", "all"),
         "ModelTree(winnow)": lambda xtr, ytr, xte: run_tree(
             xtr, ytr, xte, "linear", "all", min_relevance=0.05
@@ -102,6 +105,7 @@ def make_models():
     def _raise(msg):
         def f(*_a, **_k):
             raise RuntimeError(msg)
+
         return f
 
     def lgbm():
@@ -111,11 +115,15 @@ def make_models():
             t0 = time.perf_counter()
             b = lgb.train(
                 {"objective": "regression", "verbosity": -1, "num_leaves": 31},
-                lgb.Dataset(np.asarray(xtr, dtype=np.float64),
-                            label=np.asarray(ytr, dtype=np.float64)),
+                lgb.Dataset(
+                    np.asarray(xtr, dtype=np.float64),
+                    label=np.asarray(ytr, dtype=np.float64),
+                ),
                 num_boost_round=200,
             )
-            return b.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return b.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -128,7 +136,9 @@ def make_models():
             m = CatBoostRegressor(iterations=200, verbose=0, allow_writing_files=False)
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -148,10 +158,13 @@ def make_models():
 
         def run(xtr, ytr, xte):
             # sklearn's CART cannot consume NAs — mean-impute (documented).
-            cols = list(zip(*[[float("nan") if v is None else v for v in row] for row in xtr]))
+            cols = list(
+                zip(*[[float("nan") if v is None else v for v in row] for row in xtr])
+            )
             means = [sum(c) / len(c) if any(v == v for v in c) else 0.0 for c in cols]
             fill = lambda rows: [
-                [means[j] if v is None else v for j, v in enumerate(row)] for row in rows
+                [means[j] if v is None else v for j, v in enumerate(row)]
+                for row in rows
             ]
             m = DecisionTreeRegressor(random_state=0)  # stock, unpruned
             t0 = time.perf_counter()
@@ -174,7 +187,9 @@ def make_models():
             dte = pd.DataFrame(np.asarray(xte, dtype=float), columns=cols)
             t0 = time.perf_counter()
             m = mt_lmtree(f, data=df)
-            return np.asarray(m.predict(newdata=dte), dtype=float), time.perf_counter() - t0
+            return np.asarray(
+                m.predict(newdata=dte), dtype=float
+            ), time.perf_counter() - t0
 
         return run
 
@@ -199,7 +214,9 @@ def make_models():
             m = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=1)
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -210,7 +227,9 @@ def make_models():
             m = TRUST()
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -235,7 +254,9 @@ def make_models():
             m = ChimeraBoostRegressor()  # quality=3 stock
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -246,7 +267,9 @@ def make_models():
             m = ExplainableBoostingRegressor()  # GA2M, stock
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -257,7 +280,9 @@ def make_models():
             m = ExtraTreesRegressor(n_estimators=100, random_state=42, n_jobs=1)
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -268,7 +293,9 @@ def make_models():
             m = LinearRegression()
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -279,7 +306,9 @@ def make_models():
             m = KNeighborsRegressor(n_neighbors=5)
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -303,8 +332,9 @@ def make_models():
             xa = sm.add_constant(np.asarray(xtr, dtype=np.float64), has_constant="add")
             xe = sm.add_constant(np.asarray(xte, dtype=np.float64), has_constant="add")
             t0 = time.perf_counter()
-            fit = sm.RLM(np.asarray(ytr, dtype=np.float64), xa,
-                         M=sm.robust.norms.HuberT()).fit()
+            fit = sm.RLM(
+                np.asarray(ytr, dtype=np.float64), xa, M=sm.robust.norms.HuberT()
+            ).fit()
             return fit.predict(xe), time.perf_counter() - t0
 
         return run
@@ -381,7 +411,9 @@ def main():
                     raise RuntimeError("no finite predictions")
                 rmse, mae = scores([p for p, _ in pairs], [t for _, t in pairs])
                 append_row(ds, name, rmse, mae, fit)
-                log.info(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
+                log.info(
+                    f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}"
+                )
             except Exception as exc:
                 msg = f"{type(exc).__name__}: {exc}"
                 log.info(f"{ds:<9} {name:<16} FAILED ({msg[:70]})")

@@ -2,13 +2,15 @@ import sys
 import time
 from pathlib import Path
 
-# Add examples/ to sys.path
-EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
-if str(EXAMPLES_DIR) not in sys.path:
-    sys.path.insert(0, str(EXAMPLES_DIR))
+# Add repo root and examples/ to sys.path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+EXAMPLES_DIR = REPO_ROOT / "examples"
+for p in [str(REPO_ROOT), str(EXAMPLES_DIR)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-from elo_budget import run_with_budget
-from elo_common import ScoreSheet, calculate_elo
+from examples.elo_budget import run_with_budget
+from examples.elo_common import ScoreSheet, calculate_elo
 
 
 def test_run_with_budget_success():
@@ -43,10 +45,10 @@ def test_scoresheet_upsert_and_done_pairs(tmp_path):
     # Upsert overwrite
     sheet.upsert("ds1", "m1", rmse=1.11, mae=0.88, fit_s=0.4)
     assert ("ds1", "m1") in sheet.done_pairs()
-    
+
     # Verify file content
     with open(csv_file, "r") as fh:
-        lines = [line.strip() for line in fh.readlines() if line.strip()]
+        lines = [line.strip() for line in fh if line.strip()]
     assert len(lines) == 2  # header + 1 row
     assert "1.1100" in lines[1]
 

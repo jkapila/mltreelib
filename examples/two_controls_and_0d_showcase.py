@@ -26,8 +26,8 @@ def main():
     model = ModelTree(
         max_depth=3,
         min_rows=10,
-        tree_monotone=[1, 0],   # global split ordering
-        col_weights=[2.0, 0.5], # feature split priorities
+        tree_monotone=[1, 0],  # global split ordering
+        col_weights=[2.0, 0.5],  # feature split priorities
         control=leaf_ctrl,
     )
     print("ModelTree initialized with LeafControl.")
@@ -51,9 +51,15 @@ def main():
     for i, leaf in enumerate(clf.leaves()):
         st = leaf["stats"]
         print(f"\nLeaf {i} (n={leaf['n']}):")
-        print(f"  Classification stats: prob={st['prob']:.4f}, odds={st['odds']:.4f}, log_odds={st['log_odds']:.4f}, entropy={st['entropy']:.4f}, gini={st['gini']:.4f}")
-        print(f"  Distribution stats  : mean={st['mean']:.4f}, std={st['std']:.4f}, var={st['var']:.4f}, median={st['median']:.4f}, mad={st['mad']:.4f}, iqr={st['iqr']:.4f}")
-        print(f"  Shape stats         : skew={st['skew']:.4f}, kurtosis={st['kurtosis']:.4f}, zero_fraction={st['zero_fraction']:.4f}, dispersion={st['dispersion']:.4f}")
+        print(
+            f"  Classification stats: prob={st['prob']:.4f}, odds={st['odds']:.4f}, log_odds={st['log_odds']:.4f}, entropy={st['entropy']:.4f}, gini={st['gini']:.4f}"
+        )
+        print(
+            f"  Distribution stats  : mean={st['mean']:.4f}, std={st['std']:.4f}, var={st['var']:.4f}, median={st['median']:.4f}, mad={st['mad']:.4f}, iqr={st['iqr']:.4f}"
+        )
+        print(
+            f"  Shape stats         : skew={st['skew']:.4f}, kurtosis={st['kurtosis']:.4f}, zero_fraction={st['zero_fraction']:.4f}, dispersion={st['dispersion']:.4f}"
+        )
 
     # Inspect all leaf stats via m.leaf_stats()
     all_stats = clf.leaf_stats()
@@ -72,7 +78,9 @@ def main():
 
     for idx, sample in enumerate(test_samples):
         print(f"Sample {sample}:")
-        print(f"  -> prob={preds_prob[idx]:.4f}, odds={preds_odds[idx]:.4e}, log_odds={preds_lo[idx]:.4f}, median={preds_med[idx]:.4f}")
+        print(
+            f"  -> prob={preds_prob[idx]:.4f}, odds={preds_odds[idx]:.4e}, log_odds={preds_lo[idx]:.4f}, median={preds_med[idx]:.4f}"
+        )
         print(f"  -> row stats dict keys: {sorted(preds_stats[idx].keys())[:6]}...")
 
     print("\n" + "=" * 70)

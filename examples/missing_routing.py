@@ -12,6 +12,7 @@ Demonstrates mltreelib's first-class missing data contract:
 from __future__ import annotations
 
 import math
+
 from mltreelib import ModelTree
 
 
@@ -38,7 +39,9 @@ def run_learned_direction():
     pred_high = tree.predict([[8.0]])[0]
     print("== 1. Learned missing direction (missing_left) ==")
     print(f"  split details: {tree.splits()}")
-    print(f"  pred(x=None): {pred_missing:.3f} (matches pred(x=8.0): {pred_high:.3f}, pred(x=1.0): {pred_low:.3f})")
+    print(
+        f"  pred(x=None): {pred_missing:.3f} (matches pred(x=8.0): {pred_high:.3f}, pred(x=1.0): {pred_low:.3f})"
+    )
 
 
 def run_surrogate_splits():
@@ -51,10 +54,15 @@ def run_surrogate_splits():
     def noise(i: int) -> float:
         return math.sin(i * 12.9898 + 78.233)
 
-    x = [[None if i % 20 == 0 else i / 300.0, i / 300.0 + 0.2 * noise(i)] for i in range(300)]
+    x = [
+        [None if i % 20 == 0 else i / 300.0, i / 300.0 + 0.2 * noise(i)]
+        for i in range(300)
+    ]
     y = [5.0 if i / 300.0 >= 0.5 else 0.0 for i in range(300)]
 
-    tree_no_surr = ModelTree(max_depth=1, leaf="mean", min_rows=10, l2=0.0, maxsurrogate=0)
+    tree_no_surr = ModelTree(
+        max_depth=1, leaf="mean", min_rows=10, l2=0.0, maxsurrogate=0
+    )
     tree_no_surr.fit(x, y)
 
     tree_surr = ModelTree(max_depth=1, leaf="mean", min_rows=10, l2=0.0, maxsurrogate=1)
@@ -67,9 +75,15 @@ def run_surrogate_splits():
     p_hi_surr = tree_surr.predict([[None, 0.9]])[0]
 
     print("\n== 2. Surrogate splits (maxsurrogate=1) ==")
-    print(f"  primary split : {tree_surr.splits()[0]['col']} (threshold={tree_surr.splits()[0]['threshold']:.3f})")
-    print(f"  maxsurrogate=0 (fallback only): pred(None, 0.1)={p_lo_nosurr:.3f}, pred(None, 0.9)={p_hi_nosurr:.3f}")
-    print(f"  maxsurrogate=1 (routed by x1) : pred(None, 0.1)={p_lo_surr:.3f}, pred(None, 0.9)={p_hi_surr:.3f}")
+    print(
+        f"  primary split : {tree_surr.splits()[0]['col']} (threshold={tree_surr.splits()[0]['threshold']:.3f})"
+    )
+    print(
+        f"  maxsurrogate=0 (fallback only): pred(None, 0.1)={p_lo_nosurr:.3f}, pred(None, 0.9)={p_hi_nosurr:.3f}"
+    )
+    print(
+        f"  maxsurrogate=1 (routed by x1) : pred(None, 0.1)={p_lo_surr:.3f}, pred(None, 0.9)={p_hi_surr:.3f}"
+    )
 
 
 def run_linear_leaf_na():
@@ -88,7 +102,9 @@ def run_linear_leaf_na():
     leaves = tree.leaves()
     print("\n== 3. Linear leaves with NA indicator coefficients ==")
     for idx, lf in enumerate(leaves):
-        print(f"  leaf {idx}: cols={lf['cols']} intercept={lf['intercept']:.3f} na_coef={[round(v, 3) for v in lf['na_coef']]}")
+        print(
+            f"  leaf {idx}: cols={lf['cols']} intercept={lf['intercept']:.3f} na_coef={[round(v, 3) for v in lf['na_coef']]}"
+        )
 
     p_observed = tree.predict([[5.0, 2.0]])[0]
     p_missing = tree.predict([[5.0, None]])[0]

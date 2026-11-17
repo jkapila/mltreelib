@@ -15,7 +15,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
-
 from mltreelib import Metrics, ModelTree, OneHotEncoder, generate, plots
 
 m = Metrics()
@@ -28,7 +27,9 @@ x = df.drop(columns=["churn"]).copy()
 for col in x.select_dtypes(include="category").columns:
     enc = OneHotEncoder()
     enc.fit([None if v is None else str(v) for v in x[col].astype(object)])
-    dummies = enc.transform([None if v is None else str(v) for v in x[col].astype(object)])
+    dummies = enc.transform(
+        [None if v is None else str(v) for v in x[col].astype(object)]
+    )
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
@@ -41,16 +42,20 @@ scores = [min(1.0, max(0.0, p)) for p in tree.predict(X[n_tr:])]
 truth = y[n_tr:]
 hard = [1.0 if p >= 0.5 else 0.0 for p in scores]
 base = [sum(truth) / len(truth)] * len(truth)  # mean predictor
-print(f"churn: {len(truth)} test rows, event rate {sum(truth)/len(truth):.3f}")
+print(f"churn: {len(truth)} test rows, event rate {sum(truth) / len(truth):.3f}")
 
 # ------------------------------------------------------------- reports
 print("\n== reports ==")
 reg = m.regression(truth, scores)
-print(f"regression: rmse {reg['rmse']:.3f}  r2 {reg['r2']:.3f}  "
-      f"deciles {len(reg['deciles'])}")
+print(
+    f"regression: rmse {reg['rmse']:.3f}  r2 {reg['r2']:.3f}  "
+    f"deciles {len(reg['deciles'])}"
+)
 clf = m.classification([int(v) for v in truth], [int(v) for v in hard])
-print(f"classification: accuracy {clf['accuracy']:.3f}  "
-      f"macro f1 {clf['macro_f1']:.3f}  confusion {clf['confusion']}")
+print(
+    f"classification: accuracy {clf['accuracy']:.3f}  "
+    f"macro f1 {clf['macro_f1']:.3f}  confusion {clf['confusion']}"
+)
 med = sorted(scores)[len(scores) // 2]
 grp = m.regression_by_group(
     ["high" if s >= med else "low" for s in scores], truth, scores
@@ -58,7 +63,8 @@ grp = m.regression_by_group(
 print(f"regression_by_group: {sorted(grp)}")
 cgrp = m.classification_by_group(
     ["high" if s >= med else "low" for s in scores],
-    [int(v) for v in truth], [int(v) for v in hard],
+    [int(v) for v in truth],
+    [int(v) for v in hard],
 )
 print("classification_by_group:", {k: round(v["accuracy"], 3) for k, v in cgrp.items()})
 
@@ -71,33 +77,39 @@ dec = m.decile_table(truth, scores)
 cal = m.calibration(truth, scores)
 print(f"roc: auc {roc['auc']:.3f} over {len(roc['points'])} points")
 print(f"pr:  ap {pr['average_precision']:.3f}")
-print(f"ks:  {ks['ks']:.3f} at score {ks['score_at_ks']:.3f} "
-      f"(tpr {ks['tpr_at_ks']:.2f} / fpr {ks['fpr_at_ks']:.2f})")
+print(
+    f"ks:  {ks['ks']:.3f} at score {ks['score_at_ks']:.3f} "
+    f"(tpr {ks['tpr_at_ks']:.2f} / fpr {ks['fpr_at_ks']:.2f})"
+)
 print(f"gain/decile 1: capture {dec[0]['cum_capture']:.3f}  lift {dec[0]['lift']:.2f}")
 print(f"calibration: {len(cal['bins'])} non-empty bins")
 
 # ------------------------------------------- probability & margin scores
 print("\n== probability & margin scores ==")
-print(f"log_loss {m.log_loss(truth, scores):.3f}  "
-      f"brier {m.brier_score(truth, scores):.3f}  "
-      f"hinge {m.hinge_loss(truth, [2*p - 1 for p in scores]):.3f}")
+print(
+    f"log_loss {m.log_loss(truth, scores):.3f}  "
+    f"brier {m.brier_score(truth, scores):.3f}  "
+    f"hinge {m.hinge_loss(truth, [2 * p - 1 for p in scores]):.3f}"
+)
 
 # --------------------------------------------- classification scorecard
 print("\n== classification scorecard ==")
 card = m.classification_scores([int(v) for v in truth], [int(v) for v in hard])
-print("  " + "  ".join(f"{k}={v:.3f}" for k, v in card.items()
-                       if isinstance(v, float)))
+print("  " + "  ".join(f"{k}={v:.3f}" for k, v in card.items() if isinstance(v, float)))
 
 # --------------------------------------------------- multilabel scorecard
 print("\n== multilabel ==")
 random.seed(3)
 ml_true = [[1.0 if random.random() < 0.4 else 0.0 for _ in range(4)] for _ in range(50)]
-ml_scores = [[min(1.0, max(0.0, v + random.uniform(-0.3, 0.3))) for v in row]
-             for row in ml_true]
+ml_scores = [
+    [min(1.0, max(0.0, v + random.uniform(-0.3, 0.3))) for v in row] for row in ml_true
+]
 ml = m.multilabel_scores(ml_true, ml_scores)
-print(f"  subset_accuracy {ml['subset_accuracy']:.3f}  "
-      f"hamming {ml['hamming_loss']:.3f}  lrap {ml['label_ranking_ap']:.3f}  "
-      f"coverage {ml['coverage_error']:.2f}")
+print(
+    f"  subset_accuracy {ml['subset_accuracy']:.3f}  "
+    f"hamming {ml['hamming_loss']:.3f}  lrap {ml['label_ranking_ap']:.3f}  "
+    f"coverage {ml['coverage_error']:.2f}"
+)
 
 # ------------------------------------------------------- agreement (kappa)
 print("\n== agreement ==")
@@ -117,14 +129,24 @@ print(f"  CSI (age train vs test): {csi['psi']:.4f}")
 print("\n== double lift (tree vs mean baseline) ==")
 dl = m.double_lift(truth, scores, base, 5)
 for r in dl:
-    print(f"  bucket {r['bucket']}: n={r['n']} actual={r['actual']:.3f} "
-          f"tree={r['pred_a']:.3f} base={r['pred_b']:.3f}")
+    print(
+        f"  bucket {r['bucket']}: n={r['n']} actual={r['actual']:.3f} "
+        f"tree={r['pred_a']:.3f} base={r['pred_b']:.3f}"
+    )
 
 # ------------------------------------------------------------- distances
 print("\n== pairwise distances ==")
 a, b = [[0.0, 0.0], [1.0, 1.0]], [[3.0, 4.0], [0.0, 0.0]]
-for metric in ("euclidean", "manhattan", "chebyshev", "minkowski", "cosine",
-               "correlation", "hamming", "jaccard"):
+for metric in (
+    "euclidean",
+    "manhattan",
+    "chebyshev",
+    "minkowski",
+    "cosine",
+    "correlation",
+    "hamming",
+    "jaccard",
+):
     d = m.pairwise_distances(a, b, metric)
     print(f"  {metric:<12} {[[round(v, 3) for v in row] for row in d]}")
 
@@ -139,10 +161,19 @@ singles = [
     ("decile", lambda ax: plots.plot_decile(truth, scores, ax=ax)),
     ("calibration", lambda ax: plots.plot_calibration(truth, scores, ax=ax)),
     ("response", lambda ax: plots.plot_response(truth, scores, ax=ax)),
-    ("double_lift", lambda ax: plots.plot_double_lift(
-        truth, scores, base, model_type="ratio", ax=ax)),
+    (
+        "double_lift",
+        lambda ax: plots.plot_double_lift(
+            truth, scores, base, model_type="ratio", ax=ax
+        ),
+    ),
     ("psi", lambda ax: plots.plot_psi(scores[:h], scores[h:], ax=ax)),
-    ("confusion", lambda ax: plots.plot_confusion_matrix(clf["confusion"], class_names=["Retained", "Churned"], ax=ax)),
+    (
+        "confusion",
+        lambda ax: plots.plot_confusion_matrix(
+            clf["confusion"], class_names=["Retained", "Churned"], ax=ax
+        ),
+    ),
     ("residuals", lambda ax: plots.plot_residuals(truth, scores, ax=ax)),
 ]
 for _name, _fn in singles:
@@ -175,16 +206,28 @@ plt.close(_fig)
 
 # Decomposition chart
 from datetime import date, timedelta
+
 from mltreelib import decomposed_transform
+
 _dates = [(date(2026, 1, 1) + timedelta(days=i)).isoformat() for i in range(28)]
 _vals = [20.0 + 0.5 * i + (5.0 if i % 7 in (5, 6) else -2.0) for i in range(28)]
-_d = decomposed_transform(["store"] * 28, _dates, _vals, season_granularity="weekday", trend_window=7)
+_d = decomposed_transform(
+    ["store"] * 28, _dates, _vals, season_granularity="weekday", trend_window=7
+)
 _trend = [_vals[i] - (_d["detrended"][i] or _vals[i]) for i in range(28)]
 _fig, _axes = plt.subplots(2, 2, figsize=(10.0, 5.5), sharex=True)
-plots.plot_decomposition(_vals, _trend, _d["detrended"], _d["deseasonalized"], _d["residual"], dates=_dates, axes=_axes)
+plots.plot_decomposition(
+    _vals,
+    _trend,
+    _d["detrended"],
+    _d["deseasonalized"],
+    _d["residual"],
+    dates=_dates,
+    axes=_axes,
+)
 _fig.tight_layout()
 _fig.savefig("docs/assets/plots/decomposition.png", dpi=110)
 plt.close(_fig)
 
-print(f"explanation + data-truth charts -> docs/assets/plots/*.png")
+print("explanation + data-truth charts -> docs/assets/plots/*.png")
 print("\nwrote docs/assets/plots/*.png (16 separate zoomable charts)")

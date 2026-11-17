@@ -13,7 +13,6 @@ import sys
 
 import optuna
 import pandas as pd
-
 from mltreelib import Metrics, ModelTree
 
 df = pd.read_parquet("datasets/airfoil_self_noise.parquet")
@@ -42,9 +41,7 @@ def objective(trial: optuna.Trial) -> float:
         leaf=trial.suggest_categorical("leaf", ["linear", "mean"]),
         leaf_cols=trial.suggest_categorical("leaf_cols", ["all", "path"]),
         gain=trial.suggest_categorical("gain", ["sse", "sdr"]),
-        split_precision=trial.suggest_categorical(
-            "split_precision", [None, 0.1, 0.01]
-        ),
+        split_precision=trial.suggest_categorical("split_precision", [None, 0.1, 0.01]),
         cat_search=trial.suggest_categorical(
             "cat_search", ["cumulative", "single_vs_rest", "both"]
         ),

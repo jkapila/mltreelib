@@ -84,14 +84,21 @@ def run_rpart(xtr, ytr, xte, yte, tmp):
     def write_csv(path, x, y):
         with open(path, "w") as fh:
             fh.write(",".join([f"x{i}" for i in range(len(x[0]))]) + ",y\n")
-            for row, t in zip(x, y):
-                fh.write(",".join(str(v) for v in row) + f",{t}\n")
+            fh.writelines(
+                ",".join(str(v) for v in row) + f",{t}\n" for row, t in zip(x, y)
+            )
 
     write_csv(tmp / "train.csv", xtr, ytr)
     write_csv(tmp / "test.csv", xte, yte)
     out = subprocess.run(
-        ["Rscript", "examples/rpart_realdata.R", str(tmp / "train.csv"), str(tmp / "test.csv")],
-        capture_output=True, text=True,
+        [
+            "Rscript",
+            "examples/rpart_realdata.R",
+            str(tmp / "train.csv"),
+            str(tmp / "test.csv"),
+        ],
+        capture_output=True,
+        text=True,
     )
     line = out.stdout.strip().splitlines()[-1]
     _, rmse, mae, fit = line.split()
@@ -115,9 +122,15 @@ def run_cubist(name, xtr, ytr, xte, yte, tmp):
         "".join(",".join(str(v) for v in xte[k]) + f",{yte[k]}\n" for k in te)
     )
     t0 = time.perf_counter()
-    out = subprocess.run([str(CUBIST), "-f", str(tmp / "c")], capture_output=True, text=True)
+    out = subprocess.run(
+        [str(CUBIST), "-f", str(tmp / "c")], capture_output=True, text=True
+    )
     wall = time.perf_counter() - t0
-    mae = float(next(l for l in out.stdout.splitlines() if "Average" in l and "error" in l).split()[-1])
+    mae = float(
+        next(
+            l for l in out.stdout.splitlines() if "Average" in l and "error" in l
+        ).split()[-1]
+    )
     # Cubist's |error| is the mean absolute error on its 200-case test sample.
     # Recover RMSE the same way our table does: rerun predictions is not
     # exposed by the demo, so report MAE + its own correlation line.
@@ -153,14 +166,38 @@ def main():
                 rmse, mae, fit = run_rpart(xtr, ytr, xte, yte, tmp)
                 print(fmt("rpart (live R, default)", rmse, mae, fit))
             except Exception as exc:
-                print(fmt("rpart (live R, default)", 0, 0, 0, f"skipped ({type(exc).__name__})"))
+                print(
+                    fmt(
+                        "rpart (live R, default)",
+                        0,
+                        0,
+                        0,
+                        f"skipped ({type(exc).__name__})",
+                    )
+                )
 
             if CUBIST.exists():
                 try:
                     mae, wall = run_cubist(ds, xtr, ytr, xte, yte, tmp)
-                    print(fmt("Cubist 2.10 (demo)", float("nan"), mae, wall, "[200-case demo cap; MAE only]"))
+                    print(
+                        fmt(
+                            "Cubist 2.10 (demo)",
+                            float("nan"),
+                            mae,
+                            wall,
+                            "[200-case demo cap; MAE only]",
+                        )
+                    )
                 except Exception as exc:
-                    print(fmt("Cubist 2.10 (demo)", 0, 0, 0, f"skipped ({type(exc).__name__})"))
+                    print(
+                        fmt(
+                            "Cubist 2.10 (demo)",
+                            0,
+                            0,
+                            0,
+                            f"skipped ({type(exc).__name__})",
+                        )
+                    )
 
             if lgb is not None:
                 import numpy as np
@@ -168,16 +205,22 @@ def main():
                 t0 = time.perf_counter()
                 booster = lgb.train(
                     {"objective": "regression", "verbosity": -1, "num_leaves": 31},
-                    lgb.Dataset(np.asarray(xtr, dtype=np.float64),
-                                label=np.asarray(ytr, dtype=np.float64)),
+                    lgb.Dataset(
+                        np.asarray(xtr, dtype=np.float64),
+                        label=np.asarray(ytr, dtype=np.float64),
+                    ),
                     num_boost_round=200,
                 )
-                pred = [float(v) for v in booster.predict(np.asarray(xte, dtype=np.float64))]
+                pred = [
+                    float(v) for v in booster.predict(np.asarray(xte, dtype=np.float64))
+                ]
                 dt = time.perf_counter() - t0
                 rmse, mae = scores(pred, yte)
                 print(fmt("LightGBM (200 rounds)", rmse, mae, dt))
             else:
-                print(fmt("LightGBM (200 rounds)", 0, 0, 0, "skipped (deps unavailable)"))
+                print(
+                    fmt("LightGBM (200 rounds)", 0, 0, 0, "skipped (deps unavailable)")
+                )
 
             if cb is not None:
                 import numpy as np
@@ -185,10 +228,14 @@ def main():
                 t0 = time.perf_counter()
                 model = cb.train(
                     {"iterations": 200, "loss_function": "RMSE", "verbose": 0},
-                    cb.Pool(np.asarray(xtr, dtype=np.float64),
-                            label=np.asarray(ytr, dtype=np.float64)),
+                    cb.Pool(
+                        np.asarray(xtr, dtype=np.float64),
+                        label=np.asarray(ytr, dtype=np.float64),
+                    ),
                 )
-                pred = [float(v) for v in model.predict(np.asarray(xte, dtype=np.float64))]
+                pred = [
+                    float(v) for v in model.predict(np.asarray(xte, dtype=np.float64))
+                ]
                 dt = time.perf_counter() - t0
                 rmse, mae = scores(pred, yte)
                 print(fmt("CatBoost (native)", rmse, mae, dt))

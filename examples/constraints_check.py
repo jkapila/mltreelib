@@ -87,22 +87,28 @@ def main():
     print("   linear leaves: within-leaf slopes are sign-projected and boundaries")
     print("   at splits on age gate on the children's fitted outputs at the")
     for leaf in ("mean", "linear"):
-        ours_u, ours_c = ModelTree(leaf=leaf, l1=0.0, l2=0.0), ModelTree(
-            monotone=mono, leaf=leaf, l1=0.0, l2=0.0
+        ours_u, ours_c = (
+            ModelTree(leaf=leaf, l1=0.0, l2=0.0),
+            ModelTree(monotone=mono, leaf=leaf, l1=0.0, l2=0.0),
         )
         ours_u.fit(xtr, ytr, dtypes=dtypes)
         ours_c.fit(xtr, ytr, dtypes=dtypes)
         pu, pc = ours_u.predict(grid), ours_c.predict(grid)
-        print(f"  ours/{leaf:<6} unconstrained monotone: {monotone_ok(pu)}"
-              f"   constrained: {monotone_ok(pc)}")
-        print(f"  ours/{leaf:<6} rmse uncon {rmse(ours_u.predict(xte), yte):.3f}"
-              f" -> constrained {rmse(ours_c.predict(xte), yte):.3f}")
+        print(
+            f"  ours/{leaf:<6} unconstrained monotone: {monotone_ok(pu)}"
+            f"   constrained: {monotone_ok(pc)}"
+        )
+        print(
+            f"  ours/{leaf:<6} rmse uncon {rmse(ours_u.predict(xte), yte):.3f}"
+            f" -> constrained {rmse(ours_c.predict(xte), yte):.3f}"
+        )
 
     import os
 
     r = subprocess.run(
         ["Rscript", "examples/constraints_check.R"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
         env={**os.environ, "R_LIBS_USER": str(Path.home() / "R/library")},
     )
     if r.returncode == 0:
@@ -123,28 +129,31 @@ def main():
     # split_paths returns column names (x0..x3 for default-named fits)
     g_of = lambda name: 0 if int(name[1:]) in (0, 1) else 1
 
-    ours_g = ModelTree(interaction_groups=groups, max_depth=6, min_rows=20, l1=0.0, l2=0.0)
+    ours_g = ModelTree(
+        interaction_groups=groups, max_depth=6, min_rows=20, l1=0.0, l2=0.0
+    )
     ours_g.fit(x_rows, y_list)
-    mixed = [
-        p for p in ours_g.split_paths()
-        if len({g_of(c) for c in p}) > 1
-    ]
+    mixed = [p for p in ours_g.split_paths() if len({g_of(c) for c in p}) > 1]
     ours_u2 = ModelTree(max_depth=6, min_rows=20, l1=0.0, l2=0.0)
     ours_u2.fit(x_rows, y_list)
-    mixed_u = [
-        p for p in ours_u2.split_paths()
-        if len({g_of(c) for c in p}) > 1
-    ]
-    print(f"  ours      mixed paths constrained: {len(mixed)} (want 0)"
-          f"   unconstrained: {len(mixed_u)} (want > 0)")
+    mixed_u = [p for p in ours_u2.split_paths() if len({g_of(c) for c in p}) > 1]
+    print(
+        f"  ours      mixed paths constrained: {len(mixed)} (want 0)"
+        f"   unconstrained: {len(mixed_u)} (want > 0)"
+    )
 
     try:
         import lightgbm as lgb
 
         b = lgb.train(
-            {"objective": "regression", "verbosity": -1, "num_leaves": 31,
-             "interaction_constraints": [[0, 1], [2, 3]]},
-            lgb.Dataset(X, label=Y), num_boost_round=200,
+            {
+                "objective": "regression",
+                "verbosity": -1,
+                "num_leaves": 31,
+                "interaction_constraints": [[0, 1], [2, 3]],
+            },
+            lgb.Dataset(X, label=Y),
+            num_boost_round=200,
         )
         bad = 0
         trees = b.dump_model()["tree_info"]

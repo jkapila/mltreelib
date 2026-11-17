@@ -14,9 +14,7 @@ from pathlib import Path
 
 from mltreelib import ModelTree
 
-DATA = (
-    Path("references/sources/cubist-demo/CubistR2/Data/boston.data")
-)
+DATA = Path("references/sources/cubist-demo/CubistR2/Data/boston.data")
 # Column layout from boston.names: OBS, TOWN, TOWN#, TRACT, LON, LAT, MEDV,
 # CMEDV(target), CRIM, ZN, INDUS, CHAS, NOX, RM, AGE, DIS, RAD, TAX, PTRATIO,
 # B, LSTAT. Cubist's "Attributes included" drops TOWN#/TRACT/LON/LAT/MEDV
@@ -24,8 +22,18 @@ DATA = (
 TARGET = 7
 PREDS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20]
 PRED_NAMES = [
-    "CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM",
-    "AGE", "DIS", "RAD", "TAX", "PTRATIO", "LSTAT",
+    "CRIM",
+    "ZN",
+    "INDUS",
+    "CHAS",
+    "NOX",
+    "RM",
+    "AGE",
+    "DIS",
+    "RAD",
+    "TAX",
+    "PTRATIO",
+    "LSTAT",
 ]
 
 # Cubist 2.10 demo, `bin/cubistdemo -f Data/boston` (200 training cases):
@@ -64,8 +72,10 @@ def main():
     print(f"{len(y)} training cases, {len(PREDS)} predictors (Cubist's own set)")
     print(f"{'model':<28}{'avg|err|':>10}{'rel err':>10}{'corr':>10}")
     print("-" * 58)
-    print(f"{'Cubist 2.10 (5 rules)':<28}{CUBIST_AVG_ABS_ERR:>10.2f}"
-          f"{CUBIST_REL_ERR:>10.2f}{CUBIST_CORR:>10.2f}")
+    print(
+        f"{'Cubist 2.10 (5 rules)':<28}{CUBIST_AVG_ABS_ERR:>10.2f}"
+        f"{CUBIST_REL_ERR:>10.2f}{CUBIST_CORR:>10.2f}"
+    )
     for name, kw in [
         ("ModelTree linear (All)", {"leaf": "linear"}),
         ("ModelTree linear (Path)", {"leaf": "linear", "leaf_cols": "path"}),

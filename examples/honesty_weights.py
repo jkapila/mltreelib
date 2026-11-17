@@ -14,11 +14,13 @@ Demonstrates two advanced estimation capabilities:
 from __future__ import annotations
 
 import math
+
 from mltreelib import ModelTree
 
 
 def run_honesty_demo():
     print("== 1. Honest tree estimation (honesty=True) ==")
+
     # 300 observations with noisy observations
     def noise(i: int) -> float:
         return math.sin(i * 12.9898 + 78.233)
@@ -32,17 +34,25 @@ def run_honesty_demo():
     standard.fit(x, y)
 
     # Honest tree: 40% (120 rows) for structure search, 60% (180 rows) for leaf estimation
-    honest = ModelTree(max_depth=2, min_rows=10, l2=0.0, honesty=True, honesty_fraction=0.4)
+    honest = ModelTree(
+        max_depth=2, min_rows=10, l2=0.0, honesty=True, honesty_fraction=0.4
+    )
     honest.fit(x, y)
 
     std_leaves = standard.leaves()
     hon_leaves = honest.leaves()
 
-    print(f"  standard tree: {len(std_leaves)} leaves, total leaf rows: {sum(l['n'] for l in std_leaves)}")
-    print(f"  honest tree  : {len(hon_leaves)} leaves, estimation leaf rows: {sum(l['n'] for l in hon_leaves)} (structure used 40%)")
+    print(
+        f"  standard tree: {len(std_leaves)} leaves, total leaf rows: {sum(l['n'] for l in std_leaves)}"
+    )
+    print(
+        f"  honest tree  : {len(hon_leaves)} leaves, estimation leaf rows: {sum(l['n'] for l in hon_leaves)} (structure used 40%)"
+    )
 
     for idx, (sl, hl) in enumerate(zip(std_leaves, hon_leaves)):
-        print(f"    leaf {idx}: standard mean={sl['mean']:.3f} (n={sl['n']}) | honest mean={hl['mean']:.3f} (n={hl['n']})")
+        print(
+            f"    leaf {idx}: standard mean={sl['mean']:.3f} (n={sl['n']}) | honest mean={hl['mean']:.3f} (n={hl['n']})"
+        )
 
 
 def run_sample_weights_demo():
@@ -73,7 +83,7 @@ def run_sample_weights_demo():
     weighted.fit(x, y, w=w)
     p_weighted = weighted.predict([[0.0]])[0]
 
-    print(f"  x0=0 target: eight rows at y=2.0, two rows at y=20.0")
+    print("  x0=0 target: eight rows at y=2.0, two rows at y=20.0")
     print(f"  unweighted prediction (equal weight): {p_unweighted:.3f}")
     print(f"  weighted prediction (10x rare weight) : {p_weighted:.3f}")
 

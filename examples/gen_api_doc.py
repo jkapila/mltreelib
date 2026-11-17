@@ -16,46 +16,101 @@ import mltreelib
 OUT = Path("docs/reference/api")
 
 ENCODERS = [
-    "BaseNEncoder", "CatBoostEncoder", "CountEncoder", "EmbeddingEncoder",
-    "HashingEncoder", "JamesSteinEncoder", "LeaveOneOutEncoder",
-    "MEstimatorEncoder", "OneHotEncoder", "QuantileEncoder", "SumEncoder",
-    "TargetEncoder", "TfidfEncoder", "WoEEncoder",
+    "BaseNEncoder",
+    "CatBoostEncoder",
+    "CountEncoder",
+    "EmbeddingEncoder",
+    "HashingEncoder",
+    "JamesSteinEncoder",
+    "LeaveOneOutEncoder",
+    "MEstimatorEncoder",
+    "OneHotEncoder",
+    "QuantileEncoder",
+    "SumEncoder",
+    "TargetEncoder",
+    "TfidfEncoder",
+    "WoEEncoder",
 ]
 
 PAGES = [
-    ("data.md", "Data",
-     ["DatasetBuilder"],
-     ["generate", "load_dataset", "list_datasets", "summarize", "winnow"],
-     "Typed ingest, the synthetic generator, dataset helpers and column "
-     "screening. Guide with real examples: [Data](../data.md)."),
-    ("model-tree.md", "ModelTree",
-     ["ModelTree", "LeafControl"], [],
-     "The model tree: typed fit, split-search knobs, quantiles, training "
-     "log. Guide: [Model](../model.md)."),
-    ("metrics.md", "Metrics",
-     ["Metrics"], [],
-     "Complete evaluation reports at once. Guides: [Metrics](../metrics.md), "
-     "[Evaluation reports](../reports.md)."),
-    ("encoders.md", "Encoders & scalers",
-     ["IndexMapper", "VariableScaler", "GroupedScaler"] + ENCODERS, [],
-     "Pipeline tools for feeding downstream algorithms (sklearn and "
-     "friends) — never invoked by the tree. Guide: [Data](../data.md)."),
-    ("features.md", "Feature functions",
-     [],
-     ["grouped_scale", "grouped_transform", "trended_transform",
-      "windowed_transform", "lag_by_days", "decomposed_transform",
-      "calendar_features"],
-     "Grouped/trended/windowed transforms, lags and calendar parts. Guide: "
-     "[Data processing](../../examples/data-processing.md)."),
-    ("cluster.md", "Clustering trees",
-     ["TrieKNN", "PredictiveClusteringTree", "CLTree", "HDBSCAN", "UnsupervisedRandomForest"], [],
-     "Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), "
-     "CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF)."),
-    ("anomaly.md", "Anomaly & density trees",
-     ["GritBot", "DensityEstimationTree", "ExtendedIsolationTree", "HalfSpaceTree",
-      "RandomCutTree", "ActiveAnomalyTree", "ContextAnomalyTree"], [],
-     "Tree-based anomaly detection, density estimation, streaming mass scoring, "
-     "collusive displacement (CoDisp), active human feedback, and contextual surprise."),
+    (
+        "data.md",
+        "Data",
+        ["DatasetBuilder"],
+        ["generate", "load_dataset", "list_datasets", "summarize", "winnow"],
+        "Typed ingest, the synthetic generator, dataset helpers and column "
+        "screening. Guide with real examples: [Data](../data.md).",
+    ),
+    (
+        "model-tree.md",
+        "ModelTree",
+        ["ModelTree", "LeafControl"],
+        [],
+        "The model tree: typed fit, split-search knobs, quantiles, training "
+        "log. Guide: [Model](../model.md).",
+    ),
+    (
+        "metrics.md",
+        "Metrics",
+        ["Metrics"],
+        [],
+        "Complete evaluation reports at once. Guides: [Metrics](../metrics.md), "
+        "[Evaluation reports](../reports.md).",
+    ),
+    (
+        "encoders.md",
+        "Encoders & scalers",
+        ["IndexMapper", "VariableScaler", "GroupedScaler"] + ENCODERS,
+        [],
+        "Pipeline tools for feeding downstream algorithms (sklearn and "
+        "friends) — never invoked by the tree. Guide: [Data](../data.md).",
+    ),
+    (
+        "features.md",
+        "Feature functions",
+        [],
+        [
+            "grouped_scale",
+            "grouped_transform",
+            "trended_transform",
+            "windowed_transform",
+            "lag_by_days",
+            "decomposed_transform",
+            "calendar_features",
+        ],
+        "Grouped/trended/windowed transforms, lags and calendar parts. Guide: "
+        "[Data processing](../../examples/data-processing.md).",
+    ),
+    (
+        "cluster.md",
+        "Clustering trees",
+        [
+            "TrieKNN",
+            "PredictiveClusteringTree",
+            "CLTree",
+            "HDBSCAN",
+            "UnsupervisedRandomForest",
+        ],
+        [],
+        "Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), "
+        "CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF).",
+    ),
+    (
+        "anomaly.md",
+        "Anomaly & density trees",
+        [
+            "GritBot",
+            "DensityEstimationTree",
+            "ExtendedIsolationTree",
+            "HalfSpaceTree",
+            "RandomCutTree",
+            "ActiveAnomalyTree",
+            "ContextAnomalyTree",
+        ],
+        [],
+        "Tree-based anomaly detection, density estimation, streaming mass scoring, "
+        "collusive displacement (CoDisp), active human feedback, and contextual surprise.",
+    ),
 ]
 
 HEADER = "<!-- generated by examples/gen_api_doc.py from the built module's docstrings - do not edit -->\n"
@@ -76,7 +131,9 @@ def emit_class(buf, name, cls):
     doc = inspect.getdoc(cls)
     if doc:
         buf.append(doc + "\n")
-    for mname, m in inspect.getmembers(cls, lambda o: callable(o) and not isinstance(o, type)):
+    for mname, m in inspect.getmembers(
+        cls, lambda o: callable(o) and not isinstance(o, type)
+    ):
         if mname.startswith("_"):
             continue
         buf.append(f"### {name}.{mname}\n")
@@ -100,11 +157,18 @@ def emit_fn(buf, name, fn):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    classes = {n: c for n, c in inspect.getmembers(mltreelib, inspect.isclass)
-               if not n.startswith("_")}
-    fns = {n: f for n, f in inspect.getmembers(
-        mltreelib, lambda o: callable(o) and not isinstance(o, type))
-        if not n.startswith("_")}
+    classes = {
+        n: c
+        for n, c in inspect.getmembers(mltreelib, inspect.isclass)
+        if not n.startswith("_")
+    }
+    fns = {
+        n: f
+        for n, f in inspect.getmembers(
+            mltreelib, lambda o: callable(o) and not isinstance(o, type)
+        )
+        if not n.startswith("_")
+    }
 
     index = [
         "# API reference — class index\n",

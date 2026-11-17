@@ -1,6 +1,5 @@
 """Tests for Unsupervised Random Forest (URF) proximity, agglomeration & outlier scoring."""
 
-import pytest
 from mltreelib import UnsupervisedRandomForest
 
 
@@ -60,14 +59,17 @@ def test_urf_knobs():
         data.append([10.0 + float(i * 0.1), 10.0 + float(i * 0.1)])
 
     # Single linkage
-    urf_single = UnsupervisedRandomForest(n_trees=10, max_features=1, linkage="single", seed=42)
+    urf_single = UnsupervisedRandomForest(
+        n_trees=10, max_features=1, linkage="single", seed=42
+    )
     urf_single.fit(data, n_clusters=2)
     assert urf_single.n_clusters == 2
     assert len(urf_single.labels) == len(data)
 
     # Complete linkage
-    urf_complete = UnsupervisedRandomForest(n_trees=10, max_features=1, linkage="complete", seed=42)
+    urf_complete = UnsupervisedRandomForest(
+        n_trees=10, max_features=1, linkage="complete", seed=42
+    )
     urf_complete.fit(data, n_clusters=2)
     assert urf_complete.n_clusters == 2
     assert len(urf_complete.labels) == len(data)
-

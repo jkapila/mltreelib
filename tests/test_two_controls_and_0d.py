@@ -28,9 +28,24 @@ def test_leaf_0d_stats_dictionary():
         assert "stats" in leaf
         st = leaf["stats"]
         expected_keys = {
-            "mean", "std", "var", "median", "mad", "iqr", "min", "max",
-            "skew", "kurtosis", "prob", "odds", "log_odds", "majority_class",
-            "entropy", "gini", "zero_fraction", "dispersion",
+            "mean",
+            "std",
+            "var",
+            "median",
+            "mad",
+            "iqr",
+            "min",
+            "max",
+            "skew",
+            "kurtosis",
+            "prob",
+            "odds",
+            "log_odds",
+            "majority_class",
+            "entropy",
+            "gini",
+            "zero_fraction",
+            "dispersion",
         }
         assert expected_keys.issubset(set(st.keys()))
         # Check direct aliases match stats

@@ -2,7 +2,6 @@
 Multi-target variance reduction clustering tree with rule extraction.
 """
 
-import pytest
 from mltreelib import PredictiveClusteringTree
 
 

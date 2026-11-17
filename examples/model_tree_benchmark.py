@@ -19,7 +19,6 @@ Run:
 import time
 
 import numpy as np
-
 from mltreelib import ModelTree
 
 try:
@@ -100,7 +99,9 @@ def run():
 
         for name, kind in models:
             if kind is None:
-                print(f"{regime:<18}{name:<20}{'skipped':>8}{'':>8}{'':>8}  (deps unavailable)")
+                print(
+                    f"{regime:<18}{name:<20}{'skipped':>8}{'':>8}{'':>8}  (deps unavailable)"
+                )
                 continue
             t0 = time.perf_counter()
             try:
@@ -110,13 +111,17 @@ def run():
                     pred = m.predict(rows_te)
                     last_profile = m.profile()
                 elif kind == "tree_path":
-                    m = ModelTree(max_depth=6, min_rows=40, leaf_cols="path", leaf="linear")
+                    m = ModelTree(
+                        max_depth=6, min_rows=40, leaf_cols="path", leaf="linear"
+                    )
                     m.fit(rows_tr, [float(v) for v in ytr])
                     pred = m.predict(rows_te)
                 else:
                     pred = [float(v) for v in kind(xtr, ytr, xte)]
             except Exception as exc:  # test mode: never die on a missing dep
-                print(f"{regime:<18}{name:<20}{'skipped':>8}{'':>8}{'':>8}  ({type(exc).__name__})")
+                print(
+                    f"{regime:<18}{name:<20}{'skipped':>8}{'':>8}{'':>8}  ({type(exc).__name__})"
+                )
                 continue
             dt = time.perf_counter() - t0
             err = np.array(pred) - yte

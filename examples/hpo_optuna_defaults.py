@@ -25,12 +25,11 @@ Computes relative error / rank scores per dataset and produces global rankings.
 import csv
 import json
 import math
+import os
 import statistics
 import time
-import os
-import sys
 
-from mltreelib import ModelTree, LeafControl
+from mltreelib import LeafControl, ModelTree
 
 REG_DIR = "benchmarks/elo_data"
 CLA_DIR = "benchmarks/elo_cla_data"
@@ -114,36 +113,172 @@ def run_regression_hpo():
     # Covering: current default, deeper, shallower, path-only, mean leaf, varying l2, varying min_rows, varying cp_alpha
     configs = [
         # id, label, tree_kwargs, leaf_kwargs
-        ("C0_baseline", {"max_depth": 5, "min_rows": 50, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                        {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C1_d6_m30_l2_1", {"max_depth": 6, "min_rows": 30, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "linear", "leaf_cols": "all", "l2": 1.0}),
-        ("C2_d5_m25_l2_0.5", {"max_depth": 5, "min_rows": 25, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                             {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C3_d6_m25_l2_0.5", {"max_depth": 6, "min_rows": 25, "cp_alpha": 2.0, "split_precision": 0.001, "prune": "cp"},
-                             {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C4_d5_m50_path", {"max_depth": 5, "min_rows": 50, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "linear", "leaf_cols": "path", "l2": 0.5}),
-        ("C5_d6_m30_path", {"max_depth": 6, "min_rows": 30, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "linear", "leaf_cols": "path", "l2": 1.0}),
-        ("C6_d7_m20_l2_1", {"max_depth": 7, "min_rows": 20, "cp_alpha": 2.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "linear", "leaf_cols": "all", "l2": 1.0}),
-        ("C7_d5_m50_mean", {"max_depth": 5, "min_rows": 50, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "mean", "leaf_cols": "all", "l2": 0.0}),
-        ("C8_d6_m25_mean", {"max_depth": 6, "min_rows": 25, "cp_alpha": 2.0, "split_precision": 0.001, "prune": "cp"},
-                           {"leaf": "mean", "leaf_cols": "all", "l2": 0.0}),
-        ("C9_d5_m30_l2_0.1", {"max_depth": 5, "min_rows": 30, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                             {"leaf": "linear", "leaf_cols": "all", "l2": 0.1}),
-        ("C10_d6_m20_cp10", {"max_depth": 6, "min_rows": 20, "cp_alpha": 10.0, "split_precision": 0.001, "prune": "cp"},
-                            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C11_d5_m20_no_prec", {"max_depth": 5, "min_rows": 20, "cp_alpha": 5.0, "split_precision": None, "prune": "cp"},
-                               {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C12_d6_m30_col0.8", {"max_depth": 6, "min_rows": 30, "col_sample": 0.8, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                              {"leaf": "linear", "leaf_cols": "all", "l2": 1.0}),
-        ("C13_d5_m15_l2_0.5", {"max_depth": 5, "min_rows": 15, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                              {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
-        ("C14_d4_m40_l2_0.5", {"max_depth": 4, "min_rows": 40, "cp_alpha": 5.0, "split_precision": 0.001, "prune": "cp"},
-                              {"leaf": "linear", "leaf_cols": "all", "l2": 0.5}),
+        (
+            "C0_baseline",
+            {
+                "max_depth": 5,
+                "min_rows": 50,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C1_d6_m30_l2_1",
+            {
+                "max_depth": 6,
+                "min_rows": 30,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 1.0},
+        ),
+        (
+            "C2_d5_m25_l2_0.5",
+            {
+                "max_depth": 5,
+                "min_rows": 25,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C3_d6_m25_l2_0.5",
+            {
+                "max_depth": 6,
+                "min_rows": 25,
+                "cp_alpha": 2.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C4_d5_m50_path",
+            {
+                "max_depth": 5,
+                "min_rows": 50,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "path", "l2": 0.5},
+        ),
+        (
+            "C5_d6_m30_path",
+            {
+                "max_depth": 6,
+                "min_rows": 30,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "path", "l2": 1.0},
+        ),
+        (
+            "C6_d7_m20_l2_1",
+            {
+                "max_depth": 7,
+                "min_rows": 20,
+                "cp_alpha": 2.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 1.0},
+        ),
+        (
+            "C7_d5_m50_mean",
+            {
+                "max_depth": 5,
+                "min_rows": 50,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "mean", "leaf_cols": "all", "l2": 0.0},
+        ),
+        (
+            "C8_d6_m25_mean",
+            {
+                "max_depth": 6,
+                "min_rows": 25,
+                "cp_alpha": 2.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "mean", "leaf_cols": "all", "l2": 0.0},
+        ),
+        (
+            "C9_d5_m30_l2_0.1",
+            {
+                "max_depth": 5,
+                "min_rows": 30,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.1},
+        ),
+        (
+            "C10_d6_m20_cp10",
+            {
+                "max_depth": 6,
+                "min_rows": 20,
+                "cp_alpha": 10.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C11_d5_m20_no_prec",
+            {
+                "max_depth": 5,
+                "min_rows": 20,
+                "cp_alpha": 5.0,
+                "split_precision": None,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C12_d6_m30_col0.8",
+            {
+                "max_depth": 6,
+                "min_rows": 30,
+                "col_sample": 0.8,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 1.0},
+        ),
+        (
+            "C13_d5_m15_l2_0.5",
+            {
+                "max_depth": 5,
+                "min_rows": 15,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
+        (
+            "C14_d4_m40_l2_0.5",
+            {
+                "max_depth": 4,
+                "min_rows": 40,
+                "cp_alpha": 5.0,
+                "split_precision": 0.001,
+                "prune": "cp",
+            },
+            {"leaf": "linear", "leaf_cols": "all", "l2": 0.5},
+        ),
     ]
 
     # Evaluate all configs on all datasets
@@ -159,7 +294,9 @@ def run_regression_hpo():
                 m.fit(xtr, ytr, dtypes=dtypes)
                 dur_ms = (time.perf_counter() - t0) * 1000.0
                 preds = m.predict(xte)
-                rmse = math.sqrt(sum((p - y) ** 2 for p, y in zip(preds, yte)) / len(yte))
+                rmse = math.sqrt(
+                    sum((p - y) ** 2 for p, y in zip(preds, yte)) / len(yte)
+                )
             except Exception as e:
                 rmse = float("inf")
                 dur_ms = 0.0
@@ -171,7 +308,7 @@ def run_regression_hpo():
     rel_scores = {cid: [] for cid, _, _ in configs}
     ranks = {cid: [] for cid, _, _ in configs}
 
-    for ds in loaded.keys():
+    for ds in loaded:
         ds_scores = [(cid, raw_scores[cid][ds]) for cid, _, _ in configs]
         ds_scores.sort(key=lambda x: x[1])
         best_score = ds_scores[0][1]
@@ -184,19 +321,23 @@ def run_regression_hpo():
         mean_rank = statistics.mean(ranks[cid])
         mean_rel = statistics.mean(rel_scores[cid])
         mean_time = statistics.mean(fit_durations[cid].values())
-        summary.append({
-            "cid": cid,
-            "mean_rank": mean_rank,
-            "mean_rel_excess": mean_rel,
-            "mean_fit_ms": mean_time,
-            "tree_kw": t_kw,
-            "leaf_kw": l_kw,
-        })
+        summary.append(
+            {
+                "cid": cid,
+                "mean_rank": mean_rank,
+                "mean_rel_excess": mean_rel,
+                "mean_fit_ms": mean_time,
+                "tree_kw": t_kw,
+                "leaf_kw": l_kw,
+            }
+        )
 
     summary.sort(key=lambda s: s["mean_rank"])
     print("\n--- REGRESSION HPO SUMMARY RANKINGS ---")
     for s in summary:
-        print(f"Rank {s['mean_rank']:.2f} | Rel +{s['mean_rel_excess']*100:.1f}% | Time: {s['mean_fit_ms']:.1f}ms | {s['cid']:18} | Tree: {s['tree_kw']} | Leaf: {s['leaf_kw']}")
+        print(
+            f"Rank {s['mean_rank']:.2f} | Rel +{s['mean_rel_excess'] * 100:.1f}% | Time: {s['mean_fit_ms']:.1f}ms | {s['cid']:18} | Tree: {s['tree_kw']} | Leaf: {s['leaf_kw']}"
+        )
 
     return summary
 
@@ -215,22 +356,46 @@ def run_classification_hpo():
 
     configs = [
         # (id, tree_kwargs, leaf_kwargs)
-        ("CLA_prob_d5_m25", {"max_depth": 5, "min_rows": 25, "cp_alpha": 2.0, "gain": "entropy"},
-                            {"leaf": "prob", "leaf_family": "binomial"}),
-        ("CLA_prob_d5_m50", {"max_depth": 5, "min_rows": 50, "cp_alpha": 5.0, "gain": "entropy"},
-                            {"leaf": "prob", "leaf_family": "binomial"}),
-        ("CLA_prob_d6_m30", {"max_depth": 6, "min_rows": 30, "cp_alpha": 2.0, "gain": "entropy"},
-                            {"leaf": "prob", "leaf_family": "binomial"}),
-        ("CLA_prob_d4_m20", {"max_depth": 4, "min_rows": 20, "cp_alpha": 2.0, "gain": "entropy"},
-                            {"leaf": "prob", "leaf_family": "binomial"}),
-        ("CLA_mean_d5_m25", {"max_depth": 5, "min_rows": 25, "cp_alpha": 2.0, "gain": "gini"},
-                            {"leaf": "mean", "leaf_family": "gaussian"}),
-        ("CLA_linear_d5_m30_l2_1", {"max_depth": 5, "min_rows": 30, "cp_alpha": 5.0, "gain": "deviance"},
-                                  {"leaf": "linear", "leaf_family": "binomial", "l2": 1.0}),
-        ("CLA_linear_d6_m30_l2_0.5", {"max_depth": 6, "min_rows": 30, "cp_alpha": 2.0, "gain": "deviance"},
-                                    {"leaf": "linear", "leaf_family": "binomial", "l2": 0.5}),
-        ("CLA_prob_d6_m20_bic", {"max_depth": 6, "min_rows": 20, "prune": "bic", "gain": "entropy"},
-                                {"leaf": "prob", "leaf_family": "binomial"}),
+        (
+            "CLA_prob_d5_m25",
+            {"max_depth": 5, "min_rows": 25, "cp_alpha": 2.0, "gain": "entropy"},
+            {"leaf": "prob", "leaf_family": "binomial"},
+        ),
+        (
+            "CLA_prob_d5_m50",
+            {"max_depth": 5, "min_rows": 50, "cp_alpha": 5.0, "gain": "entropy"},
+            {"leaf": "prob", "leaf_family": "binomial"},
+        ),
+        (
+            "CLA_prob_d6_m30",
+            {"max_depth": 6, "min_rows": 30, "cp_alpha": 2.0, "gain": "entropy"},
+            {"leaf": "prob", "leaf_family": "binomial"},
+        ),
+        (
+            "CLA_prob_d4_m20",
+            {"max_depth": 4, "min_rows": 20, "cp_alpha": 2.0, "gain": "entropy"},
+            {"leaf": "prob", "leaf_family": "binomial"},
+        ),
+        (
+            "CLA_mean_d5_m25",
+            {"max_depth": 5, "min_rows": 25, "cp_alpha": 2.0, "gain": "gini"},
+            {"leaf": "mean", "leaf_family": "gaussian"},
+        ),
+        (
+            "CLA_linear_d5_m30_l2_1",
+            {"max_depth": 5, "min_rows": 30, "cp_alpha": 5.0, "gain": "deviance"},
+            {"leaf": "linear", "leaf_family": "binomial", "l2": 1.0},
+        ),
+        (
+            "CLA_linear_d6_m30_l2_0.5",
+            {"max_depth": 6, "min_rows": 30, "cp_alpha": 2.0, "gain": "deviance"},
+            {"leaf": "linear", "leaf_family": "binomial", "l2": 0.5},
+        ),
+        (
+            "CLA_prob_d6_m20_bic",
+            {"max_depth": 6, "min_rows": 20, "prune": "bic", "gain": "entropy"},
+            {"leaf": "prob", "leaf_family": "binomial"},
+        ),
     ]
 
     raw_scores = {cid: {} for cid, _, _ in configs}
@@ -245,10 +410,16 @@ def run_classification_hpo():
                 m = ModelTree(leaf_control=lc, **t_kw, seed=42)
                 m.fit(xtr, ytr, dtypes=dtypes)
                 dur_ms = (time.perf_counter() - t0) * 1000.0
-                preds = m.predict(xte, kind="prob" if l_kw.get("leaf_family") == "binomial" else "response")
+                preds = m.predict(
+                    xte,
+                    kind="prob"
+                    if l_kw.get("leaf_family") == "binomial"
+                    else "response",
+                )
                 # Log-loss
                 ll = -sum(
-                    y * math.log(max(eps, min(1.0 - eps, p))) + (1.0 - y) * math.log(max(eps, min(1.0 - eps, 1.0 - p)))
+                    y * math.log(max(eps, min(1.0 - eps, p)))
+                    + (1.0 - y) * math.log(max(eps, min(1.0 - eps, 1.0 - p)))
                     for p, y in zip(preds, yte)
                 ) / len(yte)
             except Exception as e:
@@ -261,7 +432,7 @@ def run_classification_hpo():
     ranks = {cid: [] for cid, _, _ in configs}
     rel_scores = {cid: [] for cid, _, _ in configs}
 
-    for ds in loaded.keys():
+    for ds in loaded:
         ds_scores = [(cid, raw_scores[cid][ds]) for cid, _, _ in configs]
         ds_scores.sort(key=lambda x: x[1])
         best_score = ds_scores[0][1]
@@ -274,19 +445,23 @@ def run_classification_hpo():
         mean_rank = statistics.mean(ranks[cid])
         mean_rel = statistics.mean(rel_scores[cid])
         mean_time = statistics.mean(fit_durations[cid].values())
-        summary.append({
-            "cid": cid,
-            "mean_rank": mean_rank,
-            "mean_rel_excess": mean_rel,
-            "mean_fit_ms": mean_time,
-            "tree_kw": t_kw,
-            "leaf_kw": l_kw,
-        })
+        summary.append(
+            {
+                "cid": cid,
+                "mean_rank": mean_rank,
+                "mean_rel_excess": mean_rel,
+                "mean_fit_ms": mean_time,
+                "tree_kw": t_kw,
+                "leaf_kw": l_kw,
+            }
+        )
 
     summary.sort(key=lambda s: s["mean_rank"])
     print("\n--- CLASSIFICATION HPO SUMMARY RANKINGS ---")
     for s in summary:
-        print(f"Rank {s['mean_rank']:.2f} | Rel +{s['mean_rel_excess']*100:.1f}% | Time: {s['mean_fit_ms']:.1f}ms | {s['cid']:25} | Tree: {s['tree_kw']} | Leaf: {s['leaf_kw']}")
+        print(
+            f"Rank {s['mean_rank']:.2f} | Rel +{s['mean_rel_excess'] * 100:.1f}% | Time: {s['mean_fit_ms']:.1f}ms | {s['cid']:25} | Tree: {s['tree_kw']} | Leaf: {s['leaf_kw']}"
+        )
 
     return summary
 
@@ -299,11 +474,44 @@ def main():
     out_csv = "benchmarks/hpo_empirical_defaults.csv"
     with open(out_csv, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["task", "rank", "cid", "mean_rank", "mean_rel_excess", "mean_fit_ms", "tree_params", "leaf_params"])
+        w.writerow(
+            [
+                "task",
+                "rank",
+                "cid",
+                "mean_rank",
+                "mean_rel_excess",
+                "mean_fit_ms",
+                "tree_params",
+                "leaf_params",
+            ]
+        )
         for idx, s in enumerate(reg_summary):
-            w.writerow(["regression", idx + 1, s["cid"], f"{s['mean_rank']:.3f}", f"{s['mean_rel_excess']:.3f}", f"{s['mean_fit_ms']:.1f}", json.dumps(s["tree_kw"]), json.dumps(s["leaf_kw"])])
+            w.writerow(
+                [
+                    "regression",
+                    idx + 1,
+                    s["cid"],
+                    f"{s['mean_rank']:.3f}",
+                    f"{s['mean_rel_excess']:.3f}",
+                    f"{s['mean_fit_ms']:.1f}",
+                    json.dumps(s["tree_kw"]),
+                    json.dumps(s["leaf_kw"]),
+                ]
+            )
         for idx, s in enumerate(cla_summary):
-            w.writerow(["classification", idx + 1, s["cid"], f"{s['mean_rank']:.3f}", f"{s['mean_rel_excess']:.3f}", f"{s['mean_fit_ms']:.1f}", json.dumps(s["tree_kw"]), json.dumps(s["leaf_kw"])])
+            w.writerow(
+                [
+                    "classification",
+                    idx + 1,
+                    s["cid"],
+                    f"{s['mean_rank']:.3f}",
+                    f"{s['mean_rel_excess']:.3f}",
+                    f"{s['mean_fit_ms']:.1f}",
+                    json.dumps(s["tree_kw"]),
+                    json.dumps(s["leaf_kw"]),
+                ]
+            )
     print(f"\nSaved empirical HPO results to {out_csv}")
 
 

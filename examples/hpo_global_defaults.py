@@ -13,12 +13,11 @@ Records trial scores to benchmarks/hpo_global_defaults.csv and prints rankings.
 """
 
 import csv
-import itertools
+import logging
 import math
 import statistics
 import time
 from pathlib import Path
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,7 +80,14 @@ def main():
         if d:
             xtr, ytr, xte, yte = d
             p = len(xtr[0])
-            dtypes = [("categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric") for j in range(p)]
+            dtypes = [
+                (
+                    "categorical"
+                    if any(isinstance(r[j], str) for r in xtr)
+                    else "numeric"
+                )
+                for j in range(p)
+            ]
             loaded[ds] = (xtr, ytr, xte, yte, dtypes)
             log.info(f"Loaded {ds}: train={len(xtr)}, test={len(xte)}, features={p}")
 
@@ -104,10 +110,23 @@ def main():
         ("linear", "path", 0.5, 7, 25, 2.0, 0.001),
     ]
 
-    log.info(f"Starting HPO across {len(param_grid)} configurations on {len(loaded)} datasets...")
+    log.info(
+        f"Starting HPO across {len(param_grid)} configurations on {len(loaded)} datasets..."
+    )
 
     results = []
-    fieldnames = ["config_id", "leaf", "leaf_cols", "l2", "depth", "min_rows", "cp_alpha", "split_precision", "mean_rmse", "mean_fit_ms"]
+    fieldnames = [
+        "config_id",
+        "leaf",
+        "leaf_cols",
+        "l2",
+        "depth",
+        "min_rows",
+        "cp_alpha",
+        "split_precision",
+        "mean_rmse",
+        "mean_fit_ms",
+    ]
 
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -134,7 +153,9 @@ def main():
                 fit_times.append(fit_ms)
 
                 preds = m.predict(xte)
-                rmse = math.sqrt(sum((p - y) ** 2 for p, y in zip(preds, yte)) / len(yte))
+                rmse = math.sqrt(
+                    sum((p - y) ** 2 for p, y in zip(preds, yte)) / len(yte)
+                )
                 rmses.append(rmse)
 
             avg_rmse = statistics.mean(rmses)
@@ -154,12 +175,16 @@ def main():
             writer.writerow(row)
             f.flush()
             results.append(row)
-            log.info(f"[{idx+1}/{len(param_grid)}] leaf={leaf:<6} cols={lcols:<4} l2={l2:<4} depth={depth} min_r={min_rows:<2} -> RMSE={avg_rmse:.4f} fit={avg_fit:.1f}ms")
+            log.info(
+                f"[{idx + 1}/{len(param_grid)}] leaf={leaf:<6} cols={lcols:<4} l2={l2:<4} depth={depth} min_r={min_rows:<2} -> RMSE={avg_rmse:.4f} fit={avg_fit:.1f}ms"
+            )
 
     results.sort(key=lambda r: r["mean_rmse"])
     log.info("\n=== TOP 5 GLOBAL DEFAULT CANDIDATES ===")
     for r in results[:5]:
-        log.info(f"Rank {r['config_id']}: RMSE={r['mean_rmse']:.4f} (fit={r['mean_fit_ms']}ms) -> leaf={r['leaf']} cols={r['leaf_cols']} l2={r['l2']} depth={r['depth']} min_rows={r['min_rows']} cp_alpha={r['cp_alpha']} sp={r['split_precision']}")
+        log.info(
+            f"Rank {r['config_id']}: RMSE={r['mean_rmse']:.4f} (fit={r['mean_fit_ms']}ms) -> leaf={r['leaf']} cols={r['leaf_cols']} l2={r['l2']} depth={r['depth']} min_rows={r['min_rows']} cp_alpha={r['cp_alpha']} sp={r['split_precision']}"
+        )
 
 
 if __name__ == "__main__":

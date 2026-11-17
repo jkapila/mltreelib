@@ -22,7 +22,6 @@ from mltreelib import (
     CountEncoder,
     EmbeddingEncoder,
     HashingEncoder,
-    JamesSteinEncoder,
     LeaveOneOutEncoder,
     MEstimatorEncoder,
     OneHotEncoder,
@@ -64,7 +63,9 @@ def figures(leak=None, woe=None, out_dir: Path | None = None):
         import matplotlib.pyplot as plt
         import seaborn as sns
     except ImportError:
-        print("\n(figures skipped: install with `uv run --with seaborn --with matplotlib`)")
+        print(
+            "\n(figures skipped: install with `uv run --with seaborn --with matplotlib`)"
+        )
         return
     sns.set_theme(style="whitegrid")
     out_dir = out_dir or (Path(__file__).resolve().parent / "out")
@@ -77,7 +78,9 @@ def figures(leak=None, woe=None, out_dir: Path | None = None):
         ax.plot(ordered, ".", alpha=0.5, label="CatBoostEncoder (ordered TS)")
         ax.set_xlabel("row")
         ax.set_ylabel("encoded churn")
-        ax.set_title("Same levels, different values: ordered statistics hide the row's own target")
+        ax.set_title(
+            "Same levels, different values: ordered statistics hide the row's own target"
+        )
         ax.legend()
         fig.tight_layout()
         path = out_dir / "encoding_leakage.png"
@@ -101,8 +104,10 @@ def figures(leak=None, woe=None, out_dir: Path | None = None):
 def main(argv: list[str]) -> None:
     name = argv[0] if argv else "churn"
     if name not in set(list_datasets()):
-        print(f"unknown or unavailable dataset '{name}'; run the data demo first "
-              f"or see datasets/MANIFEST.md")
+        print(
+            f"unknown or unavailable dataset '{name}'; run the data demo first "
+            f"or see datasets/MANIFEST.md"
+        )
         return
 
     ds = load_dataset(name)
@@ -119,7 +124,9 @@ def main(argv: list[str]) -> None:
     print(f"categorical feats: {feats}")
     print(f"numeric feats    : {nums[:6]}{' …' if len(nums) > 6 else ''}")
     churn = summarize(y)
-    print(f"base rate       : {churn['mean']:.4f} ({int(churn['sum'])} of {churn['count']})")
+    print(
+        f"base rate       : {churn['mean']:.4f} ({int(churn['sum'])} of {churn['count']})"
+    )
 
     state = feats[0]
     sv = ds["columns"][state]
@@ -129,12 +136,16 @@ def main(argv: list[str]) -> None:
     section("2. UNSUPERVISED ENCODERS (task: both)")
     ohe = OneHotEncoder()
     ohe.fit(sv)
-    print(f"OneHot     : {len(ohe.levels())} indicator columns; row 0 -> "
-          f"{ {lv: ohe.transform(sv[:1])[lv][0] for lv in list(ohe.levels())[:3]} }")
+    print(
+        f"OneHot     : {len(ohe.levels())} indicator columns; row 0 -> "
+        f"{ {lv: ohe.transform(sv[:1])[lv][0] for lv in list(ohe.levels())[:3]} }"
+    )
     he = HashingEncoder(16)
     cols = he.transform(sv)
-    print(f"Hashing    : {len(cols)} buckets; row 0 bucket = "
-          f"{[k for k, v in cols.items() if v[0] == 1.0]}")
+    print(
+        f"Hashing    : {len(cols)} buckets; row 0 bucket = "
+        f"{[k for k, v in cols.items() if v[0] == 1.0]}"
+    )
     bn = BaseNEncoder(2)
     bn.fit(sv)
     digits = bn.transform(sv)
@@ -142,13 +153,17 @@ def main(argv: list[str]) -> None:
     ce = CountEncoder(False)
     ce.fit(sv)
     counts = ce.transform(sv)
-    print(f"Count      : row 0 level occurs {fmt(counts[0])} times; "
-          f"unseen -> {fmt(ce.transform(['___never___'])[0])}")
+    print(
+        f"Count      : row 0 level occurs {fmt(counts[0])} times; "
+        f"unseen -> {fmt(ce.transform(['___never___'])[0])}"
+    )
     sm = SumEncoder()
     sm.fit(sv)
     row0 = sm.transform(sv[:1])[0]
-    print(f"Sum        : {len(row0)} contrast columns; row 0 -> "
-          f"{[fmt(x) for x in row0[:5]]}{' …' if len(row0) > 5 else ''}")
+    print(
+        f"Sum        : {len(row0)} contrast columns; row 0 -> "
+        f"{[fmt(x) for x in row0[:5]]}{' …' if len(row0) > 5 else ''}"
+    )
 
     section("3. SUPERVISED ENCODERS (task: both) on " + state)
     te = TargetEncoder(10.0)
@@ -163,19 +178,33 @@ def main(argv: list[str]) -> None:
         if s_ is not None:
             per_level[s_] = p
     low, high = top_bottom(per_level)
-    print("TargetEncoder (smoothing=10) churn estimate, lowest levels : "
-          + ", ".join(f"{k}={fmt(v)}" for k, v in low))
-    print("TargetEncoder churn estimate, highest levels: "
-          + ", ".join(f"{k}={fmt(v)}" for k, v in high))
-    print(f"LeaveOneOut fit_transform (leakage-aware) rows 0..4: {[fmt(v) for v in loo_rows[:5]]}")
-    print(f"CatBoost ordered TS      rows 0..4           : {[fmt(v) for v in cb_rows[:5]]}")
+    print(
+        "TargetEncoder (smoothing=10) churn estimate, lowest levels : "
+        + ", ".join(f"{k}={fmt(v)}" for k, v in low)
+    )
+    print(
+        "TargetEncoder churn estimate, highest levels: "
+        + ", ".join(f"{k}={fmt(v)}" for k, v in high)
+    )
+    print(
+        f"LeaveOneOut fit_transform (leakage-aware) rows 0..4: {[fmt(v) for v in loo_rows[:5]]}"
+    )
+    print(
+        f"CatBoost ordered TS      rows 0..4           : {[fmt(v) for v in cb_rows[:5]]}"
+    )
     a_state = next(s for s in sv if s is not None)
-    same = {round(v, 6) for s_, v in zip(sv, cb_rows) if s_ == a_state and v is not None}
-    print(f"ordered TS values for level '{a_state}': {len(same)} distinct per-row values "
-          f"(plain TargetEncoder gives exactly 1 — that difference is the leakage guard)")
+    same = {
+        round(v, 6) for s_, v in zip(sv, cb_rows) if s_ == a_state and v is not None
+    }
+    print(
+        f"ordered TS values for level '{a_state}': {len(same)} distinct per-row values "
+        f"(plain TargetEncoder gives exactly 1 — that difference is the leakage guard)"
+    )
     me = MEstimatorEncoder(20.0)
     me.fit(sv, y)
-    print(f"M-estimate (m=20) row 0: {fmt(me.transform(sv[:1])[0])} (shrunk harder toward {fmt(te.prior())})")
+    print(
+        f"M-estimate (m=20) row 0: {fmt(me.transform(sv[:1])[0])} (shrunk harder toward {fmt(te.prior())})"
+    )
 
     section("4. CLASSIFICATION FAMILY: class-space vectors")
     tf = TfidfEncoder(True)
@@ -191,18 +220,26 @@ def main(argv: list[str]) -> None:
         if s_ is not None and v is not None:
             per_state_woe[s_] = v[1]
     low, high = top_bottom(per_state_woe)
-    print("WoE for churn, protective (negative) states: "
-          + ", ".join(f"{k}={fmt(v)}" for k, v in low))
-    print("WoE for churn, risky (positive) states     : "
-          + ", ".join(f"{k}={fmt(v)}" for k, v in high))
+    print(
+        "WoE for churn, protective (negative) states: "
+        + ", ".join(f"{k}={fmt(v)}" for k, v in low)
+    )
+    print(
+        "WoE for churn, risky (positive) states     : "
+        + ", ".join(f"{k}={fmt(v)}" for k, v in high)
+    )
 
     emb = EmbeddingEncoder(8, 0.2, 60, 7, "classification")
     emb.fit(sv, y, 2)
     preds = emb.predict(sv)
-    hits = sum(1 for p, t in zip(preds, y) if p is not None and t is not None and p == t)
+    hits = sum(
+        1 for p, t in zip(preds, y) if p is not None and t is not None and p == t
+    )
     observed = sum(1 for t in y if t is not None)
-    print(f"Embedding (dim=8) churn accuracy on train: {hits / observed:.3f} "
-          f"(base rate {churn['mean']:.3f})")
+    print(
+        f"Embedding (dim=8) churn accuracy on train: {hits / observed:.3f} "
+        f"(base rate {churn['mean']:.3f})"
+    )
     print(f"Embedding for '{a_state}' -> {len(emb.transform([a_state])[0])}-d vector")
 
     section("5. REGRESSION FAMILY (task: regression) on account_length")
@@ -211,17 +248,23 @@ def main(argv: list[str]) -> None:
     kv = ds["columns"][key]
     qe = QuantileEncoder(0.5, 2.0)
     qe.fit(kv, y_num)
-    print(f"Quantile (median, smoothing=2) by '{key}', row 0: {fmt(qe.transform(kv[:1])[0])}")
+    print(
+        f"Quantile (median, smoothing=2) by '{key}', row 0: {fmt(qe.transform(kv[:1])[0])}"
+    )
     reg = EmbeddingEncoder(4, 0.05, 80, 11, "regression")
     reg.fit(kv, y_num)
     rpreds = reg.predict(kv[:5])
     print(f"Embedding regression on '{nums[0]}', rows 0..4: {[fmt(v) for v in rpreds]}")
     obs = [v for v in y_num if v is not None]
-    print(f"targets all non-negative -> ReLU output head "
-          f"(min target {fmt(min(obs))}); negative targets would switch to linear")
+    print(
+        f"targets all non-negative -> ReLU output head "
+        f"(min target {fmt(min(obs))}); negative targets would switch to linear"
+    )
 
-    print("\nNA note: missing values pass through every encoder as missing; "
-          "unseen levels use each encoder's documented fallback.")
+    print(
+        "\nNA note: missing values pass through every encoder as missing; "
+        "unseen levels use each encoder's documented fallback."
+    )
     figures(leak=(plain, cb_rows), woe=per_state_woe)
     section("DONE — every encoder exercised on real data")
 

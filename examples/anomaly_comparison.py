@@ -19,17 +19,17 @@ Evaluates:
 """
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
-
 from mltreelib import (
+    HDBSCAN,
     ActiveAnomalyTree,
     ContextAnomalyTree,
     DensityEstimationTree,
     ExtendedIsolationTree,
     GritBot,
-    HDBSCAN,
     HalfSpaceTree,
     RandomCutTree,
     UnsupervisedRandomForest,
@@ -134,10 +134,15 @@ def main():
     aad.fit(data_norm)
     # Simulate human feedback on 5 initial top candidates
     initial_scores = aad.anomaly_score(data_norm)
-    top_init = sorted(range(len(initial_scores)), key=lambda i: initial_scores[i], reverse=True)[:5]
+    top_init = sorted(
+        range(len(initial_scores)), key=lambda i: initial_scores[i], reverse=True
+    )[:5]
     for idx in top_init:
         # Mark as confirmed anomaly if credit_amount > 10000 or duration > 40
-        is_true_anomaly = df.iloc[idx]["credit_amount"] > 10000 or df.iloc[idx]["duration_months"] > 40
+        is_true_anomaly = (
+            df.iloc[idx]["credit_amount"] > 10000
+            or df.iloc[idx]["duration_months"] > 40
+        )
         aad.update_feedback(data_norm[idx], is_anomaly=is_true_anomaly, eta=0.8)
     scores["AAD (Feedback)"] = aad.anomaly_score(data_norm)
 
@@ -147,7 +152,10 @@ def main():
     purposes = sorted(df["credit_purpose"].unique())
     purpose_map = {p: i for i, p in enumerate(purposes)}
     purp_ids = [purpose_map[p] for p in df["credit_purpose"]]
-    seqs = [[purp_ids[i], purp_ids[i + 1], purp_ids[i + 2]] for i in range(len(purp_ids) - 2)]
+    seqs = [
+        [purp_ids[i], purp_ids[i + 1], purp_ids[i + 2]]
+        for i in range(len(purp_ids) - 2)
+    ]
     cat.fit(seqs)
     cat_scores = []
     for i in range(len(df)):
@@ -193,15 +201,17 @@ def main():
     print("=" * 90)
     dist_rows = []
     for name, sc in norm_scores.items():
-        dist_rows.append({
-            "Method": name,
-            "Mean": f"{np.mean(sc):.3f}",
-            "Std Dev": f"{np.std(sc):.3f}",
-            "Min": f"{np.min(sc):.3f}",
-            "Median": f"{np.median(sc):.3f}",
-            "Max": f"{np.max(sc):.3f}",
-            "Skewness": f"{float(pd.Series(sc).skew()):.2f}",
-        })
+        dist_rows.append(
+            {
+                "Method": name,
+                "Mean": f"{np.mean(sc):.3f}",
+                "Std Dev": f"{np.std(sc):.3f}",
+                "Min": f"{np.min(sc):.3f}",
+                "Median": f"{np.median(sc):.3f}",
+                "Max": f"{np.max(sc):.3f}",
+                "Skewness": f"{float(pd.Series(sc).skew()):.2f}",
+            }
+        )
     print(pd.DataFrame(dist_rows).to_string(index=False))
 
     # 2. Spearman Rank Correlation Matrix
@@ -215,7 +225,9 @@ def main():
             )
 
     print("\n" + "=" * 90)
-    print("Spearman Rank Correlation Matrix of Anomaly Scores (Degree of Inter-Model Agreement)")
+    print(
+        "Spearman Rank Correlation Matrix of Anomaly Scores (Degree of Inter-Model Agreement)"
+    )
     print("=" * 90)
     corr_df = pd.DataFrame(corr_matrix, index=method_names, columns=method_names)
     print(corr_df.round(2).to_string())
@@ -241,10 +253,14 @@ def main():
 
     # 4. Top Consensus Anomalies across all 9 detectors
     print("\n" + "=" * 90)
-    print("Consensus Anomalies (Highest Average Normalized Anomaly Score across All 9 Models)")
+    print(
+        "Consensus Anomalies (Highest Average Normalized Anomaly Score across All 9 Models)"
+    )
     print("=" * 90)
     avg_scores = np.mean([norm_scores[m] for m in method_names], axis=0)
-    top_consensus_idx = sorted(range(len(avg_scores)), key=lambda i: avg_scores[i], reverse=True)[:5]
+    top_consensus_idx = sorted(
+        range(len(avg_scores)), key=lambda i: avg_scores[i], reverse=True
+    )[:5]
 
     for rank, idx in enumerate(top_consensus_idx, 1):
         row = df.iloc[idx]
@@ -257,7 +273,9 @@ def main():
             f"   Checking: {row['checking_status']} | History: {row['credit_history']} | "
             f"Savings: {row['savings_status']} | Housing: {row['housing']}"
         )
-        model_scores_str = ", ".join([f"{m.split()[0]}={norm_scores[m][idx]:.2f}" for m in method_names[:5]])
+        model_scores_str = ", ".join(
+            [f"{m.split()[0]}={norm_scores[m][idx]:.2f}" for m in method_names[:5]]
+        )
         print(f"   Individual Scores: {model_scores_str}")
 
     # Architectural Comparison Summary

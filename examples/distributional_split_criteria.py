@@ -11,8 +11,8 @@ Zero external dependencies (uses standard library csv and random).
 """
 
 import csv
-import math
 import random
+
 from mltreelib import ModelTree
 
 
@@ -46,7 +46,9 @@ def run_tweedie_split_example():
     print(f"Tree grown with gain='tweedie' (p=1.5) -> Leaves: {tree.n_leaves()}")
     for s in tree.splits():
         col_name = str(s["col"])
-        print(f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (quasi-deviance gain = {s['gain']:.4f})")
+        print(
+            f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (quasi-deviance gain = {s['gain']:.4f})"
+        )
     preds = tree.predict(X[:5])
     print(f"Sample predictions: {[round(p, 4) for p in preds]}")
 
@@ -62,24 +64,33 @@ def run_heteroscedastic_split_example():
     n = 200
     x_vals = [-5.0 + 10.0 * (i / (n - 1)) for i in range(n)]
     X = [[v] for v in x_vals]
-    y = [
-        rng.gauss(0.0, 0.2 if v < 0.0 else 4.0)
-        for v in x_vals
-    ]
+    y = [rng.gauss(0.0, 0.2 if v < 0.0 else 4.0) for v in x_vals]
 
     # Standard MSE tree
-    tree_mse = ModelTree(max_depth=2, min_rows=20, gain="sse", leaf="mean", prune="none")
+    tree_mse = ModelTree(
+        max_depth=2, min_rows=20, gain="sse", leaf="mean", prune="none"
+    )
     tree_mse.fit(X, y)
 
     # Heteroscedastic Gaussian NLL tree
-    tree_hetero = ModelTree(max_depth=2, min_rows=20, gain="heteroscedastic", leaf="mean", prune="none")
+    tree_hetero = ModelTree(
+        max_depth=2, min_rows=20, gain="heteroscedastic", leaf="mean", prune="none"
+    )
     tree_hetero.fit(X, y)
 
-    print(f"Data: 200 rows with identical conditional mean 0.0, but sigma(left)=0.2 vs sigma(right)=4.0")
-    print(f"  Standard SSE tree leaves:        {tree_mse.n_leaves()} (splits={len(tree_mse.splits())})")
-    print(f"  Heteroscedastic tree leaves:     {tree_hetero.n_leaves()} (splits={len(tree_hetero.splits())})")
+    print(
+        "Data: 200 rows with identical conditional mean 0.0, but sigma(left)=0.2 vs sigma(right)=4.0"
+    )
+    print(
+        f"  Standard SSE tree leaves:        {tree_mse.n_leaves()} (splits={len(tree_mse.splits())})"
+    )
+    print(
+        f"  Heteroscedastic tree leaves:     {tree_hetero.n_leaves()} (splits={len(tree_hetero.splits())})"
+    )
     for s in tree_hetero.splits():
-        print(f"    Split on X0 at threshold {s['threshold']:.2f} (NLL gain = {s['gain']:.4f})")
+        print(
+            f"    Split on X0 at threshold {s['threshold']:.2f} (NLL gain = {s['gain']:.4f})"
+        )
 
 
 def run_tobit_split_example():
@@ -111,7 +122,9 @@ def run_tobit_split_example():
     print(f"Tree grown with gain='tobit' (threshold=0.0) -> Leaves: {tree.n_leaves()}")
     for s in tree.splits():
         col_name = str(s["col"])
-        print(f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (tobit hurdle gain = {s['gain']:.4f})")
+        print(
+            f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (tobit hurdle gain = {s['gain']:.4f})"
+        )
 
 
 def run_cv_split_example():
@@ -129,9 +142,11 @@ def run_cv_split_example():
         x_val = -3.0 + 6.0 * (i / (n - 1))
         X.append([x_val])
         if x_val < 0.0:
-            val = max(1.0, 10.0 + rng.gauss(0.0, 5.0))   # mean ~ 10, sd ~ 5 -> CV ~ 0.50
+            val = max(1.0, 10.0 + rng.gauss(0.0, 5.0))  # mean ~ 10, sd ~ 5 -> CV ~ 0.50
         else:
-            val = max(10.0, 100.0 + rng.gauss(0.0, 10.0)) # mean ~ 100, sd ~ 10 -> CV ~ 0.10
+            val = max(
+                10.0, 100.0 + rng.gauss(0.0, 10.0)
+            )  # mean ~ 100, sd ~ 10 -> CV ~ 0.10
         y.append(val)
 
     tree_cv = ModelTree(
@@ -143,10 +158,12 @@ def run_cv_split_example():
     )
     tree_cv.fit(X, y, col_names=["X0"])
 
-    print(f"Data: 200 rows with distinct scale regimes (CV_L=0.50 vs CV_R=0.10)")
+    print("Data: 200 rows with distinct scale regimes (CV_L=0.50 vs CV_R=0.10)")
     print(f"Tree grown with gain='cv' -> Leaves: {tree_cv.n_leaves()}")
     for s in tree_cv.splits():
-        print(f"  Split on X0 at threshold {s['threshold']:.2f} (CV reduction = {s['gain']:.4f})")
+        print(
+            f"  Split on X0 at threshold {s['threshold']:.2f} (CV reduction = {s['gain']:.4f})"
+        )
 
 
 def run_martingale_split_example():
@@ -176,10 +193,7 @@ def run_martingale_split_example():
         cum_hazard += e / at_risk
         hazard_at_time[t] = cum_hazard
 
-    martingale_residuals = [
-        float(e - hazard_at_time[t])
-        for t, e in zip(times, events)
-    ]
+    martingale_residuals = [float(e - hazard_at_time[t]) for t, e in zip(times, events)]
 
     mean_res = sum(martingale_residuals) / len(martingale_residuals)
 
@@ -192,11 +206,15 @@ def run_martingale_split_example():
     )
     tree.fit(X, martingale_residuals, col_names=cols)
 
-    print(f"Data: Veteran Trial (n={len(X)}) | Martingale residuals E[M] = {mean_res:.4f}")
+    print(
+        f"Data: Veteran Trial (n={len(X)}) | Martingale residuals E[M] = {mean_res:.4f}"
+    )
     print(f"Tree grown with gain='martingale' -> Leaves: {tree.n_leaves()}")
     for s in tree.splits():
         col_name = str(s["col"])
-        print(f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (Martingale SSE gain = {s['gain']:.4f})")
+        print(
+            f"  Split on {col_name:15s} at threshold {s['threshold']:.2f} (Martingale SSE gain = {s['gain']:.4f})"
+        )
 
 
 if __name__ == "__main__":

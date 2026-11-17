@@ -22,26 +22,23 @@ Builds on:
 Outputs both PNG and SVG to docs/assets/.
 """
 
-import sys
 from pathlib import Path
-import numpy as np
 
 # Use Agg backend for headless generation
 import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+import numpy as np
 
+matplotlib.use("Agg")
+import lightgbm as lgb
+import matplotlib.pyplot as plt
+from catboost import CatBoostClassifier, CatBoostRegressor
+from matplotlib.colors import ListedColormap
+from mltreelib import ModelTree
 from sklearn.datasets import make_circles, make_classification, make_moons
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
-import lightgbm as lgb
-from catboost import CatBoostClassifier, CatBoostRegressor
-
-import mltreelib as mt
-from mltreelib import ModelTree
 
 DOCS_ASSETS = Path("docs/assets")
 DOCS_ASSETS.mkdir(parents=True, exist_ok=True)
@@ -65,13 +62,21 @@ def plot_classifier_comparison():
         RandomForestClassifier(max_depth=5, n_estimators=50, random_state=42),
         lgb.LGBMClassifier(max_depth=5, n_estimators=50, random_state=42, verbosity=-1),
         CatBoostClassifier(depth=5, iterations=50, random_seed=42, verbose=0),
-        ModelTree(leaf="linear", leaf_family="binomial", gain="deviance", max_depth=3, seed=42),
-        ModelTree(leaf="mean", leaf_family="binomial", gain="deviance", max_depth=3, seed=42),
+        ModelTree(
+            leaf="linear", leaf_family="binomial", gain="deviance", max_depth=3, seed=42
+        ),
+        ModelTree(
+            leaf="mean", leaf_family="binomial", gain="deviance", max_depth=3, seed=42
+        ),
     ]
 
     # Generate 3 benchmark datasets
     X_lin, y_lin = make_classification(
-        n_features=2, n_redundant=0, n_informative=2, random_state=1, n_clusters_per_class=1
+        n_features=2,
+        n_redundant=0,
+        n_informative=2,
+        random_state=1,
+        n_clusters_per_class=1,
     )
     rng = np.random.RandomState(2)
     X_lin += 2 * rng.uniform(size=X_lin.shape)
@@ -79,7 +84,10 @@ def plot_classifier_comparison():
 
     datasets = [
         ("Moons", make_moons(n_samples=250, noise=0.25, random_state=42)),
-        ("Circles", make_circles(n_samples=250, noise=0.15, factor=0.5, random_state=42)),
+        (
+            "Circles",
+            make_circles(n_samples=250, noise=0.15, factor=0.5, random_state=42),
+        ),
         ("Linear Separable", linearly_separable),
     ]
 
@@ -108,9 +116,23 @@ def plot_classifier_comparison():
         if ds_cnt == 0:
             ax.set_title("Input data", fontsize=12, fontweight="bold")
         # Plot the training points
-        ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k", alpha=0.6)
+        ax.scatter(
+            X_train[:, 0],
+            X_train[:, 1],
+            c=y_train,
+            cmap=cm_bright,
+            edgecolors="k",
+            alpha=0.6,
+        )
         # Plot the testing points
-        ax.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap=cm_bright, edgecolors="k", alpha=0.9)
+        ax.scatter(
+            X_test[:, 0],
+            X_test[:, 1],
+            c=y_test,
+            cmap=cm_bright,
+            edgecolors="k",
+            alpha=0.9,
+        )
         ax.set_xlim(xx.min(), xx.max())
         ax.set_ylim(yy.min(), yy.max())
         ax.set_xticks(())
@@ -143,11 +165,23 @@ def plot_classifier_comparison():
 
             # Plot the training points
             ax.scatter(
-                X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k", alpha=0.4, s=20
+                X_train[:, 0],
+                X_train[:, 1],
+                c=y_train,
+                cmap=cm_bright,
+                edgecolors="k",
+                alpha=0.4,
+                s=20,
             )
             # Plot the testing points
             ax.scatter(
-                X_test[:, 0], X_test[:, 1], c=y_test, cmap=cm_bright, edgecolors="k", alpha=0.9, s=25
+                X_test[:, 0],
+                X_test[:, 1],
+                c=y_test,
+                cmap=cm_bright,
+                edgecolors="k",
+                alpha=0.9,
+                s=25,
             )
 
             ax.set_xlim(xx.min(), xx.max())
@@ -182,14 +216,20 @@ def plot_tree_regression_comparison():
     # Create a non-linear continuous physics dataset (Sine with decay + noise)
     rng = np.random.RandomState(42)
     X = np.sort(5 * rng.rand(160, 1), axis=0)
-    y = np.sin(X).ravel() + 0.2 * np.cos(3 * X).ravel() + rng.normal(0, 0.15, X.shape[0])
+    y = (
+        np.sin(X).ravel()
+        + 0.2 * np.cos(3 * X).ravel()
+        + rng.normal(0, 0.15, X.shape[0])
+    )
     X_test = np.arange(0.0, 5.0, 0.01)[:, np.newaxis]
     y_true = np.sin(X_test).ravel() + 0.2 * np.cos(3 * X_test).ravel()
 
     # Fit models
     regr_dt_shallow = DecisionTreeRegressor(max_depth=2, random_state=42)
     regr_dt_deep = DecisionTreeRegressor(max_depth=5, random_state=42)
-    regr_lgb = lgb.LGBMRegressor(n_estimators=30, max_depth=3, random_state=42, verbosity=-1)
+    regr_lgb = lgb.LGBMRegressor(
+        n_estimators=30, max_depth=3, random_state=42, verbosity=-1
+    )
     regr_catb = CatBoostRegressor(iterations=30, depth=3, random_seed=42, verbose=0)
     regr_mt = ModelTree(leaf="linear", max_depth=2, min_rows=15, l2=1e-3, seed=42)
 
@@ -217,27 +257,101 @@ def plot_tree_regression_comparison():
 
     # Panel 1: Decision Tree (Step Function Staircase) vs ModelTree
     ax = axes[0]
-    ax.scatter(X, y, s=25, edgecolor="black", c="#94A3B8", alpha=0.7, label="Actual Data ($N=160$)")
-    ax.plot(X_test, y_true, color="#64748B", linestyle="--", linewidth=1.8, label="True Underlying Curve")
-    ax.plot(X_test, y_dt_shallow, color="#EF4444", linewidth=2.2, label=f"DecisionTree (Depth 2, RMSE={rmse_dt_shallow:.3f})")
-    ax.plot(X_test, y_dt_deep, color="#F59E0B", linewidth=1.8, linestyle=":", label=f"DecisionTree (Depth 5, RMSE={rmse_dt_deep:.3f})")
-    ax.plot(X_test, y_mt, color="#2563EB", linewidth=2.5, label=f"ModelTree Linear (Depth 2, RMSE={rmse_mt:.3f})")
+    ax.scatter(
+        X,
+        y,
+        s=25,
+        edgecolor="black",
+        c="#94A3B8",
+        alpha=0.7,
+        label="Actual Data ($N=160$)",
+    )
+    ax.plot(
+        X_test,
+        y_true,
+        color="#64748B",
+        linestyle="--",
+        linewidth=1.8,
+        label="True Underlying Curve",
+    )
+    ax.plot(
+        X_test,
+        y_dt_shallow,
+        color="#EF4444",
+        linewidth=2.2,
+        label=f"DecisionTree (Depth 2, RMSE={rmse_dt_shallow:.3f})",
+    )
+    ax.plot(
+        X_test,
+        y_dt_deep,
+        color="#F59E0B",
+        linewidth=1.8,
+        linestyle=":",
+        label=f"DecisionTree (Depth 5, RMSE={rmse_dt_deep:.3f})",
+    )
+    ax.plot(
+        X_test,
+        y_mt,
+        color="#2563EB",
+        linewidth=2.5,
+        label=f"ModelTree Linear (Depth 2, RMSE={rmse_mt:.3f})",
+    )
     ax.set_xlabel("Feature $x$", fontsize=12)
     ax.set_ylabel("Target $y$", fontsize=12)
-    ax.set_title("Step Staircase (CART) vs Piecewise Linear (ModelTree)", fontsize=13, fontweight="bold")
+    ax.set_title(
+        "Step Staircase (CART) vs Piecewise Linear (ModelTree)",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax.legend(loc="upper right", framealpha=0.9)
     ax.grid(True, linestyle="--", alpha=0.4)
 
     # Panel 2: Ensembles (GBDT / CatBoost) vs ModelTree
     ax = axes[1]
-    ax.scatter(X, y, s=25, edgecolor="black", c="#94A3B8", alpha=0.7, label="Actual Data ($N=160$)")
-    ax.plot(X_test, y_true, color="#64748B", linestyle="--", linewidth=1.8, label="True Underlying Curve")
-    ax.plot(X_test, y_lgb, color="#10B981", linewidth=2.2, label=f"LightGBM 30 Trees (RMSE={rmse_lgb:.3f})")
-    ax.plot(X_test, y_catb, color="#8B5CF6", linewidth=2.0, linestyle="-.", label=f"CatBoost 30 Trees (RMSE={rmse_catb:.3f})")
-    ax.plot(X_test, y_mt, color="#2563EB", linewidth=2.5, label=f"ModelTree 1 Single Tree (RMSE={rmse_mt:.3f})")
+    ax.scatter(
+        X,
+        y,
+        s=25,
+        edgecolor="black",
+        c="#94A3B8",
+        alpha=0.7,
+        label="Actual Data ($N=160$)",
+    )
+    ax.plot(
+        X_test,
+        y_true,
+        color="#64748B",
+        linestyle="--",
+        linewidth=1.8,
+        label="True Underlying Curve",
+    )
+    ax.plot(
+        X_test,
+        y_lgb,
+        color="#10B981",
+        linewidth=2.2,
+        label=f"LightGBM 30 Trees (RMSE={rmse_lgb:.3f})",
+    )
+    ax.plot(
+        X_test,
+        y_catb,
+        color="#8B5CF6",
+        linewidth=2.0,
+        linestyle="-.",
+        label=f"CatBoost 30 Trees (RMSE={rmse_catb:.3f})",
+    )
+    ax.plot(
+        X_test,
+        y_mt,
+        color="#2563EB",
+        linewidth=2.5,
+        label=f"ModelTree 1 Single Tree (RMSE={rmse_mt:.3f})",
+    )
     ax.set_xlabel("Feature $x$", fontsize=12)
     ax.set_ylabel("Target $y$", fontsize=12)
-    ax.set_title("GBDT Ensemble Steps vs Single ModelTree", fontsize=13, fontweight="bold")
+    ax.set_title(
+        "GBDT Ensemble Steps vs Single ModelTree", fontsize=13, fontweight="bold"
+    )
     ax.legend(loc="upper right", framealpha=0.9)
     ax.grid(True, linestyle="--", alpha=0.4)
 

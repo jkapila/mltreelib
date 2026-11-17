@@ -1096,3 +1096,109 @@ students_dropout_and_academic_success,ModelTree(mean),ok,3.2
 students_dropout_and_academic_success,ModelTree(path),ok,4.3
 students_dropout_and_academic_success,ModelTree(winnow),ok,21.1
 taiwanese_bankruptcy_prediction,ModelTree(all),timeout,180.1
+APSFailure,ModelTree(all),ok,15.1
+APSFailure,ModelTree(winnow),ok,15.1
+SDSS17,ModelTree(all),ok,233.6
+SDSS17,ModelTree(mean),ok,218.1
+SDSS17,ModelTree(path),ok,219.9
+SDSS17,ModelTree(winnow),ok,38.1
+hiva_agnostic,ModelTree(all),ok,6.7
+kddcup09_appetency,ModelTree(all),ok,8.9
+kddcup09_appetency,ModelTree(winnow),ok,8.6
+taiwanese_bankruptcy_prediction,ModelTree(all),ok,4.1
+online_shoppers_intention,ctree,error,0.5
+online_shoppers_intention,glmtree,error,0.4
+online_shoppers_intention,earth,error,0.4
+online_shoppers_intention,mboost,error,0.4
+online_shoppers_intention,bart,error,0.4
+online_shoppers_intention,grf_rf,error,0.4
+online_shoppers_intention,CTBoost,error,3.5
+online_shoppers_intention,CatBoost(200),error,3.6
+online_shoppers_intention,ChimeraBoost,error,3.7
+online_shoppers_intention,EBM,error,3.4
+online_shoppers_intention,ExtraTrees,error,3.5
+online_shoppers_intention,HistGradientBoosting,error,3.4
+online_shoppers_intention,KNN,error,3.4
+online_shoppers_intention,LightGBM(200),error,3.4
+online_shoppers_intention,MARS (mars-earth),error,3.4
+online_shoppers_intention,forust (Rust),error,3.6
+online_shoppers_intention,modeltrees glmtree,error,3.7
+online_shoppers_intention,modeltrees multinomtree,error,4.0
+online_shoppers_intention,perpetual (Rust),error,3.8
+online_shoppers_intention,sklearn GBM,error,3.8
+online_shoppers_intention,sklearn LogReg,error,22.0
+online_shoppers_intention,sklearn RF,ok,41.8
+online_shoppers_intention,sklearn tree,ok,17.6
+online_shoppers_intention,statsmodels MNLogit,error,16.8
+online_shoppers_intention,ctree,error,0.4
+online_shoppers_intention,glmtree,error,0.4
+online_shoppers_intention,earth,error,0.4
+online_shoppers_intention,mboost,error,0.4
+online_shoppers_intention,bart,error,0.4
+online_shoppers_intention,grf_rf,error,0.4
+online_shoppers_intention,CTBoost,error,15.2
+online_shoppers_intention,CatBoost(200),ok,16.5
+online_shoppers_intention,ChimeraBoost,error,14.8
+online_shoppers_intention,EBM,ok,54.5
+online_shoppers_intention,ExtraTrees,ok,16.5
+online_shoppers_intention,HistGradientBoosting,ok,16.8
+online_shoppers_intention,KNN,ok,15.3
+online_shoppers_intention,LightGBM(200),ok,15.0
+online_shoppers_intention,MARS (mars-earth),error,14.5
+online_shoppers_intention,forust (Rust),ok,15.4
+online_shoppers_intention,modeltrees glmtree,ok,19.8
+online_shoppers_intention,modeltrees multinomtree,timeout,180.2
+online_shoppers_intention,perpetual (Rust),ok,25.6
+online_shoppers_intention,sklearn GBM,ok,23.1
+online_shoppers_intention,sklearn LogReg,ok,27.8
+online_shoppers_intention,statsmodels MNLogit,error,14.3
+customer_satisfaction_in_airline,rpart,ok,5.0
+customer_satisfaction_in_airline,CatBoost(200),ok,27.2
+customer_satisfaction_in_airline,EBM,timeout,180.4
+customer_satisfaction_in_airline,ExtraTrees,ok,28.9
+customer_satisfaction_in_airline,HistGradientBoosting,ok,20.9
+customer_satisfaction_in_airline,KNN,ok,22.4
+customer_satisfaction_in_airline,LightGBM(200),ok,20.9
+customer_satisfaction_in_airline,forust (Rust),ok,21.0
+customer_satisfaction_in_airline,modeltrees glmtree,timeout,180.2
+customer_satisfaction_in_airline,perpetual (Rust),ok,114.5
+customer_satisfaction_in_airline,sklearn GBM,ok,33.0
+customer_satisfaction_in_airline,sklearn LogReg,ok,30.8
+customer_satisfaction_in_airline,sklearn RF,ok,26.0
+customer_satisfaction_in_airline,sklearn tree,ok,18.7
+GiveMeSomeCredit,rpart,ok,4.6
+GiveMeSomeCredit,CatBoost(200),ok,16.3
+GiveMeSomeCredit,ExtraTrees,ok,23.4
+GiveMeSomeCredit,HistGradientBoosting,ok,16.2
+GiveMeSomeCredit,KNN,ok,17.2
+GiveMeSomeCredit,LightGBM(200),ok,15.8
+GiveMeSomeCredit,forust (Rust),ok,16.8
+GiveMeSomeCredit,perpetual (Rust),ok,19.8
+GiveMeSomeCredit,sklearn GBM,ok,32.3
+GiveMeSomeCredit,sklearn LogReg,ok,29.7
+GiveMeSomeCredit,sklearn RF,ok,36.7
+GiveMeSomeCredit,sklearn tree,ok,17.1
+Diabetes130US,rpart,ok,2.7
+Diabetes130US,CatBoost(200),ok,34.5
+Diabetes130US,ExtraTrees,ok,24.9
+Diabetes130US,HistGradientBoosting,error,17.0
+Diabetes130US,KNN,ok,19.7
+Diabetes130US,LightGBM(200),ok,18.4
+Diabetes130US,forust (Rust),ok,21.0
+Diabetes130US,perpetual (Rust),ok,67.5
+Diabetes130US,sklearn GBM,ok,31.5
+Diabetes130US,sklearn LogReg,ok,40.5
+Diabetes130US,sklearn RF,ok,29.2
+Diabetes130US,sklearn tree,ok,24.1
+APSFailure,rpart,ok,62.1
+APSFailure,CatBoost(200),ok,44.5
+APSFailure,ExtraTrees,ok,50.4
+APSFailure,HistGradientBoosting,ok,33.2
+APSFailure,KNN,ok,26.2
+APSFailure,LightGBM(200),ok,35.8
+APSFailure,forust (Rust),ok,26.8
+APSFailure,perpetual (Rust),ok,109.5
+APSFailure,sklearn GBM,timeout,120.3
+APSFailure,sklearn LogReg,ok,44.0
+APSFailure,sklearn RF,ok,98.7
+APSFailure,sklearn tree,ok,55.7

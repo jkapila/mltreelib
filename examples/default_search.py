@@ -69,8 +69,12 @@ def main():
             bars[(r["dataset"], r["model"])] = float(r["rmse"])
 
     grid = []
-    for (leaf, l1, l2, depth, min_rows) in itertools.product(
-        ["mean", "linear"], [0.0, 0.01, 0.1], [0.0, 0.1, 1.0, 10.0], [4, 6, 8], [10, 20, 40]
+    for leaf, l1, l2, depth, min_rows in itertools.product(
+        ["mean", "linear"],
+        [0.0, 0.01, 0.1],
+        [0.0, 0.1, 1.0, 10.0],
+        [4, 6, 8],
+        [10, 20, 40],
     ):
         if leaf == "mean" and (l1 != 0.0 or l2 != 0.0):
             continue
@@ -102,10 +106,14 @@ def main():
     print("-" * 80)
     for score, leaf, l1, l2, depth, min_rows, wins, per in results[:12]:
         cfg = f"leaf={leaf} l1={l1:g} l2={l2:g} depth={depth} min_rows={min_rows}"
-        print(f"{cfg:<52}{score:>7.3f}{wins['lmtree']:>6}{wins['cubist']:>6}{wins['rpart']:>7}")
+        print(
+            f"{cfg:<52}{score:>7.3f}{wins['lmtree']:>6}{wins['cubist']:>6}{wins['rpart']:>7}"
+        )
     best = results[0]
-    print(f"\nWINNER: leaf={best[1]} l1={best[2]:g} l2={best[3]:g} "
-          f"max_depth={best[4]} min_rows={best[5]}")
+    print(
+        f"\nWINNER: leaf={best[1]} l1={best[2]:g} l2={best[3]:g} "
+        f"max_depth={best[4]} min_rows={best[5]}"
+    )
     print("per-dataset rmse:", {k: round(v, 3) for k, v in best[7].items()})
 
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 import random
+
 from mltreelib import ModelTree
 
 
@@ -68,7 +69,9 @@ def main():
     print("PART 2: C5.0 Rule-Set Extraction with Quinlan's Pessimistic Pruning")
     print("=" * 75)
     print("Extracting decision paths into standalone IF-THEN rules...")
-    print("Preconditions are simplified and pruned using Quinlan's binomial bound (CF=0.25):\n")
+    print(
+        "Preconditions are simplified and pruned using Quinlan's binomial bound (CF=0.25):\n"
+    )
 
     random.seed(42)
     n_rule = 300

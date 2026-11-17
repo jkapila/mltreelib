@@ -10,8 +10,8 @@ Demonstrates all base anomaly tree paradigms on real data (credit-g):
 """
 
 from pathlib import Path
-import pyarrow.parquet as pq
 
+import pyarrow.parquet as pq
 from mltreelib import (
     ActiveAnomalyTree,
     ContextAnomalyTree,
@@ -57,7 +57,9 @@ def main():
 
     print("=" * 80)
     print("mltreelib Base Anomaly Tree Suite Showcase (credit-g dataset)")
-    print(f"Loaded {len(df)} records across {len(all_cols)} attributes ({len(num_cols)} numeric, {len(cat_cols)} categorical).")
+    print(
+        f"Loaded {len(df)} records across {len(all_cols)} attributes ({len(num_cols)} numeric, {len(cat_cols)} categorical)."
+    )
     print("=" * 80)
 
     # ---------------------------------------------------------
@@ -70,13 +72,21 @@ def main():
     scores_eif = eif.anomaly_score(data_mixed)
     path_lens = eif.path_length(data_mixed)
 
-    top_eif_idx = sorted(range(len(scores_eif)), key=lambda i: scores_eif[i], reverse=True)[:3]
+    top_eif_idx = sorted(
+        range(len(scores_eif)), key=lambda i: scores_eif[i], reverse=True
+    )[:3]
     print("  Top 3 anomalous records via EIF:")
     for rank, idx in enumerate(top_eif_idx, 1):
         row = df.iloc[idx]
-        print(f"   {rank}. Row {idx:3d} | score: {scores_eif[idx]:.4f} | path: {path_lens[idx]:.2f}")
-        print(f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}")
-        print(f"      History: {row['credit_history']}, Purpose: {row['credit_purpose']}, Checking: {row['checking_status']}")
+        print(
+            f"   {rank}. Row {idx:3d} | score: {scores_eif[idx]:.4f} | path: {path_lens[idx]:.2f}"
+        )
+        print(
+            f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}"
+        )
+        print(
+            f"      History: {row['credit_history']}, Purpose: {row['credit_purpose']}, Checking: {row['checking_status']}"
+        )
 
     # ---------------------------------------------------------
     # 2. Density Estimation Tree (DET)
@@ -88,12 +98,18 @@ def main():
     densities = det.predict_density(data_num)
     det_scores = det.predict_anomaly_score(data_num)
 
-    top_det_idx = sorted(range(len(det_scores)), key=lambda i: det_scores[i], reverse=True)[:3]
+    top_det_idx = sorted(
+        range(len(det_scores)), key=lambda i: det_scores[i], reverse=True
+    )[:3]
     print("  Top 3 lowest-density records via DET:")
     for rank, idx in enumerate(top_det_idx, 1):
         row = df.iloc[idx]
-        print(f"   {rank}. Row {idx:3d} | -ln(density): {det_scores[idx]:.2f} | density: {densities[idx]:.2e}")
-        print(f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}")
+        print(
+            f"   {rank}. Row {idx:3d} | -ln(density): {det_scores[idx]:.2f} | density: {densities[idx]:.2e}"
+        )
+        print(
+            f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}"
+        )
 
     # ---------------------------------------------------------
     # 3. Half-Space Tree (HST) - Streaming Mass Scoring
@@ -103,19 +119,27 @@ def main():
     hst.fit(data_num)
 
     hst_scores = hst.anomaly_score(data_num)
-    top_hst_idx = sorted(range(len(hst_scores)), key=lambda i: hst_scores[i], reverse=True)[:3]
+    top_hst_idx = sorted(
+        range(len(hst_scores)), key=lambda i: hst_scores[i], reverse=True
+    )[:3]
     print("  Top 3 HST anomalies (sparse mass subspaces):")
     for rank, idx in enumerate(top_hst_idx, 1):
         row = df.iloc[idx]
-        print(f"   {rank}. Row {idx:3d} | anomaly score: {hst_scores[idx]:.4f} | mass score: {hst.mass_score([data_num[idx]])[0]:.1f}")
-        print(f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}")
+        print(
+            f"   {rank}. Row {idx:3d} | anomaly score: {hst_scores[idx]:.4f} | mass score: {hst.mass_score([data_num[idx]])[0]:.1f}"
+        )
+        print(
+            f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}"
+        )
 
     # Online streaming demonstration
     synth_outlier = [120.0, 50000.0, 10.0, 95.0, 8.0]
     score_before = hst.anomaly_score([synth_outlier])[0]
     hst.insert(synth_outlier)
     score_after = hst.anomaly_score([synth_outlier])[0]
-    print(f"  Streaming insertion test: synthetic outlier score {score_before:.4f} -> {score_after:.4f} (mass updated online)")
+    print(
+        f"  Streaming insertion test: synthetic outlier score {score_before:.4f} -> {score_after:.4f} (mass updated online)"
+    )
 
     # ---------------------------------------------------------
     # 4. Random Cut Tree (RCT) - Collusive Displacement (CoDisp)
@@ -125,12 +149,16 @@ def main():
     rct.fit(data_num)
 
     codisp_scores = rct.codisp(data_num)
-    top_rct_idx = sorted(range(len(codisp_scores)), key=lambda i: codisp_scores[i], reverse=True)[:3]
+    top_rct_idx = sorted(
+        range(len(codisp_scores)), key=lambda i: codisp_scores[i], reverse=True
+    )[:3]
     print("  Top 3 RCT anomalies via CoDisp:")
     for rank, idx in enumerate(top_rct_idx, 1):
         row = df.iloc[idx]
         print(f"   {rank}. Row {idx:3d} | CoDisp: {codisp_scores[idx]:.2f}")
-        print(f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}")
+        print(
+            f"      Credit: ${row['credit_amount']:.0f}, Duration: {row['duration_months']} mo, Age: {row['age_years']}"
+        )
 
     # ---------------------------------------------------------
     # 5. Active Anomaly Tree (AAD) - Human-in-the-Loop Feedback
@@ -140,16 +168,24 @@ def main():
     aad.fit(data_num)
 
     initial_scores = aad.anomaly_score(data_num)
-    initial_top = sorted(range(len(initial_scores)), key=lambda i: initial_scores[i], reverse=True)[:5]
-    print(f"  Initial top candidate presented to analyst: Row {initial_top[0]} (score: {initial_scores[initial_top[0]]:.4f})")
+    initial_top = sorted(
+        range(len(initial_scores)), key=lambda i: initial_scores[i], reverse=True
+    )[:5]
+    print(
+        f"  Initial top candidate presented to analyst: Row {initial_top[0]} (score: {initial_scores[initial_top[0]]:.4f})"
+    )
 
     # Analyst confirms candidate is a true positive anomaly
     reviewed_row = data_num[initial_top[0]]
     aad.update_feedback(reviewed_row, is_anomaly=True, eta=0.8)
 
     updated_scores = aad.anomaly_score(data_num)
-    print(f"  Feedback incorporated (+0.8): Row {initial_top[0]} score increased to {updated_scores[initial_top[0]]:.4f}")
-    new_top = sorted(range(len(updated_scores)), key=lambda i: updated_scores[i], reverse=True)[:3]
+    print(
+        f"  Feedback incorporated (+0.8): Row {initial_top[0]} score increased to {updated_scores[initial_top[0]]:.4f}"
+    )
+    new_top = sorted(
+        range(len(updated_scores)), key=lambda i: updated_scores[i], reverse=True
+    )[:3]
     print(f"  Re-ranked top candidates after analyst label: {new_top}")
 
     # ---------------------------------------------------------
@@ -163,7 +199,9 @@ def main():
     sequences = []
     # Build synthetic sequential credit history sequences across client cohorts
     for grp_idx in range(0, len(df) - 4, 4):
-        seq = [unique_purposes[df["credit_purpose"].iloc[grp_idx + k]] for k in range(4)]
+        seq = [
+            unique_purposes[df["credit_purpose"].iloc[grp_idx + k]] for k in range(4)
+        ]
         sequences.append(seq)
 
     cat.fit(sequences)
@@ -179,9 +217,15 @@ def main():
     surprise_rare = cat.surprise_score(test_context, rare_sym)
 
     print(f"  Context sequence: {test_context}")
-    print(f"  Expected transition {expected_sym}: P = {prob_exp:.4f} | Surprise = {surprise_exp:.2f} bits")
-    print(f"  Rare transition     {rare_sym}: P = {prob_rare:.4f} | Surprise = {surprise_rare:.2f} bits")
-    print(f"  Surprise elevation: {surprise_rare / max(surprise_exp, 1e-6):.2f}x higher")
+    print(
+        f"  Expected transition {expected_sym}: P = {prob_exp:.4f} | Surprise = {surprise_exp:.2f} bits"
+    )
+    print(
+        f"  Rare transition     {rare_sym}: P = {prob_rare:.4f} | Surprise = {surprise_rare:.2f} bits"
+    )
+    print(
+        f"  Surprise elevation: {surprise_rare / max(surprise_exp, 1e-6):.2f}x higher"
+    )
 
     print("\n" + "=" * 80)
     print("All base anomaly tree paradigms demonstrated successfully on live data.")

@@ -24,7 +24,10 @@ def rows_from_csv(path):
         r = list(csv.reader(f))
     head, body = r[0], r[1:]
     yi = head.index("y")
-    x = [[float(v) if v != "" else None for j, v in enumerate(row) if j != yi] for row in body]
+    x = [
+        [float(v) if v != "" else None for j, v in enumerate(row) if j != yi]
+        for row in body
+    ]
     y = [float(row[yi]) for row in body]
     return x, y
 
@@ -64,7 +67,11 @@ def bench(name, xtr, ytr, xte, yte):
 
 
 print(f"{'shape':<24}{'leaf':<8}{'fit':>10}{'rmse':>10}{'leaves':>7}")
-for shape, n, d in [("wide 2k x 40", 2000, 40), ("long 20k x 8", 20000, 8), ("categorical 10k x 12", 10000, 12)]:
+for shape, n, d in [
+    ("wide 2k x 40", 2000, 40),
+    ("long 20k x 8", 20000, 8),
+    ("categorical 10k x 12", 10000, 12),
+]:
     x, y = synthetic(shape.split()[0], n, d)
     split = int(0.8 * n)
     bench(shape, x[:split], y[:split], x[split:], y[split:])

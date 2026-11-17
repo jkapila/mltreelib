@@ -2,7 +2,6 @@
 Decision tree clustering via analytical background non-data.
 """
 
-import pytest
 from mltreelib import CLTree
 
 
@@ -30,7 +29,9 @@ def test_cltree_dense_clusters_and_noise():
 
     # Noise query in empty gap
     noise = clt.predict_cluster([[5.0, 10.0]])[0]
-    assert noise is None, "Sparse background space must be classified as None (noise/outlier)"
+    assert noise is None, (
+        "Sparse background space must be classified as None (noise/outlier)"
+    )
 
     # Check bounding boxes
     bboxes = clt.cluster_bounding_boxes()

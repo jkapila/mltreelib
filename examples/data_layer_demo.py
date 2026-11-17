@@ -66,8 +66,10 @@ def figures(variance=None, panel=None, out_dir: Path | None = None):
     out_dir.mkdir(exist_ok=True)
 
     if variance:
-        shares = {k: variance[k] for k in
-                  ("numeric", "categorical", "hierarchy", "interaction", "noise")}
+        shares = {
+            k: variance[k]
+            for k in ("numeric", "categorical", "hierarchy", "interaction", "noise")
+        }
         ax = mplots.plot_variance_shares(shares)
         ax.figure.tight_layout()
         path = out_dir / "variance_shares.png"
@@ -77,8 +79,9 @@ def figures(variance=None, panel=None, out_dir: Path | None = None):
 
     if panel:
         dates, values, trend, detrended, deseason, residual = panel
-        axes = mplots.plot_decomposition(values, trend, detrended, deseason,
-                                         residual, dates=dates)
+        axes = mplots.plot_decomposition(
+            values, trend, detrended, deseason, residual, dates=dates
+        )
         axes[0][0].figure.suptitle("Additive decomposition (statsmodels convention)")
         axes[0][0].figure.tight_layout()
         path = out_dir / "decomposition.png"
@@ -104,10 +107,15 @@ def dataset_report(name: str) -> None:
     numerics = by_type.get("numeric", [])
     categoricals = by_type.get("categorical", [])
     if numerics:
-        print("\nnumeric summaries (count, n_missing, mean, std, min, q1, median, q3, max):")
+        print(
+            "\nnumeric summaries (count, n_missing, mean, std, min, q1, median, q3, max):"
+        )
         for col in numerics[:4]:
             s = summarize(ds["columns"][col])
-            stats = " ".join(f"{s[k]:>10.4g}" for k in ("mean", "std", "min", "q1", "median", "q3", "max"))
+            stats = " ".join(
+                f"{s[k]:>10.4g}"
+                for k in ("mean", "std", "min", "q1", "median", "q3", "max")
+            )
             print(f"  {col[:28]:28s} {s['count']:6d} {s['n_missing']:5d}  {stats}")
 
     # ingest through the data layer with category inference
@@ -118,9 +126,20 @@ def dataset_report(name: str) -> None:
         else:
             b.add_numeric(col, values)
     built = b.build()
-    inferred = sorted(set(built["dtypes"]) - set(ds["columns"]) | {c for c, t in built["dtypes"].items() if t == "categorical" and ds["dtypes"].get(c) == "numeric"})
-    print(f"\nDatasetBuilder(n_category=5% of rows): integral numerics promoted to categorical: {inferred or 'none'}")
-    print(f"na_counts after ingest: { {k: v for k, v in built['na_counts'].items() if v} or 'none'}")
+    inferred = sorted(
+        set(built["dtypes"]) - set(ds["columns"])
+        | {
+            c
+            for c, t in built["dtypes"].items()
+            if t == "categorical" and ds["dtypes"].get(c) == "numeric"
+        }
+    )
+    print(
+        f"\nDatasetBuilder(n_category=5% of rows): integral numerics promoted to categorical: {inferred or 'none'}"
+    )
+    print(
+        f"na_counts after ingest: { {k: v for k, v in built['na_counts'].items() if v} or 'none' }"
+    )
 
     if categoricals:
         col = categoricals[0]
@@ -137,18 +156,29 @@ def dataset_report(name: str) -> None:
         zs.fit(ds["columns"][key], ds["columns"][tgt], "zscore")
         z = zs.transform(ds["columns"][key], ds["columns"][tgt])
         back = zs.inverse_transform(ds["columns"][key], z)
-        print(f"\ngroup mean of {tgt} by {key} (first 5): {[fmt(v) for v in gmean[:5]]}")
+        print(
+            f"\ngroup mean of {tgt} by {key} (first 5): {[fmt(v) for v in gmean[:5]]}"
+        )
         print(f"group zscore of {tgt} by {key} (first 5): {[fmt(v) for v in z[:5]]}")
-        print(f"zscore -> inverse roundtrip ok       : {all((a is None and b is None) or (a is not None and b is not None and abs(a - b) < 1e-9) for a, b in zip(back, ds['columns'][tgt]))}")
+        print(
+            f"zscore -> inverse roundtrip ok       : {all((a is None and b is None) or (a is not None and b is not None and abs(a - b) < 1e-9) for a, b in zip(back, ds['columns'][tgt]))}"
+        )
 
 
 # ------------------------------------------------------ 2. generator ---
 def generator_report() -> dict:
     section("2. SYNTHETIC GENERATOR WITH GROUND TRUTH")
     g = generate(
-        n_rows=20_000, n_numeric=4, cardinalities=[8, 64], hierarchy_levels=2,
-        branching=[4, 12], group_effect_strength=0.6, hierarchy_effect_strength=0.4,
-        interaction_strength=0.2, noise=0.2, seed=7,
+        n_rows=20_000,
+        n_numeric=4,
+        cardinalities=[8, 64],
+        hierarchy_levels=2,
+        branching=[4, 12],
+        group_effect_strength=0.6,
+        hierarchy_effect_strength=0.4,
+        interaction_strength=0.2,
+        noise=0.2,
+        seed=7,
     )
     v = g["truth"]["variance"]
     print(f"rows: {len(g['target'])}, columns: {len(g['columns'])}")
@@ -177,27 +207,44 @@ def time_report():
     for f in ("weekday", "weekend", "season"):
         print(f"  {f:14s}: {[fmt(x) for x in cal[f][:7]]}")
 
-    print(f"\nlag 7 days (first 8)          : {[fmt(v) for v in lag_by_days(keys, dates, vals, 7)[:8]]}")
-    print(f"year_month mean (first 5)     : {[fmt(v) for v in trended_transform(keys, dates, vals)[:5]]}")
+    print(
+        f"\nlag 7 days (first 8)          : {[fmt(v) for v in lag_by_days(keys, dates, vals, 7)[:8]]}"
+    )
+    print(
+        f"year_month mean (first 5)     : {[fmt(v) for v in trended_transform(keys, dates, vals)[:5]]}"
+    )
     w = windowed_transform(keys, dates, vals, window_days=7, kind="sum")
     print(f"7-day trailing sum (first 10) : {[fmt(v) for v in w[:10]]}")
 
-    d = decomposed_transform(keys, dates, vals, season_granularity="weekday", trend_window=7)
+    d = decomposed_transform(
+        keys, dates, vals, season_granularity="weekday", trend_window=7
+    )
     print("\ndecomposition (store_a, rows 5..12):")
     print(f"  {'value':>7} {'detrend':>9} {'deseason':>9} {'residual':>9}")
     for i in range(5, 13):
-        print(f"  {vals[i]:7.2f} {fmt(d['detrended'][i]):>9} {fmt(d['deseasonalized'][i]):>9} {fmt(d['residual'][i]):>9}")
+        print(
+            f"  {vals[i]:7.2f} {fmt(d['detrended'][i]):>9} {fmt(d['deseasonalized'][i]):>9} {fmt(d['residual'][i]):>9}"
+        )
 
     print("\nNA handling (drop + warn):")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        out = lag_by_days(keys[:3] + [None], dates[:3] + ["2026-01-30"], vals[:3] + [1.0], 7)
+        out = lag_by_days(
+            keys[:3] + [None], dates[:3] + ["2026-01-30"], vals[:3] + [1.0], 7
+        )
     for w_ in caught:
         print(f"  warning: {w_.message}")
     print(f"  output : {out}  (incomplete rows -> missing)")
 
     trend = [vals[i] - (d["detrended"][i] or vals[i]) for i in range(21)]
-    return (dates[:21], vals[:21], trend, d["detrended"][:21], d["deseasonalized"][:21], d["residual"][:21])
+    return (
+        dates[:21],
+        vals[:21],
+        trend,
+        d["detrended"][:21],
+        d["deseasonalized"][:21],
+        d["residual"][:21],
+    )
 
 
 def main(argv: list[str]) -> None:
@@ -211,8 +258,10 @@ def main(argv: list[str]) -> None:
     variance = generator_report()
     panel = time_report()
     figures(variance=variance, panel=panel)
-    section("DONE — details printed above cover ingest, missingness, encodings, "
-            "grouped/trended/windowed/decomposed features and ground truth")
+    section(
+        "DONE — details printed above cover ingest, missingness, encodings, "
+        "grouped/trended/windowed/decomposed features and ground truth"
+    )
 
 
 if __name__ == "__main__":

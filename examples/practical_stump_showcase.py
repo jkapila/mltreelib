@@ -15,8 +15,9 @@ Run:
 """
 
 import time
+
+from mltreelib import LeafControl, ModelTree
 from mltreelib.datasets import load_dataset
-from mltreelib import ModelTree, LeafControl
 
 
 def format_cubist_rules(tree, col_names):
@@ -85,15 +86,23 @@ def main():
     # 3. Key Causal / Actuarial Insights
     leaves = stump.leaves()
     print("\n--- Key Practical Insights ---")
-    print(f"• Age Sensitivity:     Non-smoker = +${leaves[0]['coef'][0]:.2f}/yr  |  Smoker = +${leaves[1]['coef'][0]:.2f}/yr")
-    print(f"  -> Both populations age at the exact same rate (~$265/year).")
-    print(f"• BMI Sensitivity:     Non-smoker = +${leaves[0]['coef'][1]:.2f}/BMI |  Smoker = +${leaves[1]['coef'][1]:.2f}/BMI")
-    print(f"  -> Smokers experience a 270x steeper increase per BMI unit ($1,438 vs $5.28)!")
-    print(f"• Average Claim:       Non-smoker = ${leaves[0]['mean']:,.2f}       |  Smoker = ${leaves[1]['mean']:,.2f}")
+    print(
+        f"• Age Sensitivity:     Non-smoker = +${leaves[0]['coef'][0]:.2f}/yr  |  Smoker = +${leaves[1]['coef'][0]:.2f}/yr"
+    )
+    print("  -> Both populations age at the exact same rate (~$265/year).")
+    print(
+        f"• BMI Sensitivity:     Non-smoker = +${leaves[0]['coef'][1]:.2f}/BMI |  Smoker = +${leaves[1]['coef'][1]:.2f}/BMI"
+    )
+    print(
+        "  -> Smokers experience a 270x steeper increase per BMI unit ($1,438 vs $5.28)!"
+    )
+    print(
+        f"• Average Claim:       Non-smoker = ${leaves[0]['mean']:,.2f}       |  Smoker = ${leaves[1]['mean']:,.2f}"
+    )
 
     # 4. Instant Retraining Showcase (frozen topology)
     test_cases = [
-        [35.0, 28.0, 1.0, "no"],   # 35yo non-smoker, BMI 28
+        [35.0, 28.0, 1.0, "no"],  # 35yo non-smoker, BMI 28
         [35.0, 28.0, 1.0, "yes"],  # 35yo smoker, BMI 28
     ]
 
@@ -103,7 +112,7 @@ def main():
 
     # A. OLS Piecewise Linear
     preds_ols = stump.predict(test_cases)
-    print(f"\n1. Piecewise Linear (OLS):")
+    print("\n1. Piecewise Linear (OLS):")
     print(f"   35yo non-smoker (BMI 28): ${preds_ols[0]:,.2f}")
     print(f"   35yo smoker     (BMI 28): ${preds_ols[1]:,.2f}")
 
@@ -124,13 +133,17 @@ def main():
     q50 = stump.quantile(test_cases, 0.50)
     q90 = stump.quantile(test_cases, 0.90)
     print(f"\n3. Empirical Quantile Risk Bands [Refit in {t_quant:.3f} ms]:")
-    print(f"   Non-smoker 10th - 50th - 90th: ${q10[0]:,.2f} <= ${q50[0]:,.2f} <= ${q90[0]:,.2f}")
-    print(f"   Smoker     10th - 50th - 90th: ${q10[1]:,.2f} <= ${q50[1]:,.2f} <= ${q90[1]:,.2f}")
+    print(
+        f"   Non-smoker 10th - 50th - 90th: ${q10[0]:,.2f} <= ${q50[0]:,.2f} <= ${q90[0]:,.2f}"
+    )
+    print(
+        f"   Smoker     10th - 50th - 90th: ${q10[1]:,.2f} <= ${q50[1]:,.2f} <= ${q90[1]:,.2f}"
+    )
 
     # D. Constant Mean Baseline
     stump.retrain(x, y, control=LeafControl(leaf="mean"))
     preds_mean = stump.predict(test_cases)
-    print(f"\n4. Constant Mean Baseline:")
+    print("\n4. Constant Mean Baseline:")
     print(f"   Non-smoker flat mean:    ${preds_mean[0]:,.2f}")
     print(f"   Smoker flat mean:        ${preds_mean[1]:,.2f}")
 

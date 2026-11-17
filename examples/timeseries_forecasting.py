@@ -13,6 +13,7 @@ Demonstrates:
 from __future__ import annotations
 
 from datetime import date, timedelta
+
 from mltreelib import (
     Metrics,
     ModelTree,
@@ -42,7 +43,9 @@ def generate_panel_data():
 
 def main():
     keys, dates, sales = generate_panel_data()
-    print("== 1. Synthetic Store Sales Panel (90 days x 2 stores = 180 observations) ==")
+    print(
+        "== 1. Synthetic Store Sales Panel (90 days x 2 stores = 180 observations) =="
+    )
     print(f"  dates: {dates[0]} to {dates[-1]}")
 
     # Feature extraction via Rust core
@@ -61,7 +64,16 @@ def main():
     # Assemble feature matrix
     X = []
     for i in range(len(sales)):
-        X.append([keys[i], cal["weekday"][i], cal["weekend"][i], lag1[i], lag7[i], win7_mean[i]])
+        X.append(
+            [
+                keys[i],
+                cal["weekday"][i],
+                cal["weekend"][i],
+                lag1[i],
+                lag7[i],
+                win7_mean[i],
+            ]
+        )
 
     dtypes = ["categorical", "numeric", "numeric", "numeric", "numeric", "numeric"]
 
@@ -83,7 +95,9 @@ def main():
 
     print("\n== 4. Out-of-Time Predictions vs Actuals (first 6 rows) ==")
     for i in range(6):
-        print(f"  date={dates[split_idx + i]} store={keys[split_idx + i]:<10} actual={yte[i]:5.1f} predicted={preds[i]:5.1f}")
+        print(
+            f"  date={dates[split_idx + i]} store={keys[split_idx + i]:<10} actual={yte[i]:5.1f} predicted={preds[i]:5.1f}"
+        )
 
 
 if __name__ == "__main__":

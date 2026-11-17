@@ -1,5 +1,5 @@
-import pytest
 from mltreelib import DensityEstimationTree, ExtendedIsolationTree
+
 
 def test_det_continuous_density_and_anomaly_score():
     # 100 points clustered around (1.0, 1.0)
@@ -17,8 +17,13 @@ def test_det_continuous_density_and_anomaly_score():
     scores = det.predict_anomaly_score([[1.0, 1.0], [10.0, 10.0]])
 
     assert len(densities) == 2
-    assert densities[0] > densities[1], "Cluster center must have higher density than outlier"
-    assert scores[1] > scores[0], "Outlier must have higher negative log-density anomaly score"
+    assert densities[0] > densities[1], (
+        "Cluster center must have higher density than outlier"
+    )
+    assert scores[1] > scores[0], (
+        "Outlier must have higher negative log-density anomaly score"
+    )
+
 
 def test_det_mixed_categorical():
     # Data with categorical column
@@ -33,7 +38,10 @@ def test_det_mixed_categorical():
     det.fit(data, col_names=["val", "group"], dtypes=["float", "cat"])
 
     scores = det.predict_anomaly_score([[5.0, "A"], [50.0, "Z"]])
-    assert scores[1] > scores[0], "Rare category 'Z' at extreme value must have higher anomaly score"
+    assert scores[1] > scores[0], (
+        "Rare category 'Z' at extreme value must have higher anomaly score"
+    )
+
 
 def test_eif_tree_oblique_isolation_and_categorical():
     data = []
@@ -54,5 +62,7 @@ def test_eif_tree_oblique_isolation_and_categorical():
     normal_score = eif.anomaly_score([[2.0, 3.0, "group1"]])[0]
     outlier_score = eif.anomaly_score([[25.0, 35.0, "rare_group"]])[0]
 
-    assert outlier_len < normal_len, "Outlier must be isolated earlier (shorter path length)"
+    assert outlier_len < normal_len, (
+        "Outlier must be isolated earlier (shorter path length)"
+    )
     assert outlier_score > normal_score, "Outlier must have higher anomaly score"

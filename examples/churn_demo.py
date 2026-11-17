@@ -10,7 +10,6 @@ not a tree step. Fit, evaluate, interpret.
 """
 
 import pandas as pd
-
 from mltreelib import IndexMapper, Metrics, ModelTree
 
 df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
@@ -32,13 +31,17 @@ for col in cols:
     raw = [None if pd.isna(v) else v for v in df[col]]
     if col in mappers:
         dtypes.append("categorical")
-        columns.append(mappers[col].transform(col, [None if v is None else str(v) for v in raw]))
+        columns.append(
+            mappers[col].transform(col, [None if v is None else str(v) for v in raw])
+        )
     else:
         dtypes.append("numeric")
         columns.append([None if v is None else float(v) for v in raw])
 X = [list(row) for row in zip(*columns)]
 print("columns (xN index -> name, dtype):")
-print("  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes))))
+print(
+    "  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes)))
+)
 
 # Deterministic 80/20 split.
 n_train = int(0.8 * len(X))

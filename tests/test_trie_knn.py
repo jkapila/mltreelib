@@ -2,7 +2,6 @@
 Mixed-type categorical prefix trie with local numerical K-Nearest Neighbors.
 """
 
-import pytest
 from mltreelib import TrieKNN
 
 
@@ -23,7 +22,12 @@ def test_trie_knn_classification_mixed_data():
         x.append(["IN", "Platinum", 30.0 + i * 0.5, 5000.0])
         y.append(1)
 
-    model.fit(x, y, col_names=["country", "tier", "age", "spend"], dtypes=["cat", "cat", "float", "float"])
+    model.fit(
+        x,
+        y,
+        col_names=["country", "tier", "age", "spend"],
+        dtypes=["cat", "cat", "float", "float"],
+    )
 
     assert model.classes == [0, 1]
 

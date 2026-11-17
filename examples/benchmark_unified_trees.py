@@ -9,19 +9,26 @@ Evaluates unified models on standard tabular benchmarks:
 
 import csv
 import json
-import math
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-from mltreelib import AnomalyTree, ClusterTree, Metrics
+from mltreelib import AnomalyTree, ClusterTree
 
 ANOM_DIR = Path("benchmarks/anomaly_data")
 CLUS_DIR = Path("benchmarks/clustering_data")
-DATASETS = ["credit-g", "diabetes", "blood-transfusion-service-center", "qsar-biodeg", "churn"]
+DATASETS = [
+    "credit-g",
+    "diabetes",
+    "blood-transfusion-service-center",
+    "qsar-biodeg",
+    "churn",
+]
 
 
-def load_dataset(dir_path: Path, name: str) -> Tuple[List[List[Any]], List[Any], List[List[Any]], List[Any], List[str]]:
+def load_dataset(
+    dir_path: Path, name: str
+) -> tuple[list[list[Any]], list[Any], list[list[Any]], list[Any], list[str]]:
     with open(dir_path / f"{name}.meta.json") as f:
         meta = json.load(f)
     col_names = list(meta["columns"].keys())
@@ -55,7 +62,7 @@ def load_dataset(dir_path: Path, name: str) -> Tuple[List[List[Any]], List[Any],
     return xtr, ytr, xte, yte, dtypes
 
 
-def compute_roc_auc(scores: List[float], y_true: List[int]) -> float:
+def compute_roc_auc(scores: list[float], y_true: list[int]) -> float:
     """Pure-python ROC-AUC via Wilcoxon-Mann-Whitney rank statistic."""
     pos_scores = [s for s, y in zip(scores, y_true) if y == 1]
     neg_scores = [s for s, y in zip(scores, y_true) if y == 0]
@@ -74,7 +81,7 @@ def compute_roc_auc(scores: List[float], y_true: List[int]) -> float:
     return paired_wins / (n_pos * n_neg)
 
 
-def compute_f1(y_pred: List[int], y_true: List[int]) -> float:
+def compute_f1(y_pred: list[int], y_true: list[int]) -> float:
     tp = sum(1 for p, t in zip(y_pred, y_true) if p == 1 and t == 1)
     fp = sum(1 for p, t in zip(y_pred, y_true) if p == 1 and t == 0)
     fn = sum(1 for p, t in zip(y_pred, y_true) if p == 0 and t == 1)
@@ -82,16 +89,16 @@ def compute_f1(y_pred: List[int], y_true: List[int]) -> float:
     return (2.0 * tp / denom) if denom > 0 else 0.0
 
 
-def compute_ari(labels_pred: List[Any], labels_true: List[Any]) -> float:
+def compute_ari(labels_pred: list[Any], labels_true: list[Any]) -> float:
     """Pure-python Adjusted Rand Index (Hubert & Arabie 1985)."""
     n = len(labels_true)
     if n <= 1:
         return 1.0
 
     # Build contingency table
-    contingency: Dict[Tuple[Any, Any], int] = {}
-    sum_a: Dict[Any, int] = {}
-    sum_b: Dict[Any, int] = {}
+    contingency: dict[tuple[Any, Any], int] = {}
+    sum_a: dict[Any, int] = {}
+    sum_b: dict[Any, int] = {}
 
     for p, t in zip(labels_pred, labels_true):
         contingency[(p, t)] = contingency.get((p, t), 0) + 1
@@ -119,7 +126,9 @@ def run_anomaly_benchmarks():
 
     engines = ["eif", "det", "hst", "rct"]
 
-    print(f"{'Dataset':32} | {'Engine':8} | {'ROC-AUC':8} | {'F1-Score':8} | {'Fit (ms)':10}")
+    print(
+        f"{'Dataset':32} | {'Engine':8} | {'ROC-AUC':8} | {'F1-Score':8} | {'Fit (ms)':10}"
+    )
     print("-" * 80)
 
     results = []
@@ -151,8 +160,18 @@ def run_anomaly_benchmarks():
 
                 auc = compute_roc_auc(scores, yte)
                 f1 = compute_f1(preds, yte)
-                print(f"{ds_name:32} | {eng:8} | {auc:8.4f} | {f1:8.4f} | {dur_ms:8.2f} ms")
-                results.append({"dataset": ds_name, "engine": eng, "auc": auc, "f1": f1, "fit_ms": dur_ms})
+                print(
+                    f"{ds_name:32} | {eng:8} | {auc:8.4f} | {f1:8.4f} | {dur_ms:8.2f} ms"
+                )
+                results.append(
+                    {
+                        "dataset": ds_name,
+                        "engine": eng,
+                        "auc": auc,
+                        "f1": f1,
+                        "fit_ms": dur_ms,
+                    }
+                )
             except Exception as e:
                 print(f"{ds_name:32} | {eng:8} | FAILED ({e})")
 
@@ -164,7 +183,9 @@ def run_anomaly_benchmarks():
             mean_auc = sum(r["auc"] for r in eng_res) / len(eng_res)
             mean_f1 = sum(r["f1"] for r in eng_res) / len(eng_res)
             mean_time = sum(r["fit_ms"] for r in eng_res) / len(eng_res)
-            print(f"  {eng.upper():5}: Mean ROC-AUC={mean_auc:.4f} | Mean F1={mean_f1:.4f} | Mean Fit={mean_time:.1f} ms")
+            print(
+                f"  {eng.upper():5}: Mean ROC-AUC={mean_auc:.4f} | Mean F1={mean_f1:.4f} | Mean Fit={mean_time:.1f} ms"
+            )
 
 
 def run_clustering_benchmarks():
@@ -174,7 +195,9 @@ def run_clustering_benchmarks():
 
     engines = ["pct", "cltree", "hdbscan", "urf"]
 
-    print(f"{'Dataset':32} | {'Engine':8} | {'ARI Score':10} | {'Clusters':9} | {'Fit (ms)':10}")
+    print(
+        f"{'Dataset':32} | {'Engine':8} | {'ARI Score':10} | {'Clusters':9} | {'Fit (ms)':10}"
+    )
     print("-" * 80)
 
     results = []
@@ -185,7 +208,9 @@ def run_clustering_benchmarks():
             t0 = time.perf_counter()
             try:
                 # CLTree, HDBSCAN, and URF require numeric arrays
-                if eng in ("cltree", "hdbscan", "urf") and any(dt == "categorical" for dt in dtypes):
+                if eng in ("cltree", "hdbscan", "urf") and any(
+                    dt == "categorical" for dt in dtypes
+                ):
                     num_idx = [j for j, dt in enumerate(dtypes) if dt == "numeric"]
                     xtr_in = [[r[j] for j in num_idx] for r in xtr]
                     xte_in = [[r[j] for j in num_idx] for r in xte]
@@ -200,8 +225,18 @@ def run_clustering_benchmarks():
                 preds = ct.predict(xte_in)
                 ari = compute_ari(preds, yte_raw)
                 k = ct.n_clusters_
-                print(f"{ds_name:32} | {eng:8} | {ari:10.4f} | {k:<9} | {dur_ms:8.2f} ms")
-                results.append({"dataset": ds_name, "engine": eng, "ari": ari, "k": k, "fit_ms": dur_ms})
+                print(
+                    f"{ds_name:32} | {eng:8} | {ari:10.4f} | {k:<9} | {dur_ms:8.2f} ms"
+                )
+                results.append(
+                    {
+                        "dataset": ds_name,
+                        "engine": eng,
+                        "ari": ari,
+                        "k": k,
+                        "fit_ms": dur_ms,
+                    }
+                )
             except Exception as e:
                 print(f"{ds_name:32} | {eng:8} | FAILED ({e})")
 
@@ -211,7 +246,9 @@ def run_clustering_benchmarks():
         if eng_res:
             mean_ari = sum(r["ari"] for r in eng_res) / len(eng_res)
             mean_time = sum(r["fit_ms"] for r in eng_res) / len(eng_res)
-            print(f"  {eng.upper():7}: Mean ARI={mean_ari:.4f} | Mean Fit={mean_time:.1f} ms")
+            print(
+                f"  {eng.upper():7}: Mean ARI={mean_ari:.4f} | Mean Fit={mean_time:.1f} ms"
+            )
 
 
 if __name__ == "__main__":

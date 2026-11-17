@@ -7,8 +7,6 @@
 - ContextAnomalyTree (CAT)
 """
 
-import math
-import pytest
 from mltreelib import (
     ActiveAnomalyTree,
     ContextAnomalyTree,
@@ -31,7 +29,9 @@ def test_density_estimation_tree():
 
     score_in = det.predict_anomaly_score([[0.5, 1.0]])[0]
     score_out = det.predict_anomaly_score([[50.0, 1.0]])[0]
-    assert score_out > score_in, f"Outlier score {score_out} must exceed normal score {score_in}"
+    assert score_out > score_in, (
+        f"Outlier score {score_out} must exceed normal score {score_in}"
+    )
 
 
 def test_extended_isolation_tree_categorical():
@@ -103,11 +103,15 @@ def test_context_anomaly_tree():
 
     p_expected = cat.conditional_prob([1, 2], 3)
     p_unexpected = cat.conditional_prob([1, 2], 99)
-    assert p_expected > p_unexpected, "Common sequence symbol must have higher conditional prob"
+    assert p_expected > p_unexpected, (
+        "Common sequence symbol must have higher conditional prob"
+    )
 
     surprise_expected = cat.surprise_score([1, 2], 3)
     surprise_unexpected = cat.surprise_score([1, 2], 99)
-    assert surprise_unexpected > surprise_expected, "Surprise in bits must be higher for rare transition"
+    assert surprise_unexpected > surprise_expected, (
+        "Surprise in bits must be higher for rare transition"
+    )
 
 
 def test_anomaly_knobs_configuration():
@@ -117,7 +121,9 @@ def test_anomaly_knobs_configuration():
     assert len(det.predict_density([[2.0]])) == 1
 
     # Test EIF subsample_size
-    eif = ExtendedIsolationTree(max_depth=4, extension_level=1, subsample_size=10, seed=42)
+    eif = ExtendedIsolationTree(
+        max_depth=4, extension_level=1, subsample_size=10, seed=42
+    )
     eif.fit([[float(i)] for i in range(100)], col_names=["x"], dtypes=["float"])
     assert len(eif.anomaly_score([[50.0]])) == 1
 
@@ -141,4 +147,3 @@ def test_anomaly_knobs_configuration():
     cat.fit([[1, 2, 3]])
     prob = cat.conditional_prob([1, 2], 3)
     assert 0.0 < prob <= 1.0
-

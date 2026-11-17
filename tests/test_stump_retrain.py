@@ -1,7 +1,7 @@
 """Tests for frozen-topology retraining on decision stumps."""
 
 import pytest
-from mltreelib import ModelTree, LeafControl
+from mltreelib import LeafControl, ModelTree
 
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def two_regime_data():
     y_reg = []
     for i in range(n):
         x0 = (i - 100) / 50.0  # Range -2.0 to +1.98
-        x1 = (i % 10) * 0.5     # Range 0.0 to 4.5
+        x1 = (i % 10) * 0.5  # Range 0.0 to 4.5
         if x0 < 0.0:
             y_val = 10.0 + 2.0 * x1
         else:

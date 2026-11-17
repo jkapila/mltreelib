@@ -3,7 +3,6 @@
 from datetime import date, timedelta
 
 import pytest
-
 from mltreelib import (
     DatasetBuilder,
     IndexMapper,
@@ -39,15 +38,24 @@ def test_generate_shapes_and_columns():
     )
     cols = g["columns"]
     assert set(cols) == {
-        "num_0", "num_1", "num_2",
-        "cat_0", "cat_1",
-        "hier_0", "hier_1",
+        "num_0",
+        "num_1",
+        "num_2",
+        "cat_0",
+        "cat_1",
+        "hier_0",
+        "hier_1",
     }
     assert all(len(v) == 500 for v in cols.values())
     assert len(g["target"]) == 500
     assert g["labels"] is None
     assert set(g["truth"]["variance"]) == {
-        "numeric", "categorical", "hierarchy", "interaction", "noise", "total",
+        "numeric",
+        "categorical",
+        "hierarchy",
+        "interaction",
+        "noise",
+        "total",
     }
 
 
@@ -304,7 +312,10 @@ def test_categorical_encoders():
     ohe = OneHotEncoder()
     ohe.fit(["a", "b", "a"])
     assert ohe.levels() == ["a", "b"]
-    assert ohe.transform(["a", "zz", None]) == {"a": [1.0, 0.0, 0.0], "b": [0.0, 0.0, 0.0]}
+    assert ohe.transform(["a", "zz", None]) == {
+        "a": [1.0, 0.0, 0.0],
+        "b": [0.0, 0.0, 0.0],
+    }
 
     he = HashingEncoder(4)
     cols = he.transform(["x", "y", "x"])
@@ -479,8 +490,9 @@ def test_demo_script_runs():
 def test_model_tree_smoke():
     from mltreelib import ModelTree
 
-    x = [[0.5], [1.5], [2.5], [3.5]] * 5
-    y = [2.0 * xi[0] + 1.0 for xi in x]
+    x_init = [[0.5], [1.5], [2.5], [3.5]] * 5
+    y = [2.0 * xi[0] + 1.0 for xi in x_init]
+    x: list[list[object]] = [[xi[0]] for xi in x_init]
     x[0] = [None]  # NA row trains
     y[0] = 7.0
     t = ModelTree(max_depth=3, min_rows=3, leaf="linear")

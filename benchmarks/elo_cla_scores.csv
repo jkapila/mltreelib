@@ -848,3 +848,72 @@ students_dropout_and_academic_success,ModelTree(all),Rust,internal,0.8307,0.7627
 students_dropout_and_academic_success,ModelTree(mean),Rust,internal,0.6563,0.7446,0.6263,,0.6355,1.1520
 students_dropout_and_academic_success,ModelTree(path),Rust,internal,0.7421,0.7435,0.6585,,0.6685,2.2050
 students_dropout_and_academic_success,ModelTree(winnow),Rust,internal,0.7712,0.7605,0.6606,,0.6685,18.3480
+APSFailure,ModelTree(all),Rust,internal,0.0381,0.9863,0.6682,0.9711,0.7326,1.2790
+APSFailure,ModelTree(winnow),Rust,internal,0.0381,0.9863,0.6682,0.9711,0.7326,1.2660
+SDSS17,ModelTree(all),Rust,internal,0.2545,0.9685,0.9618,,0.9615,229.2450
+SDSS17,ModelTree(mean),Rust,internal,0.1396,0.9615,0.9473,,0.9532,213.7780
+SDSS17,ModelTree(path),Rust,internal,0.1507,0.9677,0.9595,,0.9614,215.6030
+SDSS17,ModelTree(winnow),Rust,internal,0.2086,0.9591,0.9426,,0.9500,33.8950
+hiva_agnostic,ModelTree(all),Rust,internal,0.2559,0.9649,0.3333,,0.3274,2.0940
+kddcup09_appetency,ModelTree(all),Rust,internal,0.0958,0.9822,0.5000,0.8154,0.4955,1.3530
+kddcup09_appetency,ModelTree(winnow),Rust,internal,0.0856,0.9822,0.5000,0.8004,0.4955,1.2090
+taiwanese_bankruptcy_prediction,ModelTree(all),Rust,internal,0.1183,0.9736,0.6678,0.9388,0.7205,0.1100
+online_shoppers_intention,sklearn RF,Python,external,0.2609,0.9092,0.7816,0.9295,0.8090,1.0250
+online_shoppers_intention,sklearn tree,Python,external,4.7900,0.8613,0.7384,0.7384,0.7368,0.0460
+online_shoppers_intention,CatBoost(200),Python,internal,0.2202,0.9047,0.7833,0.9356,0.8041,1.8980
+online_shoppers_intention,EBM,Python,internal,0.2199,0.9063,0.7896,0.9357,0.8088,38.7050
+online_shoppers_intention,ExtraTrees,Python,external,0.2861,0.8962,0.7397,0.9224,0.7726,1.0010
+online_shoppers_intention,HistGradientBoosting,Python,internal,0.2285,0.9019,0.7816,0.9325,0.8000,0.7960
+online_shoppers_intention,KNN,Python,external,1.6886,0.8581,0.6381,0.7581,0.6650,0.3700
+online_shoppers_intention,LightGBM(200),Python,internal,0.2402,0.8990,0.7703,0.9305,0.7915,0.3020
+online_shoppers_intention,forust (Rust),Rust,external,0.2381,0.9019,0.7730,0.9294,0.7961,0.5760
+online_shoppers_intention,modeltrees glmtree,Python,internal,0.2937,0.8885,0.6914,0.8941,0.7333,4.5890
+online_shoppers_intention,perpetual (Rust),Rust,external,0.2253,0.9055,0.7870,0.9335,0.8067,7.6100
+online_shoppers_intention,sklearn GBM,Python,external,0.2236,0.9051,0.7835,0.9338,0.8047,1.6580
+online_shoppers_intention,sklearn LogReg,Python,external,0.3081,0.8901,0.6966,0.8719,0.7387,0.4530
+customer_satisfaction_in_airline,rpart,R,internal,0.3653,0.8680,0.8670,0.8988,0.8669,3.3280
+customer_satisfaction_in_airline,CatBoost(200),Python,internal,0.0971,0.9590,0.9595,0.9940,0.9587,11.2730
+customer_satisfaction_in_airline,ExtraTrees,Python,external,0.1270,0.9564,0.9570,0.9923,0.9561,9.6780
+customer_satisfaction_in_airline,HistGradientBoosting,Python,internal,0.1130,0.9526,0.9535,0.9924,0.9523,1.9630
+customer_satisfaction_in_airline,KNN,Python,external,1.5170,0.7023,0.6985,0.7644,0.6989,2.3270
+customer_satisfaction_in_airline,LightGBM(200),Python,internal,0.1012,0.9557,0.9566,0.9937,0.9554,1.0540
+customer_satisfaction_in_airline,forust (Rust),Rust,external,0.1073,0.9539,0.9545,0.9928,0.9536,1.9930
+customer_satisfaction_in_airline,perpetual (Rust),Rust,external,0.0981,0.9562,0.9568,0.9939,0.9558,97.3120
+customer_satisfaction_in_airline,sklearn GBM,Python,external,0.1964,0.9185,0.9182,0.9781,0.9178,15.0920
+customer_satisfaction_in_airline,sklearn LogReg,Python,external,0.4243,0.8171,0.8138,0.8897,0.8148,14.8210
+customer_satisfaction_in_airline,sklearn RF,Python,external,0.1262,0.9557,0.9565,0.9923,0.9554,10.0500
+customer_satisfaction_in_airline,sklearn tree,Python,external,2.3122,0.9331,0.9323,0.9323,0.9324,0.6900
+GiveMeSomeCredit,rpart,R,internal,0.2135,0.9353,0.5810,0.6564,0.6142,3.3060
+GiveMeSomeCredit,CatBoost(200),Python,internal,0.1817,0.9355,0.5904,0.8593,0.6255,1.7460
+GiveMeSomeCredit,ExtraTrees,Python,external,0.2941,0.9346,0.5918,0.8218,0.6259,8.7010
+GiveMeSomeCredit,HistGradientBoosting,Python,internal,0.1784,0.9377,0.5906,0.8639,0.6285,0.7070
+GiveMeSomeCredit,KNN,Python,external,1.6079,0.9317,0.5085,0.5675,0.5011,2.2300
+GiveMeSomeCredit,LightGBM(200),Python,internal,0.1792,0.9369,0.5920,0.8613,0.6291,0.6580
+GiveMeSomeCredit,forust (Rust),Rust,external,0.1814,0.9360,0.5960,0.8586,0.6323,1.3280
+GiveMeSomeCredit,perpetual (Rust),Rust,external,0.1834,0.9365,0.5875,0.8531,0.6233,4.7310
+GiveMeSomeCredit,sklearn GBM,Python,external,0.1792,0.9376,0.5941,0.8620,0.6323,17.2680
+GiveMeSomeCredit,sklearn LogReg,Python,external,0.2246,0.9343,0.5242,0.7028,0.5298,14.5670
+GiveMeSomeCredit,sklearn RF,Python,external,0.2834,0.9363,0.5940,0.8396,0.6305,20.2300
+GiveMeSomeCredit,sklearn tree,Python,external,3.5535,0.8968,0.6148,0.6160,0.6085,1.1360
+Diabetes130US,rpart,R,internal,0.2979,0.9120,0.5000,0.5000,0.4770,0.9230
+Diabetes130US,CatBoost(200),Python,internal,0.2802,0.9124,0.5110,0.6667,0.4999,16.2960
+Diabetes130US,ExtraTrees,Python,external,0.3084,0.9118,0.4999,0.6068,0.4769,6.0490
+Diabetes130US,KNN,Python,external,1.9627,0.9063,0.5005,0.5242,0.4828,1.1550
+Diabetes130US,LightGBM(200),Python,internal,0.3012,0.9112,0.5064,0.6233,0.4913,0.7410
+Diabetes130US,forust (Rust),Rust,external,0.2872,0.9114,0.5094,0.6458,0.4972,1.3620
+Diabetes130US,perpetual (Rust),Rust,external,0.2891,0.9121,0.5069,0.6444,0.4917,49.2810
+Diabetes130US,sklearn GBM,Python,external,0.2843,0.9118,0.5021,0.6559,0.4816,10.9240
+Diabetes130US,sklearn LogReg,Python,external,0.2927,0.9118,0.5028,0.5971,0.4832,18.1090
+Diabetes130US,sklearn RF,Python,external,0.3067,0.9120,0.5004,0.6192,0.4778,7.4260
+Diabetes130US,sklearn tree,Python,external,5.8096,0.8318,0.5274,0.5274,0.5243,0.6430
+APSFailure,rpart,R,internal,0.0394,0.9890,0.7838,0.9108,0.8236,39.2570
+APSFailure,CatBoost(200),Python,internal,0.0225,0.9937,0.8647,0.9867,0.9020,6.2200
+APSFailure,ExtraTrees,Python,external,0.0305,0.9932,0.8573,0.9867,0.8938,20.4380
+APSFailure,HistGradientBoosting,Python,internal,0.0241,0.9921,0.8479,0.9827,0.8789,1.4350
+APSFailure,KNN,Python,external,0.1251,0.9862,0.7288,0.9172,0.7702,2.1610
+APSFailure,LightGBM(200),Python,internal,0.0311,0.9930,0.8608,0.9857,0.8923,3.1280
+APSFailure,forust (Rust),Rust,external,0.0303,0.9927,0.8731,0.9817,0.8920,1.9640
+APSFailure,perpetual (Rust),Rust,external,0.0360,0.9941,0.8685,0.9860,0.9078,84.9260
+APSFailure,sklearn LogReg,Python,external,0.0385,0.9891,0.7803,0.9635,0.8236,17.9490
+APSFailure,sklearn RF,Python,external,0.0384,0.9936,0.8611,0.9793,0.8996,74.7130
+APSFailure,sklearn tree,Python,external,0.3704,0.9893,0.8446,0.8446,0.8477,28.8270

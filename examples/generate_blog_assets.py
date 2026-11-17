@@ -15,21 +15,22 @@ Articles covered:
 from __future__ import annotations
 
 import math
-import os
 import random
 import subprocess
 from pathlib import Path
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
-import mltreelib as mt
-from mltreelib import Metrics, ModelTree
+from mltreelib import ModelTree
+
 if HAS_MATPLOTLIB:
     from mltreelib import plots
 else:
@@ -161,13 +162,29 @@ def run_blog_causal_uplift():
 
     ax1 = axes[0]
     plots._style_axis(ax1)
-    ax1.plot(fractions, qini_vals, color="#00897b", linewidth=2.5, label="Honest Causal Tree (Targeting Persuadables)")
+    ax1.plot(
+        fractions,
+        qini_vals,
+        color="#00897b",
+        linewidth=2.5,
+        label="Honest Causal Tree (Targeting Persuadables)",
+    )
     # Baseline random targeting line
     final_qini = qini_vals[-1]
-    ax1.plot([0.0, 1.0], [0.0, final_qini], color="#78909c", linestyle="--", linewidth=1.5, label="Random Targeting (No Model)")
+    ax1.plot(
+        [0.0, 1.0],
+        [0.0, final_qini],
+        color="#78909c",
+        linestyle="--",
+        linewidth=1.5,
+        label="Random Targeting (No Model)",
+    )
     ax1.set_xlabel("Fraction of Population Targeted")
     ax1.set_ylabel("Cumulative Incremental Conversions (Qini)")
-    ax1.set_title("Uplift Curve: Targeting Persuadables Avoids Sleeping Dogs", fontweight="semibold")
+    ax1.set_title(
+        "Uplift Curve: Targeting Persuadables Avoids Sleeping Dogs",
+        fontweight="semibold",
+    )
     ax1.legend(loc="upper left", frameon=False, fontsize=9)
     ax1.grid(True, linestyle=":", alpha=0.6)
 
@@ -188,19 +205,37 @@ def run_blog_causal_uplift():
         mean_c = sum(c_y) / len(c_y) if c_y else 0.0
         emp_uplift = (mean_t - mean_c) * 100.0  # percentage points
         decile_uplifts.append(emp_uplift)
-        bucket_labels.append(f"Q{b+1}\n(Top {int((b+1)/buckets*100)}%)")
+        bucket_labels.append(f"Q{b + 1}\n(Top {int((b + 1) / buckets * 100)}%)")
 
     ax2 = axes[1]
     plots._style_axis(ax2)
     colors = ["#00897b" if u >= 0 else "#f4511e" for u in decile_uplifts]
-    bars = ax2.bar(bucket_labels, decile_uplifts, color=colors, width=0.55, edgecolor="#263238", linewidth=0.5)
+    bars = ax2.bar(
+        bucket_labels,
+        decile_uplifts,
+        color=colors,
+        width=0.55,
+        edgecolor="#263238",
+        linewidth=0.5,
+    )
     ax2.axhline(0, color="#263238", linestyle="-", linewidth=0.8)
     for bar, u in zip(bars, decile_uplifts):
         y_pos = bar.get_height() + (1.5 if u >= 0 else -4.0)
-        ax2.text(bar.get_x() + bar.get_width() / 2, y_pos, f"{u:+.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            y_pos,
+            f"{u:+.1f}%",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            fontweight="bold",
+        )
     ax2.set_xlabel("Predicted Uplift Quintile (Descending)")
     ax2.set_ylabel("Empirical Treatment Effect (Treated % - Control %)")
-    ax2.set_title("Quintile Uplift: Isolating Persuadables vs Sleeping Dogs", fontweight="semibold")
+    ax2.set_title(
+        "Quintile Uplift: Isolating Persuadables vs Sleeping Dogs",
+        fontweight="semibold",
+    )
     ax2.grid(True, linestyle=":", alpha=0.6)
 
     plt.tight_layout()
@@ -230,7 +265,9 @@ def run_blog_credit_scoring():
         cibil = random.gauss(680, 75)
         cibil = min(850.0, max(300.0, cibil))
         income = random.uniform(2000.0, 18000.0)
-        delinq = float(random.choices([0, 1, 2, 3, 4], weights=[0.60, 0.20, 0.10, 0.06, 0.04])[0])
+        delinq = float(
+            random.choices([0, 1, 2, 3, 4], weights=[0.60, 0.20, 0.10, 0.06, 0.04])[0]
+        )
         dti = random.uniform(0.15, 0.75)
 
         # Monotonic latent log-odds of default
@@ -280,16 +317,24 @@ def run_blog_credit_scoring():
     fig, axes = plt.subplots(2, 2, figsize=(13, 10))
 
     plots.plot_roc(y_test, scores_test, ax=axes[0, 0])
-    axes[0, 0].set_title("ROC Curve: Discrimination Power (Test Set)", fontweight="semibold")
+    axes[0, 0].set_title(
+        "ROC Curve: Discrimination Power (Test Set)", fontweight="semibold"
+    )
 
     plots.plot_ks(y_test, scores_test, ax=axes[0, 1])
-    axes[0, 1].set_title("Kolmogorov-Smirnov: Max Separation Distance", fontweight="semibold")
+    axes[0, 1].set_title(
+        "Kolmogorov-Smirnov: Max Separation Distance", fontweight="semibold"
+    )
 
     plots.plot_decile(y_test, scores_test, n_buckets=10, ax=axes[1, 0])
-    axes[1, 0].set_title("Scorecard Decile Profile: Monotonic Default Capture", fontweight="semibold")
+    axes[1, 0].set_title(
+        "Scorecard Decile Profile: Monotonic Default Capture", fontweight="semibold"
+    )
 
     plots.plot_psi(scores_train, scores_test, n_bins=10, ax=axes[1, 1])
-    axes[1, 1].set_title("Population Stability Index: Train vs Out-of-Time", fontweight="semibold")
+    axes[1, 1].set_title(
+        "Population Stability Index: Train vs Out-of-Time", fontweight="semibold"
+    )
 
     plt.tight_layout()
     metrics_png_path = DOCS_ASSETS / "blog_credit_metrics.png"
@@ -367,13 +412,17 @@ def run_blog_predictive_maintenance():
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 
     plots.plot_residuals(y_test, pred_test, ax=axes[0])
-    axes[0].set_title("Remaining Useful Life (RUL): Actual vs Predicted (Test)", fontweight="semibold")
+    axes[0].set_title(
+        "Remaining Useful Life (RUL): Actual vs Predicted (Test)", fontweight="semibold"
+    )
 
     imp = tree.feature_importance()
     feature_names = ["bearing_temp", "vibration_rms", "oil_pressure"]
     imp_pairs = [(name, float(val)) for name, (_, val) in zip(feature_names, imp)]
     plots.plot_importance(imp_pairs, ax=axes[1])
-    axes[1].set_title("Split Gain Importance Shares: Sensor Telemetry", fontweight="semibold")
+    axes[1].set_title(
+        "Split Gain Importance Shares: Sensor Telemetry", fontweight="semibold"
+    )
 
     plt.tight_layout()
     metrics_png_path = DOCS_ASSETS / "blog_maintenance_metrics.png"

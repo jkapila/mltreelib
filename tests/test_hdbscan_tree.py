@@ -1,6 +1,5 @@
 """Tests for HDBSCAN Condensed Tree clustering, stability selection & GLOSH outlier scores."""
 
-import pytest
 from mltreelib import HDBSCAN
 
 
@@ -68,7 +67,8 @@ def test_hdbscan_knobs():
     assert hdb_single.n_clusters >= 1
 
     # 4. Epsilon flat cutoff (large epsilon prevents splitting, keeping them merged)
-    hdb_eps = HDBSCAN(min_cluster_size=5, cluster_selection_epsilon=20.0, allow_single_cluster=True)
+    hdb_eps = HDBSCAN(
+        min_cluster_size=5, cluster_selection_epsilon=20.0, allow_single_cluster=True
+    )
     hdb_eps.fit(data)
     assert hdb_eps.n_clusters >= 1
-

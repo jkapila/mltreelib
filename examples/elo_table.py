@@ -16,9 +16,9 @@ Features:
 
 import csv
 import itertools
-from pathlib import Path
-import statistics
 import logging
+import statistics
+from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,37 +54,51 @@ def build_interactive_table(
     max_elo = max(ratings.values()) if ratings else 0.0
 
     # Find fastest model
-    fastest_model = min(models, key=lambda m: statistics.mean(raw_fits.get(m, [999999.0]))) if models else None
+    fastest_model = (
+        min(models, key=lambda m: statistics.mean(raw_fits.get(m, [999999.0])))
+        if models
+        else None
+    )
 
     # Find best score per dataset
     best_per_ds = {}
     for ds in datasets:
-        vals = [data_by[(ds, m)] for m in models if (ds, m) in data_by and data_by[(ds, m)] is not None]
+        vals = [
+            data_by[(ds, m)]
+            for m in models
+            if (ds, m) in data_by and data_by[(ds, m)] is not None
+        ]
         if vals:
             best_per_ds[ds] = min(vals) if lower_is_better else max(vals)
 
     shorts = {}
     for d in datasets:
-        s = d[3:] if d.startswith("ta_") else d
+        s = d.removeprefix("ta_")
         shorts[d] = s
     dupes = {s for s in shorts.values() if list(shorts.values()).count(s) > 1}
     shorts = {d: (d if s in dupes else s) for d, s in shorts.items()}
 
-    th = "".join(f"<th data-t='{i + 3}'>{shorts[d]}</th>" for i, d in enumerate(datasets))
+    th = "".join(
+        f"<th data-t='{i + 3}'>{shorts[d]}</th>" for i, d in enumerate(datasets)
+    )
     body = []
 
     for m in order:
-        n = sum(1 for d in datasets if (d, m) in data_by and data_by[(d, m)] is not None)
+        n = sum(
+            1 for d in datasets if (d, m) in data_by and data_by[(d, m)] is not None
+        )
         cells = []
         for ds in datasets:
             v = data_by.get((ds, m))
             if v is None:
                 cells.append("<td class='n'>·</td>")
             else:
-                is_win = (v == best_per_ds.get(ds))
+                is_win = v == best_per_ds.get(ds)
                 val_str = fmt_fn(v)
                 if is_win:
-                    cells.append(f"<td class='n win' title='Best {metric_label} on {ds}'><b>{val_str}</b></td>")
+                    cells.append(
+                        f"<td class='n win' title='Best {metric_label} on {ds}'><b>{val_str}</b></td>"
+                    )
                 else:
                     cells.append(f"<td class='n'>{val_str}</td>")
 
@@ -95,7 +109,8 @@ def build_interactive_table(
             f"<tr><td class='{elo_cls}'><b>{ratings[m]:.1f}</b></td>"
             f"<td class='{fit_cls}'>{fit_txt[m]}</td>"
             f"<td class='k n m-name'><b>{m}</b> <span class='c'>{n}/{len(datasets)}</span></td>"
-            + "".join(cells) + "</tr>"
+            + "".join(cells)
+            + "</tr>"
         )
 
     html = f"""
@@ -128,7 +143,7 @@ def build_interactive_table(
 <th class='k2 k' data-t='1'>FIT TIME (±sd)</th>
 <th class='k3 k' data-t='2'>MODEL</th>{th}
 </tr></thead>
-<tbody>{''.join(body)}</tbody>
+<tbody>{"".join(body)}</tbody>
 </table>
 <script>
 (function () {{
@@ -157,7 +172,11 @@ def build_interactive_table(
 def generate_regression():
     if not SCORES_REG.exists():
         return
-    rows = [r for r in csv.DictReader(open(SCORES_REG)) if r.get("model") and r["model"] != "model" and r.get("rmse")]
+    rows = [
+        r
+        for r in csv.DictReader(open(SCORES_REG))
+        if r.get("model") and r["model"] != "model" and r.get("rmse")
+    ]
     by = {(r["dataset"], r["model"]): float(r["rmse"]) for r in rows}
     datasets = sorted({d for (d, _) in by})
     models = sorted({m for (_, m) in by})
@@ -201,8 +220,16 @@ def generate_regression():
 def generate_classification():
     if not SCORES_CLA.exists():
         return
-    rows = [r for r in csv.DictReader(open(SCORES_CLA)) if r.get("model") and r["model"] != "model" and r.get("logloss")]
-    by = {(r["dataset"], r["model"]): float(r["logloss"]) for r in rows if r["logloss"] != "" and float(r["logloss"]) == float(r["logloss"])}
+    rows = [
+        r
+        for r in csv.DictReader(open(SCORES_CLA))
+        if r.get("model") and r["model"] != "model" and r.get("logloss")
+    ]
+    by = {
+        (r["dataset"], r["model"]): float(r["logloss"])
+        for r in rows
+        if r["logloss"] != "" and float(r["logloss"]) == float(r["logloss"])
+    }
     datasets = sorted({d for (d, _) in by})
     models = sorted({m for (_, m) in by})
 
@@ -249,4 +276,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

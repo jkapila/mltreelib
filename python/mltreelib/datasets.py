@@ -54,7 +54,8 @@ def load_dataset(name: str) -> dict:
         else:
             # NaN is missing too (pandas/parquet float nulls)
             columns[field.name] = [
-                None if v is None or (isinstance(v, float) and v != v) else v for v in values
+                None if v is None or (isinstance(v, float) and v != v) else v
+                for v in values
             ]
             dtypes[field.name] = "numeric"
     return {

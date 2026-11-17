@@ -15,19 +15,21 @@ where:
 """
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
-
 from mltreelib import (
-    CLTree,
     HDBSCAN,
+    CLTree,
     PredictiveClusteringTree,
     UnsupervisedRandomForest,
 )
 
 
-def crosstab_sparsity(df, clusters, numeric_bin="decile", method="fd", exhaustive=False):
+def crosstab_sparsity(
+    df, clusters, numeric_bin="decile", method="fd", exhaustive=False
+):
     """Crosstab Sparsity (CSP) metric calculation based on Jitin Kapila's paper & gist:
 
     https://gist.github.com/jkapila/83bb8f6461ec91bfced437762f2c9220
@@ -46,7 +48,9 @@ def crosstab_sparsity(df, clusters, numeric_bin="decile", method="fd", exhaustiv
         df_flag = False
 
     if df.shape[0] != len(clusters):
-        raise ValueError("Clusters and number of observations are different. Cannot Proceed!")
+        raise ValueError(
+            "Clusters and number of observations are different. Cannot Proceed!"
+        )
 
     # Filter out noise/unassigned instances (-1 or None) if present for valid contingency
     valid_mask = [c is not None and c != -1 for c in clusters]
@@ -63,21 +67,23 @@ def crosstab_sparsity(df, clusters, numeric_bin="decile", method="fd", exhaustiv
             "scores": pd.DataFrame({"Columns": col_names, "metric": 0.0}),
         }
 
-    score_df = pd.DataFrame({
-        "Columns": col_names,
-        "l": -1,
-        "n_v": -1,
-        "med_n_v": -1.0,
-        "min_n_v": -1.0,
-        "avg_n_v": -1.0,
-        "max_n_v": -1.0,
-        "k": k,
-        "n_d": n_d,
-        "seggregation": -1.0,
-        "explaination": -1.0,
-        "inv_seggregation": -1.0,
-        "inv_explaination": -1.0,
-    })
+    score_df = pd.DataFrame(
+        {
+            "Columns": col_names,
+            "l": -1,
+            "n_v": -1,
+            "med_n_v": -1.0,
+            "min_n_v": -1.0,
+            "avg_n_v": -1.0,
+            "max_n_v": -1.0,
+            "k": k,
+            "n_d": n_d,
+            "seggregation": -1.0,
+            "explaination": -1.0,
+            "inv_seggregation": -1.0,
+            "inv_explaination": -1.0,
+        }
+    )
 
     cstables = {} if exhaustive else None
 
@@ -182,14 +188,18 @@ def main():
 
     print("=" * 90)
     print("mltreelib Tree-Based Clustering Suite Comparison & Benchmarking")
-    print(f"Dataset: credit-g ({len(df)} samples, {len(eval_cols)} evaluation features)")
+    print(
+        f"Dataset: credit-g ({len(df)} samples, {len(eval_cols)} evaluation features)"
+    )
     print("=" * 90)
 
     results = {}
 
     # 1. Predictive Clustering Tree (PCT / CLUS)
     print("\n[1/4] Fitting Predictive Clustering Tree (PCT / CLUS)...")
-    pct = PredictiveClusteringTree(max_depth=3, min_samples_split=25, min_samples_leaf=15)
+    pct = PredictiveClusteringTree(
+        max_depth=3, min_samples_split=25, min_samples_leaf=15
+    )
     pct.fit(data_num, col_names=numeric_cols, dtypes=["float"] * len(numeric_cols))
     pct_labels = pct.predict_cluster(data_num)
     results["PCT (CLUS)"] = {
@@ -210,7 +220,9 @@ def main():
     }
 
     # 3. HDBSCAN Condensed Tree
-    print("[3/4] Fitting HDBSCAN Condensed Tree (Density Hierarchy & Excess of Mass)...")
+    print(
+        "[3/4] Fitting HDBSCAN Condensed Tree (Density Hierarchy & Excess of Mass)..."
+    )
     hdb = HDBSCAN(min_cluster_size=25, min_samples=15)
     hdb.fit(data_norm)
     results["HDBSCAN"] = {
@@ -220,7 +232,9 @@ def main():
     }
 
     # 4. Unsupervised Random Forest (URF)
-    print("[4/4] Fitting Unsupervised Random Forest (Breiman Proximity & Agglomeration)...")
+    print(
+        "[4/4] Fitting Unsupervised Random Forest (Breiman Proximity & Agglomeration)..."
+    )
     urf = UnsupervisedRandomForest(n_trees=50, max_depth=5, min_samples_leaf=5, seed=42)
     urf.fit(data_num, n_clusters=4)
     results["URF"] = {
@@ -248,14 +262,16 @@ def main():
         csp_score = csp["score"]
         csp_details[name] = csp
 
-        summary_rows.append({
-            "Method": name,
-            "Paradigm": res["paradigm"],
-            "Clusters (k)": n_clusters,
-            "Assigned": len(valid),
-            "Noise / Unassigned": f"{noise_cnt} ({noise_cnt / len(labels) * 100:.1f}%)",
-            "CSP Metric Score": f"{csp_score:.3f}",
-        })
+        summary_rows.append(
+            {
+                "Method": name,
+                "Paradigm": res["paradigm"],
+                "Clusters (k)": n_clusters,
+                "Assigned": len(valid),
+                "Noise / Unassigned": f"{noise_cnt} ({noise_cnt / len(labels) * 100:.1f}%)",
+                "CSP Metric Score": f"{csp_score:.3f}",
+            }
+        )
 
     summary_df = pd.DataFrame(summary_rows)
     print("\n--- Summary Comparison Table ---")
@@ -263,10 +279,14 @@ def main():
 
     # Top variables segregated per method
     print("\n" + "=" * 90)
-    print("Top Feature Drivers of Cluster Separation (by CSP Metric = Segregation * Explanation)")
+    print(
+        "Top Feature Drivers of Cluster Separation (by CSP Metric = Segregation * Explanation)"
+    )
     print("=" * 90)
     for name, csp in csp_details.items():
-        print(f"\n[{name}] Total CSP: {csp['score']:.3f} across {csp['n_clusters']} clusters:")
+        print(
+            f"\n[{name}] Total CSP: {csp['score']:.3f} across {csp['n_clusters']} clusters:"
+        )
         top_cols = csp["scores"].head(4)
         for _, r in top_cols.iterrows():
             print(

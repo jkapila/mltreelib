@@ -9,11 +9,10 @@ Models: forust (jinlow/forust, XGBoost-parity GBDT in Rust) and perpetual
 """
 
 import csv
+import logging
 import math
 import time
 from pathlib import Path
-
-import logging
 
 # Standard run logging: file + console (the AGENTS.md logging pattern).
 logging.basicConfig(
@@ -33,6 +32,7 @@ OUT = Path("benchmarks/elo_scores.csv")
 # touching the scorers.
 DATASETS = sorted(p.name[: -len("_train.csv")] for p in DATA_DIR.glob("*_train.csv"))
 import os
+
 if os.environ.get("ELO_DATASETS"):  # groups-of-5 runs: score a subset
     _only = set(os.environ["ELO_DATASETS"].split(","))
     DATASETS = [d for d in DATASETS if d in _only]
@@ -73,8 +73,7 @@ def append_row(ds, model, rmse, mae, fit):
             rows = [r for r in rdr if not (r[0] == ds and r[1] == model)]
     with open(OUT, "w") as fh:
         fh.write("dataset,model,rmse,mae,fit_s\n")
-        for r in rows:
-            fh.write(",".join(r) + "\n")
+        fh.writelines(",".join(r) + "\n" for r in rows)
         fh.write(f"{ds},{model},{rmse:.4f},{mae:.4f},{fit:.3f}\n")
 
 
@@ -115,7 +114,9 @@ def make_models():
             m = PerpetualBooster(objective="SquaredLoss", budget=1.0)
             t0 = time.perf_counter()
             m.fit(np.asarray(xtr, dtype=np.float64), np.asarray(ytr, dtype=np.float64))
-            return m.predict(np.asarray(xte, dtype=np.float64)), time.perf_counter() - t0
+            return m.predict(
+                np.asarray(xte, dtype=np.float64)
+            ), time.perf_counter() - t0
 
         return run
 
@@ -148,7 +149,9 @@ def main():
                 pred, fit = fn(xtr, ytr, xte)
                 rmse, mae = scores([float(p) for p in pred], yte)
                 append_row(ds, name, rmse, mae, fit)
-                log.info(f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}")
+                log.info(
+                    f"{ds:<9} {name:<16} rmse={rmse:8.3f} mae={mae:8.3f} fit={fit:6.2f}"
+                )
             except Exception as exc:
                 msg = f"{type(exc).__name__}: {exc}"
                 log.info(f"{ds:<9} {name:<16} FAILED ({msg[:70]})")

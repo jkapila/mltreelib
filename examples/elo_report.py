@@ -4,15 +4,21 @@ Protocol: deterministic round-robin over per-dataset RMSE matchups, Elo K=32, st
 """
 
 import csv
-from pathlib import Path
 import statistics
 import sys
+from pathlib import Path
 
 EXAMPLES_DIR = Path(__file__).resolve().parent
 if str(EXAMPLES_DIR) not in sys.path:
     sys.path.insert(0, str(EXAMPLES_DIR))
 
-from elo_common import calculate_elo, discover_datasets, get_cat_handling, get_model_lang, setup_logging
+from elo_common import (
+    calculate_elo,
+    discover_datasets,
+    get_cat_handling,
+    get_model_lang,
+    setup_logging,
+)
 
 log = setup_logging("elo.report")
 
@@ -26,23 +32,40 @@ def main():
         return
 
     with open(OUT, "r", encoding="utf-8") as fh:
-        rows = [r for r in csv.DictReader(fh) if r.get("model") and r.get("model") != "model" and r.get("rmse")]
+        rows = [
+            r
+            for r in csv.DictReader(fh)
+            if r.get("model") and r.get("model") != "model" and r.get("rmse")
+        ]
 
     if not rows:
         log.info(f"No scores present in {OUT}")
         return
 
     datasets = discover_datasets(DATA_DIR)
-    by = {(r["dataset"], r["model"]): (float(r["rmse"]), float(r["mae"]), float(r["fit_s"]), r.get("cat_handling") or get_cat_handling(r["model"]), r.get("lang") or get_model_lang(r["model"])) for r in rows}
+    by = {
+        (r["dataset"], r["model"]): (
+            float(r["rmse"]),
+            float(r["mae"]),
+            float(r["fit_s"]),
+            r.get("cat_handling") or get_cat_handling(r["model"]),
+            r.get("lang") or get_model_lang(r["model"]),
+        )
+        for r in rows
+    }
 
     for ds in datasets:
         here = {m: v for (d, m), v in by.items() if d == ds}
         if not here:
             continue
         log.info(f"\n== {ds} ==")
-        log.info(f"{'model':<24}{'lang':<8}{'handling':<10}{'RMSE':>9}{'MAE':>9}{'fit s':>8}")
+        log.info(
+            f"{'model':<24}{'lang':<8}{'handling':<10}{'RMSE':>9}{'MAE':>9}{'fit s':>8}"
+        )
         log.info("-" * 72)
-        for m, (rmse, mae, fit, cat, lang) in sorted(here.items(), key=lambda kv: kv[1][0]):
+        for m, (rmse, mae, fit, cat, lang) in sorted(
+            here.items(), key=lambda kv: kv[1][0]
+        ):
             log.info(f"{m:<24}{lang:<8}{cat:<10}{rmse:>9.3f}{mae:>9.3f}{fit:>8.2f}")
 
     ratings = calculate_elo(rows, metric_col="rmse", lower_is_better=True)
@@ -67,7 +90,16 @@ def main():
         sd = statistics.stdev(xs) if len(xs) > 1 else 0.0
         cat = get_cat_handling(m)
         lang = get_model_lang(m)
-        log.info(row(f"{r:.1f}", f"{statistics.mean(xs):>6.2f} s (±{sd:.2f})", m, lang, cat, f"{n}/{total}"))
+        log.info(
+            row(
+                f"{r:.1f}",
+                f"{statistics.mean(xs):>6.2f} s (±{sd:.2f})",
+                m,
+                lang,
+                cat,
+                f"{n}/{total}",
+            )
+        )
     log.info(line)
 
 

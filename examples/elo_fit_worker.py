@@ -20,16 +20,16 @@ EXAMPLES_DIR = Path(__file__).resolve().parent
 if str(EXAMPLES_DIR) not in sys.path:
     sys.path.insert(0, str(EXAMPLES_DIR))
 
-from elo_common import read_split, regression_scores
-from cla_scores import score_cla
-import elo_models_reg
 import elo_models_cla
+import elo_models_reg
+from cla_scores import score_cla
+from elo_common import read_split, regression_scores
 
 
 def main():
     if len(sys.argv) < 3:
         raise SystemExit("Usage: python elo_fit_worker.py [task] <dataset> <model>")
-    
+
     if len(sys.argv) == 3:
         task, ds, name = "reg", sys.argv[1], sys.argv[2]
     else:
@@ -41,7 +41,7 @@ def main():
         models = elo_models_reg.make_models(meta)
         if name not in models:
             raise SystemExit(f"Unknown regression model: {name}")
-        
+
         pred, fit_s = models[name](xtr, ytr, xte)
         rmse, mae = regression_scores(pred, yte)
         print(f"RESULT {ds},{name},{rmse:.4f},{mae:.4f},{fit_s:.3f}", flush=True)

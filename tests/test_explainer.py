@@ -81,7 +81,9 @@ def test_permutation_importance_and_unified_api():
     gain_imp = model.feature_importance(method="gain")
     assert gain_imp[0][0] == "x0"
 
-    perm_unified = model.feature_importance(method="permutation", x=X, y=y, metric="rmse")
+    perm_unified = model.feature_importance(
+        method="permutation", x=X, y=y, metric="rmse"
+    )
     assert perm_unified[0][0] == "x0"
 
     with pytest.raises(Exception):

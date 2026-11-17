@@ -1,6 +1,5 @@
 import pytest
-import math
-from mltreelib import ModelTree, LeafControl
+from mltreelib import ModelTree
 
 
 def test_softmax_stump_fit_and_predict():
@@ -152,7 +151,11 @@ def test_distributional_stump_retrain_and_entity_routing():
         col_names=["f1", "f2"],
     )
     # Original remains gaussian
-    assert macro_tree.params["leaf_family"] == "gaussian" if hasattr(macro_tree, "params") and isinstance(macro_tree.params, dict) else True
+    assert (
+        macro_tree.params["leaf_family"] == "gaussian"
+        if hasattr(macro_tree, "params") and isinstance(macro_tree.params, dict)
+        else True
+    )
     # Het tree predicts distribution
     het_dist = het_tree.predict(X, kind="dist")
     assert len(het_dist) == 40

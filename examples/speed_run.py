@@ -68,7 +68,9 @@ def load(ds):
                 if im is None:
                     row.append(None if v == "" else float(v))
                 else:
-                    code = im.transform(cols[xi.index(j)] if False else "c", [v if v != "" else None])[0]
+                    code = im.transform(
+                        cols[xi.index(j)] if False else "c", [v if v != "" else None]
+                    )[0]
                     row.append(code)
             out.append(row)
         return out
@@ -92,7 +94,9 @@ def main():
         p.split("/")[-1][: -len("_train.csv")]
         for p in glob.glob("benchmarks/elo_data/*_train.csv")
     )
-    print(f"{'dataset':<22}{'config':<24}{'fit s':>8}{'pred s':>8}{'rmse':>10}{'leaves':>7}")
+    print(
+        f"{'dataset':<22}{'config':<24}{'fit s':>8}{'pred s':>8}{'rmse':>10}{'leaves':>7}"
+    )
     totals = {c: 0.0 for c in CONFIGS}
     for ds in ds_names:
         xtr, ytr, xte, yte, kinds = load(ds)

@@ -1,5 +1,5 @@
-import pytest
 from mltreelib import GritBot
+
 
 def test_gritbot_python_basic_scan():
     # Build dataset with pregnant vs age contextual anomaly
@@ -16,13 +16,17 @@ def test_gritbot_python_basic_scan():
     anomalies = bot.scan(data, col_names=["pregnant", "age"])
 
     assert len(anomalies) > 0
-    case0 = next((a for a in anomalies if a["case_id"] == 0 and a["attribute_name"] == "age"), None)
+    case0 = next(
+        (a for a in anomalies if a["case_id"] == 0 and a["attribute_name"] == "age"),
+        None,
+    )
     assert case0 is not None, "Case 0 must be flagged as anomalous on age"
     assert case0["actual_value"] == 80.0
     assert case0["z_score"] >= 3.0
     assert len(case0["conditions"]) > 0
     assert case0["conditions"][0]["col_name"] == "pregnant"
     assert "where pregnant" in case0["summary"]
+
 
 def test_gritbot_python_global_outlier():
     data = []
@@ -33,7 +37,10 @@ def test_gritbot_python_global_outlier():
     bot = GritBot(min_items=20, max_norm=3.0, sig_threshold=0.05)
     anomalies = bot.scan(data, col_names=["x", "y"])
 
-    found = next((a for a in anomalies if a["case_id"] == 50 and a["attribute_name"] == "y"), None)
+    found = next(
+        (a for a in anomalies if a["case_id"] == 50 and a["attribute_name"] == "y"),
+        None,
+    )
     assert found is not None
     assert found["actual_value"] == 500.0
     assert len(found["conditions"]) == 0

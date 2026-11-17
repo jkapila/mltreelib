@@ -3,7 +3,6 @@
 import math
 
 import pytest
-
 from mltreelib import ModelTree
 
 
@@ -14,7 +13,9 @@ from mltreelib import ModelTree
         ("poisson", [0.0, 2.0, 1.0, 3.0], [1.0, 3.0, 1.0, 3.0], [1.5, 2.5]),
     ],
 )
-def test_weighted_linear_leaf_recovers_two_group_mle(family, targets, weights, expected):
+def test_weighted_linear_leaf_recovers_two_group_mle(
+    family, targets, weights, expected
+):
     # An intercept and one indicator saturate the two groups. Their weighted
     # event rates/count means are exact MLEs, not ordinary unweighted means.
     model = ModelTree(leaf_family=family, gain="deviance", max_depth=0, l2=0.0)
@@ -31,7 +32,8 @@ def test_weighted_linear_leaf_recovers_two_group_mle(family, targets, weights, e
         with pytest.raises(ValueError, match="[Bb]inomial"):
             model.predict_proba([[0]])
         assert model.cdf([[0], [1]], 0.0) == pytest.approx(
-            [math.exp(-1.5), math.exp(-2.5)], abs=1e-6,
+            [math.exp(-1.5), math.exp(-2.5)],
+            abs=1e-6,
         )
 
 
@@ -42,14 +44,23 @@ def test_weighted_linear_leaf_recovers_two_group_mle(family, targets, weights, e
         ("poisson", [0.0, 2.0, 1.0, 3.0], [1.0, 3.0, 1.0, 3.0], [1.5, 2.5]),
     ],
 )
-def test_categorical_mean_leaves_fit_weighted_distributions(family, targets, weights, expected):
+def test_categorical_mean_leaves_fit_weighted_distributions(
+    family, targets, weights, expected
+):
     model = ModelTree(
-        leaf_family=family, leaf="mean", gain="deviance", max_depth=1,
-        min_rows=1, minprob=0.0, prune="none",
+        leaf_family=family,
+        leaf="mean",
+        gain="deviance",
+        max_depth=1,
+        min_rows=1,
+        minprob=0.0,
+        prune="none",
     )
     model.fit(
         [["low"], ["low"], ["high"], ["high"], [None]],
-        targets + [None], w=weights + [1000.0], dtypes=["categorical"],
+        targets + [None],
+        w=weights + [1000.0],
+        dtypes=["categorical"],
     )
     assert model.n_leaves() == 2
     assert model.predict([["low"], ["high"]]) == pytest.approx(expected, abs=1e-6)
@@ -60,7 +71,8 @@ def test_categorical_mean_leaves_fit_weighted_distributions(family, targets, wei
     else:
         # For a Poisson variable, P(Y <= 1) = exp(-mean) * (1 + mean).
         assert model.cdf([["low"], ["high"]], 1.5) == pytest.approx(
-            [2.5 * math.exp(-1.5), 3.5 * math.exp(-2.5)], abs=1e-6,
+            [2.5 * math.exp(-1.5), 3.5 * math.exp(-2.5)],
+            abs=1e-6,
         )
     raw_missing = [[None], [float("nan")], ["unseen"]]
     predictions = model.predict(raw_missing)
@@ -70,7 +82,9 @@ def test_categorical_mean_leaves_fit_weighted_distributions(family, targets, wei
         assert model.predict_proba(raw_missing) == pytest.approx(predictions)
 
 
-@pytest.mark.parametrize("family, targets", [("binomial", [0.0, 1.0, 1.0]), ("poisson", [0.0, 2.0, 4.0])])
+@pytest.mark.parametrize(
+    "family, targets", [("binomial", [0.0, 1.0, 1.0]), ("poisson", [0.0, 2.0, 4.0])]
+)
 def test_observed_targets_with_missing_numeric_predictors_train(family, targets):
     model = ModelTree(leaf_family=family, gain="deviance", max_depth=0, l2=0.1)
     model.fit([[0.0], [None], [float("nan")], [1.0]], targets + [None])
@@ -82,7 +96,17 @@ def test_observed_targets_with_missing_numeric_predictors_train(family, targets)
         assert all(p >= 0.0 for p in predictions)
 
 
-@pytest.mark.parametrize("family, target", [("binomial", -1.0), ("binomial", 0.5), ("binomial", 2.0), ("poisson", -1.0), ("binomial", float("inf")), ("poisson", float("inf"))])
+@pytest.mark.parametrize(
+    "family, target",
+    [
+        ("binomial", -1.0),
+        ("binomial", 0.5),
+        ("binomial", 2.0),
+        ("poisson", -1.0),
+        ("binomial", float("inf")),
+        ("poisson", float("inf")),
+    ],
+)
 def test_invalid_observed_targets_are_rejected(family, target):
     model = ModelTree(leaf_family=family, max_depth=0)
     with pytest.raises(ValueError):
@@ -119,7 +143,10 @@ def test_gaussian_default_stays_response_scale_and_rejects_distribution_helpers(
         model.cdf([[0]], 0.0)
 
 
-@pytest.mark.parametrize("family, targets, expected", [("binomial", [1.0, 1.0], 1.0), ("poisson", [0.0, 0.0], 0.0)])
+@pytest.mark.parametrize(
+    "family, targets, expected",
+    [("binomial", [1.0, 1.0], 1.0), ("poisson", [0.0, 0.0], 0.0)],
+)
 def test_boundary_targets_have_finite_predictions(family, targets, expected):
     model = ModelTree(leaf_family=family, max_depth=0, l2=0.0)
     model.fit([[0], [1]], targets)

@@ -52,8 +52,12 @@ def test_anomaly_tree_numeric_engines():
 
 def test_cluster_tree_pct_and_rules():
     X = [
-        [1.0, 1.0], [1.1, 0.9], [0.9, 1.2],
-        [10.0, 10.0], [10.2, 9.8], [9.9, 10.1],
+        [1.0, 1.0],
+        [1.1, 0.9],
+        [0.9, 1.2],
+        [10.0, 10.0],
+        [10.2, 9.8],
+        [9.9, 10.1],
     ]
     ct_pct = ClusterTree(kind="pct", max_depth=3, min_rows=2)
     ct_pct.fit(X)
@@ -72,8 +76,12 @@ def test_cluster_tree_pct_and_rules():
 
 def test_cluster_tree_hdbscan_and_urf():
     X = [
-        [1.0, 1.0], [1.1, 0.9], [0.9, 1.2],
-        [10.0, 10.0], [10.2, 9.8], [9.9, 10.1],
+        [1.0, 1.0],
+        [1.1, 0.9],
+        [0.9, 1.2],
+        [10.0, 10.0],
+        [10.2, 9.8],
+        [9.9, 10.1],
     ]
     # HDBSCAN
     ct_hdb = ClusterTree(kind="hdbscan", min_rows=2)

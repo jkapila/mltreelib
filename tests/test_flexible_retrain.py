@@ -1,7 +1,7 @@
 """Tests for flexible retrain, control dictionary, mode (internal/external), and id_col in leaf_samples."""
 
 import pytest
-from mltreelib import ModelTree, LeafControl
+from mltreelib import ModelTree
 
 
 @pytest.fixture
@@ -12,10 +12,10 @@ def cohort_micro_data():
     y = []
     vins = []
     for i in range(n):
-        x0 = (i - 50) / 25.0       # Split feature: regime -2.0 to 1.96
-        x1 = float(i % 5)          # Macro category/cohort
-        mileage = float(i * 100)   # Micro feature 1
-        age = float(i % 10 + 1)    # Micro feature 2
+        x0 = (i - 50) / 25.0  # Split feature: regime -2.0 to 1.96
+        x1 = float(i % 5)  # Macro category/cohort
+        mileage = float(i * 100)  # Micro feature 1
+        age = float(i % 10 + 1)  # Micro feature 2
         vin = f"VIN_{i:04d}"
 
         # Target: regime determines intercept, micro features determine slope
@@ -122,7 +122,14 @@ def test_retrain_leaf_features_subsets_and_aliases(cohort_micro_data):
 
 def test_retrain_split_column_validation():
     # Tree splits on col_A
-    x_train = [[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0], [5.0, 50.0], [6.0, 60.0]] * 5
+    x_train = [
+        [1.0, 10.0],
+        [2.0, 20.0],
+        [3.0, 30.0],
+        [4.0, 40.0],
+        [5.0, 50.0],
+        [6.0, 60.0],
+    ] * 5
     y_train = [1.0, 2.0, 3.0, 10.0, 11.0, 12.0] * 5
     tree = ModelTree(max_depth=1, min_rows=3, prune="none")
     tree.fit(x_train, y_train)
@@ -155,10 +162,7 @@ def test_leaf_samples_id_col(cohort_micro_data):
     # 3. id_col supplied as column index in data
     # Create dataset where VIN is column 0 and features are 1 and 2
     x_with_vin = [[vins[i], r[0], r[1]] for i, r in enumerate(x)]
-    samples_idx = tree.leaf_samples(
-        [[r[1], r[2]] for r in x_with_vin],
-        id_col=vins
-    )
+    samples_idx = tree.leaf_samples([[r[1], r[2]] for r in x_with_vin], id_col=vins)
     assert samples_idx[0][:3] == ["VIN_0000", "VIN_0001", "VIN_0002"]
 
 

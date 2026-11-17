@@ -6,7 +6,6 @@ Same big diamonds dataset as the model-building example.
 """
 
 import pandas as pd
-
 from mltreelib import Metrics, ModelTree, OneHotEncoder
 
 df = pd.read_parquet("datasets/diamonds.parquet")
@@ -15,7 +14,9 @@ x = df.drop(columns=["price"]).copy()
 for col in x.select_dtypes(include="category").columns:
     enc = OneHotEncoder()
     enc.fit([None if v is None else str(v) for v in x[col].astype(object)])
-    dummies = enc.transform([None if v is None else str(v) for v in x[col].astype(object)])
+    dummies = enc.transform(
+        [None if v is None else str(v) for v in x[col].astype(object)]
+    )
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
@@ -34,7 +35,9 @@ for k in ("n", "rmse", "mae", "mad", "r2", "bias", "max_error", "explained_varia
     print(f"  {k:<20} {reg[k]:.3f}")
 print("  decile calibration (first 3):")
 for d in reg["deciles"][:3]:
-    print(f"    decile {d['decile']}: n={d['n']}  mean_error={d['mean_error']:.1f}  mae={d['mae']:.1f}")
+    print(
+        f"    decile {d['decile']}: n={d['n']}  mean_error={d['mean_error']:.1f}  mae={d['mae']:.1f}"
+    )
 
 # --- structural inspection ---------------------------------------------
 print(f"\nn_leaves: {model.n_leaves()}")
@@ -50,25 +53,33 @@ for p in model.split_paths()[:5]:
 
 leaf = model.leaves()[0]
 print(f"\nfirst leaf: n={leaf['n']}  mean={leaf['mean']:.1f}  std={leaf['std']:.1f}")
-print(f"  range: [{leaf['min']:.1f}, {leaf['max']:.1f}]  quantiles: {[round(q) for q in leaf['quantiles']]}")
+print(
+    f"  range: [{leaf['min']:.1f}, {leaf['max']:.1f}]  quantiles: {[round(q) for q in leaf['quantiles']]}"
+)
 print(f"  linear coefs on: {leaf['cols'][:6]}  intercept={leaf['intercept']:.1f}")
 
 prof = model.profile()
-print(f"\nfit profile: {len(prof)} depth levels; slowest depth's split scan: "
-      f"{max(p['scan_ns'] for p in prof) / 1e6:.1f} ms")
+print(
+    f"\nfit profile: {len(prof)} depth levels; slowest depth's split scan: "
+    f"{max(p['scan_ns'] for p in prof) / 1e6:.1f} ms"
+)
 
 # --- explaining one prediction (DALEX-style break-down) -----------------
 row = X[n_tr]
 bd = model.break_down(row)
 total = sum(d for _, d in bd["steps"])
-print(f"\nbreak_down of one row: baseline {bd['baseline']:.1f} -> "
-      f"prediction {bd['prediction']:.1f} ({len(bd['steps'])} steps)")
+print(
+    f"\nbreak_down of one row: baseline {bd['baseline']:.1f} -> "
+    f"prediction {bd['prediction']:.1f} ({len(bd['steps'])} steps)"
+)
 for col, delta in bd["steps"][:6]:
     print(f"  {col:<6} {delta:+.1f}")
 if len(bd["steps"]) > 6:
     print(f"  ... {len(bd['steps']) - 6} more steps")
-print(f"  residual {bd['residual']:+.1f}  "
-      f"(sum check: {bd['baseline'] + total + bd['residual']:.1f})")
+print(
+    f"  residual {bd['residual']:+.1f}  "
+    f"(sum check: {bd['baseline'] + total + bd['residual']:.1f})"
+)
 
 # --- feature importance (share of total split gain) --------------------
 imp = model.feature_importance()

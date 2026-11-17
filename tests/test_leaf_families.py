@@ -2,8 +2,8 @@
 
 import math
 import random
-import pytest
-from mltreelib import ModelTree, LeafControl
+
+from mltreelib import ModelTree
 
 
 def test_probit_leaf_family_fit_and_retrain():
@@ -23,7 +23,9 @@ def test_probit_leaf_family_fit_and_retrain():
         x.append([x0, x1])
         y.append(y_val)
 
-    tree = ModelTree(max_depth=1, min_rows=15, leaf="linear", leaf_family="probit", prune="none")
+    tree = ModelTree(
+        max_depth=1, min_rows=15, leaf="linear", leaf_family="probit", prune="none"
+    )
     tree.fit(x, y)
 
     assert tree.n_leaves() >= 1
@@ -57,7 +59,9 @@ def test_gamma_leaf_family():
         x.append([x0, x1])
         y.append(target)
 
-    tree = ModelTree(max_depth=1, min_rows=10, leaf="linear", leaf_family="gamma", prune="none")
+    tree = ModelTree(
+        max_depth=1, min_rows=10, leaf="linear", leaf_family="gamma", prune="none"
+    )
     tree.fit(x, y)
 
     preds = tree.predict(x)
@@ -65,7 +69,9 @@ def test_gamma_leaf_family():
     assert all(p > 0.0 for p in preds)
 
     # Retrain with gamma dictionary
-    retrained = tree.retrain(x, y, mode="external", control={"leaf": "linear", "family": "gamma"})
+    retrained = tree.retrain(
+        x, y, mode="external", control={"leaf": "linear", "family": "gamma"}
+    )
     preds_ret = retrained.predict(x)
     assert all(p > 0.0 for p in preds_ret)
 
@@ -86,7 +92,9 @@ def test_tweedie_leaf_family():
         x.append([x0])
         y.append(target)
 
-    tree = ModelTree(max_depth=1, min_rows=10, leaf="linear", leaf_family="tweedie", prune="none")
+    tree = ModelTree(
+        max_depth=1, min_rows=10, leaf="linear", leaf_family="tweedie", prune="none"
+    )
     tree.fit(x, y)
 
     preds = tree.predict(x)
@@ -114,7 +122,9 @@ def test_tobit_censored_leaf_family():
         x.append([x0])
         y.append(observed)
 
-    tree = ModelTree(max_depth=1, min_rows=15, leaf="linear", leaf_family="tobit", prune="none")
+    tree = ModelTree(
+        max_depth=1, min_rows=15, leaf="linear", leaf_family="tobit", prune="none"
+    )
     tree.fit(x, y)
 
     leaves = tree.leaves()
@@ -135,41 +145,59 @@ def test_model_tree_purity_knobs_and_family_parameters():
     y = [100.0 + (0.5 if i < 50 else -0.5) for i in range(100)]
 
     # CV purity gate: mean=100, sd=0.5 => CV=0.005. With threshold 0.02, it should collapse to 1 leaf.
-    tree_cv = ModelTree(max_depth=3, min_rows=5, leaf="mean", purity_gate=0.02, purity_gate_metric="cv")
+    tree_cv = ModelTree(
+        max_depth=3, min_rows=5, leaf="mean", purity_gate=0.02, purity_gate_metric="cv"
+    )
     tree_cv.fit(x, y)
     assert tree_cv.n_leaves() == 1
 
     # With SD purity gate: sd=0.5 > 0.02, so it splits.
-    tree_sd = ModelTree(max_depth=3, min_rows=5, leaf="mean", purity_gate=0.02, purity_gate_metric="sd")
+    tree_sd = ModelTree(
+        max_depth=3, min_rows=5, leaf="mean", purity_gate=0.02, purity_gate_metric="sd"
+    )
     tree_sd.fit(x, y)
     assert tree_sd.n_leaves() > 1
 
     # With tail_quantile extrema protection:
     tree_tail = ModelTree(
-        max_depth=3, min_rows=5, leaf="mean", purity_gate=0.02,
-        purity_gate_metric="cv", tail_quantile=0.10
+        max_depth=3,
+        min_rows=5,
+        leaf="mean",
+        purity_gate=0.02,
+        purity_gate_metric="cv",
+        tail_quantile=0.10,
     )
     tree_tail.fit(x, y)
     assert tree_tail.n_leaves() > 1
 
     # Tweedie with custom power parameter
-    tree_tweedie = ModelTree(max_depth=1, min_rows=10, leaf="linear", leaf_family="tweedie", tweedie_p=1.6)
+    tree_tweedie = ModelTree(
+        max_depth=1, min_rows=10, leaf="linear", leaf_family="tweedie", tweedie_p=1.6
+    )
     tree_tweedie.fit([[1.0], [2.0], [3.0]], [1.0, 2.0, 3.0])
     assert tree_tweedie.n_leaves() >= 1
 
     # Tobit with custom censoring threshold
-    tree_tobit = ModelTree(max_depth=1, min_rows=5, leaf="mean", leaf_family="tobit", tobit_threshold=0.5)
-    tree_tobit.fit([[float(i)] for i in range(20)], [0.5 if i < 10 else float(i) for i in range(20)])
+    tree_tobit = ModelTree(
+        max_depth=1, min_rows=5, leaf="mean", leaf_family="tobit", tobit_threshold=0.5
+    )
+    tree_tobit.fit(
+        [[float(i)] for i in range(20)],
+        [0.5 if i < 10 else float(i) for i in range(20)],
+    )
     assert tree_tobit.n_leaves() >= 1
 
     # Softmax with n_classes
-    tree_sm = ModelTree(max_depth=1, min_rows=5, leaf="mean", leaf_family="softmax", n_classes=3)
+    tree_sm = ModelTree(
+        max_depth=1, min_rows=5, leaf="mean", leaf_family="softmax", n_classes=3
+    )
     tree_sm.fit([[1.0], [2.0], [3.0]], [0.0, 1.0, 2.0])
     assert tree_sm.n_leaves() >= 1
 
     # Survival with events in constructor
     events = [1.0, 0.0, 1.0]
-    tree_surv = ModelTree(max_depth=1, min_rows=1, leaf="mean", leaf_family="survival", events=events)
+    tree_surv = ModelTree(
+        max_depth=1, min_rows=1, leaf="mean", leaf_family="survival", events=events
+    )
     tree_surv.fit([[1.0], [2.0], [3.0]], [10.0, 20.0, 30.0])
     assert tree_surv.n_leaves() >= 1
-

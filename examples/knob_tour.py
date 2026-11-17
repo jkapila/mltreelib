@@ -11,6 +11,7 @@ Defaults are unchanged everywhere: each block flips exactly one knob.
 
 from mltreelib import ModelTree
 
+
 # ---------------------------------------------------------------- helpers
 # splitmix64: deterministic pseudo-noise, no RNG dependency
 def noise(i):
@@ -46,7 +47,9 @@ for leaf, kw in [
 ]:
     m = ModelTree(leaf=leaf, max_depth=2, min_rows=10, **kw)
     m.fit(skew_x, skew_y, dtypes=["numeric"])
-    print(f"  {leaf:<9} leaves={m.n_leaves():<3} pred(x=0)={m.predict([[0.0]])[0]:8.4f}")
+    print(
+        f"  {leaf:<9} leaves={m.n_leaves():<3} pred(x=0)={m.predict([[0.0]])[0]:8.4f}"
+    )
 
 m = ModelTree(leaf="mean", max_depth=0, min_rows=10, leaf_digest=True)
 m.fit(skew_x, skew_y, dtypes=["numeric"])
@@ -57,30 +60,40 @@ print("== criterion family (planted regime at x=0.5) ==")
 for gain in ["sse", "friedman_mse", "absolute_error", "huber"]:
     m = ModelTree(gain=gain, max_depth=3, min_rows=10, leaf="mean")
     m.fit(reg_x, reg_y, dtypes=["numeric"])
-    print(f"  {gain:<14} leaves={m.n_leaves():<3} pred(0.1)={m.predict([[0.1]])[0]:.3f} "
-          f"pred(0.9)={m.predict([[0.9]])[0]:.3f}")
+    print(
+        f"  {gain:<14} leaves={m.n_leaves():<3} pred(0.1)={m.predict([[0.1]])[0]:.3f} "
+        f"pred(0.9)={m.predict([[0.9]])[0]:.3f}"
+    )
 
 print("== classification criteria (0/1 labels, same break) ==")
 for gain in ["entropy", "gini", "gain_ratio", "twoing", "sdr"]:
     m = ModelTree(gain=gain, max_depth=3, min_rows=10, leaf="mean")
     m.fit(reg_x, cls_y, dtypes=["numeric"])
-    acc = (sum(1 for p in m.predict(reg_x) if (p >= 0.5) == bool(y))
-           for y in [1 if i / 200.0 >= 0.5 else 0 for i in range(200)])
+    acc = (
+        sum(1 for p in m.predict(reg_x) if (p >= 0.5) == bool(y))
+        for y in [1 if i / 200.0 >= 0.5 else 0 for i in range(200)]
+    )
     print(f"  {gain:<10} leaves={m.n_leaves():<3} train_acc={sum(acc) / 200:.3f}")
 
 print("== categorical levels-as-is (level codes 0..4) ==")
-for order, search in [("frequency_desc", "cumulative"), ("target_mean", "single_vs_rest")]:
-    m = ModelTree(max_depth=3, min_rows=10, leaf="mean",
-                  cat_order=order, cat_search=search)
+for order, search in [
+    ("frequency_desc", "cumulative"),
+    ("target_mean", "single_vs_rest"),
+]:
+    m = ModelTree(
+        max_depth=3, min_rows=10, leaf="mean", cat_order=order, cat_search=search
+    )
     m.fit(cat_x, cat_y, dtypes=["categorical", "numeric"])
-    print(f"  {order}/{search}: leaves={m.n_leaves():<3} splits={[(s['col'], round(s['threshold'], 2)) for s in m.splits()[:3]]}")
+    print(
+        f"  {order}/{search}: leaves={m.n_leaves():<3} splits={[(s['col'], round(s['threshold'], 2)) for s in m.splits()[:3]]}"
+    )
 
 print("== split_precision grid (exact scan vs 0.1 grid) ==")
 for prec in [None, 0.1]:
     m = ModelTree(max_depth=3, min_rows=10, leaf="mean", split_precision=prec)
     m.fit(reg_x, reg_y, dtypes=["numeric"])
-    thr = [round(s['threshold'], 3) for s in m.splits()]
-    print(f"  precision={str(prec):<5} thresholds={thr}")
+    thr = [round(s["threshold"], 3) for s in m.splits()]
+    print(f"  precision={prec!s:<5} thresholds={thr}")
 
 print("== per-node column subsets (col_sample + seed) ==")
 wide_x = [[noise(i * 3 + j) for j in range(10)] for i in range(300)]
@@ -88,8 +101,10 @@ wide_y = [2.0 * wide_x[i][3] + 0.1 * noise(i) for i in range(300)]
 for frac, seed in [(None, 42), (0.3, 42), (0.3, 42), (0.3, 7)]:
     m = ModelTree(col_sample=frac, seed=seed, max_depth=3, min_rows=10)
     m.fit(wide_x, wide_y, dtypes=["numeric"] * 10)
-    print(f"  col_sample={str(frac):<5} seed={seed} leaves={m.n_leaves():<3} "
-          f"top_importance={m.feature_importance()[:1]}")
+    print(
+        f"  col_sample={frac!s:<5} seed={seed} leaves={m.n_leaves():<3} "
+        f"top_importance={m.feature_importance()[:1]}"
+    )
 
 print("== cost pruning (prune=none|bic|mdl) ==")
 for prune in ["none", "bic", "mdl"]:
@@ -100,13 +115,26 @@ for prune in ["none", "bic", "mdl"]:
 print("== Chow significance gate (split_test='chow') ==")
 noise_x = [[(i % 20) / 20.0] for i in range(400)]
 noise_y = [noise(i) for i in range(400)]
-m = ModelTree(leaf="mean", max_depth=3, min_rows=10,
-              split_test="chow", split_alpha=1e-6, verbose=2)
+m = ModelTree(
+    leaf="mean",
+    max_depth=3,
+    min_rows=10,
+    split_test="chow",
+    split_alpha=1e-6,
+    verbose=2,
+)
 m.fit(noise_x, noise_y, dtypes=["numeric"])
 print(f"  pure noise     -> leaves={m.n_leaves()} (gate must stop)")
 print("   ", m.training_log()[-1])
-m = ModelTree(leaf="mean", max_depth=3, min_rows=10,
-              split_test="chow", split_alpha=0.05, bonferroni=True, verbose=2)
+m = ModelTree(
+    leaf="mean",
+    max_depth=3,
+    min_rows=10,
+    split_test="chow",
+    split_alpha=0.05,
+    bonferroni=True,
+    verbose=2,
+)
 m.fit(reg_x, reg_y, dtypes=["numeric"])
 print(f"  planted regime -> leaves={m.n_leaves()} (gate must pass)")
 for line in m.training_log():
@@ -117,21 +145,21 @@ for mono in [[], [1]]:
     m = ModelTree(tree_monotone=mono, max_depth=3, min_rows=10, leaf="mean")
     m.fit(reg_x, reg_y, dtypes=["numeric"])
     p = [m.predict([[v]])[0] for v in (0.2, 0.5, 0.8)]
-    print(f"  tree_monotone={str(mono):<4} preds={p}")
+    print(f"  tree_monotone={mono!s:<4} preds={p}")
 
 print("== column weights (col_weights split priority) ==")
 for cw in [None, [10.0, 0.1]]:
     m = ModelTree(col_weights=cw, max_depth=2, min_rows=10)
     m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
-    cols = sorted({s['col'] for s in m.splits()})
-    print(f"  col_weights={str(cw):<12} split_columns={cols}")
+    cols = sorted({s["col"] for s in m.splits()})
+    print(f"  col_weights={cw!s:<12} split_columns={cols}")
 
 print("== split_cols (split-search column subset; leaves stay full) ==")
 for sc in [None, [1]]:
     m = ModelTree(split_cols=sc, max_depth=3, min_rows=10, l2=0.0)
     m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
-    cols = sorted({s['col'] for s in m.splits()})
-    print(f"  split_cols={str(sc):<6} split_columns={cols} leaves={m.n_leaves()}")
+    cols = sorted({s["col"] for s in m.splits()})
+    print(f"  split_cols={sc!s:<6} split_columns={cols} leaves={m.n_leaves()}")
 
 print("== honesty (structure/estimation split; grf-style fairness) ==")
 for hon, frac in [(False, 0.5), (True, 0.5), (True, 0.2)]:
@@ -141,8 +169,10 @@ for hon, frac in [(False, 0.5), (True, 0.5), (True, 0.2)]:
     print(f"  honesty={hon!s:<5} frac={frac}: leaves={m.n_leaves()} preds={p}")
 
 print("== NA surrogate splits (maxsurrogate; rpart lineage) ==")
-sur_x = [[(None if i % 20 == 0 else i / 300.0), i / 300.0 + 0.2 * noise(i)]
-         for i in range(300)]
+sur_x = [
+    [(None if i % 20 == 0 else i / 300.0), i / 300.0 + 0.2 * noise(i)]
+    for i in range(300)
+]
 sur_y = [5.0 if i / 300.0 >= 0.5 else 0.0 for i in range(300)]
 for ms in [0, 1]:
     m = ModelTree(maxsurrogate=ms, max_depth=1, min_rows=10, leaf="mean")
@@ -166,8 +196,18 @@ print(f"  minsplit=200:     leaves={m.n_leaves()}")
 m = ModelTree(purity_gate=0.5, max_depth=3, min_rows=5, leaf="mean")
 m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
 print(f"  purity_gate=0.5:  leaves={m.n_leaves()}")
-for ps in ["none", "winnow", "boruta", "shadowmax", "variance", "mutual_info", "unitree"]:
-    m = ModelTree(preselect=ps, min_relevance=0.05, max_depth=2, min_rows=5, leaf="mean")
+for ps in [
+    "none",
+    "winnow",
+    "boruta",
+    "shadowmax",
+    "variance",
+    "mutual_info",
+    "unitree",
+]:
+    m = ModelTree(
+        preselect=ps, min_relevance=0.05, max_depth=2, min_rows=5, leaf="mean"
+    )
     m.fit(cat_x, cat_y, dtypes=["numeric", "numeric"])
-    cols = sorted({s['col'] for s in m.splits()})
+    cols = sorted({s["col"] for s in m.splits()})
     print(f"  preselect={ps:<11} split_columns={cols}")

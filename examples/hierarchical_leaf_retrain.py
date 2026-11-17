@@ -9,6 +9,7 @@ Demonstrates:
 """
 
 import random
+
 from mltreelib import ModelTree
 
 
@@ -16,8 +17,8 @@ def generate_warranty_fleet(n: int = 600, seed: int = 42):
     """Simulate fleet warranty data with macro cohorts and micro telemetry."""
     rng = random.Random(seed)
 
-    cities = [1.0, 2.0, 3.0]          # 1: Metro, 2: Suburban, 3: Rural
-    segments = [1.0, 2.0, 3.0]        # 1: Economy, 2: SUV, 3: Commercial Fleet
+    cities = [1.0, 2.0, 3.0]  # 1: Metro, 2: Suburban, 3: Rural
+    segments = [1.0, 2.0, 3.0]  # 1: Economy, 2: SUV, 3: Commercial Fleet
     years = [2021.0, 2022.0, 2023.0, 2024.0]
 
     macro_rows = []
@@ -45,14 +46,34 @@ def generate_warranty_fleet(n: int = 600, seed: int = 42):
         # Micro parameters drive individual car behavior
         # Notice: Commercial fleet (segment 3) has much higher sensitivity to distance & accidents
         if segment == 3.0:
-            micro_effect = 0.015 * distance_km + 450.0 * accidents - 80.0 * service_count + 120.0 * tire_changes
+            micro_effect = (
+                0.015 * distance_km
+                + 450.0 * accidents
+                - 80.0 * service_count
+                + 120.0 * tire_changes
+            )
         else:
-            micro_effect = 0.005 * distance_km + 250.0 * accidents - 50.0 * service_count + 60.0 * tire_changes
+            micro_effect = (
+                0.005 * distance_km
+                + 250.0 * accidents
+                - 50.0 * service_count
+                + 60.0 * tire_changes
+            )
 
         claim_cost = max(0.0, macro_base + micro_effect + rng.gauss(0.0, 50.0))
 
         macro_rows.append([city, segment, year])
-        full_rows.append([city, segment, year, distance_km, float(service_count), float(accidents), float(tire_changes)])
+        full_rows.append(
+            [
+                city,
+                segment,
+                year,
+                distance_km,
+                float(service_count),
+                float(accidents),
+                float(tire_changes),
+            ]
+        )
         targets.append(claim_cost)
         vins.append(vin)
 
@@ -76,13 +97,25 @@ def run_hierarchical_showcase():
 
     print(f"  Fitted macro tree with {macro_tree.n_leaves()} cohort leaf partitions.")
     for sp in macro_tree.splits():
-        print(f"    Split on {sp['col']} at threshold {sp['threshold']:.2f} (gain: {sp['gain']:.2f})")
+        print(
+            f"    Split on {sp['col']} at threshold {sp['threshold']:.2f} (gain: {sp['gain']:.2f})"
+        )
 
     # -------------------------------------------------------------------------
     # Stage 2: Mode='external' Retraining with Micro Features
     # -------------------------------------------------------------------------
-    print("\n[Stage 2] Retraining Micro Leaves (mode='external') using Vehicle Telemetry...")
-    full_cols = ["city", "segment", "year", "distance_km", "service_count", "accidents", "tire_changes"]
+    print(
+        "\n[Stage 2] Retraining Micro Leaves (mode='external') using Vehicle Telemetry..."
+    )
+    full_cols = [
+        "city",
+        "segment",
+        "year",
+        "distance_km",
+        "service_count",
+        "accidents",
+        "tire_changes",
+    ]
     micro_cols = ["distance_km", "service_count", "accidents", "tire_changes"]
 
     # Retrain: routes via macro splits, but fits linear models using only micro features
@@ -97,13 +130,21 @@ def run_hierarchical_showcase():
     )
 
     print("  External retrain complete.")
-    print("  Macro Tree leaves remain constant:", macro_tree.leaves()[0]["intercept"] is None)
-    print("  Micro Model leaves are linear:", micro_model.leaves()[0]["intercept"] is not None)
+    print(
+        "  Macro Tree leaves remain constant:",
+        macro_tree.leaves()[0]["intercept"] is None,
+    )
+    print(
+        "  Micro Model leaves are linear:",
+        micro_model.leaves()[0]["intercept"] is not None,
+    )
 
     print("\n  Fitted Micro Leaf Models:")
     for lf in micro_model.leaves():
         coef_str = ", ".join(f"{c}: {v:+.4f}" for c, v in zip(lf["cols"], lf["coef"]))
-        print(f"    Leaf #{lf['id']} (n={lf['n']:3d}): intercept={lf['intercept']:8.2f} | {coef_str}")
+        print(
+            f"    Leaf #{lf['id']} (n={lf['n']:3d}): intercept={lf['intercept']:8.2f} | {coef_str}"
+        )
 
     # -------------------------------------------------------------------------
     # Stage 3: Entity Primary Key Routing (id_col="vin")
@@ -112,12 +153,16 @@ def run_hierarchical_showcase():
     leaf_clusters = micro_model.leaf_samples(full_rows, id_col=vins)
 
     for leaf_id, vin_list in sorted(leaf_clusters.items()):
-        print(f"    Leaf #{leaf_id}: {len(vin_list)} vehicles clustered. Sample VINs: {vin_list[:3]}...")
+        print(
+            f"    Leaf #{leaf_id}: {len(vin_list)} vehicles clustered. Sample VINs: {vin_list[:3]}..."
+        )
 
     # -------------------------------------------------------------------------
     # Stage 4: Test Point Inference Comparison
     # -------------------------------------------------------------------------
-    print("\n[Stage 4] Prediction Comparison (Macro Cohort Baseline vs Micro-Tailored Model):")
+    print(
+        "\n[Stage 4] Prediction Comparison (Macro Cohort Baseline vs Micro-Tailored Model):"
+    )
     # Test car: Metro, Commercial Fleet, 2022, 90,000 km, 3 services, 1 accident, 2 tire changes
     test_car_macro = [[1.0, 3.0, 2022.0]]
     test_car_full = [[1.0, 3.0, 2022.0, 90_000.0, 3.0, 1.0, 2.0]]

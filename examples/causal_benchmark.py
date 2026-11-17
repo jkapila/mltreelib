@@ -18,14 +18,13 @@ from __future__ import annotations
 
 import math
 import random
-from typing import List, Tuple
 
 from mltreelib import ModelTree
 
 
 def simulate_nie_wager_setup_b(
     n: int = 2000, p: int = 6, sigma: float = 0.5, seed: int = 42
-) -> Tuple[List[List[float]], List[float], List[float], List[float]]:
+) -> tuple[list[list[float]], list[float], list[float], list[float]]:
     """Simulate Setup B (Randomized trial with non-linear CATE) from Nie & Wager (2021).
 
     b(x) = max(0, x0 + x1, x2) + max(0, x3 + x4)
@@ -40,10 +39,10 @@ def simulate_nie_wager_setup_b(
         u2 = rng.random()
         return math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
 
-    X: List[List[float]] = []
-    y: List[float] = []
-    treat: List[float] = []
-    true_tau: List[float] = []
+    X: list[list[float]] = []
+    y: list[float] = []
+    treat: list[float] = []
+    true_tau: list[float] = []
 
     for _ in range(n):
         row = [randn() for _ in range(p)]
@@ -66,17 +65,17 @@ def simulate_nie_wager_setup_b(
 
 def simulate_piecewise_causal_step(
     n: int = 1000, seed: int = 42
-) -> Tuple[List[List[float]], List[float], List[float], List[float]]:
+) -> tuple[list[list[float]], list[float], list[float], list[float]]:
     """Piecewise step CATE to verify structural recovery.
 
     x0 < 0: tau = +10.0 (strong positive uplift)
     x0 >= 0: tau = -5.0 (negative uplift / sleeping dog)
     """
     rng = random.Random(seed)
-    X: List[List[float]] = []
-    y: List[float] = []
-    treat: List[float] = []
-    true_tau: List[float] = []
+    X: list[list[float]] = []
+    y: list[float] = []
+    treat: list[float] = []
+    true_tau: list[float] = []
 
     for i in range(n):
         x0 = -1.0 + 2.0 * rng.random()
@@ -96,26 +95,28 @@ def simulate_piecewise_causal_step(
     return X, y, treat, true_tau
 
 
-def evaluate_pehe(true_tau: List[float], pred_tau: List[float]) -> float:
+def evaluate_pehe(true_tau: list[float], pred_tau: list[float]) -> float:
     """Precision in Estimating Heterogeneous Effects (PEHE) = sqrt(MSE(tau, pred_tau))."""
     mse = sum((t - p) ** 2 for t, p in zip(true_tau, pred_tau)) / len(true_tau)
     return math.sqrt(mse)
 
 
-def evaluate_ate_error(true_tau: List[float], pred_tau: List[float]) -> float:
+def evaluate_ate_error(true_tau: list[float], pred_tau: list[float]) -> float:
     """Absolute error between Average Treatment Effect (ATE) and predicted ATE."""
     mean_true = sum(true_tau) / len(true_tau)
     mean_pred = sum(pred_tau) / len(pred_tau)
     return abs(mean_true - mean_pred)
 
 
-def validate_leaf_arithmetic(tree: ModelTree, X: List[List[float]], y: List[float], treat: List[float]) -> None:
+def validate_leaf_arithmetic(
+    tree: ModelTree, X: list[list[float]], y: list[float], treat: list[float]
+) -> None:
     """Validate numerical correctness: assert that leaf uplift matches raw sample mean differences."""
     leaf_ids = tree.predict(X, kind="leaf_id")
     pred_uplifts = tree.predict(X, kind="uplift")
 
     # Group rows by leaf_id
-    leaf_rows: dict[int, List[int]] = {}
+    leaf_rows: dict[int, list[int]] = {}
     for row_idx, lid in enumerate(leaf_ids):
         leaf_rows.setdefault(int(lid), []).append(row_idx)
 
@@ -132,9 +133,13 @@ def validate_leaf_arithmetic(tree: ModelTree, X: List[List[float]], y: List[floa
 
         sample_pred = pred_uplifts[row_indices[0]]
         diff = abs(sample_pred - empirical_tau)
-        assert diff < 1e-9, f"Leaf {lid} arithmetic mismatch: pred={sample_pred}, empirical={empirical_tau}"
+        assert diff < 1e-9, (
+            f"Leaf {lid} arithmetic mismatch: pred={sample_pred}, empirical={empirical_tau}"
+        )
 
-    print("  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9.")
+    print(
+        "  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9."
+    )
 
 
 def run_benchmark():
@@ -143,7 +148,9 @@ def run_benchmark():
     print("=" * 70)
 
     n_train, n_test = 2000, 1000
-    X_train, y_train, w_train, tau_train = simulate_nie_wager_setup_b(n=n_train, seed=42)
+    X_train, y_train, w_train, tau_train = simulate_nie_wager_setup_b(
+        n=n_train, seed=42
+    )
     X_test, y_test, w_test, tau_test = simulate_nie_wager_setup_b(n=n_test, seed=1337)
 
     # Fit Causal Tree with tuple targets: y = (outcomes, treatments)
@@ -162,8 +169,12 @@ def run_benchmark():
 
     print(f"Dataset Size: N_train={n_train}, N_test={n_test}, P=6 features")
     print(f"Causal Tree: Leaves={tree.n_leaves()}, Max Depth=4")
-    print(f"True Average Treatment Effect (ATE):     {sum(tau_test) / len(tau_test):.4f}")
-    print(f"Estimated Average Treatment Effect (ATE):{sum(pred_test) / len(pred_test):.4f}")
+    print(
+        f"True Average Treatment Effect (ATE):     {sum(tau_test) / len(tau_test):.4f}"
+    )
+    print(
+        f"Estimated Average Treatment Effect (ATE):{sum(pred_test) / len(pred_test):.4f}"
+    )
     print(f"ATE Absolute Error:                      {ate_err:.4f}")
     print(f"PEHE (Heterogeneity Precision):          {pehe:.4f}")
 
@@ -191,7 +202,9 @@ def run_benchmark():
     assert abs(preds[1] - (-5.0)) < 0.2, f"Expected ~ -5.0, got {preds[1]}"
 
     validate_leaf_arithmetic(step_tree, X_step, y_step, w_step)
-    print("  [Pass] Successfully differentiated persuasive units (+10.0) from sleeping dogs (-5.0).")
+    print(
+        "  [Pass] Successfully differentiated persuasive units (+10.0) from sleeping dogs (-5.0)."
+    )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import numpy as np
-import pytest
 from mltreelib import MarsRegressor
+
 
 def test_mars_regressor_1d_hinge():
     rng = np.random.default_rng(42)
@@ -22,6 +22,7 @@ def test_mars_regressor_1d_hinge():
     eq = reg.equation(["x0"])
     assert "h(x0 - " in eq or "h(" in eq
 
+
 def test_mars_regressor_2d_interaction():
     rng = np.random.default_rng(123)
     grid_1d = np.linspace(0.0, 10.0, 21)
@@ -41,6 +42,7 @@ def test_mars_regressor_2d_interaction():
     eq = reg.equation(["feat_a", "feat_b"])
     assert "feat_a" in eq
     assert "feat_b" in eq
+
 
 def test_mars_linpreds_and_sample_weights():
     # x0 is linear, x1 is hinged
@@ -69,6 +71,7 @@ def test_mars_linpreds_and_sample_weights():
     preds = reg.predict(X)
     np.testing.assert_allclose(preds, y, atol=1e-2)
 
+
 def test_mars_glm_binomial_classification():
     x = np.linspace(0.0, 10.0, 100)
     X = x.reshape(-1, 1)
@@ -88,8 +91,10 @@ def test_mars_glm_binomial_classification():
     eq = clf.equation(["feat"])
     assert eq.startswith("logit(p) = ")
 
+
 def test_model_tree_with_mars_leaf():
     from mltreelib import ModelTree
+
     rng = np.random.default_rng(42)
     # 2 regimes partitioned by x0:
     # regime 1: x0 < 0: y = 2.0 * x1 + 3.0 * max(0, x2 - 2.0)
@@ -106,6 +111,6 @@ def test_model_tree_with_mars_leaf():
     preds = np.asarray(tree.predict(X))
     rmse = float(np.sqrt(np.mean((y - preds) ** 2)))
     ss_tot = float(np.sum((y - np.mean(y)) ** 2))
-    r2 = 1.0 - (rmse ** 2 * len(y)) / ss_tot
+    r2 = 1.0 - (rmse**2 * len(y)) / ss_tot
     assert rmse < 5.0
     assert r2 > 0.85

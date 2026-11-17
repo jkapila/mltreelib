@@ -10,7 +10,6 @@ docs/assets/ for the documentation pages.
 from pathlib import Path
 
 import pandas as pd
-
 from mltreelib import Metrics, ModelTree, OneHotEncoder
 
 ASSETS = Path("docs/assets")
@@ -22,7 +21,9 @@ x = df.drop(columns=["scaled-sound-pressure"]).copy()
 for col in x.select_dtypes(include="category").columns:
     enc = OneHotEncoder()
     enc.fit([None if v is None else str(v) for v in x[col].astype(object)])
-    dummies = enc.transform([None if v is None else str(v) for v in x[col].astype(object)])
+    dummies = enc.transform(
+        [None if v is None else str(v) for v in x[col].astype(object)]
+    )
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
@@ -43,12 +44,15 @@ dot = model.to_dot()
 g = pgv.AGraph(string=dot)
 g.layout(prog="dot")
 g.draw(str(ASSETS / "airfoil_tree.svg"))
-print(f"tree diagram: {ASSETS / 'airfoil_tree.svg'} "
-      f"({len(model.leaves())} leaves, depth 3, rendered by graphviz)")
+print(
+    f"tree diagram: {ASSETS / 'airfoil_tree.svg'} "
+    f"({len(model.leaves())} leaves, depth 3, rendered by graphviz)"
+)
 
 # --- diagnostic plots via matplotlib (dev extra, guarded) ---------------
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from mltreelib import plots as mplots
@@ -57,18 +61,32 @@ try:
     mplots._style_axis(axes[0])
     mplots._style_axis(axes[1])
     sample = list(range(0, len(pred), max(1, len(pred) // 2000)))
-    axes[0].scatter([y[n_tr + i] for i in sample], [pred[i] for i in sample],
-                    s=14, alpha=0.55, color=mplots.PALETTE["primary"], zorder=3)
+    axes[0].scatter(
+        [y[n_tr + i] for i in sample],
+        [pred[i] for i in sample],
+        s=14,
+        alpha=0.55,
+        color=mplots.PALETTE["primary"],
+        zorder=3,
+    )
     lo = min(min(pred), min(y[n_tr:]))
     hi = max(max(pred), max(y[n_tr:]))
-    axes[0].plot([lo, hi], [lo, hi], color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2)
+    axes[0].plot(
+        [lo, hi], [lo, hi], color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2
+    )
     axes[0].set_xlabel("Actual Scaled Sound Pressure")
     axes[0].set_ylabel("Predicted Value")
     axes[0].set_title("Airfoil: Predicted vs. Actual (Test)")
 
     resid = [p - t for p, t in zip(pred, y[n_tr:])]
-    axes[1].scatter([pred[i] for i in sample], [resid[i] for i in sample],
-                    s=14, alpha=0.55, color=mplots.PALETTE["secondary"], zorder=3)
+    axes[1].scatter(
+        [pred[i] for i in sample],
+        [resid[i] for i in sample],
+        s=14,
+        alpha=0.55,
+        color=mplots.PALETTE["secondary"],
+        zorder=3,
+    )
     axes[1].axhline(0, color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2)
     axes[1].set_xlabel("Predicted Value")
     axes[1].set_ylabel("Residual (Predicted − Actual)")
@@ -91,7 +109,9 @@ try:
     plt.close(ax.figure)
     print(f"breakdown of one test row: {ASSETS / 'airfoil_breakdown.png'}")
 except ImportError:
-    print("matplotlib not installed - skipping diagnostic plots "
-          "(uv run --with matplotlib python examples/visualization.py)")
+    print(
+        "matplotlib not installed - skipping diagnostic plots "
+        "(uv run --with matplotlib python examples/visualization.py)"
+    )
 
 print(f"test rmse: {Metrics().regression(y[n_tr:], pred)['rmse']:.1f}")

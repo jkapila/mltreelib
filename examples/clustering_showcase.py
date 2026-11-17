@@ -11,11 +11,11 @@ Demonstrates:
 """
 
 from pathlib import Path
-import pyarrow.parquet as pq
 
+import pyarrow.parquet as pq
 from mltreelib import (
-    CLTree,
     HDBSCAN,
+    CLTree,
     PredictiveClusteringTree,
     TrieKNN,
     UnsupervisedRandomForest,
@@ -58,16 +58,33 @@ def showcase_trie_knn(df):
         actual = y_test[i]
         pred = preds[i]
         prob = probs[i]
-        print(f"  Case {i+1}: Actual={actual:.0f} | Pred={pred:.0f} | P(Good)={prob[1]:.2f}")
-        print(f"    Context: {row['checking_status']}, {row['credit_history']}, {row['housing']}")
-        print(f"    Numeric: ${row['credit_amount']:.0f}, {row['duration_months']} mo, Age {row['age_years']}")
+        print(
+            f"  Case {i + 1}: Actual={actual:.0f} | Pred={pred:.0f} | P(Good)={prob[1]:.2f}"
+        )
+        print(
+            f"    Context: {row['checking_status']}, {row['credit_history']}, {row['housing']}"
+        )
+        print(
+            f"    Numeric: ${row['credit_amount']:.0f}, {row['duration_months']} mo, Age {row['age_years']}"
+        )
 
     # Demonstrate Hierarchical Back-off on Unseen Category
     print("\nDemonstrating Hierarchical Back-off:")
-    synth_query = [["unseen_checking_val", "critical account / other credits existing", "own", 48.0, 10000.0, 35.0]]
+    synth_query = [
+        [
+            "unseen_checking_val",
+            "critical account / other credits existing",
+            "own",
+            48.0,
+            10000.0,
+            35.0,
+        ]
+    ]
     synth_pred = model.predict(synth_query)[0]
     synth_prob = model.predict_proba(synth_query)[0]
-    print(f"  Unseen category query routed via parent back-off: Pred={synth_pred:.0f}, P(Good)={synth_prob[1]:.2f}")
+    print(
+        f"  Unseen category query routed via parent back-off: Pred={synth_pred:.0f}, P(Good)={synth_prob[1]:.2f}"
+    )
 
 
 def showcase_pct(df):
@@ -85,7 +102,9 @@ def showcase_pct(df):
     x = df[descriptive_cols].values.tolist()
     y = df[target_cols].values.tolist()
 
-    pct = PredictiveClusteringTree(max_depth=4, min_samples_split=20, min_samples_leaf=10)
+    pct = PredictiveClusteringTree(
+        max_depth=4, min_samples_split=20, min_samples_leaf=10
+    )
     pct.fit(
         x,
         y=y,
@@ -100,15 +119,26 @@ def showcase_pct(df):
     for cid, rule, proto, size in rules[:5]:
         print(f"\n  [Cluster {cid}] (Size: {size} instances)")
         print(f"    Rule: {rule}")
-        print(f"    Centroid: Duration = {proto[0]:.1f} mo | Credit Amount = ${proto[1]:.0f}")
+        print(
+            f"    Centroid: Duration = {proto[0]:.1f} mo | Credit Amount = ${proto[1]:.0f}"
+        )
 
     # Unsupervised Mode (Y omitted)
     print("\n--- Unsupervised PCT Clustering ---")
-    numeric_cols = ["duration_months", "credit_amount", "installment_rate_percent", "age_years"]
+    numeric_cols = [
+        "duration_months",
+        "credit_amount",
+        "installment_rate_percent",
+        "age_years",
+    ]
     x_num = df[numeric_cols].values.tolist()
-    pct_unsup = PredictiveClusteringTree(max_depth=3, min_samples_split=30, min_samples_leaf=15)
+    pct_unsup = PredictiveClusteringTree(
+        max_depth=3, min_samples_split=30, min_samples_leaf=15
+    )
     pct_unsup.fit(x_num, col_names=numeric_cols, dtypes=["float"] * len(numeric_cols))
-    print(f"Unsupervised PCT extracted {pct_unsup.n_clusters} clusters across numeric dimensions.")
+    print(
+        f"Unsupervised PCT extracted {pct_unsup.n_clusters} clusters across numeric dimensions."
+    )
 
 
 def showcase_cltree(df):
@@ -123,10 +153,14 @@ def showcase_cltree(df):
     clt = CLTree(max_depth=5, min_samples_leaf=15, min_density=0.60)
     clt.fit(data, col_names=cols)
 
-    print(f"CLTree discovered {clt.n_clusters} dense clusters surrounded by sparse space.")
+    print(
+        f"CLTree discovered {clt.n_clusters} dense clusters surrounded by sparse space."
+    )
     bboxes = clt.cluster_bounding_boxes()
     for cid, bounds, size, density in bboxes[:5]:
-        print(f"\n  [Cluster {cid}] Size: {size} instances | Data Density: {density * 100:.1f}%")
+        print(
+            f"\n  [Cluster {cid}] Size: {size} instances | Data Density: {density * 100:.1f}%"
+        )
         print(f"    Duration range: [{bounds[0][0]:.1f}, {bounds[0][1]:.1f}] mo")
         print(f"    Credit range:   [${bounds[1][0]:.0f}, ${bounds[1][1]:.0f}]")
         print(f"    Age range:      [{bounds[2][0]:.1f}, {bounds[2][1]:.1f}] yrs")
@@ -138,7 +172,9 @@ def showcase_cltree(df):
     c_outlier = clt.predict_cluster([outlier_pt])[0]
     print("\nPoint Assignments:")
     print(f"  Typical point {dense_pt} -> Cluster {c_dense}")
-    print(f"  Extreme point {outlier_pt} -> {c_outlier} (None = identified as noise/outlier space)")
+    print(
+        f"  Extreme point {outlier_pt} -> {c_outlier} (None = identified as noise/outlier space)"
+    )
 
 
 def showcase_hdbscan(df):
@@ -157,14 +193,19 @@ def showcase_hdbscan(df):
         for j in range(len(cols))
     ]
     norm_data = [
-        [(row[j] - means[j]) / (stds[j] if stds[j] > 1e-6 else 1.0) for j in range(len(cols))]
+        [
+            (row[j] - means[j]) / (stds[j] if stds[j] > 1e-6 else 1.0)
+            for j in range(len(cols))
+        ]
         for row in data
     ]
 
     hdb = HDBSCAN(min_cluster_size=25, min_samples=15)
     hdb.fit(norm_data)
 
-    print(f"HDBSCAN discovered {hdb.n_clusters} stable density clusters via Excess of Mass.")
+    print(
+        f"HDBSCAN discovered {hdb.n_clusters} stable density clusters via Excess of Mass."
+    )
     labels = hdb.labels
     cluster_counts = {}
     noise_count = 0
@@ -176,7 +217,9 @@ def showcase_hdbscan(df):
 
     for cid in sorted(cluster_counts.keys()):
         print(f"  Cluster {cid}: {cluster_counts[cid]} points")
-    print(f"  Noise / Outliers (lambda death): {noise_count} points ({noise_count / len(data) * 100:.1f}%)")
+    print(
+        f"  Noise / Outliers (lambda death): {noise_count} points ({noise_count / len(data) * 100:.1f}%)"
+    )
 
     # Condensed Tree inspection
     tree = hdb.condensed_tree()
@@ -191,7 +234,9 @@ def showcase_hdbscan(df):
 
     # GLOSH Outlier scores
     outlier_scores = hdb.outlier_scores
-    top_outlier_indices = sorted(range(len(outlier_scores)), key=lambda i: outlier_scores[i], reverse=True)[:5]
+    top_outlier_indices = sorted(
+        range(len(outlier_scores)), key=lambda i: outlier_scores[i], reverse=True
+    )[:5]
     print("\nTop 5 Outliers by GLOSH (Global-Local Outlier Score from Hierarchies):")
     for idx in top_outlier_indices:
         row = df.iloc[idx]
@@ -212,8 +257,10 @@ def showcase_urf(df):
     urf = UnsupervisedRandomForest(n_trees=50, max_depth=6, min_samples_leaf=5, seed=42)
     urf.fit(data, n_clusters=3)
 
-    print(f"Unsupervised Forest grew 50 synthetic-scrambled margin-separator trees.")
-    print(f"Agglomerative clustering on D = sqrt(1 - P) yielded {urf.n_clusters} clusters.")
+    print("Unsupervised Forest grew 50 synthetic-scrambled margin-separator trees.")
+    print(
+        f"Agglomerative clustering on D = sqrt(1 - P) yielded {urf.n_clusters} clusters."
+    )
 
     # Cluster distribution
     labels = urf.labels
@@ -232,7 +279,9 @@ def showcase_urf(df):
 
     # Proximity outlier scores
     outlier_scores = urf.outlier_scores
-    top_outliers = sorted(range(len(outlier_scores)), key=lambda i: outlier_scores[i], reverse=True)[:5]
+    top_outliers = sorted(
+        range(len(outlier_scores)), key=lambda i: outlier_scores[i], reverse=True
+    )[:5]
     print("\nTop 5 Outliers by Proximity Isolation:")
     for idx in top_outliers:
         row = df.iloc[idx]

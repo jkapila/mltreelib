@@ -65,8 +65,12 @@ def test_blog_causal_uplift():
     tau_persuadable = tree.predict([[0.8, 0.0]], kind="uplift")[0]
     tau_sleeping_dog = tree.predict([[-0.8, 0.8]], kind="uplift")[0]
 
-    assert tau_persuadable > 0.20, f"Expected positive uplift for persuadables, got {tau_persuadable}"
-    assert tau_sleeping_dog < -0.10, f"Expected negative uplift for sleeping dogs, got {tau_sleeping_dog}"
+    assert tau_persuadable > 0.20, (
+        f"Expected positive uplift for persuadables, got {tau_persuadable}"
+    )
+    assert tau_sleeping_dog < -0.10, (
+        f"Expected negative uplift for sleeping dogs, got {tau_sleeping_dog}"
+    )
 
 
 def test_blog_credit_scoring():

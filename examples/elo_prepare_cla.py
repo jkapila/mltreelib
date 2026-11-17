@@ -87,7 +87,9 @@ CL_TASKS = {
 def manifest_targets():
     """name -> (target column, task kind) from the MANIFEST table rows."""
     out = {}
-    pat = re.compile(r"^\|\s*([^|]+?)\s*\|\s*\d+\s*\|\s*classification \((binary|multiclass)\)\s*\|\s*`([^`]+)`\s*\|")
+    pat = re.compile(
+        r"^\|\s*([^|]+?)\s*\|\s*\d+\s*\|\s*classification \((binary|multiclass)\)\s*\|\s*`([^`]+)`\s*\|"
+    )
     for line in MANIFEST.read_text().splitlines():
         m = pat.match(line)
         if m:
@@ -119,22 +121,33 @@ def main():
     rows = []
     for name, task in CL_TASKS.items():
         if name not in targets:
-            raise SystemExit(f"{name}: no classification row in {MANIFEST} — manifest is the source of truth, not guesses")
+            raise SystemExit(
+                f"{name}: no classification row in {MANIFEST} — manifest is the source of truth, not guesses"
+            )
         target, manifest_task = targets[name]
         if manifest_task != task:
-            raise SystemExit(f"{name}: task kind mismatch (manifest={manifest_task}, selection={task})")
+            raise SystemExit(
+                f"{name}: task kind mismatch (manifest={manifest_task}, selection={task})"
+            )
         pq = PQ / f"{name}.parquet"
         if not pq.exists():
-            raise SystemExit(f"{name}: {pq} missing — re-download from the MANIFEST OpenML id")
+            raise SystemExit(
+                f"{name}: {pq} missing — re-download from the MANIFEST OpenML id"
+            )
         df = pd.read_parquet(pq)
         if target not in df.columns:
-            raise SystemExit(f"{name}: target {target!r} not in columns {list(df.columns)[:8]}…")
+            raise SystemExit(
+                f"{name}: target {target!r} not in columns {list(df.columns)[:8]}…"
+            )
         before = len(df)
         df = df.dropna(subset=[target])
         y = df[target].astype(str)
         x = df.drop(columns=[target])
         # column roles by dtype: strings = categorical, numbers = numeric; data AS-IS
-        roles = {c: ("categorical" if not pd.api.types.is_numeric_dtype(x[c]) else "numeric") for c in x.columns}
+        roles = {
+            c: ("categorical" if not pd.api.types.is_numeric_dtype(x[c]) else "numeric")
+            for c in x.columns
+        }
         tr, te = stratified_indices(y.tolist())
         xtr, ytr = x.iloc[tr], y.iloc[tr]
         xte, yte = x.iloc[te], y.iloc[te]
@@ -157,8 +170,19 @@ def main():
             "encoding": "none (raw as-is; sklearn-only ordinal encoding lives in the driver, fit on train)",
         }
         (OUT / f"{name}.meta.json").write_text(json.dumps(meta, indent=1))
-        rows.append((name, task, len(classes), len(df), x.shape[1], sum(1 for v in roles.values() if v == "categorical")))
-    print(f"{len(rows)} classification tasks written to {OUT}/ (target last, raw as-is)")
+        rows.append(
+            (
+                name,
+                task,
+                len(classes),
+                len(df),
+                x.shape[1],
+                sum(1 for v in roles.values() if v == "categorical"),
+            )
+        )
+    print(
+        f"{len(rows)} classification tasks written to {OUT}/ (target last, raw as-is)"
+    )
     print(f"{'dataset':<44} {'task':<11} {'K':>2} {'rows':>7} {'cols':>4} {'cat':>4}")
     for name, task, k, n, p, nc in rows:
         print(f"{name:<44} {task:<11} {k:>2} {n:>7} {p:>4} {nc:>4}")
