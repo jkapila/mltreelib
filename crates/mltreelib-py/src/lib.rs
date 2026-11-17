@@ -2037,6 +2037,7 @@ fn extract_leaf_control<'py>(
                         }
                         "huber" => LeafKind::Huber,
                         "mars" => LeafKind::Mars,
+                        "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
                         "prob" => LeafKind::Prob,
                         "odds" => LeafKind::Odds,
                         "log_odds" | "logit" => LeafKind::LogOdds,
@@ -2108,6 +2109,27 @@ fn extract_leaf_control<'py>(
                 if let Some(item) = feat_item {
                     c.leaf_features = Some(parse_feature_indices(&item, effective_col_names)?);
                 }
+                if let Some(item) = dict.get_item("knn_k")? {
+                    c.knn_k = item.extract::<usize>()?;
+                }
+                if let Some(item) = dict.get_item("knn_k_validity")? {
+                    c.knn_k_validity = item.extract::<usize>()?;
+                }
+                if let Some(item) = dict.get_item("knn_variant")? {
+                    let s = item.extract::<String>()?;
+                    c.knn_variant = mltreelib_core::knn::KnnVariant::from_str(&s).map_err(PyValueError::new_err)?;
+                }
+                if let Some(item) = dict.get_item("knn_metric")? {
+                    let s = item.extract::<String>()?;
+                    let p = dict.get_item("knn_p")?.and_then(|v| v.extract::<f64>().ok());
+                    c.knn_metric = mltreelib_core::knn::DistanceMetric::from_str(&s, p).map_err(PyValueError::new_err)?;
+                }
+                if let Some(item) = dict.get_item("knn_gamma")? {
+                    c.knn_gamma = item.extract::<Option<f64>>()?;
+                }
+                if let Some(item) = dict.get_item("knn_p")? {
+                    c.knn_p = item.extract::<f64>()?;
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2152,6 +2174,7 @@ fn extract_leaf_control<'py>(
             }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
             "prob" => LeafKind::Prob,
             "odds" => LeafKind::Odds,
             "log_odds" | "logit" => LeafKind::LogOdds,
@@ -2241,6 +2264,12 @@ impl PyLeafControl {
         mars_penalty = 2.0,
         tweedie_p = 1.5,
         tobit_threshold = 0.0,
+        knn_k = 5,
+        knn_k_validity = 5,
+        knn_variant = "uniform",
+        knn_metric = "euclidean",
+        knn_gamma = None,
+        knn_p = 2.0,
         events = None,
         treatments = None,
         n_classes = None
@@ -2261,6 +2290,12 @@ impl PyLeafControl {
         mars_penalty: f64,
         tweedie_p: f64,
         tobit_threshold: f64,
+        knn_k: usize,
+        knn_k_validity: usize,
+        knn_variant: &str,
+        knn_metric: &str,
+        knn_gamma: Option<f64>,
+        knn_p: f64,
         events: Option<Vec<f64>>,
         treatments: Option<Vec<f64>>,
         n_classes: Option<usize>,
@@ -2277,6 +2312,7 @@ impl PyLeafControl {
             }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
             "prob" => LeafKind::Prob,
             "odds" => LeafKind::Odds,
             "log_odds" | "logit" => LeafKind::LogOdds,
@@ -2301,6 +2337,8 @@ impl PyLeafControl {
             other => return Err(PyValueError::new_err(format!("unrecognized leaf_cols policy '{other}'"))),
         };
         let mono = leaf_monotone.or(monotone).unwrap_or_default();
+        let knn_var = mltreelib_core::knn::KnnVariant::from_str(knn_variant).map_err(PyValueError::new_err)?;
+        let knn_met = mltreelib_core::knn::DistanceMetric::from_str(knn_metric, Some(knn_p)).map_err(PyValueError::new_err)?;
         Ok(Self {
             inner: mltreelib_core::leaf::LeafControl {
                 leaf: kind,
@@ -2321,6 +2359,12 @@ impl PyLeafControl {
                 mars_penalty,
                 tweedie_p,
                 tobit_threshold,
+                knn_k,
+                knn_k_validity,
+                knn_variant: knn_var,
+                knn_metric: knn_met,
+                knn_gamma,
+                knn_p,
             },
         })
     }
@@ -2334,6 +2378,7 @@ impl PyLeafControl {
             LeafKind::Quantile(t) => format!("quantile({t})"),
             LeafKind::Huber => "huber".to_string(),
             LeafKind::Mars => "mars".to_string(),
+            LeafKind::Knn => "knn".to_string(),
             LeafKind::Prob => "prob".to_string(),
             LeafKind::Odds => "odds".to_string(),
             LeafKind::LogOdds => "log_odds".to_string(),
@@ -2845,6 +2890,8 @@ impl PyModelTree {
         presort = false, events = None, treatments = None, train_groups = true, train_ids = false, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
+        knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
+        knn_gamma = None, knn_p = 2.0,
         control = None, leaf_control = None
     ))]
     fn new(
@@ -2902,6 +2949,12 @@ impl PyModelTree {
         mars_degree: usize,
         mars_terms: usize,
         mars_penalty: f64,
+        knn_k: usize,
+        knn_k_validity: usize,
+        knn_variant: &str,
+        knn_metric: &str,
+        knn_gamma: Option<f64>,
+        knn_p: f64,
         control: Option<Bound<'_, PyAny>>,
         leaf_control: Option<Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
@@ -2939,6 +2992,7 @@ impl PyModelTree {
             "quantile" => LeafKind::Quantile(tau),
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
+            "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
             "prob" => LeafKind::Prob,
             "odds" => LeafKind::Odds,
             "log_odds" | "logit" => LeafKind::LogOdds,
@@ -3096,6 +3150,9 @@ impl PyModelTree {
                 )))
             }
         };
+        let knn_var = mltreelib_core::knn::KnnVariant::from_str(knn_variant).map_err(PyValueError::new_err)?;
+        let knn_met = mltreelib_core::knn::DistanceMetric::from_str(knn_metric, Some(knn_p)).map_err(PyValueError::new_err)?;
+
         let mut params = ModelTreeParams {
             max_depth,
             min_rows,
@@ -3151,6 +3208,12 @@ impl PyModelTree {
             mars_degree,
             mars_terms,
             mars_penalty,
+            knn_k,
+            knn_k_validity,
+            knn_variant: knn_var,
+            knn_metric: knn_met,
+            knn_gamma,
+            knn_p,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(
@@ -3173,6 +3236,12 @@ impl PyModelTree {
             params.l1 = ctrl.l1;
             params.l2 = ctrl.l2;
             params.leaf_digest = ctrl.leaf_digest;
+            params.knn_k = ctrl.knn_k;
+            params.knn_k_validity = ctrl.knn_k_validity;
+            params.knn_variant = ctrl.knn_variant;
+            params.knn_metric = ctrl.knn_metric;
+            params.knn_gamma = ctrl.knn_gamma;
+            params.knn_p = ctrl.knn_p;
             if !ctrl.leaf_monotone.is_empty() {
                 params.leaf_monotone = ctrl.leaf_monotone;
             }
@@ -4377,6 +4446,7 @@ impl PyModelTree {
                 LeafKind::Quantile(_) => "quantile",
                 LeafKind::Huber => "huber",
                 LeafKind::Mars => "mars",
+                LeafKind::Knn => "knn",
                 LeafKind::Prob => "prob",
                 LeafKind::Odds => "odds",
                 LeafKind::LogOdds => "log_odds",
@@ -4456,6 +4526,12 @@ impl PyModelTree {
         d.set_item("mars_degree", self.params.mars_degree)?;
         d.set_item("mars_terms", self.params.mars_terms)?;
         d.set_item("mars_penalty", self.params.mars_penalty)?;
+        d.set_item("knn_k", self.params.knn_k)?;
+        d.set_item("knn_k_validity", self.params.knn_k_validity)?;
+        d.set_item("knn_variant", self.params.knn_variant.as_str())?;
+        d.set_item("knn_metric", self.params.knn_metric.as_str())?;
+        d.set_item("knn_gamma", self.params.knn_gamma)?;
+        d.set_item("knn_p", self.params.knn_p)?;
         Ok(d.into())
     }
 

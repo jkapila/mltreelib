@@ -40,6 +40,8 @@ pub enum LeafKind {
     Odds,
     /// 0D Log-odds (logit): ln(p / (1 - p)).
     LogOdds,
+    /// Non-parametric K-Nearest Neighbors leaf model (Uniform, Distance, Exponential, Dual, Double/DW-KNN).
+    Knn,
 }
 
 /// Parameter controls for fitting leaf models independently of tree topology.
@@ -81,6 +83,18 @@ pub struct LeafControl {
     pub tweedie_p: f64,
     /// Censoring threshold for Tobit response (default 0.0).
     pub tobit_threshold: f64,
+    /// Number of nearest neighbors to query at leaf KNN inference (default 5).
+    pub knn_k: usize,
+    /// Secondary neighborhood size for precomputing neighbor reliability / compactness (default 5).
+    pub knn_k_validity: usize,
+    /// KNN weighting variant: Uniform, Distance, Exponential, Dual, Double (DW-KNN).
+    pub knn_variant: crate::knn::KnnVariant,
+    /// Distance metric for leaf KNN (Euclidean, Manhattan, Chebyshev, Gower, etc.).
+    pub knn_metric: crate::knn::DistanceMetric,
+    /// Decay scale gamma for exponential / double weighting (None => auto-scale by median distance).
+    pub knn_gamma: Option<f64>,
+    /// Power parameter p for inverse distance / Minkowski metric (default 2.0).
+    pub knn_p: f64,
 }
 
 impl Default for LeafControl {
@@ -104,6 +118,12 @@ impl Default for LeafControl {
             mars_penalty: 2.0,
             tweedie_p: 1.5,
             tobit_threshold: 0.0,
+            knn_k: 5,
+            knn_k_validity: 5,
+            knn_variant: crate::knn::KnnVariant::Uniform,
+            knn_metric: crate::knn::DistanceMetric::Euclidean,
+            knn_gamma: None,
+            knn_p: 2.0,
         }
     }
 }
@@ -116,6 +136,12 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         extra.insert("mars_degree".to_string(), p.mars_degree as f64);
         extra.insert("mars_terms".to_string(), p.mars_terms as f64);
         extra.insert("mars_penalty".to_string(), p.mars_penalty);
+        extra.insert("knn_k".to_string(), p.knn_k as f64);
+        extra.insert("knn_k_validity".to_string(), p.knn_k_validity as f64);
+        extra.insert("knn_p".to_string(), p.knn_p);
+        if let Some(g) = p.knn_gamma {
+            extra.insert("knn_gamma".to_string(), g);
+        }
         let leaf_monotone = if !p.leaf_monotone.is_empty() {
             p.leaf_monotone.clone()
         } else {
@@ -140,6 +166,12 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             mars_penalty: p.mars_penalty,
             tweedie_p: p.tweedie_p,
             tobit_threshold: p.tobit_threshold,
+            knn_k: p.knn_k,
+            knn_k_validity: p.knn_k_validity,
+            knn_variant: p.knn_variant,
+            knn_metric: p.knn_metric,
+            knn_gamma: p.knn_gamma,
+            knn_p: p.knn_p,
         }
     }
 }
@@ -393,6 +425,8 @@ pub fn fit_leaf_model(
             causal,
             mars: None,
             mars_cols: None,
+            knn: None,
+            knn_cols: None,
         };
     }
 
@@ -465,6 +499,8 @@ pub fn fit_leaf_model(
             causal,
             mars: None,
             mars_cols: None,
+            knn: None,
+            knn_cols: None,
         };
     }
 
@@ -544,6 +580,8 @@ pub fn fit_leaf_model(
             causal,
             mars: None,
             mars_cols: None,
+            knn: None,
+            knn_cols: None,
         };
     }
 
@@ -582,6 +620,42 @@ pub fn fit_leaf_model(
             causal,
             mars: reg.model,
             mars_cols: Some(chosen),
+            knn: None,
+            knn_cols: None,
+        };
+    }
+
+    if control.leaf == LeafKind::Knn {
+        let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+        let n_classes = control.n_classes.unwrap_or(2);
+        let knn_model = crate::knn::LeafKnnModel::fit(
+            cols,
+            y,
+            w,
+            rows,
+            chosen.clone(),
+            control.knn_k,
+            control.knn_k_validity,
+            control.knn_variant,
+            control.knn_metric,
+            control.knn_gamma,
+            control.knn_p,
+            family,
+            n_classes,
+        );
+        return LeafModel {
+            stats,
+            linear: None,
+            center: Some(knn_model.fallback_mean),
+            family,
+            softmax: None,
+            survival: None,
+            heteroscedastic: None,
+            causal,
+            mars: None,
+            mars_cols: None,
+            knn: Some(knn_model),
+            knn_cols: Some(chosen),
         };
     }
 
@@ -602,6 +676,8 @@ pub fn fit_leaf_model(
             causal,
             mars: None,
             mars_cols: None,
+            knn: None,
+            knn_cols: None,
         };
     }
     let linear = if control.leaf == LeafKind::Linear {
@@ -634,6 +710,8 @@ pub fn fit_leaf_model(
                 causal,
                 mars: None,
                 mars_cols: None,
+                knn: None,
+                knn_cols: None,
             };
         }
         let mut g = Gram::new(dim);
@@ -683,6 +761,8 @@ pub fn fit_leaf_model(
         causal,
         mars: None,
         mars_cols: None,
+        knn: None,
+        knn_cols: None,
     }
 }
 

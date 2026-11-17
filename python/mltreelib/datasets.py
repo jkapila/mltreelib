@@ -10,6 +10,7 @@ feed straight back into the data layer.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 _DATA_DIR = Path(__file__).resolve().parents[2] / "datasets"
@@ -54,7 +55,7 @@ def load_dataset(name: str) -> dict:
         else:
             # NaN is missing too (pandas/parquet float nulls)
             columns[field.name] = [
-                None if v is None or (isinstance(v, float) and v != v) else v
+                None if v is None or (isinstance(v, float) and math.isnan(v)) else v
                 for v in values
             ]
             dtypes[field.name] = "numeric"

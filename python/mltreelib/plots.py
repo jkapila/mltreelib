@@ -218,7 +218,7 @@ def plot_ks(y_true, scores, ax=None):
         xy=(r["score_at_ks"], (r["tpr_at_ks"] + r["fpr_at_ks"]) / 2),
         xytext=(0.06, 0.82),
         textcoords="axes fraction",
-        bbox=dict(boxstyle="round,pad=0.4", fc="#ffffff", ec="#b0bec5", lw=0.8),
+        bbox={"boxstyle": "round,pad=0.4", "fc": "#ffffff", "ec": "#b0bec5", "lw": 0.8},
         fontsize=8.5,
     )
     ax.set_xlabel("Score Threshold (descending)")
@@ -636,7 +636,7 @@ def plot_confusion_matrix(confusion, class_names=None, ax=None):
     teal_cmap = LinearSegmentedColormap.from_list(
         "teal_map", ["#f0fdfa", "#b2dfdb", "#80cbc4", "#00897b", "#004d40"]
     )
-    im = ax.imshow(mat, cmap=teal_cmap, interpolation="nearest")
+    ax.imshow(mat, cmap=teal_cmap, interpolation="nearest")
 
     ax.set_xticks(range(n_classes))
     ax.set_yticks(range(n_classes))

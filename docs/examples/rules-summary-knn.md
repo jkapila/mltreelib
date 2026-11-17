@@ -120,3 +120,61 @@ On datasets with non-linear or localized effects:
 | **Cubist Adjustment ($k=3$)** | 1160.44 | 24.31 | **-35.2%** error |
 | **Cubist Adjustment ($k=5$)** | 1172.85 | 24.66 | **-34.5%** error |
 | **Cubist Adjustment ($k=9$)** | 1083.16 | 24.95 | **-39.5%** error |
+
+---
+
+## 4. Native Leaf-KNN & DW-KNN Architecture
+
+Beyond post-hoc inference adjustments, `mltreelib` implements native **Leaf-KNN models** where each partitioned terminal node fits a localized, metric-weighted $k$-NN regressor or classifier directly inside the tree structure (`leaf="knn"` or `leaf="dwknn"`).
+
+Script: [`examples/knn_leaf_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/knn_leaf_showcase.py).
+
+### Weighting Variants
+
+- **`uniform`**: Standard unweighted majority vote / mean over $k$ nearest leaf samples.
+- **`distance`**: Inverse-distance weighting (Dudani, 1976), $w_i = 1 / (d_i + \epsilon)$.
+- **`exponential`**: Radial / kernel exponential decay, $w_i = \exp(-\gamma \cdot d_i^2)$.
+- **`dual`**: Distance $\times$ local compactness weighting (Gou et al., 2012).
+- **`double` / `dwknn`**: Double-Weighted KNN (Pathak, Karthik, Madan, Kapila; [arXiv:2512.08956](https://arxiv.org/abs/2512.08956)). Precomputes neighbor validity $v_i$ for each training instance within its neighborhood, dampening label noise and boundary anomalies before query voting:
+  $$w_i = \frac{1}{d_i + \epsilon} \times v_i$$
+
+### Proximity & Distance Metrics
+
+Supports 10 distance metrics via `knn_metric`:
+- Continuous geometry: `euclidean`, `manhattan`, `chebyshev`, `minkowski(p)`
+- Directional & correlation: `cosine`, `correlation`
+- Normalized & relative: `canberra`, `braycurtis`
+- Mixed / Missing data: `gower` (range-normalized across numerical and categorical features; handles missing `None` values without imputation)
+- Scale-invariant: `mahalanobis` (diagonal variance-scaled)
+
+### Usage Example
+
+```python
+from mltreelib import ModelTree
+
+# Train a ModelTree with DW-KNN leaves and Gower distance
+tree = ModelTree(
+    leaf="dwknn",
+    knn_k=7,
+    knn_metric="gower",
+    max_depth=3,
+    min_rows=15,
+)
+tree.fit(X_train, y_train)
+
+# Predictions invoke localized DW-KNN within the targeted leaf node
+y_pred = tree.predict(X_test)
+```
+
+You can also dynamically retrain tree leaves using `LeafControl`:
+```python
+from mltreelib import LeafControl
+
+# Retrain existing tree partitions to DW-KNN without rebuilding the tree topology
+tree.retrain(
+    X_train,
+    y_train,
+    leaf_control=LeafControl(leaf="knn", knn_variant="double", knn_k=5, knn_metric="manhattan"),
+)
+```
+

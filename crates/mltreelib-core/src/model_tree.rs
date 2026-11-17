@@ -205,6 +205,18 @@ pub struct ModelTreeParams {
     pub mars_terms: usize,
     /// GCV penalty for MARS leaves (default 2.0).
     pub mars_penalty: f64,
+    /// Number of nearest neighbors to query at leaf KNN inference (default 5).
+    pub knn_k: usize,
+    /// Secondary neighborhood size for precomputing neighbor reliability / compactness (default 5).
+    pub knn_k_validity: usize,
+    /// KNN weighting variant: Uniform, Distance, Exponential, Dual, Double (DW-KNN).
+    pub knn_variant: crate::knn::KnnVariant,
+    /// Distance metric for leaf KNN (Euclidean, Manhattan, Chebyshev, Gower, etc.).
+    pub knn_metric: crate::knn::DistanceMetric,
+    /// Decay scale gamma for exponential / double weighting (None => auto-scale by median distance).
+    pub knn_gamma: Option<f64>,
+    /// Power parameter p for inverse distance / Minkowski metric (default 2.0).
+    pub knn_p: f64,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -281,6 +293,12 @@ impl Default for ModelTreeParams {
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
+            knn_k: 5,
+            knn_k_validity: 5,
+            knn_variant: crate::knn::KnnVariant::Uniform,
+            knn_metric: crate::knn::DistanceMetric::Euclidean,
+            knn_gamma: None,
+            knn_p: 2.0,
         }
     }
 }
@@ -513,6 +531,7 @@ impl ModelTree {
                 LeafKind::Mean
                     | LeafKind::Linear
                     | LeafKind::Mars
+                    | LeafKind::Knn
                     | LeafKind::Prob
                     | LeafKind::Odds
                     | LeafKind::LogOdds
@@ -922,6 +941,7 @@ impl ModelTree {
                 LeafKind::Mean
                     | LeafKind::Linear
                     | LeafKind::Mars
+                    | LeafKind::Knn
                     | LeafKind::Prob
                     | LeafKind::Odds
                     | LeafKind::LogOdds

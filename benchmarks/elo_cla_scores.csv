@@ -917,3 +917,19 @@ APSFailure,perpetual (Rust),Rust,external,0.0360,0.9941,0.8685,0.9860,0.9078,84.
 APSFailure,sklearn LogReg,Python,external,0.0385,0.9891,0.7803,0.9635,0.8236,17.9490
 APSFailure,sklearn RF,Python,external,0.0384,0.9936,0.8611,0.9793,0.8996,74.7130
 APSFailure,sklearn tree,Python,external,0.3704,0.9893,0.8446,0.8446,0.8477,28.8270
+APSFailure,c50_tree,R,internal,0.0322,0.9907,0.8061,0.9660,0.8497,36.6200
+APSFailure,ranger,R,internal,0.0314,0.9935,0.8593,0.9848,0.8983,142.4970
+APSFailure,ChimeraBoost,Python,internal,0.0217,0.9940,0.8720,0.9857,0.9077,30.1680
+Diabetes130US,ranger,R,internal,0.2881,0.9120,0.5004,0.6332,0.4778,92.1270
+Diabetes130US,ChimeraBoost,Python,internal,0.2825,0.9122,0.5023,0.6650,0.4818,7.5990
+GiveMeSomeCredit,c50_tree,R,internal,0.2044,0.9361,0.5988,0.7039,0.6356,6.2100
+GiveMeSomeCredit,ranger,R,internal,0.1825,0.9366,0.5894,0.8539,0.6256,103.6130
+GiveMeSomeCredit,ChimeraBoost,Python,internal,0.1783,0.9373,0.5897,0.8643,0.6269,3.6340
+anneal,ranger,R,internal,0.0653,0.9944,0.9985,,0.9944,1.0300
+customer_satisfaction_in_airline,c50_tree,R,internal,0.1372,0.9477,0.9483,0.9888,0.9474,6.2330
+customer_satisfaction_in_airline,ranger,R,internal,0.1230,0.9554,0.9562,0.9925,0.9551,68.6960
+customer_satisfaction_in_airline,ChimeraBoost,Python,internal,0.1031,0.9539,0.9544,0.9931,0.9535,20.1900
+jm1,ranger,R,internal,0.4234,0.8218,0.5889,0.7589,0.6048,2.9430
+online_shoppers_intention,ChimeraBoost,Python,internal,0.2216,0.9059,0.7883,0.9354,0.8078,4.4400
+splice,ranger,R,internal,0.3269,0.9467,0.9378,,0.9383,1.4380
+taiwanese_bankruptcy_prediction,ranger,R,internal,0.0744,0.9714,0.5788,0.9586,0.6248,2.0060

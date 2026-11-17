@@ -57,6 +57,14 @@ Based on the canonical [scikit-learn Tree Regression](https://scikit-learn.org/s
 
 ![1D Tree Regression Comparison: Decision Tree, LightGBM, CatBoost, and ModelTree](../assets/plot_tree_regression_comparison.png)
 
+### 3. 2D Continuous Surface Regression — Staircase Terraces vs Piecewise Planar Facets
+
+Comparison on a non-linear 2D ripple function ($z = \frac{\sin(r)}{r + 0.4} \times 2.5$):
+
+![2D Surface Regression Comparison: Ground Truth, Decision Tree, LightGBM, CatBoost, and ModelTree](../assets/plot_surface_regression_comparison.png)
+
+Where CART, LightGBM, and CatBoost are constrained to flat orthogonal step terraces, a single `ModelTree(leaf="linear")` fits local 2D planar gradients in each partitioned partition, capturing continuous curved topography with zero staircase artifacts.
+
 ---
 
 ## The chart layer

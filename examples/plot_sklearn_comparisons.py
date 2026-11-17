@@ -63,14 +63,14 @@ def plot_classifier_comparison():
         lgb.LGBMClassifier(max_depth=5, n_estimators=50, random_state=42, verbosity=-1),
         CatBoostClassifier(depth=5, iterations=50, random_seed=42, verbose=0),
         ModelTree(
-            leaf="linear", leaf_family="binomial", gain="deviance", max_depth=3, seed=42
+            leaf="linear", leaf_family="binomial", gain="deviance", max_depth=5, min_rows=10, seed=42
         ),
         ModelTree(
-            leaf="mean", leaf_family="binomial", gain="deviance", max_depth=3, seed=42
+            leaf="mean", leaf_family="binomial", gain="deviance", max_depth=5, min_rows=10, seed=42
         ),
     ]
 
-    # Generate 3 benchmark datasets
+    # Generate 4 benchmark datasets
     X_lin, y_lin = make_classification(
         n_features=2,
         n_redundant=0,
@@ -82,6 +82,11 @@ def plot_classifier_comparison():
     X_lin += 2 * rng.uniform(size=X_lin.shape)
     linearly_separable = (X_lin, y_lin)
 
+    # XOR / 4-quadrant checkerboard dataset
+    rng_xor = np.random.RandomState(42)
+    X_xor = rng_xor.uniform(-2.5, 2.5, size=(300, 2))
+    y_xor = np.logical_xor(X_xor[:, 0] > 0, X_xor[:, 1] > 0).astype(int)
+
     datasets = [
         ("Moons", make_moons(n_samples=250, noise=0.25, random_state=42)),
         (
@@ -89,9 +94,10 @@ def plot_classifier_comparison():
             make_circles(n_samples=250, noise=0.15, factor=0.5, random_state=42),
         ),
         ("Linear Separable", linearly_separable),
+        ("XOR Checkerboard", (X_xor, y_xor)),
     ]
 
-    figure = plt.figure(figsize=(21, 9))
+    figure = plt.figure(figsize=(21, 12))
     h = 0.03  # step size in the mesh
 
     cm = plt.cm.RdBu
@@ -231,7 +237,7 @@ def plot_tree_regression_comparison():
         n_estimators=30, max_depth=3, random_state=42, verbosity=-1
     )
     regr_catb = CatBoostRegressor(iterations=30, depth=3, random_seed=42, verbose=0)
-    regr_mt = ModelTree(leaf="linear", max_depth=2, min_rows=15, l2=1e-3, seed=42)
+    regr_mt = ModelTree(leaf="linear", max_depth=4, min_rows=8, l2=1e-3, seed=42)
 
     regr_dt_shallow.fit(X, y)
     regr_dt_deep.fit(X, y)
@@ -294,7 +300,7 @@ def plot_tree_regression_comparison():
         y_mt,
         color="#2563EB",
         linewidth=2.5,
-        label=f"ModelTree Linear (Depth 2, RMSE={rmse_mt:.3f})",
+        label=f"ModelTree Linear (Depth 4, RMSE={rmse_mt:.3f})",
     )
     ax.set_xlabel("Feature $x$", fontsize=12)
     ax.set_ylabel("Target $y$", fontsize=12)
@@ -364,7 +370,88 @@ def plot_tree_regression_comparison():
     print(f"  [Output] Saved {out_png} and {out_svg}")
 
 
+def plot_2d_surface_comparison():
+    print("\nGenerating 2D Non-Linear Surface Comparison (Piecewise Linear vs Staircase Terraces)...")
+
+    # Generate 2D continuous surface (Sombrero / Sinc ripple function)
+    rng = np.random.RandomState(42)
+    N = 500
+    X1 = rng.uniform(-3.0, 3.0, N)
+    X2 = rng.uniform(-3.0, 3.0, N)
+    X = np.column_stack([X1, X2])
+    r = np.sqrt(X1**2 + X2**2)
+    y = np.sin(r) / (r + 0.4) * 2.5 + rng.normal(0, 0.08, N)
+
+    # Grid for dense evaluation
+    grid_res = 80
+    gx = np.linspace(-3.0, 3.0, grid_res)
+    gy = np.linspace(-3.0, 3.0, grid_res)
+    xx, yy = np.meshgrid(gx, gy)
+    grid_pts = np.c_[xx.ravel(), yy.ravel()]
+    r_grid = np.sqrt(xx**2 + yy**2)
+    z_true = np.sin(r_grid) / (r_grid + 0.4) * 2.5
+
+    # Models
+    dt_regr = DecisionTreeRegressor(max_depth=5, random_state=42)
+    lgb_regr = lgb.LGBMRegressor(n_estimators=40, max_depth=4, random_state=42, verbosity=-1)
+    catb_regr = CatBoostRegressor(iterations=40, depth=4, random_seed=42, verbose=0)
+    mt_regr = ModelTree(leaf="linear", max_depth=5, min_rows=10, l2=1e-3, seed=42)
+
+    dt_regr.fit(X, y)
+    lgb_regr.fit(X, y)
+    catb_regr.fit(X, y)
+    mt_regr.fit(X.tolist(), y.tolist())
+
+    z_dt = dt_regr.predict(grid_pts).reshape(xx.shape)
+    z_lgb = lgb_regr.predict(grid_pts).reshape(xx.shape)
+    z_catb = catb_regr.predict(grid_pts).reshape(xx.shape)
+    z_mt = np.array(mt_regr.predict(grid_pts.tolist())).reshape(xx.shape)
+
+    rmse_dt = np.sqrt(np.mean((z_true - z_dt)**2))
+    rmse_lgb = np.sqrt(np.mean((z_true - z_lgb)**2))
+    rmse_catb = np.sqrt(np.mean((z_true - z_catb)**2))
+    rmse_mt = np.sqrt(np.mean((z_true - z_mt)**2))
+
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5))
+    cm = plt.cm.viridis
+
+    panels = [
+        ("Ground Truth Surface", z_true, None),
+        ("DecisionTree (Depth 5)", z_dt, rmse_dt),
+        ("LightGBM (40 Trees)", z_lgb, rmse_lgb),
+        ("CatBoost (40 Trees)", z_catb, rmse_catb),
+        ("ModelTree Linear (1 Tree)", z_mt, rmse_mt),
+    ]
+
+    vmin = min(z_true.min(), z_dt.min(), z_lgb.min(), z_catb.min(), z_mt.min())
+    vmax = max(z_true.max(), z_dt.max(), z_lgb.max(), z_catb.max(), z_mt.max())
+
+    for idx, (title, z_map, rmse) in enumerate(panels):
+        ax = axes[idx]
+        ax.contourf(xx, yy, z_map, levels=25, cmap=cm, vmin=vmin, vmax=vmax)
+        if idx == 0:
+            ax.scatter(X[:, 0], X[:, 1], c="white", edgecolors="black", s=15, alpha=0.5, label="Train Samples")
+        ax.set_title(title, fontsize=12, fontweight="bold")
+        ax.set_xticks(())
+        ax.set_yticks(())
+        if rmse is not None:
+            ax.text(
+                xx.max() - 0.4, yy.min() + 0.4, f"RMSE: {rmse:.3f}",
+                size=12, fontweight="bold", horizontalalignment="right",
+                bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.85)
+            )
+
+    plt.tight_layout()
+    out_png = DOCS_ASSETS / "plot_surface_regression_comparison.png"
+    out_svg = DOCS_ASSETS / "plot_surface_regression_comparison.svg"
+    plt.savefig(out_png, dpi=200, bbox_inches="tight")
+    plt.savefig(out_svg, bbox_inches="tight")
+    plt.close()
+    print(f"  [Output] Saved {out_png} and {out_svg}")
+
+
 if __name__ == "__main__":
     plot_classifier_comparison()
     plot_tree_regression_comparison()
+    plot_2d_surface_comparison()
     print("\nAll matplotlib benchmark plots generated successfully.")

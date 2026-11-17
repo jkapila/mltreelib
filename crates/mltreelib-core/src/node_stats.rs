@@ -379,12 +379,17 @@ pub struct LeafModel {
     pub causal: Option<CausalStats>,
     pub mars: Option<crate::mars::MarsModel>,
     pub mars_cols: Option<Vec<usize>>,
+    pub knn: Option<crate::knn::LeafKnnModel>,
+    pub knn_cols: Option<Vec<usize>>,
 }
 
 impl LeafModel {
     /// Linear model when present, the fitted constant otherwise (weighted
     /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {
+        if let (Some(knn), Some(_chosen)) = (&self.knn, &self.knn_cols) {
+            return knn.predict(x, self.family);
+        }
         if let (Some(mars), Some(chosen)) = (&self.mars, &self.mars_cols) {
             let row_f64: Vec<f64> = chosen.iter().map(|&c| x.get(c).and_then(|&v| v).unwrap_or(0.0)).collect();
             return mars.predict_row(&row_f64);
@@ -467,8 +472,11 @@ impl LeafModel {
         self.family.inverse_link(eta)
     }
 
-    /// Predict class probabilities for classification leaves (Softmax, Binomial, Probit).
+    /// Predict class probabilities for classification leaves (Softmax, Binomial, Probit, Knn).
     pub fn predict_proba_row(&self, x: &[Option<f64>]) -> Vec<f64> {
+        if let Some(knn) = &self.knn {
+            return knn.predict_proba(x);
+        }
         match self.family {
             LeafFamily::Softmax => {
                 if let Some(sm) = &self.softmax {

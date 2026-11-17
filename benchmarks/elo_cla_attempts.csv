@@ -1202,3 +1202,21 @@ APSFailure,sklearn GBM,timeout,120.3
 APSFailure,sklearn LogReg,ok,44.0
 APSFailure,sklearn RF,ok,98.7
 APSFailure,sklearn tree,ok,55.7
+APSFailure,c50_tree,ok,51.2
+APSFailure,ranger,ok,162.5
+APSFailure,ChimeraBoost,ok,76.8
+Diabetes130US,c50_tree,error,9.8
+Diabetes130US,ranger,ok,98.6
+Diabetes130US,ChimeraBoost,ok,36.5
+GiveMeSomeCredit,c50_tree,ok,7.8
+GiveMeSomeCredit,ranger,ok,109.4
+GiveMeSomeCredit,ChimeraBoost,ok,21.3
+anneal,c50_tree,error,3.1
+anneal,ranger,ok,1.4
+customer_satisfaction_in_airline,c50_tree,ok,7.6
+customer_satisfaction_in_airline,ranger,ok,73.1
+customer_satisfaction_in_airline,ChimeraBoost,ok,40.6
+jm1,ranger,ok,4.9
+online_shoppers_intention,ChimeraBoost,ok,22.6
+splice,ranger,ok,1.8
+taiwanese_bankruptcy_prediction,ranger,ok,5.2

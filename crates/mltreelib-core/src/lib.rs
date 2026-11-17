@@ -30,5 +30,7 @@ pub mod transform;
 pub mod trie_knn;
 pub mod mars;
 pub mod rules;
+pub mod knn;
 
+pub use knn::{DistanceMetric, KnnVariant, LeafKnnModel};
 pub use rules::{ConditionOp, Rule, RuleCondition, RuleSet};

@@ -96,6 +96,7 @@ nav:
       - Field notes: field-notes.md
   - API reference:
       - Overview: reference/api/index.md
+      - Parameters Catalog: reference/parameters.md
       - Data: reference/api/data.md
       - ModelTree: reference/api/model-tree.md
       - Clustering trees: reference/api/cluster.md

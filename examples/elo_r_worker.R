@@ -152,9 +152,9 @@ if (task %in% c("cla", "classification")) {
       }
     },
     ranger = {
-      fit <- ranger::ranger(as.formula(paste0("`", ycol, "` ~ .")), data = train,
+      fit <- ranger::ranger(x = train[, xs, drop = FALSE], y = train[[ycol]],
                             probability = TRUE)
-      predict(fit, test)$predictions
+      predict(fit, test[, xs, drop = FALSE])$predictions
     },
     bart = {
       if (K != 2) stop("bart is binary-only")
@@ -309,8 +309,8 @@ if (task %in% c("cla", "classification")) {
       predict(fit, test)
     },
     ranger = {
-      fit <- ranger::ranger(as.formula(paste(ycol, "~ .")), data = train)
-      predict(fit, test)$predictions
+      fit <- ranger::ranger(x = train[, xs, drop = FALSE], y = train[[ycol]])
+      predict(fit, test[, xs, drop = FALSE])$predictions
     },
     bart = {
       fit <- dbarts::bart(x.train = train_mat,

@@ -182,7 +182,7 @@ class AnomalyTree:
             scores = self.score_samples(x)
             sorted_scores = sorted(scores)
             # Find score cutoff strictly for the top contamination fraction
-            n_anom = max(1, int(round(self.contamination * len(sorted_scores))))
+            n_anom = max(1, round(self.contamination * len(sorted_scores)))
             # Index of first anomaly from the tail
             idx = max(0, len(sorted_scores) - n_anom)
             self._threshold = sorted_scores[idx]
