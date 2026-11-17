@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" width="100%" height="100%" style="background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <style>
+    .title { font-size: 14px; font-weight: 700; fill: #1e293b; }
+    .subtitle { font-size: 11px; fill: #64748b; }
+    .axis { stroke: #cbd5e1; stroke-width: 1.5; }
+    .step-line { stroke: #ef4444; stroke-width: 2.5; fill: none; }
+    .model-line { stroke: #2563eb; stroke-width: 2.5; fill: none; }
+    .truth-line { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 3,3; fill: none; }
+    .extrap-flat { stroke: #ef4444; stroke-width: 2.5; stroke-dasharray: 4,4; fill: none; }
+    .extrap-linear { stroke: #10b981; stroke-width: 2.5; fill: none; }
+    .label { font-size: 10px; fill: #475569; }
+    .badge { font-size: 10px; font-weight: 600; }
+  </style>
+
+  <!-- Panel 1: Step Function Staircase vs Linear Model Tree -->
+  <g transform="translate(40, 30)">
+    <rect width="260" height="260" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="16" y="28" class="title">Approximating Continuous Physics</text>
+    <text x="16" y="44" class="subtitle">CART/GBDT 20-step staircase vs 1 Linear Leaf</text>
+
+    <line x1="35" y1="210" x2="235" y2="210" class="axis"/>
+    <line x1="35" y1="60" x2="35" y2="210" class="axis"/>
+
+    <!-- True smooth curve -->
+    <path d="M 40 185 Q 120 150 230 75" class="truth-line"/>
+
+    <!-- Step function staircase (GBDT) -->
+    <path d="M 40 185 H 65 V 170 H 90 V 155 H 115 V 140 H 145 V 122 H 175 V 102 H 205 V 85 H 230" class="step-line"/>
+
+    <!-- Model tree smooth line -->
+    <path d="M 40 182 L 130 138 L 230 76" class="model-line"/>
+
+    <!-- Legend -->
+    <line x1="45" y1="235" x2="65" y2="235" class="step-line"/>
+    <text x="70" y="238" class="label">GBDT (Staircase)</text>
+    <line x1="150" y1="235" x2="170" y2="235" class="model-line"/>
+    <text x="175" y="238" class="label">ModelTree (Linear)</text>
+  </g>
+
+  <!-- Panel 2: Extrapolation Outside Training Range -->
+  <g transform="translate(350, 30)">
+    <rect width="260" height="260" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="16" y="28" class="title">Extrapolation Beyond Support</text>
+    <text x="16" y="44" class="subtitle">GBDT flatline collapse vs Monotone projection</text>
+
+    <line x1="35" y1="210" x2="235" y2="210" class="axis"/>
+    <line x1="35" y1="60" x2="35" y2="210" class="axis"/>
+
+    <!-- Support boundary -->
+    <rect x="35" y="60" width="120" height="150" fill="#f8fafc"/>
+    <line x1="155" y1="60" x2="155" y2="210" stroke="#cbd5e1" stroke-dasharray="3,3"/>
+    <text x="95" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">Training Support</text>
+    <text x="195" y="75" text-anchor="middle" font-size="9" fill="#f97316">Extrapolation Zone</text>
+
+    <!-- Training line -->
+    <path d="M 40 170 L 155 110" class="model-line"/>
+
+    <!-- GBDT flatline in extrapolation -->
+    <path d="M 155 110 H 230" class="extrap-flat"/>
+    <text x="215" y="102" text-anchor="end" class="badge" fill="#ef4444">GBDT Flatline</text>
+
+    <!-- Linear Model Tree continuation with clamping -->
+    <path d="M 155 110 L 230 72" class="extrap-linear"/>
+    <text x="215" y="65" text-anchor="end" class="badge" fill="#10b981">ModelTree Slope</text>
+
+    <text x="135" y="225" text-anchor="middle" class="label">Airfoil Inflow Velocity (m/s)</text>
+  </g>
+
+  <!-- Panel 3: Efficiency Frontier (Tree Depth vs RMSE) -->
+  <g transform="translate(660, 30)">
+    <rect width="260" height="260" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="16" y="28" class="title">Model Efficiency Frontier</text>
+    <text x="16" y="44" class="subtitle">RMSE vs Required Tree Depth</text>
+
+    <line x1="45" y1="210" x2="235" y2="210" class="axis"/>
+    <line x1="45" y1="60" x2="45" y2="210" class="axis"/>
+
+    <!-- GBDT curve -->
+    <path d="M 55 190 Q 90 175 140 140 T 225 115" class="step-line"/>
+    <circle cx="55" cy="190" r="3" fill="#ef4444"/>
+    <circle cx="100" cy="165" r="3" fill="#ef4444"/>
+    <circle cx="160" cy="130" r="3" fill="#ef4444"/>
+    <circle cx="225" cy="115" r="3" fill="#ef4444"/>
+
+    <!-- ModelTree curve -->
+    <path d="M 55 135 Q 90 95 160 82 T 225 78" class="model-line"/>
+    <circle cx="55" cy="135" r="3" fill="#2563eb"/>
+    <circle cx="100" cy="98" r="3" fill="#2563eb"/>
+    <circle cx="160" cy="82" r="3" fill="#2563eb"/>
+    <circle cx="225" cy="78" r="3" fill="#2563eb"/>
+
+    <text x="180" y="70" class="badge" fill="#2563eb">ModelTree (Depth 3 = 1.05 RMSE)</text>
+    <text x="165" y="160" class="badge" fill="#ef4444">CART (Depth 10 = 1.76 RMSE)</text>
+
+    <text x="140" y="225" text-anchor="middle" class="label">Tree Depth (Splits)</text>
+    <text x="25" y="135" text-anchor="middle" transform="rotate(-90 25 135)" class="label">Test RMSE (dB)</text>
+  </g>
+</svg>

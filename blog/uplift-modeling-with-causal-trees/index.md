@@ -37,8 +37,9 @@ causal_tree = ModelTree(
     seed=42,
 )
 
-# Fit over tuple target: (outcomes, treatments)
-causal_tree.fit(X_train, (y_train, w_train))
+# Fit over tuple target (outcomes, treatments) with explicit feature names
+col_names = ["loyalty_tenure", "engagement_freq"]
+causal_tree.fit(X_train, (y_train, w_train), col_names=col_names)
 
 # Predict individual uplift (tau / CATE)
 uplift_scores = causal_tree.predict(X_test, kind="uplift")
@@ -52,10 +53,10 @@ In our customer discount benchmark (\\(N=1,000\\) campaign members), customers f
 
 | Persona | Feature Profile | Control Rate (\\(W=0\\)) | Treated Rate (\\(W=1\\)) | True CATE (\\(\\tau\\)) | Action |
 | :--- | :--- | :---: | :---: | :---: | :--- |
-| **Persuadables** | \\(X\_0 \> 0.0\\) (High loyalty / tenure) | 15% | 75% | **\+60%** | **Target with Discount** |
-| **Sleeping Dogs** | \\(X\_0 \\le 0.0, X\_1 \> 0.0\\) (High renewal risk) | 55% | 10% | **\-45%** | **Do Not Disturb** |
-| **Sure Things** | \\(X\_0 \\le 0.0, X\_1 \\le 0.0\\) | 25% | 25% | **0%** | **Save Discount Budget** |
-| **Lost Causes** | \\(X\_0 \\le 0.0, X\_1 \\le 0.0\\) | 25% | 25% | **0%** | **Do Not Target** |
+| **Persuadables** | `loyalty_tenure > 0.0` (High loyalty / tenure) | 15% | 75% | **\+60%** | **Target with Discount** |
+| **Sleeping Dogs** | `loyalty_tenure <= 0.0, engagement_freq > 0.0` | 55% | 10% | **\-45%** | **Do Not Disturb** |
+| **Sure Things** | `loyalty_tenure <= 0.0, engagement_freq <= 0.0` | 25% | 25% | **0%** | **Save Discount Budget** |
+| **Lost Causes** | `loyalty_tenure <= 0.0, engagement_freq <= 0.0` | 25% | 25% | **0%** | **Do Not Target** |
 
 ---
 
@@ -63,7 +64,7 @@ In our customer discount benchmark (\\(N=1,000\\) campaign members), customers f
 
 Below is the trained causal tree diagram rendered via `causal_tree.to_dot()` and Graphviz:
 
-Notice how the tree immediately splits on feature \\(X\_0 \\approx 0.0\\). Customers with \\(X\_0 \> 0.0\\) are grouped into the left leaves where \\(\\hat{\\tau} \\approx +0.60\\). Customers with \\(X\_0 \\le 0.0\\) branch right, where the tree isolates the Sleeping Dogs on \\(X\_1 \> 0.0\\) with \\(\\hat{\\tau} \\approx -0.45\\).
+Notice how the tree immediately splits on feature `loyalty_tenure < 0.051`. Customers with high loyalty are grouped into the left leaves where \\(\\hat{\\tau} \\approx +0.60\\). Customers with low loyalty branch right, where the tree isolates the Sleeping Dogs on `engagement_freq > 0.029` with \\(\\hat{\\tau} \\approx -0.45\\).
 
 ---
 

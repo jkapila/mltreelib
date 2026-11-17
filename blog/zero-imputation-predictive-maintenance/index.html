@@ -11,7 +11,8 @@
 <span class=p>)</span>
 
 <span class=c1># Fit over raw telemetry matrix containing None / NaN dropouts</span>
-<span class=n>model</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>X_train</span><span class=p>,</span> <span class=n>y_train</span><span class=p>)</span>
+<span class=n>col_names</span> <span class=o>=</span> <span class=p>[</span><span class=s2>"bearing_temp"</span><span class=p>,</span> <span class=s2>"vibration_rms"</span><span class=p>,</span> <span class=s2>"oil_pressure"</span><span class=p>]</span>
+<span class=n>model</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>X_train</span><span class=p>,</span> <span class=n>y_train</span><span class=p>,</span> <span class=n>col_names</span><span class=o>=</span><span class=n>col_names</span><span class=p>)</span>
 
 <span class=c1># Predict Remaining Useful Life (RUL) in hours</span>
 <span class=n>rul_predictions</span> <span class=o>=</span> <span class=n>model</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>)</span>

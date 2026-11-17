@@ -25,3 +25,13 @@ Why response prediction is the wrong goal for customer retention and marketing c
 
 *Core Architecture &amp; Systems ML*  
 The story behind reviving J. Ross Quinlan's rule-based classics, replacing 1990s C code with memory-safe Rust SIMD, and making them first-class citizens in modern Python.
+
+#### [5\. Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](<https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/index.md>)
+
+*Actuarial Science &amp; Risk Modeling*  
+Why standard MSE fails on zero-inflated insurance claims, top-coded surveys, and financial volatility, and how native Tweedie, Tobit, and heteroscedastic splitting criteria solve non-Gaussian data in pure Rust.
+
+#### [6\. Breaking the Step Function: Why Model Trees Beat Gradient Boosters on Continuous Physics](<https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/index.md>)
+
+*Systems ML &amp; Physics-Informed ML*  
+How orthogonal step-function staircases in GBDTs fail on continuous aerodynamic and thermodynamic manifolds, and how Quinlan's Model Trees with linear leaves, committee boosting, and hierarchical smoothing deliver smooth extrapolation with 10× fewer splits.
