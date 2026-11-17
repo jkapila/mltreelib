@@ -19,10 +19,10 @@ tobit latent means: [-2.765143, 1.19807]
 
 ## 1\. Binomial &amp; Probit Probability Estimation
 
-For binary classification targets $y \\in {0, 1}$:
+For binary classification targets \\(y \\in \\{0, 1\\}\\):
 
-- **`leaf_family="binomial"`**: Standard logistic link $\\mu = \\frac{1}{1 + e^{-\\eta}}$.
-- **`leaf_family="probit"`**: Gaussian CDF link $\\mu = \\Phi(\\eta)$ (ideal for threshold crossing and latent utility models).
+- **`leaf_family="binomial"`**: Standard logistic link \\(\\mu = \\frac{1}{1 + e^{-\\eta}}\\).
+- **`leaf_family="probit"`**: Gaussian CDF link \\(\\mu = \\Phi(\\eta)\\) (ideal for threshold crossing and latent utility models).
 
 ```
 from mltreelib import ModelTree
@@ -40,7 +40,7 @@ labels = m_probit.predict_label([[0.0], [1.0]], threshold=0.5)
 
 ## 2\. Poisson Rate &amp; Count Modeling
 
-For nonnegative counts or rates ($y \\ge 0$) with log link $\\mu = e^\\eta$:
+For nonnegative counts or rates (\\(y \\ge 0\\)) with log link \\(\\mu = e^\\eta\\):
 
 ```
 mp = ModelTree(max_depth=2, min_rows=2, leaf_family="poisson", gain="deviance")
@@ -55,7 +55,7 @@ prob_zero = mp.cdf([[0.0], [2.0]], 0)
 
 ## 3\. Gamma Severity &amp; Duration Modeling
 
-For strictly positive continuous outcomes ($y \> 0$) with constant coefficient of variation (e.g. claim severity, service duration, customer lifetime value):
+For strictly positive continuous outcomes (\\(y \> 0\\)) with constant coefficient of variation (e.g. claim severity, service duration, customer lifetime value):
 
 ```
 mg = ModelTree(max_depth=2, min_rows=5, leaf_family="gamma", gain="deviance")
@@ -68,7 +68,7 @@ preds = mg.predict(x_test)  # Strictly positive predictions
 
 ## 4\. Tweedie Compound Poisson-Gamma Modeling
 
-For zero-inflated continuous positive targets ($y \\ge 0$) where a mass of exact zeros exists alongside continuous positive values (e.g. insurance pure premiums, warranty loss costs):
+For zero-inflated continuous positive targets (\\(y \\ge 0\\)) where a mass of exact zeros exists alongside continuous positive values (e.g. insurance pure premiums, warranty loss costs):
 
 ```
 mt = ModelTree(max_depth=2, min_rows=10, leaf_family="tweedie", gain="deviance", l2=1e-3)
@@ -81,7 +81,7 @@ preds = mt.predict(x_test)
 
 ## 5\. Tobit Left-Censored Regression
 
-For continuous targets censored at a lower threshold (default $0.0$, e.g. warranty claims, consumer expenditures):
+For continuous targets censored at a lower threshold (default \\(0.0\\), e.g. warranty claims, consumer expenditures):
 
 ```
 tobit_tree = ModelTree(max_depth=2, min_rows=10, leaf_family="tobit")
@@ -97,7 +97,7 @@ latent_means = tobit_tree.predict(x_test)
 
 ## 6\. Softmax Multi-Class Probability Vectors
 
-For discrete targets with $C \\ge 3$ mutually exclusive classes:
+For discrete targets with \\(C \\ge 3\\) mutually exclusive classes:
 
 ```
 m_softmax = ModelTree(max_depth=0, leaf_family="softmax", min_rows=10)
@@ -112,7 +112,7 @@ labels = m_softmax.predict(x_test, kind="response")   # [0, 1, 2, ...]
 
 ## 7\. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)
 
-For right-censored time-to-event outcomes $(T, E)$ where $T$ is elapsed duration and $E \\in {0, 1}$ is event occurrence (1 = event, 0 = censored):
+For right-censored time-to-event outcomes \\((T, E)\\) where \\(T\\) is elapsed duration and \\(E \\in \\{0, 1\\}\\) is event occurrence (1 = event, 0 = censored):
 
 ```
 m_surv = ModelTree(max_depth=0, leaf_family="survival", min_rows=10)
@@ -131,7 +131,7 @@ cum_hazard = m_surv.predict(x_test, kind="hazard", times=[30.0, 90.0, 180.0, 365
 
 ## 8\. Heteroscedastic Location &amp; Scale Modeling
 
-For continuous targets exhibiting conditional volatility or non-constant variance $\\sigma\_i^2 = \\exp(z\_i^\\top \\gamma)$:
+For continuous targets exhibiting conditional volatility or non-constant variance \\(\\sigma\_i^2 = \\exp(z\_i^\\top \\gamma)\\):
 
 ```
 m_het = ModelTree(max_depth=0, leaf_family="heteroscedastic", min_rows=10)

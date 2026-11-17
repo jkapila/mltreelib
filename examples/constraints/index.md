@@ -3,8 +3,8 @@
 `ModelTree` supports domain-enforced structural constraints:
 
 1. **Dual Monotone constraints**:
-2. `tree_monotone=[...]`: enforces that split child node target means are monotonically ordered across split thresholds: $(\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0$.
-3. `leaf_monotone=[...]`: enforces that local linear leaf model coefficients satisfy directional sign constraints ($\\beta\_j \\ge 0$ for `+1`, $\\beta\_j \\le 0$ for `-1`).
+2. `tree_monotone=[...]`: enforces that split child node target means are monotonically ordered across split thresholds: \\((\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0\\).
+3. `leaf_monotone=[...]`: enforces that local linear leaf model coefficients satisfy directional sign constraints (\\(\\beta\_j \\ge 0\\) for `+1`, \\(\\beta\_j \\le 0\\) for `-1`).
 4. `monotone=[...]`: sets both tree and leaf monotonicity simultaneously.
 5. **Interaction constraints** (`interaction_groups=[[...], [...]]`): restricts trees from mixing split variables across specified feature groups along any root-to-leaf path. Supports column names as well as column indices.
 6. **Column Weights** (`col_weights=[...]`): scales candidate split gains by feature importance and biases feature subsampling during `col_sample`.

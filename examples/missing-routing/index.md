@@ -48,8 +48,8 @@ At prediction time, if the primary split feature is missing, the highest-ranking
 
 ### 3\. NA-indicator leaf regression
 
-When `leaf="linear"`, the leaf fits a coefficient for each observed feature plus an indicator term $\\beta\_{\\text{NA}, j}$ for whether feature $j$ was missing:
+When `leaf="linear"`, the leaf fits a coefficient for each observed feature plus an indicator term \\(\\beta\_{\\text{NA}, j}\\) for whether feature \\(j\\) was missing:
 
-$$\\hat{y} = \\beta\_0 + \\sum\_{j \\in \\text{obs}} \\beta\_j x\_j + \\sum\_{j \\in \\text{missing}} \\beta\_{\\text{NA}, j}$$
+\\\[\\hat{y} = \\beta\_0 + \\sum\_{j \\in \\text{obs}} \\beta\_j x\_j + \\sum\_{j \\in \\text{missing}} \\beta\_{\\text{NA}, j}\\\]
 
 This allows leaves to make continuous linear adjustments when predictors are partially missing without collapsing to a simple global mean.

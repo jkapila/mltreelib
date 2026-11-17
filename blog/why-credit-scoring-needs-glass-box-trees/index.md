@@ -44,11 +44,11 @@ pd_scores = model.predict(X_test)
 
 ## Data Analysis &amp; Borrower Population
 
-In our underwriting benchmark ($N=1,200$ applicants), applicant profiles reflect standard retail loan portfolios:
+In our underwriting benchmark (\\(N=1,200\\) applicants), applicant profiles reflect standard retail loan portfolios:
 
 | Feature | Type | Range / Distribution | Monotone Constraint | Economic Rationale |
 | :--- | :--- | :---: | :---: | :--- |
-| **`cibil_score`** | Continuous | 300 to 850 ($\\mu=680, \\sigma=75$) | **\-1 (Decreasing)** | Higher credit reputation implies lower default risk. |
+| **`cibil_score`** | Continuous | 300 to 850 (\\(\\mu=680, \\sigma=75\\)) | **\-1 (Decreasing)** | Higher credit reputation implies lower default risk. |
 | **`monthly_income`** | Continuous | ₹2,000 to ₹18,000 | 0 (Free) | General capacity to repay. |
 | **`delinquencies_24m`** | Count | 0 to 4 past 30+ DPD events | **\+1 (Increasing)** | Prior delinquency strongly signals credit distress. |
 | **`debt_to_income`** | Continuous | 15% to 75% | **\+1 (Increasing)** | High leverage increases sensitivity to income shocks. |
@@ -69,7 +69,7 @@ Adverse action notices (e.g. "Credit denied due to high 24-month delinquency cou
 
 Regulatory validation requires verifying discrimination, maximum separation, monotonic risk ordering, and population stability across periods:
 
-1. **ROC Discrimination**: Strong separation power ($AUC \> 0.75$) despite simple tree depth.
+1. **ROC Discrimination**: Strong separation power (\\(AUC \> 0.75\\)) despite simple tree depth.
 2. **Kolmogorov-Smirnov (KS)**: Maximum separation distance between good and bad borrowers peaks above 45% at the scorecard cutoff.
 3. **Monotonic Decile Capture**: Event rates increase strictly monotonically across credit score deciles—essential for regulatory rating agency validation.
-4. **Population Stability Index (PSI)**: Evaluates distribution shift between training and out-of-time test batches ($PSI \< 0.10$, indicating stable population dynamics).
+4. **Population Stability Index (PSI)**: Evaluates distribution shift between training and out-of-time test batches (\\(PSI \< 0.10\\), indicating stable population dynamics).

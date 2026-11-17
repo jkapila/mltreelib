@@ -15,7 +15,7 @@ Script: [`examples/clustering_comparison.py`](<https://github.com/jkapila/mltree
 
 The Crosstab Sparsity metric measures how well clustering partitions separate attributes:
 
-$$\\text{CSP} = \\sum\_{j} \\left\[ \\frac{n\_v}{\\max(l, k)} \\times \\ln \\left( \\frac{N}{l \\cdot k} \\right) \\right\]$$
+\\\[\\text{CSP} = \\sum\_{j} \\left\[ \\frac{n\_v}{\\max(l, k)} \\times \\ln \\left( \\frac{N}{l \\cdot k} \\right) \\right\]\\\]
 
 - **Segregation factor**: measures mass concentration in contingency table cells above the median cell count.
 - **Explanation factor**: measures information density gained over a uniform null spread.

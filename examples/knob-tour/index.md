@@ -99,8 +99,8 @@ This prevents structure search from overfitting leaf estimates.
 
 ## NA Surrogate Splits — `maxsurrogate`
 
-`maxsurrogate=k` (following `rpart` lineage) stores up to $k$ surrogate splits at each internal node that mimic the primary partition. When predicting a test row missing the primary split feature, the primary surrogate routes the row instead of defaulting to a static branch.
+`maxsurrogate=k` (following `rpart` lineage) stores up to \\(k\\) surrogate splits at each internal node that mimic the primary partition. When predicting a test row missing the primary split feature, the primary surrogate routes the row instead of defaulting to a static branch.
 
 ## Feature Screening — `preselect`
 
-Before tree growth begins, candidate features can be filtered via screening: - `"winnow"`: Univariate linear correlation screening. - `"boruta"`: Comparison against shadow randomized permutations. - `"unitree"`: Univariate shallow surrogate trees scored by explained variation $R^2$.
+Before tree growth begins, candidate features can be filtered via screening: - `"winnow"`: Univariate linear correlation screening. - `"boruta"`: Comparison against shadow randomized permutations. - `"unitree"`: Univariate shallow surrogate trees scored by explained variation \\(R^2\\).

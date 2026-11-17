@@ -18,7 +18,7 @@ In R, packages like `Cubist` and `C50` developed cult followings among chemometr
 `mltreelib` rewrites Quinlan's algorithms from scratch in modern, memory-safe Rust (`crates/mltreelib-core`):
 
 1. **Zero-Copy Arrow Buffering**: Ingests PyArrow and Polars tables directly into contiguous column memory buffers.
-2. **Streaming Split Scans**: Implements $O(N)$ numerical linear scans and SIMD aggregations without intermediate heap allocations.
+2. **Streaming Split Scans**: Implements \\(O(N)\\) numerical linear scans and SIMD aggregations without intermediate heap allocations.
 3. **Pure Python Frontends**: Exposed via thin PyO3 bindings with a clean, modern API (`mltreelib._core`).
 4. **First-Class Missingness**: Implements Quinlan's original fractional missing value weight distributions without fragile post-hoc imputers.
 
@@ -30,7 +30,7 @@ The result is a production-grade implementation ready for modern tabular machine
 
 In classical linear model trees, terminal leaves fit multivariate linear equations. However, standard tree packages throw away the covariance structure of the leaf regressions, leaving practitioners unable to evaluate coefficient significance.
 
-In `mltreelib`, every terminal leaf computes the closed-form inverse $(X^T X)^{-1}$ via `faer` LU decomposition. Calling `tree.leaf_summary(id)` produces exact R `summary(lm)` reports:
+In `mltreelib`, every terminal leaf computes the closed-form inverse \\((X^T X)^{-1}\\) via `faer` LU decomposition. Calling `tree.leaf_summary(id)` produces exact R `summary(lm)` reports:
 
 ```
 from mltreelib import ModelTree
@@ -66,7 +66,7 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ## 2\. C5.0 Rule-Set Extraction with Pessimistic Binomial Pruning
 
-Trees enforce strict hierarchies where conditions near the root apply globally. C5.0 flattens decision paths into modular IF-THEN rules, simplifies multi-condition bounds on the same variable, and prunes preconditions using Quinlan's pessimistic binomial error bound $U\_{CF}(E, N)$:
+Trees enforce strict hierarchies where conditions near the root apply globally. C5.0 flattens decision paths into modular IF-THEN rules, simplifies multi-condition bounds on the same variable, and prunes preconditions using Quinlan's pessimistic binomial error bound \\(U\_{CF}(E, N)\\):
 
 ```
 # Extract C5.0 rules with confidence factor 0.25
@@ -98,11 +98,11 @@ Default Rule:
 
 ---
 
-## 3\. Cubist $k$-NN Sample Neighbor Adjustments
+## 3\. Cubist \\(k\\)-NN Sample Neighbor Adjustments
 
-Cubist's crowning innovation is its post-prediction neighbor correction: adjust leaf predictions at query time using the residuals of $k$ training instances nearest in normalized Manhattan space:
+Cubist's crowning innovation is its post-prediction neighbor correction: adjust leaf predictions at query time using the residuals of \\(k\\) training instances nearest in normalized Manhattan space:
 
-$$\\hat{y}*{\\text{adj}}(x) = \\hat{y}(x) + \\sum*{i=1}^k w\_i (y\_i - \\hat{y}(x\_i)), \\quad w\_i = \\frac{1}{D(x, x\_i) + \\epsilon}$$
+\\\[\\hat{y}\_{\\text{adj}}(x) = \\hat{y}(x) + \\sum\_{i=1}^k w\_i (y\_i - \\hat{y}(x\_i)), \\quad w\_i = \\frac{1}{D(x, x\_i) + \\epsilon}\\\]
 
 ```
 # Unadjusted tree prediction
@@ -114,7 +114,7 @@ adjusted_preds = tree.predict(X_test, neighbors=5)
 
 ### Empirical Results
 
-On non-linear response surfaces with localized effects, $k$-NN neighbor adjustments reduce error significantly:
+On non-linear response surfaces with localized effects, \\(k\\)-NN neighbor adjustments reduce error significantly:
 
 ```
 Inference Mode                     Test MSE     Test MAE

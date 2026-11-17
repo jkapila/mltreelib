@@ -110,15 +110,15 @@ Pair with `gain="deviance"` so split search maximizes deviance reduction under t
 ## Constraints &amp; Weights
 
 - **Dual Monotonicity**:
-- `tree_monotone`: Enforces directional ordering on split child target means across tree splits: $(\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0$.
-- `leaf_monotone` (or in `LeafControl`): Enforces sign bounds on local linear leaf slopes ($\\beta\_j \\ge 0$ for $+1$, $\\le 0$ for $-1$).
+- `tree_monotone`: Enforces directional ordering on split child target means across tree splits: \\((\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0\\).
+- `leaf_monotone` (or in `LeafControl`): Enforces sign bounds on local linear leaf slopes (\\(\\beta\_j \\ge 0\\) for \\(+1\\), \\(\\le 0\\) for \\(-1\\)).
 - `monotone`: Sets both tree and leaf monotonicity simultaneously.
 - **Interaction Constraints (`interaction_groups`)**:
 - Restricts root-to-leaf paths to features within the same group (LightGBM-style).
 - Supports column names (e.g. `[["age", "income"], ["city", "zip"]]`) as well as numeric column indices.
 - **Weights (Row &amp; Column)**:
 - **Row weights**: Pass via `w`, `sample_weight`, or `row_weights` to `fit()` or `retrain()`.
-- **Column weights**: `col_weights` scales candidate split gains ($gain \\times W\_j$) and weights random feature subset sampling during `col_sample`.
+- **Column weights**: `col_weights` scales candidate split gains (\\(gain \\times W\_j\\)) and weights random feature subset sampling during `col_sample`.
 
 Both are validated against reference implementations in `examples/constraints_check.py` (R `gbm`'s `var.monotone`, LightGBM's `interaction_constraints`).
 

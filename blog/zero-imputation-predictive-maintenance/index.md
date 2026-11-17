@@ -46,13 +46,13 @@ rul_predictions = model.predict(X_test)
 
 ## Data Analysis &amp; Sensor Telemetry Profile
 
-In our bearing degradation benchmark ($N=1,000$ machine monitoring hours), telemetry captures the following dynamics:
+In our bearing degradation benchmark (\\(N=1,000\\) machine monitoring hours), telemetry captures the following dynamics:
 
 | Sensor Channel | Operational Range | Dropout Mechanism | Failure Degradation Impact |
 | :--- | :---: | :---: | :--- |
-| **`bearing_temp`** | 40°C to 105°C | Continuous (no drops) | Critical friction heat indicator; drives catastrophic wear when $\>85^\\circ\\text{C}$. |
+| **`bearing_temp`** | 40°C to 105°C | Continuous (no drops) | Critical friction heat indicator; drives catastrophic wear when \\(\>85^\\circ\\text{C}\\). |
 | **`vibration_rms`** | 0.5 to 6.5 mm/s | Continuous (no drops) | Mechanical harmonic resonance; high RMS accelerates bearing degradation. |
-| **`oil_pressure`** | 25 to 55 psi | **\~20% Missing (`None`)** | When thermal friction spikes ($\>85^\\circ\\text{C}$), telemetry transmitters blackout. |
+| **`oil_pressure`** | 25 to 55 psi | **\~20% Missing (`None`)** | When thermal friction spikes (\\(\>85^\\circ\\text{C}\\)), telemetry transmitters blackout. |
 | **`hours_to_failure`** (RUL) | 10 to 350 hours | Target (continuous) | Continuous operational hours until thermal seizure or bearing raceway fracture. |
 
 ---
@@ -61,7 +61,7 @@ In our bearing degradation benchmark ($N=1,000$ machine monitoring hours), telem
 
 Below is the trained piecewise model tree rendered via `model.to_dot()` and Graphviz:
 
-Notice the dual mechanics: - **Decision Partitioning**: The tree isolates regimes by temperature ($T \> 83.2^\\circ\\text{C}$) and vibration ($V \> 3.4\\,\\text{mm/s}$). - **Local Linear Regressions**: Rather than a single flat step-function, each leaf evaluates a fitted hyperplane equation: $$\\text{RUL} = \\beta\_0 + \\beta\_1 \\cdot \\text{bearing\_temp} + \\beta\_2 \\cdot \\text{vibration\_rms} + \\beta\_3 \\cdot \\text{oil\_pressure}$$ capturing high-gradient degradation slopes near the end of machine life.
+Notice the dual mechanics: - **Decision Partitioning**: The tree isolates regimes by temperature (\\(T \> 83.2^\\circ\\text{C}\\)) and vibration (\\(V \> 3.4\\,\\text{mm/s}\\)). - **Local Linear Regressions**: Rather than a single flat step-function, each leaf evaluates a fitted hyperplane equation: $\\(\\text{RUL} = \\beta\_0 + \\beta\_1 \\cdot \\text{bearing\\\_temp} + \\beta\_2 \\cdot \\text{vibration\\\_rms} + \\beta\_3 \\cdot \\text{oil\\\_pressure}\\)$ capturing high-gradient degradation slopes near the end of machine life.
 
 ---
 
@@ -69,5 +69,5 @@ Notice the dual mechanics: - **Decision Partitioning**: The tree isolates regime
 
 Evaluating residual errors and split importance validates that native missing-value routing captures the physical failure mechanics:
 
-1. **Actual vs. Predicted RUL**: Residuals cling tightly to the identity diagonal ($R^2 \> 0.85$, RMSE $\< 15$ hours), with zero artifact clustering from imputed medians.
+1. **Actual vs. Predicted RUL**: Residuals cling tightly to the identity diagonal (\\(R^2 \> 0.85\\), RMSE \\(\< 15\\) hours), with zero artifact clustering from imputed medians.
 2. **Feature Importance Shares**: Split gain importance confirms that `bearing_temp` and `vibration_rms` drive the macro regime partitions, while `oil_pressure` and its missing-dropout indicators calibrate fine-grained leaf survival curves.

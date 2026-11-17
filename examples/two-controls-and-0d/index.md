@@ -11,8 +11,8 @@
 7. Access directly via `leaf["stats"]` or `tree.leaf_stats()`.
 8. Predict 0D formulations row-wise on test data: `predict(x, kind="prob"|"odds"|"log_odds"|"median"|"stats")`.
 9. **Dual Monotonicity**:
-10. `tree_monotone`: Enforces directional ordering across tree splits: $(\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0$.
-11. `leaf_monotone`: Enforces directional sign bounds on local linear leaf slopes ($\\beta\_j \\ge 0$ for `+1`, $\\le 0$ for `-1`).
+10. `tree_monotone`: Enforces directional ordering across tree splits: \\((\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0\\).
+11. `leaf_monotone`: Enforces directional sign bounds on local linear leaf slopes (\\(\\beta\_j \\ge 0\\) for `+1`, \\(\\le 0\\) for `-1`).
 12. **Row &amp; Column Weights**:
 13. `sample_weight` / `row_weights` / `w`: Row-level importance weighting.
 14. `col_weights`: Feature-level split priorities scaling candidate split gains and weighting feature subsampling during `col_sample`.

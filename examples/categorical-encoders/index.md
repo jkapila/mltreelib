@@ -52,9 +52,9 @@ Embedding regression on 'account_length', rows 0..4: ['100.3', '100.3', '100.3',
 
 ## Leakage Protection in Supervised Encoders
 
-Directly mapping high-cardinality levels to their target mean leads to target leakage on train data. `mltreelib` provides three built-in mitigations: - **`CatBoostEncoder`**: Ordered target statistics using seeded random row permutations. For level `'3'` (which appears 89 times), `CatBoostEncoder` assigns 89 distinct incremental target statistic values on train, completely guarding against memorization. - **`LeaveOneOutEncoder`**: Subtracts the target of the current row: $(S - y\_i) / (n - 1)$. - **`MEstimatorEncoder`**: Shrinks small-count categories toward the global prior: $(S + m \\cdot p) / (n + m)$.
+Directly mapping high-cardinality levels to their target mean leads to target leakage on train data. `mltreelib` provides three built-in mitigations: - **`CatBoostEncoder`**: Ordered target statistics using seeded random row permutations. For level `'3'` (which appears 89 times), `CatBoostEncoder` assigns 89 distinct incremental target statistic values on train, completely guarding against memorization. - **`LeaveOneOutEncoder`**: Subtracts the target of the current row: \\((S - y\_i) / (n - 1)\\). - **`MEstimatorEncoder`**: Shrinks small-count categories toward the global prior: \\((S + m \\cdot p) / (n + m)\\).
 
 ## Weight of Evidence &amp; Neural Embeddings
 
-- **`WoEEncoder`**: Computes $\\ln(\\text{distribution of non-events} / \\text{distribution of events})$ for credit risk and churn scorecards.
+- **`WoEEncoder`**: Computes \\(\\ln(\\text{distribution of non-events} / \\text{distribution of events})\\) for credit risk and churn scorecards.
 - **`EmbeddingEncoder`**: Trains dense entity embeddings directly in pure Rust via stochastic gradient descent with an SGD optimizer and cosine decay schedule.

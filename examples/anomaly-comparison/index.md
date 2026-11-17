@@ -8,19 +8,19 @@ Script: [`examples/anomaly_comparison.py`](<https://github.com/jkapila/mltreelib
 
 | Method | Paradigm | Scoring Principle | Time / Space Complexity |
 | :--- | :--- | :--- | :--- |
-| **Extended Isolation Tree (EIF)** | Oblique Hyperplane Cuts | Path depth under random oblique cuts | $O(N \\log N)$ |
-| **Density Estimation Tree (DET)** | Integrated Squared Error | Density estimate $\\hat{f}(x)$ &amp; negative log-density | $O(N \\log N)$ |
-| **Half-Space Tree (HST)** | Streaming Mass Estimation | Node mass profile across perturbed half-spaces | $O(\\text{depth})$ update |
-| **Random Cut Tree (RCT)** | Collusive Displacement | CoDisp with dimension selection $\\propto$ bbox | $O(\\text{sample\_size})$ |
-| **Active Anomaly Tree (AAD)** | Human-in-the-Loop Feedback | Gradient adaptation on confirmed outliers | $O(\\text{depth})$ update |
-| **Context Anomaly Tree (CAT)** | Sequential Context Model | Context transition surprise $-\\log\_2 P\_{KT}$ | $O(\\text{sequence\_len})$ |
+| **Extended Isolation Tree (EIF)** | Oblique Hyperplane Cuts | Path depth under random oblique cuts | \\(O(N \\log N)\\) |
+| **Density Estimation Tree (DET)** | Integrated Squared Error | Density estimate \\(\\hat{f}(x)\\) &amp; negative log-density | \\(O(N \\log N)\\) |
+| **Half-Space Tree (HST)** | Streaming Mass Estimation | Node mass profile across perturbed half-spaces | \\(O(\\text{depth})\\) update |
+| **Random Cut Tree (RCT)** | Collusive Displacement | CoDisp with dimension selection \\(\\propto\\) bbox | \\(O(\\text{sample\\\_size})\\) |
+| **Active Anomaly Tree (AAD)** | Human-in-the-Loop Feedback | Gradient adaptation on confirmed outliers | \\(O(\\text{depth})\\) update |
+| **Context Anomaly Tree (CAT)** | Sequential Context Model | Context transition surprise \\(-\\log\_2 P\_{KT}\\) | \\(O(\\text{sequence\\\_len})\\) |
 | **GritBot** | Subgroup Rule Discrepancy | Contextual deviation from local regression | Rule search |
-| **HDBSCAN (GLOSH)** | Density Clustering Hierarchy | Relative lambda death within cluster hierarchy | $O(N^2)$ |
-| **URF (Proximity)** | Synthetic Marginal Affinity | Proximity co-occurrence isolation | $O(N^2)$ |
+| **HDBSCAN (GLOSH)** | Density Clustering Hierarchy | Relative lambda death within cluster hierarchy | \\(O(N^2)\\) |
+| **URF (Proximity)** | Synthetic Marginal Affinity | Proximity co-occurrence isolation | \\(O(N^2)\\) |
 
 ## Inter-model agreement (Spearman rank correlation)
 
-Comparing normalized $\[0, 1\]$ anomaly scores across all models on `credit-g`:
+Comparing normalized \\(\[0, 1\]\\) anomaly scores across all models on `credit-g`:
 
 | Method | EIF | DET | HST | RCT | AAD | CAT | GritBot | HDBSCAN |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -46,7 +46,7 @@ The top multi-model consensus anomaly detected across models:
 
 1. **EIF**: Best for mixed tabular data with diagonal/correlated features where standard isolation trees suffer from axis ghost masking.
 2. **DET**: Best for exact density estimation with theoretical ISE optimality.
-3. **HST**: Best for streaming data pipelines requiring strict $O(\\text{depth})$ update budgets.
+3. **HST**: Best for streaming data pipelines requiring strict \\(O(\\text{depth})\\) update budgets.
 4. **RCT**: Best for streaming datasets with dense clusters of anomalies (collusion resistance).
 5. **AAD**: Best for security or audit desks where analysts review flagged anomalies in real time.
 6. **CAT**: Best for event streams and user clickstream / session transitions.
