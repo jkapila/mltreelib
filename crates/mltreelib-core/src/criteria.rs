@@ -57,6 +57,18 @@ pub enum GainFn {
     /// Log-rank test statistic for survival trees (Leblanc & Crowley 1992):
     /// compares observed vs expected survival events between partitions.
     LogRank,
+    /// Tweedie unit quasi-deviance reduction for 1 < p < 2 zero-inflated continuous data.
+    Tweedie { p: f64 },
+    /// Dual-parameter Gaussian negative log-likelihood deviance reduction:
+    /// detects variance breaks even when means are identical.
+    Heteroscedastic,
+    /// Censored continuous regression hurdle gain combining binary classification
+    /// of non-zero/censored indicator with Gaussian deviance on positive slice.
+    Tobit { threshold: f64 },
+    /// Coefficient of variation reduction: CV(P) - [w_l/w * CV(L) + w_r/w * CV(R)].
+    Cv,
+    /// Survival martingale residual variance reduction: SSE reduction on M_i.
+    Martingale,
     /// User criterion. Receives lazy `(y, w)` slices of the two sides per
     /// candidate split and returns the split quality (higher = better).
     /// Pinball/quantile losses and anything exotic live here.
@@ -87,6 +99,11 @@ impl Clone for GainFn {
             GainFn::Twoing => GainFn::Twoing,
             GainFn::Causal => GainFn::Causal,
             GainFn::LogRank => GainFn::LogRank,
+            GainFn::Tweedie { p } => GainFn::Tweedie { p: *p },
+            GainFn::Heteroscedastic => GainFn::Heteroscedastic,
+            GainFn::Tobit { threshold } => GainFn::Tobit { threshold: *threshold },
+            GainFn::Cv => GainFn::Cv,
+            GainFn::Martingale => GainFn::Martingale,
             GainFn::Custom(f) => GainFn::Custom(f.clone()),
         }
     }
@@ -108,6 +125,11 @@ impl std::fmt::Debug for GainFn {
             GainFn::Twoing => write!(f, "Twoing"),
             GainFn::Causal => write!(f, "Causal"),
             GainFn::LogRank => write!(f, "LogRank"),
+            GainFn::Tweedie { p } => write!(f, "Tweedie(p={})", p),
+            GainFn::Heteroscedastic => write!(f, "Heteroscedastic"),
+            GainFn::Tobit { threshold } => write!(f, "Tobit(threshold={})", threshold),
+            GainFn::Cv => write!(f, "Cv"),
+            GainFn::Martingale => write!(f, "Martingale"),
             GainFn::Custom(_) => write!(f, "Custom(<fn>)"),
         }
     }
@@ -189,6 +211,98 @@ impl std::fmt::Debug for GainFn {
                     if sw <= 0.0 { 0.0 } else { p.iter().map(|&(y, wt)| wt * y).sum::<f64>() / sw }
                 };
                 (wl * wr / w) * (mean(left) - mean(right)).powi(2)
+            }
+            GainFn::Tweedie { p } => {
+                let tweedie_dev = |slice: &[(f64, f64)]| -> f64 {
+                    let sw: f64 = slice.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let sy: f64 = slice.iter().map(|&(y, w)| w * y).sum();
+                    let mu = (sy / sw).max(1e-9);
+                    let p_val = *p;
+                    let inv_1_p = 1.0 / (1.0 - p_val);
+                    let inv_2_p = 1.0 / (2.0 - p_val);
+                    let mu_1_p = mu.powf(1.0 - p_val);
+                    let mu_2_p = mu.powf(2.0 - p_val);
+
+                    slice.iter().map(|&(y, w)| {
+                        let y_clamp = y.max(0.0);
+                        let term1 = if y_clamp > 0.0 {
+                            y_clamp.powf(2.0 - p_val) * inv_1_p * inv_2_p
+                        } else {
+                            0.0
+                        };
+                        let term2 = y_clamp * mu_1_p * inv_1_p;
+                        let term3 = mu_2_p * inv_2_p;
+                        let d = 2.0 * (term1 - term2 + term3);
+                        w * d.max(0.0)
+                    }).sum()
+                };
+                (tweedie_dev(&all) - tweedie_dev(left) - tweedie_dev(right)).max(0.0)
+            }
+            GainFn::Heteroscedastic => {
+                let nll_dev = |slice: &[(f64, f64)]| -> f64 {
+                    let sw: f64 = slice.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let mean = slice.iter().map(|&(y, w)| w * y).sum::<f64>() / sw;
+                    let var = slice.iter().map(|&(y, w)| w * (y - mean) * (y - mean)).sum::<f64>() / sw;
+                    sw * (var + 1e-9).ln()
+                };
+                (nll_dev(&all) - nll_dev(left) - nll_dev(right)).max(0.0)
+            }
+            GainFn::Tobit { threshold } => {
+                let th = *threshold;
+                let bin_dev = |slice: &[(f64, f64)]| -> f64 {
+                    let sw: f64 = slice.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let sw_pos: f64 = slice.iter().filter(|&&(y, _)| y > th).map(|&(_, w)| w).sum();
+                    let p_pos = (sw_pos / sw).clamp(1e-12, 1.0 - 1e-12);
+                    -2.0 * (sw_pos * p_pos.ln() + (sw - sw_pos) * (1.0 - p_pos).ln())
+                };
+                let gain_bin = bin_dev(&all) - bin_dev(left) - bin_dev(right);
+
+                let sse_pos = |slice: &[(f64, f64)]| -> f64 {
+                    let pos: Vec<(f64, f64)> = slice.iter().filter(|&&(y, _)| y > th).copied().collect();
+                    let sw: f64 = pos.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let sy: f64 = pos.iter().map(|&(y, w)| w * y).sum();
+                    let sy2: f64 = pos.iter().map(|&(y, w)| w * y * y).sum();
+                    sy2 - sy * sy / sw
+                };
+                let gain_sse = sse_pos(&all) - sse_pos(left) - sse_pos(right);
+                gain_bin.max(0.0) + gain_sse.max(0.0)
+            }
+            GainFn::Cv => {
+                let cv = |slice: &[(f64, f64)]| -> f64 {
+                    let sw: f64 = slice.iter().map(|&(_, w)| w).sum();
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let mean = slice.iter().map(|&(y, w)| w * y).sum::<f64>() / sw;
+                    let var = slice.iter().map(|&(y, w)| w * (y - mean) * (y - mean)).sum::<f64>() / sw;
+                    let sd = var.sqrt();
+                    sd / (mean.abs() + 1e-6)
+                };
+                cv(&all) - ((wl / w) * cv(left) + (wr / w) * cv(right))
+            }
+            GainFn::Martingale => {
+                let sse = |p: &[(f64, f64)]| {
+                    let sw = wsum(p);
+                    if sw <= 0.0 {
+                        return 0.0;
+                    }
+                    let sy: f64 = p.iter().map(|&(y, wt)| wt * y).sum();
+                    let sy2: f64 = p.iter().map(|&(y, wt)| wt * y * y).sum();
+                    sy2 - sy * sy / sw
+                };
+                sse(&all) - sse(left) - sse(right)
             }
             GainFn::Custom(f) => f.gain(left, right),
         }

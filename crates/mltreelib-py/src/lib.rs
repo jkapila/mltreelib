@@ -2992,9 +2992,14 @@ impl PyModelTree {
                         "twoing" => GainFn::Twoing,
                         "causal" | "uplift" => GainFn::Causal,
                         "logrank" | "log_rank" => GainFn::LogRank,
+                        "tweedie" => GainFn::Tweedie { p: tweedie_p },
+                        "heteroscedastic" | "gaussian_nll" | "ngboost" => GainFn::Heteroscedastic,
+                        "tobit" => GainFn::Tobit { threshold: tobit_threshold },
+                        "cv" => GainFn::Cv,
+                        "martingale" => GainFn::Martingale,
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale' or a callable, got {other}"
                             )))
                         }
                     }

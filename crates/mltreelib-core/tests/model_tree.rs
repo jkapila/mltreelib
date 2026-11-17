@@ -3190,3 +3190,82 @@ fn causal_tree_splits_on_treatment_heterogeneity_and_predicts_uplift() {
     assert!((uplifts[1] - (-5.0)).abs() < 1e-3, "right regime uplift should be ~ -5.0, got {}", uplifts[1]);
 }
 
+#[test]
+fn test_distributional_split_criteria() {
+    // 1. Tweedie criterion on zero-inflated continuous targets
+    let x: Vec<Vec<Option<f64>>> = (0..60)
+        .map(|i| vec![Some(if i < 30 { 0.1 * (i as f64) } else { 10.0 + 0.1 * (i as f64) })])
+        .collect();
+    let y_tweedie: Vec<Option<f64>> = (0..60)
+        .map(|i| Some(if i < 30 { if i % 5 == 0 { 1.5 } else { 0.0 } } else { 12.0 + (i % 3) as f64 }))
+        .collect();
+    let p_tweedie = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Tweedie { p: 1.5 },
+        ..Default::default()
+    };
+    let tree_tweedie = ModelTree::fit(&x, &y_tweedie, p_tweedie).unwrap();
+    assert_eq!(tree_tweedie.splits().len(), 1, "Tweedie must find the zero-inflated regime split");
+
+    // 2. Heteroscedastic criterion: detects variance break even when means are identical (mean = 0.0)
+    let y_hetero: Vec<Option<f64>> = (0..60)
+        .map(|i| {
+            let sign = if i % 2 == 0 { 1.0 } else { -1.0 };
+            Some(if i < 30 { sign * 0.05 } else { sign * 5.0 })
+        })
+        .collect();
+    let p_hetero = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Heteroscedastic,
+        prune: PruneCost::None,
+        ..Default::default()
+    };
+    let tree_hetero = ModelTree::fit(&x, &y_hetero, p_hetero).unwrap();
+    assert_eq!(tree_hetero.splits().len(), 1, "Heteroscedastic must isolate the variance break");
+
+    // 3. Tobit criterion: hurdle deviance on left-censored continuous data
+    let y_tobit: Vec<Option<f64>> = (0..60)
+        .map(|i| Some(if i < 30 { 0.0 } else { 2.0 + (i as f64) * 0.2 }))
+        .collect();
+    let p_tobit = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Tobit { threshold: 0.0 },
+        prune: PruneCost::None,
+        ..Default::default()
+    };
+    let tree_tobit = ModelTree::fit(&x, &y_tobit, p_tobit).unwrap();
+    assert_eq!(tree_tobit.splits().len(), 1, "Tobit must split censored vs uncensored regime");
+
+    // 4. Cv criterion: coefficient of variation reduction
+    let y_cv: Vec<Option<f64>> = (0..60)
+        .map(|i| Some(if i < 30 { 10.0 + (i % 2) as f64 * 0.1 } else { 1.0 + (i % 2) as f64 * 3.0 }))
+        .collect();
+    let p_cv = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Cv,
+        prune: PruneCost::None,
+        ..Default::default()
+    };
+    let tree_cv = ModelTree::fit(&x, &y_cv, p_cv).unwrap();
+    assert_eq!(tree_cv.splits().len(), 1, "Cv must separate low-CV regime from high-CV regime");
+
+    // 5. Martingale criterion: residual variance reduction
+    let y_martingale: Vec<Option<f64>> = (0..60)
+        .map(|i| Some(if i < 30 { -0.8 } else { 0.8 }))
+        .collect();
+    let p_mart = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        gain: GainFn::Martingale,
+        prune: PruneCost::None,
+        ..Default::default()
+    };
+    let tree_mart = ModelTree::fit(&x, &y_martingale, p_mart).unwrap();
+    assert_eq!(tree_mart.splits().len(), 1, "Martingale must split residual regimes");
+}
+
+
