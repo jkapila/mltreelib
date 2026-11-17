@@ -32,7 +32,7 @@ n_tr = int(0.8 * len(X))
 
 # depth 3 on purpose: the diagram must read at a glance, not score
 model = ModelTree(max_depth=3, min_rows=30)
-model.fit(X[:n_tr], y[:n_tr])
+model.fit(X[:n_tr], y[:n_tr], col_names=names)
 pred = model.predict(X[n_tr:])
 
 # --- tree diagram via graphviz -----------------------------------------

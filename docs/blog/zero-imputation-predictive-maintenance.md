@@ -38,7 +38,8 @@ model = ModelTree(
 )
 
 # Fit over raw telemetry matrix containing None / NaN dropouts
-model.fit(X_train, y_train)
+col_names = ["bearing_temp", "vibration_rms", "oil_pressure"]
+model.fit(X_train, y_train, col_names=col_names)
 
 # Predict Remaining Useful Life (RUL) in hours
 rul_predictions = model.predict(X_test)

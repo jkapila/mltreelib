@@ -27,7 +27,7 @@
 <g id="node3" class="node">
 <title>n4</title>
 <path fill="#fafafa" stroke="#333333" d="M586,-360C586,-360 467,-360 467,-360 461,-360 455,-354 455,-348 455,-348 455,-336 455,-336 455,-330 461,-324 467,-324 467,-324 586,-324 586,-324 592,-324 598,-330 598,-336 598,-336 598,-348 598,-348 598,-354 592,-360 586,-360"/>
-<text text-anchor="middle" x="526.5" y="-345" font-family="monospace" font-size="10.00">x0 &lt; 53.641</text>
+<text text-anchor="middle" x="526.5" y="-345" font-family="monospace" font-size="10.00">bearing_temp &lt; 53.641</text>
 <text text-anchor="middle" x="526.5" y="-334" font-family="monospace" font-size="10.00">n=211 &#160;dev=227993.610</text>
 </g>
 <!-- n4&#45;&gt;n8 -->
@@ -62,7 +62,7 @@
 <g id="node6" class="node">
 <title>n5</title>
 <path fill="#fafafa" stroke="#333333" d="M586,-287C586,-287 467,-287 467,-287 461,-287 455,-281 455,-275 455,-275 455,-263 455,-263 455,-257 461,-251 467,-251 467,-251 586,-251 586,-251 592,-251 598,-257 598,-263 598,-263 598,-275 598,-275 598,-281 592,-287 586,-287"/>
-<text text-anchor="middle" x="526.5" y="-272" font-family="monospace" font-size="10.00">x0 &lt; 52.471</text>
+<text text-anchor="middle" x="526.5" y="-272" font-family="monospace" font-size="10.00">bearing_temp &lt; 52.471</text>
 <text text-anchor="middle" x="526.5" y="-261" font-family="monospace" font-size="10.00">n=152 &#160;dev=159274.398</text>
 </g>
 <!-- n5&#45;&gt;n10 -->
@@ -83,7 +83,7 @@
 <g id="node7" class="node">
 <title>n2</title>
 <path fill="#fafafa" stroke="#333333" d="M364,-287C364,-287 245,-287 245,-287 239,-287 233,-281 233,-275 233,-275 233,-263 233,-263 233,-257 239,-251 245,-251 245,-251 364,-251 364,-251 370,-251 376,-257 376,-263 376,-263 376,-275 376,-275 376,-281 370,-287 364,-287"/>
-<text text-anchor="middle" x="304.5" y="-272" font-family="monospace" font-size="10.00">x1 &lt; 3.513</text>
+<text text-anchor="middle" x="304.5" y="-272" font-family="monospace" font-size="10.00">vibration_rms &lt; 3.513</text>
 <text text-anchor="middle" x="304.5" y="-261" font-family="monospace" font-size="10.00">n=363 &#160;dev=931893.618</text>
 </g>
 <!-- n2&#45;&gt;n4 -->
@@ -118,7 +118,7 @@
 <g id="node10" class="node">
 <title>n6</title>
 <path fill="#fafafa" stroke="#333333" d="M586,-179C586,-179 467,-179 467,-179 461,-179 455,-173 455,-167 455,-167 455,-155 455,-155 455,-149 461,-143 467,-143 467,-143 586,-143 586,-143 592,-143 598,-149 598,-155 598,-155 598,-167 598,-167 598,-173 592,-179 586,-179"/>
-<text text-anchor="middle" x="526.5" y="-164" font-family="monospace" font-size="10.00">x0 &lt; 84.983</text>
+<text text-anchor="middle" x="526.5" y="-164" font-family="monospace" font-size="10.00">bearing_temp &lt; 84.983</text>
 <text text-anchor="middle" x="526.5" y="-153" font-family="monospace" font-size="10.00">n=147 &#160;dev=218905.771</text>
 </g>
 <!-- n6&#45;&gt;n12 -->
@@ -152,29 +152,29 @@
 <!-- n7 -->
 <g id="node13" class="node">
 <title>n7</title>
-<path fill="#fafafa" stroke="#333333" d="M583,-90C583,-90 470,-90 470,-90 464,-90 458,-84 458,-78 458,-78 458,-66 458,-66 458,-60 464,-54 470,-54 470,-54 583,-54 583,-54 589,-54 595,-60 595,-66 595,-66 595,-78 595,-78 595,-84 589,-90 583,-90"/>
-<text text-anchor="middle" x="526.5" y="-75" font-family="monospace" font-size="10.00">x0 &lt; 84.551</text>
+<path fill="#fafafa" stroke="#333333" d="M586,-90C586,-90 467,-90 467,-90 461,-90 455,-84 455,-78 455,-78 455,-66 455,-66 455,-60 461,-54 467,-54 467,-54 586,-54 586,-54 592,-54 598,-60 598,-66 598,-66 598,-78 598,-78 598,-84 592,-90 586,-90"/>
+<text text-anchor="middle" x="526.5" y="-75" font-family="monospace" font-size="10.00">bearing_temp &lt; 84.551</text>
 <text text-anchor="middle" x="526.5" y="-64" font-family="monospace" font-size="10.00">n=240 &#160;dev=70008.978</text>
 </g>
 <!-- n7&#45;&gt;n14 -->
 <g id="edge9" class="edge">
 <title>n7&#45;&gt;n14</title>
-<path fill="none" stroke="#888888" d="M595.29,-72C620.58,-72 649.35,-72 674.96,-72"/>
-<polygon fill="#888888" stroke="#888888" points="674.98,-75.5 684.98,-72 674.98,-68.5 674.98,-75.5"/>
+<path fill="none" stroke="#888888" d="M598.3,-72C622.69,-72 650.01,-72 674.49,-72"/>
+<polygon fill="#888888" stroke="#888888" points="674.79,-75.5 684.79,-72 674.79,-68.5 674.79,-75.5"/>
 <text text-anchor="middle" x="640" y="-74.8" font-family="monospace" font-size="9.00">&lt; 84.551</text>
 </g>
 <!-- n7&#45;&gt;n15 -->
 <g id="edge10" class="edge">
 <title>n7&#45;&gt;n15</title>
-<path fill="none" stroke="#888888" d="M595.29,-55.28C621.58,-48.8 651.64,-41.39 678,-34.89"/>
-<polygon fill="#888888" stroke="#888888" points="679.03,-38.24 687.9,-32.45 677.35,-31.45 679.03,-38.24"/>
+<path fill="none" stroke="#888888" d="M598.3,-54.54C623.79,-48.26 652.48,-41.18 677.78,-34.94"/>
+<polygon fill="#888888" stroke="#888888" points="678.8,-38.3 687.67,-32.51 677.12,-31.5 678.8,-38.3"/>
 <text text-anchor="middle" x="640" y="-51.8" font-family="monospace" font-size="9.00">&gt;= 84.551</text>
 </g>
 <!-- n3 -->
 <g id="node14" class="node">
 <title>n3</title>
 <path fill="#fafafa" stroke="#333333" d="M364,-179C364,-179 245,-179 245,-179 239,-179 233,-173 233,-167 233,-167 233,-155 233,-155 233,-149 239,-143 245,-143 245,-143 364,-143 364,-143 370,-143 376,-149 376,-155 376,-155 376,-167 376,-167 376,-173 370,-179 364,-179"/>
-<text text-anchor="middle" x="304.5" y="-164" font-family="monospace" font-size="10.00">x1 &lt; 2.804</text>
+<text text-anchor="middle" x="304.5" y="-164" font-family="monospace" font-size="10.00">vibration_rms &lt; 2.804</text>
 <text text-anchor="middle" x="304.5" y="-153" font-family="monospace" font-size="10.00">n=387 &#160;dev=404248.441</text>
 </g>
 <!-- n3&#45;&gt;n6 -->
@@ -195,7 +195,7 @@
 <g id="node15" class="node">
 <title>n1</title>
 <path fill="#fafafa" stroke="#333333" d="M137,-232C137,-232 12,-232 12,-232 6,-232 0,-226 0,-220 0,-220 0,-208 0,-208 0,-202 6,-196 12,-196 12,-196 137,-196 137,-196 143,-196 149,-202 149,-208 149,-208 149,-220 149,-220 149,-226 143,-232 137,-232"/>
-<text text-anchor="middle" x="74.5" y="-217" font-family="monospace" font-size="10.00">x0 &lt; 69.485</text>
+<text text-anchor="middle" x="74.5" y="-217" font-family="monospace" font-size="10.00">bearing_temp &lt; 69.485</text>
 <text text-anchor="middle" x="74.5" y="-206" font-family="monospace" font-size="10.00">n=750 &#160;dev=2802758.562</text>
 </g>
 <!-- n1&#45;&gt;n2 -->

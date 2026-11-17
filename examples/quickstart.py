@@ -11,7 +11,7 @@ y = [2.0 * (i % 8) + (5.0 if i % 8 > 4 else 0.0) + ((i * 13) % 7) * 0.05 for i i
 
 # Defaults are already tuned (regularized linear leaves, shallow depth).
 model = ModelTree()
-model.fit(x, y)
+model.fit(x, y, col_names=["signal_step"])
 
 x_test = [[float(v)] for v in range(8)]
 y_test = [2.0 * v + (5.0 if v > 4 else 0.0) for v in range(8)]

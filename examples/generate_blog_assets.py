@@ -20,12 +20,20 @@ import random
 import subprocess
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
 
 import mltreelib as mt
-from mltreelib import Metrics, ModelTree, plots
+from mltreelib import Metrics, ModelTree
+if HAS_MATPLOTLIB:
+    from mltreelib import plots
+else:
+    plots = None
 
 DOCS_ASSETS = Path("docs/assets")
 DOCS_ASSETS.mkdir(parents=True, exist_ok=True)
@@ -93,6 +101,7 @@ def run_blog_causal_uplift():
     X_test, y_test, w_test = X[split:], y[split:], w[split:]
 
     # Fit Honest Causal ModelTree
+    col_names = ["loyalty_tenure", "engagement_freq"]
     tree = ModelTree(
         gain="causal",
         max_depth=3,
@@ -102,12 +111,16 @@ def run_blog_causal_uplift():
         honesty_fraction=0.5,
         seed=42,
     )
-    tree.fit(X_train, (y_train, w_train))
+    tree.fit(X_train, (y_train, w_train), col_names=col_names)
 
     # 1. Tree Diagram
     dot = tree.to_dot()
     tree_svg_path = DOCS_ASSETS / "blog_causal_tree.svg"
     render_dot_to_svg(dot, tree_svg_path)
+
+    if not HAS_MATPLOTLIB:
+        print("  [Note] matplotlib not installed; skipping PNG metrics plot")
+        return
 
     # Predict test uplift (CATE)
     pred_tau = tree.predict(X_test, kind="uplift")
@@ -239,6 +252,7 @@ def run_blog_credit_scoring():
     X_test, y_test = X[split:], y[split:]
 
     # Glass-box tree with monotone constraints: cibil (-1), delinq (+1), dti (+1)
+    col_names = ["cibil_score", "monthly_income", "delinquencies_24m", "debt_to_income"]
     tree = ModelTree(
         gain="gini",
         max_depth=3,
@@ -247,12 +261,16 @@ def run_blog_credit_scoring():
         prune="none",
         seed=123,
     )
-    tree.fit(X_train, y_train)
+    tree.fit(X_train, y_train, col_names=col_names)
 
     # 1. Tree Diagram
     dot = tree.to_dot()
     tree_svg_path = DOCS_ASSETS / "blog_credit_tree.svg"
     render_dot_to_svg(dot, tree_svg_path)
+
+    if not HAS_MATPLOTLIB:
+        print("  [Note] matplotlib not installed; skipping PNG metrics plot")
+        return
 
     # Predictions (probabilities)
     scores_train = [min(1.0, max(0.0, p)) for p in tree.predict(X_train)]
@@ -322,6 +340,7 @@ def run_blog_predictive_maintenance():
     X_test, y_test = X[split:], y[split:]
 
     # Fit ModelTree with linear leaves and surrogate routing (maxsurrogate=1)
+    col_names = ["bearing_temp", "vibration_rms", "oil_pressure"]
     tree = ModelTree(
         leaf="linear",
         max_depth=3,
@@ -330,12 +349,16 @@ def run_blog_predictive_maintenance():
         prune="none",
         seed=999,
     )
-    tree.fit(X_train, y_train)
+    tree.fit(X_train, y_train, col_names=col_names)
 
     # 1. Tree Diagram
     dot = tree.to_dot()
     tree_svg_path = DOCS_ASSETS / "blog_maintenance_tree.svg"
     render_dot_to_svg(dot, tree_svg_path)
+
+    if not HAS_MATPLOTLIB:
+        print("  [Note] matplotlib not installed; skipping PNG metrics plot")
+        return
 
     # Predictions
     pred_test = tree.predict(X_test)

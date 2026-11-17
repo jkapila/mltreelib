@@ -37,7 +37,8 @@ model = ModelTree(
     prune="none",
     seed=123,
 )
-model.fit(X_train, y_train)
+col_names = ["cibil_score", "monthly_income", "delinquencies_24m", "debt_to_income"]
+model.fit(X_train, y_train, col_names=col_names)
 
 # Predict calibrated default probabilities
 pd_scores = model.predict(X_test)
