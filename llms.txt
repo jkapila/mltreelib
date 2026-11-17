@@ -33,6 +33,8 @@
 - [Zero-Imputation Maintenance](<https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/index.md>)
 - [Causal Uplift Modeling](<https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/index.md>)
 - [Modernizing Quinlan in Rust](<https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/index.md>)
+- [Beyond MSE (Distributional)](<https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/index.md>)
+- [Breaking Step Functions](<https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/index.md>)
 - [Data guide](<https://jkapila.github.io/mltreelib/reference/data/index.md>)
 - [Model guide](<https://jkapila.github.io/mltreelib/reference/model/index.md>)
 - [Metrics guide](<https://jkapila.github.io/mltreelib/reference/metrics/index.md>)

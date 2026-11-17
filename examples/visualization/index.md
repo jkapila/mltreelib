@@ -22,6 +22,24 @@ breakdown of one test row: docs/assets/airfoil_breakdown.png
 test rmse: 2.3
 ```
 
+---
+
+## Benchmark Comparisons (scikit-learn style)
+
+Generated via `examples/plot_sklearn_comparisons.py` using `matplotlib`:
+
+### 1\. 2D Decision Boundaries — ModelTree vs CART, LightGBM, and CatBoost
+
+Based on the canonical [scikit-learn Classifier Comparison](<https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html>) on Moons, Circles, and Linearly Separable datasets:
+
+Unlike standard orthogonal axis-aligned step boxes from CART and GBDTs, `ModelTree(leaf="linear")` computes multivariate linear logits within each leaf, generating smooth oblique decision surfaces.
+
+### 2\. 1D Continuous Curve Approximation — Step Staircase vs Linear ModelTree
+
+Based on the canonical [scikit-learn Tree Regression](<https://scikit-learn.org/stable/auto_examples/tree/plot_tree_regression.html>) benchmark:
+
+---
+
 ## The chart layer
 
 All fourteen chart functions (`mltreelib.plots`) are catalogued under [API reference — Visualization](<https://jkapila.github.io/mltreelib/reference/plots/index.md>); the full metrics + charts showcase is [Metrics &amp; plots](<https://jkapila.github.io/mltreelib/examples/metrics-plots/index.md>).
