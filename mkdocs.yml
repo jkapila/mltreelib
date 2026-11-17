@@ -87,7 +87,10 @@ nav:
       - Beyond MSE (Distributional): blog/beyond-mse-distributional-trees.md
       - Breaking Step Functions: blog/breaking-step-functions-model-trees-vs-gbdt.md
   - Benchmarks:
-      - ELO: benchmarks/elo.md
+      - Overview: benchmarks/elo.md
+      - Overall Arena: benchmarks/elo_overall.md
+      - Regression Arena: benchmarks/elo_board.md
+      - Classification Arena: benchmarks/elo_cla_board.md
       - DataSets: benchmarks/datasets.md
   - Research:
       - Field notes: field-notes.md

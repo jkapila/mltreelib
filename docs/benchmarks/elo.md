@@ -3,7 +3,11 @@
 One scoreboard, one protocol, every model scored on the **same prepared data**.
 The arena evaluates models across **Rust, Python, and R** under a strict 300s process-group timeout.
 
-Detailed runbook & ModelTree experimentation guide: [`benchmarks/README.md`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/README.md).
+### Dedicated Arena Boards
+- **[Overall Arena (56 Datasets)](elo_overall.md)**: Combined cumulative Elo across 18 Regression + 38 Classification datasets.
+- **[Regression Arena (18 Datasets)](elo_board.md)**: Interactive RMSE leaderboard with sticky column freezes and winner badges.
+- **[Classification Arena (38 Datasets)](elo_cla_board.md)**: Interactive leaderboards broken down by Accuracy, LogLoss, Binary-only, and Multiclass-only.
+- **[Benchmark Datasets Index](datasets.md)**: OpenML suites, row/column counts, and feature metadata.
 
 ---
 
@@ -16,8 +20,8 @@ Detailed runbook & ModelTree experimentation guide: [`benchmarks/README.md`](htt
 - **Reproduce**: `uv run python examples/elo_report.py` (or `bash examples/elo_run_resume.sh`).
 
 ### 2. Classification Arena
-- **Data**: 24 TabArena datasets (20 binary, 4 multiclass) from OpenML suite 457, stratified 80/20 split within class (seed 7), prepared once by `examples/elo_prepare_cla.py` with raw strings for categoricals and `<ds>.meta.json`.
-- **Matchups**: Per dataset, round-robin pairwise comparisons based on test **log loss** (cross-entropy), K=32, starting rating 1000.
+- **Data**: 38 TabArena datasets (30 binary, 8 multiclass) from OpenML suite 457, stratified 80/20 split within class (seed 7), prepared once by `examples/elo_prepare_cla.py` with raw strings for categoricals and `<ds>.meta.json`.
+- **Matchups**: Per dataset, round-robin pairwise comparisons based on test **Accuracy** and **Log Loss** (cross-entropy), K=32, starting rating 1000.
 - **Scores**: Evaluates 32 models across Python, Rust, and R (`benchmarks/elo_cla_scores.csv`), including RuleQuest `C5.0 (tree)` and `C5.0 (rules)` in R, `HistGradientBoosting`, `sklearn GBM`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `ranger`, `bart`, `glmtree`, and all 4 `ModelTree` variants (`all`, `path`, `mean`, `winnow`).
 - **Reproduce**: `uv run python examples/elo_report_cla.py` (or `bash examples/elo_run_cla.sh`).
 

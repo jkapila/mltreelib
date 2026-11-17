@@ -23,6 +23,10 @@ if (length(args) == 2) {
 
 setTimeLimit(elapsed = 290, transient = TRUE)  # cooperative floor (hard cap 300s external)
 
+if (dir.exists(".r_library")) {
+  .libPaths(c(normalizePath(".r_library"), .libPaths()))
+}
+
 if (task %in% c("cla", "classification")) {
   data_dir <- file.path("benchmarks", "elo_cla_data")
   pred_dir <- file.path("benchmarks", "cla_preds")

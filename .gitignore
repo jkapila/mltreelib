@@ -185,3 +185,7 @@ benchmarks/elo_reg_data/
 !docs/assets/*.png
 !docs/assets/**/*.png
 
+# R local libraries
+.r_library/
+r_library/
+
