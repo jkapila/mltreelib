@@ -1,6 +1,6 @@
 # Tobit & Censored Regression Trees
 
-When response variables have a natural boundary — such as insurance claims, consumer expenditures, or labor supply hours bounded at zero — linear regression estimates suffer from **attenuation bias**: the estimated slopes flatten toward zero because unobserved negative latent desires are clipped to the boundary.
+Tobit models a latent response censored at a known boundary. A natural lower bound or a real zero alone does not establish censoring. Latent-normal and censoring assumptions must fit the application.
 
 `ModelTree` provides native **Tobit regression leaves** (`leaf_family="tobit"`) fitted via iterative reweighted least squares (IRLS / EM) inside tree partitions.
 
@@ -17,7 +17,7 @@ True Latent Model: y* = 0.5 + 2.0 * x + N(0, 1)
 Fitted Parameters:
   OLS (Gaussian) : Intercept = +0.8850 | Slope = +1.3257 (Attenuated by 33.7%)
   Tobit (Censored): Intercept = +0.4458 | Slope = +2.0920 (Recovery error: 0.0920)
-  [Pass] Tobit eliminates attenuation bias and recovers the true latent slope.
+  [Pass] Tobit recovers the latent slope in this synthetic example.
 
 ======================================================================
 2. MROZ (1987) FEMALE LABOR SUPPLY: ECONOMETRIC BENCHMARK
@@ -82,4 +82,4 @@ predictions = tree.predict(X_test)
 On the classic **Mroz female labor supply dataset** (`datasets/external/mroz.csv`):
 - 43.2% of women in the survey reported 0 hours worked.
 - OLS attenuates the disincentive effect of infant children (`kidslt6`), giving $-403.61$ hours.
-- Tobit tree leaf model recovers the unattenuated latent marginal disincentive of $-436.19$ hours.
+- The fitted Tobit tree leaf coefficient is of $-436.19$ hours.

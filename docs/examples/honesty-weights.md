@@ -1,6 +1,6 @@
 # Honest trees & sample weights
 
-`ModelTree` supports sample-splitting honesty to avoid in-sample optimism bias, as well as observation weights for cost-sensitive learning and survey sampling.
+`ModelTree` supports sample-splitting honesty to reduce reuse of outcomes for split selection and leaf estimation, as well as observation weights for cost-sensitive learning and survey sampling.
 
 Script: [`examples/honesty_weights.py`](https://github.com/jkapila/mltreelib/blob/main/examples/honesty_weights.py) (`uv run python examples/honesty_weights.py`).
 
@@ -41,7 +41,7 @@ model = ModelTree(
 model.fit(X, y)
 ```
 
-The resulting leaf predictions and conditional quantiles are unbiased out-of-sample estimates for the leaf's sub-population.
+Sample splitting reduces adaptive reuse of outcomes. It does not guarantee unbiased predictions or quantiles for every dataset, remove confounding, or replace independent evaluation. Fewer estimation rows can also make leaf estimates unstable. Check leaf support and compare performance on a held-out set. See [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113).
 
 ### Sample weights (`w`, `sample_weight`, `row_weights`)
 

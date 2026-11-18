@@ -29,6 +29,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 |---|---|
 | install it | [Installation](installation.md) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
+| choose a modeling task | [Practical modeling pathways](guides/index.md) |
 | solve a real problem | [Examples — end-to-end walkthrough](examples/walkthrough.md) |
 | wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
 | know every knob | [Examples — Model building & predictions](examples/model-building.md) |
@@ -44,18 +45,18 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 
 Explore our in-depth architectural and commercial case studies:
 
-1. **[Why India's Digital Lending Boom Needs Glass-Box Trees Over Black-Box Boosters](blog/why-credit-scoring-needs-glass-box-trees.md)**  
-   *Regulatory Compliance & Fintech*: Monotonic shape constraints, WOE binning, and auditable credit scorecards.
-2. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](blog/zero-imputation-predictive-maintenance.md)**  
-   *Industrie 4.0 & Sensor Telemetry*: Why synthetic imputation corrupts failure dynamics, and how native surrogate routing and linear leaves solve sensor blackouts.
-3. **[Uplift Modeling from Scratch: Maximizing ROI with Honest Causal Trees](blog/uplift-modeling-with-causal-trees.md)**  
-   *Commercial Decision Optimization*: Why standard response modeling fails, and how sample-split honest trees isolate incremental treatment uplift.
-4. **[Why We Rebuilt Quinlan's Cubist and C5.0 in Rust](blog/modernizing-quinlan-classics-in-rust.md)**  
-   *Core Systems ML*: Modernizing 1990s C rule engines with memory-safe SIMD Cholesky factorization in Rust.
-5. **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](blog/beyond-mse-distributional-trees.md)**  
+1. **[Decision Trees for Credit Scoring](blog/why-credit-scoring-needs-glass-box-trees.md)**
+   *Regulatory Compliance & Fintech*: How tree paths, constraints and calibration support model review.
+2. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](blog/zero-imputation-predictive-maintenance.md)**
+   *Industrie 4.0 & Sensor Telemetry*: A synthetic example of missing sensor values and tree routing.
+3. **[Uplift Modeling with Causal Trees](blog/uplift-modeling-with-causal-trees.md)**
+   *Commercial Decision Optimization*: How an honest causal tree compares targeting policies on a randomized held-out trial.
+4. **[Cubist Models and C5.0 Rules](blog/modernizing-quinlan-classics-in-rust.md)**
+   *Core Systems ML*: Linear leaves, extracted rules and the contracts still to check.
+5. **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](blog/beyond-mse-distributional-trees.md)**
    *Actuarial & Risk Modeling*: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
-6. **[Breaking the Step Function: Why Model Trees Beat Gradient Boosters on Continuous Physics](blog/breaking-step-functions-model-trees-vs-gbdt.md)**  
-   *Systems ML & Physics-Informed ML*: Overcoming orthogonal step staircases on continuous physical manifolds with piecewise linear leaves and hierarchical smoothing.
+6. **[Breaking the Step Function: Model Trees and Step Functions for Continuous Regression](blog/breaking-step-functions-model-trees-vs-gbdt.md)**
+   *Systems ML & Physics-Informed ML*: How linear leaves represent local trends and why fair comparisons need held-out data.
 
 !!! tip "Try it right now"
     `uv run python examples/quickstart.py` fits a tree, prints it in rpart

@@ -2,54 +2,35 @@
 
 Predict who leaves the bank — typed ingest: categoricals enter the tree as
 LEVELS (a distinct value is a level; the split search partitions level sets,
-nothing is ever encoded), NAs route as-is. Strings are coded once by
-IndexMapper because the fit takes numbers; that mapping is a pipeline step,
-not a tree step. Fit, evaluate, interpret.
+nothing is ever encoded), NAs route as-is. Raw categorical labels and missing predictor values go directly to ModelTree.
+Fit, evaluate, interpret.
 
     uv run python examples/churn_demo.py
 """
 
 import pandas as pd
-from mltreelib import IndexMapper, Metrics, ModelTree
+from mltreelib import Metrics, ModelTree
 
 df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
 y = (df["churn"] == "Yes").astype(float).tolist()  # churn: No/Yes -> 0/1
 print(f"rows: {len(df)}   churn rate: {sum(y) / len(y):.3f}")
 
-# Typed ingest: country and gender are categorical — level codes go to the
-# tree as-is. IndexMapper only turns the strings into codes (its one job);
-# the tree never sees dummies.
+# Pass raw categories and missing predictors directly to ModelTree.
 cols = [c for c in df.columns if c != "churn"]
-mappers = {}
-for col in ("country", "gender"):
-    m = IndexMapper()
-    m.fit(col, [None if pd.isna(v) else str(v) for v in df[col]])
-    mappers[col] = m
-
-dtypes, columns = [], []
-for col in cols:
-    raw = [None if pd.isna(v) else v for v in df[col]]
-    if col in mappers:
-        dtypes.append("categorical")
-        columns.append(
-            mappers[col].transform(col, [None if v is None else str(v) for v in raw])
-        )
-    else:
-        dtypes.append("numeric")
-        columns.append([None if v is None else float(v) for v in raw])
-X = [list(row) for row in zip(*columns)]
+n_train = int(0.8 * len(df))
+dtypes = ["categorical" if col in ("country", "gender", "credit_card", "active_member") else "numeric" for col in cols]
+X = [[None if pd.isna(v) else v for v in row] for row in df[cols].itertuples(index=False, name=None)]
 print("columns (xN index -> name, dtype):")
 print(
     "  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes)))
 )
 
 # Deterministic 80/20 split.
-n_train = int(0.8 * len(X))
 xtr, ytr = X[:n_train], y[:n_train]
 xte, yte = X[n_train:], y[n_train:]
 
 model = ModelTree(max_depth=4, min_rows=40)
-model.fit(xtr, ytr, dtypes=dtypes)
+model.fit(xtr, ytr, dtypes=dtypes, col_names=cols)
 pred = model.predict(xte)
 
 reg = Metrics().regression(yte, pred)

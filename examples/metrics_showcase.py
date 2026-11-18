@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
-from mltreelib import Metrics, ModelTree, OneHotEncoder, generate, plots
+from mltreelib import Metrics, ModelTree, generate, plots
 
 m = Metrics()
 
@@ -24,24 +24,17 @@ m = Metrics()
 df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
 y = (df["churn"] == "Yes").astype(float).tolist()
 x = df.drop(columns=["churn"]).copy()
-for col in x.select_dtypes(include="category").columns:
-    enc = OneHotEncoder()
-    enc.fit([None if v is None else str(v) for v in x[col].astype(object)])
-    dummies = enc.transform(
-        [None if v is None else str(v) for v in x[col].astype(object)]
-    )
-    x = x.drop(columns=[col])
-    for level, values in dummies.items():
-        x[f"{col}_{level}"] = values
-X = [[None if pd.isna(v) else float(v) for v in row] for row in x.values.tolist()]
+names = list(x.columns)
+dtypes = ["categorical" if str(x[col].dtype) in ("category", "str", "object") else "numeric" for col in names]
+X = [[None if pd.isna(v) else v for v in row] for row in x.itertuples(index=False, name=None)]
 
 n_tr = int(0.8 * len(X))
-tree = ModelTree(max_depth=4, min_rows=40)
-tree.fit(X[:n_tr], y[:n_tr])
-scores = [min(1.0, max(0.0, p)) for p in tree.predict(X[n_tr:])]
+tree = ModelTree(max_depth=4, min_rows=40, leaf="mean", leaf_family="binomial", gain="deviance")
+tree.fit(X[:n_tr], y[:n_tr], dtypes=dtypes, col_names=names)
+scores = tree.predict_proba(X[n_tr:])
 truth = y[n_tr:]
 hard = [1.0 if p >= 0.5 else 0.0 for p in scores]
-base = [sum(truth) / len(truth)] * len(truth)  # mean predictor
+base = [sum(y[:n_tr]) / n_tr] * len(truth)  # training-set mean predictor
 print(f"churn: {len(truth)} test rows, event rate {sum(truth) / len(truth):.3f}")
 
 # ------------------------------------------------------------- reports
@@ -190,7 +183,13 @@ _fig.tight_layout()
 _fig.savefig("docs/assets/plots/importance.png", dpi=110)
 plt.close(_fig)
 
-_bd = tree.break_down(X[n_tr // 2])
+# break_down currently accepts numeric rows. Fit a numeric-only explanation
+# model until the method supports the same raw categories as predict.
+numeric_indices = [i for i, dtype in enumerate(dtypes) if dtype == "numeric"]
+numeric_x = [[row[i] for i in numeric_indices] for row in X]
+explain_tree = ModelTree(max_depth=4, min_rows=40, leaf="mean", leaf_family="binomial", gain="deviance")
+explain_tree.fit(numeric_x[:n_tr], y[:n_tr], col_names=[names[i] for i in numeric_indices])
+_bd = explain_tree.break_down(numeric_x[n_tr])
 _fig, _ax = plt.subplots(figsize=(6.2, 4.0))
 plots.plot_breakdown(_bd, ax=_ax)
 _fig.tight_layout()

@@ -47,6 +47,20 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Quickstart: quickstart.md
+  - Modeling pathways:
+      - Overview: guides/index.md
+      - Prepare data: guides/data.md
+      - Real-data walkthrough: guides/real-data.md
+      - Regression: guides/regression.md
+      - Classification: guides/classification.md
+      - Clustering: guides/clustering.md
+      - Anomaly detection: guides/anomaly.md
+      - Survival: guides/survival.md
+      - Uplift: guides/uplift.md
+      - Evaluate and monitor: guides/evaluation.md
+      - Visualize results: guides/visualization.md
+      - Prediction and schema: guides/serving-contract.md
+      - Extend a model tree: guides/advanced-modeling.md
   - Examples:
       - Data:
           - Data Processing: examples/data-processing.md
@@ -76,11 +90,10 @@ nav:
       - Metrics & Diagnostics:
           - Metrics & Plots: examples/metrics-plots.md
           - Tree Inspection: examples/inspection.md
-          - Visualization: examples/visualization.md
           - End-to-End Walkthrough: examples/walkthrough.md
   - Blog:
       - Overview: blog/index.md
-      - Credit Scoring & Glass-Box: blog/why-credit-scoring-needs-glass-box-trees.md
+      - Credit Scoring and Trees: blog/why-credit-scoring-needs-glass-box-trees.md
       - Zero-Imputation Maintenance: blog/zero-imputation-predictive-maintenance.md
       - Causal Uplift Modeling: blog/uplift-modeling-with-causal-trees.md
       - Modernizing Quinlan in Rust: blog/modernizing-quinlan-classics-in-rust.md
@@ -108,7 +121,6 @@ nav:
       - Model guide: reference/model.md
       - Metrics guide: reference/metrics.md
       - Evaluation reports: reference/reports.md
-      - Visualization: reference/plots.md
 plugins:
   - search
   - include-markdown
@@ -120,6 +132,19 @@ plugins:
           - index.md
           - installation.md
           - quickstart.md
+          - guides/index.md
+          - guides/data.md
+          - guides/real-data.md
+          - guides/regression.md
+          - guides/classification.md
+          - guides/clustering.md
+          - guides/anomaly.md
+          - guides/survival.md
+          - guides/uplift.md
+          - guides/evaluation.md
+          - guides/visualization.md
+          - guides/serving-contract.md
+          - guides/advanced-modeling.md
           - examples/walkthrough.md
           - examples/two-controls-and-0d.md
           - examples/data-processing.md
@@ -132,7 +157,6 @@ plugins:
           - examples/honesty-weights.md
           - examples/timeseries-forecasting.md
           - examples/inspection.md
-          - examples/visualization.md
           - examples/metrics-plots.md
           - examples/hpo.md
           - examples/stump-explainable.md
@@ -152,7 +176,6 @@ plugins:
           - reference/model.md
           - reference/metrics.md
           - reference/reports.md
-          - reference/plots.md
           - reference/api/index.md
           - reference/api/data.md
           - reference/api/model-tree.md

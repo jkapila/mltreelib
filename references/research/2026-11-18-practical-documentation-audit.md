@@ -77,3 +77,108 @@ The audit does not establish drop-in compatibility with any named library. Compa
 - scikit-learn, [Common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html) — practical split and preprocessing examples. This is a reference, not a package dependency.
 
 These references are starting points. Check each source against the precise claim when writing the guides.
+
+## Proposed reader journey
+
+Organize the site around decisions in this order:
+
+1. **Start here:** install, a complete first fit, input conventions, and a task selector.
+2. **Prepare data:** missing values, categorical types, train-only transformations, leakage and feature names.
+3. **Choose a task:** regression, classification, clustering, anomaly detection, survival, uplift or forecasting. Each task starts with a decision guide and a complete small example.
+4. **Evaluate:** task-specific baselines, held-out design, metrics, uncertainty and failure analysis.
+5. **Understand and act:** named paths, leaf support, rules, explanations and the limits of causal interpretation.
+6. **Operate:** supported persistence and input contracts, monitoring, drift and retraining. Mark missing capabilities explicitly.
+7. **Reference:** model contracts, parameters, methods, examples, benchmarks and primary sources.
+
+For clustering, proceed from a complete fit and segment profile to model selection, mixed inputs, noise and new-row behavior. Follow with stability, held-out usefulness and a reproducible comparison. For anomaly detection, proceed from score interpretation and review capacity to threshold selection, contextual explanations, feedback, drift and labeled evaluation when available. Document each model's actual support before promising shared behavior.
+
+Every task path needs the same progression: decision, data, baseline, fit, evaluate, interpret, act, limitations and next steps. Benchmark pages need data provenance, split, preprocessing, budgets, seeds, metrics and failed runs. Use small runnable examples before longer comparisons. Add navigation and smoke checks as each path is completed.
+
+## Progress after the first pathway pass
+
+- **Phase 1, trust repairs: substantially complete.** The forecasting example uses prior-day outcomes, the causal and honesty claims are narrower, and the quickstart and churn snippets run. A full review of all existing claims remains.
+- **Phase 2, core workflow: started.** Regression and classification now have runnable synthetic pathways. Shared missing-value and categorical contracts and structured tree export remain to be checked per model.
+- **Phase 3, decision workflows: started.** Survival and uplift now have introductory pathways, but they do not yet contain independent censoring-aware survival evaluation or a randomized policy evaluation with uncertainty and costs.
+- **Phase 4, unsupervised workflows: started.** Clustering and anomaly pathways use the unified `ClusterTree` and `AnomalyTree` interfaces. The remaining work is to document each supported `kind`, its inputs, missing values, prediction behavior, score or label semantics, and practical evaluation.
+- **Phase 5, lifecycle and reference: pending.** Persistence, deployment, API coverage, generated references and CI checks still need source-backed review.
+
+### Next implementation step
+
+Build out the unified clustering and anomaly pathways first. Check every facade option against its implementation and tests. Add small runnable examples and task-specific figures, then compare stability and operational usefulness using reproducible data and budgets. Show limits and unavailable methods explicitly. Follow with shared missing-value, categorical and tree-inspection contracts. Then deepen survival and uplift evaluation before claiming complete decision workflows.
+
+## Follow-up: model examples, data and metrics
+
+The model examples are useful but mix task introductions, configuration catalogs and benchmarks. Keep the existing pages and links while their content is reviewed. Use the task pathways as entry points and the model-extension guide as a decision map. Consolidate repeated explanations only after checking their claims and inbound links. The knob tour belongs after a working baseline. Tobit, constraints and retraining are advanced workflows, not mandatory steps for every model. Keep benchmark results separate from instructions and label their datasets, splits and limits.
+
+Data and metrics are not complete as end-to-end user journeys. The new preparation and evaluation pages supply a first sequence and link to existing material. Remaining work includes per-estimator missing and unseen-category contracts, leakage-safe preprocessing across folds, stable schema and persistence, task-specific metrics for survival and uplift, anomaly and clustering evaluation, subgroup and uncertainty guidance, and runnable monitoring examples. The catalog contains conflicting descriptions of some metrics signatures. Check each against source and tests before treating it as authoritative. Do not infer that the package implements every metric recommended in the guide.
+
+
+## Checked contracts on 2026-11-18
+
+Both the committed worktree build (0.4.4) and an isolated build of the current original-checkout source (0.4.5, including its uncommitted Rust and Python changes) gave the following results. The latter build used a separate snapshot, virtual environment and Cargo target. These observations do not prove all cases.
+
+- On the healthcare training set and the 24-point age grid in `examples/constraints_check.py`, `monotone=[+1 on age]` produced no decreases with mean leaves. With linear leaves it produced two decreases: age 42 to 44 (20522.277 to 9202.407) and 58 to 60 (48176.713 to 15310.416). Treat global monotonicity for that configuration as a product gap and investigate before promising it.
+- A mean-leaf ModelTree accepted raw `north`/`south` strings and `None` numeric predictors with declared types. For the repeated four-row synthetic sample in `docs/guides/data.md`, prediction for `["unknown", None]` was 9.5 while `[None, None]` was 1.5. This differs from the repository's unseen-as-missing rule. Investigate category mapping and routing as a product gap.
+- For training values `["a", "a", "b", None]` and queries `["a", "unknown", None]`, `IndexMapper` returned `[0, None, None]`; one-hot returned all zeros for both unknown and missing; count encoding returned `[2, 0, None]`; target encoding with smoothing 2 returned approximately `[0.5833, 0.6667, None]`. Encoder behavior is method-specific and does not imply encoding is required for ModelTree.
+- A churn example passes raw category strings and missing values directly to ModelTree. Fitted tree rules still display categorical codes. Check whether users can obtain human-readable category labels and actionable paths as structured outputs. A predictive path alone does not identify an intervention effect.
+
+
+## Data, metrics and visual diagnostics follow-up
+
+The `examples/data_metrics_pathway.py` workflow uses raw categories and missing numeric values, separate training/validation/test partitions, a training-mean regression baseline and a validation-selected decision threshold. Its visual diagnostics show missingness, residuals, precision–recall, calibration, confusion, split importance and the tree. The metrics showcase now uses native categories and a training-set baseline.
+
+A further product gap appeared when the showcase passed a raw mixed-type row to `ModelTree.break_down`: prediction accepted the row but `break_down` raised `TypeError: must be real number, not str`. The showcase uses a separate numeric-only model for its break-down chart. Check mixed-type explanation support and structured category labels in the later contracts phase.
+
+
+## Probability calibration gap
+
+`Metrics.calibration` produces reliability bins, and `plots.plot_calibration` draws them. Brier score and log loss assess probability quality. These diagnostics do not fit or apply a post-hoc probability calibrator. The inspected public exports and model methods do not expose a fitted calibration workflow. Add probability recalibration to the roadmap, with held-out or out-of-fold fitting and independent evaluation. The algorithm and interface remain to be specified before implementation.
+
+
+## Prediction contract checks
+
+On the committed 0.4.4 worktree, a two-column mean-leaf ModelTree accepted a one-cell row and a three-cell row without an error. A numeric column supplied as a string raised `ValueError`. Python `pickle.dumps` on the fitted model raised `TypeError`. These are focused observations, not a complete deployment audit. The new prediction and schema guide checks field names in application code and records these gaps. An isolated build of the current original-checkout source reproduced the short-row, extra-row and pickle results. Define persistence and compatibility before production handoff.
+
+
+## Unified clustering checks
+
+The same `python/mltreelib/models.py` facade is present in the documentation worktree and current original checkout. Source inspection shows `ClusterTree` converts `None` to `0.0` for CLTree, HDBSCAN and URF in both fit and prediction. This conflicts with the missing-data-first contract and requires a product fix, not a documentation-only workaround.
+
+A synthetic two-group numeric check exercised fit, labels, new-row prediction and `rules()` for all four kinds. PCT returned rules; CLTree returned bounding boxes and `None` for some rows; HDBSCAN and URF returned empty rules. The observed results and code are described in the clustering guide. PCT accepted raw strings and missing numeric inputs in a separate mixed-data example, but rendered category codes and routed an unseen category differently from a missing one.
+
+The `examples/clustering_workflow.py` example adds independent training and review sets, cluster sizes and a label-permutation-invariant pairwise stability check. Its fixed-seed agreement was 0.788. That number is illustrative and does not establish cluster quality.
+
+
+## Unified anomaly checks
+
+`AnomalyTree` facade source was checked in the documentation worktree. HST, RCT and active paths replace `None` with `0.0` in fit and scoring, conflicting with missing-data-first behavior. EIF and DET accepted a small mixed-type input with raw categories and missing values, but that check does not establish all input contracts.
+
+A synthetic numeric check exercised fit, `score_samples` and `predict` for EIF, DET, HST, RCT and active. Context fit accepted integer sequences, but `score_samples` raised a message referring to `surprise_score`, which is not exposed on the facade. The active facade did not expose a feedback or update method. A tied-score example with 20 identical rows and contamination 0.1 flagged all 20. The facade uses a training cutoff and `>=`, so ties can exceed the nominal fraction.
+
+`examples/anomaly_workflow.py` fits independent reference data and ranks a separate 100-row review set with 10 planted anomalies. At a fixed budget of 10, 7 planted anomalies were reviewed. The training cutoff flagged 17. These are illustrative synthetic results, not a benchmark.
+
+
+## Larger synthetic pathway checks
+
+The initial 100-row anomaly review example and 80-row clustering review example above are historical. The examples now use at least 1,000 review or test rows. The anomaly workflow fits 2,000 reference rows and reviews 1,100, including 100 planted anomalies. It finds 75 at a review budget of 100. The clustering workflow fits 2,000 rows and assigns 1,000 held-out rows; its pairwise stability agreement is 0.750 across two fits. The mixed-data metrics example uses 2,000 training, 1,000 validation and 1,000 test rows. The six introductory modeling examples also use at least 1,000 rows per displayed evaluation or fit. These larger synthetic samples improve the demonstrations; they do not establish real-world performance or replace repeated seeds and independent datasets.
+
+
+## Real data check: Bank Customer Churn
+
+OpenML 46911, the 10,000-row TabArena Bank Customer Churn dataset already present in the original workspace, was copied to the isolated worktree as an untracked dataset. `examples/real_data_workflow.py` uses seven features, seed 2026 and 6,000/2,000/2,000 training/validation/test rows. The selected training columns have no missing values. A binomial ModelTree gives test average precision 0.5238 and Brier score 0.1215 against a training-rate baseline of 0.1639. A validation-selected threshold 0.2 gives test confusion [[1430,157],[187,226]]. PCT assigns four test groups of sizes 444, 530, 561 and 465. EIF scores 2,000 test records; churn is not an anomaly label, so anomaly accuracy is not established. This single random split is an exploratory example, not a benchmark or evidence of temporal deployment performance.
+
+
+## Synthetic regression selection and real-data explanation
+
+`examples/regression_real_and_synthetic.py` compares four ModelTree leaf/depth configurations on 3,000 synthetic training and 1,000 validation rows, then evaluates the selected setting on 1,000 held-out rows. Numeric predictors are missing in 169 test rows, and raw category labels are passed directly. Linear leaves at depth 2 achieve validation RMSE 2.624 and test RMSE 2.935 versus a training-mean baseline of 6.385. This is one seed and four configurations.
+
+The selected setting then fits 6,000 and scores 2,000 randomly selected records from OpenML 46923 diamonds. Test RMSE is 1381.867 versus 3982.039 baseline, and MAE is 772.555 versus 3012.514. The selected training features contain no missing values. Splits use named size features. The random split and synthetic selection do not establish the optimal model or causal interpretation.
+
+
+## Survival, uplift and real anomaly evaluation
+
+`examples/survival_uplift_evaluation.py` evaluates survival on 2,000 held-out synthetic rows, including 609 censored observations. At horizons 10, 20 and 30, tree IPCW Brier scores are 0.2417, 0.2000 and 0.1226, compared with 0.2509, 0.2102 and 0.1316 for a global survival baseline. The censoring distribution is known from the simulation. These example calculations are not a public metric API.
+
+The uplift evaluation uses 3,000 training, 1,000 validation and 2,000 independent randomized test rows. The selected policy yields estimated incremental net outcome 0.7072 per person versus -0.0478 for treat-all and 0 for treat-none. Its approximate 95% interval is [0.6438, 0.7706], conditional on the selected fraction and excluding model-selection uncertainty. PEHE 0.2347 and policy truth 0.7252 are available only because the data is synthetic.
+
+The UCI Statlog Shuttle archive (https://archive.ics.uci.edu/dataset/148/statlog+shuttle) supplies 43,500 train and 14,500 test records. The anomaly example trains EIF on a seeded subset of 5,000 class-1 train records and treats classes 2–7 as a proxy for anomalies. On the official test split, 648 of the top 725 scored records are proxy positives: precision 0.8938, recall 0.2144, AP 0.5988, prevalence 0.2084. These are operating-state labels rather than verified anomaly incidents. The source notes that the original time order was randomized. Dataset files are ignored by Git.

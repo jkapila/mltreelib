@@ -189,3 +189,9 @@ benchmarks/elo_reg_data/
 .r_library/
 r_library/
 
+# Downloaded UCI anomaly dataset
+datasets/external/shuttle/
+
+# Downloaded survival and trial datasets
+datasets/external/real_eval/
+

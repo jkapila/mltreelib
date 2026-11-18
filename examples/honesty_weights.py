@@ -4,8 +4,7 @@ Demonstrates two advanced estimation capabilities:
 1. Honest estimation (honesty=True, honesty_fraction=...):
    Partitions the data into a structure sample (used exclusively to evaluate
    splits and build tree architecture) and an estimation sample (used exclusively
-   to fit leaf parameters and empirical target distributions). This eliminates
-   in-sample optimism bias (grf-style honest trees).
+   to fit leaf parameters and empirical target distributions). This reduces reuse of outcomes for split selection and leaf estimation.
 2. Sample weights (fit(x, y, w=weights)):
    Allows assigning per-observation weights for importance weighting, survey sampling,
    or recency weighting in non-stationary series.

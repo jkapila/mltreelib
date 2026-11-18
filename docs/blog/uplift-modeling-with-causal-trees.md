@@ -1,82 +1,30 @@
-# Uplift Modeling from Scratch: Maximizing ROI with Honest Causal Trees
+# Uplift modeling with causal trees: who benefits from an intervention?
 
-**Author:** Jitin Kapila & mltreelib Team  
-**Category:** Commercial Growth & Decision Optimization  
+A customer who is likely to visit your site is not necessarily a customer who will visit **because** of an email. If the email costs money or annoys customers, the difference matters.
 
----
+Uplift modeling asks a different question from response prediction: **how much does the outcome change under treatment?** A causal tree groups observations to estimate how that change varies across customers. Randomized treatment assignment, or defensible observational assumptions, is needed to interpret those differences causally.
 
-## The Response Modeling Trap
+## What does an uplift model estimate?
 
-Most marketing, churn retention, and discount campaigns rely on standard **response modeling**:
-- Train a classifier to predict $P(Y=1 \mid X)$ (e.g. will the customer renew their subscription or click an ad?).
-- Target the top decile of predicted probabilities with discounts or incentives.
+For pre-treatment features $X=x$, the conditional average treatment effect is $E[Y(1)-Y(0)\mid X=x]$. In a randomized trial, treated and control outcomes within a sufficiently supported group can estimate that contrast. We do not observe both potential outcomes for one person, so an individual prediction is not an observed individual effect.
 
-This wastes budget. Standard response models target **Sure Things** (customers who would have renewed anyway) and **Lost Causes** (customers who will never convert, discount or not). Worst of all, they often contact **Sleeping Dogs**—customers who cancel *because* you reminded them of their recurring charge.
+`ModelTree(gain="causal")` accepts outcomes and treatment indicators as a tuple. Honesty separates rows used for tree structure from those used for leaf estimation. It does not remove confounding or guarantee that a discovered segment will generalize. See [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113).
 
----
+## Does targeting beat treating everyone?
 
-## True Incremental Uplift (CATE)
+We tested the workflow on the historical [Hillstrom randomized email trial](https://www.tensorflow.org/datasets/catalog/hillstrom). The example compares the women's email with no email and measures a website visit within two weeks. It uses 25,615 training, 8,539 validation and 8,539 test records. The tree uses pre-treatment attributes only.
 
-Uplift modeling estimates the **Conditional Average Treatment Effect (CATE)**:
+![Hillstrom held-out policy comparison](../assets/guides/real-uplift.svg)
 
-$$\tau(x) = \mathbb{E}[Y \mid X=x, W=1] - \mathbb{E}[Y \mid X=x, W=0]$$
+Validation selected a policy that treats every test customer. Its estimated incremental visit rate was **0.04517 per eligible customer**, with an approximate 95% interval of **0.03108 to 0.05927**. Treat-all has the same value because it is the same policy in this run. Treat-none has zero incremental visits by definition.
 
-Where $W \in \{0, 1\}$ represents receiving the intervention (discount, email, outreach).
+That result supports a difference between the two randomized arms in this split. It does **not** show that the targeting model improves on treating everyone. The example assumes zero campaign cost because the dataset does not provide it. Visits are not purchases or profit, and a historical experiment is not a substitute for a new trial.
 
-`mltreelib` implements **Honest Causal Trees** (Athey & Imbens / Wager):
+## How should you evaluate uplift?
 
-```python
-from mltreelib import ModelTree
+1. Define the intervention, outcome, cost and eligible population before fitting.
+2. Keep treatment and outcomes out of pre-treatment features. Split training, policy selection and test data.
+3. Compare the fixed policy with treat-all and treat-none on an independent randomized holdout. Report treated and control counts in targeted groups.
+4. Report uncertainty and campaign costs. Re-test the proposed policy in the setting where it will run.
 
-# Causal tree targeting treatment effect divergence
-causal_tree = ModelTree(
-    gain="causal",
-    max_depth=3,
-    min_rows=30,
-    prune="none",
-    honesty=True,             # Sample splitting to prevent spurious subgroup discovery
-    honesty_fraction=0.5,
-    seed=42,
-)
-
-# Fit over tuple target (outcomes, treatments) with explicit feature names
-col_names = ["loyalty_tenure", "engagement_freq"]
-causal_tree.fit(X_train, (y_train, w_train), col_names=col_names)
-
-# Predict individual uplift (tau / CATE)
-uplift_scores = causal_tree.predict(X_test, kind="uplift")
-```
-
----
-
-## Data Analysis & Persona Structure
-
-In our customer discount benchmark ($N=1,000$ campaign members), customers fall into four distinct behavioral regimes:
-
-| Persona | Feature Profile | Control Rate ($W=0$) | Treated Rate ($W=1$) | True CATE ($\tau$) | Action |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **Persuadables** | `loyalty_tenure > 0.0` (High loyalty / tenure) | 15% | 75% | **+60%** | **Target with Discount** |
-| **Sleeping Dogs** | `loyalty_tenure <= 0.0, engagement_freq > 0.0` | 55% | 10% | **-45%** | **Do Not Disturb** |
-| **Sure Things** | `loyalty_tenure <= 0.0, engagement_freq <= 0.0` | 25% | 25% | **0%** | **Save Discount Budget** |
-| **Lost Causes** | `loyalty_tenure <= 0.0, engagement_freq <= 0.0` | 25% | 25% | **0%** | **Do Not Target** |
-
----
-
-## Fitted Causal Tree Structure
-
-Below is the trained causal tree diagram rendered via `causal_tree.to_dot()` and Graphviz:
-
-![Honest Causal Tree Structure](../assets/blog_causal_tree.svg)
-
-Notice how the tree immediately splits on feature `loyalty_tenure < 0.051`. Customers with high loyalty are grouped into the left leaves where $\hat{\tau} \approx +0.60$. Customers with low loyalty branch right, where the tree isolates the Sleeping Dogs on `engagement_freq > 0.029` with $\hat{\tau} \approx -0.45$.
-
----
-
-## Model Evaluation & Uplift Metrics
-
-Targeting based on honest uplift scores completely reverses campaign economics:
-
-![Uplift Metrics and Qini Curve](../assets/blog_causal_metrics.png)
-
-1. **Cumulative Uplift (Qini Curve)**: Targeting the top 40% of the customer base ordered by predicted CATE captures all incremental conversions. Standard response modeling would mistakenly target the high-baseline Sleeping Dogs, driving negative net ROI.
-2. **Quintile Uplift Profile**: The top quintile captures over $+55\%$ empirical treatment uplift, while the bottom quintile exhibits $-43\%$ negative uplift—validating that the model separates customers who convert because of outreach from those who churn because of it.
+The [uplift pathway](../guides/uplift.md) contains the synthetic and real evaluation, data source, split, limitations and commands. Its synthetic example also reports PEHE, which requires known individual effects and is not directly observable in an ordinary real trial.

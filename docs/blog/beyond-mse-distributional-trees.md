@@ -11,15 +11,12 @@ Almost every machine learning practitioner defaults to the same split criterion:
 
 $$\Delta \text{Var} = \text{Var}(Y_{\text{parent}}) - \frac{N_L}{N}\text{Var}(Y_L) - \frac{N_R}{N}\text{Var}(Y_R)$$
 
-Under the hood, MSE implicitly assumes that target errors are **homoscedastic Gaussian**:
-1. The conditional distribution $Y \mid X$ is symmetric and bell-shaped.
-2. The residual variance $\sigma^2$ is constant across all feature regions $X$.
-3. Data is fully observed without ceilings, floors, or time censoring.
+MSE targets the conditional mean and can be used without Gaussian errors. Its squared-error objective weights large residuals heavily. A Gaussian likelihood interpretation adds assumptions about the error distribution and variance. Censoring requires separate treatment.
 
-In commercial and industrial production, **these assumptions fail continuously**:
+Different target structures can require different modeling choices:
 
-- **Zero-Inflated Insurance Claims**: In auto, property, and health insurance, 80% to 95% of policyholders file zero claims ($Y = 0$). Positive claims are strictly positive, highly skewed, and heavy-tailed. Standard MSE splits are dominated by the sheer volume of zeros, diluting the signal of severe catastrophe losses.
-- **Top-Coded / Censored Metrics (Tobit)**: Customer lifetime value surveys, credit limits, warranty caps, or sensor cutoffs introduce truncation. Running standard OLS splits treats censored values as literal outcomes, inducing severe **attenuation bias** that flattens true causal relationships.
+- **Zero-Inflated Insurance Claims**: In auto, property, and health insurance, Many claim datasets contain a mass at zero. Positive claims are strictly positive, highly skewed, and heavy-tailed. Standard MSE splits are dominated by the sheer volume of zeros, diluting the signal of severe catastrophe losses.
+- **Top-Coded / Censored Metrics (Tobit)**: Customer lifetime value surveys, credit limits, warranty caps, or sensor cutoffs can introduce censoring, which differs from truncation. Running standard OLS splits treats censored values as literal outcomes, which can bias estimates under a censored latent-outcome model.
 - **Heteroscedastic Market Volatility**: In financial risk management, the expected return $\mu(X)$ may remain near zero while the conditional variance $\sigma^2(X)$ explodes during market regime shifts. Standard MSE splits are blind to pure variance shifts when the local mean does not move.
 - **Time-to-Event / Survival Analysis**: Customer churn, loan default timing, and mechanical equipment life are subject to right-censoring. Splitting on raw duration without adjusting for risk exposure distorts survival hazard rates.
 
@@ -46,7 +43,7 @@ model = ModelTree(
 )
 model.fit(X_train, y_train, col_names=col_names)
 
-# Predict calibrated mean claim cost
+# Predict a mean claim cost; assess calibration separately
 predicted_cost = model.predict(X_test)
 ```
 
@@ -66,7 +63,7 @@ For data bounded below at $c$ (e.g., $y = \max(y^*, 0)$), observations with $y_i
 
 $$\ell(\mu, \sigma) = \sum_{y_i > c} \left( -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(y_i - \mu)^2}{2\sigma^2} \right) + \sum_{y_i = c} \log \Phi\left(\frac{c - \mu}{\sigma}\right)$$
 
-This completely eliminates attenuation bias in leaves containing boundary mass.
+This models censoring under its assumed latent-normal specification; it does not guarantee bias removal when assumptions fail.
 
 ### 3. Heteroscedastic Gaussian Deviance (`gain="heteroscedastic"`)
 When features modulate both risk level and uncertainty, partitions evaluate reductions in the full Gaussian deviance:
@@ -79,7 +76,7 @@ Partitions are rewarded for grouping points of uniform volatility together, even
 
 ## Empirical Benchmark & Distributional Diagnostics
 
-Below is a three-panel diagnostic visualization comparing distributional modeling against classical assumptions:
+The following synthetic illustration compares distributional modeling choices. It is not a real insurance benchmark:
 
 ![Distributional Tree Validation Diagnostics](../assets/blog_distributional_metrics.svg)
 
@@ -111,4 +108,8 @@ Every node displays exact actuarial sample sizes $n$ and deviance statistics:
 | **Relative Scale Invariance** | `gain="cv"` | High-scale groups dominate absolute variance splits. |
 | **Churn / Equipment Survival** | `gain="martingale"` | Right-censoring distorts unadjusted duration targets. |
 
-By stepping outside the homoscedastic Gaussian box, `mltreelib` brings modern parametric likelihoods directly into tree splitting, executing in microseconds with pure Rust SIMD.
+By stepping outside the homoscedastic Gaussian box, `mltreelib` brings modern parametric likelihoods directly into tree splitting, with a Rust core. Performance depends on the dataset and configuration.
+
+## Which tree should I use for censored or skewed data?
+
+Choose the target and censoring mechanism first. Compare alternatives on held-out data using a metric suited to the decision. The [distributional leaves](../examples/distributional-leaves.md), [Tobit](../examples/tobit-regression.md), and [survival pathway](../guides/survival.md) provide runnable examples and assumptions.

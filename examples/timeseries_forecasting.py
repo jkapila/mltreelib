@@ -41,6 +41,12 @@ def generate_panel_data():
     return keys, dates, sales
 
 
+def past_sales_mean(keys, dates, sales):
+    """Return the seven-day mean available before each day starts."""
+    same_day_mean = windowed_transform(keys, dates, sales, 7, kind="mean")
+    return lag_by_days(keys, dates, same_day_mean, 1)
+
+
 def main():
     keys, dates, sales = generate_panel_data()
     print(
@@ -52,14 +58,14 @@ def main():
     cal = calendar_features(dates)
     lag1 = lag_by_days(keys, dates, sales, 1)
     lag7 = lag_by_days(keys, dates, sales, 7)
-    win7_mean = windowed_transform(keys, dates, sales, 7, kind="mean")
+    win7_mean = past_sales_mean(keys, dates, sales)
 
     print("\n== 2. Engineered Time Features (first 4 rows) ==")
     print(f"  store      : {keys[:4]}")
     print(f"  weekday    : {cal['weekday'][:4]}")
     print(f"  weekend    : {cal['weekend'][:4]}")
     print(f"  lag_1d     : {lag1[:4]} (first day per store is None)")
-    print(f"  win7_mean  : {[round(v, 2) for v in win7_mean[:4]]}")
+    print(f"  win7_mean  : {[round(v, 2) if v is not None else None for v in win7_mean[:4]]}")
 
     # Assemble feature matrix
     X = []

@@ -256,6 +256,10 @@ Every entry tracks native categorical handling and execution resources under str
 - [x] **Modern Leaf Optimization**: Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and SOTA continuous evolutionary solvers (CMA-ES, SHADE, sNES, RCGA) augmenting exact Cholesky and IRLS.
 - [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
 - [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
+- [ ] **Anomaly facade**: preserve missing values across engines, expose context scoring and active feedback, and define threshold tie behavior.
+- [ ] **Clustering missingness**: remove implicit `None` to zero conversion in unified clustering engines and check native missing-value behavior.
+- [ ] **Survival and uplift metrics**: expose checked censoring-aware and randomized policy evaluation workflows beyond the examples.
+- [ ] **Probability recalibration**: fit post-hoc calibrators on separate validation or out-of-fold predictions, and evaluate them on independent data. Calibration plots already assess reliability.
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
 - [ ] **R Frontend Package**: CRAN package wrapping `mltreelib-core`.
 

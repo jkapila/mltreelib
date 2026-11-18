@@ -97,7 +97,7 @@ In the spirit of generalized random forests (`grf`), honesty splits the training
 - **Structure rows** (`honesty_fraction=0.5` by default) determine split candidate scoring, significance gating, and tree structure.
 - **Estimation rows** determine leaf parameters and fitted responses.
 
-This prevents structure search from overfitting leaf estimates.
+This reduces reuse of outcomes for selecting splits and estimating leaves. It does not eliminate overfitting or replace independent evaluation.
 
 ## NA Surrogate Splits — `maxsurrogate`
 
