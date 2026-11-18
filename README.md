@@ -253,9 +253,9 @@ Every entry tracks native categorical handling and execution resources under str
   - [x] Causal / uplift treatment effect heterogeneity.
   - [x] Survival Log-Rank statistic.
 - [x] **Unsupervised & Anomaly Trees**: HDBSCAN, URF, CLTree, TrieKNN, PCT, DET, EIF, HST, RCT, AAD, CAT.
-- [ ] **Modern Leaf Optimization**: Quasi-Newton L-BFGS and Cyclic Coordinate Descent GLM solvers replacing iterative IRLS for high-dimensional leaves.
+- [x] **Modern Leaf Optimization**: Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and SOTA continuous evolutionary solvers (CMA-ES, SHADE, sNES, RCGA) augmenting exact Cholesky and IRLS.
 - [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
-- [ ] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
+- [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
 - [ ] **R Frontend Package**: CRAN package wrapping `mltreelib-core`.
 

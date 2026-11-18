@@ -121,6 +121,7 @@ Defines the parametric or non-parametric local model fitted within each terminal
 | **`knn_gamma`** | `float \| None` | `None` | `(0.0, \infty)` | Exponential spatial decay rate parameter. If `None`, automatically calibrated by the inverse median neighbor distance within the queried leaf. |
 | **`knn_p`** | `float` | `2.0` | `(0.0, \infty)` | Power parameter $p$ for Minkowski metric or inverse distance weighting ($1 / (d + \epsilon)^p$). |
 | **`leaf_family`** | `str` | `"gaussian"` | `"gaussian"`, `"binomial"`, `"poisson"`, `"tweedie"`, `"tobit"`, `"softmax"` | Target distribution family for Generalized Linear Model (GLM) leaves. `"gaussian"` uses identity link, `"binomial"` uses logit link, `"poisson"` uses log link. |
+| **`leaf_solver`** | `str` | `"irls"` | `"irls"`, `"lbfgs"`, `"ccd"`, `"cmaes"`, `"shade"`, `"nes"`, `"ga"` | Local optimization solver for leaf regression models: Iteratively Reweighted Least Squares / exact normal Cholesky (`"irls"`), Quasi-Newton L-BFGS with Armijo line search (`"lbfgs"`), Cyclic Coordinate Descent with active set (`"ccd"`), or SOTA continuous evolutionary algorithms: Covariance Matrix Adaptation Evolution Strategy (`"cmaes"`), Success-History Adaptive Differential Evolution (`"shade"`), Separable Natural Evolution Strategies (`"nes"`), or Real-Coded Genetic Algorithm with SBX crossover (`"ga"`). |
 | **`leaf_cols`** | `str` | `"all"` | `"all"`, `"path_used"` | Feature policy for leaf linear models. `"all"` fits over all features (with L1/L2 shrinkage); `"path_used"` restricts the leaf model strictly to features split along that leaf's ancestry path (winnowing). |
 | **`l1`** | `float` | `0.0` | `[0.0, \infty)` | Lasso regularization penalty on leaf linear coefficients. Drives irrelevant leaf weights strictly to zero. |
 | **`l2`** | `float` | `0.5` | `[0.0, \infty)` | Ridge regularization penalty on leaf linear coefficients. Stabilizes collinear inversion matrices in high-dimensional leaves. |
@@ -150,5 +151,5 @@ Enables independent configuration of leaf models and decoupled retraining withou
 
 | Parameter | Type | Default | Options | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **`verbose`** | `int` | `0` | `0`, `1`, `2` | Training verbosity. `0` = silent; `1` = print tree summary; `2` = stream per-node split candidates, gains, and timings. |
+| **`verbose`** | `int` | `0` | `0`, `1`, `2`, `3` | Training verbosity. `0` = silent; `1` = live depth progress, per-depth summaries, and fit complete summary; `2` = stream per-node split candidates, winning features, threshold, gain, and leaf reasons; `3` = stream leaf solver optimization (GLM convergence iterations, deviance step, linear fit stats). |
 | **`seed`** | `int` | `42` | `int` | Deterministic random seed controlling feature subsampling (`col_sample`) and honest partition splits. |

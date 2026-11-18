@@ -44,11 +44,32 @@ pub enum LeafKind {
     Knn,
 }
 
+/// Optimization solver used for fitting leaf regression models.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LeafSolver {
+    /// Iteratively Reweighted Least Squares (IRLS) and exact Cholesky.
+    Irls,
+    /// Quasi-Newton L-BFGS for non-linear GLM deviance minimization.
+    Lbfgs,
+    /// Cyclic Coordinate Descent (CCD) for L1/L2 ElasticNet and monotone constraints.
+    Ccd,
+    /// Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+    CmaEs,
+    /// Success-History Based Adaptive Differential Evolution (SHADE).
+    Shade,
+    /// Separable Natural Evolution Strategies / Natural Gradient Learning (sNES).
+    NaturalGradient,
+    /// Real-Coded Genetic Algorithm with SBX crossover and polynomial mutation.
+    GeneticAlgorithm,
+}
+
 /// Parameter controls for fitting leaf models independently of tree topology.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LeafControl {
     /// Leaf model kind (Linear, Mean, Median, Quantile(t), Huber, Mars, Prob, Odds, LogOdds).
     pub leaf: LeafKind,
+    /// Optimization solver (Irls, Lbfgs, Ccd).
+    pub solver: LeafSolver,
     /// Distribution / link function for the leaf model.
     pub family: LeafFamily,
     /// Which predictor columns linear leaves may use (All vs PathUsed).
@@ -95,12 +116,15 @@ pub struct LeafControl {
     pub knn_gamma: Option<f64>,
     /// Power parameter p for inverse distance / Minkowski metric (default 2.0).
     pub knn_p: f64,
+    /// Verbosity level for leaf fitting (0 = silent, >=3 logs GLM and leaf details).
+    pub verbose: u8,
 }
 
 impl Default for LeafControl {
     fn default() -> Self {
         Self {
             leaf: LeafKind::Linear,
+            solver: LeafSolver::Irls,
             family: LeafFamily::Gaussian,
             leaf_cols: LeafCols::All,
             l2: 1e-3,
@@ -124,6 +148,7 @@ impl Default for LeafControl {
             knn_metric: crate::knn::DistanceMetric::Euclidean,
             knn_gamma: None,
             knn_p: 2.0,
+            verbose: 0,
         }
     }
 }
@@ -149,6 +174,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         };
         Self {
             leaf: p.leaf,
+            solver: p.leaf_solver,
             family: p.leaf_family,
             leaf_cols: p.leaf_cols,
             l2: p.l2,
@@ -172,6 +198,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             knn_metric: p.knn_metric,
             knn_gamma: p.knn_gamma,
             knn_p: p.knn_p,
+            verbose: p.verbose,
         }
     }
 }
@@ -395,6 +422,7 @@ pub fn fit_leaf_model(
                     LeafFamily::Binomial,
                     mean_c,
                     Some(&control.extra),
+                    control.verbose,
                 );
                 let lm = fitted.unwrap_or_else(|| LinearModel {
                     coef: vec![0.0; chosen.len()],
@@ -683,13 +711,64 @@ pub fn fit_leaf_model(
     let linear = if control.leaf == LeafKind::Linear {
         let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
         let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
-        if family != LeafFamily::Gaussian {
-            let fitted = fit_glm(
-                cols, y, w, rows, &chosen, any_missing,
-                control.effective_leaf_monotone(), control.l1, control.l2,
-                family, stats.mean,
-                Some(&control.extra),
-            );
+        let lm = if family != LeafFamily::Gaussian {
+            let fitted = if control.solver == LeafSolver::Lbfgs {
+                let glm_fam = match family {
+                    LeafFamily::Binomial => Some(crate::solver::GlmFamily::Binomial),
+                    LeafFamily::Probit => Some(crate::solver::GlmFamily::Probit),
+                    LeafFamily::Poisson => Some(crate::solver::GlmFamily::Poisson),
+                    LeafFamily::Gamma => Some(crate::solver::GlmFamily::Gamma),
+                    LeafFamily::Tweedie => {
+                        let p = control.extra.get("tweedie_p").copied().unwrap_or(control.tweedie_p);
+                        Some(crate::solver::GlmFamily::Tweedie { p })
+                    }
+                    LeafFamily::Tobit => {
+                        let threshold = control.extra.get("tobit_threshold").copied().unwrap_or(control.tobit_threshold);
+                        Some(crate::solver::GlmFamily::Tobit { threshold })
+                    }
+                    _ => None,
+                };
+                if let Some(g_fam) = glm_fam {
+                    let view = crate::solver::design::ColumnSliceView::new(
+                        cols, y, w, rows, &chosen, any_missing,
+                    );
+                    let opts = crate::solver::lbfgs::LbfgsOptions {
+                        family: g_fam,
+                        l2: control.l2,
+                        max_iter: 100,
+                        m: 6,
+                        tol: 1e-6,
+                        verbose: control.verbose,
+                    };
+                    match crate::solver::lbfgs::solve_lbfgs(&view, &opts, None) {
+                        Ok(sol) => {
+                            if sol.iter().all(|b| b.is_finite()) {
+                                let nc = chosen.len();
+                                Some(LinearModel {
+                                    cols: chosen.clone(),
+                                    coef: sol[1..1 + nc].to_vec(),
+                                    na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
+                                    intercept: sol[0],
+                                    summary: None,
+                                })
+                            } else {
+                                None
+                            }
+                        }
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                }
+            } else {
+                fit_glm(
+                    cols, y, w, rows, &chosen, any_missing,
+                    control.effective_leaf_monotone(), control.l1, control.l2,
+                    family, stats.mean,
+                    Some(&control.extra),
+                    control.verbose,
+                )
+            };
             // The tree fit rejects nonfinite final models; scans reject
             // their loss. A failed GLM must never masquerade as a mean fit.
             let linear = fitted.unwrap_or_else(|| LinearModel {
@@ -713,21 +792,128 @@ pub fn fit_leaf_model(
                 knn: None,
                 knn_cols: None,
             };
+        } else if control.solver == LeafSolver::Ccd {
+            let view = crate::solver::design::ColumnSliceView::new(
+                cols, y, w, rows, &chosen, any_missing,
+            );
+            let opts = crate::solver::ccd::CcdOptions {
+                l1: control.l1,
+                l2: control.l2,
+                max_iter: 1000,
+                tol: 1e-7,
+                monotone: control.effective_leaf_monotone().to_vec(),
+            };
+            match crate::solver::ccd::solve_ccd(&view, &opts, None) {
+                Ok(sol) => {
+                    let nc = chosen.len();
+                    LinearModel {
+                        cols: chosen.clone(),
+                        coef: sol[1..1 + nc].to_vec(),
+                        na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
+                        intercept: sol[0],
+                        summary: None,
+                    }
+                }
+                Err(_) => {
+                    LinearModel {
+                        cols: chosen.clone(),
+                        coef: vec![0.0; dim.saturating_sub(1)],
+                        na_coef: Vec::new(),
+                        intercept: stats.mean,
+                        summary: None,
+                    }
+                }
+            }
+        } else if matches!(
+            control.solver,
+            LeafSolver::CmaEs | LeafSolver::Shade | LeafSolver::NaturalGradient | LeafSolver::GeneticAlgorithm
+        ) {
+            let evo_kind = match control.solver {
+                LeafSolver::CmaEs => crate::solver::EvolutionaryKind::CmaEs,
+                LeafSolver::Shade => crate::solver::EvolutionaryKind::Shade,
+                LeafSolver::NaturalGradient => crate::solver::EvolutionaryKind::NaturalGradient,
+                LeafSolver::GeneticAlgorithm => crate::solver::EvolutionaryKind::GeneticAlgorithm,
+                _ => unreachable!(),
+            };
+            let glm_fam = match family {
+                LeafFamily::Gaussian => crate::solver::GlmFamily::Gaussian,
+                LeafFamily::Binomial => crate::solver::GlmFamily::Binomial,
+                LeafFamily::Poisson => crate::solver::GlmFamily::Poisson,
+                LeafFamily::Probit => crate::solver::GlmFamily::Probit,
+                LeafFamily::Gamma => crate::solver::GlmFamily::Gamma,
+                LeafFamily::Tweedie => {
+                    let p = control.extra.get("tweedie_p").copied().unwrap_or(control.tweedie_p);
+                    crate::solver::GlmFamily::Tweedie { p }
+                }
+                LeafFamily::Tobit => {
+                    let threshold = control.extra.get("tobit_threshold").copied().unwrap_or(control.tobit_threshold);
+                    crate::solver::GlmFamily::Tobit { threshold }
+                }
+                _ => crate::solver::GlmFamily::Gaussian,
+            };
+            let view = crate::solver::design::ColumnSliceView::new(
+                cols, y, w, rows, &chosen, any_missing,
+            );
+            let opts = crate::solver::EvolutionaryOptions {
+                kind: evo_kind,
+                family: glm_fam,
+                l1: control.l1,
+                l2: control.l2,
+                monotone: control.effective_leaf_monotone().to_vec(),
+                population_size: None,
+                max_generations: 100,
+                tol: 1e-6,
+                seed: 42,
+                verbose: control.verbose,
+            };
+            match crate::solver::solve_evolutionary(&view, &opts, None) {
+                Ok(sol) => {
+                    let nc = chosen.len();
+                    LinearModel {
+                        cols: chosen.clone(),
+                        coef: sol[1..1 + nc].to_vec(),
+                        na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
+                        intercept: sol[0],
+                        summary: None,
+                    }
+                }
+                Err(_) => {
+                    LinearModel {
+                        cols: chosen.clone(),
+                        coef: vec![0.0; dim.saturating_sub(1)],
+                        na_coef: Vec::new(),
+                        intercept: stats.mean,
+                        summary: None,
+                    }
+                }
+            }
+        } else {
+            let mut g = Gram::new(dim);
+            let mut row = vec![0.0; dim];
+            for &r in rows {
+                design_row(&mut row, cols, r, &chosen, any_missing);
+                g.add_row(&row, y[r], w[r]);
+            }
+            fit_linear(
+                &g,
+                &chosen,
+                any_missing,
+                control.effective_leaf_monotone(),
+                control.l1,
+                control.l2,
+            )
+        };
+        if control.verbose >= 3 {
+            println!(
+                "      [leaf linear fit] rows={} cols={} l1={:.4} l2={:.4} intercept={:.4}",
+                rows.len(),
+                chosen.len(),
+                control.l1,
+                control.l2,
+                lm.intercept
+            );
         }
-        let mut g = Gram::new(dim);
-        let mut row = vec![0.0; dim];
-        for &r in rows {
-            design_row(&mut row, cols, r, &chosen, any_missing);
-            g.add_row(&row, y[r], w[r]);
-        }
-        Some(fit_linear(
-            &g,
-            &chosen,
-            any_missing,
-            control.effective_leaf_monotone(),
-            control.l1,
-            control.l2,
-        ))
+        Some(lm)
     } else {
         None
     };

@@ -1331,6 +1331,7 @@ pub(crate) fn fit_glm(
     family: LeafFamily,
     mean: f64,
     extra: Option<&std::collections::HashMap<String, f64>>,
+    verbose: u8,
 ) -> Option<LinearModel> {
     let nc = chosen.len();
     let dim = 1 + nc + if with_indicators { nc } else { 0 };
@@ -1385,8 +1386,17 @@ pub(crate) fn fit_glm(
     if !old_objective.is_finite() {
         return None;
     }
+    if verbose >= 3 {
+        println!(
+            "      [glm start] family={:?} rows={} dim={} initial_obj={:.6}",
+            family,
+            rows.len(),
+            dim,
+            old_objective
+        );
+    }
     let mut beta = vec![0.0; dim];
-    for _ in 0..100 {
+    for iter in 0..100 {
         gram.xtx.fill(0.0);
         gram.xty.fill(0.0);
         gram.yty = 0.0;
@@ -1536,10 +1546,26 @@ pub(crate) fn fit_glm(
         }
         let improvement = old_objective - next_objective;
         current = candidate;
+        if verbose >= 3 {
+            println!(
+                "      [glm iter {}] obj={:.6} imp={:.6e}",
+                iter, next_objective, improvement
+            );
+        }
         if improvement <= 1e-11 * (1.0 + old_objective) {
+            if verbose >= 3 {
+                println!(
+                    "      [glm converged] iters={} final_obj={:.6}",
+                    iter + 1,
+                    next_objective
+                );
+            }
             return Some(current);
         }
         old_objective = next_objective;
+    }
+    if verbose >= 3 {
+        println!("      [glm did not converge after 100 iters]");
     }
     None
 }

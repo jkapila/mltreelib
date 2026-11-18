@@ -2251,6 +2251,7 @@ impl PyLeafControl {
     #[pyo3(signature = (
         leaf = "linear",
         leaf_family = "gaussian",
+        leaf_solver = "irls",
         leaf_cols = "all",
         l1 = 0.0,
         l2 = 1e-3,
@@ -2277,6 +2278,7 @@ impl PyLeafControl {
     fn new(
         leaf: &str,
         leaf_family: &str,
+        leaf_solver: &str,
         leaf_cols: &str,
         l1: f64,
         l2: f64,
@@ -2331,6 +2333,16 @@ impl PyLeafControl {
             "heteroscedastic" => LeafFamily::Heteroscedastic,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
+        let solver = match leaf_solver {
+            "irls" => mltreelib_core::leaf::LeafSolver::Irls,
+            "lbfgs" => mltreelib_core::leaf::LeafSolver::Lbfgs,
+            "ccd" => mltreelib_core::leaf::LeafSolver::Ccd,
+            "cmaes" | "cma_es" => mltreelib_core::leaf::LeafSolver::CmaEs,
+            "shade" | "de" => mltreelib_core::leaf::LeafSolver::Shade,
+            "nes" | "snes" | "natural_gradient" => mltreelib_core::leaf::LeafSolver::NaturalGradient,
+            "ga" | "rcga" | "genetic" => mltreelib_core::leaf::LeafSolver::GeneticAlgorithm,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf_solver '{other}'"))),
+        };
         let policy = match leaf_cols {
             "all" => LeafCols::All,
             "path_used" | "path" => LeafCols::PathUsed,
@@ -2342,6 +2354,7 @@ impl PyLeafControl {
         Ok(Self {
             inner: mltreelib_core::leaf::LeafControl {
                 leaf: kind,
+                solver,
                 family,
                 leaf_cols: policy,
                 l1,
@@ -2365,6 +2378,7 @@ impl PyLeafControl {
                 knn_metric: knn_met,
                 knn_gamma,
                 knn_p,
+                verbose: 0,
             },
         })
     }
@@ -2398,6 +2412,19 @@ impl PyLeafControl {
             LeafFamily::Softmax => "softmax".to_string(),
             LeafFamily::Survival => "survival".to_string(),
             LeafFamily::Heteroscedastic => "heteroscedastic".to_string(),
+        }
+    }
+
+    #[getter]
+    fn get_leaf_solver(&self) -> String {
+        match self.inner.solver {
+            mltreelib_core::leaf::LeafSolver::Irls => "irls".to_string(),
+            mltreelib_core::leaf::LeafSolver::Lbfgs => "lbfgs".to_string(),
+            mltreelib_core::leaf::LeafSolver::Ccd => "ccd".to_string(),
+            mltreelib_core::leaf::LeafSolver::CmaEs => "cmaes".to_string(),
+            mltreelib_core::leaf::LeafSolver::Shade => "shade".to_string(),
+            mltreelib_core::leaf::LeafSolver::NaturalGradient => "nes".to_string(),
+            mltreelib_core::leaf::LeafSolver::GeneticAlgorithm => "ga".to_string(),
         }
     }
 
@@ -2886,7 +2913,7 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0, leaf_family = "gaussian", split_eval = "fast",
+        verbose = 0, leaf_family = "gaussian", leaf_solver = "irls", split_eval = "fast",
         presort = false, events = None, treatments = None, train_groups = true, train_ids = false, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
@@ -2937,6 +2964,7 @@ impl PyModelTree {
         min_relevance: Option<f64>,
         verbose: u8,
         leaf_family: &str,
+        leaf_solver: &str,
         split_eval: &str,
         presort: bool,
         events: Option<Vec<f64>>,
@@ -3016,6 +3044,20 @@ impl PyModelTree {
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
+                )))
+            }
+        };
+        let leaf_solver_enum = match leaf_solver {
+            "irls" => mltreelib_core::leaf::LeafSolver::Irls,
+            "lbfgs" => mltreelib_core::leaf::LeafSolver::Lbfgs,
+            "ccd" => mltreelib_core::leaf::LeafSolver::Ccd,
+            "cmaes" | "cma_es" => mltreelib_core::leaf::LeafSolver::CmaEs,
+            "shade" | "de" => mltreelib_core::leaf::LeafSolver::Shade,
+            "nes" | "snes" | "natural_gradient" => mltreelib_core::leaf::LeafSolver::NaturalGradient,
+            "ga" | "rcga" | "genetic" => mltreelib_core::leaf::LeafSolver::GeneticAlgorithm,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "leaf_solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other}"
                 )))
             }
         };
@@ -3160,6 +3202,7 @@ impl PyModelTree {
             leaf_cols: policy,
             leaf: kind,
             leaf_family: family,
+            leaf_solver: leaf_solver_enum,
             l2,
             l1,
             tree_monotone: tree_mono,
@@ -5521,7 +5564,8 @@ impl PyMarsRegressor {
         fast_k = 10,
         pmethod = "backward",
         glm = "gaussian",
-        allowed = None
+        allowed = None,
+        verbose = 0
     ))]
     fn new(
         degree: usize,
@@ -5535,6 +5579,7 @@ impl PyMarsRegressor {
         pmethod: &str,
         glm: &str,
         allowed: Option<Vec<Vec<bool>>>,
+        verbose: u8,
     ) -> PyResult<Self> {
         let pm = mltreelib_core::mars::MarsPruningMethod::from_str(pmethod)
             .map_err(PyValueError::new_err)?;
@@ -5550,6 +5595,7 @@ impl PyMarsRegressor {
         reg.params.pmethod = pm;
         reg.params.glm = gm;
         reg.params.allowed = allowed;
+        reg.params.verbose = verbose;
 
         Ok(PyMarsRegressor { inner: reg })
     }

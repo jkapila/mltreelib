@@ -166,6 +166,8 @@ pub struct MarsParams {
     pub glm: MarsGlmFamily,
     /// Allowed interaction pairs (p x p boolean matrix, None = all allowed).
     pub allowed: Option<Vec<Vec<bool>>>,
+    /// Verbosity level: 0 = silent, >=1 logs forward pass and pruning.
+    pub verbose: u8,
 }
 
 impl Default for MarsParams {
@@ -182,6 +184,7 @@ impl Default for MarsParams {
             pmethod: MarsPruningMethod::Backward,
             glm: MarsGlmFamily::Gaussian,
             allowed: None,
+            verbose: 0,
         }
     }
 }
@@ -335,6 +338,12 @@ impl MarsRegressor {
         };
 
         // 1. Initial basis B_0(x) = 1
+        if self.params.verbose >= 1 {
+            println!(
+                "[MARS] fit start: n={} p={} degree={} max_terms={} penalty={:.2} glm={:?}",
+                n, p, self.params.degree, self.params.max_terms, self.params.penalty, self.params.glm
+            );
+        }
         let mut active_basis: Vec<BasisFunction> = vec![BasisFunction::constant()];
         let (_initial_coef, initial_rss) = fit_basis(&active_basis, x, y, weights, self.params.glm)?;
         let initial_total_rss = initial_rss.max(1e-12);
@@ -469,6 +478,14 @@ impl MarsRegressor {
                     active_basis.push(b2);
                 }
                 current_rss = new_rss;
+                if self.params.verbose >= 1 {
+                    println!(
+                        "  [MARS forward] terms={}/{} rss={:.4}",
+                        active_basis.len(),
+                        self.params.max_terms,
+                        current_rss
+                    );
+                }
             } else {
                 break;
             }
@@ -536,6 +553,15 @@ impl MarsRegressor {
             n_train: n,
             n_features: p,
         });
+
+        if self.params.verbose >= 1 {
+            println!(
+                "[MARS] fit complete: selected {} terms, gcv={:.6}, rss={:.6}",
+                self.model.as_ref().map(|m| m.basis.len()).unwrap_or(0),
+                final_gcv,
+                final_rss
+            );
+        }
 
         Ok(())
     }

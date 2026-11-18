@@ -33,7 +33,7 @@ use crate::criteria::GainFn;
 use crate::family::LeafFamily;
 use crate::gate::{GateNote, SplitTest};
 use crate::leaf::{fit_leaf_model, LeafCols, LeafKind};
-pub use crate::leaf::LeafControl;
+pub use crate::leaf::{LeafControl, LeafSolver};
 use crate::node_stats::{FrameStats, LeafModel};
 use crate::preselect;
 use crate::prune::PruneCost;
@@ -59,6 +59,8 @@ pub struct ModelTreeParams {
     /// Distribution fitted by each leaf; Gaussian preserves least squares.
     /// Binomial (logit) and Poisson (log) support mean and linear shapes.
     pub leaf_family: LeafFamily,
+    /// Leaf model optimization solver: Irls (default), Lbfgs, or Ccd.
+    pub leaf_solver: LeafSolver,
     /// Ridge penalty on leaf coefficients (intercept unpenalized).
     pub l2: f64,
     /// Lasso penalty on leaf coefficients (intercept unpenalized). With
@@ -245,6 +247,7 @@ impl Default for ModelTreeParams {
             leaf_cols: LeafCols::All,
             leaf: LeafKind::Linear,
             leaf_family: LeafFamily::Gaussian,
+            leaf_solver: LeafSolver::Irls,
             l2: 0.5,
             l1: 0.0,
             tree_monotone: Vec::new(),
@@ -721,8 +724,10 @@ impl ModelTree {
         } else {
             None
         };
+        let start_time = Instant::now();
         let mut grower = Grower {
             cols: &cols,
+            col_names: &col_names,
             y: &yv,
             w: &wv,
             treatments: params.treatments.as_deref(),
@@ -736,13 +741,34 @@ impl ModelTree {
             costs: Vec::new(),
             rng_counter: 0,
             tail_bounds,
+            max_depth_seen: 0,
         };
         if params.verbose > 0 {
-            grower.trace.push(format!(
-                "scan: gain={:?} split_precision={:?} cat_search={:?} ({:?}) leaf={:?} leaf_digest={}",
-                params.gain, params.split_precision, params.cat_search, params.cat_order,
-                params.leaf, params.leaf_digest
-            ));
+            grower.log(
+                1,
+                &format!(
+                    "[ModelTree] fit start: rows={} cols={} max_depth={} min_rows={} leaf={:?} family={:?} gain={:?}",
+                    rows.len(),
+                    active_cols.len(),
+                    params.max_depth,
+                    params.min_rows,
+                    params.leaf,
+                    params.leaf_family,
+                    params.gain
+                ),
+            );
+            grower.log(
+                1,
+                &format!(
+                    "scan: gain={:?} split_precision={:?} cat_search={:?} ({:?}) leaf={:?} leaf_digest={}",
+                    params.gain,
+                    params.split_precision,
+                    params.cat_search,
+                    params.cat_order,
+                    params.leaf,
+                    params.leaf_digest
+                ),
+            );
         }
 
         let cap = params.max_leaf_nodes.unwrap_or(usize::MAX);
@@ -787,16 +813,25 @@ impl ModelTree {
                 e.2 += p.candidates;
                 e.3 += p.scan_ns / 1_000_000;
             }
-            let mut lines: Vec<String> = by_depth
-                .iter()
-                .map(|(d, (nodes, rows, candidates, scan_ms))| {
-                    format!(
-                        "depth {d}: nodes={nodes} rows={rows} candidates={candidates} scan_ms={scan_ms}"
-                    )
-                })
-                .collect();
-            lines.extend(trace);
-            trace = lines;
+            for (d, (nodes, rows, candidates, scan_ms)) in &by_depth {
+                let depth_summary = format!(
+                    "[ModelTree] depth {d}: nodes={nodes} rows={rows} candidates={candidates} scan_ms={scan_ms}"
+                );
+                println!("{}", depth_summary);
+                trace.push(depth_summary);
+            }
+            let elapsed_ms = start_time.elapsed().as_millis();
+            let n_leaves = nodes.iter().filter(|n| n.split.is_none()).count();
+            let max_d = profiles.iter().map(|p| p.depth).max().unwrap_or(0);
+            let finish_msg = format!(
+                "[ModelTree] fit complete: total_nodes={} leaves={} max_depth={} elapsed_ms={}",
+                nodes.len(),
+                n_leaves,
+                max_d,
+                elapsed_ms
+            );
+            println!("{}", finish_msg);
+            trace.push(finish_msg);
         }
         let mut tree = Self {
             col_names,
@@ -2206,6 +2241,7 @@ impl ModelTree {
 
 pub(crate) struct Grower<'a> {
     pub(crate) cols: &'a [Vec<Option<f64>>],
+    pub(crate) col_names: &'a [String],
     pub(crate) y: &'a [f64],
     pub(crate) w: &'a [f64],
     pub(crate) treatments: Option<&'a [f64]>,
@@ -2226,6 +2262,7 @@ pub(crate) struct Grower<'a> {
     pub(crate) rng_counter: u64,
     /// Tail bounds (lower, upper) for extrema protection.
     pub(crate) tail_bounds: Option<(f64, f64)>,
+    pub(crate) max_depth_seen: usize,
 }
 
 enum GrowOp {
@@ -2280,6 +2317,13 @@ impl<'a> Grower<'a> {
         self.nodes.len() - 1
     }
 
+    pub(crate) fn log(&mut self, level: u8, msg: &str) {
+        if self.params.verbose >= level {
+            println!("{}", msg);
+            self.trace.push(msg.to_string());
+        }
+    }
+
     /// Iterative tree growth via an explicit work stack and bottom-up post-order pruning.
     fn grow_iterative(
         &mut self,
@@ -2306,6 +2350,11 @@ impl<'a> Grower<'a> {
                     budget,
                     res_idx,
                 } => {
+                    if depth > self.max_depth_seen {
+                        self.max_depth_seen = depth;
+                        let depth_msg = format!("[ModelTree] reached depth {}", depth);
+                        self.log(1, &depth_msg);
+                    }
                     let mut prof = NodeProfile {
                         depth,
                         rows: rows.len(),
@@ -2384,7 +2433,7 @@ impl<'a> Grower<'a> {
                     }
                     if self.params.verbose >= 2 {
                         let mut line = format!(
-                            "node depth={} rows={} cols={} candidates={} scan_ms={} leaf_ms={}",
+                            "[node depth={}] rows={} cols={} candidates={} scan_ms={} leaf_ms={}",
                             prof.depth,
                             prof.rows,
                             prof.cols,
@@ -2401,7 +2450,7 @@ impl<'a> Grower<'a> {
                                 if g.passed { "pass" } else { "stop" }
                             ));
                         }
-                        self.trace.push(line);
+                        self.log(2, &line);
                     }
 
                     match best {
@@ -2409,13 +2458,32 @@ impl<'a> Grower<'a> {
                             let t = Instant::now();
                             let leaf = self.make_leaf(self.leaf_rows(&rows, &est), &path);
                             prof.leaf_ns += t.elapsed().as_nanos() as u64;
-                            self.profiles.push(prof);
                             let stats = FrameStats::from_ty(self.y, self.w, &rows);
                             let cost = if self.params.prune == PruneCost::None {
                                 0.0
                             } else {
                                 self.leaf_cost(&rows, &path, stats.sse)
                             };
+                            let reason = if depth >= self.params.max_depth {
+                                "max_depth"
+                            } else if rows.len() < self.params.minsplit.unwrap_or(2 * self.params.min_rows) {
+                                "min_rows"
+                            } else if prof.gate.as_ref().map(|g| !g.passed).unwrap_or(false) {
+                                "chow_gate"
+                            } else {
+                                "purity_or_no_gain"
+                            };
+                            if self.params.verbose >= 2 {
+                                let leaf_msg = format!(
+                                    "  [leaf] depth={} rows={} cost={:.4} reason={}",
+                                    depth,
+                                    rows.len(),
+                                    cost,
+                                    reason
+                                );
+                                self.log(2, &leaf_msg);
+                            }
+                            self.profiles.push(prof);
                             let node_idx = self.add(Node {
                                 split: None,
                                 left: None,
@@ -2429,6 +2497,21 @@ impl<'a> Grower<'a> {
                             results[res_idx] = (node_idx, 1);
                         }
                         Some((mut sp, lrows, rrows)) => {
+                            if self.params.verbose >= 2 {
+                                let col_name = self.col_names.get(sp.col).map(|s| s.as_str()).unwrap_or("?");
+                                let op_str = if sp.cat.is_some() { "in" } else { "<=" };
+                                let split_msg = format!(
+                                    "  [split] col='{}' (idx={}) {} threshold={:.4} gain={:.6} left={} right={}",
+                                    col_name,
+                                    sp.col,
+                                    op_str,
+                                    sp.threshold,
+                                    sp.gain,
+                                    lrows.len(),
+                                    rrows.len()
+                                );
+                                self.log(2, &split_msg);
+                            }
                             // NA surrogate splits (Phase 3D: only search when the primary split
                             // column has missing values in this node; off unless maxsurrogate > 0).
                             if self.params.maxsurrogate > 0 && rows.iter().any(|&r| self.cols[sp.col][r].is_none()) {

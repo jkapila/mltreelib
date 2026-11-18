@@ -3268,4 +3268,135 @@ fn test_distributional_split_criteria() {
     assert_eq!(tree_mart.splits().len(), 1, "Martingale must split residual regimes");
 }
 
+#[test]
+fn test_training_telemetry_verbosity_levels() {
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..100 {
+        let x1 = i as f64;
+        let x2 = (i % 5) as f64;
+        x.push(vec![Some(x1), Some(x2)]);
+        y.push(Some(if i < 50 { 10.0 } else { 50.0 }));
+    }
+
+    // 1. verbose = 0: trace must be empty
+    let p0 = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        verbose: 0,
+        ..Default::default()
+    };
+    let tree0 = ModelTree::fit(&x, &y, p0).unwrap();
+    assert!(tree0.trace.is_empty(), "verbose=0 must have empty trace");
+
+    // 2. verbose = 1: depth progress, fit start, and fit complete
+    let p1 = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        verbose: 1,
+        ..Default::default()
+    };
+    let tree1 = ModelTree::fit(&x, &y, p1).unwrap();
+    assert!(!tree1.trace.is_empty(), "verbose=1 must populate trace");
+    assert!(
+        tree1.trace.iter().any(|s| s.contains("[ModelTree] fit start")),
+        "must contain fit start header"
+    );
+    assert!(
+        tree1.trace.iter().any(|s| s.contains("[ModelTree] depth")),
+        "must contain depth progress"
+    );
+    assert!(
+        tree1.trace.iter().any(|s| s.contains("[ModelTree] fit complete")),
+        "must contain fit complete summary"
+    );
+
+    // 3. verbose = 2: per-node splits, winning features, and leaf records
+    let p2 = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        verbose: 2,
+        ..Default::default()
+    };
+    let tree2 = ModelTree::fit(&x, &y, p2).unwrap();
+    assert!(
+        tree2.trace.iter().any(|s| s.contains("[node depth=")),
+        "must contain node entry logs"
+    );
+    assert!(
+        tree2.trace.iter().any(|s| s.contains("[split] col=")),
+        "must contain split decisions with column name"
+    );
+    assert!(
+        tree2.trace.iter().any(|s| s.contains("[leaf] depth=")),
+        "must contain leaf creation records"
+    );
+
+    // 4. verbose = 3 with GLM leaf family: runs without error and logs GLM leaf convergence
+    let y_bin: Vec<Option<f64>> = (0..100)
+        .map(|i| Some(if i < 50 { 0.0 } else { 1.0 }))
+        .collect();
+    let p3 = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Binomial,
+        verbose: 3,
+        ..Default::default()
+    };
+    let tree3 = ModelTree::fit(&x, &y_bin, p3).unwrap();
+    assert!(tree3.n_leaves() >= 1);
+}
+
+#[test]
+fn test_modern_leaf_solvers_lbfgs_and_ccd() {
+    use mltreelib_core::model_tree::LeafSolver;
+
+    let n = 120;
+    let mut x: Vec<Vec<Option<f64>>> = Vec::with_capacity(n);
+    let mut y_bin: Vec<Option<f64>> = Vec::with_capacity(n);
+    let mut y_gauss: Vec<Option<f64>> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let x1 = ((i as f64) - 60.0) * 0.1;
+        let x2 = ((i * 3 % 7) as f64) * 0.2;
+        x.push(vec![Some(x1), Some(x2)]);
+
+        let prob = 1.0 / (1.0 + (-1.5 * x1).exp());
+        y_bin.push(Some(if prob > 0.5 { 1.0 } else { 0.0 }));
+        y_gauss.push(Some(2.0 + 3.0 * x1));
+    }
+
+    // 1. Test LeafSolver::Lbfgs on Binomial linear leaf
+    let p_lbfgs = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 20,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Binomial,
+        leaf_solver: LeafSolver::Lbfgs,
+        l2: 1e-3,
+        ..Default::default()
+    };
+    let tree_lbfgs = ModelTree::fit(&x, &y_bin, p_lbfgs).expect("L-BFGS leaf fit failed");
+    assert!(tree_lbfgs.n_leaves() >= 1);
+    let preds = tree_lbfgs.predict(&[vec![Some(-3.0), Some(0.0)], vec![Some(3.0), Some(0.0)]]);
+    assert!(preds[0] < preds[1], "Monotonic response expected for positive slope");
+
+    // 2. Test LeafSolver::Ccd on Gaussian linear leaf with L1 penalty
+    let p_ccd = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 20,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Gaussian,
+        leaf_solver: LeafSolver::Ccd,
+        l1: 5.0,
+        l2: 0.1,
+        ..Default::default()
+    };
+    let tree_ccd = ModelTree::fit(&x, &y_gauss, p_ccd).expect("CCD leaf fit failed");
+    assert!(tree_ccd.n_leaves() >= 1);
+}
+
+
+
 
