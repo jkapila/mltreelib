@@ -1,4 +1,8 @@
-# Causal & Uplift Trees — Heterogeneous Treatment Effect (HTE) Estimation
+# Check treatment-effect recovery with known synthetic truth
+
+Use simulation to check numerical effect recovery. The [Hillstrom pathway](../guides/uplift.md) shows how to evaluate a real randomized policy when individual effects are unknown.
+
+![Expected net outcome of three policies in the controlled randomized simulation](../assets/guides/uplift-evaluation.svg)
 
 Standard machine learning models optimize predictive accuracy: $\hat{Y} = E[Y | X]$. In decision sciences, personalized medicine, and targeted marketing, the central quantity is not outcome prediction but **intervention effect**:
 $$\tau(x) = E[Y | X=x, W=1] - E[Y | X=x, W=0]$$

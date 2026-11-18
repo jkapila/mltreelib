@@ -1,115 +1,71 @@
-# Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data
-
-**Author:** Jitin Kapila & mltreelib Team  
-**Category:** Actuarial Science, Econometrics & Risk Modeling  
-
+---
+description: Compare squared-error and Tweedie splits on held-out Miami home sales and choose a tree criterion for positive, skewed or censored outcomes.
 ---
 
-## The Flaw at the Heart of Standard Tree Splitting
+# Beyond mean squared error: choose a tree split for the outcome you have
 
-Almost every machine learning practitioner defaults to the same split criterion: **Mean Squared Error (MSE)** for regression or **Gini Impurity / Log-Loss** for classification. In algorithms like CART, XGBoost, and LightGBM, the regression splitting rule seeks partitions that maximize variance reduction:
+A tree split chooses what patterns the model pays attention to. Squared error gives large absolute misses more weight. This can be a sensible choice when absolute errors matter. A different criterion can prioritize structure at different scales or account for how the target was observed.
 
-$$\Delta \text{Var} = \text{Var}(Y_{\text{parent}}) - \frac{N_L}{N}\text{Var}(Y_L) - \frac{N_R}{N}\text{Var}(Y_R)$$
+We will fit two shallow trees on real Miami home sales and compare their held-out errors. This isolates the split criterion with the same tree size controls, feature list and mean-leaf setting.
 
-MSE targets the conditional mean and can be used without Gaussian errors. Its squared-error objective weights large residuals heavily. A Gaussian likelihood interpretation adds assumptions about the error distribution and variance. Censoring requires separate treatment.
+## Get the data and fit both trees
 
-Different target structures can require different modeling choices:
+Save the [OpenML Miami housing Parquet](https://www.openml.org/d/46942) to `datasets/miami_housing.parquet`. It has 13,776 sales and a positive sale-price target, `SALE_PRC`. The example selects five features directly related to the property. It samples 6,000 training and 2,000 test records after shuffling. For a market forecast, hold out later transactions, and consider holding out geographic areas as well.
 
-- **Zero-Inflated Insurance Claims**: In auto, property, and health insurance, Many claim datasets contain a mass at zero. Positive claims are strictly positive, highly skewed, and heavy-tailed. Standard MSE splits are dominated by the sheer volume of zeros, diluting the signal of severe catastrophe losses.
-- **Top-Coded / Censored Metrics (Tobit)**: Customer lifetime value surveys, credit limits, warranty caps, or sensor cutoffs can introduce censoring, which differs from truncation. Running standard OLS splits treats censored values as literal outcomes, which can bias estimates under a censored latent-outcome model.
-- **Heteroscedastic Market Volatility**: In financial risk management, the expected return $\mu(X)$ may remain near zero while the conditional variance $\sigma^2(X)$ explodes during market regime shifts. Standard MSE splits are blind to pure variance shifts when the local mean does not move.
-- **Time-to-Event / Survival Analysis**: Customer churn, loan default timing, and mechanical equipment life are subject to right-censoring. Splitting on raw duration without adjusting for risk exposure distorts survival hazard rates.
-
----
-
-## Distributional Tree Splitting in `mltreelib`
-
-Starting in `mltreelib` v0.4.2, we introduced native Rust splitting criteria designed specifically for non-Gaussian, censored, and heteroscedastic data distributions with zero external dependencies:
+Clone the repo, run `uv sync`, then run the code from the root.
 
 ```python
-from mltreelib import ModelTree
+from statistics import mean
 
-# Auto Insurance Claims Modeling with Tweedie Deviance (p = 1.5)
-# Features: [DriverAge, VehiclePower, BonusMalus, AnnualMileage]
-col_names = ["DriverAge", "VehiclePower", "BonusMalus", "AnnualMileage"]
+from examples.real_tree_studies import load, rows
+from mltreelib import Metrics, ModelTree
 
-model = ModelTree(
-    gain="tweedie",
-    tweedie_p=1.5,      # 1 < p < 2: Compound Poisson-Gamma
-    max_depth=3,
-    min_rows=40,
-    prune="none",
-    seed=42,
-)
-model.fit(X_train, y_train, col_names=col_names)
+df = load("miami_housing", 46942).sample(frac=1, random_state=2026)
+features = ["LND_SQFOOT", "TOT_LVG_AREA", "age", "OCEAN_DIST", "structure_quality"]
+train, test = df.iloc[:6000], df.iloc[6000:8000]
+x_train, x_test = rows(train, features), rows(test, features)
+y_train, y_test = train.SALE_PRC.tolist(), test.SALE_PRC.tolist()
+metrics = Metrics()
 
-# Predict a mean claim cost; assess calibration separately
-predicted_cost = model.predict(X_test)
+print("mean baseline", metrics.regression(y_test, [mean(y_train)] * len(test))["rmse"])
+for gain in ("sse", "tweedie"):
+    tree = ModelTree(gain=gain, tweedie_p=1.5, leaf="mean",
+                     max_depth=2, min_rows=40, prune="none")
+    tree.fit(x_train, y_train, col_names=features)
+    pred = tree.predict(x_test)
+    print(gain, metrics.regression(y_test, pred)["rmse"], tree.splits()[0])
 ```
 
----
+The Tweedie variance function increases with the mean as `mean ** p`. Here the value of `p` stays fixed at 1.5 to make the comparison reproducible. We compare both models on the same sale-price units using RMSE. If the decision calls for relative or deviance-based loss, choose that metric before fitting and compare both models again.
 
-## The Mathematical Mechanics of Specialized Criteria
+## What changed in the real example?
 
-### 1. Tweedie Compound Poisson-Gamma Deviance (`gain="tweedie"`)
-For insurance claim frequencies and aggregate losses, targets follow a Tweedie distribution with power parameter $p \in (1, 2)$, where $\text{Var}(Y) = \phi \mu^p$. The split search maximizes Tweedie deviance reduction:
+| Split or baseline | Test RMSE |
+|---|---:|
+| Training mean | 316,190 |
+| Squared error | 222,710 |
+| Tweedie deviance | 217,425 |
 
-$$d(y, \hat{\mu}) = 2 \left( \frac{y^{2-p}}{(1-p)(2-p)} - \frac{y \hat{\mu}^{1-p}}{1-p} + \frac{\hat{\mu}^{2-p}}{2-p} \right)$$
+Tweedie splits reduced test RMSE by about 2.4% relative to squared-error splits in this run. Use a fresh split or paired resampling to assess how much this difference varies. Sale prices here are positive, so the comparison does not test the zero-mass use case.
 
-This penalizes deviation from the Poisson-frequency and Gamma-severity likelihood, capturing both whether a claim occurs and how severe it becomes.
+![Miami home sale test errors for squared-error and Tweedie tree splits](../assets/guides/real-housing-splits.svg)
 
-### 2. Tobit Censored Log-Likelihood (`gain="tobit"`)
-For data bounded below at $c$ (e.g., $y = \max(y^*, 0)$), observations with $y_i = c$ represent latent outcomes $y_i^* \le c$. The Tobit split criterion evaluates the log-likelihood of the censored normal model:
+Both models use mean leaves, so their scores are point estimates. A specialized split criterion does not change a point estimate into a probability distribution. The residual panel shows errors by observed sale price. Check large misses and their locations before choosing a model for pricing.
 
-$$\ell(\mu, \sigma) = \sum_{y_i > c} \left( -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(y_i - \mu)^2}{2\sigma^2} \right) + \sum_{y_i = c} \log \Phi\left(\frac{c - \mu}{\sigma}\right)$$
+## When do you need a different objective?
 
-This models censoring under its assumed latent-normal specification; it does not guarantee bias removal when assumptions fail.
+| What the target records | Start with | Check on holdout |
+|---|---|---|
+| Numeric amount with absolute error costs | Squared error | RMSE, MAE and residuals by price range |
+| Nonnegative amount with many genuine zeros and a positive tail | Tweedie deviance | Zero fraction, aggregate bias and calibration of the conditional mean |
+| A measured value capped or floored by the collection process | Tobit under a defensible latent model | Boundary frequency and fit for uncensored outcomes |
+| Time until event or end of follow-up | A survival tree | Censoring-aware scores at supported horizons |
+| Similar means but changing spread across regimes | Heteroscedastic splitting | Test error and spread within each regime |
 
-### 3. Heteroscedastic Gaussian Deviance (`gain="heteroscedastic"`)
-When features modulate both risk level and uncertainty, partitions evaluate reductions in the full Gaussian deviance:
+A zero claim, a reading floored by a sensor and an event censored by study end represent different observations. Clarify the observation process before choosing a loss. A Tobit claim depends on its latent distribution assumptions. A survival claim depends on follow-up and censoring assumptions.
 
-$$D(Y_m) = N_m \log(\hat{\sigma}_m^2) + N_m$$
+```bash
+uv run python examples/real_tree_studies.py housing
+```
 
-Partitions are rewarded for grouping points of uniform volatility together, even when leaf means $\hat{\mu}_L \approx \hat{\mu}_R$.
-
----
-
-## Empirical Benchmark & Distributional Diagnostics
-
-The following synthetic illustration compares distributional modeling choices. It is not a real insurance benchmark:
-
-![Distributional Tree Validation Diagnostics](../assets/blog_distributional_metrics.svg)
-
-1. **Panel 1 (Tweedie Poisson-Gamma)**: Captures the 84% zero-spike at $0 without zero-truncation artifacts, while accurately modeling the continuous heavy tail.
-2. **Panel 2 (Tobit Censoring)**: OLS-based splits suffer severe slope flattening due to boundary accumulation at $y=0$. The Tobit criterion recovers the true latent slope.
-3. **Panel 3 (Heteroscedastic Volatility)**: Isolates high-volatility regimes ($\sigma = 1.84$) from low-volatility regimes ($\sigma = 0.12$), detecting structural variance shifts.
-
----
-
-## Trained Distributional Scorecard Tree Structure
-
-Below is the trained Tweedie tree diagram generated via `model.to_dot()` and Graphviz, showing explicit domain feature names and split thresholds:
-
-![Tweedie Insurance Claim Tree](../assets/blog_distributional_tree.svg)
-
-Every node displays exact actuarial sample sizes $n$ and deviance statistics:
-- High-risk young drivers with powerful engines (`DriverAge < 26.5` AND `VehiclePower >= 112.0`) route to elevated claim cost leaves.
-- Experienced drivers with favorable bonus-malus ratings route directly to base minimal cost leaves.
-
----
-
-## Summary & When to Use Distributional Trees
-
-| Business Problem | Recommended Criterion | Why MSE Fails |
-| :--- | :--- | :--- |
-| **P&C Insurance Loss Cost** | `gain="tweedie", tweedie_p=1.5` | Zero-inflation flattens severe claim signals. |
-| **Survey Spend / Floor Censoring** | `gain="tobit", tobit_threshold=0.0` | Floor boundary produces attenuated, biased leaf estimates. |
-| **Financial Volatility Regimes** | `gain="heteroscedastic"` | MSE cannot detect variance shifts when means are identical. |
-| **Relative Scale Invariance** | `gain="cv"` | High-scale groups dominate absolute variance splits. |
-| **Churn / Equipment Survival** | `gain="martingale"` | Right-censoring distorts unadjusted duration targets. |
-
-By stepping outside the homoscedastic Gaussian box, `mltreelib` brings modern parametric likelihoods directly into tree splitting, with a Rust core. Performance depends on the dataset and configuration.
-
-## Which tree should I use for censored or skewed data?
-
-Choose the target and censoring mechanism first. Compare alternatives on held-out data using a metric suited to the decision. The [distributional leaves](../examples/distributional-leaves.md), [Tobit](../examples/tobit-regression.md), and [survival pathway](../guides/survival.md) provide runnable examples and assumptions.
+See the [split criteria example](../examples/distributional-split-criteria.md) for controlled cases and the [FLCHAIN survival pathway](../guides/survival.md) for censored follow-up. For a primary reference on Tweedie modeling, see [Dunn and Smyth (2005)](https://doi.org/10.1007/s11222-005-4070-y).

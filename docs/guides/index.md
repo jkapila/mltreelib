@@ -1,24 +1,20 @@
 # Practical modeling pathways
 
-Start with the decision you need to make. Each path uses a small reproducible example and covers data, fitting, evaluation and interpretation.
+Start with a decision. Each pathway uses a real dataset, shows the fitting code and reads the result against a baseline or diagnostic.
 
-| Decision | Path | Output |
-|---|---|---|
-| Predict a quantity | [Regression](regression.md) | A numeric estimate |
-| Predict an event | [Classification](classification.md) | A class score and decision |
-| Describe groups | [Clustering](clustering.md) | Segment assignments and rules |
-| Prioritize unusual records | [Anomaly detection](anomaly.md) | A review ranking |
-| Estimate time to an event | [Survival](survival.md) | Survival probabilities over time |
-| Choose an intervention | [Uplift](uplift.md) | Estimated treatment effects |
+| Decision | Path | Dataset | What to check |
+|---|---|---|---|
+| Estimate a price | [Regression](regression.md) | OpenML diamonds | Test errors and residuals |
+| Predict financial distress | [Classification](classification.md) | Give Me Some Credit | Ranking, probability and threshold cost |
+| Group wine by chemistry | [Clustering](clustering.md) | UCI Wine Quality via OpenML | Leaf profiles and refit stability |
+| Prioritize unusual readings | [Anomaly detection](anomaly.md) | UCI Statlog Shuttle | Precision at a fixed review budget |
+| Estimate survival over time | [Survival](survival.md) | FLCHAIN | Censoring-aware error by horizon |
+| Decide who gets an email | [Uplift](uplift.md) | Hillstrom experiment | Policy value against treat-all and treat-none |
 
-## Before and after modeling
+## How to use the documentation
 
-Start with [data preparation](data.md). Follow the [real-data walkthrough](real-data.md) for a TabArena dataset. After fitting, use [evaluation and monitoring](evaluation.md), then [visualize the results](visualization.md). For a model handoff, see [prediction and schema](serving-contract.md). For Tobit leaves, constraints, retraining and tuning, see [extend a model tree](advanced-modeling.md).
+1. **Run one pathway.** Get its dataset and follow the analysis from split through evaluation.
+2. **Change one part.** The [example library](../examples/index.md) covers missing routing, alternative leaves, calibration diagnostics, retraining and other focused variations.
+3. **Review the decision.** Use the [evaluation guide](evaluation.md), [visualization catalog](visualization.md) and [serving contract](serving-contract.md).
 
-## A repeatable sequence
-
-**Decision → Data → Baseline → Fit → Evaluate → Interpret → Monitor**
-
-Keep test data independent of model and threshold selection. Fit transformations on training data only. Record feature names, category handling and missingness. A prediction or segment does not establish what happens after an intervention.
-
-These introductory paths use synthetic data. Use the linked examples and API references for more detail. They do not establish production performance or full drop-in compatibility.
+The [dataset setup page](real-data.md) lists the downloads. Synthetic checks sit after the practical workflows. They make known effects and missing-data behavior easier to test.

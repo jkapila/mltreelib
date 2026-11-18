@@ -23,3 +23,27 @@ The repository's [November 16 keyword research](2026-11-16-seo-keyword-volume-an
 - Run repeated splits and compare uplift policies with uncertainty and real campaign cost. The current policy did not improve on treat-all.
 - Audit remaining generated charts, benchmark claims, documentation snippets and category-label explanations. Keep a single visualization catalog and stable links.
 - Treat indexed keyword volumes as dated estimates. Measure actual search and reader behavior before expanding articles.
+
+## Real data first revision
+
+By task, the primary studies now use diamonds (regression), Give Me Some Credit
+(classification), Wine Quality (clustering), Shuttle (anomaly review), FLCHAIN
+(survival) and Hillstrom (uplift). The [dataset setup](../../docs/guides/real-data.md)
+records source links and local paths. Bank churn remains a secondary interface
+comparison. Synthetic cases test ground truth and controlled missingness. They
+are separate from evidence about observed data.
+
+[Wine Quality](https://archive.ics.uci.edu/dataset/186/wine+quality) provides
+measured chemistry for a clustering case with interpretable profiles. The
+refit diagnostic compares co-assigned pairs on common review data. The same
+training scale stays fixed, so this measures partition stability with that scale.
+[APS Failure](https://archive.ics.uci.edu/dataset/421/aps+failure+at+scania+trucks)
+provides genuinely missing sensors and an observed component label. That label
+supports diagnostic triage. It gives no measured time to failure.
+
+The [keyword intent note](2026-11-16-seo-keyword-volume-and-search-intent.md)
+informed the blog headings for decision tree regression, missing values, model
+trees and credit classification. Each article answers a concrete question,
+shows the fit and independent evaluation, and interprets its own figure. Search
+volume remains a dated estimate. Publication is separate from documentation
+build and evaluation.

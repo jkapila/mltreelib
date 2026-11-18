@@ -1,7 +1,7 @@
 # Installation
 
-mltreelib is a Python package with a Rust core — one wheel, no transitive
-dependencies.
+mltreelib is a Python package with a Rust core — one wheel; pulls `pyarrow>=14`
+(required runtime dependency).
 
 ## From PyPI
 
@@ -23,7 +23,7 @@ Building from source needs a Rust toolchain ([rustup](https://rustup.rs)) and
 ```bash
 git clone https://github.com/jkapila/mltreelib
 cd mltreelib
-uv run maturin develop        # builds the Rust core into your environment
+uv run maturin develop --release   # builds the Rust core into your environment with release optimizations
 ```
 
 ## Verify the install
@@ -55,7 +55,7 @@ uv sync --extra plotting
 | | |
 |---|---|
 | `ModelTree` | the tree: fit / predict, rpart-style text, SVG diagram, constraints |
-| 18 encoders | OneHot, Hashing, Target, CatBoost, WoE, James-Stein, Count, Leave-One-Out, M-Estimator, Base-N, Sum, Quantile, TF-IDF, Embedding, … |
+| 14 encoders | OneHot, Hashing, Target, CatBoost, WoE, James-Stein, Count, Leave-One-Out, M-Estimator, Base-N, Sum, Quantile, TF-IDF, Embedding |
 | scalers & builders | `VariableScaler`, `GroupedScaler`, `DatasetBuilder`, `IndexMapper` |
 | `Metrics` | regression / classification / regression-by-group reports |
 | dataset helpers | `list_datasets`, `load_dataset`, `summarize`, `generate`, calendar / lag / window transforms |

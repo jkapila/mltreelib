@@ -81,7 +81,7 @@ impl ModelTree {
                                 .collect::<Vec<_>>()
                                 .join(",")
                         ),
-                        None => format!("{} < {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
+                        None => format!("{} <= {}", self.col_names[sp.col], fmt_cut(sp.threshold)),
                     },
                     format!("n={}  dev={:.3}", nd.stats.n, nd.stats.sse),
                 ),
@@ -111,7 +111,7 @@ impl ModelTree {
                     }
                     None => {
                         let cut = fmt_cut(sp.threshold);
-                        (format!("< {cut}"), format!(">= {cut}"))
+                        (format!("<= {cut}"), format!("> {cut}"))
                     }
                 };
                 s += &format!("  n{} -> n{} [label=\"{}\"];\n", num[i], num[l], esc(&el));
@@ -181,7 +181,7 @@ impl std::fmt::Display for ModelTree {
                     }
                     None => {
                         let cut = fmt_cut(sp.threshold);
-                        (format!("{name}< {cut}"), format!("{name}>={cut}"))
+                        (format!("{name} <= {cut}"), format!("{name} > {cut}"))
                     }
                 };
                 walk(t, l, num * 2, depth + 1, &ll, out);

@@ -1,4 +1,8 @@
-# Survival Trees & Kaplan-Meier Estimation
+# Check the Kaplan–Meier calculation inside a leaf
+
+This example isolates the survival and cumulative hazard calculations. Use the [FLCHAIN pathway](../guides/survival.md) for a complete held-out evaluation on 7,874 real patients.
+
+![Leaf survival curves and held-out censoring-aware scores on FLCHAIN](../assets/guides/real-survival.svg)
 
 In clinical trials, equipment failure analysis, and credit tenure modeling, outcome variables represent **time-to-event** subject to **right-censoring**: for some units, the study ends before the event occurs.
 
@@ -60,25 +64,66 @@ Inside every leaf, the core Rust engine fits:
 
 ---
 
-## 3. Querying Survival Probabilities & Hazard Rates
+## 3. Querying Survival Probabilities & Cumulative Hazard
 
-Query step probabilities across arbitrary time horizons:
+Query step probabilities and cumulative hazards across arbitrary time horizons:
 
 ```python
 # Survival probability S(t) at day 30, 90, 180, 365
 time_grid = [30.0, 90.0, 180.0, 365.0]
 surv_curves = tree.predict(X_new, kind="survival", times=time_grid)
 
-# Cumulative hazard Lambda(t)
-hazard_curves = tree.predict(X_new, kind="hazard", times=time_grid)
+# Cumulative hazard Lambda(t) (Nelson-Aalen integral, not instantaneous hazard rate)
+cum_hazard_curves = tree.predict(X_new, kind="hazard", times=time_grid)
 
-# Median survival time in days
+# Median survival time in days (or max follow-up bound if S(t) > 0.5)
 median_times = tree.predict(X_new, kind="response")
 ```
 
 ---
 
-## 4. Benchmark & Numerical Validation
+## 4. Assumptions & Limitations
+
+To interpret survival trees validly in clinical or business workflows, four assumptions must be maintained:
+
+1. **Independent (Non-Informative) Censoring**:
+   Conditional on tree split covariates $X$, censoring time $C$ and event time $T$ must be conditionally independent: $T \perp C \mid X$. If patients leave a study or customers cancel because they are in unobserved terminal deterioration, censoring is informative and empirical Kaplan-Meier leaf estimates will overestimate survival.
+2. **Synchronized Time Origin**:
+   $t = 0$ must represent a clear, homogeneous milestone (e.g. initial diagnosis, medication onset, or account inception) across all units.
+3. **Median Survival When $S(t) > 0.5$**:
+   When fewer than 50% of units experience the event within a leaf during the observation window, the survival curve $\hat{S}(t)$ never crosses 0.5. In this case, the true median survival time is unobserved (censored beyond the maximum follow-up). The engine sets `median_time` to the maximum observed follow-up time $\max(T_i)$ within that leaf as a conservative empirical lower bound.
+4. **Cumulative Hazard vs. Instantaneous Hazard Rate**:
+   `predict(kind="hazard")` computes the cumulative hazard function $\hat{\Lambda}(t) = \int_0^t \lambda(u) du$ (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate $\lambda(t) = \frac{d\Lambda(t)}{dt}$, which requires kernel smoothing or parametric baseline hazard assumptions.
+
+---
+
+## 5. Held-Out Censoring-Aware Evaluation
+
+Evaluate predictions on independent test sets using `Metrics.survival`:
+
+```python
+from mltreelib import Metrics
+
+# Held-out evaluation
+report = Metrics.survival(
+    times=test_times,
+    events=test_events,
+    pred_times=test_median_preds,
+    eval_times=[30.0, 90.0, 180.0, 365.0],
+    pred_surv=test_surv_curves,
+)
+
+print(report)
+# Returns:
+# - harrell_c: Harrell's Concordance Index (proportion of concordant evaluable pairs)
+# - uno_c: Uno's IPCW Concordance Index (robust to heavy or time-dependent censoring)
+# - brier_scores: Time-dependent IPCW Brier score BS(t) at each evaluation horizon
+# - integrated_brier: Integrated Brier Score (IBS) across the evaluation grid
+```
+
+---
+
+## 6. Benchmark & Numerical Validation
 
 On the **Veterans' Administration Lung Cancer Trial** (`datasets/external/veteran.csv`):
 - Splitting on patient Karnofsky performance scale (`karno`) segments patients into two starkly divergent cohorts:

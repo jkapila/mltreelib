@@ -1,6 +1,10 @@
 site_name: mltreelib
 site_url: https://jkapila.github.io/mltreelib/
 site_description: Tree-based machine learning with a Rust core
+exclude_docs: |
+  agents/*
+  examples/visualization.md
+  reference/plots.md
 theme:
   variant: modern
   custom_dir: overrides
@@ -50,7 +54,7 @@ nav:
   - Modeling pathways:
       - Overview: guides/index.md
       - Prepare data: guides/data.md
-      - Real-data walkthrough: guides/real-data.md
+      - Get the datasets: guides/real-data.md
       - Regression: guides/regression.md
       - Classification: guides/classification.md
       - Clustering: guides/clustering.md
@@ -62,35 +66,34 @@ nav:
       - Prediction and schema: guides/serving-contract.md
       - Extend a model tree: guides/advanced-modeling.md
   - Examples:
-      - Data:
-          - Data Processing: examples/data-processing.md
-          - Categorical Encoders: examples/categorical-encoders.md
-          - Missing Data & Routing: examples/missing-routing.md
-          - Time Series Forecasting: examples/timeseries-forecasting.md
-          - Synthetic Controls & Ground Truth: examples/two-controls-and-0d.md
-      - ML Models:
-          - Supervised & Classical Trees:
-              - Model Building & Predictions: examples/model-building.md
-              - Growth Knob Tour: examples/knob-tour.md
-              - Distributional Leaves: examples/distributional-leaves.md
-              - Distributional Split Criteria: examples/distributional-split-criteria.md
-              - Causal & Uplift Modeling: examples/causal-uplift.md
-              - Tobit & Censored Regression: examples/tobit-regression.md
-              - Survival Trees & Hazard Estimation: examples/survival-trees.md
-              - Hierarchical Retrain & Routing: examples/hierarchical-retrain.md
-              - Monotone & Interaction Constraints: examples/constraints.md
-              - Honest Trees & Causal Weights: examples/honesty-weights.md
-              - Explainable Stumps & Retrain: examples/stump-explainable.md
-              - Rules, Summaries & k-NN: examples/rules-summary-knn.md
-              - Hyperparameter Search: examples/hpo.md
-          - Clustering:
-              - Clustering Comparison: examples/clustering-comparison.md
-          - Anomaly Detection:
-              - Anomaly Detection Suite: examples/anomaly-comparison.md
-      - Metrics & Diagnostics:
-          - Metrics & Plots: examples/metrics-plots.md
-          - Tree Inspection: examples/inspection.md
-          - End-to-End Walkthrough: examples/walkthrough.md
+      - Overview: examples/index.md
+      - Prepare inputs:
+          - Data processing: examples/data-processing.md
+          - Optional categorical encoders: examples/categorical-encoders.md
+          - Missing data and routing: examples/missing-routing.md
+          - Time series forecasting: examples/timeseries-forecasting.md
+          - Synthetic controls and ground truth: examples/two-controls-and-0d.md
+      - Configure and fit:
+          - Model building: examples/model-building.md
+          - Growth knobs: examples/knob-tour.md
+          - Hyperparameter search: examples/hpo.md
+          - Distributional leaves: examples/distributional-leaves.md
+          - Distributional split criteria: examples/distributional-split-criteria.md
+          - Tobit regression: examples/tobit-regression.md
+          - Survival mechanics: examples/survival-trees.md
+          - Causal simulation: examples/causal-uplift.md
+          - Honesty and weights: examples/honesty-weights.md
+          - Monotone and interaction constraints: examples/constraints.md
+      - Evaluate and inspect:
+          - Metrics and plots: examples/metrics-plots.md
+          - Tree inspection: examples/inspection.md
+          - Clustering diagnostics: examples/clustering-comparison.md
+          - Anomaly review budgets: examples/anomaly-comparison.md
+          - Model review checklist: examples/walkthrough.md
+      - Explain and update:
+          - Rules, summaries and neighbors: examples/rules-summary-knn.md
+          - Hierarchical retrain and routing: examples/hierarchical-retrain.md
+          - Explainable stumps and retrain: examples/stump-explainable.md
   - Blog:
       - Overview: blog/index.md
       - Credit Scoring and Trees: blog/why-credit-scoring-needs-glass-box-trees.md
@@ -145,6 +148,7 @@ plugins:
           - guides/visualization.md
           - guides/serving-contract.md
           - guides/advanced-modeling.md
+          - examples/index.md
           - examples/walkthrough.md
           - examples/two-controls-and-0d.md
           - examples/data-processing.md

@@ -21,8 +21,9 @@ use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, PurityMetric};
 use mltreelib_core::prune::PruneCost;
 use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
 use mltreelib_core::metrics::{
-    classification_report, grouped_regression_report, regression_report, ClassificationReport,
-    RegressionReport,
+    classification_report, grouped_regression_report, regression_report, survival_report,
+    time_series_report, uplift_report, ClassificationReport, RegressionReport, SurvivalReport,
+    TimeSeriesReport, UpliftReport,
 };
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
@@ -1399,6 +1400,46 @@ fn classification_to_dict<'py>(
     Ok(d)
 }
 
+fn uplift_to_dict<'py>(py: Python<'py>, u: &UpliftReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n_total", u.n_total)?;
+    d.set_item("n_treated", u.n_treated)?;
+    d.set_item("n_control", u.n_control)?;
+    d.set_item("ate", u.ate)?;
+    d.set_item("qini_coef", u.qini_coef)?;
+    d.set_item("qini_norm", u.qini_norm)?;
+    d.set_item("auuc", u.auuc)?;
+    d.set_item("top_decile_uplift", u.top_decile_uplift)?;
+    d.set_item("top_quintile_uplift", u.top_quintile_uplift)?;
+    d.set_item("qini_curve", u.qini_curve.clone())?;
+    d.set_item("cumulative_gain", u.cumulative_gain.clone())?;
+    Ok(d)
+}
+
+fn survival_to_dict<'py>(py: Python<'py>, s: &SurvivalReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n_samples", s.n_samples)?;
+    d.set_item("n_events", s.n_events)?;
+    d.set_item("harrell_c", s.harrell_c)?;
+    d.set_item("uno_c", s.uno_c)?;
+    d.set_item("ibs", s.ibs)?;
+    d.set_item("brier_at_horizons", s.brier_at_horizons.clone())?;
+    Ok(d)
+}
+
+fn time_series_to_dict<'py>(py: Python<'py>, t: &TimeSeriesReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n_periods", t.n_periods)?;
+    d.set_item("mae", t.mae)?;
+    d.set_item("rmse", t.rmse)?;
+    d.set_item("mase", t.mase)?;
+    d.set_item("smape", t.smape)?;
+    d.set_item("wape", t.wape)?;
+    d.set_item("mda", t.mda)?;
+    d.set_item("crps", t.crps)?;
+    Ok(d)
+}
+
 /// One metrics class computing complete reports at once — the yardstick every
 /// learner is measured with. Task: **both**. Pairs with a missing/NaN side are
 /// dropped from the math and reported in `n_missing`, never hidden.
@@ -1459,6 +1500,84 @@ impl PyMetrics {
         let c = classification_report(&y_true, &y_pred, probabilities.as_deref())
             .map_err(PyValueError::new_err)?;
         Ok(classification_to_dict(py, &c)?.unbind())
+    }
+
+    /// Complete causal uplift and Qini curve report.
+    ///
+    /// Args:
+    ///     y_true: observed outcome per row.
+    ///     treatment: binary treatment indicator (1.0 = treated, 0.0 = control).
+    ///     tau_pred: predicted treatment effect / uplift score per row.
+    ///
+    /// Returns: dict with ATE, Qini coefficient, normalized Qini, AUUC, decile uplifts, Qini curve.
+    #[pyo3(signature = (y_true, treatment, tau_pred))]
+    fn uplift(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        treatment: Vec<f64>,
+        tau_pred: Vec<f64>,
+    ) -> PyResult<Py<PyDict>> {
+        let u = uplift_report(&y_true, &treatment, &tau_pred).map_err(PyValueError::new_err)?;
+        Ok(uplift_to_dict(py, &u)?.unbind())
+    }
+
+    /// Complete survival analysis report (Harrell C-index, Uno IPCW C-index, Integrated Brier Score).
+    ///
+    /// Args:
+    ///     durations: observed duration / time-to-event per row.
+    ///     events: event indicator (1.0 = event observed, 0.0 = right-censored).
+    ///     risk_scores: predicted risk score (higher score = shorter expected survival).
+    ///     surv_curves: optional individual survival probability curves S(t|x) matrix (N, K).
+    ///     times: optional evaluation horizon times grid.
+    #[pyo3(signature = (durations, events, risk_scores, surv_curves=None, times=None))]
+    fn survival(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        risk_scores: Vec<f64>,
+        surv_curves: Option<Vec<Vec<f64>>>,
+        times: Option<Vec<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let s = survival_report(
+            &durations,
+            &events,
+            &risk_scores,
+            surv_curves.as_deref(),
+            times.as_deref(),
+        )
+        .map_err(PyValueError::new_err)?;
+        Ok(survival_to_dict(py, &s)?.unbind())
+    }
+
+    /// Complete time series forecasting report (MAE, RMSE, MASE, sMAPE, WAPE, MDA, CRPS).
+    ///
+    /// Args:
+    ///     y_true: actual time series targets.
+    ///     y_pred: predicted values.
+    ///     y_train: optional in-sample training series (used to scale MASE).
+    ///     seasonal_period: optional seasonality m (e.g. 7 for daily, 12 for monthly).
+    ///     std_pred: optional predicted standard deviation per period (used for Gaussian CRPS).
+    #[pyo3(signature = (y_true, y_pred, y_train=None, seasonal_period=None, std_pred=None))]
+    fn time_series(
+        &self,
+        py: Python<'_>,
+        y_true: Vec<f64>,
+        y_pred: Vec<f64>,
+        y_train: Option<Vec<f64>>,
+        seasonal_period: Option<usize>,
+        std_pred: Option<Vec<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let t = time_series_report(
+            &y_true,
+            &y_pred,
+            y_train.as_deref(),
+            seasonal_period,
+            std_pred.as_deref(),
+        )
+        .map_err(PyValueError::new_err)?;
+        Ok(time_series_to_dict(py, &t)?.unbind())
     }
 
     /// Regression report per group (keys: dates, categories, ...) — the
@@ -2828,9 +2947,9 @@ fn coerce_rows(
                                     let next = vocab.len() as f64;
                                     Some(*vocab.entry(s).or_insert(next))
                                 } else {
-                                    // unseen level at predict: a code no
-                                    // trained partition contains
-                                    Some(vocab.get(&s).copied().unwrap_or(f64::MAX))
+                                    // unseen level at predict: maps to missing (None)
+                                    // per AGENTS.md contract ("Unseen categorical levels map to missing")
+                                    vocab.get(&s).copied()
                                 }
                             }
                             None => {
@@ -4472,9 +4591,12 @@ impl PyModelTree {
 
     /// Exact TreeSHAP feature attributions for a single row prediction:
     /// efficiency invariant: `base_value + \sum values == prediction`.
-    fn shapley(&self, py: Python<'_>, row: Vec<Option<f64>>) -> PyResult<Py<PyDict>> {
+    fn shapley(&self, py: Python<'_>, row: Vec<Option<Bound<'_, PyAny>>>) -> PyResult<Py<PyDict>> {
         let t = self.tree()?;
-        let sh = t.shapley(&row);
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(vec![row], &self.params.dtypes, &mut vocabs, false)?;
+        let row_f64 = coerced.into_iter().next().unwrap_or_default();
+        let sh = t.shapley(&row_f64);
         let d = PyDict::new(py);
         d.set_item("base_value", sh.base_value)?;
         d.set_item(
@@ -4491,13 +4613,16 @@ impl PyModelTree {
     /// DALEX-style break-down of one response-scale prediction.
     ///
     /// Args:
-    ///     row: one row of predictors (`None` = missing).
+    ///     row: one row of predictors (`None` = missing). Accepts mixed numeric and categorical strings.
     ///
     /// Returns: `{"baseline", "steps": [[column_name, contribution], ...],
     /// "residual", "prediction"}`; baseline + steps + residual == prediction.
-    fn break_down(&self, py: Python<'_>, row: Vec<Option<f64>>) -> PyResult<Py<PyDict>> {
+    fn break_down(&self, py: Python<'_>, row: Vec<Option<Bound<'_, PyAny>>>) -> PyResult<Py<PyDict>> {
         let t = self.tree()?;
-        let bd = t.break_down(&row);
+        let mut vocabs = self.vocabs.clone();
+        let coerced = coerce_rows(vec![row], &self.params.dtypes, &mut vocabs, false)?;
+        let row_f64 = coerced.into_iter().next().unwrap_or_default();
+        let bd = t.break_down(&row_f64);
         let d = PyDict::new(py);
         d.set_item("baseline", bd.baseline)?;
         d.set_item(

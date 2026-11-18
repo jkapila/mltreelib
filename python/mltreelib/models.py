@@ -40,6 +40,40 @@ from mltreelib._core import (
 )
 
 
+def _impute_float_matrix(
+    x: Sequence[Sequence[Any]], col_means: list[float] | None = None
+) -> tuple[list[list[float]], list[float]]:
+    """Convert sequence of rows to float matrix with mean imputation for missing values."""
+    if not x:
+        return [], []
+    n_cols = len(x[0])
+    if col_means is None:
+        sums = [0.0] * n_cols
+        counts = [0] * n_cols
+        for row in x:
+            for j, v in enumerate(row):
+                if v is not None and not (isinstance(v, float) and (v != v or abs(v) == float("inf"))):
+                    try:
+                        sums[j] += float(v)
+                        counts[j] += 1
+                    except (ValueError, TypeError):
+                        pass
+        col_means = [sums[j] / counts[j] if counts[j] > 0 else 0.0 for j in range(n_cols)]
+    out = []
+    for row in x:
+        r = []
+        for j, v in enumerate(row):
+            if v is None or (isinstance(v, float) and (v != v or abs(v) == float("inf"))):
+                r.append(col_means[j])
+            else:
+                try:
+                    r.append(float(v))
+                except (ValueError, TypeError):
+                    r.append(col_means[j])
+        out.append(r)
+    return out, col_means
+
+
 class AnomalyTree:
     """Unified Tree-Based Anomaly Detector.
 
@@ -84,7 +118,9 @@ class AnomalyTree:
         self.seed = seed
         self.params = params
         self._threshold: float | None = None
+        self._threshold_strict: bool = False
         self._fitted = False
+        self._col_means: list[float] | None = None
         self._inner: Any = None
 
         self._init_inner()
@@ -172,7 +208,7 @@ class AnomalyTree:
             self._inner.fit(x)
         else:
             # Float matrix algorithms (HST, RCT, Active)
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, self._col_means = _impute_float_matrix(x)
             self._inner.fit(float_mat)
 
         self._fitted = True
@@ -186,6 +222,9 @@ class AnomalyTree:
             # Index of first anomaly from the tail
             idx = max(0, len(sorted_scores) - n_anom)
             self._threshold = sorted_scores[idx]
+            # Deterministic tie behavior: if threshold ties with inliers below idx,
+            # use strict inequality to prevent large inlier clumps from falsely becoming anomalies.
+            self._threshold_strict = idx > 0 and sorted_scores[idx] == sorted_scores[idx - 1]
 
         return self
 
@@ -203,13 +242,13 @@ class AnomalyTree:
         elif k in ("det", "density", "density_estimation"):
             return self._inner.predict_anomaly_score(x)
         elif k in ("hst", "half_space"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             return self._inner.anomaly_score(float_mat)
         elif k in ("rct", "random_cut"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             return self._inner.codisp(float_mat)
         elif k in ("active", "aad"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             return self._inner.anomaly_score(float_mat)
         elif k in ("context", "sequence"):
             raise ValueError(
@@ -221,7 +260,8 @@ class AnomalyTree:
         """Predict binary anomaly labels (1 = anomaly, 0 = inlier / normal)."""
         scores = self.score_samples(x)
         if self._threshold is not None:
-            # Use strict inequality if tied with inliers, or threshold check
+            if getattr(self, "_threshold_strict", False):
+                return [1 if s > self._threshold else 0 for s in scores]
             return [1 if s >= self._threshold else 0 for s in scores]
         return [1 if s >= 0.5 else 0 for s in scores]
 
@@ -232,6 +272,40 @@ class AnomalyTree:
                 f"predict_density is not supported by {self.kind} anomaly tree"
             )
         return self._inner.predict_density(x)
+
+    def surprise_score(self, context: Sequence[int], symbol: int) -> float:
+        """Compute surprise score -log2 P(symbol | context) for sequence context tree."""
+        if not hasattr(self._inner, "surprise_score"):
+            raise ValueError(
+                f"surprise_score is only supported by 'context' anomaly tree, got kind='{self.kind}'"
+            )
+        return self._inner.surprise_score(list(context), symbol)
+
+    def conditional_prob(self, context: Sequence[int], symbol: int) -> float:
+        """Compute conditional probability P(symbol | context) for sequence context tree."""
+        if not hasattr(self._inner, "conditional_prob"):
+            raise ValueError(
+                f"conditional_prob is only supported by 'context' anomaly tree, got kind='{self.kind}'"
+            )
+        return self._inner.conditional_prob(list(context), symbol)
+
+    def update_feedback(
+        self, point: Sequence[float], is_anomaly: bool, eta: float = 0.5
+    ) -> "AnomalyTree":
+        """Update model weights based on expert feedback (for Active anomaly tree)."""
+        if not hasattr(self._inner, "update_feedback"):
+            raise ValueError(
+                f"update_feedback is only supported by 'active' anomaly tree, got kind='{self.kind}'"
+            )
+        pt = [float(v) for v in point]
+        self._inner.update_feedback(pt, is_anomaly, eta)
+        return self
+
+    def feedback(
+        self, point: Sequence[float], is_anomaly: bool, eta: float = 0.5
+    ) -> "AnomalyTree":
+        """Alias for update_feedback."""
+        return self.update_feedback(point, is_anomaly, eta)
 
     @property
     def threshold(self) -> float | None:
@@ -289,6 +363,7 @@ class ClusterTree:
         self.params = params
         self._fitted = False
         self._inner: Any = None
+        self._col_means: list[float] | None = None
         self._labels: list[int | None] | None = None
 
         self._init_inner()
@@ -365,16 +440,16 @@ class ClusterTree:
             )
             self._labels = self._inner.predict_cluster(x)
         elif k in ("cltree", "density"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, self._col_means = _impute_float_matrix(x)
             cnames = list(col_names) if col_names is not None else None
             self._inner.fit(float_mat, col_names=cnames)
             self._labels = self._inner.predict_cluster(float_mat)
         elif k in ("hdbscan", "hierarchical"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, self._col_means = _impute_float_matrix(x)
             self._inner.fit(float_mat)
             self._labels = self._inner.labels
         elif k in ("urf", "proximity", "forest"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, self._col_means = _impute_float_matrix(x)
             n_c = self.n_clusters if self.n_clusters is not None else 2
             self._inner.fit(float_mat, n_clusters=n_c)
             self._labels = self._inner.labels
@@ -392,13 +467,13 @@ class ClusterTree:
         if k in ("pct", "predictive", "clus"):
             return self._inner.predict_cluster(x)
         elif k in ("cltree", "density"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             return self._inner.predict_cluster(float_mat)
         elif k in ("hdbscan", "hierarchical"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             return self._inner.predict(float_mat)
         elif k in ("urf", "proximity", "forest"):
-            float_mat = [[0.0 if v is None else float(v) for v in row] for row in x]
+            float_mat, _ = _impute_float_matrix(x, self._col_means)
             if hasattr(self, "_train_encodings") and self._labels:
                 query_enc = self._inner.apply(float_mat)
                 preds: list[int | None] = []

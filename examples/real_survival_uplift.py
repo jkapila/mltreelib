@@ -3,6 +3,7 @@
 Input paths and source links are documented in the survival and uplift guides.
 This example is a reproducible research demonstration, not a clinical or marketing policy.
 """
+import argparse
 from bisect import bisect_left, bisect_right
 from collections import Counter
 from math import sqrt
@@ -72,8 +73,27 @@ def survival():
         a=brier(tte,ete,[v[j] for v in pred],h,g);b=brier(tte,ete,[v[j] for v in baseline],h,g)
         tree_scores.append(a);base_scores.append(b)
         print("FLCHAIN horizon",int(h),"G",round(g(h),4),"at-risk",sum(v>=h for v in tte),"tree",round(a,4),"baseline",round(b,4))
-    fig,ax=plt.subplots(figsize=(6,4));ax.plot(grid,tree_scores,marker="o",label="tree");ax.plot(grid,base_scores,marker="o",label="global KM")
-    ax.set(xlabel="Days",ylabel="IPCW Brier, lower is better",title="FLCHAIN: held-out evaluation");ax.legend();fig.tight_layout();fig.savefig(OUT/"real-survival.svg");plt.close(fig)
+    # Select two held-out feature rows by predicted five-year survival.
+    # Selection uses predictions only. No test outcomes enter the curves.
+    low = min(range(len(xte)), key=lambda i: pred[i][-1])
+    high = max(range(len(xte)), key=lambda i: pred[i][-1])
+    curve_grid = sorted({0.0, 1825.0, *(t for t, e in zip(ttr, etr) if e and t <= 1825)})
+    example_curves = model.predict([xte[low], xte[high]], kind="survival", times=curve_grid)
+    print("FLCHAIN example five-year predictions:", [round(curve[-1], 4) for curve in example_curves])
+    print("FLCHAIN splits", model.splits())
+    fig, (ax, curves_ax) = plt.subplots(1, 2, figsize=(10, 4))
+    ax.plot(grid, tree_scores, marker="o", label="Tree")
+    ax.plot(grid, base_scores, marker="o", label="Global Kaplan–Meier")
+    ax.set(xlabel="Days", ylabel="IPCW Brier score", title="Held-out error")
+    ax.legend()
+    for curve, label in zip(example_curves, ("Lower 5-year score", "Higher 5-year score")):
+        curves_ax.step(curve_grid, curve, where="post", label=label)
+    curves_ax.set(xlabel="Days", ylabel="Predicted survival",
+                  title="Two held-out inputs", ylim=(0, 1.04))
+    curves_ax.legend()
+    fig.tight_layout()
+    fig.savefig(OUT / "real-survival.svg")
+    plt.close(fig)
 
 
 def group_value(y,w,selected):
@@ -103,14 +123,31 @@ def uplift():
     pred=model.predict(pick(x,te),kind="uplift");yt,wt=pick(y,te),pick(w,te)
     policies={"selected":[v>threshold for v in pred],"treat all":[True]*len(te),"treat none":[False]*len(te)}
     print("Hillstrom women vs control train/val/test",len(tr),len(va),len(te),"threshold",round(threshold,6))
-    vals=[]
+    vals = []
+    intervals = []
     for name,selected in policies.items():
-        value,nsel,nt,nc,interval=group_value(yt,wt,selected);vals.append(value)
+        value,nsel,nt,nc,interval=group_value(yt,wt,selected)
+        vals.append(value)
+        intervals.append(interval)
         print("Hillstrom",name,"value",round(value,5),"selected",nsel,"treated/control",nt,nc,"interval",None if interval is None else tuple(round(i,5) for i in interval))
-    fig,ax=plt.subplots(figsize=(6,4));ax.bar(list(policies),vals,color=["#00897b","#0288d1","#78909c"]);ax.axhline(0,color="black",linewidth=.8)
-    ax.set(ylabel="Incremental visits per eligible customer",title="Hillstrom: randomized held-out comparison");fig.tight_layout();fig.savefig(OUT/"real-uplift.svg");plt.close(fig)
+    fig, ax = plt.subplots(figsize=(7, 4))
+    for i, (value, interval) in enumerate(zip(vals, intervals)):
+        error = [[value - interval[0]], [interval[1] - value]] if interval else None
+        ax.errorbar(i, value, yerr=error, fmt="o", color="#226b8a", capsize=5)
+    ax.set_xticks(range(len(policies)), ["Validation choice", "Treat all", "Treat none"])
+    ax.axhline(0, color="black", linewidth=.8)
+    ax.set(ylabel="Incremental visits per eligible customer",
+           title="Hillstrom: randomized held-out comparison")
+    fig.tight_layout()
+    fig.savefig(OUT / "real-uplift.svg")
+    plt.close(fig)
 
 
-if __name__=="__main__":
-    survival()
-    uplift()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("study", nargs="?", choices=("survival", "uplift"))
+    study = parser.parse_args().study
+    if study in (None, "survival"):
+        survival()
+    if study in (None, "uplift"):
+        uplift()

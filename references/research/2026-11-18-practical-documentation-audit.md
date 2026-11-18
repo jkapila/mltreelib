@@ -182,3 +182,12 @@ The selected setting then fits 6,000 and scores 2,000 randomly selected records 
 The uplift evaluation uses 3,000 training, 1,000 validation and 2,000 independent randomized test rows. The selected policy yields estimated incremental net outcome 0.7072 per person versus -0.0478 for treat-all and 0 for treat-none. Its approximate 95% interval is [0.6438, 0.7706], conditional on the selected fraction and excluding model-selection uncertainty. PEHE 0.2347 and policy truth 0.7252 are available only because the data is synthetic.
 
 The UCI Statlog Shuttle archive (https://archive.ics.uci.edu/dataset/148/statlog+shuttle) supplies 43,500 train and 14,500 test records. The anomaly example trains EIF on a seeded subset of 5,000 class-1 train records and treats classes 2–7 as a proxy for anomalies. On the official test split, 648 of the top 725 scored records are proxy positives: precision 0.8938, recall 0.2144, AP 0.5988, prevalence 0.2084. These are operating-state labels rather than verified anomaly incidents. The source notes that the original time order was randomized. Dataset files are ignored by Git.
+
+### Numeric boundary displayed by DOT
+
+A depth-one mean tree fit ten rows at zero and ten at one, with targets
+zero and ten, respectively. The split threshold was zero. Predictions at
+`[-0.001, 0, 0.001, 1]` were `[0, 0, 10, 10]`. DOT labeled the two branches
+`< 0` and `>= 0`, which assigns equality to the other branch. This is a
+verified export gap. A regression check for the fix must compare the displayed
+operator with prediction, including exact equality and the missing route.

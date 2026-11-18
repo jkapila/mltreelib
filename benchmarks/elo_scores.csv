@@ -646,3 +646,21 @@ ta_wine,"ModelTree(leaf=mars,deg=2)",Rust,internal,0.7282,0.5719,0.3490
 ta_wine,ModelTree(opt),Rust,internal,0.7256,0.5604,0.0840
 ta_wine,mltreelib MARS(deg=1),Python,unknown,0.7275,0.5711,0.4180
 ta_wine,mltreelib MARS(deg=2),Python,unknown,0.7263,0.5693,1.6600
+abalone,ModelTree(default),Rust,internal,2.4534,1.7410,0.0580
+boston,ModelTree(default),Rust,internal,3.4927,2.3237,0.0120
+concrete,ModelTree(default),Rust,internal,6.8266,4.9359,0.0160
+fc2008,ModelTree(default),Rust,internal,234.0737,160.9331,0.0260
+ozone,ModelTree(default),Rust,internal,4.5355,3.5594,0.0110
+ta_airfoil,ModelTree(default),Rust,internal,2.9487,2.2179,0.0340
+ta_concrete,ModelTree(default),Rust,internal,6.4669,4.4733,0.0210
+ta_diamonds,ModelTree(default),Rust,internal,0.0911,0.0191,0.2470
+ta_fiat500,ModelTree(default),Rust,internal,775.7795,589.2930,0.0300
+ta_food_delivery,ModelTree(default),Rust,internal,7.5898,5.9377,0.2510
+ta_healthcare,ModelTree(default),Rust,internal,4866.2096,2655.7470,0.0210
+ta_houses,ModelTree(default),Rust,internal,0.2900,0.1868,0.1080
+ta_miami,ModelTree(default),Rust,internal,132539.9470,59531.1555,0.0960
+ta_protein,ModelTree(default),Rust,internal,4.6832,3.3263,0.1770
+ta_qsar_fish,ModelTree(default),Rust,internal,0.9807,0.7058,0.0170
+ta_qsar_tid11,ModelTree(default),Rust,internal,1.1489,0.9076,0.4680
+ta_superconductivity,ModelTree(default),Rust,internal,13.4613,8.2811,0.3490
+ta_wine,ModelTree(default),Rust,internal,0.7269,0.5622,0.0920

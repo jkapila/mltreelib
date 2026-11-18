@@ -1,5 +1,7 @@
 # [LEAF-EXPANSION] Softmax, Survival, and Heteroscedastic Stump Leaves
 
+**Status**: Completed (`v0.4.6` / `v0.4.8`) — Shipped in core and PyO3 with streaming multiclass histogram optimization, Nelson-Aalen & Kaplan-Meier survival curves, and Gaussian NLL heteroscedastic leaves.
+
 ## Problem Statement
 
 Users require model trees that handle complex real-world data regimes beyond standard homoscedastic regression and binary classification:

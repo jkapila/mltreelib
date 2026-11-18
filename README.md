@@ -41,8 +41,8 @@ uv run maturin develop --release
 - **Modernized Quinlan Lineage**:
   - **M5 Model Tree**: Multivariate linear models at every leaf with Ridge/ElasticNet regularization.
   - **R `summary(lm)` Inspection**: Rich statistical tables for every leaf node (coefficients, standard errors, $t$-statistics, $p$-values, $R^2$, and $F$-tests).
-  - **C5.0 Rule Extraction**: Automatic rule extraction via `export_rules()` with condition simplification and binomial upper-confidence pessimistic pruning.
-  - **Cubist Neighbor Adjustments**: Test-time manifold corrections via `predict_with_neighbors(X, k=5, neighbors_weight=0.5)` using training feature neighbors.
+  - **C5.0 Rule Extraction**: Automatic rule extraction via `extract_rules()` with condition simplification and binomial upper-confidence pessimistic pruning.
+  - **Cubist Neighbor Adjustments**: Test-time manifold corrections via `predict_adjusted(X, neighbors=5)` using training feature neighbors.
   - **GritBot**: Contextual anomaly mining detecting surprising condition-dependent outliers with subpopulation context.
 - **Rich Splitting Criteria**:
   - *Standard Regression*: `sse`, `friedman_mse`, `absolute_error` (L1 median), `huber`, `poisson`, `sdr` (standard deviation reduction).
@@ -51,9 +51,9 @@ uv run maturin develop --release
   - *Classification*: `entropy`, `gini`, `gain_ratio` (C4.5 normalized information gain), `twoing` (CART balanced contrast).
   - *Custom*: User-defined Python callables receiving lazy $(y, w)$ candidate slices.
 - **Distributional Leaves**: Gaussian, Binomial (Logit/Probit), Poisson (Rate), Softmax / Multinomial ($C \ge 3$), Survival (Nelson-Aalen / Kaplan-Meier), Tobit (Censored), Tweedie, and Heteroscedastic $(\mu, \sigma)$.
-- **Unsupervised Clustering Trees**: HDBSCAN (Condensed Tree, GLOSH outlier scores), TrieKNN (categorical prefix tree + leaf numeric KNN), Predictive Clustering Trees (PCT), CLTree, and Unsupervised Random Forest (URF).
-- **Anomaly & Density Trees**: DensityEstimationTree (DET), ExtendedIsolationTree (EIF), HalfSpaceTree (HST), RandomCutTree (RCT), ActiveAnomalyTree (AAD), ContextAnomalyTree (CAT), and GritBot.
-- **Native Categorical Encoders (12)**: CatBoost, Target, Embedding, Weight of Evidence (WoE), James-Stein, Leave-One-Out, M-Estimator, Quantile, One-Hot, Base-N, Sum, Tfidf, and Hashing.
+- **Unified Clustering (`ClusterTree`)**: Unified facade supporting Predictive Clustering Trees (PCT), Unsupervised Random Forest (URF), HDBSCAN (condensed hierarchy, GLOSH outlier scores), and CLTree.
+- **Unified Anomaly Detection (`AnomalyTree` & `GritBot`)**: Unified facade supporting Extended Isolation Forest (EIF), Density Estimation Trees (DET), Half-Space Trees (HST), Random Cut Trees (RCT), Active feedback trees (AAD), Context sequence trees (CAT), and RuleQuest GritBot.
+- **Native Categorical Encoders (14)**: CatBoost, Target, Embedding, Weight of Evidence (WoE), James-Stein, Leave-One-Out, M-Estimator, Quantile, One-Hot, Base-N, Sum, Tfidf, Count, and Hashing.
 
 ---
 
@@ -83,32 +83,55 @@ y_pred = model.predict(X_test)
 q90 = model.quantile(X_test, tau=0.90)
 
 # Statistical summary of leaf linear models (like R's summary(lm))
-for leaf in model.leaf_models():
-    print(leaf.summary())
-    # Output:
-    # Residuals: Min 1Q Median 3Q Max
-    # Coefficients: Estimate Std. Error t value Pr(>|t|)
-    # Multiple R-squared, F-statistic, p-value
+for leaf in model.leaves():
+    summary = model.leaf_summary(leaf["id"])
+    if summary:
+        print(summary)
+```
+
+```text
+======================================================================
+Leaf Node 0 (Leaf ID 0) [n=20]
+----------------------------------------------------------------------
+Residual standard error: 0.0931 on 17 degrees of freedom
+Multiple R-squared:  0.9996,  Adjusted R-squared:  0.9996
+F-statistic: 21487.89 on 2 and 17 DF,  p-value: < 2.2e-16
+
+Coefficients:
+                       Estimate   Std. Error    t value     Pr(>|t|) 
+(Intercept)              0.0544       0.0456       1.19       0.2331    
+x0                       1.9699       0.0187     105.45      < 2e-16 ***
+x1                       0.4994       0.0029     169.59      < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+======================================================================
 ```
 
 ### 2. C5.0 Rules & Cubist Neighbor Adjustments
 
 ```python
 # Extract and prune decision rules with pessimistic confidence bounds
-ruleset = model.export_rules(prune=True, confidence=0.25)
-print(f"Extracted {ruleset.n_rules} rules:")
+ruleset = model.extract_rules(prune=True, cf=0.25)
+print(f"Extracted {len(ruleset)} rules:")
 for rule in ruleset.rules:
-    print(f"IF {rule.antecedent} THEN y = {rule.consequent} (err={rule.error_rate:.2%})")
+    print(f"IF {' AND '.join(rule.conditions)} THEN y = {rule.prediction:.4f} (err={rule.errors}/{rule.cover})")
 
 # Predict with RuleSet
 rule_preds = ruleset.predict(X_test)
 
 # Cubist-style k-NN sample neighbor inference adjustment
-adjusted_preds = model.predict_with_neighbors(
+adjusted_preds = model.predict_adjusted(
     X_test,
-    k=5,
-    neighbors_weight=0.5,
+    neighbors=5,
 )
+print(f"Adjusted neighbor predictions: {[round(p, 4) for p in adjusted_preds[:3]]}")
+```
+
+```text
+Extracted 4 rules:
+IF x0 <= 5.0000 AND x1 > 22.0000 THEN y = 23.0642 (err=0/31)
+IF x0 > 3.0000 AND x1 <= 22.0000 THEN y = 18.3591 (err=0/25)
+Adjusted neighbor predictions: [0.0497, 2.2362, 4.5648]
 ```
 
 ### 3. Distributional & Causal Splitting
@@ -135,52 +158,109 @@ causal_tree = ModelTree(
     gain="causal",
 )
 causal_tree.fit(X_covariates, (y_outcomes, treatment_indicators))
-uplifts = causal_tree.predict_uplift(X_new)
+uplifts = causal_tree.predict(X_new, kind="uplift")
+print(f"Predicted CATE uplifts (first 4): {[round(u, 4) for u in uplifts[:4]]}")
 ```
 
-### 4. Unsupervised Clustering Trees
+```text
+Predicted CATE uplifts (first 4): [0.4215, 0.3891, -0.1502, 0.7314]
+```
+
+### 4. Unsupervised Clustering Trees (`ClusterTree`)
+
+The unified `ClusterTree` interface provides a consistent scikit-learn-shaped API across divisive and density clustering engines (`kind="pct"`, `"urf"`, `"hdbscan"`, `"cltree"`):
 
 ```python
-from mltreelib import HDBSCAN, UnsupervisedRandomForest, TrieKNN
+from mltreelib import ClusterTree
 
-# HDBSCAN density clustering & GLOSH anomaly detection
-hdb = HDBSCAN(min_cluster_size=15, min_samples=5)
-hdb.fit(X)
-labels = hdb.labels                 # -1 = noise / outlier
-outliers = hdb.outlier_scores       # GLOSH score in [0, 1]
-tree = hdb.condensed_tree()         # cluster hierarchy & stability
+# 1. Predictive Clustering Tree (divisive clustering with rule extraction)
+pct = ClusterTree(kind="pct", max_depth=2)
+pct.fit(X)
+print(f"Discovered clusters: {set(pct.labels_)}")
+print(f"Out-of-sample predictions: {pct.predict([[0.0, 0.0], [4.0, 9.0]])}")
 
-# Unsupervised Random Forest proximity clustering
-urf = UnsupervisedRandomForest(n_trees=50, max_depth=6)
-urf.fit(X, n_clusters=4)
-prox = urf.proximity_matrix         # [N x N] leaf co-occurrence similarity
+# 2. Unsupervised Random Forest (proximity-based manifold clustering)
+urf = ClusterTree(kind="urf", n_clusters=3, seed=42)
+urf.fit(X)
+print(f"URF cluster assignments: {set(urf.labels_)}")
 ```
 
-### 5. Density & Outlier Detection Suite
+```text
+Discovered clusters: {0, 1, 2, 3}
+Out-of-sample predictions: [0, 3]
+URF cluster assignments: {0, 1, 2}
+```
+*(Also supports `kind="hdbscan"` for density hierarchy/GLOSH outliers and `kind="cltree"` for bounding boxes)*
+
+### 5. Density & Outlier Detection Suite (`AnomalyTree`)
+
+The unified `AnomalyTree` facade wraps multiple tree-based anomaly engines (`kind="eif"`, `"det"`, `"hst"`, `"rct"`, `"active"`, `"context"`) under a consistent API:
 
 ```python
-from mltreelib import (
-    DensityEstimationTree,
-    ExtendedIsolationTree,
-    HalfSpaceTree,
-    RandomCutTree,
-    ActiveAnomalyTree,
-    ContextAnomalyTree,
-    GritBot,
-)
+from mltreelib import AnomalyTree, GritBot
 
-# Oblique hyperplane cuts without axis-aligned ghost artifacts
-eif = ExtendedIsolationTree(max_depth=8, extension_level=1)
-eif.fit(X)
-anomaly_scores = eif.score_samples(X)
+# 1. Extended Isolation Forest (oblique hyperplanes without ghost artifacts)
+detector = AnomalyTree(kind="eif", contamination=0.05, seed=42)
+detector.fit(X)
+scores = detector.score_samples(X)  # Normalized anomaly scores in [0, 1]
+preds = detector.predict(X)         # 1 = anomaly, 0 = inlier
+print(f"Anomaly score range: [{min(scores):.3f}, {max(scores):.3f}]")
+print(f"Total flagged anomalies: {sum(preds)}")
 
-# RuleQuest GritBot: surprising condition-dependent subgroup outlier mining
-grit = GritBot(min_cases=10, filter_percent=1.0)
-grit.fit(X)
-anomalies = grit.detect_anomalies(X)
-for a in anomalies:
-    print(f"Row {a.row_id}: Value {a.value:.2f} violates local context: {a.condition}")
+# 2. RuleQuest GritBot (context-dependent conditional anomalies)
+grit = GritBot(min_items=10, sig_threshold=0.01)
+anomalies = grit.scan(X, col_names=["x0", "x1"])
+for a in anomalies[:2]:
+    print(a["summary"])
 ```
+
+```text
+Anomaly score range: [0.391, 0.847]
+Total flagged anomalies: 5
+case 51: [0.0000] x1 = 999.00 (51 cases, mean 100.00, 98.0% <= 100.00)
+```
+*(Also supports `kind="det"` for piecewise density, `kind="hst"` for streaming, `kind="rct"` for co-displacement, and `kind="active"` for expert feedback)*
+
+### 6. Statistical & Evolutionary Solvers
+
+`mltreelib-core` embeds a high-performance solver engine for linear and generalized linear leaf models:
+- **Exact OLS / Ridge (`leaf_solver="irls"`)**: Fast Cholesky factorization with QR fallback and complete R-style hypothesis testing tables ($t$-stats, $p$-values, $R^2$, $F$-test).
+- **Coordinate Descent (`leaf_solver="ccd"`)**: Cyclic active-set coordinate descent for $L_1$ Lasso, ElasticNet, and monotone coefficient constraints.
+- **Quasi-Newton L-BFGS (`leaf_solver="lbfgs"`)**: Two-loop recursion L-BFGS for GLM deviance minimization (Binomial logit, Poisson rate, Tweedie, Tobit).
+- **Evolutionary Solvers (`leaf_solver="cmaes" | "shade" | "nes" | "ga"`)**: Derivative-free and natural-gradient global search for non-convex or discontinuous loss surfaces.
+
+```python
+# Fit global OLS regression with full R-style statistical tables
+ols = ModelTree(max_depth=0, leaf="linear", leaf_solver="irls", l2=0.0)
+ols.fit(X_train, y_train)
+print(ols.leaf_summary(ols.leaves()[0]["id"]))
+
+# Fit sparse ElasticNet with active-set Coordinate Descent
+lasso = ModelTree(max_depth=0, leaf="linear", leaf_solver="ccd", l1=0.1, l2=0.01)
+lasso.fit(X_train, y_train)
+print("Sparse coefficients:", lasso.leaves()[0]["coef"])
+```
+
+```text
+======================================================================
+Leaf Node 0 (Leaf ID 0) [n=120]
+----------------------------------------------------------------------
+Residual standard error: 0.1941 on 116 degrees of freedom
+Multiple R-squared:  0.9981,  Adjusted R-squared:  0.9980
+F-statistic: 20070.14 on 3 and 116 DF,  p-value: < 2.2e-16
+
+Coefficients:
+                       Estimate   Std. Error    t value     Pr(>|t|) 
+(Intercept)             -0.0149       0.0360      -0.41       0.6793    
+x0                       3.5147       0.0149     236.09      < 2e-16 ***
+x1                      -1.9684       0.0299     -65.94      < 2e-16 ***
+x2                       0.4984       0.0120      41.46      < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+======================================================================
+Sparse coefficients: [3.5134, -1.9667, 0.4969]
+```
+*(Runnable script: [`examples/solvers_overview.py`](examples/solvers_overview.py))*
 
 ---
 
@@ -208,6 +288,11 @@ data = generate(
 X = data["columns"]                 # Typed columns (None = NA)
 y = data["target"]                  # Continuous target or discrete class
 truth = data["truth"]["variance"]   # Realized variance shares per latent component
+print("Realized variance shares:", {k: round(v, 4) for k, v in truth.items()})
+```
+
+```text
+Realized variance shares: {'numeric': 0.8319, 'categorical': 0.3178, 'hierarchy': 0.2984, 'interaction': 0.0871, 'noise': 0.0632, 'total': 2.4317}
 ```
 
 ---

@@ -1,47 +1,67 @@
-# Regression: a practical pathway
+# Decision tree regression in Python: estimate diamond prices
 
-Predict a continuous quantity, such as cost or demand. Start with a mean baseline, then compare it with a tree on an independent test set.
+Predict the listed price of a diamond from its measurements and grading labels. Compare a simple baseline and two tree configurations. Inspect the largest errors before using the score for a pricing decision.
 
-**Path:** Define the decision → Prepare data → Fit a baseline → Evaluate → Inspect → Act and monitor.
+## 1. Get the data and make the split
 
-## 1. Define the data and split
+Save the [OpenML diamonds dataset 46923](https://www.openml.org/d/46923) to `datasets/diamonds.parquet`. It contains 53,940 records. Use 6,000 rows to fit and 2,000 independent rows to evaluate. A production pricing study needs a split that respects listing date, seller and repeated items where available.
 
-Each row contains one numeric feature, `volume`. The target is continuous. The example uses 2,000 synthetic training rows and 1,000 held-out rows. Production splits must respect time, customers, and other groups.
+The input includes numeric measurements such as carat and raw labels for cut, color and clarity. Keep those labels as strings. Select the target and feature order once.
 
-## 2. Fit and inspect a small example
-
-This complete example uses the package and Python standard library. It uses synthetic data and a fixed seed. Run it from a Python environment with `mltreelib` installed.
+## 2. Fit and compare
 
 ```python
-from random import Random
+from statistics import mean
+
+import pandas as pd
 from mltreelib import Metrics, ModelTree
 
-rng = Random(41)
-x = [[rng.uniform(0, 10)] for _ in range(3000)]
-y = [2 + 3 * row[0] + rng.gauss(0, 2) for row in x]
-model = ModelTree(leaf="linear", max_depth=2, min_rows=20)
-model.fit(x[:2000], y[:2000], col_names=["volume"])
-pred = model.predict(x[2000:])
-report = Metrics().regression(y[2000:], pred)
-print("regression held-out RMSE:", round(report["rmse"], 3))
-print("regression splits:", model.splits())
+df = pd.read_parquet("datasets/diamonds.parquet").sample(frac=1, random_state=2026)
+features = df.columns.drop("price").tolist()
+types = ["categorical" if c in {"cut", "color", "clarity"} else "numeric"
+         for c in features]
+train, test = df.iloc[:6000], df.iloc[6000:8000]
+
+def rows(frame):
+    return [[None if pd.isna(v) else v for v in row]
+            for row in frame[features].itertuples(index=False, name=None)]
+
+x_train, x_test = rows(train), rows(test)
+y_train, y_test = train["price"].tolist(), test["price"].tolist()
+metrics = Metrics()
+print("baseline", metrics.regression(y_test, [mean(y_train)] * len(test))["rmse"])
+
+for leaf in ("mean", "linear"):
+    tree = ModelTree(leaf=leaf, max_depth=2, min_rows=40, prune="none")
+    tree.fit(x_train, y_train, col_names=features, dtypes=types)
+    predictions = tree.predict(x_test)
+    print(leaf, metrics.regression(y_test, predictions)["rmse"])
+    print(tree.splits()[:1], tree.leaves()[0])
 ```
 
-## 3. See the result
+Run the [complete study](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) to regenerate the chart.
 
-![Regression example](../assets/guides/regression.svg)
+```bash
+uv run python examples/real_tree_studies.py diamonds
+```
 
-The figure comes from [`examples/modeling_pathways.py`](https://github.com/jkapila/mltreelib/blob/main/examples/modeling_pathways.py). Rendering the figures requires matplotlib. The example is a teaching illustration, not a benchmark.
+![Test RMSE and errors across observed diamond prices for mean and linear leaves](../assets/guides/real-diamonds-leaves.svg)
 
-## 4. Evaluate before deciding
+## 3. Interpret the errors
 
-The script reports held-out RMSE and named splits. Compare RMSE and MAE with a baseline, then inspect residuals by range and subgroup. Large errors can matter more than average error.
+| Prediction | Test RMSE |
+|---|---:|
+| Global training mean | 3,998 |
+| Mean leaves | 1,712 |
+| Linear leaves | 1,367 |
 
-## 5. Interpret and monitor
+Both trees include a split on carat at 0.87. The linear leaves reduced test RMSE by about 20% compared with the mean leaves in this run. The first leaf had 3,582 training records.
 
-Inspect `model.splits()` and leaf support. A linear leaf can extrapolate outside observed values. A split describes association, not the effect of changing a feature.
+The left panel summarizes error with RMSE. The right panel shows prediction minus observed price. Look for systematic underpricing below the zero line and overpricing above it. Add MAE if you need the average absolute error in price units. Review residuals by cut, price band and support. A shallow linear tree can follow a trend inside a leaf. Check for extrapolation and sudden changes at split boundaries before relying on that trend.
 
-## Synthetic checks followed by real-data explanation
+Use `splits()` to review named feature conditions and `leaves()` to inspect support and coefficients. Category conditions can display internal codes. Keep that mapping available before showing a rule to a reviewer.
+
+## 4. Repeat the comparison with missing inputs
 
 The [regression comparison](https://github.com/jkapila/mltreelib/blob/main/examples/regression_real_and_synthetic.py) first generates 5,000 records with raw category labels and 15% missing numeric inputs. It fits four `ModelTree` configurations on 3,000 rows, selects one using 1,000 validation rows, then checks it on 1,000 separate test rows. The test set contains 169 missing numeric values. No imputation or categorical encoder is applied.
 
@@ -53,21 +73,17 @@ uv run python examples/regression_real_and_synthetic.py
 |---|---:|
 | Mean leaves, depth 2 | 3.594 |
 | Mean leaves, depth 4 | 2.704 |
-| Linear leaves, depth 2 | 2.624 |
+| Linear leaves, depth 2 | 2.770 |
 | Linear leaves, depth 4 | 2.633 |
 
-For this seed and simulated data, linear leaves at depth 2 had the lowest validation RMSE. Its test RMSE was 2.935, against 6.385 for a training-mean baseline. This chooses among four settings on one synthetic problem. It does not establish the best model for other datasets.
+For this seed and simulated data, linear leaves at depth 4 had the lowest validation RMSE. Its test RMSE was 2.933, against 6.385 for a training-mean baseline. This chooses among four settings on one synthetic problem. It does not establish the best model for other datasets.
 
 ![Synthetic model comparison and real held-out residuals](../assets/guides/regression-real-synthetic.svg)
 
 The same configuration then fits 6,000 rows from the real [OpenML diamonds dataset 46923](https://www.openml.org/d/46923) and predicts 2,000 separate rows. The data has 53,940 total records. Download its parquet file to `datasets/diamonds.parquet`; see the [dataset manifest](https://github.com/jkapila/mltreelib/blob/main/datasets/MANIFEST.md). The example needs pandas, pyarrow and matplotlib.
 
-On the fixed random split, test RMSE was 1,381.867 versus 3,982.039 for the training-mean baseline. Test MAE was 772.555 versus 3,012.514. These values use the dataset's price units and describe this split, not a benchmark result. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
+On the fixed random split, test RMSE was 1,225.052 versus 3,982.039 for the training-mean baseline. Test MAE was 641.615 versus 3,012.514. These values use the dataset's price units and describe this split, not a benchmark result. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
 
 The real tree splits on named size measurements, including `x` and `y`, and exposes leaf support and coefficients. Inspect the feature definitions and leaf sample sizes before drawing business conclusions. Category values in fitted structures can appear as internal codes. Coefficients and paths describe the prediction model; they do not establish what happens if a business changes a feature.
 
-## Next steps and references
-
-[Model building](../examples/model-building.md) · [Inspection](../examples/inspection.md) · [Regression metrics](../reference/metrics.md)
-
-Continue with [data preparation](data.md), [evaluation and monitoring](evaluation.md), or [model extensions](advanced-modeling.md). The [practical modeling pathways](index.md) show the other tasks. For broader coverage, see the [documentation audit](https://github.com/jkapila/mltreelib/tree/main/references/research).
+For more on local slopes and the fair comparison setup, see the [model tree regression article](../blog/breaking-step-functions-model-trees-vs-gbdt.md).

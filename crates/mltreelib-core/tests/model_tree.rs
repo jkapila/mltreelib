@@ -388,7 +388,7 @@ fn printer_matches_rpart_layout() {
         ..Default::default()
     };
     let tree = ModelTree::fit(&x, &y, p).unwrap();
-    let expected = "n= 4 \n\nnode), split, n, deviance, yval\n      * denotes terminal node\n\n1) root 4 1 0.5  \n  2) x0< 1.5 2 0 0.0 *\n  3) x0>=1.5 2 0 1.0 *\n";
+    let expected = "n= 4 \n\nnode), split, n, deviance, yval\n      * denotes terminal node\n\n1) root 4 1 0.5  \n  2) x0 <= 1.5 2 0 0.0 *\n  3) x0 > 1.5 2 0 1.0 *\n";
     assert_eq!(format!("{tree}"), expected);
 }
 
@@ -409,9 +409,42 @@ fn dot_export_names_nodes_and_edges() {
     let tree = ModelTree::fit(&x, &y, p).unwrap();
     let dot = tree.to_dot();
     assert!(dot.starts_with("digraph tree {"));
-    assert!(dot.contains("n1 -> n2 [label=\"< 1.5\"]"), "{dot}");
-    assert!(dot.contains("n1 -> n3 [label=\">= 1.5\"]"), "{dot}");
+    assert!(dot.contains("n1 -> n2 [label=\"<= 1.5\"]"), "{dot}");
+    assert!(dot.contains("n1 -> n3 [label=\"> 1.5\"]"), "{dot}");
     assert!(dot.contains("label=\"leaf\\nn=2  yval=0.000\""), "{dot}");
+}
+
+#[test]
+fn test_numeric_split_boundary_display_matches_execution() {
+    // Audit regression test: 10 rows at 0 (y=0), 10 rows at 1 (y=10).
+    // Split threshold is 0.5 (or midpoint). Test points at exact threshold and near boundary.
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for _ in 0..10 {
+        x.push(vec![Some(0.0)]);
+        y.push(Some(0.0));
+    }
+    for _ in 0..10 {
+        x.push(vec![Some(1.0)]);
+        y.push(Some(10.0));
+    }
+    let p = ModelTreeParams {
+        max_depth: 1,
+        min_rows: 5,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let dot = tree.to_dot();
+    // Midpoint/boundary threshold is 0 (first discrete point <= threshold)
+    assert!(dot.contains("<= 0"), "DOT must display <= for left branch: {dot}");
+    assert!(dot.contains("> 0"), "DOT must display > for right branch: {dot}");
+
+    // Execution check: <= 0 routes to left leaf (yval 0.0), > 0 routes to right leaf (yval 10.0)
+    let preds = tree.predict(&[vec![Some(-0.5)], vec![Some(0.0)], vec![Some(0.001)], vec![Some(1.0)]]);
+    assert!((preds[0] - 0.0).abs() < 1e-6);
+    assert!((preds[1] - 0.0).abs() < 1e-6, "Exact threshold 0.0 must route to <= branch (prediction 0.0)");
+    assert!((preds[2] - 10.0).abs() < 1e-6, "> threshold 0.001 must route to > branch (prediction 10.0)");
+    assert!((preds[3] - 10.0).abs() < 1e-6);
 }
 
 #[test]

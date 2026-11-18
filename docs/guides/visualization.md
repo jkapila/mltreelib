@@ -89,3 +89,5 @@ The chart functions accept an optional Matplotlib `ax`; `plot_decomposition` use
 ![Lift example](../assets/plots/lift.png)
 ![Score-band response example](../assets/plots/response.png)
 ![Decomposition example](../assets/plots/decomposition.png)
+
+When exporting a decision as a rule, [check split boundaries](serving-contract.md#check-split-boundaries) using the fitted model. The current DOT labels differ from prediction at an exact numeric split threshold in the checked example.

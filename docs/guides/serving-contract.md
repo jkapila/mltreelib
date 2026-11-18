@@ -54,3 +54,7 @@ The following gaps were reproduced in the current worktree and are tracked for i
 - `break_down` rejected a raw string category in a tested row, although `predict` accepted it.
 
 Do not present the checks above as complete deployment coverage. See the [data guide](data.md), [evaluation guide](evaluation.md), and [documentation audit](https://github.com/jkapila/mltreelib/tree/main/references/research) for further work.
+
+## Check split boundaries
+
+The DOT export in the checked build labels numeric branches as `<` and `>=`. In a one-feature reproduction with a threshold of zero, the fitted tree routed zero with lower values. It routed positive values to the other leaf. Use the fitted model to check predictions below, at, and above a threshold before translating a diagram into executable rules.

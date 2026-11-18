@@ -64,7 +64,7 @@ realized variance share of each component:
 cat_0 true level effects (first 4): [1.219, 0.186, 0.252, 0.098]
 ```
 
-![Realized variance shares](assets/variance_shares.png)
+![Realized variance shares](../assets/variance_shares.png)
 
 *rendered by `mltreelib.plots.plot_variance_shares` (the same figure the
 generator's `truth["variance"]` feeds).*
@@ -111,7 +111,7 @@ DONE — details printed above cover ingest, missingness, encodings, grouped/tre
 ==============================================================================
 ```
 
-![Additive decomposition](assets/decomposition.png)
+![Additive decomposition](../assets/decomposition.png)
 
 Figures are rendered when `matplotlib` and `seaborn` are installed (dev extras;
 the library itself does not depend on them).

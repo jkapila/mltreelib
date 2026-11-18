@@ -1,50 +1,43 @@
-# End-to-end walkthrough — churn
+# Review a fitted tree before handing it off
 
-Predict bank churn using raw category labels and missing predictors. `ModelTree` accepts them directly with declared types. This example uses a regression score as a baseline; it is not necessarily a calibrated probability.
+Use this checklist after you run a [modeling pathway](../guides/index.md). The example uses the concrete strength tree to show what to deliver with a fitted regression model.
 
-Script:
-[`examples/churn_demo.py`](https://github.com/jkapila/mltreelib/blob/main/examples/churn_demo.py)
-(`uv run --with pandas --with pyarrow --with matplotlib python examples/churn_demo.py`).
-
-## Typed ingest
-
-The script requires pandas and the local parquet dataset. It uses a deterministic row split for demonstration. For production, choose a time-aware or group-aware split when the data requires it. No category encoder or missing-value imputation is used. The model is a regression baseline; its scores are not guaranteed calibrated probabilities. Choose thresholds on validation data using decision costs.
+Download [OpenML concrete strength 46917](https://www.openml.org/d/46917) to `datasets/concrete_compressive_strength.parquet`. Run this code from the repository root after `uv sync`.
 
 ```python
-import pandas as pd
-from mltreelib import Metrics, ModelTree
+from pathlib import Path
 
-df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
-y = (df["churn"] == "Yes").astype(float).tolist()  # churn: No/Yes -> 0/1
-print(f"rows: {len(df)}   churn rate: {sum(y) / len(y):.3f}")
+from examples.real_tree_studies import load, rows
+from mltreelib import ModelTree
 
-# Pass raw categories and missing predictors directly to ModelTree.
-cols = [c for c in df.columns if c != "churn"]
-n_train = int(0.8 * len(df))
-dtypes = ["categorical" if col in ("country", "gender", "credit_card", "active_member") else "numeric" for col in cols]
-X = [[None if pd.isna(v) else v for v in row] for row in df[cols].itertuples(index=False, name=None)]
-print("columns (xN index -> name, dtype):")
-print(
-    "  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes)))
-)
+df = load("concrete_compressive_strength", 46917).sample(frac=1, random_state=2026)
+target = "ConcreteCompressiveStrength"
+features = df.columns.drop(target).tolist()
+train, test = df.iloc[:824], df.iloc[824:]
+tree = ModelTree(leaf="linear", max_depth=2, min_rows=40, prune="none")
+tree.fit(rows(train, features), train[target].tolist(), col_names=features)
+pred = tree.predict(rows(test, features))
 
-# Deterministic 80/20 split.
-xtr, ytr = X[:n_train], y[:n_train]
-xte, yte = X[n_train:], y[n_train:]
-
-model = ModelTree(max_depth=4, min_rows=40)
-model.fit(xtr, ytr, dtypes=dtypes, col_names=cols)
-pred = model.predict(xte)
-
-reg = Metrics().regression(yte, pred)
-hard = [1.0 if p >= 0.5 else 0.0 for p in pred]
-clf = Metrics().classification([int(v) for v in yte], [int(v) for v in hard])
-print(f"test rmse: {reg['rmse']:.3f}  r2: {reg['r2']:.3f}")
-print(f"accuracy @0.5: {clf['accuracy']:.3f}  macro f1: {clf['macro_f1']:.3f}")
-print(f"confusion: {clf['confusion']}")
-
+review = test[features + [target]].assign(predicted_mpa=pred)
+review["error_mpa"] = review["predicted_mpa"] - review[target]
+largest_error = review["error_mpa"].abs().nlargest(5).index
+print(review.loc[largest_error].to_string(index=False))
+print(tree.split_paths())
+print([(leaf["id"], leaf["n"]) for leaf in tree.leaves()])
+Path("concrete-tree.dot").write_text(tree.to_dot(), encoding="utf-8")
 ```
 
-## Interpretation
+If Graphviz is installed, render that file with `dot -Tsvg concrete-tree.dot -o concrete-tree.svg`.
 
-Inspect the named splits and leaf support before using a segment for decisions. A predictive association does not establish the effect of an intervention. The full script prints the fitted tree and writes a DOT file or diagram.
+![Concrete model tree showing named split conditions and local linear leaves](../assets/guides/real-concrete-tree.svg)
+
+Use the diagram to read the structure. [Check boundary routing](../guides/serving-contract.md#check-split-boundaries) before transcribing the displayed conditions.
+
+## Prepare the handoff
+
+1. **Inputs.** Record feature order, units, allowed categories and the prediction time. Keep a sample with a missing value.
+2. **Evaluation.** Report errors for the intended decision. Include the baseline, split method and examples of large errors.
+3. **Structure.** Export the DOT diagram and keep the structured splits and leaves. Check the support behind the smallest leaves.
+4. **Deployment.** Compare scores on a fixed set of reference rows after moving the model into the serving environment. Include rows near a split and ones with absent fields.
+
+The [concrete strength article](../blog/modernizing-quinlan-classics-in-rust.md) compares the tree with constant leaves. The [serving contract](../guides/serving-contract.md) lists the checks needed when you move from an example to a service. For the original churn exercise, see the [secondary case on the dataset page](../guides/real-data.md#secondary-example-bank-churn).

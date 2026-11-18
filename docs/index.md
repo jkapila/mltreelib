@@ -22,7 +22,7 @@ monotone & interaction constraints.
 ```bash
 uv sync                                          # venv + Rust extension (maturin)
 uv run python examples/quickstart.py             # fit, print, visualize
-uv run python examples/churn_demo.py             # end-to-end on real data
+uv run python examples/real_tree_studies.py wine  # after downloading Wine Quality
 ```
 
 | I want to… | go to |
@@ -30,7 +30,8 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | install it | [Installation](installation.md) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |
-| solve a real problem | [Examples — end-to-end walkthrough](examples/walkthrough.md) |
+| solve a real problem | [Real datasets and worked studies](guides/real-data.md) |
+| change one part of a model | [Example library](examples/index.md) |
 | wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
 | know every knob | [Examples — Model building & predictions](examples/model-building.md) |
 | read the numbers | [Examples — Inspection](examples/inspection.md) |
