@@ -2130,6 +2130,12 @@ fn extract_leaf_control<'py>(
                 if let Some(item) = dict.get_item("knn_p")? {
                     c.knn_p = item.extract::<f64>()?;
                 }
+                if let Some(item) = dict.get_item("shrinkage")? {
+                    c.shrinkage = item.extract::<f64>()?;
+                }
+                if let Some(item) = dict.get_item("max_classes")? {
+                    c.max_classes = item.extract::<usize>()?;
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2144,6 +2150,8 @@ fn extract_leaf_control<'py>(
                             | "tau"
                             | "leaf_features"
                             | "retrain_cols"
+                            | "shrinkage"
+                            | "max_classes"
                     ) {
                         if let Ok(num) = v.extract::<f64>() {
                             c.extra.insert(key, num);
@@ -2273,7 +2281,9 @@ impl PyLeafControl {
         knn_p = 2.0,
         events = None,
         treatments = None,
-        n_classes = None
+        n_classes = None,
+        shrinkage = 0.0,
+        max_classes = 256
     ))]
     fn new(
         leaf: &str,
@@ -2301,6 +2311,8 @@ impl PyLeafControl {
         events: Option<Vec<f64>>,
         treatments: Option<Vec<f64>>,
         n_classes: Option<usize>,
+        shrinkage: f64,
+        max_classes: usize,
     ) -> PyResult<Self> {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
@@ -2379,6 +2391,8 @@ impl PyLeafControl {
                 knn_gamma,
                 knn_p,
                 verbose: 0,
+                shrinkage,
+                max_classes,
             },
         })
     }
@@ -2897,7 +2911,7 @@ impl PyModelTree {
     /// Returns: the model tree; call `.fit()` next.
     #[new]
     #[pyo3(signature = (
-        max_depth = 5, min_rows = 50, minsplit = None, minbucket = None,
+        max_depth = 6, min_rows = 15, minsplit = None, minbucket = None,
         minprob = 0.02, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
         purity_gate_metric = "sd", tail_quantile = None,
         gain = None, split_precision = Some(0.001), split_cols = None,
@@ -2919,6 +2933,7 @@ impl PyModelTree {
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
         knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
         knn_gamma = None, knn_p = 2.0,
+        shrinkage = 0.0, max_classes = 256, preset = None,
         control = None, leaf_control = None
     ))]
     fn new(
@@ -2983,9 +2998,44 @@ impl PyModelTree {
         knn_metric: &str,
         knn_gamma: Option<f64>,
         knn_p: f64,
+        shrinkage: f64,
+        max_classes: usize,
+        preset: Option<&str>,
         control: Option<Bound<'_, PyAny>>,
         leaf_control: Option<Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
+        let mut max_depth = max_depth;
+        let mut min_rows = min_rows;
+        let mut shrinkage = shrinkage;
+        let mut prune = prune;
+        let mut split_eval = split_eval;
+
+        if let Some(p) = preset {
+            match p.to_lowercase().as_str() {
+                "accurate" => {
+                    max_depth = 8;
+                    min_rows = 10;
+                    shrinkage = 10.0;
+                    prune = "none";
+                }
+                "fast" => {
+                    split_eval = "fast";
+                    max_depth = 5;
+                    min_rows = 20;
+                    shrinkage = 0.0;
+                }
+                "interpretable" => {
+                    max_depth = 3;
+                    min_rows = 30;
+                    shrinkage = 0.0;
+                }
+                other => {
+                    return Err(PyValueError::new_err(format!(
+                        "Unknown preset: '{other}'. Expected 'accurate', 'fast', or 'interpretable'"
+                    )));
+                }
+            }
+        }
         let (tree_mono, leaf_mono) = {
             let tm = tree_monotone.unwrap_or_else(|| monotone.clone());
             let lm = leaf_monotone.unwrap_or_else(|| monotone.clone());
@@ -3257,6 +3307,8 @@ impl PyModelTree {
             knn_metric: knn_met,
             knn_gamma,
             knn_p,
+            shrinkage,
+            max_classes,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(
@@ -3285,6 +3337,8 @@ impl PyModelTree {
             params.knn_metric = ctrl.knn_metric;
             params.knn_gamma = ctrl.knn_gamma;
             params.knn_p = ctrl.knn_p;
+            params.shrinkage = ctrl.shrinkage;
+            params.max_classes = ctrl.max_classes;
             if !ctrl.leaf_monotone.is_empty() {
                 params.leaf_monotone = ctrl.leaf_monotone;
             }
@@ -4575,6 +4629,8 @@ impl PyModelTree {
         d.set_item("knn_metric", self.params.knn_metric.as_str())?;
         d.set_item("knn_gamma", self.params.knn_gamma)?;
         d.set_item("knn_p", self.params.knn_p)?;
+        d.set_item("shrinkage", self.params.shrinkage)?;
+        d.set_item("max_classes", self.params.max_classes)?;
         Ok(d.into())
     }
 

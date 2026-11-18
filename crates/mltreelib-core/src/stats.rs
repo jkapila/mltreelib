@@ -257,6 +257,101 @@ pub(crate) fn class_total_variation(left: &[(f64, f64)], right: &[(f64, f64)]) -
         .sum()
 }
 
+/// O(C) Weighted Gini impurity directly over a class histogram slice.
+#[inline]
+pub(crate) fn histogram_gini(h: &[f64], total_w: f64) -> f64 {
+    if total_w <= 0.0 {
+        return 0.0;
+    }
+    let mut sum_sq = 0.0;
+    for &c in h {
+        if c > 0.0 {
+            let q = c / total_w;
+            sum_sq += q * q;
+        }
+    }
+    (1.0 - sum_sq).max(0.0)
+}
+
+/// O(C) Weighted Shannon entropy directly over a class histogram slice.
+#[inline]
+pub(crate) fn histogram_entropy(h: &[f64], total_w: f64) -> f64 {
+    if total_w <= 0.0 {
+        return 0.0;
+    }
+    let mut ent = 0.0;
+    for &c in h {
+        if c > 0.0 {
+            let q = c / total_w;
+            ent -= q * q.log2();
+        }
+    }
+    ent.max(0.0)
+}
+
+/// O(C) Total variation contrast between two class histogram slices.
+#[inline]
+pub(crate) fn histogram_total_variation(h_left: &[f64], total_wl: f64, h_right: &[f64], total_wr: f64) -> f64 {
+    if total_wl <= 0.0 || total_wr <= 0.0 {
+        return 0.0;
+    }
+    let n = h_left.len().min(h_right.len());
+    let mut tv = 0.0;
+    for i in 0..n {
+        let pl = h_left[i] / total_wl;
+        let pr = h_right[i] / total_wr;
+        tv += (pl - pr).abs();
+    }
+    tv
+}
+
+/// O(C) Multiclass split gain calculation using histogram subtraction trick.
+pub(crate) fn histogram_multiclass_gain(
+    gain_fn: &crate::criteria::GainFn,
+    h_parent: &[f64],
+    total_wp: f64,
+    h_left: &[f64],
+    total_wl: f64,
+    h_right: &[f64],
+    total_wr: f64,
+) -> f64 {
+    if total_wl <= 0.0 || total_wr <= 0.0 || total_wp <= 0.0 {
+        return 0.0;
+    }
+    match gain_fn {
+        crate::criteria::GainFn::Gini => {
+            let ip = histogram_gini(h_parent, total_wp);
+            let il = histogram_gini(h_left, total_wl);
+            let ir = histogram_gini(h_right, total_wr);
+            (ip - (total_wl / total_wp) * il - (total_wr / total_wp) * ir).max(0.0)
+        }
+        crate::criteria::GainFn::Entropy => {
+            let ep = histogram_entropy(h_parent, total_wp);
+            let el = histogram_entropy(h_left, total_wl);
+            let er = histogram_entropy(h_right, total_wr);
+            (ep - (total_wl / total_wp) * el - (total_wr / total_wp) * er).max(0.0)
+        }
+        crate::criteria::GainFn::GainRatio => {
+            let ep = histogram_entropy(h_parent, total_wp);
+            let el = histogram_entropy(h_left, total_wl);
+            let er = histogram_entropy(h_right, total_wr);
+            let ig = (ep - (total_wl / total_wp) * el - (total_wr / total_wp) * er).max(0.0);
+            let info = |x: f64| if x > 0.0 { -x * x.log2() } else { 0.0 };
+            let split_info = info(total_wl / total_wp) + info(total_wr / total_wp);
+            if split_info <= 0.0 {
+                0.0
+            } else {
+                ig / split_info
+            }
+        }
+        crate::criteria::GainFn::Twoing => {
+            let tv = histogram_total_variation(h_left, total_wl, h_right, total_wr);
+            2.0 * (total_wl / total_wp) * (total_wr / total_wp) * tv * tv
+        }
+        _ => 0.0,
+    }
+}
+
 /// Weighted sample mean.
 pub(crate) fn w_mean(p: &[(f64, f64)]) -> f64 {
     let sw: f64 = p.iter().map(|&(_, w)| w).sum();

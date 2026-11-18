@@ -111,6 +111,11 @@ pub(crate) struct SplitScratch {
     pub level_moments: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, swy, swy2)
     pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
     pub level_causal: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw_t, swy_t, sw_c, swy_c)
+    pub h_parent: Vec<f64>,
+    pub h_left: Vec<f64>,
+    pub h_miss: Vec<f64>,
+    pub h_cand_left: Vec<f64>,
+    pub h_cand_right: Vec<f64>,
 }
 
 impl<'a> Grower<'a> {
@@ -682,6 +687,200 @@ impl<'a> Grower<'a> {
             );
         }
 
+        let is_multiclass_gain = matches!(
+            self.params.gain,
+            GainFn::Gini | GainFn::Entropy | GainFn::GainRatio | GainFn::Twoing
+        );
+        let mut max_c = self.params.n_classes.unwrap_or(0);
+        let mut all_int = is_multiclass_gain;
+        if is_multiclass_gain {
+            for &r in rows {
+                let y = self.y[r];
+                if y >= 0.0 && y < 256.0 && y.fract() == 0.0 {
+                    max_c = max_c.max((y as usize) + 1);
+                } else {
+                    all_int = false;
+                    break;
+                }
+            }
+        }
+        let n_classes_opt = if all_int && max_c >= 2 { Some(max_c) } else { None };
+
+        if let Some(nc) = n_classes_opt {
+            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, Vec<f64>)> =
+                std::collections::HashMap::new();
+            let mut miss_h = vec![0.0; nc];
+            let (mut mn, mut msw) = (0usize, 0.0);
+            for &r in rows {
+                let (y, w) = (self.y[r], self.w[r]);
+                let c = y as usize;
+                match self.cols[j][r] {
+                    Some(v) => {
+                        let e = by_level.entry(v.to_bits()).or_insert_with(|| (0, 0.0, 0.0, vec![0.0; nc]));
+                        e.0 += 1;
+                        e.1 += w;
+                        e.2 += w * y;
+                        e.3[c] += w;
+                    }
+                    None => {
+                        mn += 1;
+                        msw += w;
+                        miss_h[c] += w;
+                    }
+                }
+            }
+            if by_level.len() < 2 {
+                st.group_ns = t0.elapsed().as_nanos() as u64;
+                return (None, st);
+            }
+            let mut levels: Vec<(f64, usize, f64, f64, Vec<f64>)> = by_level
+                .into_iter()
+                .map(|(b, (n, sw, swy, h))| (f64::from_bits(b), n, sw, swy, h))
+                .collect();
+
+            match &self.params.cat_order {
+                CatOrder::FrequencyDesc => {
+                    levels.sort_by(|a, b| {
+                        b.1.cmp(&a.1)
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+                CatOrder::TargetMean => {
+                    let wmean = |sw: f64, swy: f64| if sw <= 0.0 { 0.0 } else { swy / sw };
+                    levels.sort_by(|a, b| {
+                        wmean(b.2, b.3)
+                            .partial_cmp(&wmean(a.2, a.3))
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+                CatOrder::Explicit(order) => {
+                    let rank = |v: f64| order.iter().position(|o| *o == v).unwrap_or(usize::MAX);
+                    levels.sort_by(|a, b| {
+                        rank(a.0)
+                            .cmp(&rank(b.0))
+                            .then(b.1.cmp(&a.1))
+                            .then(a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+                    });
+                }
+            }
+
+            st.group_ns += t0.elapsed().as_nanos() as u64;
+            let t1 = Instant::now();
+            let k = levels.len();
+            let m = self.min_child(rows.len()) as f64;
+            let mut candidates: Vec<Vec<usize>> = Vec::new();
+            match self.params.cat_search {
+                CatSearch::Cumulative => {
+                    for i in 1..k { candidates.push((0..i).collect()); }
+                }
+                CatSearch::SingleVsRest => {
+                    for i in 0..k { candidates.push(vec![i]); }
+                }
+                CatSearch::Both => {
+                    for i in 1..k { candidates.push((0..i).collect()); }
+                    for i in 0..k { candidates.push(vec![i]); }
+                }
+            }
+
+            let mut h_parent = vec![0.0; nc];
+            for c in 0..nc { h_parent[c] += miss_h[c]; }
+            for (_, _, _, _, h) in &levels {
+                for c in 0..nc { h_parent[c] += h[c]; }
+            }
+            let total_w: f64 = h_parent.iter().sum();
+            let total_n = rows.len();
+
+            let mut best: Option<(f64, Vec<f64>, bool)> = None;
+            for left_idx in candidates.iter() {
+                let in_left: std::collections::HashSet<usize> = left_idx.iter().copied().collect();
+                let mut ln = 0usize;
+                let mut lsw = 0.0;
+                let mut h_left_pure = vec![0.0; nc];
+                for (li, (_, n, sw, _, h)) in levels.iter().enumerate() {
+                    if in_left.contains(&li) {
+                        ln += n;
+                        lsw += sw;
+                        for c in 0..nc { h_left_pure[c] += h[c]; }
+                    }
+                }
+                let rn = total_n - mn - ln;
+                let rsw = total_w - msw - lsw;
+                if (ln as f64) < m || (rn as f64) < m {
+                    continue;
+                }
+                st.candidates += 1;
+                for missing_left in [true, false] {
+                    let (aln, alsw) = if missing_left {
+                        (ln + mn, lsw + msw)
+                    } else {
+                        (ln, lsw)
+                    };
+                    let (arn, arsw) = if missing_left {
+                        (rn, rsw)
+                    } else {
+                        (rn + mn, rsw + msw)
+                    };
+                    if (aln as f64) < m || (arn as f64) < m {
+                        continue;
+                    }
+                    if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w) {
+                        continue;
+                    }
+                    let mut h_l = h_left_pure.clone();
+                    if missing_left {
+                        for c in 0..nc { h_l[c] += miss_h[c]; }
+                    }
+                    let mut h_r = vec![0.0; nc];
+                    for c in 0..nc { h_r[c] = h_parent[c] - h_l[c]; }
+
+                    let gain = crate::stats::histogram_multiclass_gain(
+                        &self.params.gain,
+                        &h_parent,
+                        total_w,
+                        &h_l,
+                        alsw,
+                        &h_r,
+                        arsw,
+                    );
+                    let gain = if self.params.imbalance_penalty > 0.0 {
+                        gain - self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64)
+                    } else {
+                        gain
+                    };
+                    if gain <= self.params.min_gain {
+                        continue;
+                    }
+                    if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                        let left_levels: Vec<f64> = left_idx.iter().map(|&li| levels[li].0).collect();
+                        best = Some((gain, left_levels, missing_left));
+                    }
+                    if matches!(self.params.cat_search, CatSearch::SingleVsRest) {
+                        break;
+                    }
+                }
+            }
+
+            st.scan_ns += t1.elapsed().as_nanos() as u64;
+            return (
+                best.map(|(gain, left_levels, missing_left)| {
+                    (
+                        gain,
+                        Split {
+                            col: j,
+                            threshold: 0.0,
+                            missing_left,
+                            gain,
+                            cat: None,
+                            sur: None,
+                        },
+                        Some(left_levels),
+                    )
+                }),
+                st,
+            );
+        }
+
         let mut missing_yws: Vec<(f64, f64)> = Vec::new();
         let mut by_level: std::collections::HashMap<u64, Vec<(f64, f64)>> =
             std::collections::HashMap::new();
@@ -906,15 +1105,66 @@ impl<'a> Grower<'a> {
             )
         };
 
-        let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
-        if is_custom_gain {
-            scratch.pairs_yw.clear();
-            scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w)| (y, w)));
-            scratch.missing_yws.clear();
+        let is_multiclass_gain = matches!(
+            self.params.gain,
+            GainFn::Gini | GainFn::Entropy | GainFn::GainRatio | GainFn::Twoing
+        );
+        let n_classes_opt = if is_multiclass_gain {
+            let mut max_c = self.params.n_classes.unwrap_or(0);
+            let mut all_int = true;
+            for &(_, y, _) in &scratch.pairs {
+                if y >= 0.0 && y < 256.0 && y.fract() == 0.0 {
+                    max_c = max_c.max((y as usize) + 1);
+                } else {
+                    all_int = false;
+                    break;
+                }
+            }
+            if all_int && max_c >= 2 {
+                Some(max_c)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(nc) = n_classes_opt {
+            scratch.h_parent.clear();
+            scratch.h_parent.resize(nc, 0.0);
+            for &(_, y, w) in &scratch.pairs {
+                scratch.h_parent[y as usize] += w;
+            }
+            scratch.h_miss.clear();
+            scratch.h_miss.resize(nc, 0.0);
             if mn > 0 {
                 for &r in rows {
                     if self.cols[j][r].is_none() {
-                        scratch.missing_yws.push((self.y[r], self.w[r]));
+                        let y = self.y[r];
+                        if y >= 0.0 && (y as usize) < nc && y.fract() == 0.0 {
+                            scratch.h_miss[y as usize] += self.w[r];
+                            scratch.h_parent[y as usize] += self.w[r];
+                        }
+                    }
+                }
+            }
+            scratch.h_left.clear();
+            scratch.h_left.resize(nc, 0.0);
+            scratch.h_cand_left.clear();
+            scratch.h_cand_left.resize(nc, 0.0);
+            scratch.h_cand_right.clear();
+            scratch.h_cand_right.resize(nc, 0.0);
+        } else {
+            let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
+            if is_custom_gain {
+                scratch.pairs_yw.clear();
+                scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w)| (y, w)));
+                scratch.missing_yws.clear();
+                if mn > 0 {
+                    for &r in rows {
+                        if self.cols[j][r].is_none() {
+                            scratch.missing_yws.push((self.y[r], self.w[r]));
+                        }
                     }
                 }
             }
@@ -942,6 +1192,9 @@ impl<'a> Grower<'a> {
             lsw += w;
             lswy += w * y;
             lswy2 += w * y * y;
+            if n_classes_opt.is_some() {
+                scratch.h_left[y as usize] += w;
+            }
             let is_boundary = k + 1 < n_pairs && scratch.pairs[k + 1].0 != v;
             if !is_boundary {
                 continue;
@@ -975,28 +1228,53 @@ impl<'a> Grower<'a> {
                 if !self.mono_ok(j, alswy / alsw.max(1e-300), arswy / arsw.max(1e-300)) {
                     continue;
                 }
-                let gain = match self.params.gain {
-                    GainFn::Deviance if self.params.leaf_family != crate::family::LeafFamily::Gaussian => {
-                        self.constant_family_cost(tsw + msw, tswy + mswy)
-                            - self.constant_family_cost(alsw, alswy)
-                            - self.constant_family_cost(arsw, arswy)
+                let gain = if let Some(nc) = n_classes_opt {
+                    if missing_left {
+                        for c in 0..nc {
+                            let left_c = scratch.h_left[c] + scratch.h_miss[c];
+                            scratch.h_cand_left[c] = left_c;
+                            scratch.h_cand_right[c] = scratch.h_parent[c] - left_c;
+                        }
+                    } else {
+                        for c in 0..nc {
+                            let left_c = scratch.h_left[c];
+                            scratch.h_cand_left[c] = left_c;
+                            scratch.h_cand_right[c] = scratch.h_parent[c] - left_c;
+                        }
                     }
-                    GainFn::Sse | GainFn::Deviance => {
-                        parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
-                    }
-                    ref gfn => {
-                        let yws_sorted = &scratch.pairs_yw;
-                        if scratch.missing_yws.is_empty() {
-                            gain_of(gfn, &yws_sorted[..k + 1], &yws_sorted[k + 1..])
-                        } else {
-                            let mut ls: Vec<(f64, f64)> = yws_sorted[..k + 1].to_vec();
-                            let mut rs: Vec<(f64, f64)> = yws_sorted[k + 1..].to_vec();
-                            if missing_left {
-                                ls.extend_from_slice(&scratch.missing_yws);
+                    crate::stats::histogram_multiclass_gain(
+                        &self.params.gain,
+                        &scratch.h_parent,
+                        total_w,
+                        &scratch.h_cand_left,
+                        alsw,
+                        &scratch.h_cand_right,
+                        arsw,
+                    )
+                } else {
+                    match self.params.gain {
+                        GainFn::Deviance if self.params.leaf_family != crate::family::LeafFamily::Gaussian => {
+                            self.constant_family_cost(tsw + msw, tswy + mswy)
+                                - self.constant_family_cost(alsw, alswy)
+                                - self.constant_family_cost(arsw, arswy)
+                        }
+                        GainFn::Sse | GainFn::Deviance => {
+                            parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
+                        }
+                        ref gfn => {
+                            let yws_sorted = &scratch.pairs_yw;
+                            if scratch.missing_yws.is_empty() {
+                                gain_of(gfn, &yws_sorted[..k + 1], &yws_sorted[k + 1..])
                             } else {
-                                rs.extend_from_slice(&scratch.missing_yws);
+                                let mut ls: Vec<(f64, f64)> = yws_sorted[..k + 1].to_vec();
+                                let mut rs: Vec<(f64, f64)> = yws_sorted[k + 1..].to_vec();
+                                if missing_left {
+                                    ls.extend_from_slice(&scratch.missing_yws);
+                                } else {
+                                    rs.extend_from_slice(&scratch.missing_yws);
+                                }
+                                gain_of(gfn, &ls, &rs)
                             }
-                            gain_of(gfn, &ls, &rs)
                         }
                     }
                 };

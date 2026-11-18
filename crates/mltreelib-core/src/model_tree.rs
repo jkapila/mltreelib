@@ -201,6 +201,8 @@ pub struct ModelTreeParams {
     pub train_ids: bool,
     /// Number of distinct classes for softmax targets.
     pub n_classes: Option<usize>,
+    /// Maximum number of distinct integer classes supported by fast histogram binning (default 256).
+    pub max_classes: usize,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -219,6 +221,9 @@ pub struct ModelTreeParams {
     pub knn_gamma: Option<f64>,
     /// Power parameter p for inverse distance / Minkowski metric (default 2.0).
     pub knn_p: f64,
+    /// Adaptive hierarchical leaf shrinkage penalty lambda (default 0.0 = off).
+    /// Shrinks leaf models toward their parent node: beta_shrunk = beta_parent + (N / (N + lambda)) * (beta_leaf - beta_parent).
+    pub shrinkage: f64,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -293,6 +298,7 @@ impl Default for ModelTreeParams {
             train_groups: true,
             train_ids: false,
             n_classes: None,
+            max_classes: 256,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -302,6 +308,7 @@ impl Default for ModelTreeParams {
             knn_metric: crate::knn::DistanceMetric::Euclidean,
             knn_gamma: None,
             knn_p: 2.0,
+            shrinkage: 0.0,
         }
     }
 }
@@ -2272,6 +2279,8 @@ enum GrowOp {
         est: Vec<usize>,
         budget: usize,
         res_idx: usize,
+        parent_mean: Option<f64>,
+        parent_probs: Option<Vec<f64>>,
     },
     AfterLeft {
         depth: usize,
@@ -2285,6 +2294,8 @@ enum GrowOp {
         left_res_idx: usize,
         right_res_idx: usize,
         res_idx: usize,
+        node_mean: Option<f64>,
+        node_probs: Option<Vec<f64>>,
     },
     FinishSplit {
         rows: Vec<usize>,
@@ -2339,6 +2350,8 @@ impl<'a> Grower<'a> {
             est: root_est.to_vec(),
             budget,
             res_idx: 0,
+            parent_mean: None,
+            parent_probs: None,
         }];
 
         while let Some(op) = stack.pop() {
@@ -2349,6 +2362,8 @@ impl<'a> Grower<'a> {
                     est,
                     budget,
                     res_idx,
+                    parent_mean,
+                    parent_probs,
                 } => {
                     if depth > self.max_depth_seen {
                         self.max_depth_seen = depth;
@@ -2456,7 +2471,35 @@ impl<'a> Grower<'a> {
                     match best {
                         None => {
                             let t = Instant::now();
-                            let leaf = self.make_leaf(self.leaf_rows(&rows, &est), &path);
+                            let mut leaf = self.make_leaf(self.leaf_rows(&rows, &est), &path);
+                            if self.params.shrinkage > 0.0 {
+                                if let Some(p_mean) = parent_mean {
+                                    let n_samples = rows.len() as f64;
+                                    let gamma = n_samples / (n_samples + self.params.shrinkage);
+                                    if let Some(lm) = &mut leaf.linear {
+                                        lm.intercept = p_mean + gamma * (lm.intercept - p_mean);
+                                        for c in &mut lm.coef {
+                                            *c *= gamma;
+                                        }
+                                        for c in &mut lm.na_coef {
+                                            *c *= gamma;
+                                        }
+                                    }
+                                    let cur_center = leaf.center.unwrap_or(leaf.stats.mean);
+                                    leaf.center = Some(p_mean + gamma * (cur_center - p_mean));
+                                    if let (Some(sm), Some(p_probs)) = (&mut leaf.softmax, parent_probs) {
+                                        let n_c = sm.probs.len().min(p_probs.len());
+                                        let mut sum_p = 0.0;
+                                        for c in 0..n_c {
+                                            sm.probs[c] = p_probs[c] + gamma * (sm.probs[c] - p_probs[c]);
+                                            sum_p += sm.probs[c];
+                                        }
+                                        if sum_p > 0.0 {
+                                            for c in 0..n_c { sm.probs[c] /= sum_p; }
+                                        }
+                                    }
+                                }
+                            }
                             prof.leaf_ns += t.elapsed().as_nanos() as u64;
                             let stats = FrameStats::from_ty(self.y, self.w, &rows);
                             let cost = if self.params.prune == PruneCost::None {
@@ -2527,6 +2570,33 @@ impl<'a> Grower<'a> {
                             let right_res_idx = results.len();
                             results.push((0, 0));
 
+                            let node_mean = if self.params.shrinkage > 0.0 {
+                                let (mut swy, mut sw) = (0.0, 0.0);
+                                for &r in &rows {
+                                    swy += self.w[r] * self.y[r];
+                                    sw += self.w[r];
+                                }
+                                if sw > 0.0 { Some(swy / sw) } else { None }
+                            } else {
+                                None
+                            };
+                            let node_probs = if self.params.shrinkage > 0.0 && self.params.leaf_family == LeafFamily::Softmax {
+                                let n_c = self.params.n_classes.unwrap_or(2);
+                                let mut counts = vec![0.0; n_c];
+                                let mut sw = 0.0;
+                                for &r in &rows {
+                                    let c = self.y[r] as usize;
+                                    if c < n_c {
+                                        counts[c] += self.w[r];
+                                        sw += self.w[r];
+                                    }
+                                }
+                                if sw > 0.0 { for c in 0..n_c { counts[c] /= sw; } }
+                                Some(counts)
+                            } else {
+                                None
+                            };
+
                             stack.push(GrowOp::AfterLeft {
                                 depth,
                                 rows,
@@ -2539,6 +2609,8 @@ impl<'a> Grower<'a> {
                                 left_res_idx,
                                 right_res_idx,
                                 res_idx,
+                                node_mean,
+                                node_probs: node_probs.clone(),
                             });
                             path.push(sp.col);
                             stack.push(GrowOp::Grow {
@@ -2547,6 +2619,8 @@ impl<'a> Grower<'a> {
                                 est: est_l,
                                 budget: budget.saturating_sub(1),
                                 res_idx: left_res_idx,
+                                parent_mean: node_mean,
+                                parent_probs: node_probs,
                             });
                         }
                     }
@@ -2563,6 +2637,8 @@ impl<'a> Grower<'a> {
                     left_res_idx,
                     right_res_idx,
                     res_idx,
+                    node_mean,
+                    node_probs,
                 } => {
                     let (_l, lu) = results[left_res_idx];
                     stack.push(GrowOp::FinishSplit {
@@ -2580,6 +2656,8 @@ impl<'a> Grower<'a> {
                         est: est_r,
                         budget: budget.saturating_sub(lu),
                         res_idx: right_res_idx,
+                        parent_mean: node_mean,
+                        parent_probs: node_probs,
                     });
                 }
                 GrowOp::FinishSplit {

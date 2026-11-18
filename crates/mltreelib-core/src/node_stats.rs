@@ -384,6 +384,72 @@ pub struct LeafModel {
 }
 
 impl LeafModel {
+    /// Hierarchical shrinkage of leaf coefficients toward an ancestor/parent leaf model:
+    /// beta_shrunk = beta_parent + (N_t / (N_t + lambda)) * (beta_leaf - beta_parent)
+    pub fn shrink_toward(&mut self, parent: &LeafModel, lambda: f64, n_samples: f64) {
+        if lambda <= 0.0 || n_samples <= 0.0 {
+            return;
+        }
+        let gamma = n_samples / (n_samples + lambda);
+
+        // 1. Shrink LinearModel if present
+        if let Some(lm) = &mut self.linear {
+            if let Some(plm) = &parent.linear {
+                lm.intercept = plm.intercept + gamma * (lm.intercept - plm.intercept);
+                for (k, &col) in lm.cols.iter().enumerate() {
+                    let p_coef = plm.cols.iter().position(|&pc| pc == col).map(|idx| plm.coef[idx]).unwrap_or(0.0);
+                    lm.coef[k] = p_coef + gamma * (lm.coef[k] - p_coef);
+                    if k < lm.na_coef.len() {
+                        let p_na = plm.cols.iter().position(|&pc| pc == col).and_then(|idx| plm.na_coef.get(idx)).copied().unwrap_or(0.0);
+                        lm.na_coef[k] = p_na + gamma * (lm.na_coef[k] - p_na);
+                    }
+                }
+            } else {
+                let p_mean = parent.center.unwrap_or(parent.stats.mean);
+                lm.intercept = p_mean + gamma * (lm.intercept - p_mean);
+                for c in &mut lm.coef {
+                    *c *= gamma;
+                }
+                for c in &mut lm.na_coef {
+                    *c *= gamma;
+                }
+            }
+        }
+
+        // 2. Shrink response-scale center / mean
+        let p_center = parent.center.unwrap_or(parent.stats.mean);
+        let cur_center = self.center.unwrap_or(self.stats.mean);
+        let shrunk_center = p_center + gamma * (cur_center - p_center);
+        self.center = Some(shrunk_center);
+
+        // 3. Shrink SoftmaxModel if present
+        if let (Some(sm), Some(psm)) = (&mut self.softmax, &parent.softmax) {
+            let n_c = sm.probs.len().min(psm.probs.len());
+            let mut sum_p = 0.0;
+            for c in 0..n_c {
+                sm.probs[c] = psm.probs[c] + gamma * (sm.probs[c] - psm.probs[c]);
+                sum_p += sm.probs[c];
+            }
+            if sum_p > 0.0 {
+                for c in 0..n_c {
+                    sm.probs[c] /= sum_p;
+                }
+            }
+            if let (Some(lms), Some(plms)) = (&mut sm.linear_models, &psm.linear_models) {
+                let m_len = lms.len().min(plms.len());
+                for c in 0..m_len {
+                    let lm = &mut lms[c];
+                    let plm = &plms[c];
+                    lm.intercept = plm.intercept + gamma * (lm.intercept - plm.intercept);
+                    for (k, &col) in lm.cols.iter().enumerate() {
+                        let p_coef = plm.cols.iter().position(|&pc| pc == col).map(|idx| plm.coef[idx]).unwrap_or(0.0);
+                        lm.coef[k] = p_coef + gamma * (lm.coef[k] - p_coef);
+                    }
+                }
+            }
+        }
+    }
+
     /// Linear model when present, the fitted constant otherwise (weighted
     /// mean for `LeafKind::Mean`).
     pub fn predict(&self, x: &[Option<f64>]) -> f64 {

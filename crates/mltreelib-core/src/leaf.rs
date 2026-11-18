@@ -118,6 +118,10 @@ pub struct LeafControl {
     pub knn_p: f64,
     /// Verbosity level for leaf fitting (0 = silent, >=3 logs GLM and leaf details).
     pub verbose: u8,
+    /// Adaptive hierarchical leaf shrinkage penalty lambda (default 0.0 = off).
+    pub shrinkage: f64,
+    /// Maximum number of distinct integer classes for histogram binning (default 256).
+    pub max_classes: usize,
 }
 
 impl Default for LeafControl {
@@ -149,6 +153,8 @@ impl Default for LeafControl {
             knn_gamma: None,
             knn_p: 2.0,
             verbose: 0,
+            shrinkage: 0.0,
+            max_classes: 256,
         }
     }
 }
@@ -199,6 +205,8 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             knn_gamma: p.knn_gamma,
             knn_p: p.knn_p,
             verbose: p.verbose,
+            shrinkage: p.shrinkage,
+            max_classes: p.max_classes,
         }
     }
 }

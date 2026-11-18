@@ -3397,6 +3397,124 @@ fn test_modern_leaf_solvers_lbfgs_and_ccd() {
     assert!(tree_ccd.n_leaves() >= 1);
 }
 
+#[test]
+fn test_streaming_multiclass_histogram_optimization() {
+    // Generate 4-class classification dataset with clean split along x0 at 0.0
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..120 {
+        let v = (i as f64) - 60.0;
+        let cls = if v < -30.0 {
+            0.0
+        } else if v < 0.0 {
+            1.0
+        } else if v < 30.0 {
+            2.0
+        } else {
+            3.0
+        };
+        x.push(vec![Some(v), Some((i % 5) as f64)]);
+        y.push(Some(cls));
+    }
+
+    // Fit with Gini criterion and streaming multiclass histogram
+    let params_gini = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 15,
+        leaf: LeafKind::Mean,
+        gain: GainFn::Gini,
+        n_classes: Some(4),
+        ..Default::default()
+    };
+    let tree_gini = ModelTree::fit(&x, &y, params_gini).expect("Gini fit failed");
+    assert!(tree_gini.n_leaves() >= 4, "Expected at least 4 leaves for 4 classes");
+
+    // Fit with Entropy criterion
+    let params_entropy = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 15,
+        leaf: LeafKind::Mean,
+        gain: GainFn::Entropy,
+        n_classes: Some(4),
+        ..Default::default()
+    };
+    let tree_entropy = ModelTree::fit(&x, &y, params_entropy).expect("Entropy fit failed");
+    assert!(tree_entropy.n_leaves() >= 4, "Expected at least 4 leaves for 4 classes");
+
+    // Verify predictions follow class regions
+    let preds = tree_gini.predict(&[
+        vec![Some(-45.0), Some(0.0)],
+        vec![Some(-15.0), Some(0.0)],
+        vec![Some(15.0), Some(0.0)],
+        vec![Some(45.0), Some(0.0)],
+    ]);
+    assert!(preds[0] < preds[1] && preds[1] < preds[2] && preds[2] < preds[3]);
+}
+
+#[test]
+fn test_hierarchical_leaf_shrinkage() {
+    // Generate simple piecewise linear data:
+    // x < 0: y = 2.0 * x - 10.0
+    // x >= 0: y = 2.0 * x + 10.0
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..100 {
+        let xv = (i as f64) - 50.0;
+        let yv = if xv < 0.0 { 2.0 * xv - 10.0 } else { 2.0 * xv + 10.0 };
+        x.push(vec![Some(xv)]);
+        y.push(Some(yv));
+    }
+
+    // 1. Unshrunk tree: shrinkage = 0.0
+    let tree_unshrunk = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 1,
+            min_rows: 10,
+            leaf: LeafKind::Linear,
+            shrinkage: 0.0,
+            ..Default::default()
+        },
+    )
+    .expect("unshrunk fit");
+
+    // 2. Strongly shrunk tree: shrinkage = 100.0 (Nt = 50, so factor = 50 / (50 + 100) = 1/3)
+    let tree_shrunk = ModelTree::fit(
+        &x,
+        &y,
+        ModelTreeParams {
+            max_depth: 1,
+            min_rows: 10,
+            leaf: LeafKind::Linear,
+            shrinkage: 100.0,
+            ..Default::default()
+        },
+    )
+    .expect("shrunk fit");
+
+    // Check leaf parameters
+    let leaves_unshrunk = tree_unshrunk.leaves();
+    let leaves_shrunk = tree_shrunk.leaves();
+    assert_eq!(leaves_unshrunk.len(), leaves_shrunk.len());
+
+    for (lu, ls) in leaves_unshrunk.iter().zip(leaves_shrunk.iter()) {
+        let lu_model = lu.0;
+        let ls_model = ls.0;
+        if let (Some(lmu), Some(lms)) = (&lu_model.linear, &ls_model.linear) {
+            // Slope in shrunk model should be strictly smaller in magnitude than unshrunk slope
+            assert!(lms.coef[0].abs() < lmu.coef[0].abs(), "Shrunk slope {} must be smaller in magnitude than unshrunk slope {}", lms.coef[0], lmu.coef[0]);
+            // Shrinkage pulls slope towards 0
+            let ratio = lms.coef[0] / lmu.coef[0];
+            // Nt is ~50, lambda is 100 => ratio ~ 50 / 150 = 0.333
+            assert!((ratio - 0.333).abs() < 0.1, "Expected shrinkage ratio ~0.33, got {}", ratio);
+        } else {
+            panic!("Expected Linear leaf models");
+        }
+    }
+}
+
+
 
 
 
