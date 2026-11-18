@@ -1,6 +1,6 @@
 # Monotone and interaction constraints
 
-`ModelTree` supports domain-enforced structural constraints:
+`ModelTree` supports structural constraint options. These controls do not establish global monotonicity for every leaf configuration. A repeated check of the healthcare example found two decreases on its 24-point age grid with linear leaves and none with mean leaves. This is a behavior gap to investigate. Check predictions on relevant grids and holdout data.
 
 1. **Dual Monotone constraints**:
 2. `tree_monotone=[...]`: enforces that split child node target means are monotonically ordered across split thresholds: \\((\\bar{y}\_L - \\bar{y}\_R) \\cdot m \\le 0\\).

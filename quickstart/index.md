@@ -13,14 +13,16 @@ y = [2.0 * (i % 8) + (5.0 if i % 8 > 4 else 0.0) + ((i * 13) % 7) * 0.05 for i i
 model = ModelTree()
 model.fit(x, y)
 
-pred = model.predict([[float(v)] for v in range(8)])
+x_test = [[float(v)] for v in range(8)]
+y_test = [2.0 * v + (5.0 if v > 4 else 0.0) for v in range(8)]
+pred = model.predict(x_test)
 print("predictions:", [round(p, 2) for p in pred])
 print("metrics:", {k: round(v, 3) for k, v in
                    Metrics().regression(y_test, pred).items() if k in ("rmse", "mae", "r2")})
 
 print(model)                                  # rpart-style tree text
 dot = model.to_dot()                         # graphviz does the layout
-pgv.AGraph(string=dot).draw("docs/assets/quickstart_tree.svg", prog="dot")
+print(dot)  # Install pygraphviz and Graphviz to render this DOT string.
 ```
 
 Output:
@@ -48,7 +50,7 @@ node), split, n, deviance, yval
       13) x0>=5 10 0.12400 17.14000 *
      7) x0>=6 10 0.12400 19.16000 *
 
-wrote docs/assets/quickstart_tree.svg (rendered by graphviz)
+DOT output omitted
 ```
 
 Three things to notice:

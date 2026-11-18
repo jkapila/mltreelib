@@ -15,20 +15,20 @@ Script: [`examples/timeseries_forecasting.py`](<https://github.com/jkapila/mltre
   weekday    : [2.0, 2.0, 3.0, 3.0]
   weekend    : [0.0, 0.0, 0.0, 0.0]
   lag_1d     : [None, None, 150.0, 100.0] (first day per store is None)
-  win7_mean  : [150.0, 100.0, 150.25, 100.25]
+  win7_mean  : [None, None, 150.0, 100.0]
 
 == 3. ModelTree Fit (Linear leaves with regularized trend) ==
-  test RMSE : 0.512
-  test MAE  : 0.435
-  test R2   : 1.000
+  test RMSE : 2.693
+  test MAE  : 2.562
+  test R2   : 0.991
 
 == 4. Out-of-Time Predictions vs Actuals (first 6 rows) ==
-  date=2025-03-12 store=store_nyc  actual=185.0 predicted=184.8
-  date=2025-03-12 store=store_lon  actual=135.0 predicted=134.8
-  date=2025-03-13 store=store_nyc  actual=185.5 predicted=185.6
-  date=2025-03-13 store=store_lon  actual=135.5 predicted=135.6
-  date=2025-03-14 store=store_nyc  actual=186.0 predicted=186.3
-  date=2025-03-14 store=store_lon  actual=136.0 predicted=136.3
+  date=2025-03-12 store=store_nyc  actual=185.0 predicted=182.3
+  date=2025-03-12 store=store_lon  actual=135.0 predicted=133.4
+  date=2025-03-13 store=store_nyc  actual=185.5 predicted=182.9
+  date=2025-03-13 store=store_lon  actual=135.5 predicted=134.0
+  date=2025-03-14 store=store_nyc  actual=186.0 predicted=183.5
+  date=2025-03-14 store=store_lon  actual=136.0 predicted=134.7
 ```
 
 ## How to use
@@ -53,23 +53,25 @@ cal = calendar_features(dates, hemisphere="north")
 from mltreelib import lag_by_days
 
 # Shift values by 7 calendar days within each store key:
-lag7 = lag_by_days(keys, dates, sales, lag_days=7)
+lag7 = lag_by_days(keys, dates, sales, 7)
 ```
 
 Unobserved history produces `None`, which `ModelTree` natively routes without requiring imputation.
 
 ### Trailing window aggregates
 
-Compute rolling trailing metrics over calendar windows:
+A window includes the current day. For a one-day-ahead forecast, shift the window by one calendar day. This example assumes the previous day's actual sales are available before each forecast, including during the test period. It does not evaluate a fixed-origin multi-day forecast.
 
 ```
-from mltreelib import windowed_transform
+from mltreelib import lag_by_days, windowed_transform
 
 # 7-day trailing mean per entity:
-rolling_mean = windowed_transform(keys, dates, sales, window_days=7, kind="mean")
+same_day_mean = windowed_transform(keys, dates, sales, 7, kind="mean")
+rolling_mean = lag_by_days(keys, dates, same_day_mean, 1)
 
 # 14-day trailing sum:
-rolling_sum = windowed_transform(keys, dates, sales, window_days=14, kind="sum")
+same_day_sum = windowed_transform(keys, dates, sales, 14, kind="sum")
+rolling_sum = lag_by_days(keys, dates, same_day_sum, 1)
 ```
 
 ### Training ModelTree on time panels

@@ -1,81 +1,47 @@
 # End-to-end walkthrough — churn
 
-The whole story on one real problem: predict who leaves the bank. **Typed ingest** throughout — `country` and `gender` enter the tree as **levels** (a distinct value is a level; the split search partitions level sets), NAs route as-is, and nothing is ever encoded for the tree. `ModelTree` natively accepts raw string categoricals directly when `dtypes=["categorical", ...]` is specified, or strings can be pre-mapped using `IndexMapper` if building an explicit preprocessing pipeline. The tree is a regressor; fit on a 0/1 churn target it is a solid, fully interpretable baseline (threshold at 0.5).
+Predict bank churn using raw category labels and missing predictors. `ModelTree` accepts them directly with declared types. This example uses a regression score as a baseline; it is not necessarily a calibrated probability.
 
 Script: [`examples/churn_demo.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/churn_demo.py>) (`uv run --with pandas --with pyarrow --with matplotlib python examples/churn_demo.py`).
 
 ## Typed ingest
 
+The script requires pandas and the local parquet dataset. It uses a deterministic row split for demonstration. For production, choose a time-aware or group-aware split when the data requires it. No category encoder or missing-value imputation is used. The model is a regression baseline; its scores are not guaranteed calibrated probabilities. Choose thresholds on validation data using decision costs.
+
 ```
-from mltreelib import IndexMapper, Metrics, ModelTree
+import pandas as pd
+from mltreelib import Metrics, ModelTree
 
 df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
-y = (df["churn"] == "Yes").astype(float).tolist()
+y = (df["churn"] == "Yes").astype(float).tolist()  # churn: No/Yes -> 0/1
+print(f"rows: {len(df)}   churn rate: {sum(y) / len(y):.3f}")
 
+# Pass raw categories and missing predictors directly to ModelTree.
 cols = [c for c in df.columns if c != "churn"]
-mappers = {}
-for col in ("country", "gender"):
-    m = IndexMapper()
-    m.fit(col, [None if pd.isna(v) else str(v) for v in df[col]])
-    mappers[col] = m
+n_train = int(0.8 * len(df))
+dtypes = ["categorical" if col in ("country", "gender", "credit_card", "active_member") else "numeric" for col in cols]
+X = [[None if pd.isna(v) else v for v in row] for row in df[cols].itertuples(index=False, name=None)]
+print("columns (xN index -> name, dtype):")
+print(
+    "  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes)))
+)
 
-dtypes, columns = [], []
-for col in cols:
-    raw = [None if pd.isna(v) else v for v in df[col]]
-    if col in mappers:
-        dtypes.append("categorical")
-        columns.append(mappers[col].transform(col, [None if v is None else str(v) for v in raw]))
-    else:
-        dtypes.append("numeric")
-        columns.append([None if v is None else float(v) for v in raw])
-X = [list(row) for row in zip(*columns)]
+# Deterministic 80/20 split.
+xtr, ytr = X[:n_train], y[:n_train]
+xte, yte = X[n_train:], y[n_train:]
 
 model = ModelTree(max_depth=4, min_rows=40)
-model.fit(xtr, ytr, dtypes=dtypes)
+model.fit(xtr, ytr, dtypes=dtypes, col_names=cols)
+pred = model.predict(xte)
+
+reg = Metrics().regression(yte, pred)
+hard = [1.0 if p >= 0.5 else 0.0 for p in pred]
+clf = Metrics().classification([int(v) for v in yte], [int(v) for v in hard])
+print(f"test rmse: {reg['rmse']:.3f}  r2: {reg['r2']:.3f}")
+print(f"accuracy @0.5: {clf['accuracy']:.3f}  macro f1: {clf['macro_f1']:.3f}")
+print(f"confusion: {clf['confusion']}")
 ```
 
-## Output
+## Interpretation
 
-```
-rows: 10000   churn rate: 0.204
-columns (xN index -> name, dtype):
-  x0=credit_score(nume), x1=country(cate), x2=gender(cate), x3=age(nume), x4=tenure(nume), x5=balance(nume), x6=products_number(nume), x7=credit_card(nume), x8=active_member(nume), x9=estimated_salary(nume)
-test rmse: 0.344  r2: 0.275
-accuracy @0.5: 0.852  macro f1: 0.721
-confusion: [[1535.0, 55.0], [242.0, 168.0]]
-
-n= 8000
-
-node), split, n, deviance, yval
-      * denotes terminal node
-
- 1) root 8000 1296.108875 0.20337500
-   2) x8< 0 3881 756.173151 0.26513785
-     4) x6< 2 3737 682.729997 0.24056730
-       8) x6< 1 1978 461.367543 0.37057634
-        16) x5< 98635.77 713 171.279102 0.40112202 *
-        17) x5>=98635.77 1265 289.048221 0.35335968 *
-       9) x6>=1 1759 150.334281 0.09437180
-        18) x3< 44 1552 84.780928 0.05798969 *
-        19) x3>=44 207 48.096618 0.36714976 *
-     5) x6>=2 144 12.638889 0.90277778
-      10) x3< 42 65 10.984615 0.78461538 *
-      11) x3>=42 79 0.000000 1.00000000 *
-   3) x8>=0 4119 511.181840 0.14518087
-     6) x6< 2 3996 437.437437 0.12512513
-      12) x0< 768 3509 388.566543 0.12681676
-        24) x3< 45 2666 208.501125 0.08552138 *
-        25) x3>=45 843 161.141163 0.25741400 *
-      13) x0>=768 487 48.788501 0.11293634
-        26) x2 in {0} 272 18.529412 0.07352941 *
-        27) x2 not-in {0} 215 29.302326 0.16279070 *
-     7) x6>=2 123 19.918699 0.79674797
-      14) x0< 614 43 6.511628 0.81395349 *
-      15) x0>=614 80 13.387500 0.78750000 *
-
-wrote docs/assets/churn_tree.svg (rendered by graphviz)
-```
-
-Read the tree top-down: `x8` is `active_member` (the strongest signal), `x6` is `products_number` (2+ products almost always churns — leaves 5/7 at 0.78–0.90), `x3` is `age`, `x5` is `balance`. And the categorical split renders as level sets: `x2 in {0}` is `gender` — one level against the rest, exactly as the split search treats it (no dummies anywhere).
-
-The tree diagram (left-to-right) is `churn_tree.svg`; the explanation charts for the same fit — importance and the breakdown waterfall of one row — live in [Visualization](<https://jkapila.github.io/mltreelib/examples/visualization/index.md>).
+Inspect the named splits and leaf support before using a segment for decisions. A predictive association does not establish the effect of an intervention. The full script prints the fitted tree and writes a DOT file or diagram.

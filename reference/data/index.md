@@ -14,7 +14,7 @@ The data &amp; feature layer: everything that turns raw columns into numeric mat
 
 ## Categorical encoders
 
-All follow `fit(values)` → `transform(values)` with `None` passed through as missing; unseen levels map to missing.
+Encoder fit and transform signatures differ. Target-based encoders also need training targets. Missing and unseen-level behavior depends on the encoder. See the individual API and test the behavior required by your workflow.
 
 | encoder | shape |
 | --- | --- |
@@ -56,7 +56,7 @@ Full docstrings and every method: the [full generated API](<https://jkapila.gith
 
 **`DatasetBuilder(n_category=None, na_policy='allow', digits=None, add_intercept=False)`** — ingest any raw columns into the typed dataset. `add_categorical(name, values)`, `add_numeric(name, values)`, `build()` → `{"columns", "dtypes", "na_counts", "n_rows", "n_cols"}`.
 
-**Encoders** — all: `fit(values)` → `transform(values)` (dict of columns), `levels()`; `None` = missing, unseen → missing. Constructors vary per encoder (see the table above); every arg is optional.
+**Encoders** — signatures, output shapes and handling of missing or unseen levels vary. Consult the individual API before constructing a pipeline.
 
 **`VariableScaler(normalize)` / `GroupedScaler`** — `fit` / `transform` / `inverse_transform` (invertible by construction).
 

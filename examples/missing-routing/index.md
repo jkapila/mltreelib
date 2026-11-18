@@ -1,6 +1,6 @@
 # Missing data routing &amp; surrogate splits
 
-In `mltreelib`, missing data is a first-class citizen. Missing entries (`None` in Python, `NaN` normalized at ingest) never raise an error and do not require prior imputation.
+In `mltreelib`, missing data is a first-class citizen. `ModelTree` supports missing predictor values (`None` and NaN) in the workflows below. Input validation and missing-target behavior vary by operation. Check the contract for the selected estimator.
 
 `ModelTree` resolves missing data through three mechanisms: 1. **Learned missing directions (`missing_left`)**: during split search, the tree evaluates both sending missing values left vs. right, selecting whichever branch minimizes error. 2. **Surrogate splits (`maxsurrogate=N`)**: when a split feature is missing at prediction time, the highest-agreement surrogate split directs the sample. 3. **NA indicator coefficients in linear leaves**: linear leaves estimate dedicated indicator coefficients for missing predictors so within-leaf regressions remain valid.
 

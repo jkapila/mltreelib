@@ -1,6 +1,6 @@
 # Categorical encoders deep-dive
 
-Comprehensive tour of all 13 categorical encoders in `mltreelib` evaluated on real churn data (5,000 rows, 4 categorical columns).
+Tour of categorical encoders in `mltreelib` evaluated on real churn data (5,000 rows, 4 categorical columns).
 
 Script: [`examples/encoding_demo.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/encoding_demo.py>) (`uv run --with pandas python examples/encoding_demo.py`).
 
@@ -30,7 +30,7 @@ TargetEncoder (smoothing=10) churn estimate, lowest levels : 45=0.05792, 11=0.06
 TargetEncoder churn estimate, highest levels: 4=0.2486, 31=0.2411, 47=0.2353, 43=0.2176, 26=0.2056
 LeaveOneOut fit_transform (leakage-aware) rows 0..4: ['0.1023', '0.1613', '0.1798', '0.1593', '0.05882']
 CatBoost ordered TS      rows 0..4           : ['0.07624', '0.15', '0.1685', '0.1883', '0.06456']
-ordered TS values for level '3': 89 distinct per-row values (plain TargetEncoder gives exactly 1 — that difference is the leakage guard)
+ordered TS values for level '3': 89 distinct per-row values (plain TargetEncoder gives exactly 1 — different per-row statistics do not by themselves prove leakage is absent)
 M-estimate (m=20) row 0: 0.1085 (shrunk harder toward 0.1414)
 
 ==============================================================================
@@ -52,9 +52,11 @@ Embedding regression on 'account_length', rows 0..4: ['100.3', '100.3', '100.3',
 
 ## Leakage Protection in Supervised Encoders
 
-Directly mapping high-cardinality levels to their target mean leads to target leakage on train data. `mltreelib` provides three built-in mitigations: - **`CatBoostEncoder`**: Ordered target statistics using seeded random row permutations. For level `'3'` (which appears 89 times), `CatBoostEncoder` assigns 89 distinct incremental target statistic values on train, completely guarding against memorization. - **`LeaveOneOutEncoder`**: Subtracts the target of the current row: \\((S - y\_i) / (n - 1)\\). - **`MEstimatorEncoder`**: Shrinks small-count categories toward the global prior: \\((S + m \\cdot p) / (n + m)\\).
+Target-derived features can leak a row's outcome into its own representation. Split data first. Fit encoders only on training folds, and use out-of-fold training representations when appropriate. Fit the final encoder on the training set before transforming a held-out set. The following methods address different aspects of this problem: - **`CatBoostEncoder`**: Ordered target statistics using seeded random row permutations. For level `'3'` (which appears 89 times), `CatBoostEncoder` assigns 89 distinct incremental target statistic values on train, reducing direct reuse of the current row target. - **`LeaveOneOutEncoder`**: Subtracts the target of the current row: \\((S - y\_i) / (n - 1)\\). - **`MEstimatorEncoder`**: Shrinks small-count categories toward the global prior, but does not by itself prevent target leakage: \\((S + m \\cdot p) / (n + m)\\).
 
 ## Weight of Evidence &amp; Neural Embeddings
 
 - **`WoEEncoder`**: Computes \\(\\ln(\\text{distribution of non-events} / \\text{distribution of events})\\) for credit risk and churn scorecards.
 - **`EmbeddingEncoder`**: Trains dense entity embeddings directly in pure Rust via stochastic gradient descent with an SGD optimizer and cosine decay schedule.
+
+Ordered statistics and leave-one-out encoding do not replace an independent evaluation. For grouped or time-ordered data, construct folds that respect groups or time. The training accuracy above is illustrative and is not a generalization estimate.

@@ -11,13 +11,13 @@ In manufacturing facilities, wind turbine farms, and oil &amp; gas pipelines, se
 
 Standard machine learning pipelines default to synthetic imputation: filling missing readings with the historical mean, median, or KNN interpolations.
 
-In predictive maintenance, **this destroys signal**: - A missing temperature reading often means the sensor overheated and faulted, not that it was at the average temperature (e.g. 25°C). - Imputing medians distorts rolling volatility, dampens trend acceleration, and triggers false negatives before catastrophic bearing failures.
+In predictive maintenance, imputation can obscure a useful missingness pattern: - A missing temperature reading can reflect a sensor fault, not that it was at the average temperature (e.g. 25°C). - Imputation can change rolling statistics and model decisions. Its effect depends on the data and method.
 
 ---
 
 ## Native Routing and Piecewise Linear Models
 
-`mltreelib` solves industrial telemetry through two mechanisms:
+`ModelTree` supports two mechanisms for evaluating missing telemetry:
 
 1. **Native Missing Routing**: Missing sensor values (`None` / `NaN`) are preserved at ingest and routed through primary and surrogate split logic (`maxsurrogate=1`). The tree learns directly whether sensor dropout itself signals imminent failure.
 2. **Cubist-Style Linear Leaves**: Instead of predicting constant step-functions, leaves fit localized multivariate linear regressions over active operational telemetry.
@@ -47,7 +47,7 @@ rul_predictions = model.predict(X_test)
 
 ## Data Analysis &amp; Sensor Telemetry Profile
 
-In our bearing degradation benchmark (\\(N=1,000\\) machine monitoring hours), telemetry captures the following dynamics:
+The following is a synthetic bearing-degradation illustration (\\(N=1,000\\) simulated monitoring hours), not an industrial validation dataset:
 
 | Sensor Channel | Operational Range | Dropout Mechanism | Failure Degradation Impact |
 | :--- | :---: | :---: | :--- |
@@ -68,7 +68,11 @@ Notice the dual mechanics: - **Decision Partitioning**: The tree isolates regime
 
 ## Model Evaluation &amp; Diagnostics
 
-Evaluating residual errors and split importance validates that native missing-value routing captures the physical failure mechanics:
+Residuals and split importance describe this synthetic fit. They do not validate the physical failure mechanism:
 
 1. **Actual vs. Predicted RUL**: Residuals cling tightly to the identity diagonal (\\(R^2 \> 0.85\\), RMSE \\(\< 15\\) hours), with zero artifact clustering from imputed medians.
-2. **Feature Importance Shares**: Split gain importance confirms that `bearing_temp` and `vibration_rms` drive the macro regime partitions, while `oil_pressure` and its missing-dropout indicators calibrate fine-grained leaf survival curves.
+2. **Feature Importance Shares**: Split gain importance shows that `bearing_temp` and `vibration_rms` contribute to the macro regime partitions, while `oil_pressure` and its missing-dropout indicators contribute to the fitted leaf model.
+
+## How do decision trees handle missing sensor values?
+
+A fitted `ModelTree` learns a missing direction at a split and can use surrogate splits. Compare it with appropriate imputation baselines on an independent, time-ordered dataset. The [missing-data guide](<https://jkapila.github.io/mltreelib/examples/missing-routing/index.md>) shows the mechanisms and the [forecasting example](<https://jkapila.github.io/mltreelib/examples/timeseries-forecasting/index.md>) explains information available at prediction time.

@@ -17,6 +17,7 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 | --- | --- |
 | install it | [Installation](<https://jkapila.github.io/mltreelib/installation/index.md>) |
 | see it work in 30 seconds | [Quickstart](<https://jkapila.github.io/mltreelib/quickstart/index.md>) |
+| choose a modeling task | [Practical modeling pathways](<https://jkapila.github.io/mltreelib/guides/index.md>) |
 | solve a real problem | [Examples — end-to-end walkthrough](<https://jkapila.github.io/mltreelib/examples/walkthrough/index.md>) |
 | wrangle data &amp; encodings | [Examples — Data Processing](<https://jkapila.github.io/mltreelib/examples/data-processing/index.md>) |
 | know every knob | [Examples — Model building &amp; predictions](<https://jkapila.github.io/mltreelib/examples/model-building/index.md>) |
@@ -32,18 +33,12 @@ uv run python examples/churn_demo.py             # end-to-end on real data
 
 Explore our in-depth architectural and commercial case studies:
 
-1. **[Why India's Digital Lending Boom Needs Glass-Box Trees Over Black-Box Boosters](<https://jkapila.github.io/mltreelib/blog/why-credit-scoring-needs-glass-box-trees/index.md>)**  
-   *Regulatory Compliance &amp; Fintech*: Monotonic shape constraints, WOE binning, and auditable credit scorecards.
-2. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](<https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/index.md>)**  
-   *Industrie 4.0 &amp; Sensor Telemetry*: Why synthetic imputation corrupts failure dynamics, and how native surrogate routing and linear leaves solve sensor blackouts.
-3. **[Uplift Modeling from Scratch: Maximizing ROI with Honest Causal Trees](<https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/index.md>)**  
-   *Commercial Decision Optimization*: Why standard response modeling fails, and how sample-split honest trees isolate incremental treatment uplift.
-4. **[Why We Rebuilt Quinlan's Cubist and C5.0 in Rust](<https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/index.md>)**  
-   *Core Systems ML*: Modernizing 1990s C rule engines with memory-safe SIMD Cholesky factorization in Rust.
-5. **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](<https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/index.md>)**  
-   *Actuarial &amp; Risk Modeling*: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
-6. **[Breaking the Step Function: Why Model Trees Beat Gradient Boosters on Continuous Physics](<https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/index.md>)**  
-   *Systems ML &amp; Physics-Informed ML*: Overcoming orthogonal step staircases on continuous physical manifolds with piecewise linear leaves and hierarchical smoothing.
+1. **[Decision Trees for Credit Scoring](<https://jkapila.github.io/mltreelib/blog/why-credit-scoring-needs-glass-box-trees/index.md>)** *Regulatory Compliance &amp; Fintech*: How tree paths, constraints and calibration support model review.
+2. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](<https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/index.md>)** *Industrie 4.0 &amp; Sensor Telemetry*: A synthetic example of missing sensor values and tree routing.
+3. **[Uplift Modeling with Causal Trees](<https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/index.md>)** *Commercial Decision Optimization*: How an honest causal tree compares targeting policies on a randomized held-out trial.
+4. **[Cubist Models and C5.0 Rules](<https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/index.md>)** *Core Systems ML*: Linear leaves, extracted rules and the contracts still to check.
+5. **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](<https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/index.md>)** *Actuarial &amp; Risk Modeling*: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
+6. **[Breaking the Step Function: Model Trees and Step Functions for Continuous Regression](<https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/index.md>)** *Systems ML &amp; Physics-Informed ML*: How linear leaves represent local trends and why fair comparisons need held-out data.
 
 > [!TIP]
 >

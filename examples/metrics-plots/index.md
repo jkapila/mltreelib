@@ -9,57 +9,7 @@ uv run python examples/metrics_showcase.py
 
 ## The full surface, in one run
 
-```
-churn: 2000 test rows, event rate 0.205
-
-== reports ==
-regression: rmse 0.328  r2 0.342  deciles 10
-classification: accuracy 0.851  macro f1 0.734  confusion [[1515.0, 75.0], [223.0, 187.0]]
-regression_by_group: ['high', 'low']
-classification_by_group: {'high': 0.75, 'low': 0.952}
-
-== curves ==
-roc: auc 0.849 over 1799 points
-pr:  ap 0.684
-ks:  0.554 at score 0.174 (tpr 0.79 / fpr 0.23)
-gain/decile 1: capture 0.390  lift 3.90
-calibration: 10 non-empty bins
-
-== probability & margin scores ==
-log_loss 0.441  brier 0.107  hinge 0.417
-
-== classification scorecard ==
-  accuracy=0.851  balanced_accuracy=0.704  precision_macro=0.793  recall_macro=0.704  f1_macro=0.734  precision_micro=0.851  recall_micro=0.851  f1_micro=0.851  precision_weighted=0.839  recall_weighted=0.851  f1_weighted=0.838  mcc=0.489  jaccard_macro=0.611  jaccard_micro=0.741  jaccard_weighted=0.743  hamming_loss=0.149  zero_one_loss=0.149
-
-== multilabel ==
-  subset_accuracy 1.000  hamming 0.000  lrap 1.000  coverage 1.83
-
-== agreement ==
-  weighted_kappa(none): 0.472
-  weighted_kappa(linear): 0.472
-  weighted_kappa(quadratic): 0.472
-
-== stability ==
-  PSI (score halves): 0.0104
-  CSI (age train vs test): 0.0055
-
-== double lift (tree vs mean baseline) ==
-  bucket 1: n=400 actual=0.593 tree=0.632 base=0.205
-  bucket 2: n=400 actual=0.240 tree=0.224 base=0.205
-  bucket 3: n=400 actual=0.115 tree=0.103 base=0.205
-  bucket 4: n=400 actual=0.048 tree=0.049 base=0.205
-  bucket 5: n=400 actual=0.030 tree=0.008 base=0.205
-
-== pairwise distances ==
-  euclidean    [[5.0, 0.0], [3.606, 1.414]]
-  manhattan    [[7.0, 0.0], [5.0, 2.0]]
-  chebyshev    [[4.0, 0.0], [3.0, 1.0]]
-  minkowski    [[5.0, 0.0], [3.606, 1.414]]
-  cosine       [[1.0, 1.0], [0.01, 1.0]]
-  correlation  [[1.0, 1.0], [1.0, 1.0]]
-  hamming      [[1.0, 0.0], [1.0, 1.0]]
-  jaccard      [[1.0, 0.0], [0.0, 1.0]]
-```
+The script fits `ModelTree` on raw categorical labels and evaluates a held-out slice. It computes its comparison baseline from the training outcomes. The break-down chart uses a separately fitted numeric-only model because `break_down` rejected raw strings in a tested mixed row. A threshold of 0.5 is illustrative; select operational thresholds on validation data. The [evaluation pathway](<https://jkapila.github.io/mltreelib/guides/evaluation/index.md>) demonstrates that sequence with reproducible synthetic data.
 
 ## The chart surface
 
