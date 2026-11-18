@@ -107,4 +107,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.4.4"
+__version__ = "0.4.5"
