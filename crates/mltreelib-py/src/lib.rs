@@ -2136,6 +2136,15 @@ fn extract_leaf_control<'py>(
                 if let Some(item) = dict.get_item("max_classes")? {
                     c.max_classes = item.extract::<usize>()?;
                 }
+                if let Some(item) = dict.get_item("leaf_na_policy")? {
+                    let s = item.extract::<String>()?;
+                    c.leaf_na_policy = match s.as_str() {
+                        "drop_fallback" | "drop" | "fallback" => mltreelib_core::leaf::LeafNaPolicy::DropFallback,
+                        "impute_local" | "impute" | "local" => mltreelib_core::leaf::LeafNaPolicy::ImputeLocal,
+                        "indicator" => mltreelib_core::leaf::LeafNaPolicy::Indicator,
+                        other => return Err(PyValueError::new_err(format!("unrecognized leaf_na_policy '{other}' in control dict"))),
+                    };
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2152,6 +2161,7 @@ fn extract_leaf_control<'py>(
                             | "retrain_cols"
                             | "shrinkage"
                             | "max_classes"
+                            | "leaf_na_policy"
                     ) {
                         if let Ok(num) = v.extract::<f64>() {
                             c.extra.insert(key, num);
@@ -2283,7 +2293,8 @@ impl PyLeafControl {
         treatments = None,
         n_classes = None,
         shrinkage = 0.0,
-        max_classes = 256
+        max_classes = 256,
+        leaf_na_policy = "drop_fallback"
     ))]
     fn new(
         leaf: &str,
@@ -2313,6 +2324,7 @@ impl PyLeafControl {
         n_classes: Option<usize>,
         shrinkage: f64,
         max_classes: usize,
+        leaf_na_policy: &str,
     ) -> PyResult<Self> {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
@@ -2355,6 +2367,12 @@ impl PyLeafControl {
             "ga" | "rcga" | "genetic" => mltreelib_core::leaf::LeafSolver::GeneticAlgorithm,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf_solver '{other}'"))),
         };
+        let leaf_na_policy_enum = match leaf_na_policy {
+            "drop_fallback" | "drop" | "fallback" => mltreelib_core::leaf::LeafNaPolicy::DropFallback,
+            "impute_local" | "impute" | "local" => mltreelib_core::leaf::LeafNaPolicy::ImputeLocal,
+            "indicator" => mltreelib_core::leaf::LeafNaPolicy::Indicator,
+            other => return Err(PyValueError::new_err(format!("unrecognized leaf_na_policy '{other}', expected 'drop_fallback', 'impute_local', or 'indicator'"))),
+        };
         let policy = match leaf_cols {
             "all" => LeafCols::All,
             "path_used" | "path" => LeafCols::PathUsed,
@@ -2393,6 +2411,7 @@ impl PyLeafControl {
                 verbose: 0,
                 shrinkage,
                 max_classes,
+                leaf_na_policy: leaf_na_policy_enum,
             },
         })
     }
@@ -2439,6 +2458,15 @@ impl PyLeafControl {
             mltreelib_core::leaf::LeafSolver::Shade => "shade".to_string(),
             mltreelib_core::leaf::LeafSolver::NaturalGradient => "nes".to_string(),
             mltreelib_core::leaf::LeafSolver::GeneticAlgorithm => "ga".to_string(),
+        }
+    }
+
+    #[getter]
+    fn get_leaf_na_policy(&self) -> String {
+        match self.inner.leaf_na_policy {
+            mltreelib_core::leaf::LeafNaPolicy::DropFallback => "drop_fallback".to_string(),
+            mltreelib_core::leaf::LeafNaPolicy::ImputeLocal => "impute_local".to_string(),
+            mltreelib_core::leaf::LeafNaPolicy::Indicator => "indicator".to_string(),
         }
     }
 
@@ -2927,13 +2955,13 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0, leaf_family = "gaussian", leaf_solver = "irls", split_eval = "fast",
+        verbose = 0, leaf_family = "gaussian", leaf_solver = "lbfgs", split_eval = "fast",
         presort = false, events = None, treatments = None, train_groups = true, train_ids = false, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
         knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
         knn_gamma = None, knn_p = 2.0,
-        shrinkage = 0.0, max_classes = 256, preset = None,
+        shrinkage = 0.0, max_classes = 256, leaf_na_policy = "drop_fallback", preset = None,
         control = None, leaf_control = None
     ))]
     fn new(
@@ -3000,6 +3028,7 @@ impl PyModelTree {
         knn_p: f64,
         shrinkage: f64,
         max_classes: usize,
+        leaf_na_policy: &str,
         preset: Option<&str>,
         control: Option<Bound<'_, PyAny>>,
         leaf_control: Option<Bound<'_, PyAny>>,
@@ -3108,6 +3137,16 @@ impl PyModelTree {
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other}"
+                )))
+            }
+        };
+        let leaf_na_policy_enum = match leaf_na_policy {
+            "drop_fallback" | "drop" | "fallback" => mltreelib_core::leaf::LeafNaPolicy::DropFallback,
+            "impute_local" | "impute" | "local" => mltreelib_core::leaf::LeafNaPolicy::ImputeLocal,
+            "indicator" => mltreelib_core::leaf::LeafNaPolicy::Indicator,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "leaf_na_policy must be 'drop_fallback', 'impute_local', or 'indicator', got {other}"
                 )))
             }
         };
@@ -3309,6 +3348,7 @@ impl PyModelTree {
             knn_p,
             shrinkage,
             max_classes,
+            leaf_na_policy: leaf_na_policy_enum,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(

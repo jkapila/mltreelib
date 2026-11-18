@@ -495,7 +495,7 @@ def test_model_tree_smoke():
     x: list[list[object]] = [[xi[0]] for xi in x_init]
     x[0] = [None]  # NA row trains
     y[0] = 7.0
-    t = ModelTree(max_depth=3, min_rows=3, leaf="linear")
+    t = ModelTree(max_depth=3, min_rows=3, leaf="linear", leaf_na_policy="indicator")
     t.fit(x, y)
     preds = t.predict(x)
     assert len(preds) == 20 and all(isinstance(p, float) for p in preds)

@@ -46,6 +46,7 @@ pub struct ColumnSliceView<'a> {
     pub rows: &'a [usize],
     pub chosen: &'a [usize],
     pub with_indicators: bool,
+    pub impute_means: Option<&'a [f64]>,
 }
 
 impl<'a> ColumnSliceView<'a> {
@@ -64,6 +65,27 @@ impl<'a> ColumnSliceView<'a> {
             rows,
             chosen,
             with_indicators,
+            impute_means: None,
+        }
+    }
+
+    pub fn new_with_imputation(
+        cols: &'a [Vec<Option<f64>>],
+        y: &'a [f64],
+        w: &'a [f64],
+        rows: &'a [usize],
+        chosen: &'a [usize],
+        with_indicators: bool,
+        impute_means: Option<&'a [f64]>,
+    ) -> Self {
+        Self {
+            cols,
+            y,
+            w,
+            rows,
+            chosen,
+            with_indicators,
+            impute_means,
         }
     }
 }
@@ -100,7 +122,11 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
             match self.cols[c][r] {
                 Some(v) => eta += coef[1 + k] * v,
                 None => {
-                    if self.with_indicators {
+                    if let Some(means) = self.impute_means {
+                        if let Some(&mean_val) = means.get(k) {
+                            eta += coef[1 + k] * mean_val;
+                        }
+                    } else if self.with_indicators {
                         eta += coef[1 + nc + k];
                     }
                 }
@@ -122,7 +148,8 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                     }
                 }
                 None => {
-                    out[1 + k] = 0.0;
+                    let imp = self.impute_means.and_then(|m| m.get(k).copied()).unwrap_or(0.0);
+                    out[1 + k] = imp;
                     if self.with_indicators {
                         out[1 + nc + k] = 1.0;
                     }
@@ -164,7 +191,10 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                 1.0
             } else if j <= nc {
                 let col = self.chosen[j - 1];
-                self.cols[col][r].unwrap_or(0.0)
+                match self.cols[col][r] {
+                    Some(v) => v,
+                    None => self.impute_means.and_then(|m| m.get(j - 1).copied()).unwrap_or(0.0),
+                }
             } else {
                 let col = self.chosen[j - 1 - nc];
                 if self.cols[col][r].is_none() { 1.0 } else { 0.0 }
@@ -189,7 +219,10 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                 1.0
             } else if j <= nc {
                 let col = self.chosen[j - 1];
-                self.cols[col][r].unwrap_or(0.0)
+                match self.cols[col][r] {
+                    Some(v) => v,
+                    None => self.impute_means.and_then(|m| m.get(j - 1).copied()).unwrap_or(0.0),
+                }
             } else {
                 let col = self.chosen[j - 1 - nc];
                 if self.cols[col][r].is_none() { 1.0 } else { 0.0 }

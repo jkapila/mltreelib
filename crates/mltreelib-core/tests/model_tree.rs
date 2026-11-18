@@ -3514,6 +3514,95 @@ fn test_hierarchical_leaf_shrinkage() {
     }
 }
 
+#[test]
+fn test_leaf_na_policy_drop_fallback() {
+    use mltreelib_core::leaf::LeafNaPolicy;
+    // 20 points: y = 2.0 + 3.0 * x.
+    // Rows 0..16 have complete x. Rows 16..20 have x = None with y = 100.0.
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..16 {
+        let v = i as f64;
+        x.push(vec![Some(v)]);
+        y.push(Some(2.0 + 3.0 * v));
+    }
+    for _ in 16..20 {
+        x.push(vec![None]);
+        y.push(Some(100.0));
+    }
+
+    let p = ModelTreeParams {
+        max_depth: 0,
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        leaf_na_policy: LeafNaPolicy::DropFallback,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let (leaf, _) = tree.leaves()[0].clone();
+    let m = leaf.linear.as_ref().unwrap();
+    // Slope was fitted ONLY on the 16 complete rows, ignoring the None rows with y=100!
+    assert!((m.coef[0] - 3.0).abs() < 1e-5, "slope must be 3.0, got {}", m.coef[0]);
+    assert!((m.intercept - 2.0).abs() < 1e-5, "intercept must be 2.0, got {}", m.intercept);
+    assert!(m.na_coef.is_empty(), "na_coef must be empty in DropFallback");
+
+    // Test predict:
+    // Observed sample evaluates linear model: 2.0 + 3.0 * 5.0 = 17.0
+    let pred_obs = tree.predict(&[vec![Some(5.0)]])[0];
+    assert!((pred_obs - 17.0).abs() < 1e-5);
+
+    // Missing sample falls back to 0D leaf response mean!
+    // Total y sum: sum(2 + 3*i for i in 0..16) + 4 * 100 = (32 + 3 * 120) + 400 = 392 + 400 = 792.
+    // Mean = 792 / 20 = 39.6
+    let pred_na = tree.predict(&[vec![None]])[0];
+    assert!((pred_na - 39.6).abs() < 1e-5, "NA row must fall back to leaf response mean 39.6, got {}", pred_na);
+}
+
+#[test]
+fn test_leaf_na_policy_impute_local() {
+    use mltreelib_core::leaf::LeafNaPolicy;
+    // 20 points:
+    // Feature 0: x0 observed in 15 rows, None in 5 rows.
+    // Feature 1: x1 is 100% None in all 20 rows! (Feature subsetting must drop x1 from this leaf).
+    // Target: y = 5.0 + 2.0 * x0.
+    let mut x: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut y: Vec<Option<f64>> = Vec::new();
+    for i in 0..15 {
+        let v = (i * 2) as f64;
+        x.push(vec![Some(v), None]);
+        y.push(Some(5.0 + 2.0 * v));
+    }
+    // Observed x0 values: 0, 2, 4, ..., 28. Sum = 210, Count = 15, Mean = 14.0.
+    for _ in 15..20 {
+        x.push(vec![None, None]);
+        // Target near mean: 5.0 + 2.0 * 14.0 = 33.0
+        y.push(Some(33.0));
+    }
+
+    let p = ModelTreeParams {
+        max_depth: 0,
+        min_rows: 5,
+        l1: 0.0,
+        l2: 0.0,
+        leaf_na_policy: LeafNaPolicy::ImputeLocal,
+        ..Default::default()
+    };
+    let tree = ModelTree::fit(&x, &y, p).unwrap();
+    let (leaf, _) = tree.leaves()[0].clone();
+    let m = leaf.linear.as_ref().unwrap();
+
+    // Feature 1 was 100% missing -> dropped! Active cols should only contain feature 0.
+    assert_eq!(m.cols, vec![0], "Feature 1 must be dropped due to 100% missingness");
+    assert_eq!(m.feature_means.len(), 1);
+    assert!((m.feature_means[0].unwrap() - 14.0).abs() < 1e-5, "Stored leaf mean must be 14.0");
+
+    // Prediction with NA in feature 0 gets imputed with stored leaf mean (14.0):
+    // 5.0 + 2.0 * 14.0 = 33.0
+    let pred_na = tree.predict(&[vec![None, None]])[0];
+    assert!((pred_na - 33.0).abs() < 1e-4, "Expected 33.0 with local imputation, got {}", pred_na);
+}
+
 
 
 

@@ -294,6 +294,7 @@ pub struct LinearModel {
     pub cols: Vec<usize>,
     pub coef: Vec<f64>,
     pub na_coef: Vec<f64>,
+    pub feature_means: Vec<Option<f64>>,
     pub intercept: f64,
     pub summary: Option<RegressionSummary>,
 }
@@ -304,10 +305,29 @@ impl LinearModel {
             cols,
             coef,
             na_coef,
+            feature_means: Vec::new(),
             intercept,
             summary: None,
         }
     }
+
+    pub fn new_with_means(
+        cols: Vec<usize>,
+        coef: Vec<f64>,
+        na_coef: Vec<f64>,
+        feature_means: Vec<Option<f64>>,
+        intercept: f64,
+    ) -> Self {
+        Self {
+            cols,
+            coef,
+            na_coef,
+            feature_means,
+            intercept,
+            summary: None,
+        }
+    }
+
     /// Predict for one row (`None` = missing). Always returns a value; a row
     /// shorter than the fit-time width treats absent cells as missing (an NA
     /// never blocks a prediction, and never panics).
@@ -316,10 +336,13 @@ impl LinearModel {
         for (k, &j) in self.cols.iter().enumerate() {
             match x.get(j).copied().flatten() {
                 Some(v) => y += self.coef[k] * v,
-                // A leaf fitted on fully-observed rows has no indicator
-                // terms; missingness then contributes its honest estimate,
-                // zero (nothing learned), never a panic.
-                None => y += self.na_coef.get(k).copied().unwrap_or(0.0),
+                None => {
+                    if let Some(Some(mean_val)) = self.feature_means.get(k) {
+                        y += self.coef[k] * mean_val;
+                    } else {
+                        y += self.na_coef.get(k).copied().unwrap_or(0.0);
+                    }
+                }
             }
         }
         y
@@ -497,8 +520,8 @@ impl LeafModel {
                 match &self.linear {
                     Some(model) => {
                         let has_na = model.cols.iter().any(|&j| x.get(j).copied().flatten().is_none());
-                        if has_na && model.na_coef.is_empty() && self.center.is_some() {
-                            self.center.unwrap()
+                        if has_na && model.na_coef.is_empty() && model.feature_means.is_empty() {
+                            self.center.unwrap_or(self.stats.mean)
                         } else {
                             self.family.inverse_link(model.predict(x))
                         }
@@ -525,14 +548,20 @@ impl LeafModel {
             return self.center.unwrap_or(self.stats.mean);
         };
         let has_na = model.cols.iter().any(|&c| cols[c][r].is_none());
-        if has_na && model.na_coef.is_empty() && self.center.is_some() {
-            return self.center.unwrap();
+        if has_na && model.na_coef.is_empty() && model.feature_means.is_empty() {
+            return self.center.unwrap_or(self.stats.mean);
         }
         let mut eta = model.intercept;
         for (k, &c) in model.cols.iter().enumerate() {
             match cols[c][r] {
                 Some(value) => eta += model.coef[k] * value,
-                None => eta += model.na_coef.get(k).copied().unwrap_or(0.0),
+                None => {
+                    if let Some(Some(mean_val)) = model.feature_means.get(k) {
+                        eta += model.coef[k] * mean_val;
+                    } else {
+                        eta += model.na_coef.get(k).copied().unwrap_or(0.0);
+                    }
+                }
             }
         }
         self.family.inverse_link(eta)
@@ -547,14 +576,19 @@ impl LeafModel {
             LeafFamily::Softmax => {
                 if let Some(sm) = &self.softmax {
                     if let Some(models) = &sm.linear_models {
-                        let etas: Vec<f64> = models.iter().map(|m| m.predict(x)).collect();
-                        let max_eta = etas.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-                        let exps: Vec<f64> = etas.iter().map(|&eta| (eta - max_eta).exp()).collect();
-                        let sum_exp: f64 = exps.iter().sum();
-                        if sum_exp > 0.0 {
-                            exps.iter().map(|&e| e / sum_exp).collect()
+                        let has_na = models.first().map(|m| m.cols.iter().any(|&j| x.get(j).copied().flatten().is_none())).unwrap_or(false);
+                        if has_na && models.first().map(|m| m.na_coef.is_empty() && m.feature_means.is_empty()).unwrap_or(false) {
+                            sm.probs.clone()
                         } else {
-                            vec![1.0 / sm.n_classes as f64; sm.n_classes]
+                            let etas: Vec<f64> = models.iter().map(|m| m.predict(x)).collect();
+                            let max_eta = etas.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+                            let exps: Vec<f64> = etas.iter().map(|&eta| (eta - max_eta).exp()).collect();
+                            let sum_exp: f64 = exps.iter().sum();
+                            if sum_exp > 0.0 {
+                                exps.iter().map(|&e| e / sum_exp).collect()
+                            } else {
+                                vec![1.0 / sm.n_classes as f64; sm.n_classes]
+                            }
                         }
                     } else {
                         sm.probs.clone()
@@ -1267,6 +1301,7 @@ pub fn fit_linear(
         } else {
             Vec::new()
         },
+        feature_means: Vec::new(),
         intercept: sol[0],
         summary,
     }
@@ -1384,6 +1419,7 @@ impl LinearModel {
 /// below 1e-11. Separation therefore approaches a finite numerical boundary;
 /// exact pure/zero leaves are handled by the caller. A failed or exhausted
 /// fit returns None, never a successful-looking constant fallback.
+#[allow(unused)]
 pub(crate) fn fit_glm(
     cols: &[Vec<Option<f64>>],
     y: &[f64],
@@ -1399,12 +1435,34 @@ pub(crate) fn fit_glm(
     extra: Option<&std::collections::HashMap<String, f64>>,
     verbose: u8,
 ) -> Option<LinearModel> {
+    fit_glm_imputed(
+        cols, y, w, rows, chosen, with_indicators, None, mono, l1, l2, family, mean, extra, verbose,
+    )
+}
+
+pub(crate) fn fit_glm_imputed(
+    cols: &[Vec<Option<f64>>],
+    y: &[f64],
+    w: &[f64],
+    rows: &[usize],
+    chosen: &[usize],
+    with_indicators: bool,
+    impute_means: Option<&[f64]>,
+    mono: &[i8],
+    l1: f64,
+    l2: f64,
+    family: LeafFamily,
+    mean: f64,
+    extra: Option<&std::collections::HashMap<String, f64>>,
+    verbose: u8,
+) -> Option<LinearModel> {
     let nc = chosen.len();
     let dim = 1 + nc + if with_indicators { nc } else { 0 };
     let mut current = LinearModel {
         cols: chosen.to_vec(),
         coef: vec![0.0; nc],
         na_coef: if with_indicators { vec![0.0; nc] } else { Vec::new() },
+        feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
         intercept: match family {
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
             LeafFamily::Probit => std_norm_inv_cdf(mean),
@@ -1418,7 +1476,7 @@ pub(crate) fn fit_glm(
     let mut scales = vec![1.0; dim];
     if l1 > 0.0 {
         for &r in rows {
-            design_row(&mut row, cols, r, chosen, with_indicators);
+            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
             gram.add_row(&row, 0.0, w[r]);
         }
         for j in 1..dim {
@@ -1441,7 +1499,7 @@ pub(crate) fn fit_glm(
             if w[r] <= 0.0 {
                 continue;
             }
-            design_row(row, cols, r, chosen, with_indicators);
+            design_row_imputed(row, cols, r, chosen, with_indicators, impute_means);
             let mean = family.inverse_link(model.eval_design(row));
             loss += 0.5 * w[r] * family.deviance(y[r], mean);
         }
@@ -1473,7 +1531,7 @@ pub(crate) fn fit_glm(
             if w[r] <= 0.0 {
                 continue;
             }
-            design_row(&mut row, cols, r, chosen, with_indicators);
+            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
             let eta = current.eval_design(&row);
             let mean = family.inverse_link(eta);
             match family {
@@ -1584,6 +1642,7 @@ pub(crate) fn fit_glm(
                 cols: chosen.to_vec(),
                 coef: beta[1..1 + nc].to_vec(),
                 na_coef: if with_indicators { beta[1 + nc..].to_vec() } else { Vec::new() },
+                feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
                 intercept: beta[0],
                 summary: None,
             }
@@ -1681,6 +1740,18 @@ pub fn design_row(
     chosen: &[usize],
     with_indicators: bool,
 ) {
+    design_row_imputed(out, cols, r, chosen, with_indicators, None)
+}
+
+/// One design row with optional feature mean imputation for missing values.
+pub fn design_row_imputed(
+    out: &mut [f64],
+    cols: &[Vec<Option<f64>>],
+    r: usize,
+    chosen: &[usize],
+    with_indicators: bool,
+    impute_means: Option<&[f64]>,
+) {
     let nc = chosen.len();
     for slot in out.iter_mut() {
         *slot = 0.0;
@@ -1690,6 +1761,9 @@ pub fn design_row(
         match cols[c][r] {
             Some(v) => out[1 + k] = v,
             None => {
+                if let Some(means) = impute_means {
+                    out[1 + k] = means.get(k).copied().unwrap_or(0.0);
+                }
                 if with_indicators {
                     out[1 + nc + k] = 1.0;
                 }

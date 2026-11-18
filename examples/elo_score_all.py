@@ -69,30 +69,40 @@ R_MODELS_CLA = [
 def parse_result_reg(text: str, ds: str, name: str):
     for line in text.splitlines():
         if line.startswith("RESULT "):
-            parts = line[len("RESULT ") :].split(",")
-            if len(parts) == 5 and parts[0] == ds and parts[1] == name:
-                try:
-                    return float(parts[2]), float(parts[3]), float(parts[4])
-                except ValueError:
-                    pass
+            rest = line[len("RESULT ") :].strip()
+            # Split from right for the 3 numeric fields: rmse, mae, fit_s
+            parts = rest.rsplit(",", 3)
+            if len(parts) == 4:
+                prefix = parts[0]
+                expected_prefix = f"{ds},{name}"
+                if prefix == expected_prefix:
+                    try:
+                        return float(parts[1]), float(parts[2]), float(parts[3])
+                    except ValueError:
+                        pass
     return None
 
 
 def parse_result_cla(text: str, ds: str, name: str):
     for line in text.splitlines():
         if line.startswith("RESULT "):
-            parts = line[len("RESULT ") :].split(",")
-            if len(parts) == 8 and parts[0] == ds and parts[1] == name:
-                try:
-                    logloss = float(parts[2])
-                    acc = float(parts[3])
-                    bal_acc = float(parts[4])
-                    auc = float(parts[5]) if parts[5] != "" else None
-                    macro_f1 = float(parts[6])
-                    fit_s = float(parts[7])
-                    return logloss, acc, bal_acc, auc, macro_f1, fit_s
-                except ValueError:
-                    pass
+            rest = line[len("RESULT ") :].strip()
+            # Split from right for the 6 numeric fields: logloss, acc, bal_acc, auc, macro_f1, fit_s
+            parts = rest.rsplit(",", 6)
+            if len(parts) == 7:
+                prefix = parts[0]
+                expected_prefix = f"{ds},{name}"
+                if prefix == expected_prefix:
+                    try:
+                        logloss = float(parts[1])
+                        acc = float(parts[2])
+                        bal_acc = float(parts[3])
+                        auc = float(parts[4]) if parts[4] != "" else None
+                        macro_f1 = float(parts[5])
+                        fit_s = float(parts[6])
+                        return logloss, acc, bal_acc, auc, macro_f1, fit_s
+                    except ValueError:
+                        pass
     return None
 
 

@@ -150,6 +150,39 @@ def make_models(meta: dict[str, Any] | None = None) -> dict[str, Callable]:
     ms["ModelTree(mean)"] = make_mt("mean", "all")
     ms["ModelTree(winnow)"] = make_mt("linear", "all", min_relevance=0.05)
 
+    def make_mt_opt():
+        def run(xtr, ytr, xte):
+            p = len(xtr[0])
+            dtypes = (
+                roles
+                if roles and len(roles) == p
+                else [
+                    ("categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric")
+                    for j in range(p)
+                ]
+            )
+            eff_leaf = "mean" if p >= 100 else "linear"
+            eff_cols = "path" if (50 <= p < 100) else "all"
+            m = ModelTree(
+                leaf=eff_leaf,
+                leaf_cols=eff_cols,
+                max_depth=8,
+                min_rows=10,
+                shrinkage=9.0,
+                l2=3.0,
+                col_sample=0.85,
+                prune="bic",
+                seed=42,
+            )
+            t0 = time.perf_counter()
+            m.fit(xtr, [float(y) for y in ytr], dtypes=dtypes)
+            pred = m.predict(xte)
+            return pred, time.perf_counter() - t0
+
+        return run
+
+    ms["ModelTree(opt)"] = make_mt_opt()
+
     def make_mt_mars(mars_degree: int = 1, max_depth: int = 3):
         def run(xtr, ytr, xte):
             p = len(xtr[0])

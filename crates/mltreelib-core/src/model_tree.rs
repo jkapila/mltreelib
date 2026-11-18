@@ -33,7 +33,7 @@ use crate::criteria::GainFn;
 use crate::family::LeafFamily;
 use crate::gate::{GateNote, SplitTest};
 use crate::leaf::{fit_leaf_model, LeafCols, LeafKind};
-pub use crate::leaf::{LeafControl, LeafSolver};
+pub use crate::leaf::{LeafControl, LeafNaPolicy, LeafSolver};
 use crate::node_stats::{FrameStats, LeafModel};
 use crate::preselect;
 use crate::prune::PruneCost;
@@ -224,6 +224,8 @@ pub struct ModelTreeParams {
     /// Adaptive hierarchical leaf shrinkage penalty lambda (default 0.0 = off).
     /// Shrinks leaf models toward their parent node: beta_shrunk = beta_parent + (N / (N + lambda)) * (beta_leaf - beta_parent).
     pub shrinkage: f64,
+    /// Missing value strategy at leaf level: DropFallback (default), ImputeLocal, or Indicator.
+    pub leaf_na_policy: LeafNaPolicy,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -309,6 +311,7 @@ impl Default for ModelTreeParams {
             knn_gamma: None,
             knn_p: 2.0,
             shrinkage: 0.0,
+            leaf_na_policy: LeafNaPolicy::Indicator,
         }
     }
 }

@@ -210,6 +210,71 @@ def make_models(meta: dict[str, Any] | None = None) -> dict[str, Callable]:
     ms["ModelTree(mean)"] = make_mt("mean", "all")
     ms["ModelTree(winnow)"] = make_mt("linear", "all", min_relevance=0.05)
 
+    def make_mt_opt():
+        def run(xtr, ytr, xte):
+            p = len(xtr[0])
+            dtypes = (
+                roles
+                if roles and len(roles) == p
+                else [
+                    ("categorical" if any(isinstance(r[j], str) for r in xtr) else "numeric")
+                    for j in range(p)
+                ]
+            )
+            eff_leaf = "mean" if p >= 100 else "linear"
+            eff_cols = "path" if (50 <= p < 100) else "all"
+
+            if len(classes) == 2:
+                pos_label = str(classes[1])
+                y_bin = [1.0 if str(y) == pos_label else 0.0 for y in ytr]
+                m = ModelTree(
+                    leaf=eff_leaf,
+                    leaf_family="binomial",
+                    leaf_solver="lbfgs",
+                    leaf_cols=eff_cols,
+                    gain="deviance",
+                    max_depth=8,
+                    min_rows=10,
+                    shrinkage=9.0,
+                    l2=3.0,
+                    col_sample=0.85,
+                    prune="bic",
+                    seed=42,
+                )
+                t0 = time.perf_counter()
+                m.fit(xtr, y_bin, dtypes=dtypes)
+                probs = m.predict_proba(xte)
+                fit_s = time.perf_counter() - t0
+                aligned = [[1.0 - p, p] for p in probs]
+                return aligned, fit_s
+            else:
+                class_map = {str(c): float(i) for i, c in enumerate(classes)}
+                y_multi = [class_map[str(y)] for y in ytr]
+                m = ModelTree(
+                    leaf=eff_leaf,
+                    leaf_family="softmax",
+                    leaf_solver="lbfgs",
+                    n_classes=len(classes),
+                    leaf_cols=eff_cols,
+                    gain="twoing",
+                    max_depth=8,
+                    min_rows=10,
+                    shrinkage=9.0,
+                    l2=3.0,
+                    col_sample=0.85,
+                    prune="bic",
+                    seed=42,
+                )
+                t0 = time.perf_counter()
+                m.fit(xtr, y_multi, dtypes=dtypes)
+                aligned = m.predict(xte, kind="proba")
+                fit_s = time.perf_counter() - t0
+                return aligned, fit_s
+
+        return run
+
+    ms["ModelTree(opt)"] = make_mt_opt()
+
     # 1. LightGBM
     def lgbm():
         import lightgbm as lgb

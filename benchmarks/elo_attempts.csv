@@ -738,3 +738,93 @@ ta_wine,statsmodels OLS,error,6.0
 ta_wine,statsmodels QuantReg,error,6.3
 ta_wine,statsmodels RLM,error,6.0
 ta_wine,trust-free,error,6.2
+abalone,"ModelTree(leaf=mars,deg=1)",error,2.9
+abalone,"ModelTree(leaf=mars,deg=2)",error,2.8
+abalone,ModelTree(opt),ok,2.8
+abalone,mltreelib MARS(deg=1),ok,3.1
+abalone,mltreelib MARS(deg=2),ok,3.2
+boston,"ModelTree(leaf=mars,deg=1)",ok,2.7
+boston,"ModelTree(leaf=mars,deg=2)",ok,2.7
+boston,ModelTree(opt),ok,3.0
+boston,mltreelib MARS(deg=1),ok,2.8
+boston,mltreelib MARS(deg=2),ok,2.9
+concrete,"ModelTree(leaf=mars,deg=1)",ok,3.0
+concrete,"ModelTree(leaf=mars,deg=2)",ok,3.2
+concrete,ModelTree(opt),ok,3.2
+concrete,mltreelib MARS(deg=1),ok,3.2
+concrete,mltreelib MARS(deg=2),ok,3.2
+fc2008,"ModelTree(leaf=mars,deg=1)",ok,3.2
+fc2008,"ModelTree(leaf=mars,deg=2)",ok,3.1
+fc2008,ModelTree(opt),ok,3.2
+fc2008,mltreelib MARS(deg=1),error,3.3
+fc2008,mltreelib MARS(deg=2),error,3.4
+ozone,"ModelTree(leaf=mars,deg=1)",ok,3.3
+ozone,"ModelTree(leaf=mars,deg=2)",ok,3.3
+ozone,ModelTree(opt),ok,3.3
+ozone,mltreelib MARS(deg=1),ok,3.3
+ozone,mltreelib MARS(deg=2),ok,3.5
+ta_airfoil,"ModelTree(leaf=mars,deg=1)",ok,3.0
+ta_airfoil,"ModelTree(leaf=mars,deg=2)",ok,3.0
+ta_airfoil,ModelTree(opt),ok,3.0
+ta_airfoil,mltreelib MARS(deg=1),ok,3.0
+ta_airfoil,mltreelib MARS(deg=2),ok,3.4
+ta_concrete,"ModelTree(leaf=mars,deg=1)",ok,3.0
+ta_concrete,"ModelTree(leaf=mars,deg=2)",ok,3.0
+ta_concrete,ModelTree(opt),ok,3.0
+ta_concrete,mltreelib MARS(deg=1),ok,3.1
+ta_concrete,mltreelib MARS(deg=2),ok,3.7
+ta_diamonds,"ModelTree(leaf=mars,deg=1)",ok,4.4
+ta_diamonds,"ModelTree(leaf=mars,deg=2)",ok,5.3
+ta_diamonds,ModelTree(opt),ok,3.9
+ta_diamonds,mltreelib MARS(deg=1),ok,3.5
+ta_diamonds,mltreelib MARS(deg=2),ok,4.0
+ta_fiat500,"ModelTree(leaf=mars,deg=1)",ok,2.7
+ta_fiat500,"ModelTree(leaf=mars,deg=2)",ok,2.7
+ta_fiat500,ModelTree(opt),ok,2.7
+ta_fiat500,mltreelib MARS(deg=1),ok,2.6
+ta_fiat500,mltreelib MARS(deg=2),ok,2.9
+ta_food_delivery,"ModelTree(leaf=mars,deg=1)",ok,3.5
+ta_food_delivery,"ModelTree(leaf=mars,deg=2)",ok,3.9
+ta_food_delivery,ModelTree(opt),ok,3.5
+ta_food_delivery,mltreelib MARS(deg=1),ok,4.1
+ta_food_delivery,mltreelib MARS(deg=2),ok,7.5
+ta_healthcare,"ModelTree(leaf=mars,deg=1)",ok,2.5
+ta_healthcare,"ModelTree(leaf=mars,deg=2)",ok,2.8
+ta_healthcare,ModelTree(opt),ok,2.7
+ta_healthcare,mltreelib MARS(deg=1),ok,2.8
+ta_healthcare,mltreelib MARS(deg=2),ok,3.3
+ta_houses,"ModelTree(leaf=mars,deg=1)",ok,3.7
+ta_houses,"ModelTree(leaf=mars,deg=2)",ok,4.1
+ta_houses,ModelTree(opt),ok,3.5
+ta_houses,mltreelib MARS(deg=1),ok,4.5
+ta_houses,mltreelib MARS(deg=2),ok,6.6
+ta_miami,"ModelTree(leaf=mars,deg=1)",ok,3.4
+ta_miami,"ModelTree(leaf=mars,deg=2)",ok,3.9
+ta_miami,ModelTree(opt),ok,3.5
+ta_miami,mltreelib MARS(deg=1),ok,4.1
+ta_miami,mltreelib MARS(deg=2),ok,6.8
+ta_protein,"ModelTree(leaf=mars,deg=1)",ok,4.0
+ta_protein,"ModelTree(leaf=mars,deg=2)",ok,4.8
+ta_protein,ModelTree(opt),ok,3.4
+ta_protein,mltreelib MARS(deg=1),ok,6.5
+ta_protein,mltreelib MARS(deg=2),ok,11.8
+ta_qsar_fish,"ModelTree(leaf=mars,deg=1)",ok,2.8
+ta_qsar_fish,"ModelTree(leaf=mars,deg=2)",ok,3.0
+ta_qsar_fish,ModelTree(opt),ok,2.7
+ta_qsar_fish,mltreelib MARS(deg=1),ok,2.7
+ta_qsar_fish,mltreelib MARS(deg=2),ok,2.8
+ta_qsar_tid11,"ModelTree(leaf=mars,deg=1)",ok,6.2
+ta_qsar_tid11,"ModelTree(leaf=mars,deg=2)",ok,6.0
+ta_qsar_tid11,ModelTree(opt),ok,5.9
+ta_qsar_tid11,mltreelib MARS(deg=1),ok,6.4
+ta_qsar_tid11,mltreelib MARS(deg=2),ok,6.2
+ta_superconductivity,"ModelTree(leaf=mars,deg=1)",ok,5.8
+ta_superconductivity,"ModelTree(leaf=mars,deg=2)",ok,9.9
+ta_superconductivity,ModelTree(opt),ok,4.5
+ta_superconductivity,mltreelib MARS(deg=1),ok,9.2
+ta_superconductivity,mltreelib MARS(deg=2),ok,33.9
+ta_wine,"ModelTree(leaf=mars,deg=1)",ok,3.3
+ta_wine,"ModelTree(leaf=mars,deg=2)",ok,3.5
+ta_wine,ModelTree(opt),ok,3.2
+ta_wine,mltreelib MARS(deg=1),ok,3.6
+ta_wine,mltreelib MARS(deg=2),ok,4.9
