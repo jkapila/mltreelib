@@ -19,6 +19,26 @@ flowchart TD
     Target -- "Unlabeled Observations (Unsupervised)" --> Unsup{"Are you isolating outliers or finding segments?"}
     Unsup -- "Discover Homogeneous Cohorts" --> G_Clust["Clustering Pathway\n(Predictive Clustering Trees with Rules)"]
     Unsup -- "Surface Anomalous Telemetry" --> G_Anom["Anomaly Detection Pathway\n(Extended Isolation Forest without Ghosts)"]
+
+    classDef startBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef regBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef distBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+    classDef claBox fill:#9a3412,stroke:#c2410c,stroke-width:2px,color:#ffffff;
+    classDef survBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef upliftBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+    classDef clustBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef anomBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+
+    class Start startBox;
+    class Target,Dist,Unsup gateBox;
+    class G_Reg regBox;
+    class G_Dist distBox;
+    class G_Cla claBox;
+    class G_Surv survBox;
+    class G_Uplift upliftBox;
+    class G_Clust clustBox;
+    class G_Anom anomBox;
 ```
 
 | Decision | Path | Dataset | What to check |

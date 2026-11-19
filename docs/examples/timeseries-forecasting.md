@@ -39,6 +39,18 @@ flowchart LR
         Route --> LinearLeaf["Terminal Linear Leaves\ny = b0 + b1*lag1 + b7*lag7 + b_win*win7"]
         LinearLeaf --> Forecast["Out-of-Time Extrapolated Demand"]
     end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef rustBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef outBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Raw,Matrix dataBox;
+    class Cal,Lag,Win,Decomp rustBox;
+    class Route gateBox;
+    class LinearLeaf leafBox;
+    class Forecast outBox;
 ```
 
 ---

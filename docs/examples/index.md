@@ -124,6 +124,16 @@ flowchart TD
     Q1 -- "Autoregressive Demand & Seasonality" --> A7["Suite 7: Time Series Forecasting\n(Calendar Lags & Additive Decomp)"]
     Q1 -- "Unsupervised Grouping / Outlier Triage" --> A8["Suite 8: Unsupervised Trees\n(PCT Clustering & EIF Anomaly)"]
     Q1 -- "Right-Censored / Competing Multi-Cause" --> A9["Suite 9: Survival & Competing Risks\n(Gray's Test, Aalen-Johansen CIF)"]
+
+    classDef startBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef suiteBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef survBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class Start startBox;
+    class Q1 gateBox;
+    class A1,A2,A3,A4,A5,A6,A7,A8 suiteBox;
+    class A9 survBox;
 ```
 
 ---

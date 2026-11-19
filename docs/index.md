@@ -35,6 +35,13 @@ flowchart TD
         ModelTree["ModelTree API"] & LeafControl["LeafControl"] & Metrics["Metrics & Diagnostic Curves"]
     end
     PythonShell <==>|"PyO3 Zero-Copy / Fast Memory"| RustCore
+
+    classDef rustBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef pyBox fill:#0f5132,stroke:#198754,stroke-width:2px,color:#ffffff;
+    classDef frameBox fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ffffff;
+
+    class Frame,SplitSearch,LeafFit rustBox;
+    class ModelTree,LeafControl,Metrics pyBox;
 ```
 
 ```bash

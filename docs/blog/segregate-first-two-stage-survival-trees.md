@@ -50,6 +50,24 @@ flowchart TD
         H --> K["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_2(t) fitted purely on Leaf 2 members"]
         I --> L["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_3(t) fitted purely on Leaf 3 members"]
     end
+
+    classDef trapBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef stageBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef lowRisk fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef medRisk fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef highRisk fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef kmBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class A,C,D trapBox;
+    class B gateBox;
+    class E dataBox;
+    class F stageBox;
+    class G lowRisk;
+    class H medRisk;
+    class I highRisk;
+    class J,K,L kmBox;
 ```
 
 ### Why Standard Methods Fail:

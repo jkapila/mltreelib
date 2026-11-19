@@ -18,6 +18,18 @@ flowchart LR
     B --> C["Typed Frame & Schema\n(n_category Cardinality Check)"]
     C --> D["Categorical IndexMapper\n(Zero-Allocation Codes)"]
     D --> E["ModelTree Core Engine\n(Handles Missing & Categories Natively)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef buildBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef frameBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef mapBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef engineBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B buildBox;
+    class C frameBox;
+    class D mapBox;
+    class E engineBox;
 ```
 
 `ModelTree` accepts categorical labels and missing predictors without a separate encoder or imputation step. Declare the feature types and preserve the same column order at prediction time.

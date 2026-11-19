@@ -27,6 +27,20 @@ flowchart TD
     end
     Dead & Censored --> LogRank["Log-Rank / Martingale Split Criterion\nmax Q_LR(s)"]
     LogRank --> KM["Terminal Leaf Estimators\nKaplan-Meier S(t) & Nelson-Aalen H(t)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef deadBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef censBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class Patient,FollowUp dataBox;
+    class Event gateBox;
+    class Dead deadBox;
+    class Censored censBox;
+    class LogRank splitBox;
+    class KM leafBox;
 ```
 
 Run this Python block from the repository root. The evaluation helpers are part of the example script.

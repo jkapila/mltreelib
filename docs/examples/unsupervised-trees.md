@@ -32,6 +32,18 @@ flowchart TD
         A2 --> A3["Path Length Aggregation h(x)"]
         A3 --> A4["Continuous Anomaly Score s(x, n)\n(Rotationally Invariant Contours)"]
     end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef nodeBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef ruleBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef anomBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+
+    class C1,A1 dataBox;
+    class C2,A2 splitBox;
+    class C3,A3 nodeBox;
+    class C4 ruleBox;
+    class A4 anomBox;
 ```
 
 ---

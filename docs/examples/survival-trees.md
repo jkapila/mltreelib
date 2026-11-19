@@ -31,40 +31,60 @@ flowchart TD
     
     LeafEst1 --> SimplexCheck["Verify Monotonicity:\nS(t) non-increasing"]
     LeafEst2 --> SimplexCheck2["Verify Simplex Invariant:\nsum_c F_c(t) + S(t) == 1.0"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef targetBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef pathBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef checkBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+
+    class Data dataBox;
+    class TargetType targetBox;
+    class SingleEvent,CompRisks pathBox;
+    class SplitCrit1,SplitCrit2 splitBox;
+    class LeafEst1,LeafEst2 leafBox;
+    class SimplexCheck,SimplexCheck2 checkBox;
 ```
 
-### Fitted Decision Tree Diagram
+### Native ModelTree Architecture & Graphviz Topology
 
-The tree below illustrates the exact decision topology fitted on the $N=800$ multi-cause cohort by `gain="gray"` ($N=600$ training cohort):
+Rather than an abstract diagram, `mltreelib` exports the exact mathematical graph structure directly via `ModelTree.to_dot()`. You can render this directly with Graphviz (`dot -Tsvg`):
 
-```mermaid
-flowchart TD
-    Root["Root Split: biomarker <= 1.4710\nTotal N = 600 | Relapse = 41.6%"]
-    
-    Root -- "True (biomarker <= 1.4710)" --> Node1["Node 1: biomarker <= -0.1550\nN = 559"]
-    Root -- "False (biomarker > 1.4710)" --> Leaf5["Leaf 5: Extreme Early Relapse\nN = 41 (6.8%)\nMedian Survival = 0.76 yr\nRelapse CIF = 85.4%"]
-    
-    Node1 -- "True (biomarker <= -0.1550)" --> Node2["Node 2: age <= 5.7510\nN = 272"]
-    Node1 -- "False (biomarker > -0.1550)" --> Node3["Node 3: age <= 6.1680\nN = 287"]
-    
-    Node2 -- "True (age <= 5.7510)" --> Leaf4["Leaf 4: Favorable Long-Term\nN = 111 (18.5%)\nMedian Survival = 5.68 yr\nRelapse CIF = 9.9%"]
-    Node2 -- "False (age > 5.7510)" --> Leaf1["Leaf 1: Moderate-Low Risk\nN = 161 (26.8%)\nMedian Survival = 1.99 yr\nRelapse CIF = 32.3%"]
-    
-    Node3 -- "True (age <= 6.1680)" --> Leaf3["Leaf 3: Intermediate Risk\nN = 135 (22.5%)\nMedian Survival = 2.97 yr\nRelapse CIF = 24.4%"]
-    Node3 -- "False (age > 6.1680)" --> Leaf2["Leaf 2: Elevated Risk\nN = 152 (25.3%)\nMedian Survival = 1.62 yr\nRelapse CIF = 48.0%"]
-    
-    classDef rootStyle fill:#2b3a42,stroke:#4f6d7a,stroke-width:2px,color:#fff;
-    classDef nodeStyle fill:#3d5a80,stroke:#293241,stroke-width:2px,color:#fff;
-    classDef lowRisk fill:#2d6a4f,stroke:#1b4332,stroke-width:2px,color:#fff;
-    classDef medRisk fill:#d4a373,stroke:#bc6c25,stroke-width:2px,color:#000;
-    classDef highRisk fill:#9b2226,stroke:#6a040f,stroke-width:2px,color:#fff;
+```python
+import subprocess
+from mltreelib import ModelTree
 
-    class Root rootStyle;
-    class Node1,Node2,Node3 nodeStyle;
-    class Leaf4 lowRisk;
-    class Leaf1,Leaf3 medRisk;
-    class Leaf2,Leaf5 highRisk;
+# Export and render native ModelTree graphviz DOT representation
+dot_graph = tree.to_dot()
+subprocess.run(["dot", "-Tsvg", "-o", "docs/assets/suite9_survival_tree_model.svg"], input=dot_graph, text=True)
 ```
+
+The resulting native decision topology shows split predicates, node sample counts $N$, node deviances, and leaf response constants:
+
+<p align="center">
+  <img src="../assets/suite9_survival_tree_model.svg" alt="ModelTree native Graphviz DOT topology" width="100%">
+</p>
+
+### Individual Leaf Survival & Competing Risks Profiles
+
+Behind each terminal node in the tree lives a complete multi-state survival distribution. The panel below illustrates the distinct Kaplan-Meier survival curves $S(t)$ and Aalen-Johansen Cumulative Incidence Functions $F_1(t)$ (Relapse) and $F_2(t)$ (Competing Mortality) across all 5 leaves:
+
+<p align="center">
+  <img src="../assets/suite9_leaf_survival_profiles.png" alt="Leaf-Specific Survival and Competing Risks Decompositions" width="100%">
+</p>
+
+#### Why the Partitions Formed:
+1. **Leaf 1 (Rule 4: `biomarker <= -0.155 & age <= 5.751`) — Favorable Long-Term ($N=111$, Median = 5.68 yrs)**:
+   Younger patients with low biomarker levels have minimal hazard. Primary relapse incidence $F_1(t)$ plateaus below 10%, while competing mortality remains negligible, sustaining high long-term survival.
+2. **Leaf 2 (Rule 1: `biomarker <= -0.155 & age > 5.751`) — Moderate-Low Risk ($N=161$, Median = 1.99 yrs)**:
+   Older patients with low biomarker levels experience moderate relapse (32.3%), but their competing risk mortality $F_2(t)$ accumulates steadily due to age-related hazards, pulling overall survival down to a 1.99-year median.
+3. **Leaf 3 (Rule 3: `-0.155 < biomarker <= 1.471 & age <= 6.168`) — Intermediate Risk ($N=135$, Median = 2.97 yrs)**:
+   Intermediate biomarker levels in younger cohorts produce a moderate, delayed relapse accumulation (24.4%), yielding a stable 2.97-year median survival.
+4. **Leaf 4 (Rule 2: `-0.155 < biomarker <= 1.471 & age > 6.168`) — Elevated Risk ($N=152$, Median = 1.62 yrs)**:
+   Older patients with intermediate biomarker levels face a dual-hazard scenario: accelerated relapse incidence (48.0%) combined with substantial competing mortality ($F_2(t) \approx 45\%$).
+5. **Leaf 5 (Rule 5: `biomarker > 1.471`) — Extreme Early Relapse ($N=41$, Median = 0.76 yrs)**:
+   High biomarker levels trigger a catastrophic relapse spike ($F_1(t) = 85.4\%$ within the first 12 months). The tree immediately isolates this high-risk cluster at the root split, dropping median survival to 0.76 years.
 
 ---
 

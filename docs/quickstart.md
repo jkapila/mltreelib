@@ -25,6 +25,16 @@ flowchart LR
     D --> F["Leaf 13: Local Ridge Linear\ny = 0.11*Cement - 0.04*Water + ..."]
     E --> G["Continuous Prediction (MPa)"]
     F --> G
+
+    classDef inputBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef outBox fill:#1e3a5f,stroke:#2563eb,stroke-width:2px,color:#ffffff;
+
+    class A inputBox;
+    class B,C,D splitBox;
+    class E,F leafBox;
+    class G outBox;
 ```
 
 ---

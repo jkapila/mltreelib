@@ -36,6 +36,20 @@ flowchart TD
 
     D ==> G
     G --> H["Fitted Piecewise Model Tree\n+ 0D Distributional Stats Dictionary"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef nodeBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef leafSpec fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef solverBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+    classDef finalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B,C splitBox;
+    class D nodeBox;
+    class E,F leafSpec;
+    class G solverBox;
+    class H finalBox;
 ```
 
 ---

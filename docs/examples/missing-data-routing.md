@@ -37,6 +37,16 @@ flowchart TD
     D -- "No Surrogates Available" --> F{"Learned Missing Route\n(missing_left)"}
     F -- "missing_left = True" --> Left
     F -- "missing_left = False" --> Right
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef altGate fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B,C gateBox;
+    class D,E,F altGate;
+    class Left,Right leafBox;
 ```
 
 ---

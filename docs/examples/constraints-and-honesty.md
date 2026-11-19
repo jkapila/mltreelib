@@ -40,6 +40,20 @@ flowchart TD
         Route --> Solve["Solve Leaf Models\n(Subject to leaf_monotone)"]
         Solve --> Final["Honest, Monotone ModelTree"]
     end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef sampleBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef treeBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef solveBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef finalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Raw dataBox;
+    class Split gateBox;
+    class Str,Est sampleBox;
+    class Partition,Topology treeBox;
+    class Route,Solve solveBox;
+    class Final finalBox;
 ```
 
 ---

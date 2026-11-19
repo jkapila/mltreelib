@@ -9,6 +9,20 @@ flowchart LR
     C --> D{"Operational Review Budget\n(e.g., Top 5% of Volume)"}
     D -- "Above Threshold" --> E["High-Priority Review Queue\n(Analyst Inspection)"]
     D -- "Below Threshold" --> F["Automated Clearance\n(Normal Operations)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef engineBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef scoreBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef alertBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef passBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B engineBox;
+    class C scoreBox;
+    class D gateBox;
+    class E alertBox;
+    class F passBox;
 ```
 
 ---

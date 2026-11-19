@@ -43,6 +43,16 @@ flowchart TD
     S4 --> E2["cmaes: Covariance Matrix Adaptation\nLatency: ~13 ms | Ill-conditioned"]
     S4 --> E3["ga: Real-Coded Genetic Algorithm\nLatency: ~58 ms | Global exploration"]
     S4 --> E4["nes: Natural Evolution Strategies\nLatency: ~13 ms | Gradient estimation"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef gradBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef evoBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+
+    class Data dataBox;
+    class Fam,S4 gateBox;
+    class S1,S2,S3 gradBox;
+    class E1,E2,E3,E4 evoBox;
 ```
 
 ---

@@ -26,6 +26,18 @@ flowchart TD
         TreeStructure --> FixedNodes["Fixed Partition Topology"]
         FixedNodes & LeafEstimator --> UnbiasedModel["Unbiased Honest Causal Tree"]
     end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef treeBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef causalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Sample dataBox;
+    class Partition gateBox;
+    class TreeStructure,FixedNodes treeBox;
+    class LeafEstimator leafBox;
+    class UnbiasedModel causalBox;
 ```
 
 Run this Python block from the repository root. `group_value` comes from the example script.
