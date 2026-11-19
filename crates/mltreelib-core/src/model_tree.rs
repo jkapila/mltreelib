@@ -233,11 +233,27 @@ pub struct ModelTreeParams {
     pub fairness_penalty: f64,
     /// Column index of the protected attribute for fairness constraints (None = off).
     pub protected_col: Option<usize>,
+    /// Fairness metric to penalize: DemographicParity (default) or EqualizedOdds.
+    pub fairness_metric: FairnessMetric,
     /// SPORF: number of features to combine in sparse oblique projections (Tomita et al. 2020).
     /// 0 = off (standard axis-aligned splits); 2 or 3 = sparse random combinations.
     pub sporf_d: usize,
     /// SPORF: number of random linear projection hyperplanes to evaluate per node. Default 10.
     pub sporf_projections: usize,
+    /// Extremely Randomized Trees (Geurts et al. 2006): evaluate a single uniform random cutpoint per feature.
+    pub extratrees: bool,
+    /// EBM FAST: prioritize or screen bivariate interaction pairs (Lou et al. 2013).
+    pub ebm_fast: bool,
+}
+
+/// Fairness criterion evaluated when fairness_penalty > 0.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum FairnessMetric {
+    /// Demographic Parity: equalizes acceptance/routing rate across groups |P(L|S=1) - P(L|S=0)|.
+    #[default]
+    DemographicParity,
+    /// Equalized Odds: equalizes True Positive Rate and False Positive Rate across groups: 0.5*(|TPR_1 - TPR_0| + |FPR_1 - FPR_0|).
+    EqualizedOdds,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -327,8 +343,11 @@ impl Default for ModelTreeParams {
             target_vectors: None,
             fairness_penalty: 0.0,
             protected_col: None,
+            fairness_metric: FairnessMetric::DemographicParity,
             sporf_d: 0,
             sporf_projections: 10,
+            extratrees: false,
+            ebm_fast: false,
         }
     }
 }
@@ -440,6 +459,8 @@ pub struct ModelTree {
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
     /// SPORF oblique projections referenced by `Split::oblique`.
     pub(crate) oblique_parts: Vec<crate::split::ObliqueProjection>,
+    /// EBM FAST screened bivariate interactions.
+    pub fast_interactions: Vec<crate::fast_interaction::FastInteraction>,
     /// Training log (populated when `params.verbose > 0`).
     pub trace: Vec<String>,
     /// Training memory for nearest-neighbor adjustments.
@@ -761,6 +782,17 @@ impl ModelTree {
         } else {
             None
         };
+        let fast_interactions = if params.ebm_fast {
+            let detected = crate::fast_interaction::fast_interaction_screen(&cols, &yv, &wv, &col_names, 5, params.min_rows);
+            if let Some(top) = detected.first() {
+                if params.interaction_groups.is_empty() {
+                    params.interaction_groups = vec![vec![top.col1, top.col2]];
+                }
+            }
+            detected
+        } else {
+            Vec::new()
+        };
         let start_time = Instant::now();
         let mut grower = Grower {
             cols: &cols,
@@ -776,6 +808,7 @@ impl ModelTree {
             cat_parts: Vec::new(),
             sur_parts: Vec::new(),
             oblique_parts: Vec::new(),
+            fast_interactions,
             trace: Vec::new(),
             costs: Vec::new(),
             rng_counter: 0,
@@ -820,6 +853,7 @@ impl ModelTree {
             cat_parts,
             sur_parts,
             oblique_parts,
+            fast_interactions,
             mut trace,
             ..
         } = grower;
@@ -883,6 +917,7 @@ impl ModelTree {
             cat_parts,
             sur_parts,
             oblique_parts,
+            fast_interactions,
             trace,
             training_memory: None,
         };
@@ -1565,6 +1600,10 @@ impl ModelTree {
     /// SPORF oblique projections referenced by `Split::oblique`.
     pub fn oblique_parts(&self) -> &[crate::split::ObliqueProjection] {
         &self.oblique_parts
+    }
+
+    pub fn fast_interactions(&self) -> &[crate::fast_interaction::FastInteraction] {
+        &self.fast_interactions
     }
 
     /// Feature importance — each column's share of the total split gain
@@ -2377,6 +2416,8 @@ pub(crate) struct Grower<'a> {
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
     /// SPORF oblique projections referenced by `Split::oblique`.
     pub(crate) oblique_parts: Vec<crate::split::ObliqueProjection>,
+    /// EBM FAST screened bivariate interactions.
+    pub(crate) fast_interactions: Vec<crate::fast_interaction::FastInteraction>,
     /// Training log lines (`params.verbose`).
     pub(crate) trace: Vec<String>,
     /// Prune-cost bookkeeping aligned with node indices (`prune != None`).

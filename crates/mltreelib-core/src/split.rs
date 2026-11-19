@@ -116,7 +116,7 @@ pub(crate) struct SplitScratch {
     pub pairs: Vec<(f64, f64, f64, f64)>,
     pub pairs_yw: Vec<(f64, f64)>,
     pub missing_yws: Vec<(f64, f64)>,
-    pub level_moments: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw, swy, swy2)
+    pub level_moments: Vec<(f64, usize, f64, f64, f64, f64, f64, f64, f64, f64)>, // (level, n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0)
     pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
     pub level_causal: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw_t, swy_t, sw_c, swy_c)
     pub h_parent: Vec<f64>,
@@ -661,9 +661,10 @@ impl<'a> Grower<'a> {
         let is_standard_gain = matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
         if is_standard_gain {
             let prot_col_opt = self.params.protected_col;
-            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64, f64)> =
+            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64, f64, f64, f64, f64, f64)> =
                 std::collections::HashMap::new();
             let (mut mn, mut msw, mut mswy, mut mswy2, mut msw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
+            let (mut msw_s1_y1, mut msw_s0_y1, mut msw_s1_y0, mut msw_s0_y0) = (0.0, 0.0, 0.0, 0.0);
             for &r in rows {
                 let (y, w) = (self.y[r], self.w[r]);
                 let p_wt = if let Some(pc) = prot_col_opt {
@@ -671,14 +672,25 @@ impl<'a> Grower<'a> {
                 } else {
                     0.0
                 };
+                let is_prot = p_wt > 0.0;
+                let is_y1 = y >= 0.5;
+                let s1_y1 = if is_prot && is_y1 { w } else { 0.0 };
+                let s0_y1 = if !is_prot && is_y1 { w } else { 0.0 };
+                let s1_y0 = if is_prot && !is_y1 { w } else { 0.0 };
+                let s0_y0 = if !is_prot && !is_y1 { w } else { 0.0 };
+
                 match self.cols[j][r] {
                     Some(v) => {
-                        let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0, 0.0));
+                        let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
                         e.0 += 1;
                         e.1 += w;
                         e.2 += w * y;
                         e.3 += w * y * y;
                         e.4 += p_wt;
+                        e.5 += s1_y1;
+                        e.6 += s0_y1;
+                        e.7 += s1_y0;
+                        e.8 += s0_y0;
                     }
                     None => {
                         mn += 1;
@@ -686,6 +698,10 @@ impl<'a> Grower<'a> {
                         mswy += w * y;
                         mswy2 += w * y * y;
                         msw_prot += p_wt;
+                        msw_s1_y1 += s1_y1;
+                        msw_s0_y1 += s0_y1;
+                        msw_s1_y0 += s1_y0;
+                        msw_s0_y0 += s0_y0;
                     }
                 }
             }
@@ -694,8 +710,8 @@ impl<'a> Grower<'a> {
                 return (None, st);
             }
             scratch.level_moments.clear();
-            for (b, (n, sw, swy, swy2, sw_prot)) in by_level {
-                scratch.level_moments.push((f64::from_bits(b), n, sw, swy, swy2, sw_prot));
+            for (b, (n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0)) in by_level {
+                scratch.level_moments.push((f64::from_bits(b), n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0));
             }
 
             // Level order (deterministic: ties by level code ascending).
@@ -733,12 +749,17 @@ impl<'a> Grower<'a> {
             let k = scratch.level_moments.len();
             let m = self.min_child(rows.len()) as f64;
             let (mut tn, mut tsw, mut tswy, mut tswy2, mut tsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
-            for &(_, n, sw, swy, swy2, sw_prot) in scratch.level_moments.iter() {
+            let (mut tsw_s1_y1, mut tsw_s0_y1, mut tsw_s1_y0, mut tsw_s0_y0) = (0.0, 0.0, 0.0, 0.0);
+            for &(_, n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0) in scratch.level_moments.iter() {
                 tn += n;
                 tsw += sw;
                 tswy += swy;
                 tswy2 += swy2;
                 tsw_prot += sw_prot;
+                tsw_s1_y1 += s1_y1;
+                tsw_s0_y1 += s0_y1;
+                tsw_s1_y0 += s1_y0;
+                tsw_s0_y0 += s0_y0;
             }
             let total_w = tsw + msw;
 
@@ -749,7 +770,7 @@ impl<'a> Grower<'a> {
 
             let mut best: Option<(f64, Vec<usize>, bool)> = None;
 
-            let mut eval_split = |left_indices: &[usize], ln: usize, lsw: f64, lswy: f64, lswy2: f64, lsw_prot: f64, best: &mut Option<(f64, Vec<usize>, bool)>| -> bool {
+            let mut eval_split = |left_indices: &[usize], ln: usize, lsw: f64, lswy: f64, lswy2: f64, lsw_prot: f64, ls1_y1: f64, ls0_y1: f64, ls1_y0: f64, ls0_y0: f64, best: &mut Option<(f64, Vec<usize>, bool)>| -> bool {
                 let rn = tn - ln;
                 let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
                 if (ln as f64) < m || (rn as f64) < m {
@@ -793,9 +814,47 @@ impl<'a> Grower<'a> {
                         gain
                     };
                     let gain = if self.params.fairness_penalty > 0.0 && self.params.protected_col.is_some() {
-                        let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
-                        let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
-                        let disparity = (p_l - p_r).abs();
+                        let disparity = match self.params.fairness_metric {
+                            crate::model_tree::FairnessMetric::DemographicParity => {
+                                let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
+                                let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
+                                (p_l - p_r).abs()
+                            }
+                            crate::model_tree::FairnessMetric::EqualizedOdds => {
+                                let (alsw_s1_y1, alsw_s0_y1, alsw_s1_y0, alsw_s0_y0) = if missing_left {
+                                    (ls1_y1 + msw_s1_y1, ls0_y1 + msw_s0_y1, ls1_y0 + msw_s1_y0, ls0_y0 + msw_s0_y0)
+                                } else {
+                                    (ls1_y1, ls0_y1, ls1_y0, ls0_y0)
+                                };
+                                let tot_s1_y1 = tsw_s1_y1 + msw_s1_y1;
+                                let tot_s0_y1 = tsw_s0_y1 + msw_s0_y1;
+                                let tot_s1_y0 = tsw_s1_y0 + msw_s1_y0;
+                                let tot_s0_y0 = tsw_s0_y0 + msw_s0_y0;
+
+                                let diff_tpr = if tot_s1_y1 > 0.0 && tot_s0_y1 > 0.0 {
+                                    let tpr_1 = alsw_s1_y1 / tot_s1_y1;
+                                    let tpr_0 = alsw_s0_y1 / tot_s0_y1;
+                                    Some((tpr_1 - tpr_0).abs())
+                                } else {
+                                    None
+                                };
+
+                                let diff_fpr = if tot_s1_y0 > 0.0 && tot_s0_y0 > 0.0 {
+                                    let fpr_1 = alsw_s1_y0 / tot_s1_y0;
+                                    let fpr_0 = alsw_s0_y0 / tot_s0_y0;
+                                    Some((fpr_1 - fpr_0).abs())
+                                } else {
+                                    None
+                                };
+
+                                match (diff_tpr, diff_fpr) {
+                                    (Some(dt), Some(df)) => 0.5 * (dt + df),
+                                    (Some(dt), None) => dt,
+                                    (None, Some(df)) => df,
+                                    (None, None) => 0.0,
+                                }
+                            }
+                        };
                         (gain - self.params.fairness_penalty * parent_sse * disparity).max(0.0)
                     } else {
                         gain
@@ -814,22 +873,27 @@ impl<'a> Grower<'a> {
             match self.params.cat_search {
                 CatSearch::Cumulative => {
                     let (mut ln, mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
+                    let (mut ls1_y1, mut ls0_y1, mut ls1_y0, mut ls0_y0) = (0.0, 0.0, 0.0, 0.0);
                     let mut left_indices = Vec::with_capacity(k);
                     for i in 1..k {
-                        let (_, cn, csw, cswy, cswy2, csw_prot) = scratch.level_moments[i - 1];
+                        let (_, cn, csw, cswy, cswy2, csw_prot, cs1_y1, cs0_y1, cs1_y0, cs0_y0) = scratch.level_moments[i - 1];
                         ln += cn;
                         lsw += csw;
                         lswy += cswy;
                         lswy2 += cswy2;
                         lsw_prot += csw_prot;
+                        ls1_y1 += cs1_y1;
+                        ls0_y1 += cs0_y1;
+                        ls1_y0 += cs1_y0;
+                        ls0_y0 += cs0_y0;
                         left_indices.push(i - 1);
-                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, &mut best);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, ls1_y1, ls0_y1, ls1_y0, ls0_y0, &mut best);
                     }
                 }
                 CatSearch::SingleVsRest => {
                     for i in 0..k {
-                        let (_, ln, lsw, lswy, lswy2, lsw_prot) = scratch.level_moments[i];
-                        let hit = eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, &mut best);
+                        let (_, ln, lsw, lswy, lswy2, lsw_prot, s1_y1, s0_y1, s1_y0, s0_y0) = scratch.level_moments[i];
+                        let hit = eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, s1_y1, s0_y1, s1_y0, s0_y0, &mut best);
                         if hit {
                             break;
                         }
@@ -837,20 +901,25 @@ impl<'a> Grower<'a> {
                 }
                 CatSearch::Both => {
                     let (mut ln, mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
+                    let (mut ls1_y1, mut ls0_y1, mut ls1_y0, mut ls0_y0) = (0.0, 0.0, 0.0, 0.0);
                     let mut left_indices = Vec::with_capacity(k);
                     for i in 1..k {
-                        let (_, cn, csw, cswy, cswy2, csw_prot) = scratch.level_moments[i - 1];
+                        let (_, cn, csw, cswy, cswy2, csw_prot, cs1_y1, cs0_y1, cs1_y0, cs0_y0) = scratch.level_moments[i - 1];
                         ln += cn;
                         lsw += csw;
                         lswy += cswy;
                         lswy2 += cswy2;
                         lsw_prot += csw_prot;
+                        ls1_y1 += cs1_y1;
+                        ls0_y1 += cs0_y1;
+                        ls1_y0 += cs1_y0;
+                        ls0_y0 += cs0_y0;
                         left_indices.push(i - 1);
-                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, &mut best);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, ls1_y1, ls0_y1, ls1_y0, ls0_y0, &mut best);
                     }
                     for i in 0..k {
-                        let (_, ln, lsw, lswy, lswy2, lsw_prot) = scratch.level_moments[i];
-                        eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, &mut best);
+                        let (_, ln, lsw, lswy, lswy2, lsw_prot, s1_y1, s0_y1, s1_y0, s0_y0) = scratch.level_moments[i];
+                        eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, s1_y1, s0_y1, s1_y0, s0_y0, &mut best);
                     }
                 }
             }
@@ -1263,6 +1332,7 @@ impl<'a> Grower<'a> {
 
         let mut tn = 0usize;
         let (mut tsw, mut tswy, mut tswy2, mut tsw_prot) = (0.0, 0.0, 0.0, 0.0);
+        let (mut tsw_s1_y1, mut tsw_s0_y1, mut tsw_s1_y0, mut tsw_s0_y0) = (0.0, 0.0, 0.0, 0.0);
 
         for &r in rows {
             if let Some(v_raw) = self.cols[j][r] {
@@ -1276,6 +1346,17 @@ impl<'a> Grower<'a> {
                 } else {
                     0.0
                 };
+                let is_prot = p >= 0.5;
+                let is_y1 = y >= 0.5;
+                if is_prot && is_y1 {
+                    tsw_s1_y1 += w;
+                } else if !is_prot && is_y1 {
+                    tsw_s0_y1 += w;
+                } else if is_prot && !is_y1 {
+                    tsw_s1_y0 += w;
+                } else {
+                    tsw_s0_y0 += w;
+                }
                 scratch.pairs.push((v, y, w, p));
                 tn += 1;
                 tsw += w;
@@ -1304,12 +1385,25 @@ impl<'a> Grower<'a> {
             )
         };
         let mut msw_prot = 0.0;
+        let (mut msw_s1_y1, mut msw_s0_y1, mut msw_s1_y0, mut msw_s0_y0) = (0.0, 0.0, 0.0, 0.0);
         if let Some(pc) = prot_col_opt {
             if mn > 0 {
                 for &r in rows {
                     if self.cols[j][r].is_none() {
-                        if self.cols[pc][r].unwrap_or(0.0) >= 0.5 {
-                            msw_prot += self.w[r];
+                        let is_prot = self.cols[pc][r].unwrap_or(0.0) >= 0.5;
+                        let is_y1 = self.y[r] >= 0.5;
+                        let w = self.w[r];
+                        if is_prot {
+                            msw_prot += w;
+                        }
+                        if is_prot && is_y1 {
+                            msw_s1_y1 += w;
+                        } else if !is_prot && is_y1 {
+                            msw_s0_y1 += w;
+                        } else if is_prot && !is_y1 {
+                            msw_s1_y0 += w;
+                        } else {
+                            msw_s0_y0 += w;
                         }
                     }
                 }
@@ -1392,8 +1486,29 @@ impl<'a> Grower<'a> {
         st.group_ns += t0.elapsed().as_nanos() as u64;
         let t1 = Instant::now();
 
+        let min_v = scratch.pairs.first().unwrap().0;
+        let max_v = scratch.pairs.last().unwrap().0;
+        if self.params.extratrees && (max_v - min_v).abs() < 1e-12 {
+            st.scan_ns += t1.elapsed().as_nanos() as u64;
+            return (None, st);
+        }
+        let extratrees_cut = if self.params.extratrees {
+            let mut state = self.params.seed
+                .wrapping_add((rows.len() as u64).wrapping_mul(0x517cc1b727220a95))
+                .wrapping_add((j as u64).wrapping_mul(0x9e3779b97f4a7c15))
+                .wrapping_add((rows.first().copied().unwrap_or(0) as u64).wrapping_mul(0x85ebca6b));
+            state ^= state >> 12;
+            state ^= state << 25;
+            state ^= state >> 27;
+            let rand_u = (state.wrapping_mul(0x2545F4914F6CDD1D) >> 11) as f64 / ((1u64 << 53) as f64);
+            Some(min_v + (0.05 + 0.90 * rand_u) * (max_v - min_v))
+        } else {
+            None
+        };
+
         let mut ln = 0usize;
         let (mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0.0, 0.0, 0.0, 0.0);
+        let (mut lsw_s1_y1, mut lsw_s0_y1, mut lsw_s1_y0, mut lsw_s0_y0) = (0.0, 0.0, 0.0, 0.0);
         let mut best: Option<(f64, Split)> = None;
         let total_w = tsw + msw;
 
@@ -1404,16 +1519,35 @@ impl<'a> Grower<'a> {
             lswy += w * y;
             lswy2 += w * y * y;
             lsw_prot += w * p;
+            let is_prot = p >= 0.5;
+            let is_y1 = y >= 0.5;
+            if is_prot && is_y1 {
+                lsw_s1_y1 += w;
+            } else if !is_prot && is_y1 {
+                lsw_s0_y1 += w;
+            } else if is_prot && !is_y1 {
+                lsw_s1_y0 += w;
+            } else {
+                lsw_s0_y0 += w;
+            }
             if n_classes_opt.is_some() {
                 scratch.h_left[y as usize] += w;
             }
-            let is_boundary = k + 1 < n_pairs && scratch.pairs[k + 1].0 != v;
+            let is_boundary = if let Some(et_cut) = extratrees_cut {
+                scratch.pairs[k].0 <= et_cut && (k + 1 == n_pairs || scratch.pairs[k + 1].0 > et_cut)
+            } else {
+                k + 1 < n_pairs && scratch.pairs[k + 1].0 != v
+            };
             if !is_boundary {
                 continue;
             }
-            let threshold = match grid {
-                Some(_) => v,
-                None => (v + scratch.pairs[k + 1].0) / 2.0,
+            let threshold = if let Some(et_cut) = extratrees_cut {
+                et_cut
+            } else {
+                match grid {
+                    Some(_) => v,
+                    None => (v + scratch.pairs[k + 1].0) / 2.0,
+                }
             };
             let rn = tn - ln;
             let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
@@ -1496,9 +1630,47 @@ impl<'a> Grower<'a> {
                     gain
                 };
                 let gain = if self.params.fairness_penalty > 0.0 && self.params.protected_col.is_some() {
-                    let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
-                    let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
-                    let disparity = (p_l - p_r).abs();
+                    let disparity = match self.params.fairness_metric {
+                        crate::model_tree::FairnessMetric::DemographicParity => {
+                            let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
+                            let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
+                            (p_l - p_r).abs()
+                        }
+                        crate::model_tree::FairnessMetric::EqualizedOdds => {
+                            let (alsw_s1_y1, alsw_s0_y1, alsw_s1_y0, alsw_s0_y0) = if missing_left {
+                                (lsw_s1_y1 + msw_s1_y1, lsw_s0_y1 + msw_s0_y1, lsw_s1_y0 + msw_s1_y0, lsw_s0_y0 + msw_s0_y0)
+                            } else {
+                                (lsw_s1_y1, lsw_s0_y1, lsw_s1_y0, lsw_s0_y0)
+                            };
+                            let tot_s1_y1 = tsw_s1_y1 + msw_s1_y1;
+                            let tot_s0_y1 = tsw_s0_y1 + msw_s0_y1;
+                            let tot_s1_y0 = tsw_s1_y0 + msw_s1_y0;
+                            let tot_s0_y0 = tsw_s0_y0 + msw_s0_y0;
+
+                            let diff_tpr = if tot_s1_y1 > 0.0 && tot_s0_y1 > 0.0 {
+                                let tpr_1 = alsw_s1_y1 / tot_s1_y1;
+                                let tpr_0 = alsw_s0_y1 / tot_s0_y1;
+                                Some((tpr_1 - tpr_0).abs())
+                            } else {
+                                None
+                            };
+
+                            let diff_fpr = if tot_s1_y0 > 0.0 && tot_s0_y0 > 0.0 {
+                                let fpr_1 = alsw_s1_y0 / tot_s1_y0;
+                                let fpr_0 = alsw_s0_y0 / tot_s0_y0;
+                                Some((fpr_1 - fpr_0).abs())
+                            } else {
+                                None
+                            };
+
+                            match (diff_tpr, diff_fpr) {
+                                (Some(dt), Some(df)) => 0.5 * (dt + df),
+                                (Some(dt), None) => dt,
+                                (None, Some(df)) => df,
+                                (None, None) => 0.0,
+                            }
+                        }
+                    };
                     let scale = parent_sse.max(1e-12);
                     (gain - self.params.fairness_penalty * scale * disparity).max(0.0)
                 } else {
@@ -1521,6 +1693,9 @@ impl<'a> Grower<'a> {
                         },
                     ));
                 }
+            }
+            if extratrees_cut.is_some() {
+                break;
             }
         }
 

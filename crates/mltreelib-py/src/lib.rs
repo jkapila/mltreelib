@@ -3083,8 +3083,9 @@ impl PyModelTree {
         shrinkage = 0.0, max_classes = 256, leaf_na_policy = "drop_fallback", preset = None,
         control = None, leaf_control = None,
         mmd_kernel = None, mmd_bandwidth = None,
-        fairness_penalty = None, protected_col = None,
-        sporf_d = 0, sporf_projections = 10
+        fairness_penalty = None, protected_col = None, fairness_metric = None,
+        sporf_d = 0, sporf_projections = 10,
+        extratrees = false, ebm_fast = false
     ))]
     fn new(
         max_depth: usize,
@@ -3158,8 +3159,11 @@ impl PyModelTree {
         mmd_bandwidth: Option<f64>,
         fairness_penalty: Option<f64>,
         protected_col: Option<usize>,
+        fairness_metric: Option<&str>,
         sporf_d: usize,
         sporf_projections: usize,
+        extratrees: bool,
+        ebm_fast: bool,
     ) -> PyResult<Self> {
         let mut max_depth = max_depth;
         let mut min_rows = min_rows;
@@ -3512,8 +3516,15 @@ impl PyModelTree {
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
             protected_col,
+            fairness_metric: match fairness_metric.unwrap_or("demographic_parity").to_lowercase().as_str() {
+                "equalized_odds" | "equalizedodds" | "eo" => mltreelib_core::model_tree::FairnessMetric::EqualizedOdds,
+                "demographic_parity" | "demographicparity" | "dp" => mltreelib_core::model_tree::FairnessMetric::DemographicParity,
+                other => return Err(PyValueError::new_err(format!("Unknown fairness_metric: '{other}'. Expected 'demographic_parity' or 'equalized_odds'"))),
+            },
             sporf_d,
             sporf_projections,
+            extratrees,
+            ebm_fast,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(
@@ -3583,7 +3594,7 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, sporf_d = None, sporf_projections = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
     fn fit(
         &mut self,
         mut x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
@@ -3606,9 +3617,25 @@ impl PyModelTree {
         fairness_penalty: Option<f64>,
         protected_col: Option<usize>,
         protected_attribute: Option<Bound<'_, PyAny>>,
+        fairness_metric: Option<&str>,
         sporf_d: Option<usize>,
         sporf_projections: Option<usize>,
+        extratrees: Option<bool>,
+        ebm_fast: Option<bool>,
     ) -> PyResult<()> {
+        if let Some(fm) = fairness_metric {
+            self.params.fairness_metric = match fm.to_lowercase().as_str() {
+                "equalized_odds" | "equalizedodds" | "eo" => mltreelib_core::model_tree::FairnessMetric::EqualizedOdds,
+                "demographic_parity" | "demographicparity" | "dp" => mltreelib_core::model_tree::FairnessMetric::DemographicParity,
+                other => return Err(PyValueError::new_err(format!("Unknown fairness_metric: '{other}'. Expected 'demographic_parity' or 'equalized_odds'"))),
+            };
+        }
+        if let Some(et) = extratrees {
+            self.params.extratrees = et;
+        }
+        if let Some(ef) = ebm_fast {
+            self.params.ebm_fast = ef;
+        }
         if let Some(sd) = sporf_d {
             self.params.sporf_d = sd;
         }
@@ -3779,22 +3806,18 @@ impl PyModelTree {
                 .collect::<PyResult<Vec<_>>>()?;
         }
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, true)?;
-        let mut tree = match effective_w {
-            Some(w) => ModelTree::fit_weighted(&x, &y_vec, &w, self.params.clone()),
-            None => ModelTree::fit(&x, &y_vec, self.params.clone()),
+        let d = x.first().map(|r| r.len()).unwrap_or(0);
+        let names = col_names.unwrap_or_else(|| (0..d).map(|j| format!("x{j}")).collect());
+        if names.len() != d {
+            return Err(PyValueError::new_err(format!(
+                "col_names length ({}) does not match column count ({})",
+                names.len(),
+                d
+            )));
         }
-        .map_err(PyValueError::new_err)?;
-
-        if let Some(names) = col_names {
-            if names.len() != tree.col_names.len() {
-                return Err(PyValueError::new_err(format!(
-                    "col_names length ({}) does not match column count ({})",
-                    names.len(),
-                    tree.col_names.len()
-                )));
-            }
-            tree.col_names = names;
-        }
+        let weights = effective_w.unwrap_or_else(|| vec![1.0; x.len()]);
+        let tree = ModelTree::fit_weighted_named(names, &x, &y_vec, &weights, self.params.clone())
+            .map_err(PyValueError::new_err)?;
 
         self.inner = Some(tree);
         Ok(())
@@ -4720,6 +4743,24 @@ impl PyModelTree {
             } else {
                 out.push(None);
             }
+        }
+        Ok(out)
+    }
+
+    /// Returns list of detected pairwise feature interactions from EBM FAST screening.
+    fn fast_interactions(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
+        let t = self.tree()?;
+        let mut out = Vec::new();
+        for inter in t.fast_interactions() {
+            let d = PyDict::new(py);
+            d.set_item("col1", inter.col1)?;
+            d.set_item("col2", inter.col2)?;
+            d.set_item("col1_name", &inter.col1_name)?;
+            d.set_item("col2_name", &inter.col2_name)?;
+            d.set_item("score", inter.score)?;
+            d.set_item("cut1", inter.cut1)?;
+            d.set_item("cut2", inter.cut2)?;
+            out.push(d.into_any().unbind());
         }
         Ok(out)
     }
@@ -6066,6 +6107,51 @@ impl PyMarsRegressor {
     }
 }
 
+/// Screen all feature pairs for bivariate interactions using EBM FAST quad-stumps (Lou et al. 2013).
+#[pyfunction]
+#[pyo3(signature = (x, y, w = None, col_names = None, top_k = 10, min_samples = 5))]
+fn fast_interaction_screen(
+    py: Python<'_>,
+    x: Vec<Vec<Option<f64>>>,
+    y: Vec<f64>,
+    w: Option<Vec<f64>>,
+    col_names: Option<Vec<String>>,
+    top_k: usize,
+    min_samples: usize,
+) -> PyResult<Vec<Py<PyAny>>> {
+    let n = y.len();
+    if x.len() != n {
+        return Err(PyValueError::new_err("x and y length mismatch"));
+    }
+    let p = x.first().map(|r| r.len()).unwrap_or(0);
+    let names = col_names.unwrap_or_else(|| (0..p).map(|j| format!("x{j}")).collect());
+    let weights = w.unwrap_or_else(|| vec![1.0; n]);
+
+    let mut cols: Vec<Vec<Option<f64>>> = vec![Vec::with_capacity(n); p];
+    for row in x {
+        for (j, val) in row.into_iter().enumerate() {
+            if j < p {
+                cols[j].push(val);
+            }
+        }
+    }
+
+    let results = mltreelib_core::fast_interaction_screen(&cols, &y, &weights, &names, top_k, min_samples);
+    let mut out = Vec::new();
+    for inter in results {
+        let d = PyDict::new(py);
+        d.set_item("col1", inter.col1)?;
+        d.set_item("col2", inter.col2)?;
+        d.set_item("col1_name", inter.col1_name)?;
+        d.set_item("col2_name", inter.col2_name)?;
+        d.set_item("score", inter.score)?;
+        d.set_item("cut1", inter.cut1)?;
+        d.set_item("cut2", inter.cut2)?;
+        out.push(d.into_any().unbind());
+    }
+    Ok(out)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMarsRegressor>()?;
@@ -6114,5 +6200,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(summarize, m)?)?;
     m.add_function(wrap_pyfunction!(trended_transform, m)?)?;
     m.add_function(wrap_pyfunction!(windowed_transform, m)?)?;
+    m.add_function(wrap_pyfunction!(fast_interaction_screen, m)?)?;
     Ok(())
 }

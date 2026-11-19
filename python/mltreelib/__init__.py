@@ -51,6 +51,7 @@ from mltreelib._core import (
     trended_transform,
     windowed_transform,
     winnow,
+    fast_interaction_screen,
 )
 from mltreelib.datasets import list_datasets, load_dataset
 from mltreelib.models import AnomalyTree, ClusterTree, distributions_to_quantiles, histograms_to_quantiles
@@ -108,5 +109,6 @@ __all__ = [
     "trended_transform",
     "windowed_transform",
     "winnow",
+    "fast_interaction_screen",
 ]
-__version__ = "0.4.5"
+__version__ = "0.4.9"

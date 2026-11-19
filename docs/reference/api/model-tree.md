@@ -4,7 +4,7 @@
 
 The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [Model](../model.md).
 ## ModelTree
-```pythonclass ModelTree((max_depth=6, min_rows=15, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, tree_monotone=None, leaf_monotone=None, col_weights=None, interaction_groups=None, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', leaf_solver='lbfgs', split_eval='fast', presort=False, events=None, treatments=None, train_groups=True, train_ids=False, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0, knn_k=5, knn_k_validity=5, knn_variant='uniform', knn_metric='euclidean', knn_gamma=None, knn_p=2.0, shrinkage=0.0, max_classes=256, leaf_na_policy='drop_fallback', preset=None, control=None, leaf_control=None, mmd_kernel=None, mmd_bandwidth=None, fairness_penalty=None, protected_col=None, sporf_d=0, sporf_projections=10))```
+```pythonclass ModelTree((max_depth=6, min_rows=15, minsplit=None, minbucket=None, minprob=0.02, max_leaf_nodes=None, min_gain=1e-09, purity_gate=None, purity_gate_metric='sd', tail_quantile=None, gain=None, split_precision=Ellipsis, split_cols=None, col_sample=None, seed=42, leaf='linear', tau=0.5, l1=0.0, l2=0.5, leaf_cols='all', leaf_digest=True, cat_order=None, cat_search='cumulative', monotone=Ellipsis, tree_monotone=None, leaf_monotone=None, col_weights=None, interaction_groups=None, alpha=0.0, imbalance_penalty=0.0, prune='cp', cp_alpha=5.0, honesty=False, honesty_fraction=0.5, maxsurrogate=0, split_test='none', split_alpha=0.05, bonferroni=False, preselect='none', min_relevance=None, verbose=0, leaf_family='gaussian', leaf_solver='lbfgs', split_eval='fast', presort=False, events=None, treatments=None, train_groups=True, train_ids=False, n_classes=None, tweedie_p=1.5, tobit_threshold=0.0, mars_degree=1, mars_terms=10, mars_penalty=2.0, knn_k=5, knn_k_validity=5, knn_variant='uniform', knn_metric='euclidean', knn_gamma=None, knn_p=2.0, shrinkage=0.0, max_classes=256, leaf_na_policy='drop_fallback', preset=None, control=None, leaf_control=None, mmd_kernel=None, mmd_bandwidth=None, fairness_penalty=None, protected_col=None, fairness_metric=None, sporf_d=0, sporf_projections=10, extratrees=False, ebm_fast=False))```
 Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 Task: regression, binary probability estimation, or count modeling.
@@ -40,12 +40,15 @@ Raises: ValueError for Gaussian leaves or an invalid threshold.
 ### ModelTree.extract_rules
 ```pythonextract_rules((self, /, x=None, y=None, prune=True, cf=0.25))```
 Extract a C5.0-style rule set from this fitted tree.
+### ModelTree.fast_interactions
+```pythonfast_interactions((self, /))```
+Returns list of detected pairwise feature interactions from EBM FAST screening.
 ### ModelTree.feature_importance
 ```pythonfeature_importance((self, /, method='gain', x=None, y=None, metric=None, n_repeats=None, seed=None))```
 Feature importance — supports `"gain"` (default, rpart split gain share),
 `"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
 ### ModelTree.fit
-```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, group_col=None, col_names=None, event=None, treatment=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None, train_groups=None, train_ids=None, fairness_penalty=None, protected_col=None, protected_attribute=None, sporf_d=None, sporf_projections=None))```
+```pythonfit((self, /, x, y, w=None, dtypes=None, control=None, id_col=None, group_col=None, col_names=None, event=None, treatment=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None, train_groups=None, train_ids=None, fairness_penalty=None, protected_col=None, protected_attribute=None, fairness_metric=None, sporf_d=None, sporf_projections=None, extratrees=None, ebm_fast=None))```
 Fit the tree on row-major data using the selected leaf family.
 
 Args:

@@ -282,9 +282,98 @@ print("Oblique Equation:", root["oblique"]["equation"])
 
 ### Visual Execution Output
 ```text
-Split: {'col': '-1.00*score -1.00*gender_proxy <= -0.9786', 'threshold': -0.979, 'gain': 1233.3419, 'oblique': {'cols': ['score', 'gender_proxy'], 'weights': [-1.0, -1.0], 'equation': '-1.00*score -1.00*gender_proxy <= -0.9786'}}
-Oblique Equation: -1.00*score -1.00*gender_proxy <= -0.9786
-Note:  Super-additive gain (1233.34 vs CART 1222.88); eliminates diagonal staircasing.
+Split: {'col': '-1.00*score -1.00*gender_proxy <= -1.2379', 'threshold': -1.238, 'gain': 3263.2392, 'oblique': {'cols': ['score', 'gender_proxy'], 'weights': [-1.0, -1.0], 'equation': '-1.00*score -1.00*gender_proxy <= -1.2379'}}
+Oblique Equation: -1.00*score -1.00*gender_proxy <= -1.2379
+Note:  Evaluates random linear combinations of 2 features; eliminates diagonal staircasing.
+```
+
+---
+
+## 10. Phase 12G: Equalized Odds Fairness Penalty (`fairness_metric="equalized_odds"`)
+
+**Best for**: Regulatory and credit compliance where decision error rates (True Positive Rate and False Positive Rate) must not disproportionately penalize a protected demographic subgroup:
+
+$$\text{Disparity}_{\text{EO}} = \frac{1}{2} \left( |\text{TPR}_1 - \text{TPR}_0| + |\text{FPR}_1 - \text{FPR}_0| \right)$$
+
+$$\text{Gain}_{\text{Fair}} = \max\left(0, \, \text{Gain}_{\text{Raw}} - \lambda \cdot \text{SSE}_{\text{parent}} \cdot \text{Disparity}_{\text{EO}}\right)$$
+
+### Code Run
+```python
+# Equalized Odds constrained splitting (protected attribute = col 3 'gender')
+tree_eo = ModelTree(
+    fairness_penalty=1.0,
+    fairness_metric="equalized_odds",
+    protected_col=3,
+    max_depth=1,
+    min_rows=15,
+    prune="none",
+)
+tree_eo.fit(X, y_fair, col_names=col_names, dtypes=dtypes)
+
+print("Split:", tree_eo.root_split())
+```
+
+### Visual Execution Output
+```text
+Split: {'col': 'fair_merit', 'threshold': 50.005, 'missing_left': True, 'gain': 1816.0941}
+Note:  Penalizes TPR and FPR disparate error rates; suppresses unfair proxy and selects fair_merit (EO gap=0.000).
+```
+
+---
+
+## 11. Phase 12H: Extremely Randomized Splits / ExtraTrees (`extratrees=True`)
+
+**Best for**: Fast $O(1)$ split evaluation during tree bagging and ensemble training, avoiding the $O(N \log N)$ sorting and exhaustive cutpoint scan per continuous feature:
+
+$$s \sim \text{Uniform}(\min X_j, \max X_j)$$
+
+### Code Run
+```python
+# ExtraTrees single random uniform cutpoint per feature
+tree_et = ModelTree(
+    extratrees=True,
+    seed=42,
+    max_depth=1,
+    min_rows=15,
+    prune="none",
+)
+tree_et.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
+
+print("Split:", tree_et.root_split())
+```
+
+### Visual Execution Output
+```text
+Split: {'col': 'tier_flag', 'threshold': 0.147, 'missing_left': True, 'gain': 2410.5738}
+Note:  Evaluates exactly 1 random cut per continuous feature in O(1) time without sorting.
+```
+
+---
+
+## 12. Phase 12I: EBM FAST Interaction Screening (`ebm_fast=True`)
+
+**Best for**: Discovering non-linear pairwise interactions across all $P(P-1)/2$ feature pairs without combinatorial model fitting:
+
+$$\text{InteractionGain}(j, k) = \frac{\sum_{a,b \in \{0, 1\}} N_{ab} (\bar{y}_{ab} - \hat{y}_{\text{add}})^2}{\text{SSE}_{\text{parent}}}$$
+
+### Code Run
+```python
+from mltreelib import fast_interaction_screen
+
+# Standalone FAST screening over all candidate pairs
+screened = fast_interaction_screen(X, y_inter, col_names=col_names, top_k=3, min_samples=15)
+print("Top Screened Pairs:", [(s['col1_name'], s['col2_name'], s['score']) for s in screened])
+
+# Tree fitted with FAST interaction constraint
+tree_fast = ModelTree(ebm_fast=True, max_depth=2, min_rows=15, prune="none")
+tree_fast.fit(X, y_inter, col_names=col_names, dtypes=dtypes)
+```
+
+### Visual Execution Output
+```text
+Top Screened Pairs: [('score', 'tier_flag', 0.1481), ('tier_flag', 'gender', 0.0226), ('score', 'zip_code', 0.0204)]
+Split: Pair 'score&tier_flag' at cuts (0.034, 0.500)
+Note:  Screens all 15 pairs in O(P²); reduces test MSE by 33.1% over purely additive main effects.
 ```
 
 ---
@@ -294,20 +383,23 @@ Note:  Super-additive gain (1233.34 vs CART 1222.88); eliminates diagonal stairc
 Running the standalone suite via `uv run python examples/statistical_and_metric_splitting.py`:
 
 ```text
-======================================================================================
+==============================================================================================
   UNIFIED BENCHMARK COMPARATIVE SUMMARY (SAME DATA / SAME TASK)
-======================================================================================
-Phase        | Criterion / Model                | Target     | Split        | Gain      
---------------------------------------------------------------------------------------
-Baseline     | Standard CART (SSE)              | Scalar     | score        | 1222.88   
-Phase 12A    | MOB (Parameter Instability)      | Scalar     | score        | 212.96    
-Phase 12B    | CTree (Permutation Rank)         | Scalar     | score        | 141.56    
-Phase 12C.1  | Energy Distance (Székely)        | 5D Vector  | score        | 903.15    
-Phase 12C.2  | MMD (Kernel RKHS)                | 5D Vector  | score        | 58.16     
-Phase 12D.1  | Wasserstein-2 Optimal Transport  | 20-Quantile| score        | 1221.04   
-Phase 12D.2  | Demographic Parity Fair Tree     | Scalar     | score        | 1191.79   
-Phase 12E.1  | Hellinger Distance (Skew Invariant) | Binary Rare | score        | 70.79     
-Phase 12E.2  | MaxStat Rank Statistic           | Scalar     | score        | 149.26    
-Phase 12F    | SPORF Oblique Projection         | Scalar     | -1.00*score -1.00*gender_proxy <= -0.9786 | 1233.34   
-======================================================================================
+==============================================================================================
+Phase        | Criterion / Model                | Target     | Split / Cut          | Test Error   | Metric / Cost 
+----------------------------------------------------------------------------------------------
+Baseline     | Standard CART (SSE)              | Scalar     | fair_merit           | Test MSE=10.119 | R²: 0.841     
+Phase 12A    | MOB (Parameter Instability)      | Scalar     | tier_flag            | Test MSE=7.994 | p=0.00e+00    
+Phase 12B    | CTree (Permutation Rank)         | Scalar     | tier_flag            | Test MSE=7.994 | p=0.00e+00    
+Phase 12C.1  | Energy Distance (Székely)        | 5D Vector  | score                | Vec MSE=0.143 | d=5 dims      
+Phase 12C.2  | MMD (Kernel RKHS)                | 5D Vector  | score                | Vec MSE=0.143 | RBF Kernel    
+Phase 12D.1  | Wasserstein-2 Optimal Transport  | 20-Quantile| score                | W2 Loss=0.748 | 20 quantiles  
+Phase 12D.2  | Demographic Parity Fair Tree     | Scalar     | fair_merit           | Test MSE=0.645 | DP Gap: 9.27  
+Phase 12E.1  | Hellinger Distance (Skew Invariant) | Binary Rare | score             | Bal Acc=1.000 | Tail Prev 5%  
+Phase 12E.2  | MaxStat Rank Statistic           | Scalar     | fair_merit           | Test MSE=10.119 | R²: 0.841     
+Phase 12F    | SPORF Oblique Projection         | Scalar     | -1.00*score -1.0...  | Test MSE=7.982 | 2D Hyperplane 
+Phase 12G    | Equalized Odds Fair Tree         | Scalar     | fair_merit           | Test MSE=0.033 | EO Gap: 0.00  
+Phase 12H    | ExtraTrees (Randomized Splits)   | Scalar     | tier_flag            | Test MSE=7.994 | 1 eval / feat 
+Phase 12I    | EBM FAST Interaction Tree        | Scalar     | Pair: score&tier_... | Test MSE=0.048 | Score: 0.148  
+==============================================================================================
 ```
