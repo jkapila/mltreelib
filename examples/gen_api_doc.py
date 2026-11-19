@@ -179,7 +179,7 @@ def main():
         "regenerated from the built module, so this never drifts from the\n",
         "code. Narrative guides with verified examples:\n",
         "[Data](../data.md) · [Model](../model.md) · [Metrics](../metrics.md) ·\n",
-        "[Reports](../reports.md) · [Visualization](../plots.md).\n",
+        "[Reports](../reports.md) · [Visualization](../../guides/visualization.md).\n",
         "\n",
         "| page | classes | functions |\n|---|---|---|\n",
     ]

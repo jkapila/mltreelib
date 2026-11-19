@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 authors = [{ name = "Jitin Kapila" }]
 readme = "README.md"
 license = "Apache-2.0"
-dependencies = ["pyarrow>=14"]
+dependencies = []
 keywords = [
     "tree",
     "decision-trees",
@@ -45,6 +45,10 @@ Repository = "https://github.com/jkapila/mltreelib"
 Issues = "https://github.com/jkapila/mltreelib/issues"
 
 [project.optional-dependencies]
+# Benchmark dataset loader: reading parquet benchmark suites
+dataset = [
+    "pyarrow>=14",
+]
 # Charts and diagrams: the rendering wheels we borrow instead of reinventing.
 plotting = [
     "matplotlib>=3.8",
@@ -55,11 +59,21 @@ plotting = [
 tuning = [
     "optuna>=3.0",
 ]
+# All optional extras combined
+all = [
+    "pyarrow>=14",
+    "matplotlib>=3.8",
+    "pygraphviz>=1.11",
+    "seaborn>=0.13",
+    "optuna>=3.0",
+]
 
 [dependency-groups]
 dev = [
     "maturin>=1.5,<2.0",
     "pytest>=8",
+    "pyarrow>=14",
+    "pandas>=2.0",
     "matplotlib>=3.8",
     "seaborn>=0.13",
     "ruff>=0.8",

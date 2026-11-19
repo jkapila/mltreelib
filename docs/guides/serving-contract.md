@@ -13,6 +13,29 @@ This guide starts the deployment and schema workflow. It covers a fitted `ModelT
 | Output | Prediction kind, scale, class ordering and any decision threshold. |
 | Evidence | Training data period, split, baseline, metrics and known model gaps. |
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Ingestion Client / API Gateway
+    participant Guard as Schema Guard & Validator
+    participant Normalizer as Sentinel Normalizer (None / NaN)
+    participant Core as mltreelib-core Tree Route
+    participant Leaf as Local Leaf Solver (Linear / GLM)
+    participant Decision as Threshold & Policy Post-Processor
+
+    Client->>Guard: Submit Raw Record (JSON Payload)
+    Note over Guard: Check required keys, field order, and valid types
+    Guard->>Normalizer: Verified Named Features
+    Note over Normalizer: Map unobserved keys & NaNs to None; map unseen category levels to missing
+    Normalizer->>Core: Fast Vector Traversal [x1, x2, ..., xk]
+    Note over Core: Traverse internal split nodes using learned missing_left and surrogates
+    Core->>Leaf: Deliver to Terminal Leaf Node
+    Note over Leaf: Evaluate local linear model: y_hat = b0 + sum(bj * xj)
+    Leaf->>Decision: Continuous Raw Score / Probability
+    Note over Decision: Apply calibrated threshold (e.g. p >= 0.20 -> Review Queue)
+    Decision-->>Client: Final Actionable Prediction & Audit Path
+```
+
 `ModelTree` accepts raw categorical strings and missing predictor values. Preserve the fitted feature order. A row-based input does not carry column names at prediction time, so your application needs to check the schema before constructing rows.
 
 ## Fit and predict with named records

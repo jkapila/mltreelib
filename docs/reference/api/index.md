@@ -6,7 +6,7 @@ Every class and function with its exact signature and docstring —
 regenerated from the built module, so this never drifts from the
 code. Narrative guides with verified examples:
 [Data](../data.md) · [Model](../model.md) · [Metrics](../metrics.md) ·
-[Reports](../reports.md) · [Visualization](../plots.md).
+[Reports](../reports.md) · [Visualization](../../guides/visualization.md).
 
 | page | classes | functions |
 |---|---|---|

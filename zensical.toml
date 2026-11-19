@@ -1,0 +1,173 @@
+[project]
+site_name = "mltreelib"
+site_url = "https://jkapila.github.io/mltreelib/"
+site_description = "Tree-based machine learning with a Rust core"
+exclude_docs = """
+agents/*
+examples/visualization.md
+reference/plots.md
+"""
+
+extra_javascript = [
+  "assets/medium-zoom.min.js",
+  "assets/zoom-init.js",
+  "assets/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+]
+
+nav = [
+  { "Home" = "index.md" },
+  { "Installation" = "installation.md" },
+  { "Quickstart" = "quickstart.md" },
+  { "Modeling pathways" = [
+    { "Overview" = "guides/index.md" },
+    { "Prepare data" = "guides/data.md" },
+    { "Get the datasets" = "guides/real-data.md" },
+    { "Regression" = "guides/regression.md" },
+    { "Classification" = "guides/classification.md" },
+    { "Clustering" = "guides/clustering.md" },
+    { "Anomaly detection" = "guides/anomaly.md" },
+    { "Survival" = "guides/survival.md" },
+    { "Uplift" = "guides/uplift.md" },
+    { "Evaluate and monitor" = "guides/evaluation.md" },
+    { "Visualize results" = "guides/visualization.md" },
+    { "Prediction and schema" = "guides/serving-contract.md" },
+    { "Extend a model tree" = "guides/advanced-modeling.md" },
+  ] },
+  { "Examples" = [
+    { "Overview" = "examples/index.md" },
+    { "Core Suites" = [
+      { "Suite 1: Core Architecture & Growth Knobs" = "examples/core-tree-architecture.md" },
+      { "Suite 2: Structural Constraints & Honesty" = "examples/constraints-and-honesty.md" },
+      { "Suite 3: Native Missing Data Routing" = "examples/missing-data-routing.md" },
+      { "Suite 4: Distributional & Censored Leaves" = "examples/distributional-leaves.md" },
+      { "Suite 5: Dynamic Leaf Retraining" = "examples/hierarchical-retrain.md" },
+      { "Suite 6: Statistical & Metric Splitting" = "examples/statistical-and-metric-splitting.md" },
+      { "Suite 7: Time Series Forecasting" = "examples/timeseries-forecasting.md" },
+      { "Suite 8: Unsupervised Trees" = "examples/unsupervised-trees.md" },
+      { "Leaf Solver Benchmarks" = "examples/solver-benchmarks.md" },
+    ] },
+    { "Specialized Topics" = [
+      { "Data processing" = "examples/data-processing.md" },
+      { "Optional categorical encoders" = "examples/categorical-encoders.md" },
+      { "Missing data and routing" = "examples/missing-routing.md" },
+      { "Synthetic controls and ground truth" = "examples/two-controls-and-0d.md" },
+      { "Model building" = "examples/model-building.md" },
+      { "Growth knobs" = "examples/knob-tour.md" },
+      { "Hyperparameter search" = "examples/hpo.md" },
+      { "Distributional split criteria" = "examples/distributional-split-criteria.md" },
+      { "Tobit regression" = "examples/tobit-regression.md" },
+      { "Survival mechanics" = "examples/survival-trees.md" },
+      { "Causal simulation" = "examples/causal-uplift.md" },
+      { "Honesty and weights" = "examples/honesty-weights.md" },
+      { "Monotone and interaction constraints" = "examples/constraints.md" },
+      { "Metrics and plots" = "examples/metrics-plots.md" },
+      { "Tree inspection" = "examples/inspection.md" },
+      { "Clustering diagnostics" = "examples/clustering-comparison.md" },
+      { "Anomaly review budgets" = "examples/anomaly-comparison.md" },
+      { "Model review checklist" = "examples/walkthrough.md" },
+      { "Rules, summaries and neighbors" = "examples/rules-summary-knn.md" },
+      { "Explainable stumps and retrain" = "examples/stump-explainable.md" },
+    ] },
+  ] },
+  { "Blog" = [
+    { "Overview" = "blog/index.md" },
+    { "Credit Scoring and Trees" = "blog/why-credit-scoring-needs-glass-box-trees.md" },
+    { "Zero-Imputation Maintenance" = "blog/zero-imputation-predictive-maintenance.md" },
+    { "Causal Uplift Modeling" = "blog/uplift-modeling-with-causal-trees.md" },
+    { "Modernizing Quinlan in Rust" = "blog/modernizing-quinlan-classics-in-rust.md" },
+    { "Beyond MSE (Distributional)" = "blog/beyond-mse-distributional-trees.md" },
+    { "Breaking Step Functions" = "blog/breaking-step-functions-model-trees-vs-gbdt.md" },
+    { "Two-Stage Survival Trees" = "blog/segregate-first-two-stage-survival-trees.md" },
+  ] },
+  { "Benchmarks" = [
+    { "Overview" = "benchmarks/elo.md" },
+    { "Overall Arena" = "benchmarks/elo_overall.md" },
+    { "Regression Arena" = "benchmarks/elo_board.md" },
+    { "Classification Arena" = "benchmarks/elo_cla_board.md" },
+    { "DataSets" = "benchmarks/datasets.md" },
+  ] },
+  { "Research" = [
+    { "Field notes" = "field-notes.md" },
+  ] },
+  { "API reference" = [
+    { "Overview" = "reference/api/index.md" },
+    { "Parameters Catalog" = "reference/parameters.md" },
+    { "Data" = "reference/api/data.md" },
+    { "ModelTree" = "reference/api/model-tree.md" },
+    { "Clustering trees" = "reference/api/cluster.md" },
+    { "Anomaly & density trees" = "reference/api/anomaly.md" },
+    { "Metrics" = "reference/api/metrics.md" },
+    { "Encoders & scalers" = "reference/api/encoders.md" },
+    { "Feature functions" = "reference/api/features.md" },
+    { "Data guide" = "reference/data.md" },
+    { "Model guide" = "reference/model.md" },
+    { "Metrics guide" = "reference/metrics.md" },
+    { "Evaluation reports" = "reference/reports.md" },
+  ] },
+]
+
+[project.theme]
+variant = "modern"
+custom_dir = "overrides"
+logo = "assets/mltreelib-icon.svg"
+favicon = "assets/mltreelib-icon.svg"
+features = [
+  "navigation.instant",
+  "navigation.tracking",
+  "navigation.top",
+  "content.code.copy",
+  "search.suggest",
+  "search.highlight",
+  "content.tabs.link",
+  "content.footnote.tooltips",
+  "content.tooltips",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "teal"
+accent = "deep orange"
+toggle.icon = "material/brightness-7"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "teal"
+accent = "deep orange"
+toggle.icon = "material/brightness-4"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+toc.permalink = true
+pymdownx.arithmatex.generic = true
+pymdownx.betterem = {}
+pymdownx.caret = {}
+pymdownx.details = {}
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.keys = {}
+pymdownx.magiclink = {}
+pymdownx.mark = {}
+pymdownx.smartsymbols = {}
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tabbed.alternate_style = true
+pymdownx.tabbed.combine_header_slug = true
+pymdownx.tasklist.custom_checkbox = true
+pymdownx.tilde = {}
+

@@ -10,14 +10,32 @@
 
 ---
 
-## Overall Leaderboard (56 Datasets)
+## Executive Summary & Cross-Task Insights
 
+### 1. Unified Arena Overview
+The cumulative TabArena-v0.1 arena provides an empirical tournament across **56 diverse datasets** spanning physical sciences, medical diagnosis, financial churn, industrial failures, and web analytics. Every algorithm was tested under strict serial evaluation with a 300-second wall-clock timeout per run.
+
+### 2. High-Altitude Rankings
+1. **grf_llf (Rank 1, Elo 1585.4)**: Leads in regression via Generalized Random Forests with local linear leaves.
+2. **CatBoost (Rank 2, Overall Elo 1477.5)**: The most consistent dual-domain performer across all 56 datasets (Reg: 1479.0, Cla: 1388.0).
+3. **perpetual (Rust) (Rank 3, Overall Elo 1391.8)**: High-speed pure-Rust gradient booster with automatic stopping and zero hyperparameters.
+4. **sklearn RF & ChimeraBoost (Ranks 4-5, Elo 1368.5 & 1354.9)**: Random forests remain extraordinarily resilient across diverse tabular domains without manual tuning.
+5. **EBM (Explainable Boosting Machine) (Rank 6, Elo 1353.5)**: Highest-ranking fully interpretable model, though computationally expensive (~44.7s average fit time).
+6. **ModelTree(all) (Rank 7, Overall Elo 1333.9)**: The top-performing pure-Rust model tree architecture. It outperforms traditional trees (`ctree`, `rpart`, `sklearn tree`) by 300+ Elo points and matches or exceeds standard gradient boosters on many tasks by substituting flat leaf constants with regularized local linear models.
+
+### 3. Language & Runtime Economy
+- **Rust Core Advantage**: `ModelTree` and `perpetual` provide native memory safety and multi-threaded throughput with zero reliance on external BLAS/Fortran runtimes.
+- **Microsecond Leaf Updates**: While full GBDT re-fitting requires dozens of seconds, `ModelTree` enables frozen-topology leaf retraining in < 2 ms, allowing high-throughput online serving on streaming data.
+
+---
+
+## Overall Leaderboard (56 Datasets)
 
 <div id="elo-overall-table" class="elo-interactive-wrap">
 <style>
 #elo-overall-table { overflow-x: auto; margin: 1.2em 0; border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-#elo-overall-table table { border-collapse: separate; border-spacing: 0; font-size: 0.82rem; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
-#elo-overall-table th, #elo-overall-table td { padding: 7px 12px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
+#elo-overall-table table { border-collapse: separate; border-spacing: 0; font-size: 0.72rem; line-height: 1.25; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
+#elo-overall-table th, #elo-overall-table td { padding: 4px 8px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
 #elo-overall-table th { cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 4; font-weight: 600; background: var(--md-default-fg-color--lightest, #f8f9fa); border-bottom: 2px solid var(--md-default-fg-color--light, #ccc); }
 #elo-overall-table th:hover { color: var(--md-accent-fg-color, #0288d1); background: #eef7fc; }
 #elo-overall-table td.n { text-align: right; }

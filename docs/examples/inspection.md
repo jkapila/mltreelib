@@ -109,7 +109,7 @@ feature importance (top 5 of 26):
 ## The tree text itself
 
 `print(model)` is the full rpart-format listing (see the
-[Visualization](visualization.md) page for the diagram of the same tree):
+[Visualization](../guides/visualization.md) page for the diagram of the same tree):
 
 ```text
 n= 43152
@@ -122,5 +122,5 @@ node), split, n, deviance, yval
       4) x0< 0.465 13953 7.944035e+08 788.6131
 ```
 
-Next: [Visualization](visualization.md) to draw it, or
+Next: [Visualization](../guides/visualization.md) to draw it, or
 [Benchmarks — ELO](../benchmarks/elo.md) to see it against the field.

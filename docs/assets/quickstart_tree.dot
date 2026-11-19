@@ -1,0 +1,34 @@
+digraph tree {
+  rankdir=LR;
+  node [shape=box, style="rounded,filled", fillcolor="#fafafa", fontname="monospace", fontsize=10];
+  edge [fontname="monospace", fontsize=9, color="#888888"];
+  n8 [label="leaf\nn=143  yval=15.445", color="#22aa77"];
+  n9 [label="leaf\nn=47  yval=27.673", color="#22aa77"];
+  n4 [label="Age <= 7\nn=190  dev=14043.474", color="#333333"];
+  n10 [label="leaf\nn=48  yval=39.254", color="#22aa77"];
+  n11 [label="leaf\nn=25  yval=26.084", color="#22aa77"];
+  n5 [label="Water <= 178\nn=73  dev=10258.391", color="#333333"];
+  n2 [label="Cement <= 350\nn=263  dev=38269.292", color="#333333"];
+  n12 [label="leaf\nn=101  yval=26.099", color="#22aa77"];
+  n13 [label="leaf\nn=329  yval=40.014", color="#22aa77"];
+  n6 [label="Cement <= 164.6\nn=430  dev=68793.496", color="#333333"];
+  n14 [label="leaf\nn=76  yval=63.465", color="#22aa77"];
+  n15 [label="leaf\nn=55  yval=46.383", color="#22aa77"];
+  n7 [label="Water <= 181.1\nn=131  dev=22786.202", color="#333333"];
+  n3 [label="Cement <= 350\nn=561  dev=129948.081", color="#333333"];
+  n1 [label="Age <= 14\nn=824  dev=228333.917", color="#333333"];
+  n4 -> n8 [label="<= 7"];
+  n4 -> n9 [label="> 7"];
+  n5 -> n10 [label="<= 178"];
+  n5 -> n11 [label="> 178"];
+  n2 -> n4 [label="<= 350"];
+  n2 -> n5 [label="> 350"];
+  n6 -> n12 [label="<= 164.6"];
+  n6 -> n13 [label="> 164.6"];
+  n7 -> n14 [label="<= 181.1"];
+  n7 -> n15 [label="> 181.1"];
+  n3 -> n6 [label="<= 350"];
+  n3 -> n7 [label="> 350"];
+  n1 -> n2 [label="<= 14"];
+  n1 -> n3 [label="> 14"];
+}

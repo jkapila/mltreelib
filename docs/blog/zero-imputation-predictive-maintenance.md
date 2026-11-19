@@ -53,6 +53,8 @@ When a split feature is absent, the tree can use its missing route. The named sp
 
 The `ab_000` channel was missing on 6,181 of 8,000 training rows. All 2,000 test records received scores. The validation-selected threshold was 0.10. The test queue contained 59 records, including 28 of the 39 positive cases. That is 47% precision and 72% recall. Average precision was 0.430, alongside 1.95% test prevalence.
 
+![Scania Truck Native Missing Routing and Surrogate Precision-Recall](../assets/missing_routing_aps.png)
+
 ![Truck sensor precision–recall and observed versus predicted rates by missingness](../assets/guides/real-aps.svg)
 
 The right panel separates records with all selected sensor values from records with at least one missing value. The groups contain 370 and 1,630 observations with 9 and 30 positives, respectively. The mean score was 1.31% for complete rows, compared with 2.43% observed. The missing group had a mean score of 1.76% and an observed rate of 1.84%. Small event counts make these slice averages noisy. Review score bins, false alerts and missed events on a larger recent sample before changing alert policy.

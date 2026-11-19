@@ -12,24 +12,40 @@
 
 ---
 
+## Executive Commentary & Analysis
+
+### 1. Benchmark Methodology
+- **Scope**: 38 TabArena-v0.1 classification datasets spanning industrial failure diagnosis (`APSFailure`, `seismic-bumps`), customer retention (`Bank_Customer_Churn`, `churn`, `online_shoppers_intention`), clinical screening (`Bioresponse`, `Diabetes130US`, `maternal_health_risk`), cybersecurity (`website_phishing`, `NATICUSdroid`), and corporate bankruptcy (`polish_companies_bankruptcy`, `taiwanese_bankruptcy_prediction`).
+- **Elo Rating Engine**: Pairwise round-robin head-to-head matches across all pairs on holdout test accuracy ($K=32$, initialized at $R_0 = 1500$).
+- **Calibration Sub-Arena**: Section 4 evaluates multiclass cross-entropy (LogLoss) to penalize overconfident and miscalibrated models.
+
+### 2. Tier Analysis & Core Findings
+- **Tier 1 — Symmetric & Categorical Boosters (Elo 1300–1390)**:  
+  `CatBoost` (1388.0) and `perpetual` (1302.3) dominate tabular classification. `CatBoost`'s target-based categorical encoders and oblivious symmetric decision trees provide strong regularization against overfitting on sparse categories.
+- **Tier 2 — Random Forests & Additive Ensembles (Elo 1240–1280)**:  
+  `sklearn RF` (1279.0), `ChimeraBoost` (1265.3), `EBM` (1264.0), and `ModelTree(all)` (1244.3). `ModelTree(all)` shows remarkable competitiveness, outscoring standard `LightGBM` (1148.2) and `HistGradientBoosting` (1170.8) on complex mixed-type tasks by utilizing local regularized logistic regressions at leaves.
+- **Tier 3 — Classical & Single-Tree Baselines (Elo < 1000)**:  
+  `ctree` (948.1), `sklearn tree` (800.1), `KNN` (791.0), and `rpart` (760.4). Single decision trees experience severe boundary discretization error, while model trees with local logistic models bridge the gap to full ensembles.
+
+---
+
 ## 1. All Datasets (Test Accuracy Elo)
 *Evaluates raw classification accuracy across all 38 datasets.*
-
 
 <div id="elo-cla-acc" class="elo-interactive-wrap">
 <style>
 #elo-cla-acc { overflow-x: auto; margin: 1.2em 0; border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-#elo-cla-acc table { border-collapse: separate; border-spacing: 0; font-size: 0.78rem; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
-#elo-cla-acc th, #elo-cla-acc td { padding: 5px 11px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
+#elo-cla-acc table { border-collapse: separate; border-spacing: 0; font-size: 0.70rem; line-height: 1.25; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
+#elo-cla-acc th, #elo-cla-acc td { padding: 3px 6px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
 #elo-cla-acc th { cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 4; font-weight: 600; background: var(--md-default-fg-color--lightest, #f8f9fa); border-bottom: 2px solid var(--md-default-fg-color--light, #ccc); }
 #elo-cla-acc th:hover { color: var(--md-accent-fg-color, #0288d1); background: #eef7fc; }
 #elo-cla-acc td.n { text-align: right; }
 #elo-cla-acc tr:hover td { background: var(--md-default-fg-color--lightest, #f4f6f8); }
 
 /* Sticky Left Key Columns */
-#elo-cla-acc th.k1, #elo-cla-acc td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 85px; min-width: 85px; }
-#elo-cla-acc th.k2, #elo-cla-acc td:nth-child(2) { position: sticky; left: 85px; z-index: 2; width: 145px; min-width: 145px; }
-#elo-cla-acc th.k3, #elo-cla-acc td:nth-child(3) { position: sticky; left: 230px; z-index: 2; width: 220px; min-width: 220px; text-align: left; }
+#elo-cla-acc th.k1, #elo-cla-acc td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 70px; min-width: 70px; }
+#elo-cla-acc th.k2, #elo-cla-acc td:nth-child(2) { position: sticky; left: 70px; z-index: 2; width: 115px; min-width: 115px; }
+#elo-cla-acc th.k3, #elo-cla-acc td:nth-child(3) { position: sticky; left: 185px; z-index: 2; width: 180px; min-width: 180px; text-align: left; }
 #elo-cla-acc th.k1, #elo-cla-acc th.k2, #elo-cla-acc th.k3 { z-index: 5; background: var(--md-default-fg-color--lightest, #f0f2f5); }
 
 /* Column Winner Highlighting */

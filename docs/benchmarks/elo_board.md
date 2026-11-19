@@ -7,20 +7,40 @@
 
 ---
 
+## Executive Commentary & Analysis
+
+### 1. Benchmark Methodology
+- **Protocol**: 18 TabArena-v0.1 regression datasets spanning physical sciences (`superconductivity`, `airfoil`, `concrete`), real-estate appraisal (`houses`, `miami`), biochemical assay (`qsar_fish`, `qsar_tid11`, `protein`), and commercial operations (`food_delivery`, `fiat500`).
+- **Elo Rating Engine**: Pairwise round-robin head-to-head matches on test RMSE ($K=32$, initialized at $R_0 = 1500$). A lower test RMSE scores a win ($S=1$); identical RMSE scores a draw ($S=0.5$).
+- **Isolation Budget**: Every model runs under strict serial single-job execution with a 300-second wall-clock cap per dataset.
+
+### 2. Tier Analysis & Core Findings
+- **Tier 1 — Ensembles & Local Linear Leaves (Elo 1600–1725)**:  
+  `ChimeraBoost` (1723.5), `ranger` (1685.4), `sklearn RF` (1670.4), `ExtraTrees` (1623.4), and `grf_llf` (1585.4) lead the leaderboard.  
+  *Why local linear leaves excel*: Standard axis-aligned trees approximate smooth continuous gradients with dozens of flat staircase steps, accumulating variance. In contrast, local linear models fit continuous slopes directly inside partitions, achieving low bias with far fewer splits.
+- **Tier 2 — Gradient Boosted Decision Trees (Elo 1360–1525)**:  
+  `LightGBM` (1525.9), `perpetual` (1490.2), `CatBoost` (1479.0), and `forust` (1363.6). Robust general-purpose performers, though requiring hundreds of sequential estimators.
+- **Tier 3 — Interpretable Additive & Model Trees (Elo 850–1365)**:  
+  `EBM` (1362.8), `ModelTree(all)` (1123.3), `lmtree` (1066.7), `cubist` (964.1), and `ModelTree(opt)` (852.0).
+- **The Speed-Accuracy Pareto Frontier**:  
+  While `EBM` achieves a strong Elo (1362.8), it requires **65.08 seconds** per dataset on average. In sharp contrast, `ModelTree(opt)` executes in **0.10 seconds** (~650x faster) while delivering transparent, auditable piecewise linear equations at every leaf.
+
+---
+
 <div id="elo-reg-interactive" class="elo-interactive-wrap">
 <style>
 #elo-reg-interactive { overflow-x: auto; margin: 1.2em 0; border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-#elo-reg-interactive table { border-collapse: separate; border-spacing: 0; font-size: 0.78rem; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
-#elo-reg-interactive th, #elo-reg-interactive td { padding: 5px 11px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
+#elo-reg-interactive table { border-collapse: separate; border-spacing: 0; font-size: 0.70rem; line-height: 1.25; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
+#elo-reg-interactive th, #elo-reg-interactive td { padding: 3px 6px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
 #elo-reg-interactive th { cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 4; font-weight: 600; background: var(--md-default-fg-color--lightest, #f8f9fa); border-bottom: 2px solid var(--md-default-fg-color--light, #ccc); }
 #elo-reg-interactive th:hover { color: var(--md-accent-fg-color, #0288d1); background: #eef7fc; }
 #elo-reg-interactive td.n { text-align: right; }
 #elo-reg-interactive tr:hover td { background: var(--md-default-fg-color--lightest, #f4f6f8); }
 
 /* Sticky Left Key Columns */
-#elo-reg-interactive th.k1, #elo-reg-interactive td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 85px; min-width: 85px; }
-#elo-reg-interactive th.k2, #elo-reg-interactive td:nth-child(2) { position: sticky; left: 85px; z-index: 2; width: 145px; min-width: 145px; }
-#elo-reg-interactive th.k3, #elo-reg-interactive td:nth-child(3) { position: sticky; left: 230px; z-index: 2; width: 220px; min-width: 220px; text-align: left; }
+#elo-reg-interactive th.k1, #elo-reg-interactive td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 70px; min-width: 70px; }
+#elo-reg-interactive th.k2, #elo-reg-interactive td:nth-child(2) { position: sticky; left: 70px; z-index: 2; width: 115px; min-width: 115px; }
+#elo-reg-interactive th.k3, #elo-reg-interactive td:nth-child(3) { position: sticky; left: 185px; z-index: 2; width: 180px; min-width: 180px; text-align: left; }
 #elo-reg-interactive th.k1, #elo-reg-interactive th.k2, #elo-reg-interactive th.k3 { z-index: 5; background: var(--md-default-fg-color--lightest, #f0f2f5); }
 
 /* Column Winner Highlighting */

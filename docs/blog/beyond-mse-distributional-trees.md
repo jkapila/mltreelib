@@ -48,6 +48,8 @@ The Tweedie variance function increases with the mean as `mean ** p`. Here the v
 
 Tweedie splits reduced test RMSE by about 2.4% relative to squared-error splits in this run. Use a fresh split or paired resampling to assess how much this difference varies. Sale prices here are positive, so the comparison does not test the zero-mass use case.
 
+![Distributional Decision Tree Benchmarks: Probit, Gamma, Tweedie, Tobit](../assets/distributional_leaf_benchmarks.png)
+
 ![Miami home sale test errors for squared-error and Tweedie tree splits](../assets/guides/real-housing-splits.svg)
 
 Both models use mean leaves, so their scores are point estimates. A specialized split criterion does not change a point estimate into a probability distribution. The residual panel shows errors by observed sale price. Check large misses and their locations before choosing a model for pricing.

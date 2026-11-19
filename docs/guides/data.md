@@ -12,6 +12,14 @@
 
 ## Example: native categories and missing predictors
 
+```mermaid
+flowchart LR
+    A["Raw Data Matrix\n(Python Lists / Dicts / Parquet)"] --> B["DatasetBuilder\n(NA Policy: Keep None & NaN)"]
+    B --> C["Typed Frame & Schema\n(n_category Cardinality Check)"]
+    C --> D["Categorical IndexMapper\n(Zero-Allocation Codes)"]
+    D --> E["ModelTree Core Engine\n(Handles Missing & Categories Natively)"]
+```
+
 `ModelTree` accepts categorical labels and missing predictors without a separate encoder or imputation step. Declare the feature types and preserve the same column order at prediction time.
 
 ```python

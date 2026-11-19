@@ -17,7 +17,8 @@ try:
     import matplotlib.pyplot as plt
 except ImportError as e:  # pragma: no cover - environment guard
     raise ImportError(
-        "mltreelib.plots needs matplotlib (a dev extra): uv run --with matplotlib ..."
+        "mltreelib.plots requires 'matplotlib' (the 'plotting' optional extra): "
+        "pip install 'mltreelib[plotting]' or uv run --with matplotlib ..."
     ) from e
 
 from mltreelib import Metrics

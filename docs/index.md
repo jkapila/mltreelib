@@ -19,9 +19,27 @@ monotone & interaction constraints.
 - 51 TabArena-v0.1 benchmark datasets on board, plus a generator whose knobs
   control how much signal lives in group and hierarchy structure
 
+<p align="center">
+  <img src="assets/quickstart_tree_vs_flat.png" alt="ModelTree Piecewise Linear vs CART Step Function" width="96%">
+</p>
+
+```mermaid
+flowchart TD
+    subgraph RustCore["mltreelib-core (Rust Engine)"]
+        direction LR
+        Frame["Typed Frame & NA Policy"] --> SplitSearch["Greedy Split Search\n(SSE, Gini, Chow Gate, Oblique)"]
+        SplitSearch --> LeafFit["Decoupled Leaf Solvers\n(Ridge OLS, Huber, Quantile, GLM)"]
+    end
+    subgraph PythonShell["mltreelib (Python FFI)"]
+        direction LR
+        ModelTree["ModelTree API"] & LeafControl["LeafControl"] & Metrics["Metrics & Diagnostic Curves"]
+    end
+    PythonShell <==>|"PyO3 Zero-Copy / Fast Memory"| RustCore
+```
+
 ```bash
 uv sync                                          # venv + Rust extension (maturin)
-uv run python examples/quickstart.py             # fit, print, visualize
+uv run python examples/quickstart.py             # fit, print, visualize (34.3% RMSE reduction on Concrete)
 uv run python examples/real_tree_studies.py wine  # after downloading Wine Quality
 ```
 
@@ -35,7 +53,7 @@ uv run python examples/real_tree_studies.py wine  # after downloading Wine Quali
 | wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
 | know every knob | [Examples — Model building & predictions](examples/model-building.md) |
 | read the numbers | [Examples — Inspection](examples/inspection.md) |
-| draw the tree | [Examples — Visualization](examples/visualization.md) |
+| draw the tree | [Visualization](guides/visualization.md) |
 | see how it compares | [Benchmarks — ELO](benchmarks/elo.md) |
 | read technical deep dives & blogs | [Blog & Technical Insights](blog/index.md) |
 | look up every parameter | [API reference](reference/model.md) |
@@ -58,6 +76,8 @@ Explore our in-depth architectural and commercial case studies:
    *Actuarial & Risk Modeling*: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
 6. **[Breaking the Step Function: Model Trees and Step Functions for Continuous Regression](blog/breaking-step-functions-model-trees-vs-gbdt.md)**
    *Systems ML & Physics-Informed ML*: How linear leaves represent local trends and why fair comparisons need held-out data.
+7. **[Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts](blog/segregate-first-two-stage-survival-trees.md)**
+   *Actuarial & Retention Analytics*: How decoupling ID-level cohort discovery from leaf-level Kaplan-Meier curves eliminates right-censoring bias and non-proportional hazard violations.
 
 !!! tip "Try it right now"
     `uv run python examples/quickstart.py` fits a tree, prints it in rpart

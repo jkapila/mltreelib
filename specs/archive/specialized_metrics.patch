@@ -1,0 +1,495 @@
+diff --git a/crates/mltreelib-core/src/metrics.rs b/crates/mltreelib-core/src/metrics.rs
+index f880c54..158500b 100644
+--- a/crates/mltreelib-core/src/metrics.rs
++++ b/crates/mltreelib-core/src/metrics.rs
+@@ -1276,3 +1276,490 @@ pub fn pairwise_distances(
+         .map(|u| b.iter().map(|v| one(u, v)).collect())
+         .collect())
+ }
++
++// =========================================================================
++// Specialized Metric Reports: Uplift, Survival, Time Series
++// =========================================================================
++
++/// Complete causal uplift report.
++#[derive(Clone, Debug, PartialEq)]
++pub struct UpliftReport {
++    pub n_total: usize,
++    pub n_treated: usize,
++    pub n_control: usize,
++    pub ate: f64,
++    pub qini_coef: f64,
++    pub qini_norm: f64,
++    pub auuc: f64,
++    pub top_decile_uplift: f64,
++    pub top_quintile_uplift: f64,
++    pub qini_curve: Vec<(f64, f64)>,
++    pub cumulative_gain: Vec<(f64, f64)>,
++}
++
++pub fn uplift_report(
++    y: &[f64],
++    treatment: &[f64],
++    tau_pred: &[f64],
++) -> Result<UpliftReport, String> {
++    let n = y.len();
++    if n == 0 || treatment.len() != n || tau_pred.len() != n {
++        return Err("y, treatment, and tau_pred must all have the same non-zero length".to_string());
++    }
++
++    let mut n_treated = 0;
++    let mut n_control = 0;
++    let mut sum_y_t = 0.0;
++    let mut sum_y_c = 0.0;
++    for i in 0..n {
++        if treatment[i] > 0.5 {
++            n_treated += 1;
++            sum_y_t += y[i];
++        } else {
++            n_control += 1;
++            sum_y_c += y[i];
++        }
++    }
++
++    if n_treated == 0 || n_control == 0 {
++        return Err("uplift evaluation requires both treated and control units".to_string());
++    }
++
++    let ate = (sum_y_t / n_treated as f64) - (sum_y_c / n_control as f64);
++
++    let mut order: Vec<usize> = (0..n).collect();
++    order.sort_by(|&a, &b| {
++        tau_pred[b]
++            .partial_cmp(&tau_pred[a])
++            .unwrap_or(std::cmp::Ordering::Equal)
++            .then_with(|| a.cmp(&b))
++    });
++
++    let mut qini_curve = Vec::with_capacity(n + 1);
++    let mut cumulative_gain = Vec::with_capacity(n + 1);
++    qini_curve.push((0.0, 0.0));
++    cumulative_gain.push((0.0, 0.0));
++
++    let mut cur_y_t = 0.0;
++    let mut cur_y_c = 0.0;
++    let mut cur_n_t = 0usize;
++    let mut cur_n_c = 0usize;
++
++    let mut qini_auc = 0.0;
++    let mut auuc = 0.0;
++    let mut prev_frac = 0.0;
++    let mut prev_q = 0.0;
++    let mut prev_gain = 0.0;
++
++    let mut top_decile_uplift = 0.0;
++    let mut top_quintile_uplift = 0.0;
++    let k_decile = ((0.10 * n as f64).ceil() as usize).clamp(1, n);
++    let k_quintile = ((0.20 * n as f64).ceil() as usize).clamp(1, n);
++
++    for (step, &idx) in order.iter().enumerate() {
++        let k = step + 1;
++        if treatment[idx] > 0.5 {
++            cur_n_t += 1;
++            cur_y_t += y[idx];
++        } else {
++            cur_n_c += 1;
++            cur_y_c += y[idx];
++        }
++
++        let frac = k as f64 / n as f64;
++        let q_k = if cur_n_c > 0 {
++            cur_y_t - cur_y_c * (cur_n_t as f64 / cur_n_c as f64)
++        } else {
++            cur_y_t
++        };
++
++        let mean_t = if cur_n_t > 0 { cur_y_t / cur_n_t as f64 } else { 0.0 };
++        let mean_c = if cur_n_c > 0 { cur_y_c / cur_n_c as f64 } else { 0.0 };
++        let uplift_k = mean_t - mean_c;
++        let gain_k = uplift_k * k as f64;
++
++        if k == k_decile {
++            top_decile_uplift = uplift_k;
++        }
++        if k == k_quintile {
++            top_quintile_uplift = uplift_k;
++        }
++
++        let d_frac = frac - prev_frac;
++        let q_random = frac * (sum_y_t - sum_y_c * (n_treated as f64 / n_control as f64));
++        let prev_q_random = prev_frac * (sum_y_t - sum_y_c * (n_treated as f64 / n_control as f64));
++
++        let net_q = q_k - q_random;
++        let prev_net_q = prev_q - prev_q_random;
++        qini_auc += 0.5 * (prev_net_q + net_q) * d_frac;
++        auuc += 0.5 * (prev_gain + gain_k) * d_frac;
++
++        prev_frac = frac;
++        prev_q = q_k;
++        prev_gain = gain_k;
++
++        qini_curve.push((frac, q_k));
++        cumulative_gain.push((frac, gain_k));
++    }
++
++    let mut opt_order: Vec<usize> = (0..n).collect();
++    opt_order.sort_by(|&a, &b| {
++        let score_a = if treatment[a] > 0.5 { y[a] } else { -y[a] };
++        let score_b = if treatment[b] > 0.5 { y[b] } else { -y[b] };
++        score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
++    });
++
++    let mut opt_qini_auc = 0.0;
++    let mut opt_cur_y_t = 0.0;
++    let mut opt_cur_y_c = 0.0;
++    let mut opt_cur_n_t = 0usize;
++    let mut opt_cur_n_c = 0usize;
++    let mut opt_prev_frac = 0.0;
++    let mut opt_prev_q = 0.0;
++
++    for (step, &idx) in opt_order.iter().enumerate() {
++        let k = step + 1;
++        if treatment[idx] > 0.5 {
++            opt_cur_n_t += 1;
++            opt_cur_y_t += y[idx];
++        } else {
++            opt_cur_n_c += 1;
++            opt_cur_y_c += y[idx];
++        }
++        let frac = k as f64 / n as f64;
++        let q_k = if opt_cur_n_c > 0 {
++            opt_cur_y_t - opt_cur_y_c * (opt_cur_n_t as f64 / opt_cur_n_c as f64)
++        } else {
++            opt_cur_y_t
++        };
++        let d_frac = frac - opt_prev_frac;
++        let q_random = frac * (sum_y_t - sum_y_c * (n_treated as f64 / n_control as f64));
++        let prev_q_random = opt_prev_frac * (sum_y_t - sum_y_c * (n_treated as f64 / n_control as f64));
++        opt_qini_auc += 0.5 * ((opt_prev_q - prev_q_random) + (q_k - q_random)) * d_frac;
++
++        opt_prev_frac = frac;
++        opt_prev_q = q_k;
++    }
++
++    let qini_norm = if opt_qini_auc.abs() > 1e-9 {
++        qini_auc / opt_qini_auc
++    } else {
++        0.0
++    };
++
++    Ok(UpliftReport {
++        n_total: n,
++        n_treated,
++        n_control,
++        ate,
++        qini_coef: qini_auc,
++        qini_norm,
++        auuc,
++        top_decile_uplift,
++        top_quintile_uplift,
++        qini_curve,
++        cumulative_gain,
++    })
++}
++
++/// Complete survival analysis report.
++#[derive(Clone, Debug, PartialEq)]
++pub struct SurvivalReport {
++    pub n_samples: usize,
++    pub n_events: usize,
++    pub harrell_c: f64,
++    pub uno_c: f64,
++    pub ibs: f64,
++    pub brier_at_horizons: Vec<(f64, f64)>,
++}
++
++pub fn survival_report(
++    durations: &[f64],
++    events: &[f64],
++    risk_scores: &[f64],
++    surv_curves: Option<&[Vec<f64>]>,
++    times: Option<&[f64]>,
++) -> Result<SurvivalReport, String> {
++    let n = durations.len();
++    if n == 0 || events.len() != n || risk_scores.len() != n {
++        return Err("durations, events, and risk_scores must all have the same non-zero length".to_string());
++    }
++
++    let mut n_events = 0usize;
++    for &e in events {
++        if e > 0.5 {
++            n_events += 1;
++        }
++    }
++    if n_events == 0 {
++        return Err("survival evaluation requires at least one observed event".to_string());
++    }
++
++    let mut time_indices: Vec<usize> = (0..n).collect();
++    time_indices.sort_by(|&a, &b| {
++        durations[a]
++            .partial_cmp(&durations[b])
++            .unwrap_or(std::cmp::Ordering::Equal)
++    });
++
++    let mut distinct_times: Vec<f64> = Vec::new();
++    let mut g_vals: Vec<f64> = Vec::new();
++    let mut g_cur = 1.0;
++    let mut at_risk = n;
++
++    let mut i = 0;
++    while i < n {
++        let t = durations[time_indices[i]];
++        let mut d_c = 0;
++        let mut d_total = 0;
++        while i < n && durations[time_indices[i]] == t {
++            if events[time_indices[i]] <= 0.5 {
++                d_c += 1;
++            }
++            d_total += 1;
++            i += 1;
++        }
++        if at_risk > 0 && d_c > 0 {
++            g_cur *= 1.0 - (d_c as f64 / at_risk as f64);
++        }
++        distinct_times.push(t);
++        g_vals.push(g_cur.max(1e-4));
++        at_risk -= d_total;
++    }
++
++    let get_g = |t: f64| -> f64 {
++        if distinct_times.is_empty() || t < distinct_times[0] {
++            return 1.0;
++        }
++        match distinct_times.binary_search_by(|v| v.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
++            Ok(idx) => g_vals[idx],
++            Err(0) => 1.0,
++            Err(idx) => g_vals[idx - 1],
++        }
++    };
++
++    let mut harrell_num = 0.0;
++    let mut harrell_den = 0.0;
++    let mut uno_num = 0.0;
++    let mut uno_den = 0.0;
++
++    for i in 0..n {
++        if events[i] <= 0.5 {
++            continue;
++        }
++        let ti = durations[i];
++        let ri = risk_scores[i];
++        let gi = get_g(ti);
++        let uno_w = 1.0 / (gi * gi).max(1e-8);
++
++        for j in 0..n {
++            if i == j {
++                continue;
++            }
++            let tj = durations[j];
++            let rj = risk_scores[j];
++
++            if ti < tj {
++                harrell_den += 1.0;
++                uno_den += uno_w;
++                if ri > rj {
++                    harrell_num += 1.0;
++                    uno_num += uno_w;
++                } else if (ri - rj).abs() < 1e-12 {
++                    harrell_num += 0.5;
++                    uno_num += 0.5 * uno_w;
++                }
++            }
++        }
++    }
++
++    let harrell_c = if harrell_den > 0.0 { harrell_num / harrell_den } else { 0.5 };
++    let uno_c = if uno_den > 0.0 { uno_num / uno_den } else { 0.5 };
++
++    let eval_times: Vec<f64> = if let Some(ts) = times {
++        ts.to_vec()
++    } else {
++        let mut ev_times: Vec<f64> = (0..n).filter(|&i| events[i] > 0.5).map(|i| durations[i]).collect();
++        ev_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++        (1..10)
++            .map(|d| {
++                let idx = ((d as f64 / 10.0) * (ev_times.len() - 1) as f64).round() as usize;
++                ev_times[idx]
++            })
++            .collect()
++    };
++
++    let mut brier_scores = Vec::with_capacity(eval_times.len());
++    let mut ibs = 0.0;
++    let mut prev_t = 0.0;
++    let mut prev_bs = 0.0;
++
++    for (idx, &t) in eval_times.iter().enumerate() {
++        let g_t = get_g(t);
++        let mut bs_sum = 0.0;
++
++        for i in 0..n {
++            let s_hat = if let Some(curves) = surv_curves {
++                if let Some(row_curve) = curves.get(i) {
++                    row_curve.get(idx).copied().unwrap_or(0.5)
++                } else {
++                    (-risk_scores[i].clamp(-20.0, 20.0).exp() * 0.1).exp()
++                }
++            } else {
++                let max_dur = durations[time_indices[n - 1]].max(1e-6);
++                (-risk_scores[i].clamp(-20.0, 20.0).exp() * (t / max_dur)).exp()
++            };
++
++            let ti = durations[i];
++            let ei = events[i];
++
++            if ti <= t && ei > 0.5 {
++                let gi = get_g(ti);
++                bs_sum += (0.0 - s_hat).powi(2) / gi.max(1e-4);
++            } else if ti > t {
++                bs_sum += (1.0 - s_hat).powi(2) / g_t.max(1e-4);
++            }
++        }
++        let bs_t = bs_sum / n as f64;
++        brier_scores.push((t, bs_t));
++
++        if idx > 0 {
++            let dt = t - prev_t;
++            ibs += 0.5 * (prev_bs + bs_t) * dt;
++        }
++        prev_t = t;
++        prev_bs = bs_t;
++    }
++
++    if eval_times.len() > 1 {
++        let total_time_span = eval_times.last().unwrap() - eval_times.first().unwrap();
++        if total_time_span > 1e-9 {
++            ibs /= total_time_span;
++        }
++    } else if let Some(&(_, bs)) = brier_scores.first() {
++        ibs = bs;
++    }
++
++    Ok(SurvivalReport {
++        n_samples: n,
++        n_events,
++        harrell_c,
++        uno_c,
++        ibs,
++        brier_at_horizons: brier_scores,
++    })
++}
++
++/// Complete time series forecasting report.
++#[derive(Clone, Debug, PartialEq)]
++pub struct TimeSeriesReport {
++    pub n_periods: usize,
++    pub mae: f64,
++    pub rmse: f64,
++    pub mase: Option<f64>,
++    pub smape: f64,
++    pub wape: f64,
++    pub mda: Option<f64>,
++    pub crps: Option<f64>,
++}
++
++pub fn time_series_report(
++    y_true: &[f64],
++    y_pred: &[f64],
++    y_train: Option<&[f64]>,
++    seasonal_period: Option<usize>,
++    std_pred: Option<&[f64]>,
++) -> Result<TimeSeriesReport, String> {
++    let n = y_true.len();
++    if n == 0 || y_pred.len() != n {
++        return Err("y_true and y_pred must have the same non-zero length".to_string());
++    }
++
++    let mut sum_abs_err = 0.0;
++    let mut sum_sq_err = 0.0;
++    let mut sum_abs_true = 0.0;
++    let mut sum_smape = 0.0;
++
++    for i in 0..n {
++        let err = y_true[i] - y_pred[i];
++        let abs_err = err.abs();
++        sum_abs_err += abs_err;
++        sum_sq_err += err * err;
++        sum_abs_true += y_true[i].abs();
++
++        let denom = y_true[i].abs() + y_pred[i].abs();
++        if denom > 1e-12 {
++            sum_smape += (2.0 * abs_err) / denom;
++        }
++    }
++
++    let mae = sum_abs_err / n as f64;
++    let rmse = (sum_sq_err / n as f64).sqrt();
++    let wape = if sum_abs_true > 1e-12 { sum_abs_err / sum_abs_true } else { 0.0 };
++    let smape = (sum_smape / n as f64) * 100.0;
++
++    let mase = if let Some(tr) = y_train {
++        let s = seasonal_period.unwrap_or(1).max(1);
++        if tr.len() > s {
++            let mut naive_sum = 0.0;
++            for t in s..tr.len() {
++                naive_sum += (tr[t] - tr[t - s]).abs();
++            }
++            let naive_mae = naive_sum / (tr.len() - s) as f64;
++            if naive_mae > 1e-12 {
++                Some(mae / naive_mae)
++            } else {
++                None
++            }
++        } else {
++            None
++        }
++    } else {
++        None
++    };
++
++    let mda = if n >= 2 {
++        let mut correct = 0;
++        for t in 1..n {
++            let actual_dir = y_true[t] - y_true[t - 1];
++            let pred_dir = y_pred[t] - y_true[t - 1];
++            if (actual_dir >= 0.0 && pred_dir >= 0.0) || (actual_dir <= 0.0 && pred_dir <= 0.0) {
++                correct += 1;
++            }
++        }
++        Some(correct as f64 / (n - 1) as f64)
++    } else {
++        None
++    };
++
++    let crps = if let Some(stds) = std_pred {
++        if stds.len() == n {
++            let mut crps_sum = 0.0;
++            let inv_sqrt_pi = 1.0 / std::f64::consts::PI.sqrt();
++            for i in 0..n {
++                let sigma = stds[i].max(1e-6);
++                let z = (y_true[i] - y_pred[i]) / sigma;
++                let cdf = crate::family::std_norm_cdf(z);
++                let pdf = crate::family::std_norm_pdf(z);
++                let term = z * (2.0 * cdf - 1.0) + 2.0 * pdf - inv_sqrt_pi;
++                crps_sum += sigma * term;
++            }
++            Some(crps_sum / n as f64)
++        } else {
++            None
++        }
++    } else {
++        None
++    };
++
++    Ok(TimeSeriesReport {
++        n_periods: n,
++        mae,
++        rmse,
++        mase,
++        smape,
++        wape,
++        mda,
++        crps,
++    })
++}

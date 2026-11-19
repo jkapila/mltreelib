@@ -1106,14 +1106,23 @@ wheels = [
 
 [[package]]
 name = "mltreelib"
-version = "0.4.8"
+version = "0.4.9"
 source = { editable = "." }
-dependencies = [
+
+[package.optional-dependencies]
+all = [
+    { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "matplotlib", version = "3.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "optuna" },
+    { name = "pyarrow", version = "25.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pyarrow", version = "26.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pygraphviz" },
+    { name = "seaborn" },
+]
+dataset = [
     { name = "pyarrow", version = "25.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pyarrow", version = "26.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
-
-[package.optional-dependencies]
 plotting = [
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "matplotlib", version = "3.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1129,6 +1138,10 @@ dev = [
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "matplotlib", version = "3.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "maturin" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyarrow", version = "25.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pyarrow", version = "26.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "seaborn" },
@@ -1138,18 +1151,25 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "matplotlib", marker = "extra == 'all'", specifier = ">=3.8" },
     { name = "matplotlib", marker = "extra == 'plotting'", specifier = ">=3.8" },
+    { name = "optuna", marker = "extra == 'all'", specifier = ">=3.0" },
     { name = "optuna", marker = "extra == 'tuning'", specifier = ">=3.0" },
-    { name = "pyarrow", specifier = ">=14" },
+    { name = "pyarrow", marker = "extra == 'all'", specifier = ">=14" },
+    { name = "pyarrow", marker = "extra == 'dataset'", specifier = ">=14" },
+    { name = "pygraphviz", marker = "extra == 'all'", specifier = ">=1.11" },
     { name = "pygraphviz", marker = "extra == 'plotting'", specifier = ">=1.11" },
+    { name = "seaborn", marker = "extra == 'all'", specifier = ">=0.13" },
     { name = "seaborn", marker = "extra == 'plotting'", specifier = ">=0.13" },
 ]
-provides-extras = ["plotting", "tuning"]
+provides-extras = ["dataset", "plotting", "tuning", "all"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "maturin", specifier = ">=1.5,<2.0" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "pyarrow", specifier = ">=14" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.8" },
     { name = "seaborn", specifier = ">=0.13" },

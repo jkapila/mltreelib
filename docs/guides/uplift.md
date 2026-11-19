@@ -16,6 +16,18 @@ uv run python examples/real_survival_uplift.py uplift
 
 Use treatment as part of the target. The columns below describe customers before the campaign. Use validation to choose a threshold. Keep the randomized test outcomes sealed until after the policy is fixed.
 
+```mermaid
+flowchart TD
+    subgraph HonestSplit["Honest Causal Partitioning (Athey & Imbens 2016)"]
+        direction TB
+        Sample["Randomized Trial Data (Y, W, X)"] --> Partition{"Random Subsample Split"}
+        Partition -->|"Structure Sample S_tr"| TreeStructure["Tree Split Optimization\nmax Delta tau(s)"]
+        Partition -->|"Estimation Sample S_est"| LeafEstimator["Leaf CATE Estimation\ntau_hat = E[Y | W=1] - E[Y | W=0]"]
+        TreeStructure --> FixedNodes["Fixed Partition Topology"]
+        FixedNodes & LeafEstimator --> UnbiasedModel["Unbiased Honest Causal Tree"]
+    end
+```
+
 Run this Python block from the repository root. `group_value` comes from the example script.
 
 ```python

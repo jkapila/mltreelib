@@ -3,8 +3,8 @@
 `Metrics` — evaluation reports, curves, scorecards, stability and distances.
 Everything returns plain structures (numeric series + summary scalars);
 **the library never plots** — rendering lives in `mltreelib.plots` (matplotlib
-as an optional extra) and the [Visualization](../examples/visualization.md)
-example. Charts on these docs are click-to-zoom.
+as an optional extra) and the [Visualization](../guides/visualization.md)
+guide. Charts on these docs are click-to-zoom.
 
 Unless noted, classification inputs take **scores/probabilities** with
 positive class `y > 0.5`; ties sweep together in stable order.

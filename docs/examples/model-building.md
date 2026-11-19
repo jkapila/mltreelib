@@ -110,4 +110,4 @@ as Gaussian trees. Linear coefficients are on the **link scale** (logit /
 log); `predict`/`predict_proba` convert back to response means.
 
 Next: [Inspection](inspection.md) for the metrics and structure reports, or
-[Visualization](visualization.md) to draw the tree.
+[Visualization](../guides/visualization.md) to draw the tree.

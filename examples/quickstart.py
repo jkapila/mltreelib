@@ -1,46 +1,128 @@
-"""mltreelib in 30 seconds: fit a tree, read it, see it.
+"""mltreelib Quickstart: Fit a ModelTree on real benchmark data in seconds.
 
-uv run python examples/quickstart.py
+Demonstrates why piecewise linear model trees outperform standard CART
+step functions on continuous tabular dynamics (Yeh 1998 Concrete Compressive Strength).
+
+Usage:
+    uv run python examples/quickstart.py
 """
 
-from mltreelib import Metrics, ModelTree
+import numpy as np
+from mltreelib import Metrics, ModelTree, load_dataset
 
-# Toy data: a step function plus a linear trend (deterministic).
-x = [[float(i % 8)] for i in range(80)]
-y = [
-    2.0 * (i % 8) + (5.0 if i % 8 > 4 else 0.0) + ((i * 13) % 7) * 0.05
-    for i in range(80)
-]
 
-# Defaults are already tuned (regularized linear leaves, shallow depth).
-model = ModelTree()
-model.fit(x, y, col_names=["signal_step"])
+def main():
+    # 1. Load standard real benchmark dataset (1,030 industrial concrete mixtures)
+    data = load_dataset("concrete_compressive_strength")
+    target = "ConcreteCompressiveStrength"
+    feature_names = [col for col in data["columns"].keys() if col != target]
+    n_rows = data["n_rows"]
 
-x_test = [[float(v)] for v in range(8)]
-y_test = [2.0 * v + (5.0 if v > 4 else 0.0) for v in range(8)]
-pred = model.predict(x_test)
+    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
+    y = data["columns"][target]
 
-print("predictions:", [round(p, 2) for p in pred])
-print(
-    "metrics:",
-    {
-        k: round(v, 3)
-        for k, v in Metrics().regression(y_test, pred).items()
-        if k in ("rmse", "mae", "r2")
-    },
-)
+    # 80/20 train/test split
+    split_idx = int(n_rows * 0.8)
+    X_train, y_train = X[:split_idx], y[:split_idx]
+    X_test, y_test = X[split_idx:], y[split_idx:]
 
-print()  # rpart-style tree text
-print(model)
+    print(f"Loaded Concrete Compressive Strength: {n_rows} rows, {len(feature_names)} features.")
+    print(f"Train rows: {len(X_train)}, Test rows: {len(X_test)}\n")
 
-dot = model.to_dot()  # graphviz does layout; we only describe the graph
-try:
-    import pygraphviz as pgv
+    # 2. Fit standard CART decision tree (mean leaves, depth=3)
+    cart = ModelTree(leaf="mean", max_depth=3, min_rows=20)
+    cart.fit(X_train, y_train, col_names=feature_names)
+    pred_cart = cart.predict(X_test)
 
-    pgv.AGraph(string=dot).draw("docs/assets/quickstart_tree.svg", prog="dot")
-    print("wrote docs/assets/quickstart_tree.svg (rendered by graphviz)")
-except ImportError:
-    open("quickstart_tree.dot", "w").write(dot)
-    print(
-        "wrote quickstart_tree.dot (render: dot -Tsvg quickstart_tree.dot -o tree.svg)"
-    )
+    # 3. Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=3)
+    model_tree = ModelTree(leaf="linear", max_depth=3, min_rows=20, l2=1e-3)
+    model_tree.fit(X_train, y_train, col_names=feature_names)
+    pred_mt = model_tree.predict(X_test)
+
+    # 4. Evaluate metrics
+    metrics = Metrics()
+    m_cart = metrics.regression(y_test, pred_cart)
+    m_mt = metrics.regression(y_test, pred_mt)
+
+    print("=== Model Performance on Test Set ===")
+    print(f"Standard Decision Tree (CART)  : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
+    print(f"mltreelib ModelTree (Linear)   : RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
+    rmse_reduction = (1.0 - m_mt['rmse'] / m_cart['rmse']) * 100.0
+    print(f"--> Error reduction with linear leaves: {rmse_reduction:.1f}%\n")
+
+    # 5. Display rpart-style transparent tree structure
+    print("=== Fitted ModelTree Structure (rpart-style) ===")
+    print(model_tree)
+
+    # 6. Render Graphviz DOT
+    dot_str = model_tree.to_dot()
+    try:
+        import pygraphviz as pgv
+        pgv.AGraph(string=dot_str).draw("docs/assets/quickstart_tree.svg", prog="dot")
+        print("Rendered tree graph to: docs/assets/quickstart_tree.svg")
+    except ImportError:
+        with open("docs/assets/quickstart_tree.dot", "w") as f:
+            f.write(dot_str)
+        print("Saved DOT representation to: docs/assets/quickstart_tree.dot")
+
+    # 7. Generate publication comparison plot (CART step function vs ModelTree piecewise linear)
+    try:
+        import matplotlib.pyplot as plt
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # Palette
+        c_cart = "#f4511e"   # Deep Orange
+        c_mt = "#00897b"     # Teal
+        c_ideal = "#263238"  # Dark Slate
+
+        # Panel 1: Parity Plot (Actual vs Predicted)
+        ax1.scatter(y_test, pred_cart, color=c_cart, alpha=0.55, s=36, label=f"CART Step (RMSE: {m_cart['rmse']:.2f}, R²: {m_cart['r2']:.3f})")
+        ax1.scatter(y_test, pred_mt, color=c_mt, alpha=0.75, s=36, edgecolors="white", linewidth=0.5, label=f"ModelTree Linear (RMSE: {m_mt['rmse']:.2f}, R²: {m_mt['r2']:.3f})")
+        min_v = min(min(y_test), min(pred_mt), min(pred_cart))
+        max_v = max(max(y_test), max(pred_mt), max(pred_cart))
+        ax1.plot([min_v, max_v], [min_v, max_v], linestyle="--", color=c_ideal, alpha=0.7, label="Perfect Parity (1:1)")
+        ax1.set_title("Actual vs Predicted Compressive Strength (MPa)", fontsize=13, fontweight="bold", color=c_ideal, pad=12)
+        ax1.set_xlabel("Observed Strength (MPa)", fontsize=11, color=c_ideal)
+        ax1.set_ylabel("Predicted Strength (MPa)", fontsize=11, color=c_ideal)
+        ax1.grid(True, linestyle=":", alpha=0.6)
+        ax1.legend(frameon=True, facecolor="#eceff1", edgecolor="#cfd8dc", fontsize=10)
+
+        # Panel 2: Continuous Response Profile across Cement Content
+        cement_idx = feature_names.index("Cement")
+        cement_vals = [row[cement_idx] for row in X_train]
+        c_grid = np.linspace(min(cement_vals), max(cement_vals), 200)
+
+        # Baseline median vector for other ingredients
+        medians = [float(np.median([row[j] for row in X_train])) for j in range(len(feature_names))]
+        X_grid = []
+        for c in c_grid:
+            row = list(medians)
+            row[cement_idx] = float(c)
+            X_grid.append(row)
+
+        cart_grid_preds = cart.predict(X_grid)
+        mt_grid_preds = model_tree.predict(X_grid)
+
+        cement_test = [row[cement_idx] for row in X_test]
+        ax2.scatter(cement_test, y_test, color="#78909c", alpha=0.45, s=28, label="Test Observations")
+        ax2.step(c_grid, cart_grid_preds, where="post", color=c_cart, linewidth=2.4, alpha=0.9, label="CART Step Function (Staircase, Depth 3)")
+        ax2.plot(c_grid, mt_grid_preds, color=c_mt, linewidth=2.6, label="ModelTree Piecewise Linear (Depth 3)")
+        ax2.set_title("Response Profile vs Cement Content (kg/m³)", fontsize=13, fontweight="bold", color=c_ideal, pad=12)
+        ax2.set_xlabel("Cement Content (kg/m³)", fontsize=11, color=c_ideal)
+        ax2.set_ylabel("Compressive Strength (MPa)", fontsize=11, color=c_ideal)
+        ax2.grid(True, linestyle=":", alpha=0.6)
+        ax2.legend(frameon=True, facecolor="#eceff1", edgecolor="#cfd8dc", fontsize=10)
+
+        plt.suptitle("mltreelib Quickstart: Piecewise Linear ModelTree vs CART", fontsize=15, fontweight="bold", color=c_ideal, y=0.98)
+        plt.tight_layout()
+        out_path = "docs/assets/quickstart_tree_vs_flat.png"
+        plt.savefig(out_path, dpi=300)
+        plt.close()
+        print(f"Generated comparison figure: {out_path}")
+    except ImportError:
+        print("Note: matplotlib not found; install mltreelib[plotting] to generate comparison figure.")
+
+
+if __name__ == "__main__":
+    main()

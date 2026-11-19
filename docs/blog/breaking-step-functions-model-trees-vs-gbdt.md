@@ -50,6 +50,8 @@ for leaf in ("mean", "linear"):
 
 Both trees include a split on carat at 0.87. The linear leaves reduced test RMSE by about 20% compared with the mean leaves in this run. The first leaf had 3,582 training records.
 
+![Model Trees vs Decision Trees and Gradient Boosted Trees Regression Surfaces](../assets/plot_tree_regression_comparison.png)
+
 ![Held-out RMSE and residuals for mean and linear diamond-price leaves](../assets/guides/real-diamonds-leaves.svg)
 
 The residual plot puts observed price on the horizontal axis and prediction minus observed price on the vertical axis. Large negative values are underestimates. Horizontal bands and repeated patterns can reveal that the model gives common predictions to very different records. A falling cloud at the high end can matter even if the average error improves.

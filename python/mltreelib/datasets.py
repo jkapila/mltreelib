@@ -37,8 +37,14 @@ def load_dataset(name: str) -> dict:
     ``columns`` maps column name to a list with ``None`` for missing values;
     ``dtypes`` is "numeric" or "categorical" (strings/dictionaries).
     """
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as e:
+        raise ImportError(
+            "mltreelib.load_dataset requires 'pyarrow' (the 'dataset' optional extra). "
+            "Install it with: pip install 'mltreelib[dataset]' or pip install pyarrow"
+        ) from e
 
     table = pq.read_table(dataset_path(name))
     columns: dict[str, list] = {}

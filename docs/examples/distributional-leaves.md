@@ -3,181 +3,150 @@
 Real-world targets often violate Gaussian error assumptions. `ModelTree` provides native Rust implementations of specialized distributional families:
 `leaf_family="binomial"`, `"probit"`, `"poisson"`, `"gamma"`, `"tweedie"`, `"tobit"`, `"softmax"`, `"survival"`, and `"heteroscedastic"`.
 
-Scripts:
-- [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py)
-- [`examples/stump_distributional_leaves.py`](https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py) (`uv run python examples/stump_distributional_leaves.py`)
+![Leaf Family Comparison](../assets/leaf_family_comparison.png)
 
-```text
-binomial P(1): [0.25, 0.75]
-binomial P(Y <= 0): [0.75, 0.25]
-poisson means: [1.0, 2.0, 4.0]
-poisson P(Y <= 0): [0.367879, 0.018316]
-probit P(1): [0.25, 0.75]
-gamma means: [1.0, 2.0, 4.0]
-tweedie means: [0.333827, 4.331555]
-tobit latent means: [-2.765143, 1.19807]
-```
+Executable Reference Scripts:
+- [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py) — Link function invariant verifications & 6-family gallery.
+- [`examples/stump_distributional_leaves.py`](https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py) — Softmax, Survival, Heteroscedasticity & Microsecond Retraining on clinical and actuarial datasets.
+- [`examples/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/distributional_leaf_benchmarks.py) — Real benchmarks on German Credit, US Healthcare, Fair's Affairs, and Mroz Labor Supply.
 
 ---
 
-## 1. Binomial & Probit Probability Estimation
+## Why Distributional Leaves Were Built
 
-For binary classification targets $y \in \{0, 1\}$:
+Standard decision trees and linear models assume constant Gaussian error variances:
+$$Y \sim \mathcal{N}(\mu, \sigma^2), \quad \mu = \mathbf{X}\beta$$
 
-- **`leaf_family="binomial"`**: Standard logistic link $\mu = \frac{1}{1 + e^{-\eta}}$.
-- **`leaf_family="probit"`**: Gaussian CDF link $\mu = \Phi(\eta)$ (ideal for threshold crossing and latent utility models).
+This assumption produces severe modeling failures across empirical domains:
+1. **Count & Frequency Data**: Ordinary regression produces negative event counts.
+2. **Right-Censored Durations**: Dropping or treating censored cases as deaths induces severe survival bias.
+3. **Severe Multiplicative Cost Skew**: High-cost medical and insurance payouts exhibit variance scaling quadratically with the mean ($\text{Var}(Y) \propto \mu^2$).
+4. **Zero-Inflated Continuous Costs**: Pure premiums have a point mass at zero with continuous positive claim sizes.
+5. **Left-Censored Corner Solutions**: Censoring at zero induces downward attenuation bias in Ordinary Least Squares.
+
+---
+
+## 1. Softmax Multi-Class Probability Vectors ($C \ge 3$)
+
+**Why Built & Use Case**: Multi-tier medical triage, credit rating transition, and multi-option routing. Maps features onto the probability simplex $\sum_{c=1}^C p_c = 1$.  
+**Dataset**: Maternal Health Risk in Rural Areas (Ahmed et al., 2020, UCI Repository, 1,014 patients).
 
 ```python
 from mltreelib import ModelTree
 
-# Probit tree with standard normal CDF leaves
-m_probit = ModelTree(max_depth=1, min_rows=2, leaf_family="probit", gain="deviance")
-m_probit.fit([[0.0]] * 4 + [[1.0]] * 4, [0, 0, 0, 1, 0, 1, 1, 1])
+# Fit Softmax tree partitioning on patient physiology
+tree = ModelTree(max_depth=1, leaf_family="softmax", min_rows=20)
+tree.fit(X, y, col_names=["SystolicBP", "BS", "Age"])
 
-# predict_proba returns P(Y = 1) on response scale
-probs = m_probit.predict_proba([[0.0], [1.0]])
-labels = m_probit.predict_label([[0.0], [1.0]], threshold=0.5)
+# Predict calibrated probabilities across all classes
+pred_probs = tree.predict(X_test, kind="proba")
+```
+
+### Empirical Results & Output Interpretation
+```text
+Total Cohort Size: 1014 patients across 3 risk categories
+Optimal Partition: Split on 'BS' at threshold 7.90 (Gain=259.34)
+Interpretation: Blood glucose (BS >= 7.90 mmol/L) is the primary risk discriminator.
+
+Terminal Leaf Probability Distributions:
+  Leaf 0 (n=751): P(low, mid, high) = [0.5300, 0.3715, 0.0985] -> Dominant: low_risk
+  Leaf 1 (n=263): P(low, mid, high) = [0.0304, 0.2167, 0.7529] -> Dominant: high_risk
+
+Clinical Patient Inferences:
+  Patient 1 [BP=100, BS=6.8, Age=22] -> Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 67.1%, medium_risk: 31.3%, high_risk: 1.6%]
+  Patient 2 [BP=130, BS=7.8, Age=35] -> Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 51.4%, medium_risk: 27.0%, high_risk: 21.6%]
+  Patient 3 [BP=160, BS=15.0, Age=42] -> Assigned: HIGH_RISK   | Calibrated Probs: [low_risk: 0.0%, medium_risk: 0.4%, high_risk: 99.6%]
 ```
 
 ---
 
-## 2. Poisson Rate & Count Modeling
+## 2. Survival Analysis (Nelson-Aalen & Kaplan-Meier)
 
-For nonnegative counts or rates ($y \ge 0$) with log link $\mu = e^\eta$:
-
-```python
-mp = ModelTree(max_depth=2, min_rows=2, leaf_family="poisson", gain="deviance")
-mp.fit([[0.0], [0.0], [1.0], [1.0], [2.0], [2.0]], [1, 1, 2, 2, 4, 4])
-
-# Returns expected event counts
-expected_counts = mp.predict([[0.0], [1.0], [2.0]])
-prob_zero = mp.cdf([[0.0], [2.0]], 0)
-```
-
----
-
-## 3. Gamma Severity & Duration Modeling
-
-For strictly positive continuous outcomes ($y > 0$) with constant coefficient of variation (e.g. claim severity, service duration, customer lifetime value):
+**Why Built & Use Case**: Clinical oncology, hardware MTTF, and customer churn under right-censored follow-up duration.  
+**Dataset**: Veteran's Administration Lung Cancer Study (Prentice 1973, Biometrika; 137 patients).
 
 ```python
-mg = ModelTree(max_depth=2, min_rows=5, leaf_family="gamma", gain="deviance")
-mg.fit(x_positive, y_severity)
-
-preds = mg.predict(x_test)  # Strictly positive predictions
-```
-
----
-
-## 4. Tweedie Compound Poisson-Gamma Modeling
-
-For zero-inflated continuous positive targets ($y \ge 0$) where a mass of exact zeros exists alongside continuous positive values (e.g. insurance pure premiums, warranty loss costs):
-
-```python
-mt = ModelTree(max_depth=2, min_rows=10, leaf_family="tweedie", gain="deviance", l2=1e-3)
-mt.fit(x_claims, y_loss_cost)
-
-preds = mt.predict(x_test)
-```
-
----
-
-## 5. Tobit Left-Censored Regression
-
-For continuous targets censored at a lower threshold (default $0.0$, e.g. warranty claims, consumer expenditures):
-
-```python
-tobit_tree = ModelTree(max_depth=2, min_rows=10, leaf_family="tobit")
-tobit_tree.fit(x_censored, y_censored)
-
-latent_means = tobit_tree.predict(x_test)
-```
-
-- Fits latent Gaussian expectations via Expectation-Maximization in iteratively reweighted least squares (IRLS).
-- Eliminates downward attenuation bias caused by standard linear regression on censored zeros.
-
----
-
-## 6. Softmax Multi-Class Probability Vectors
-
-For discrete targets with $C \ge 3$ mutually exclusive classes:
-
-```python
-m_softmax = ModelTree(max_depth=0, leaf_family="softmax", min_rows=10)
-m_softmax.fit(x_train, y_classes)
-
-# Query class probabilities or predicted class labels
-probs = m_softmax.predict(x_test, kind="proba")      # [[P(C_0), P(C_1), P(C_2)], ...]
-labels = m_softmax.predict(x_test, kind="response")   # [0, 1, 2, ...]
-```
-
----
-
-## 7. Survival Analysis (Nelson-Aalen & Kaplan-Meier)
-
-For right-censored time-to-event outcomes $(T, E)$ where $T$ is elapsed duration and $E \in \{0, 1\}$ is event occurrence (1 = event, 0 = censored):
-
-```python
+# Fit non-parametric survival stump accounting for risk sets
 m_surv = ModelTree(max_depth=0, leaf_family="survival", min_rows=10)
-m_surv.fit(x_patients, times, event=events)
-
-# Inspect empirical survival curves and median survival
-leaf = m_surv.leaves()[0]
-print(f"Cohort Median Survival: {leaf['median_time']} days")
+m_surv.fit(X, times, event=events)
 
 # Predict survival probability S(t) and cumulative hazard H(t) at milestone horizons
-surv_curve = m_surv.predict(x_test, kind="survival", times=[30.0, 90.0, 180.0, 365.0])
-cum_hazard = m_surv.predict(x_test, kind="hazard", times=[30.0, 90.0, 180.0, 365.0])
+surv_probs = m_surv.predict(X_test, kind="survival", times=[30.0, 90.0, 180.0, 365.0])
+cum_hazards = m_surv.predict(X_test, kind="hazard", times=[30.0, 90.0, 180.0, 365.0])
+```
+
+### Empirical Results & Output Interpretation
+```text
+Cohort Size: 137 patients (Observed Deaths: 128, Censored: 9)
+Median Survival Time: 80.0 days
+Distinct Event Checkpoints: 97 logged event horizons
+
+Milestone Actuarial Projections:
+  Horizon (Days) | Survival Prob S(t) | Cumulative Hazard H(t) | Interpretation
+  ------------------------------------------------------------------------
+  30             | 0.7004             | 0.3527                 | 70.0% surviving past 30d
+  90             | 0.4640             | 0.7603                 | 46.4% surviving past 90d
+  180            | 0.2224             | 1.4837                 | 22.2% surviving past 180d
+  365            | 0.0900             | 2.3592                 | 9.0% surviving past 365d
 ```
 
 ---
 
-## 8. Heteroscedastic Location & Scale Modeling
+## 3. Heteroscedastic Location & Scale Modeling ($\mu, \sigma$)
 
-For continuous targets exhibiting conditional volatility or non-constant variance $\sigma_i^2 = \exp(z_i^\top \gamma)$:
+**Why Built & Use Case**: Actuarial risk pricing, Value-at-Risk (VaR), and quality control tolerance bands where target variance scales with features.  
+**Dataset**: US Healthcare Insurance Expenses (TabArena-v0.1 / Kaggle; 1,338 policyholders).
 
 ```python
-m_het = ModelTree(max_depth=0, leaf_family="heteroscedastic", min_rows=10)
-m_het.fit(x_train, y_train)
+m_het = ModelTree(max_depth=1, leaf_family="heteroscedastic", min_rows=20)
+m_het.fit(X, charges, col_names=["age", "bmi", "smoker"])
 
-# Jointly predict location mu and scale sigma
-dists = m_het.predict(x_test, kind="dist")  # [(mu, sigma), ...]
-for mu, sigma in dists:
-    ci_low = mu - 1.96 * sigma
-    ci_high = mu + 1.96 * sigma
+# Predict joint location and scale (mu, sigma) with Harvey (1976) bias correction
+dists = m_het.predict(X_test, kind="dist")
 ```
 
-- Uses **Harvey (1976) bias correction** (+1.2703628 to log-variance intercept) to guarantee unbiased standard deviation estimation.
-- Enables conditional volatility bands and predictive intervals for risk reserves and financial volatility.
+### Empirical Results & Output Interpretation
+```text
+Partition Identified: Split on 'smoker' at threshold 0.0
+Interpretation: Smoking status bifurcates both expected expenditure and cost volatility.
+
+Actuarial Expected Costs & 95% Volatility Corridors [mu - 1.96*sigma, mu + 1.96*sigma]:
+  Age 25 Non-Smoker (BMI 24) -> E[Cost] = $  4,548.10 | Volatility (sigma) = $2,669.93 | 95% Band: [$       0 - $   9,781]
+  Age 55 Non-Smoker (BMI 28) -> E[Cost] = $ 12,582.68 | Volatility (sigma) = $2,567.34 | 95% Band: [$   7,551 - $  17,615]
+  Age 25 Smoker     (BMI 28) -> E[Cost] = $ 24,556.59 | Volatility (sigma) = $5,731.15 | 95% Band: [$  13,324 - $  35,790]
+  Age 55 Smoker     (BMI 32) -> E[Cost] = $ 38,297.44 | Volatility (sigma) = $5,844.02 | 95% Band: [$  26,843 - $  49,752]
+```
+
+![Stump Distributional Leaves](../assets/stump_distributional_leaves.png)
 
 ---
 
-## 9. 0D Leaf Formulations & Stats Dictionaries
+## 4. Real Benchmark Tour: Probit, Gamma, Tweedie & Tobit
 
-For non-parametric or summary leaves, `ModelTree` computes a comprehensive 0D distributional summary at every terminal node:
+![Distributional Benchmarks](../assets/distributional_leaf_benchmarks.png)
 
-- **0D Leaf Formulations**: `leaf="prob"`, `leaf="odds"`, `leaf="log_odds"`, `leaf="median"`, `leaf="huber"`, `leaf="quantile"`, `leaf="mean"`.
-- **Leaf Stats Dictionary**:
-  Every leaf dictionary contains a nested `stats` dict and direct fields:
-  `prob`, `odds`, `log_odds`, `majority_class`, `entropy`, `gini`, `var`, `skew`, `kurtosis`, `median`, `mad`, `iqr`, `zero_fraction`, `dispersion`.
+### A. Probit Latent Utility (German Credit Risk)
+- **Problem**: Binary default scoring $y \in \{0, 1\}$ with latent normal utility $y^* \sim \mathcal{N}(\mathbf{X}\beta, 1)$.
+- **Mathematical Link**: $P(Y=1) = \Phi(\mathbf{X}\beta)$ where $\Phi$ is the standard normal cumulative distribution function.
+- **Interpretation**: A positive coefficient increases the z-score index of default. Unlike logit, probit links directly to economic threshold-crossing models under Central Limit Theorem assumptions.
 
-```python
-from mltreelib import ModelTree, LeafControl
+### B. Gamma Continuous Positive Severity (Healthcare Charges)
+- **Problem**: Strictly positive charges ($y > 0$) with constant coefficient of variation ($\text{Var}(Y) \propto \mu^2$).
+- **Mathematical Link**: $\ln(\mu) = \mathbf{X}\beta \implies \mu = \exp(\mathbf{X}\beta)$.
+- **Interpretation**: Coefficients act multiplicatively. For example, a coefficient of $+0.0294$ for `age` implies an annual cost multiplier of $\exp(0.0294) \approx 1.03\times$ (+3% per year of age).
 
-# Binary classification with 0D probability leaves:
-m = ModelTree(leaf="prob", max_depth=3, min_rows=10)
-m.fit(X, y)
+### C. Tweedie Compound Poisson-Gamma (Fair's Affairs)
+- **Problem**: Target with a large point mass at zero (75.1% exact zeros) alongside right-skewed continuous positive counts.
+- **Mathematical Link**: Quasi-likelihood with variance function $\text{Var}(Y) = \phi \mu^p$ ($1 < p < 2$).
+- **Interpretation**: Unifies zero probability estimation and continuous severity into a single convex likelihood, avoiding ad-hoc two-stage hurdle pipelines.
 
-# 1. Inspect all 0D stats across leaves:
-for st in m.leaf_stats():
-    print(f"Prob: {st['prob']:.3f}, Odds: {st['odds']:.3f}, Gini: {st['gini']:.3f}")
-
-# 2. Predict specific 0D metrics directly on test data:
-p_prob = m.predict(X_test, kind="prob")
-p_odds = m.predict(X_test, kind="odds")
-p_lo   = m.predict(X_test, kind="log_odds")
-p_med  = m.predict(X_test, kind="median")
-
-# 3. Predict full stats dictionary per row:
-per_row_stats = m.predict(X_test, kind="stats")
+### D. Tobit Left-Censoring Correction (Mroz Female Labor Supply)
+- **Problem**: 43.2% of women report 0 hours worked. Ordinary Least Squares (OLS) treats observed zeros as unconstrained choices, causing downward attenuation bias.
+- **Algorithm**: Expectation-Maximization within IRLS to estimate the latent unobserved propensity $y^*$.
+- **Interpretation**:
+```text
+Structural Parameter Comparison (Tobit EM-IRLS vs Standard OLS):
+  exper  -> Tobit: +105.71 | OLS: +41.50 | OLS Attenuation: 60.7%
+  kidslt6 -> Tobit: -497.70 | OLS: -611.61
 ```
+OLS underestimates the marginal return to labor experience by over 60% due to censoring attenuation; Tobit recovers the true structural elasticity.

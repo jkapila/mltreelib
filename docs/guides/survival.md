@@ -16,6 +16,19 @@ uv run python examples/real_survival_uplift.py survival
 
 `futime` is the time to death or last observation. Keep the event flag next to it. For example, someone censored at day 600 survived beyond day 365, but their status at day 1,095 is unknown. Do not replace the censored outcome with an event at day 600.
 
+```mermaid
+flowchart TD
+    subgraph TimeToEvent["Right-Censored Follow-up Mechanics (T_i, delta_i)"]
+        direction LR
+        Patient["Patient Baseline\n(Age, Biomarkers)"] --> FollowUp["Follow-up Period\n[0, T_i]"]
+        FollowUp --> Event{"Did Event Occur Before\nEnd of Study / Dropout?"}
+        Event -- "Yes (Event Observed)" --> Dead["delta_i = 1\nExact Event Time T_i"]
+        Event -- "No (Right-Censored)" --> Censored["delta_i = 0\nT_i is Lower Bound (T* > T_i)"]
+    end
+    Dead & Censored --> LogRank["Log-Rank / Martingale Split Criterion\nmax Q_LR(s)"]
+    LogRank --> KM["Terminal Leaf Estimators\nKaplan-Meier S(t) & Nelson-Aalen H(t)"]
+```
+
 Run this Python block from the repository root. The evaluation helpers are part of the example script.
 
 ```python

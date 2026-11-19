@@ -17,7 +17,7 @@ The script fits `ModelTree` on raw categorical labels and evaluates a held-out s
 
 ## The chart surface
 
-All sixteen charts from `mltreelib.plots` render as click-to-zoom figures in [Visualization Reference](../reference/plots.md):
+All sixteen charts from `mltreelib.plots` render as click-to-zoom figures in [Visualization Guide](../guides/visualization.md):
 
 | chart | what it answers |
 |---|---|

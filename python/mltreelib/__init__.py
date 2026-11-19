@@ -2,7 +2,15 @@
 
 The heavy lifting lives in ``mltreelib-core`` (Rust); this package exposes it
 with a scikit-learn-shaped API without depending on scikit-learn.
+
+External modules like ``datasets`` (requires pyarrow) and ``plots`` (requires matplotlib)
+are lazily loaded so the core package remains lean and dependency-free.
 """
+
+from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING
 
 from mltreelib._core import (
     HDBSCAN,
@@ -43,6 +51,7 @@ from mltreelib._core import (
     WoEEncoder,
     calendar_features,
     decomposed_transform,
+    fast_interaction_screen,
     generate,
     grouped_scale,
     grouped_transform,
@@ -51,10 +60,40 @@ from mltreelib._core import (
     trended_transform,
     windowed_transform,
     winnow,
-    fast_interaction_screen,
 )
-from mltreelib.datasets import list_datasets, load_dataset
-from mltreelib.models import AnomalyTree, ClusterTree, distributions_to_quantiles, histograms_to_quantiles
+from mltreelib.models import (
+    AnomalyTree,
+    ClusterTree,
+    distributions_to_quantiles,
+    histograms_to_quantiles,
+)
+
+if TYPE_CHECKING:
+    from mltreelib import plots
+    from mltreelib.datasets import dataset_path, list_datasets, load_dataset
+
+# Lazy-loaded attributes for optional dataset and plotting extras
+_LAZY_EXPORTS: dict[str, tuple[str, str | None]] = {
+    "list_datasets": ("mltreelib.datasets", "list_datasets"),
+    "load_dataset": ("mltreelib.datasets", "load_dataset"),
+    "dataset_path": ("mltreelib.datasets", "dataset_path"),
+    "plots": ("mltreelib.plots", None),
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_EXPORTS:
+        mod_name, attr = _LAZY_EXPORTS[name]
+        mod = importlib.import_module(mod_name)
+        val = getattr(mod, attr) if attr is not None else mod
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+def __dir__() -> list[str]:
+    return sorted(__all__)
+
 
 __all__ = [
     "HDBSCAN",
@@ -99,16 +138,18 @@ __all__ = [
     "WoEEncoder",
     "calendar_features",
     "decomposed_transform",
+    "dataset_path",
+    "fast_interaction_screen",
     "generate",
     "grouped_scale",
     "grouped_transform",
     "lag_by_days",
     "list_datasets",
     "load_dataset",
+    "plots",
     "summarize",
     "trended_transform",
     "windowed_transform",
     "winnow",
-    "fast_interaction_screen",
 ]
 __version__ = "0.4.9"

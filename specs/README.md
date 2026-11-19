@@ -25,3 +25,4 @@ This directory tracks the architectural specifications, research blueprints, and
 | **15** | [`15-structured-tree-ensembles.md`](15-structured-tree-ensembles.md) | **Planned** | — | Generalized Random Forests (GRF) and honest inference forests. |
 | **16** | [`16-copula-leaves-and-generative-forests.md`](16-copula-leaves-and-generative-forests.md) | **Planned** | — | Vine copula leaves, generative forests, and tractable probabilistic circuits. |
 | **17** | [`17-panel-var-vecm-trees.md`](17-panel-var-vecm-trees.md) | **Planned** | — | Panel fixed effects, TVAR, and TVECM longitudinal econometric trees. |
+| **18** | [`18-documentation-examples-and-guides-modernization.md`](18-documentation-examples-and-guides-modernization.md) | **Active** | `v0.4.9` | Comprehensive documentation, 8-suite example consolidation, real data grounding, scikit-learn style plotting, and Mermaid architecture diagrams. |
