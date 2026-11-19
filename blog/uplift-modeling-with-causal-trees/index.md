@@ -1,28 +1,76 @@
-# Uplift modeling with causal trees: who benefits from an intervention?
+# Uplift modeling with causal trees: does targeting beat emailing everyone?
 
-A customer who is likely to visit your site is not necessarily a customer who will visit **because** of an email. If the email costs money or annoys customers, the difference matters.
+A customer can be likely to visit your site without receiving an email. Sending to that customer only helps if the email changes their behavior. A response model estimates the chance of a visit. An uplift model estimates how much that chance changes under the intervention.
 
-Uplift modeling asks a different question from response prediction: **how much does the outcome change under treatment?** A causal tree groups observations to estimate how that change varies across customers. Randomized treatment assignment, or defensible observational assumptions, is needed to interpret those differences causally.
+This walkthrough fits a causal tree, chooses a targeting threshold and estimates the policy's incremental visits on a randomized test set.
 
-## What does an uplift model estimate?
+## Get a real treatment and control dataset
 
-For pre-treatment features \\(X=x\\), the conditional average treatment effect is \\(E\[Y(1)-Y(0)\\mid X=x\]\\). In a randomized trial, treated and control outcomes within a sufficiently supported group can estimate that contrast. We do not observe both potential outcomes for one person, so an individual prediction is not an observed individual effect.
+The [Hillstrom experiment](<https://www.tensorflow.org/datasets/catalog/hillstrom>) assigned 64,000 customers across two email variants and a control group. Compare the women's email with no email. Use the `visit` indicator for a site visit in the next two weeks. Keep the men's email arm out of this comparison. The outcome and campaign assignment stay out of the feature matrix.
 
-`ModelTree(gain="causal")` accepts outcomes and treatment indicators as a tuple. Honesty separates rows used for tree structure from those used for leaf estimation. It does not remove confounding or guarantee that a discovered segment will generalize. See [Athey and Imbens (2016)](<https://www.pnas.org/doi/10.1073/pnas.1510489113>).
+Download the [CSV mirror](<https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv>) to `datasets/external/real_eval/hillstrom.csv`. It matches the published record and arm counts. The [uplift pathway](<https://jkapila.github.io/mltreelib/guides/uplift/index.md>) records the file checksum and source details. Clone the repo and run `uv sync`. Run the code below from the repository root.
 
-## Does targeting beat treating everyone?
+## Fit the causal tree and set a threshold
 
-We tested the workflow on the historical [Hillstrom randomized email trial](<https://www.tensorflow.org/datasets/catalog/hillstrom>). The example compares the women's email with no email and measures a website visit within two weeks. It uses 25,615 training, 8,539 validation and 8,539 test records. The tree uses pre-treatment attributes only.
+Shuffle once. Use 25,615 training rows, 8,539 validation rows and 8,539 test rows. The split assumes independent customer records from the same experiment. Honest estimation separates rows for split selection and leaf estimates inside the training set. Validation chooses the cutoff from the possible scores. The test set is reserved for the chosen policy and two fixed alternatives.
 
-Validation selected a policy that treats every test customer. Its estimated incremental visit rate was **0.04517 per eligible customer**, with an approximate 95% interval of **0.03108 to 0.05927**. Treat-all has the same value because it is the same policy in this run. Treat-none has zero incremental visits by definition.
+```
+from random import Random
 
-That result supports a difference between the two randomized arms in this split. It does **not** show that the targeting model improves on treating everyone. The example assumes zero campaign cost because the dataset does not provide it. Visits are not purchases or profit, and a historical experiment is not a substitute for a new trial.
+import pandas as pd
+from mltreelib import ModelTree
+from examples.real_survival_uplift import group_value
 
-## How should you evaluate uplift?
+df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
+df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
+features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
+types = ["numeric"] * 5 + ["categorical"] * 2
+ids = list(range(len(df)))
+Random(2026).shuffle(ids)
+a, b = int(.6 * len(ids)), int(.8 * len(ids))
 
-1. Define the intervention, outcome, cost and eligible population before fitting.
-2. Keep treatment and outcomes out of pre-treatment features. Split training, policy selection and test data.
-3. Compare the fixed policy with treat-all and treat-none on an independent randomized holdout. Report treated and control counts in targeted groups.
-4. Report uncertainty and campaign costs. Re-test the proposed policy in the setting where it will run.
+def inputs(indices):
+    part = df.iloc[indices]
+    x = [[None if pd.isna(v) else v for v in row]
+         for row in part[features].itertuples(index=False, name=None)]
+    return x, part.visit.tolist(), (part.segment == "Womens E-Mail").astype(int).tolist()
 
-The [uplift pathway](<https://jkapila.github.io/mltreelib/guides/uplift/index.md>) contains the synthetic and real evaluation, data source, split, limitations and commands. Its synthetic example also reports PEHE, which requires known individual effects and is not directly observable in an ordinary real trial.
+x_train, y_train, w_train = inputs(ids[:a])
+x_val, y_val, w_val = inputs(ids[a:b])
+x_test, y_test, w_test = inputs(ids[b:])
+tree = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250,
+                 prune="none", honesty=True, seed=42)
+tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
+
+val_scores = tree.predict(x_val, kind="uplift")
+def value_at(threshold):
+    return group_value(y_val, w_val, [score > threshold for score in val_scores])[0]
+
+threshold = max([min(val_scores) - 1, *sorted(set(val_scores))], key=value_at)
+test_scores = tree.predict(x_test, kind="uplift")
+for selected in ([score > threshold for score in test_scores],
+                 [True] * len(y_test), [False] * len(y_test)):
+    print(group_value(y_test, w_test, selected))
+```
+
+## What does the test set say?
+
+| Policy | Selected customers | Treated / control within selection | Incremental visits per 100 eligible customers |
+| --- | ---: | ---: | ---: |
+| Validation-selected policy | 8,539 | 4,270 / 4,269 | 4.52 |
+| Treat all | 8,539 | 4,270 / 4,269 | 4.52 |
+| Treat none | 0 | — | 0 |
+
+The selected policy sends to everyone. The approximate 95% interval is 3.11 to 5.93 incremental visits per 100 eligible customers. This experiment shows evidence of an average visit lift for the email in this test split. It gives no evidence of an improvement from targeting.
+
+The policy calculation takes the difference in visit rates between randomized arms among selected customers. It then multiplies by the selected share of the test population. The interval holds selection fixed and does not include threshold-selection uncertainty. The example assumes zero email cost because the dataset supplies no campaign cost. Use the decision's actual outcome, such as margin or conversions, before making a budget decision.
+
+## What should you inspect before a new trial?
+
+Check that the features reflect information available before sending, and that each candidate segment contains enough treated and control customers. Record the assignment probability. Inspect the tree rules and segment counts, then compare any proposed budget-constrained policy with an equally sized random send. If comparing against treat-all, use uncertainty for the difference between policies on the same test records. Assign a new randomized holdout before deployment.
+
+```
+uv run python examples/real_survival_uplift.py uplift
+```
+
+For the assumptions and mechanics behind honest causal trees, see [Athey and Imbens (2016)](<https://www.pnas.org/doi/10.1073/pnas.1510489113>).

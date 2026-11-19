@@ -1,70 +1,45 @@
-# Clustering models comparison — Crosstab Sparsity (CSP)
+# Check whether a clustering tree is stable after refitting
 
-Comparison of all tree-based clustering paradigms in `mltreelib` on the `credit-g` dataset using Jitin Kapila's **Crosstab Sparsity (CSP)** metric.
+Start with the [wine chemistry pathway](<https://jkapila.github.io/mltreelib/guides/clustering/index.md>) to fit and inspect a segment tree. This example changes the question. If you collect another training sample, do you group the same review wines together?
 
-Script: [`examples/clustering_comparison.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/clustering_comparison.py>) (`uv run python examples/clustering_comparison.py`).
+Download [OpenML Wine Quality 46964](<https://www.openml.org/d/46964>) to `datasets/wine_quality.parquet`. Run the code from the repository root after `uv sync`.
 
-## Evaluated models
+## Compare two tree depths on a fixed review set
 
-1. **Predictive Clustering Trees (PCT / CLUS)**: Multi-objective variance reduction across numerical targets while partitioning mixed attributes.
-2. **HDBSCAN Condensed Tree**: Unsupervised density-based hierarchical clustering with Excess of Mass (EOM) cluster selection.
-3. **CLTree**: Density-based hyper-rectangle clustering contrasting true samples against synthetic background noise.
-4. **Unsupervised Random Forest (URF)**: Affinity proximity matrix derived from synthetic label discrimination with Lance-Williams hierarchical clustering.
-
-## Crosstab Sparsity (CSP) metric
-
-The Crosstab Sparsity metric measures how well clustering partitions separate attributes:
-
-\\\[\\text{CSP} = \\sum\_{j} \\left\[ \\frac{n\_v}{\\max(l, k)} \\times \\ln \\left( \\frac{N}{l \\cdot k} \\right) \\right\]\\\]
-
-- **Segregation factor**: measures mass concentration in contingency table cells above the median cell count.
-- **Explanation factor**: measures information density gained over a uniform null spread.
-
-## Code snippet
+Keep the review rows constant. Use identical feature scaling for both fits so the comparison isolates the change in training rows. Use the same procedure at both depths.
 
 ```
+import numpy as np
 import pandas as pd
-from mltreelib import (
-    CLTree,
-    HDBSCAN,
-    PredictiveClusteringTree,
-    UnsupervisedRandomForest,
-    load_dataset,
-)
-from examples.clustering_comparison import crosstab_sparsity
+from mltreelib import ClusterTree
 
-# Load credit-g dataset
-data = load_dataset("credit-g")
-df = pd.DataFrame(data["data"], columns=data["columns"])
+df = pd.read_parquet("datasets/wine_quality.parquet").sample(frac=1, random_state=2026)
+features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
+train, refit, review = df.iloc[:2500], df.iloc[2500:5000], df.iloc[5000:]
+center, scale = train[features].mean(), train[features].std()
 
-# Fit Predictive Clustering Tree
-pct = PredictiveClusteringTree(
-    max_depth=5,
-    min_leaf_samples=15,
-    min_variance_reduction=0.01,
-)
-pct.fit(
-    x_matrix,
-    target_indices=[0, 1, 3],
-    col_names=feature_names,
-    dtypes=dtypes,
-)
-labels_pct = pct.predict_cluster(x_matrix)
+def design(part):
+    return ((part[features] - center) / scale).to_numpy().tolist()
 
-# Evaluate Crosstab Sparsity
-csp_score, summary = crosstab_sparsity(df, labels_pct)
-print(f"PCT Total Crosstab Sparsity: {csp_score:.3f}")
+for depth in (1, 2):
+    assignments = []
+    for part in (train, refit):
+        tree = ClusterTree(kind="pct", max_depth=depth, min_rows=150)
+        tree.fit(design(part), col_names=features)
+        assignments.append(tree.predict(design(review)))
+
+    counts = pd.crosstab(np.asarray(assignments[0]), np.asarray(assignments[1]))
+
+    def pairs(n):
+        return (n * (n - 1) // 2).sum()
+
+    shared = pairs(counts.to_numpy().ravel())
+    either = pairs(counts.sum(axis=0)) + pairs(counts.sum(axis=1)) - shared
+    print(depth, shared / either if either else float("nan"), counts.to_dict())
 ```
 
-## Benchmark results
+A score of 1 means the fits keep the same pairs together. An arbitrary segment ID change does not affect it. If one tree assigns everything to one large group, a stability score alone cannot tell you whether that group is useful. Report size, profiles and stability together. For a full pipeline stability check, refit the scaling in each training partition.
 
-| Algorithm | Paradigm | Clusters Formed | Noise Points | Crosstab Sparsity (CSP) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Predictive Clustering Tree (PCT)** | Multi-Objective Variance Reduction | 11 | 0 | **68.505** |
-| **HDBSCAN** | Density Stability &amp; Excess of Mass | 2 | 267 | **53.655** |
-| **CLTree** | Hyper-Rectangle Noise Discrimination | 7 | 0 | **49.859** |
-| **Unsupervised Random Forest (URF)** | Proximity Co-occurrence | 5 | 0 | **48.540** |
+## How to use this comparison
 
-## Takeaway
-
-PCT achieves the highest Crosstab Sparsity score because its splitting criterion directly optimizes multi-target variance reduction along numerical dimensions (`duration_months`, `credit_amount`, `age_years`), maximizing separation across attribute combinations.
+Change the depth or the feature list on development data. Check that each leaf has enough rows for its profile and that analysts can interpret the condition. Use a new held-out batch before claiming the final choice is stable. The [clustering guide](<https://jkapila.github.io/mltreelib/guides/clustering/index.md>) describes the unified engine choices and their input contracts.

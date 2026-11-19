@@ -1,24 +1,20 @@
 # Practical modeling pathways
 
-Start with the decision you need to make. Each path uses a small reproducible example and covers data, fitting, evaluation and interpretation.
+Start with a decision. Each pathway uses a real dataset, shows the fitting code and reads the result against a baseline or diagnostic.
 
-| Decision | Path | Output |
-| --- | --- | --- |
-| Predict a quantity | [Regression](<https://jkapila.github.io/mltreelib/guides/regression/index.md>) | A numeric estimate |
-| Predict an event | [Classification](<https://jkapila.github.io/mltreelib/guides/classification/index.md>) | A class score and decision |
-| Describe groups | [Clustering](<https://jkapila.github.io/mltreelib/guides/clustering/index.md>) | Segment assignments and rules |
-| Prioritize unusual records | [Anomaly detection](<https://jkapila.github.io/mltreelib/guides/anomaly/index.md>) | A review ranking |
-| Estimate time to an event | [Survival](<https://jkapila.github.io/mltreelib/guides/survival/index.md>) | Survival probabilities over time |
-| Choose an intervention | [Uplift](<https://jkapila.github.io/mltreelib/guides/uplift/index.md>) | Estimated treatment effects |
+| Decision | Path | Dataset | What to check |
+| --- | --- | --- | --- |
+| Estimate a price | [Regression](<https://jkapila.github.io/mltreelib/guides/regression/index.md>) | OpenML diamonds | Test errors and residuals |
+| Predict financial distress | [Classification](<https://jkapila.github.io/mltreelib/guides/classification/index.md>) | Give Me Some Credit | Ranking, probability and threshold cost |
+| Group wine by chemistry | [Clustering](<https://jkapila.github.io/mltreelib/guides/clustering/index.md>) | UCI Wine Quality via OpenML | Leaf profiles and refit stability |
+| Prioritize unusual readings | [Anomaly detection](<https://jkapila.github.io/mltreelib/guides/anomaly/index.md>) | UCI Statlog Shuttle | Precision at a fixed review budget |
+| Estimate survival over time | [Survival](<https://jkapila.github.io/mltreelib/guides/survival/index.md>) | FLCHAIN | Censoring-aware error by horizon |
+| Decide who gets an email | [Uplift](<https://jkapila.github.io/mltreelib/guides/uplift/index.md>) | Hillstrom experiment | Policy value against treat-all and treat-none |
 
-## Before and after modeling
+## How to use the documentation
 
-Start with [data preparation](<https://jkapila.github.io/mltreelib/guides/data/index.md>). Follow the [real-data walkthrough](<https://jkapila.github.io/mltreelib/guides/real-data/index.md>) for a TabArena dataset. After fitting, use [evaluation and monitoring](<https://jkapila.github.io/mltreelib/guides/evaluation/index.md>), then [visualize the results](<https://jkapila.github.io/mltreelib/guides/visualization/index.md>). For a model handoff, see [prediction and schema](<https://jkapila.github.io/mltreelib/guides/serving-contract/index.md>). For Tobit leaves, constraints, retraining and tuning, see [extend a model tree](<https://jkapila.github.io/mltreelib/guides/advanced-modeling/index.md>).
+1. **Run one pathway.** Get its dataset and follow the analysis from split through evaluation.
+2. **Change one part.** The [example library](<https://jkapila.github.io/mltreelib/examples/index.md>) covers missing routing, alternative leaves, calibration diagnostics, retraining and other focused variations.
+3. **Review the decision.** Use the [evaluation guide](<https://jkapila.github.io/mltreelib/guides/evaluation/index.md>), [visualization catalog](<https://jkapila.github.io/mltreelib/guides/visualization/index.md>) and [serving contract](<https://jkapila.github.io/mltreelib/guides/serving-contract/index.md>).
 
-## A repeatable sequence
-
-**Decision → Data → Baseline → Fit → Evaluate → Interpret → Monitor**
-
-Keep test data independent of model and threshold selection. Fit transformations on training data only. Record feature names, category handling and missingness. A prediction or segment does not establish what happens after an intervention.
-
-These introductory paths use synthetic data. Use the linked examples and API references for more detail. They do not establish production performance or full drop-in compatibility.
+The [dataset setup page](<https://jkapila.github.io/mltreelib/guides/real-data/index.md>) lists the downloads. Synthetic checks sit after the practical workflows. They make known effects and missing-data behavior easier to test.

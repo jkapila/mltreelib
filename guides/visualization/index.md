@@ -72,3 +72,5 @@ The public `mltreelib.plots` module exposes the functions below. `y_true` is the
 A calibration plot is a diagnostic. It does not fit a probability calibrator or change model predictions. Fitted post-hoc calibration is on the roadmap.
 
 The chart functions accept an optional Matplotlib `ax`; `plot_decomposition` uses `axes` for its panels. When using your own axes, use the axes you supplied rather than relying on a return value. See [`examples/metrics_showcase.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/metrics_showcase.py>) for calls and chart generation. The [evaluation pathway](<https://jkapila.github.io/mltreelib/guides/evaluation/index.md>) explains how to choose a threshold and interpret held-out results.
+
+When exporting a decision as a rule, [check split boundaries](<https://jkapila.github.io/mltreelib/guides/serving-contract/#check-split-boundaries>) using the fitted model. The current DOT labels differ from prediction at an exact numeric split threshold in the checked example.

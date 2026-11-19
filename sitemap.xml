@@ -4,18 +4,6 @@
         <loc>https://jkapila.github.io/mltreelib/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/agents/docs-generation/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/agents/domain/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/agents/issue-tracker/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/agents/triage-labels/</loc>
-      </url>
-      <url>
         <loc>https://jkapila.github.io/mltreelib/benchmarks/datasets/</loc>
       </url>
       <url>
@@ -50,6 +38,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/anomaly-comparison/</loc>
@@ -103,6 +94,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/statistical-and-metric-splitting/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/stump-explainable/</loc>
       </url>
       <url>
@@ -116,9 +110,6 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/visualization/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/walkthrough/</loc>
@@ -206,9 +197,6 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/parameters/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/reference/plots/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/reports/</loc>

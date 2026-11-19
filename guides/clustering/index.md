@@ -1,53 +1,60 @@
-# Clustering: a practical pathway
+# Clustering in Python: profile wines by chemistry
 
-Find groups with similar measured characteristics. Decide first what a useful segment must support, such as profiling or a service strategy.
+Use a predictive clustering tree to group wines by measurements a lab can inspect. The output is a leaf ID, a rule and a profile. A lab could investigate an unexpected shift in the size of a segment across production batches.
 
-**Path:** Define the decision → Prepare data → Fit a baseline → Evaluate → Inspect → Act and monitor.
+## 1\. Get the data and choose the features
 
-## 1\. Define the data and split
+Save [OpenML Wine Quality 46964](<https://www.openml.org/d/46964>) to `datasets/wine_quality.parquet`. The 6,497 records come from the [UCI Wine Quality collection](<https://archive.ics.uci.edu/dataset/186/wine+quality>). Use four numeric measurements. Keep `median_wine_quality` and `wine_color` out of fitting. Those columns can help interpret groups later.
 
-The synthetic example uses two numeric measurements. Scaling and distance affect similarity. Remove identifiers and outcomes that are unavailable when assigning future rows. Fit preprocessing on training data only.
+PCT splits to reduce the variation of numeric features inside its leaves. The measurements have different units, so give them comparable scales using training means and standard deviations. Keep the original units for the report. Scaling is an explicit choice for this similarity objective.
 
-## 2\. Fit and inspect a small example
+## 2\. Fit, assign and profile
 
-This complete example uses the package and Python standard library. It uses synthetic data and a fixed seed. Run it from a Python environment with `mltreelib` installed.
+Run this from the repository root. The second split supports a refit check. Assign the review records with both models before comparing them.
 
 ```
-from random import Random
+import pandas as pd
 from mltreelib import ClusterTree
 
-rng = Random(43)
-x = [[rng.gauss(center, .4), rng.gauss(center, .4)] for center in (-2, 2) for _ in range(1000)]
-model = ClusterTree(kind="pct", max_depth=2, min_rows=10)
-model.fit(x, col_names=["measure_a", "measure_b"])
-labels = model.predict(x)
-print("clustering labels:", sorted(set(labels)))
-print("clustering rules:", model.rules())
+df = pd.read_parquet("datasets/wine_quality.parquet").sample(frac=1, random_state=2026)
+features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
+train, review = df.iloc[:2500], df.iloc[5000:].copy()
+center = train[features].mean()
+scale = train[features].std()
+
+def design(frame):
+    return ((frame[features] - center) / scale).to_numpy().tolist()
+
+tree = ClusterTree(kind="pct", max_depth=2, min_rows=150)
+tree.fit(design(train), col_names=features)
+review["segment"] = tree.predict(design(review))
+print(review.groupby("segment")[features].median().round(3))
+print(review["segment"].value_counts().sort_index())
+print(tree.rules())
 ```
 
-## 3\. See the result
-
-The figure comes from [`examples/modeling_pathways.py`](<https://github.com/jkapila/mltreelib/blob/main/examples/modeling_pathways.py>). Rendering the figures requires matplotlib. The example is a teaching illustration, not a benchmark.
-
-## 4\. Evaluate before deciding
-
-`ClusterTree(kind="pct")` creates a predictive clustering tree using the features as its unsupervised targets here. It can split a natural group into multiple leaves. Compare segment sizes, profiles and stability across samples and settings. Do not treat these synthetic labels as ground truth.
-
-## 5\. Interpret and monitor
-
-`rules()` reports cluster conditions, prototypes and sizes for this PCT example. Review small groups and check whether their rules are useful to domain experts. PCT prediction is shown here; check each engine's new-row behavior before deployment.
-
-## 6\. Check a held-out segmentation
-
-The [clustering workflow](<https://github.com/jkapila/mltreelib/blob/main/examples/clustering_workflow.py>) fits 2,000 synthetic records, assigns 1,000 independent review records and fits a second tree on another independent sample. It reports rule support, segment sizes and pairwise agreement between assignments from the two fits.
+The [full script](<https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py>) refits on the other 2,500 wines and draws the figure.
 
 ```
-uv run python examples/clustering_workflow.py
+uv run python examples/real_tree_studies.py wine
 ```
 
-For the fixed seed, the held-out segment sizes are 237, 273, 243 and 247. Pairwise agreement between the two fits is 0.750. The measure checks whether pairs are together or apart in both fits, so it does not require matching cluster IDs. It is a stability diagnostic, not evidence that the segments are useful. Also inspect the proportion of pairs in each category, small segments, segment profiles, and sensitivity to `max_depth` and `min_rows`. Use a relevant downstream business measure when available, without using the test outcomes to choose the final model.
+## 3\. Read the profiles and check stability
 
-## 7\. Choose an engine through `ClusterTree`
+| Leaf | Review rows | Median residual sugar (g/L) | Median volatile acidity (g/L) | Median alcohol (%) |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 715 | 2.1 | 0.260 | 10.9 |
+| 1 | 303 | 2.2 | 0.580 | 10.0 |
+| 2 | 350 | 12.0 | 0.265 | 9.3 |
+| 3 | 129 | 9.7 | 0.280 | 11.0 |
+
+The two lower-sugar groups differ on acidity. The higher-sugar groups differ on alcohol. Pairwise Jaccard agreement on the 1,497 review wines was **0.841** after refitting at depth two on the second training sample. This is one check with a shared training scale.
+
+A scatter plot only shows two of the four input features. Use the profile panel to see how the segments differ across the full feature list. It displays each segment's median in units of the training standard deviation. For a rule review, convert a standardized threshold back to lab units using `threshold * scale + center`.
+
+Report pairwise Jaccard agreement after refitting. It counts pairs assigned together in both fits as a fraction of pairs assigned together in either fit. It avoids matching arbitrary leaf IDs and excludes the usually large number of pairs separated by both fits. This tests the stability of one partition with fixed scaling. Before using the groups operationally, repeat with independent batches and compare against a simpler lab rule.
+
+## 4\. Choose an engine through `ClusterTree`
 
 The following observations are from a small numeric, two-group synthetic check. They establish the interface paths exercised, not comparative model quality.
 
@@ -68,12 +75,8 @@ PCT accepted raw categorical labels and missing numeric entries in a separate ch
 
 For density and proximity methods, check scaling, distance choice and the meaning of an unassigned or noise label. For all kinds, test the actual new-row behavior and input schema that your workflow uses.
 
-## Real-data example
+## 5\. Run the controlled stability example
 
-The [bank churn walkthrough](<https://jkapila.github.io/mltreelib/guides/real-data/index.md>) runs this workflow on a 10,000-row TabArena dataset with independent test rows.
+The [synthetic clustering workflow](<https://github.com/jkapila/mltreelib/blob/main/examples/clustering_workflow.py>) lets you change the overlap between known generating groups. It uses 1,000 independent review rows and illustrates how a tree can split a single generating group into several leaves.
 
-## Next steps and references
-
-[Clustering comparison](<https://jkapila.github.io/mltreelib/examples/clustering-comparison/index.md>) · [API reference](<https://jkapila.github.io/mltreelib/reference/api/cluster/index.md>)
-
-Continue with [data preparation](<https://jkapila.github.io/mltreelib/guides/data/index.md>), [evaluation and monitoring](<https://jkapila.github.io/mltreelib/guides/evaluation/index.md>), or [model extensions](<https://jkapila.github.io/mltreelib/guides/advanced-modeling/index.md>). The [practical modeling pathways](<https://jkapila.github.io/mltreelib/guides/index.md>) show the other tasks. For broader coverage, see the [documentation audit](<https://github.com/jkapila/mltreelib/tree/main/references/research>).
+See [Blockeel et al. on predictive clustering](<https://arxiv.org/abs/cs/0011030>) and the [engine comparison](<https://jkapila.github.io/mltreelib/examples/clustering-comparison/index.md>).

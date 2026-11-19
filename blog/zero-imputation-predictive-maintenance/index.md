@@ -1,78 +1,62 @@
-# Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds
+# How do decision trees handle missing sensor values? A real truck failure example
 
-**Author:** Jitin Kapila &amp; mltreelib Team  
-**Category:** Industrie 4.0 &amp; Sensor Analytics
+A missing sensor reading leaves two questions. Can the tree still score the record? Does the resulting score work for the same review decision? We can answer both with labeled, held-out sensor records.
 
----
+This tutorial uses Scania's air pressure system (APS) failure data. It predicts whether a failure concerns the air pressure system using the available measurements. The label describes the relevant failure component. The table does not give the hours until failure, so this case evaluates diagnostic triage.
 
-## The Flaw of Mean/Median Imputation in IoT
+## Get the sensor data and audit missingness
 
-In manufacturing facilities, wind turbine farms, and oil &amp; gas pipelines, sensor dropouts are common. Telemetry connections drop, sensors saturate, or channels get unplugged during maintenance.
+Save the [OpenML APSFailure Parquet](<https://www.openml.org/d/46908>) to `datasets/APSFailure.parquet`. The [UCI source](<https://archive.ics.uci.edu/dataset/421/aps+failure+at+scania+trucks>) describes the sensor measurements and component labels. The TabArena version has 76,000 records. Use a fixed 12-feature subset and 12,000 sampled rows for this tutorial. The original task supplies a train/test split and a cost scheme. This example uses its own seeded split and illustrative costs.
 
-Standard machine learning pipelines default to synthetic imputation: filling missing readings with the historical mean, median, or KNN interpolations.
+Clone the repo and run `uv sync`. Run the following code from its root. The loader preserves missing values by converting pandas missing sentinels to Python `None`. The model receives the unfilled sensor readings.
 
-In predictive maintenance, imputation can obscure a useful missingness pattern: - A missing temperature reading can reflect a sensor fault, not that it was at the average temperature (e.g. 25°C). - Imputation can change rolling statistics and model decisions. Its effect depends on the data and method.
-
----
-
-## Native Routing and Piecewise Linear Models
-
-`ModelTree` supports two mechanisms for evaluating missing telemetry:
-
-1. **Native Missing Routing**: Missing sensor values (`None` / `NaN`) are preserved at ingest and routed through primary and surrogate split logic (`maxsurrogate=1`). The tree learns directly whether sensor dropout itself signals imminent failure.
-2. **Cubist-Style Linear Leaves**: Instead of predicting constant step-functions, leaves fit localized multivariate linear regressions over active operational telemetry.
+## Fit a tree and audit its review queue
 
 ```
-from mltreelib import ModelTree
+from examples.real_tree_studies import load, rows
+from mltreelib import Metrics, ModelTree
 
-# Model tree with linear leaf regressions and surrogate missing routing
-model = ModelTree(
-    leaf="linear",
-    max_depth=3,
-    min_rows=30,
-    maxsurrogate=1,    # Routes missing sensor channels without imputation
-    prune="none",
-    seed=999,
-)
+df = load("APSFailure", 46908).sample(frac=1, random_state=2026).iloc[:12000]
+features = ["aa_000", "ab_000", "ac_000", "ad_000", "ae_000", "af_000",
+            "ag_000", "ag_001", "ag_002", "ag_003", "ag_004", "ag_005"]
+train, val, test = df.iloc[:8000], df.iloc[8000:10000], df.iloc[10000:]
+target = "AirPressureSystemFailure"
+print(train[features].isna().sum())
 
-# Fit over raw telemetry matrix containing None / NaN dropouts
-col_names = ["bearing_temp", "vibration_rms", "oil_pressure"]
-model.fit(X_train, y_train, col_names=col_names)
+def labels(frame):
+    return (frame[target] == "pos").astype(int).tolist()
 
-# Predict Remaining Useful Life (RUL) in hours
-rul_predictions = model.predict(X_test)
+tree = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance",
+                 max_depth=3, min_rows=100, prune="none")
+tree.fit(rows(train, features), labels(train), col_names=features,
+         dtypes=["numeric"] * len(features))
+val_scores = tree.predict_proba(rows(val, features))
+
+def cost(cutoff):
+    return sum(5 if y and p < cutoff else 1 if not y and p >= cutoff else 0
+               for y, p in zip(labels(val), val_scores))
+
+cutoff = min([.02, .05, .10, .20, .40, 1.01], key=cost)
+scores = tree.predict_proba(rows(test, features))
+predicted = [int(score >= cutoff) for score in scores]
+print(cutoff, Metrics().classification(labels(test), predicted)["confusion"])
+print(tree.splits()[0])
 ```
 
----
+When a split feature is absent, the tree can use its missing route. The named split includes `missing_left`. The feature names here are anonymized. Keep those names in the output and ask the data owner for a mapping before making a mechanical interpretation.
 
-## Data Analysis &amp; Sensor Telemetry Profile
+## What did the tree find on the holdout?
 
-The following is a synthetic bearing-degradation illustration (\\(N=1,000\\) simulated monitoring hours), not an industrial validation dataset:
+The `ab_000` channel was missing on 6,181 of 8,000 training rows. All 2,000 test records received scores. The validation-selected threshold was 0.10. The test queue contained 59 records, including 28 of the 39 positive cases. That is 47% precision and 72% recall. Average precision was 0.430, alongside 1.95% test prevalence.
 
-| Sensor Channel | Operational Range | Dropout Mechanism | Failure Degradation Impact |
-| :--- | :---: | :---: | :--- |
-| **`bearing_temp`** | 40°C to 105°C | Continuous (no drops) | Critical friction heat indicator; drives catastrophic wear when \\(\>85^\\circ\\text{C}\\). |
-| **`vibration_rms`** | 0.5 to 6.5 mm/s | Continuous (no drops) | Mechanical harmonic resonance; high RMS accelerates bearing degradation. |
-| **`oil_pressure`** | 25 to 55 psi | **\~20% Missing (`None`)** | When thermal friction spikes (\\(\>85^\\circ\\text{C}\\)), telemetry transmitters blackout. |
-| **`hours_to_failure`** (RUL) | 10 to 350 hours | Target (continuous) | Continuous operational hours until thermal seizure or bearing raceway fracture. |
+The right panel separates records with all selected sensor values from records with at least one missing value. The groups contain 370 and 1,630 observations with 9 and 30 positives, respectively. The mean score was 1.31% for complete rows, compared with 2.43% observed. The missing group had a mean score of 1.76% and an observed rate of 1.84%. Small event counts make these slice averages noisy. Review score bins, false alerts and missed events on a larger recent sample before changing alert policy.
 
----
+## How should you test this on a new fleet?
 
-## Piecewise Linear Tree Architecture
+Record missingness by channel, truck and time window. Split by truck and date if those keys exist. If telemetry stops preferentially during particular operations, include those operating states in the evaluation. Compare the same tree against a training-only imputation baseline and an existing triage rule on identical records. The current comparison uses a constant probability baseline, which tests ranking and score quality but cannot isolate the effect of native missing routing.
 
-Below is the trained piecewise model tree rendered via `model.to_dot()` and Graphviz:
+```
+uv run python examples/real_tree_studies.py aps
+```
 
-Notice the dual mechanics: - **Decision Partitioning**: The tree isolates regimes by temperature (\\(T \> 83.2^\\circ\\text{C}\\)) and vibration (\\(V \> 3.4\\,\\text{mm/s}\\)). - **Local Linear Regressions**: Rather than a single flat step-function, each leaf evaluates a fitted hyperplane equation: $\\(\\text{RUL} = \\beta\_0 + \\beta\_1 \\cdot \\text{bearing\\\_temp} + \\beta\_2 \\cdot \\text{vibration\\\_rms} + \\beta\_3 \\cdot \\text{oil\\\_pressure}\\)$ capturing high-gradient degradation slopes near the end of machine life.
-
----
-
-## Model Evaluation &amp; Diagnostics
-
-Residuals and split importance describe this synthetic fit. They do not validate the physical failure mechanism:
-
-1. **Actual vs. Predicted RUL**: Residuals cling tightly to the identity diagonal (\\(R^2 \> 0.85\\), RMSE \\(\< 15\\) hours), with zero artifact clustering from imputed medians.
-2. **Feature Importance Shares**: Split gain importance shows that `bearing_temp` and `vibration_rms` contribute to the macro regime partitions, while `oil_pressure` and its missing-dropout indicators contribute to the fitted leaf model.
-
-## How do decision trees handle missing sensor values?
-
-A fitted `ModelTree` learns a missing direction at a split and can use surrogate splits. Compare it with appropriate imputation baselines on an independent, time-ordered dataset. The [missing-data guide](<https://jkapila.github.io/mltreelib/examples/missing-routing/index.md>) shows the mechanisms and the [forecasting example](<https://jkapila.github.io/mltreelib/examples/timeseries-forecasting/index.md>) explains information available at prediction time.
+See the [missing-routing example](<https://jkapila.github.io/mltreelib/examples/missing-routing/index.md>) for a controlled check of individual routing paths.
