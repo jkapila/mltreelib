@@ -1135,6 +1135,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1441,33 +1468,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2853,7 +2853,21 @@
         Topology &amp; Est --&gt; Route["Route Estimation Rows\nthrough Fixed Tree"]
         Route --&gt; Solve["Solve Leaf Models\n(Subject to leaf_monotone)"]
         Solve --&gt; Final["Honest, Monotone ModelTree"]
-    end</code></pre>
+    end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef sampleBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef treeBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef solveBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef finalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Raw dataBox;
+    class Split gateBox;
+    class Str,Est sampleBox;
+    class Partition,Topology treeBox;
+    class Route,Solve solveBox;
+    class Final finalBox;</code></pre>
 <hr />
 <h2 id="2-benchmark-study-healthcare-insurance-expenses">2. Benchmark Study: Healthcare Insurance Expenses<a class="headerlink" href="#2-benchmark-study-healthcare-insurance-expenses" title="Permanent link">&para;</a></h2>
 <p>We evaluate on the standard actuarial dataset: <strong>Healthcare Insurance Expenses</strong> (1,338 policyholders).</p>

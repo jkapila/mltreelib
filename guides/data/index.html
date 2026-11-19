@@ -1127,6 +1127,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1433,33 +1460,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2842,7 +2842,19 @@
     A["Raw Data Matrix\n(Python Lists / Dicts / Parquet)"] --&gt; B["DatasetBuilder\n(NA Policy: Keep None &amp; NaN)"]
     B --&gt; C["Typed Frame &amp; Schema\n(n_category Cardinality Check)"]
     C --&gt; D["Categorical IndexMapper\n(Zero-Allocation Codes)"]
-    D --&gt; E["ModelTree Core Engine\n(Handles Missing &amp; Categories Natively)"]</code></pre>
+    D --&gt; E["ModelTree Core Engine\n(Handles Missing &amp; Categories Natively)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef buildBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef frameBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef mapBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef engineBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B buildBox;
+    class C frameBox;
+    class D mapBox;
+    class E engineBox;</code></pre>
 <p><code>ModelTree</code> accepts categorical labels and missing predictors without a separate encoder or imputation step. Declare the feature types and preserve the same column order at prediction time.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>

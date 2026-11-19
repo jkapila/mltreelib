@@ -1034,6 +1034,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1340,33 +1367,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2560,6 +2560,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricscompeting_risks_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.competing_risks_calibration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsd_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.d_calibration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsdecile_table" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2604,6 +2626,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricsici" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.ici
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsintegrated_calibration_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.integrated_calibration_index
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsks_statistic" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2641,6 +2685,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Metrics.multilabel_scores
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsone_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.one_calibration
       </span>
     </span>
   </a>
@@ -3060,6 +3115,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricscompeting_risks_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.competing_risks_calibration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsd_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.d_calibration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsdecile_table" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3104,6 +3181,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricsici" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.ici
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsintegrated_calibration_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.integrated_calibration_index
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsks_statistic" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3141,6 +3240,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Metrics.multilabel_scores
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricsone_calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.one_calibration
       </span>
     </span>
   </a>
@@ -3347,6 +3457,12 @@ time-dependent Brier scores over specified or sample decile evaluation horizons.
     cif_curves: optional CIF curves mapping {cause: (N, T)} or 3D list (N, n_causes, T).
     risk_scores: optional risk scores mapping {cause: (N,)} or 2D list (N, n_causes).
     times: optional evaluation horizon times grid.</p>
+<h3 id="metricscompeting_risks_calibration">Metrics.competing_risks_calibration<a class="headerlink" href="#metricscompeting_risks_calibration" title="Permanent link">&para;</a></h3>
+<p><code>pythoncompeting_risks_calibration((self, /, durations, events, predicted_cif, horizon))</code>
+Competing risks calibration report across causes (Alberge et al. 2026).</p>
+<h3 id="metricsd_calibration">Metrics.d_calibration<a class="headerlink" href="#metricsd_calibration" title="Permanent link">&para;</a></h3>
+<p><code>pythond_calibration((self, /, durations, events, surv_at_durations, n_bins=10))</code>
+D-Calibration test (Haider et al. 2020) for survival distribution uniformity.</p>
 <h3 id="metricsdecile_table">Metrics.decile_table<a class="headerlink" href="#metricsdecile_table" title="Permanent link">&para;</a></h3>
 <p><code>pythondecile_table((self, /, y_true, scores, n_buckets=10))</code>
 Decile profile (kds/PerfScoreCard decile table; modelplotpy response at
@@ -3383,6 +3499,12 @@ Hinge loss over signed decision margins. Task: classification.</p>
     y_true: targets (positive = &gt; 0.5).
     decision: decision-function margins (signed).</p>
 <p>Returns: mean hinge loss.</p>
+<h3 id="metricsici">Metrics.ici<a class="headerlink" href="#metricsici" title="Permanent link">&para;</a></h3>
+<p><code>pythonici((self, /, durations, events, predicted_survival, horizon))</code>
+Alias for integrated_calibration_index.</p>
+<h3 id="metricsintegrated_calibration_index">Metrics.integrated_calibration_index<a class="headerlink" href="#metricsintegrated_calibration_index" title="Permanent link">&para;</a></h3>
+<p><code>pythonintegrated_calibration_index((self, /, durations, events, predicted_survival, horizon))</code>
+Integrated Calibration Index (Austin et al. 2020) at fixed horizon.</p>
 <h3 id="metricsks_statistic">Metrics.ks_statistic<a class="headerlink" href="#metricsks_statistic" title="Permanent link">&para;</a></h3>
 <p><code>pythonks_statistic((self, /, y_true, scores))</code>
 KS sweep + statistic + Score@KS. Task: classification.</p>
@@ -3419,6 +3541,9 @@ Task: multilabel classification.</p>
 <p>Returns: <code>{"n", "n_labels", "subset_accuracy", "hamming_loss",
 "precision_micro/macro/samples", "recall_*", "f1_*",
 "label_ranking_ap", "coverage_error"}</code>.</p>
+<h3 id="metricsone_calibration">Metrics.one_calibration<a class="headerlink" href="#metricsone_calibration" title="Permanent link">&para;</a></h3>
+<p><code>pythonone_calibration((self, /, durations, events, predicted_survival, horizon))</code>
+1-Calibration slope and intercept (Austin et al. 2020) at fixed horizon.</p>
 <h3 id="metricspairwise_distances">Metrics.pairwise_distances<a class="headerlink" href="#metricspairwise_distances" title="Permanent link">&para;</a></h3>
 <p><code>pythonpairwise_distances((self, /, a, b, metric='euclidean', p=2.0))</code>
 Pairwise distances between two row sets. Task: any.</p>

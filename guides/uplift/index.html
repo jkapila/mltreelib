@@ -1138,6 +1138,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1444,33 +1471,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2844,7 +2844,19 @@
         Partition --&gt;|"Estimation Sample S_est"| LeafEstimator["Leaf CATE Estimation\ntau_hat = E[Y | W=1] - E[Y | W=0]"]
         TreeStructure --&gt; FixedNodes["Fixed Partition Topology"]
         FixedNodes &amp; LeafEstimator --&gt; UnbiasedModel["Unbiased Honest Causal Tree"]
-    end</code></pre>
+    end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef treeBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef causalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Sample dataBox;
+    class Partition gateBox;
+    class TreeStructure,FixedNodes treeBox;
+    class LeafEstimator leafBox;
+    class UnbiasedModel causalBox;</code></pre>
 <p>Run this Python block from the repository root. <code>group_value</code> comes from the example script.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>

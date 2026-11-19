@@ -17,7 +17,7 @@
         <link rel="prev" href="../timeseries-forecasting/">
       
       
-        <link rel="next" href="../solver-benchmarks/">
+        <link rel="next" href="../survival-trees/">
       
       
         
@@ -1135,6 +1135,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1441,33 +1468,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2845,7 +2845,19 @@
         A1["Telemetry Observations"] --&gt; A2{"Oblique Hyperplane Sampling\nw · (x - p) &lt;= 0"}
         A2 --&gt; A3["Path Length Aggregation h(x)"]
         A3 --&gt; A4["Continuous Anomaly Score s(x, n)\n(Rotationally Invariant Contours)"]
-    end</code></pre>
+    end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef nodeBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef ruleBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef anomBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+
+    class C1,A1 dataBox;
+    class C2,A2 splitBox;
+    class C3,A3 nodeBox;
+    class C4 ruleBox;
+    class A4 anomBox;</code></pre>
 <hr />
 <h2 id="2-benchmark-study-wine-quality-multimodal-anomaly-mixture">2. Benchmark Study: Wine Quality &amp; Multimodal Anomaly Mixture<a class="headerlink" href="#2-benchmark-study-wine-quality-multimodal-anomaly-mixture" title="Permanent link">&para;</a></h2>
 <p>We evaluate clustering on the <strong>Wine Quality</strong> benchmark (chemical attributes: fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, alcohol) and anomaly scoring on a 2D multimodal mixture with peripheral outliers.</p>

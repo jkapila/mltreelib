@@ -1157,6 +1157,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1463,33 +1490,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2893,7 +2893,21 @@
     end
 
     D ==&gt; G
-    G --&gt; H["Fitted Piecewise Model Tree\n+ 0D Distributional Stats Dictionary"]</code></pre>
+    G --&gt; H["Fitted Piecewise Model Tree\n+ 0D Distributional Stats Dictionary"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef nodeBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef leafSpec fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef solverBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+    classDef finalBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B,C splitBox;
+    class D nodeBox;
+    class E,F leafSpec;
+    class G solverBox;
+    class H finalBox;</code></pre>
 <hr />
 <h2 id="2-benchmark-study-yeh-1998-concrete-compressive-strength">2. Benchmark Study: Yeh (1998) Concrete Compressive Strength<a class="headerlink" href="#2-benchmark-study-yeh-1998-concrete-compressive-strength" title="Permanent link">&para;</a></h2>
 <p>We evaluate the architecture on the standard civil engineering benchmark: Yeh (1998) Concrete Compressive Strength (1,030 industrial concrete mixtures, 8 continuous ingredients).</p>

@@ -1135,6 +1135,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1441,33 +1468,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2848,7 +2848,17 @@
 
     D -- "No Surrogates Available" --&gt; F{"Learned Missing Route\n(missing_left)"}
     F -- "missing_left = True" --&gt; Left
-    F -- "missing_left = False" --&gt; Right</code></pre>
+    F -- "missing_left = False" --&gt; Right
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef altGate fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class A dataBox;
+    class B,C gateBox;
+    class D,E,F altGate;
+    class Left,Right leafBox;</code></pre>
 <hr />
 <h2 id="2-benchmark-study-scania-truck-air-pressure-system-aps-failure">2. Benchmark Study: Scania Truck Air Pressure System (APS) Failure<a class="headerlink" href="#2-benchmark-study-scania-truck-air-pressure-system-aps-failure" title="Permanent link">&para;</a></h2>
 <p>We evaluate native routing against standard mean imputation on the <strong>Scania APS Failure</strong> benchmark (76,000 industrial truck diagnostic records, 171 sensor channels).</p>

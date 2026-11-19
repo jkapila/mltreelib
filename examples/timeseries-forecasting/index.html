@@ -1135,6 +1135,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1441,33 +1468,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2850,7 +2850,19 @@
         Matrix --&gt; Route{"Tree Partition Gate\n(Weekday vs Weekend Cycles)"}
         Route --&gt; LinearLeaf["Terminal Linear Leaves\ny = b0 + b1*lag1 + b7*lag7 + b_win*win7"]
         LinearLeaf --&gt; Forecast["Out-of-Time Extrapolated Demand"]
-    end</code></pre>
+    end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef rustBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef outBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Raw,Matrix dataBox;
+    class Cal,Lag,Win,Decomp rustBox;
+    class Route gateBox;
+    class LinearLeaf leafBox;
+    class Forecast outBox;</code></pre>
 <hr />
 <h2 id="2-benchmark-study-multi-store-retail-demand-panel">2. Benchmark Study: Multi-Store Retail Demand Panel<a class="headerlink" href="#2-benchmark-study-multi-store-retail-demand-panel" title="Permanent link">&para;</a></h2>
 <p>We evaluate an out-of-time panel of two regional retail locations (<code>store_nyc</code>, <code>store_lon</code>) over 120 days. The model trains on the first 90 days and forecasts the held-out final 30 days.</p>

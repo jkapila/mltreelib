@@ -1149,6 +1149,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1455,33 +1482,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2867,7 +2867,21 @@
         Event -- "No (Right-Censored)" --&gt; Censored["delta_i = 0\nT_i is Lower Bound (T* &gt; T_i)"]
     end
     Dead &amp; Censored --&gt; LogRank["Log-Rank / Martingale Split Criterion\nmax Q_LR(s)"]
-    LogRank --&gt; KM["Terminal Leaf Estimators\nKaplan-Meier S(t) &amp; Nelson-Aalen H(t)"]</code></pre>
+    LogRank --&gt; KM["Terminal Leaf Estimators\nKaplan-Meier S(t) &amp; Nelson-Aalen H(t)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef deadBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef censBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#0369a1,stroke:#0284c7,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class Patient,FollowUp dataBox;
+    class Event gateBox;
+    class Dead deadBox;
+    class Censored censBox;
+    class LogRank splitBox;
+    class KM leafBox;</code></pre>
 <p>Run this Python block from the repository root. The evaluation helpers are part of the example script.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>

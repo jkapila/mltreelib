@@ -1034,6 +1034,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1340,33 +1367,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -3000,7 +3000,25 @@
         G --&gt; J["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_0(t) fitted purely on Leaf 0 members"]
         H --&gt; K["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_2(t) fitted purely on Leaf 2 members"]
         I --&gt; L["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_3(t) fitted purely on Leaf 3 members"]
-    end</code></pre>
+    end
+
+    classDef trapBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef stageBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef lowRisk fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef medRisk fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef highRisk fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef kmBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class A,C,D trapBox;
+    class B gateBox;
+    class E dataBox;
+    class F stageBox;
+    class G lowRisk;
+    class H medRisk;
+    class I highRisk;
+    class J,K,L kmBox;</code></pre>
 <h3 id="why-standard-methods-fail">Why Standard Methods Fail:<a class="headerlink" href="#why-standard-methods-fail" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Cox Proportional Hazards Violations</strong>: Classical Cox models assume <span class="arithmatex">\(\lambda(t \mid X) = \lambda_0(t) \exp(\beta^T X)\)</span>. If early-tenure churn dynamics differ fundamentally from late-tenure attrition, hazard ratios cross. The proportional hazard assumption collapses.</li>

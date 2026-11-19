@@ -1147,6 +1147,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1453,33 +1480,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2863,7 +2863,17 @@
     C --&gt; E["Leaf 8: Local Ridge Linear\ny = 0.05*Cement - 0.12*Water + ..."]
     D --&gt; F["Leaf 13: Local Ridge Linear\ny = 0.11*Cement - 0.04*Water + ..."]
     E --&gt; G["Continuous Prediction (MPa)"]
-    F --&gt; G</code></pre>
+    F --&gt; G
+
+    classDef inputBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef splitBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef leafBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef outBox fill:#1e3a5f,stroke:#2563eb,stroke-width:2px,color:#ffffff;
+
+    class A inputBox;
+    class B,C,D splitBox;
+    class E,F leafBox;
+    class G outBox;</code></pre>
 <hr />
 <h2 id="2-fit-and-evaluate-on-real-benchmark-data">2. Fit and Evaluate on Real Benchmark Data<a class="headerlink" href="#2-fit-and-evaluate-on-real-benchmark-data" title="Permanent link">&para;</a></h2>
 <p>We evaluate on the industrial benchmark <strong>Concrete Compressive Strength</strong> (Yeh 1998<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>; 1,030 mixtures, 8 continuous ingredients).</p>

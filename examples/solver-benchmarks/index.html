@@ -14,7 +14,7 @@
       
       
       
-        <link rel="prev" href="../unsupervised-trees/">
+        <link rel="prev" href="../survival-trees/">
       
       
         <link rel="next" href="../data-processing/">
@@ -1035,6 +1035,33 @@
                   
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
     
   
   
@@ -1491,33 +1518,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2942,7 +2942,17 @@
     S4 --&gt; E1["shade: Adaptive Differential Evolution\nLatency: ~33 ms | Near-optimal"]
     S4 --&gt; E2["cmaes: Covariance Matrix Adaptation\nLatency: ~13 ms | Ill-conditioned"]
     S4 --&gt; E3["ga: Real-Coded Genetic Algorithm\nLatency: ~58 ms | Global exploration"]
-    S4 --&gt; E4["nes: Natural Evolution Strategies\nLatency: ~13 ms | Gradient estimation"]</code></pre>
+    S4 --&gt; E4["nes: Natural Evolution Strategies\nLatency: ~13 ms | Gradient estimation"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef gradBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef evoBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+
+    class Data dataBox;
+    class Fam,S4 gateBox;
+    class S1,S2,S3 gradBox;
+    class E1,E2,E3,E4 evoBox;</code></pre>
 <hr />
 <h2 id="2-the-seven-solvers-in-mltreelib-core">2. The Seven Solvers in <code>mltreelib-core</code><a class="headerlink" href="#2-the-seven-solvers-in-mltreelib-core" title="Permanent link">&para;</a></h2>
 <table>

@@ -14,7 +14,7 @@
       
       
       
-        <link rel="prev" href="../survival-trees/">
+        <link rel="prev" href="../tobit-regression/">
       
       
         <link rel="next" href="../honesty-weights/">
@@ -1036,6 +1036,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver-benchmarks/" class="md-nav__link">
         
   
@@ -1360,33 +1387,6 @@
                   
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
     
   
   
@@ -1506,6 +1506,34 @@
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-causal-survival-trees-research-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Causal Survival Trees (Research Track)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Causal Survival Trees (Research Track)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#honest-sample-splitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Honest Sample Splitting
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2824,6 +2852,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#5-causal-survival-trees-research-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Causal Survival Trees (Research Track)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Causal Survival Trees (Research Track)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#honest-sample-splitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Honest Sample Splitting
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2909,6 +2965,36 @@ This permits a treated-minus-control sample difference in each child. It does no
   $<span class="arithmatex">\(\text{PEHE} = \sqrt{\frac{1}{N}\sum_{i=1}^N (\hat{\tau}_i - \tau_i)^2} = 0.5848\)</span>$
 - <strong>ATE Estimation Error</strong>: <span class="arithmatex">\(|0.8177 - 0.8030| = 0.0147\)</span>.
 - <strong>Exact Leaf Verification</strong>: For every terminal leaf, the predicted CATE matches the raw sample difference <span class="arithmatex">\(\bar{Y}_{1} - \bar{Y}_{0}\)</span> to machine precision (<span class="arithmatex">\(&lt; 10^{-9}\)</span>).</p>
+<hr />
+<h2 id="5-causal-survival-trees-research-track">5. Causal Survival Trees (Research Track)<a class="headerlink" href="#5-causal-survival-trees-research-track" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>[!WARNING]
+<strong>Research Work Under Consideration</strong>
+Causal Survival Trees with Honest Sample Splitting are experimental research. Use at your own risk.</p>
+</blockquote>
+<p>In survival settings with right censoring <span class="arithmatex">\((T_i, E_i)\)</span> and binary intervention <span class="arithmatex">\(W_i \in \{0, 1\}\)</span>, the target is the Conditional Average Treatment Effect on Restricted Mean Survival Time (RMST):
+$<span class="arithmatex">\(\tau_{\text{RMST}}(x) = \mathbb{E}[\text{RMST}(1) - \text{RMST}(0) \mid X=x]\)</span>$</p>
+<h3 id="honest-sample-splitting">Honest Sample Splitting<a class="headerlink" href="#honest-sample-splitting" title="Permanent link">&para;</a></h3>
+<p>Following Wager &amp; Athey (2018) and Cui et al. (2023), <code>ModelTree(honesty=True, honesty_fraction=0.5)</code> partitions data into:
+- <strong>Structure Set <span class="arithmatex">\(S^{\text{tr}}\)</span></strong>: Used exclusively to place partition boundaries (e.g. maximizing <span class="arithmatex">\(\Delta \text{RMST}\)</span> or pseudo-value variance reduction).
+- <strong>Estimation Set <span class="arithmatex">\(S^{\text{est}}\)</span></strong>: Independent holdout used to fit leaf survival curves and estimate CATE.</p>
+<p>This honest decoupling removes optimistic selection bias in survival trees:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Honest Causal Survival Tree</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"pseudo_value"</span><span class="p">,</span>     <span class="c1"># or "rmst"</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">honesty_fraction</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="n">events</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Executable research script:
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/survival/causal_survival_honest.py"><code>examples/survival/causal_survival_honest.py</code></a></p>
 
 
 

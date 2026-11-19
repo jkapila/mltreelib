@@ -1090,6 +1090,33 @@
   
   
     <li class="md-nav__item">
+      <a href="./examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./examples/solver-benchmarks/" class="md-nav__link">
         
   
@@ -1396,33 +1423,6 @@
     
   
   Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Survival mechanics
 
     
   </span>
@@ -2769,7 +2769,14 @@ monotone &amp; interaction constraints.</p>
         direction LR
         ModelTree["ModelTree API"] &amp; LeafControl["LeafControl"] &amp; Metrics["Metrics &amp; Diagnostic Curves"]
     end
-    PythonShell &lt;==&gt;|"PyO3 Zero-Copy / Fast Memory"| RustCore</code></pre>
+    PythonShell &lt;==&gt;|"PyO3 Zero-Copy / Fast Memory"| RustCore
+
+    classDef rustBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef pyBox fill:#0f5132,stroke:#198754,stroke-width:2px,color:#ffffff;
+    classDef frameBox fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ffffff;
+
+    class Frame,SplitSearch,LeafFit rustBox;
+    class ModelTree,LeafControl,Metrics pyBox;</code></pre>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync<span class="w">                                          </span><span class="c1"># venv + Rust extension (maturin)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/quickstart.py<span class="w">             </span><span class="c1"># fit, print, visualize (34.3% RMSE reduction on Concrete)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/real_tree_studies.py<span class="w"> </span>wine<span class="w">  </span><span class="c1"># after downloading Wine Quality</span>
