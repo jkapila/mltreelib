@@ -103,6 +103,42 @@ The Brier score compares predicted survival probabilities with event outcomes at
 
 The script also compares predictions with the known synthetic survival probability. Real individual survival probabilities are not observed. Check discrimination and horizon-specific calibration on real held-out data, with uncertainty and risk-set sizes. This example implements the evaluation calculation locally; it does not claim an IPCW metric API exists in the package. See [Graf et al. (1999)](https://doi.org/10.1002/(SICI)1097-0258(19990915/30)18:17/18%3C2529::AID-SIM274%3E3.0.CO;2-5).
 
+## 5. Competing risks and multi-cause endpoints
+
+When subjects can experience mutually exclusive event causes (e.g. disease relapse vs treatment-related mortality), treating competing events as ordinary censoring violates the independent censoring assumption and overestimates cumulative incidence by 20–50%.
+
+`mltreelib` implements native competing risks trees:
+- **Split Criterion**: Gray's subdistribution log-rank test (`gain="gray", target_cause=j`) maintaining subjects who experienced competing events in the risk set.
+- **Leaf Estimators**: Aalen-Johansen multi-state estimator guaranteeing the probability simplex identity: $\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) = 1.0$.
+- **Unified Prediction API**: `tree.predict(X, kind="cif", times=times, cause=1)` and `tree.predict(X, kind="risk")`.
+- **Validation**: `Metrics().competing_risks(...)` computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier score matrices.
+
+```python
+from mltreelib import ModelTree, Metrics
+
+# Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)
+tree = ModelTree(max_depth=3, min_rows=25, gain="gray", target_cause=1)
+tree.fit(X_train, (durations_train, events_train))
+
+# Evaluate Aalen-Johansen CIF at specified horizons
+times = [2.0, 5.0, 10.0, 20.0]
+cif_cause1 = tree.predict(X_test, kind="cif", times=times, cause=1)
+cif_cause2 = tree.predict(X_test, kind="cif", times=times, cause=2)
+surv = tree.predict(X_test, kind="survival", times=times)
+
+# Compute full IPCW competing risks performance report
+metrics = Metrics()
+report = metrics.competing_risks(
+    durations=durations_test,
+    events=events_test,
+    cif_curves={1: cif_cause1, 2: cif_cause2},
+    times=times,
+)
+print("Cause 1 Harrell C:", report["cause_c_indices"][1])
+print("Cause 1 Uno IPCW C:", report["cause_uno_c_indices"][1])
+print("Cause 1 IBS:", report["cause_ibs"][1])
+```
+
 ## Next steps and references
 
-[Survival trees](../examples/survival-trees.md) · [Kaplan and Meier (1958)](https://doi.org/10.1080/01621459.1958.10501452)
+[Survival trees](../examples/survival-trees.md) · [Kaplan and Meier (1958)](https://doi.org/10.1080/01621459.1958.10501452) · [Aalen (1978)](https://doi.org/10.1214/aos/1176344247) · [Gray (1988)](https://doi.org/10.1214/aos/1176350951)

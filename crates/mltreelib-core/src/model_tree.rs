@@ -801,6 +801,7 @@ impl ModelTree {
             w: &wv,
             treatments: params.treatments.as_deref(),
             target_vectors: params.target_vectors.as_deref(),
+            events: params.events.as_deref(),
             params: &params,
             active: &active_cols,
             nodes: Vec::new(),
@@ -1495,6 +1496,40 @@ impl ModelTree {
                     .as_ref()
                     .expect("tree invariant: leaf holds a model")
                     .predict_hazard_row(times)
+            })
+            .collect())
+    }
+
+    /// Cause-specific Cumulative Incidence Function F_j(t) across a given time grid for competing risks.
+    pub fn predict_cif(&self, x: &[Vec<Option<f64>>], times: &[f64], cause: usize) -> Result<Vec<Vec<f64>>, String> {
+        if self.params.leaf_family != LeafFamily::Survival {
+            return Err("predict_cif requires leaf_family='survival'".into());
+        }
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                node.leaf
+                    .as_ref()
+                    .expect("tree invariant: leaf holds a model")
+                    .predict_cif_row(times, cause)
+            })
+            .collect())
+    }
+
+    /// Prognostic risk score or predicted median survival time per row.
+    pub fn predict_risk(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
+        if self.params.leaf_family != LeafFamily::Survival {
+            return Err("predict_risk requires leaf_family='survival'".into());
+        }
+        Ok(x.iter()
+            .map(|row| {
+                let node = &self.nodes[self.leaf_index(row)];
+                let leaf_model = node.leaf.as_ref().expect("tree invariant: leaf holds a model");
+                if let Some(surv) = &leaf_model.survival {
+                    -surv.median_time
+                } else {
+                    -leaf_model.stats.mean
+                }
             })
             .collect())
     }
@@ -2405,6 +2440,7 @@ pub(crate) struct Grower<'a> {
     pub(crate) w: &'a [f64],
     pub(crate) treatments: Option<&'a [f64]>,
     pub(crate) target_vectors: Option<&'a [Vec<f64>]>,
+    pub(crate) events: Option<&'a [f64]>,
     pub(crate) params: &'a ModelTreeParams,
     pub(crate) active: &'a [usize],
     pub(crate) nodes: Vec<Node>,

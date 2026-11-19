@@ -6,7 +6,7 @@
 
 use std::time::Instant;
 
-use crate::criteria::{beats, gain_of, GainFn};
+use crate::criteria::{beats, gain_of, GainFn, LogRankWeight};
 use crate::leaf::{LeafCols, LeafKind};
 use crate::model_tree::{Grower, NodeProfile, Split};
 use crate::node_stats::{design_row, fit_linear, solve_normal_sum, Gram, SideTrack, SolveScratch};
@@ -119,6 +119,8 @@ pub(crate) struct SplitScratch {
     pub level_moments: Vec<(f64, usize, f64, f64, f64, f64, f64, f64, f64, f64)>, // (level, n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0)
     pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
     pub level_causal: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw_t, swy_t, sw_c, swy_c)
+    pub pairs_survival: Vec<(f64, f64, f64, f64)>,      // (v, y, w, event)
+    pub level_survival: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, s_events, s_resid)
     pub h_parent: Vec<f64>,
     pub h_left: Vec<f64>,
     pub h_miss: Vec<f64>,
@@ -589,6 +591,21 @@ impl<'a> Grower<'a> {
                 self.scan_column_categorical_causal(rows, j, scratch)
             } else {
                 let (hit, st) = self.scan_column_causal(rows, j, scratch);
+                (hit.map(|(g, s)| (g, s, None)), st)
+            };
+        }
+        if matches!(
+            self.params.gain,
+            GainFn::Martingale
+                | GainFn::LogRank
+                | GainFn::LogRankWeighted { .. }
+                | GainFn::GrayTest { .. }
+                | GainFn::SurvivalBrier
+        ) {
+            return if self.col_type(j) == ColType::Categorical {
+                self.scan_column_categorical_survival(rows, j, scratch)
+            } else {
+                let (hit, st) = self.scan_column_survival(rows, j, scratch);
                 (hit.map(|(g, s)| (g, s, None)), st)
             };
         }
@@ -2032,6 +2049,572 @@ impl<'a> Grower<'a> {
             return (None, st);
         };
         let left_levels: Vec<f64> = left_indices.iter().map(|&idx| scratch.level_causal[idx].0).collect();
+        let split = Split {
+            col: j,
+            threshold: 0.0,
+            missing_left,
+            gain,
+            cat: None,
+            sur: None,
+            oblique: None,
+        };
+        (Some((gain, split, Some(left_levels))), st)
+    }
+
+    /// Fast survival split scan supporting Martingale residuals, exact Two-Sample Log-Rank,
+    /// Tarone-Ware, Peto-Prentice, Gray's test for competing risks, and proper IPCW Brier score.
+    fn scan_column_survival(
+        &self,
+        rows: &[usize],
+        j: usize,
+        scratch: &mut SplitScratch,
+    ) -> (Option<(f64, Split)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let m = self.min_child(rows.len()) as f64;
+        let t0 = Instant::now();
+
+        scratch.pairs_survival.clear();
+        let grid = self.grid_for(j);
+        let q = grid.filter(|&p| p > 0.0).map(|p| 1.0 / p);
+
+        // Extract (v, duration, weight, event_indicator)
+        for &r in rows {
+            if let Some(v_raw) = self.cols[j][r] {
+                let v = match q {
+                    Some(inv) => (v_raw * inv).round() / inv,
+                    None => v_raw,
+                };
+                let (time, w) = (self.y[r], self.w[r]);
+                let ev = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                scratch.pairs_survival.push((v, time, w, ev));
+            }
+        }
+
+        let n_pairs = scratch.pairs_survival.len();
+        if n_pairs < 2 {
+            return (None, st);
+        }
+
+        scratch.pairs_survival.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in predictors"));
+
+        // Extract missing values
+        let mut missing_rows: Vec<(f64, f64, f64)> = Vec::new(); // (time, weight, event)
+        if rows.len() > n_pairs {
+            for &r in rows {
+                if self.cols[j][r].is_none() {
+                    let ev = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                    missing_rows.push((self.y[r], self.w[r], ev));
+                }
+            }
+        }
+
+        let total_w: f64 = scratch.pairs_survival.iter().map(|p| p.2).sum::<f64>()
+            + missing_rows.iter().map(|p| p.1).sum::<f64>();
+
+        st.group_ns += t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+        let mut best: Option<(f64, Split)> = None;
+
+        // Gain branching:
+        match self.params.gain {
+            GainFn::Martingale => {
+                // Compute Nelson-Aalen cumulative hazard of parent node
+                let mut distinct_event_times: Vec<f64> = rows.iter().filter_map(|&r| {
+                    let e = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                    if e >= 1.0 && self.y[r] >= 0.0 { Some(self.y[r]) } else { None }
+                }).collect();
+                distinct_event_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                distinct_event_times.dedup();
+
+                let mut cum_h = Vec::with_capacity(distinct_event_times.len());
+                let mut cur_h = 0.0;
+                for &tj in &distinct_event_times {
+                    let mut dj = 0.0;
+                    let mut yj = 0.0;
+                    for &r in rows {
+                        let ti = self.y[r];
+                        let wi = self.w[r];
+                        let ei = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                        if ti >= tj {
+                            yj += wi;
+                            if (ti - tj).abs() < 1e-9 && ei >= 1.0 {
+                                dj += wi;
+                            }
+                        }
+                    }
+                    if yj > 0.0 {
+                        cur_h += dj / yj;
+                    }
+                    cum_h.push(cur_h);
+                }
+
+                let get_hazard = |t: f64| -> f64 {
+                    if distinct_event_times.is_empty() || t < distinct_event_times[0] {
+                        0.0
+                    } else {
+                        match distinct_event_times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                            Ok(exact) => cum_h[exact],
+                            Err(ins) => cum_h[ins.saturating_sub(1)],
+                        }
+                    }
+                };
+
+                // Compute martingale residuals for all pairs and missing
+                let residuals: Vec<f64> = scratch.pairs_survival.iter().map(|&(_, t, _, e)| {
+                    let h = get_hazard(t);
+                    if e >= 1.0 { 1.0 - h } else { -h }
+                }).collect();
+
+                let missing_res: Vec<(f64, f64)> = missing_rows.iter().map(|&(t, w, e)| {
+                    let h = get_hazard(t);
+                    let m = if e >= 1.0 { 1.0 - h } else { -h };
+                    (w, m)
+                }).collect();
+
+                let (mn, mut msw, mut msw_m) = (missing_res.len(), 0.0, 0.0);
+                for &(w, m) in &missing_res {
+                    msw += w;
+                    msw_m += w * m;
+                }
+
+                let (tn, mut tsw, mut tsw_m) = (n_pairs, 0.0, 0.0);
+                for k in 0..n_pairs {
+                    let w = scratch.pairs_survival[k].2;
+                    let m = residuals[k];
+                    tsw += w;
+                    tsw_m += w * m;
+                }
+
+                let (mut ln, mut lsw, mut lsw_m) = (0usize, 0.0, 0.0);
+                for k in 0..n_pairs {
+                    let (v, _, w, _) = scratch.pairs_survival[k];
+                    let m_res = residuals[k];
+                    ln += 1;
+                    lsw += w;
+                    lsw_m += w * m_res;
+
+                    let is_boundary = k + 1 < n_pairs && scratch.pairs_survival[k + 1].0 != v;
+                    if !is_boundary {
+                        continue;
+                    }
+                    let threshold = match grid {
+                        Some(_) => v,
+                        None => (v + scratch.pairs_survival[k + 1].0) / 2.0,
+                    };
+                    let rn = tn - ln;
+                    let rsw = tsw - lsw;
+                    let rsw_m = tsw_m - lsw_m;
+                    st.candidates += 1;
+
+                    for missing_left in [true, false] {
+                        let (aln, alsw, alsw_m) = if missing_left {
+                            (ln + mn, lsw + msw, lsw_m + msw_m)
+                        } else {
+                            (ln, lsw, lsw_m)
+                        };
+                        let (arn, arsw, arsw_m) = if missing_left {
+                            (rn, rsw, rsw_m)
+                        } else {
+                            (rn + mn, rsw + msw, rsw_m + msw_m)
+                        };
+                        if (aln as f64) < m || (arn as f64) < m || alsw <= 0.0 || arsw <= 0.0 {
+                            continue;
+                        }
+                        if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w) {
+                            continue;
+                        }
+                        let mut gain = (alsw_m * alsw_m / alsw) + (arsw_m * arsw_m / arsw) - ((alsw_m + arsw_m).powi(2) / (alsw + arsw));
+                        if self.params.imbalance_penalty > 0.0 {
+                            gain -= self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64);
+                        }
+                        if gain <= self.params.min_gain {
+                            continue;
+                        }
+                        if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                            best = Some((
+                                gain,
+                                Split {
+                                    col: j,
+                                    threshold,
+                                    missing_left,
+                                    gain,
+                                    cat: None,
+                                    sur: None,
+                                    oblique: None,
+                                },
+                            ));
+                        }
+                    }
+                }
+            }
+            _ => {
+                // Exact Two-Sample Log-Rank, Tarone-Ware, Peto-Prentice, or Gray's test
+                let is_gray = matches!(self.params.gain, GainFn::GrayTest { .. });
+                let target_cause = if let GainFn::GrayTest { cause } = self.params.gain {
+                    cause as f64
+                } else {
+                    1.0
+                };
+
+                let mut distinct_event_times: Vec<f64> = rows.iter().filter_map(|&r| {
+                    let e = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                    let is_event = if is_gray {
+                        (e - target_cause).abs() < 1e-6
+                    } else {
+                        e >= 1.0
+                    };
+                    if is_event && self.y[r] >= 0.0 { Some(self.y[r]) } else { None }
+                }).collect();
+                distinct_event_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                distinct_event_times.dedup();
+
+                if distinct_event_times.is_empty() {
+                    return (None, st);
+                }
+
+                // Compute node totals at each event time
+                let mut dj_vec = Vec::with_capacity(distinct_event_times.len());
+                let mut yj_vec = Vec::with_capacity(distinct_event_times.len());
+                let mut s_vec = Vec::with_capacity(distinct_event_times.len());
+                let mut cur_s = 1.0;
+
+                for &tj in &distinct_event_times {
+                    let mut dj = 0.0;
+                    let mut yj = 0.0;
+                    for &r in rows {
+                        let ti = self.y[r];
+                        let wi = self.w[r];
+                        let ei = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                        let at_risk = if is_gray {
+                            ti >= tj || ((ei - target_cause).abs() >= 1e-6 && ei > 0.0)
+                        } else {
+                            ti >= tj
+                        };
+                        if at_risk {
+                            yj += wi;
+                        }
+                        let is_event = if is_gray {
+                            (ei - target_cause).abs() < 1e-6
+                        } else {
+                            ei >= 1.0
+                        };
+                        if (ti - tj).abs() < 1e-9 && is_event {
+                            dj += wi;
+                        }
+                    }
+                    dj_vec.push(dj);
+                    yj_vec.push(yj);
+                    if yj > 0.0 {
+                        cur_s *= (1.0 - dj / yj).clamp(0.0, 1.0);
+                    }
+                    s_vec.push(cur_s);
+                }
+
+                let weight_type = match self.params.gain {
+                    GainFn::LogRankWeighted { scheme } => scheme,
+                    _ => LogRankWeight::Standard,
+                };
+
+                // Candidate sweep
+                for k in 0..n_pairs {
+                    let v = scratch.pairs_survival[k].0;
+                    let is_boundary = k + 1 < n_pairs && scratch.pairs_survival[k + 1].0 != v;
+                    if !is_boundary {
+                        continue;
+                    }
+                    let threshold = match grid {
+                        Some(_) => v,
+                        None => (v + scratch.pairs_survival[k + 1].0) / 2.0,
+                    };
+                    st.candidates += 1;
+
+                    for missing_left in [true, false] {
+                        let mut l_count = 0usize;
+                        let mut r_count = 0usize;
+                        let mut l_w = 0.0;
+                        let mut r_w = 0.0;
+
+                        // Evaluate Left vs Right across distinct event times
+                        let mut u_stat = 0.0;
+                        let mut v_stat = 0.0;
+
+                        for (idx, &tj) in distinct_event_times.iter().enumerate() {
+                            let dj = dj_vec[idx];
+                            let yj = yj_vec[idx];
+                            if yj <= 1.0 || dj <= 0.0 {
+                                continue;
+                            }
+                            let mut d_l = 0.0;
+                            let mut y_l = 0.0;
+
+                            for &(vi, ti, wi, ei) in &scratch.pairs_survival {
+                                let in_l = vi <= threshold;
+                                if idx == 0 {
+                                    if in_l { l_count += 1; l_w += wi; } else { r_count += 1; r_w += wi; }
+                                }
+                                let at_risk = if is_gray {
+                                    ti >= tj || ((ei - target_cause).abs() >= 1e-6 && ei > 0.0)
+                                } else {
+                                    ti >= tj
+                                };
+                                if in_l && at_risk {
+                                    y_l += wi;
+                                }
+                                let is_event = if is_gray {
+                                    (ei - target_cause).abs() < 1e-6
+                                } else {
+                                    ei >= 1.0
+                                };
+                                if in_l && (ti - tj).abs() < 1e-9 && is_event {
+                                    d_l += wi;
+                                }
+                            }
+                            for &(ti, wi, ei) in &missing_rows {
+                                let in_l = missing_left;
+                                if idx == 0 {
+                                    if in_l { l_count += 1; l_w += wi; } else { r_count += 1; r_w += wi; }
+                                }
+                                let at_risk = if is_gray {
+                                    ti >= tj || ((ei - target_cause).abs() >= 1e-6 && ei > 0.0)
+                                } else {
+                                    ti >= tj
+                                };
+                                if in_l && at_risk {
+                                    y_l += wi;
+                                }
+                                let is_event = if is_gray {
+                                    (ei - target_cause).abs() < 1e-6
+                                } else {
+                                    ei >= 1.0
+                                };
+                                if in_l && (ti - tj).abs() < 1e-9 && is_event {
+                                    d_l += wi;
+                                }
+                            }
+
+                            let e_l = dj * (y_l / yj);
+                            let v_l = (y_l * (yj - y_l) * dj * (yj - dj)) / (yj * yj * (yj - 1.0));
+                            let w_t = match weight_type {
+                                LogRankWeight::Standard => 1.0,
+                                LogRankWeight::TaroneWare => yj.sqrt(),
+                                LogRankWeight::PetoPrentice => s_vec[idx],
+                            };
+                            u_stat += w_t * (d_l - e_l);
+                            v_stat += w_t * w_t * v_l;
+                        }
+
+                        if (l_count as f64) < m || (r_count as f64) < m || l_w <= 0.0 || r_w <= 0.0 {
+                            continue;
+                        }
+                        if self.params.alpha > 0.0 && (l_w < self.params.alpha * total_w || r_w < self.params.alpha * total_w) {
+                            continue;
+                        }
+
+                        let mut gain = if v_stat > 1e-9 {
+                            (u_stat * u_stat) / v_stat
+                        } else {
+                            0.0
+                        };
+                        if self.params.imbalance_penalty > 0.0 {
+                            gain -= self.params.imbalance_penalty * (1.0 / l_count as f64 + 1.0 / r_count as f64);
+                        }
+                        if gain <= self.params.min_gain {
+                            continue;
+                        }
+                        if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                            best = Some((
+                                gain,
+                                Split {
+                                    col: j,
+                                    threshold,
+                                    missing_left,
+                                    gain,
+                                    cat: None,
+                                    sur: None,
+                                    oblique: None,
+                                },
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        (best, st)
+    }
+
+    /// Fast survival categorical split scan supporting Martingale residuals and exact Log-Rank tests.
+    fn scan_column_categorical_survival(
+        &self,
+        rows: &[usize],
+        j: usize,
+        scratch: &mut SplitScratch,
+    ) -> (Option<(f64, Split, Option<Vec<f64>>)>, ScanStats) {
+        let mut st = ScanStats::default();
+        let t0 = Instant::now();
+
+        let mut distinct_event_times: Vec<f64> = rows.iter().filter_map(|&r| {
+            let e = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+            if e >= 1.0 && self.y[r] >= 0.0 { Some(self.y[r]) } else { None }
+        }).collect();
+        distinct_event_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        distinct_event_times.dedup();
+
+        let mut cum_h = Vec::with_capacity(distinct_event_times.len());
+        let mut cur_h = 0.0;
+        for &tj in &distinct_event_times {
+            let mut dj = 0.0;
+            let mut yj = 0.0;
+            for &r in rows {
+                let ti = self.y[r];
+                let wi = self.w[r];
+                let ei = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+                if ti >= tj {
+                    yj += wi;
+                    if (ti - tj).abs() < 1e-9 && ei >= 1.0 {
+                        dj += wi;
+                    }
+                }
+            }
+            if yj > 0.0 {
+                cur_h += dj / yj;
+            }
+            cum_h.push(cur_h);
+        }
+
+        let get_hazard = |t: f64| -> f64 {
+            if distinct_event_times.is_empty() || t < distinct_event_times[0] {
+                0.0
+            } else {
+                match distinct_event_times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                    Ok(exact) => cum_h[exact],
+                    Err(ins) => cum_h[ins.saturating_sub(1)],
+                }
+            }
+        };
+
+        let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64)> =
+            std::collections::HashMap::new();
+        let (mut mn, mut msw, mut msw_m) = (0usize, 0.0, 0.0);
+
+        for &r in rows {
+            let wi = self.w[r];
+            let ti = self.y[r];
+            let ei = self.events.and_then(|evs| evs.get(r)).copied().unwrap_or(1.0);
+            let h = get_hazard(ti);
+            let mi = if ei >= 1.0 { 1.0 - h } else { -h };
+
+            match self.cols[j][r] {
+                Some(v) => {
+                    let entry = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0));
+                    entry.0 += 1;
+                    entry.1 += wi;
+                    entry.2 += wi * mi;
+                    entry.3 += wi * ei;
+                }
+                None => {
+                    mn += 1;
+                    msw += wi;
+                    msw_m += wi * mi;
+                }
+            }
+        }
+
+        if by_level.len() < 2 {
+            st.group_ns = t0.elapsed().as_nanos() as u64;
+            return (None, st);
+        }
+
+        scratch.level_survival.clear();
+        for (b, (n, sw, sw_m, s_ev)) in by_level {
+            scratch.level_survival.push((f64::from_bits(b), n, sw, s_ev, sw_m));
+        }
+
+        scratch.level_survival.sort_by(|a, b| {
+            let mean_a = if a.2 > 0.0 { a.4 / a.2 } else { 0.0 };
+            let mean_b = if b.2 > 0.0 { b.4 / b.2 } else { 0.0 };
+            mean_b.partial_cmp(&mean_a).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        st.group_ns += t0.elapsed().as_nanos() as u64;
+        let t1 = Instant::now();
+
+        let k = scratch.level_survival.len();
+        let m = self.min_child(rows.len()) as f64;
+        let (mut tsw, mut tsw_m) = (0.0, 0.0);
+        for &(_, _, sw, _, sw_m) in scratch.level_survival.iter() {
+            tsw += sw;
+            tsw_m += sw_m;
+        }
+        let total_w = tsw + msw;
+
+        let mut best: Option<(f64, Vec<usize>, bool)> = None;
+
+        let mut eval_split = |left_indices: &[usize], best: &mut Option<(f64, Vec<usize>, bool)>| {
+            let mut lsw = 0.0;
+            let mut lsw_m = 0.0;
+            let mut ln = 0usize;
+            for &idx in left_indices {
+                let (_, n, sw, _, sw_m) = scratch.level_survival[idx];
+                ln += n;
+                lsw += sw;
+                lsw_m += sw_m;
+            }
+            let rn = rows.len().saturating_sub(ln + mn);
+            if (ln as f64) < m || (rn as f64) < m {
+                return;
+            }
+            let rsw = tsw - lsw;
+            let rsw_m = tsw_m - lsw_m;
+            st.candidates += 1;
+
+            for missing_left in [true, false] {
+                let (aln, alsw, alsw_m) = if missing_left {
+                    (ln + mn, lsw + msw, lsw_m + msw_m)
+                } else {
+                    (ln, lsw, lsw_m)
+                };
+                let (arn, arsw, arsw_m) = if missing_left {
+                    (rn, rsw, rsw_m)
+                } else {
+                    (rn + mn, rsw + msw, rsw_m + msw_m)
+                };
+                if (aln as f64) < m || (arn as f64) < m || alsw <= 0.0 || arsw <= 0.0 {
+                    continue;
+                }
+                if self.params.alpha > 0.0 && (alsw < self.params.alpha * total_w || arsw < self.params.alpha * total_w) {
+                    continue;
+                }
+                let mut gain = (alsw_m * alsw_m / alsw) + (arsw_m * arsw_m / arsw) - ((alsw_m + arsw_m).powi(2) / (alsw + arsw));
+                if self.params.imbalance_penalty > 0.0 {
+                    gain -= self.params.imbalance_penalty * (1.0 / aln as f64 + 1.0 / arn as f64);
+                }
+                if gain <= self.params.min_gain {
+                    continue;
+                }
+                if best.as_ref().map(|(g, ..)| beats(gain, *g)).unwrap_or(true) {
+                    *best = Some((gain, left_indices.to_vec(), missing_left));
+                }
+            }
+        };
+
+        if k <= 12 {
+            for i in 1..k {
+                eval_split(&(0..i).collect::<Vec<_>>(), &mut best);
+            }
+        } else {
+            let max_subsets = 32.min(k);
+            for i in 1..max_subsets {
+                eval_split(&(0..i).collect::<Vec<_>>(), &mut best);
+            }
+        }
+
+        st.scan_ns += t1.elapsed().as_nanos() as u64;
+        let Some((gain, left_indices, missing_left)) = best else {
+            return (None, st);
+        };
+        let left_levels: Vec<f64> = left_indices.iter().map(|&idx| scratch.level_survival[idx].0).collect();
         let split = Split {
             col: j,
             threshold: 0.0,

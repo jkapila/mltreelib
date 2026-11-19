@@ -67,6 +67,18 @@ Args:
 Returns: `{"n", "n_classes", "accuracy", "balanced_accuracy",
 "precision_macro/micro/weighted", "recall_*", "f1_*", "mcc",
 "jaccard_macro/micro/weighted", "hamming_loss", "zero_one_loss"}`.
+### Metrics.competing_risks
+```pythoncompeting_risks((self, /, durations, events, cif_curves=None, risk_scores=None, times=None))```
+Complete competing risks report for multi-cause survival endpoints:
+cause-specific Harrell's C, Uno's IPCW C, cause-specific IBS and
+time-dependent Brier scores over specified or sample decile evaluation horizons.
+
+Args:
+    durations: observed follow-up times.
+    events: event indicators (0 = censored, 1..J = mutually exclusive causes).
+    cif_curves: optional CIF curves mapping {cause: (N, T)} or 3D list (N, n_causes, T).
+    risk_scores: optional risk scores mapping {cause: (N,)} or 2D list (N, n_causes).
+    times: optional evaluation horizon times grid.
 ### Metrics.decile_table
 ```pythondecile_table((self, /, y_true, scores, n_buckets=10))```
 Decile profile (kds/PerfScoreCard decile table; modelplotpy response at

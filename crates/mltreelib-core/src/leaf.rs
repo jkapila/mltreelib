@@ -636,8 +636,19 @@ pub fn fit_leaf_model(
             }
         }
 
+        let mut causes: Vec<usize> = Vec::new();
+        for &(_, e, _) in &records {
+            let cause_id = e.round() as usize;
+            if cause_id > 0 && !causes.contains(&cause_id) {
+                causes.push(cause_id);
+            }
+        }
+        causes.sort_unstable();
+
         let mut cum_hazard = Vec::with_capacity(distinct_event_times.len());
         let mut survival = Vec::with_capacity(distinct_event_times.len());
+        let mut cif: Vec<Vec<f64>> = vec![Vec::with_capacity(distinct_event_times.len()); causes.len()];
+        let mut cur_cif: Vec<f64> = vec![0.0; causes.len()];
         let mut current_h = 0.0;
         let mut current_s = 1.0;
         let mut median_time = records.last().map(|r| r.0).unwrap_or(0.0);
@@ -646,25 +657,45 @@ pub fn fit_leaf_model(
         for &tj in &distinct_event_times {
             let mut dj = 0.0;
             let mut nj = 0.0;
+            let mut dj_cause = vec![0.0; causes.len()];
             for &(ti, ei, wi) in &records {
                 if ti >= tj {
                     nj += wi;
                     if (ti - tj).abs() < 1e-9 && ei > 0.0 {
                         dj += wi;
+                        let cid = ei.round() as usize;
+                        if let Some(pos) = causes.iter().position(|&c| c == cid) {
+                            dj_cause[pos] += wi;
+                        }
                     }
                 }
             }
+            let s_prev = current_s;
             if nj > 0.0 {
                 let hj = dj / nj;
                 current_h += hj;
                 current_s *= (1.0 - hj).clamp(0.0, 1.0);
+                for c_idx in 0..causes.len() {
+                    let d_c = dj_cause[c_idx];
+                    if d_c > 0.0 {
+                        cur_cif[c_idx] += s_prev * (d_c / nj);
+                    }
+                }
             }
             cum_hazard.push(current_h);
             survival.push(current_s);
+            for c_idx in 0..causes.len() {
+                cif[c_idx].push(cur_cif[c_idx]);
+            }
             if !found_median && current_s <= 0.5 {
                 median_time = tj;
                 found_median = true;
             }
+        }
+
+        let mut event_counts = vec![0usize; causes.len()];
+        for (c_idx, &c) in causes.iter().enumerate() {
+            event_counts[c_idx] = records.iter().filter(|&&(_, e, _)| (e.round() as usize) == c).count();
         }
 
         return LeafModel {
@@ -678,6 +709,9 @@ pub fn fit_leaf_model(
                 cum_hazard,
                 survival,
                 median_time,
+                causes,
+                cif,
+                event_counts,
             }),
             heteroscedastic: None,
             causal,

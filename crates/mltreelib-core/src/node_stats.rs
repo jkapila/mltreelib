@@ -349,13 +349,17 @@ impl LinearModel {
     }
 }
 
-/// Summary statistics for non-parametric survival curves (Nelson-Aalen / Kaplan-Meier).
+/// Summary statistics for non-parametric survival curves (Nelson-Aalen / Kaplan-Meier)
+/// and competing risks Cumulative Incidence Functions (Aalen-Johansen CIF).
 #[derive(Clone, Debug, PartialEq)]
 pub struct SurvivalStats {
     pub times: Vec<f64>,
     pub cum_hazard: Vec<f64>,
     pub survival: Vec<f64>,
     pub median_time: f64,
+    pub causes: Vec<usize>,
+    pub cif: Vec<Vec<f64>>,
+    pub event_counts: Vec<usize>,
 }
 
 /// Fitted multinomial softmax parameters for a leaf.
@@ -646,6 +650,36 @@ impl LeafModel {
                         Err(ins) => ins.saturating_sub(1),
                     };
                     surv.cum_hazard[idx]
+                }
+            })
+            .collect()
+    }
+
+    /// Predict cause-specific Cumulative Incidence Functions F_j(t) for competing risks.
+    pub fn predict_cif_row(&self, times: &[f64], cause: usize) -> Vec<f64> {
+        let Some(surv) = &self.survival else {
+            return vec![0.0; times.len()];
+        };
+        let cause_idx = surv.causes.iter().position(|&c| c == cause);
+        let cif_curve = cause_idx.and_then(|idx| surv.cif.get(idx));
+        times
+            .iter()
+            .map(|&t| {
+                if surv.times.is_empty() || t < surv.times[0] {
+                    0.0
+                } else if let Some(curve) = cif_curve {
+                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                        Ok(exact) => exact,
+                        Err(ins) => ins.saturating_sub(1),
+                    };
+                    curve.get(idx).copied().unwrap_or(0.0)
+                } else {
+                    // Fallback to 1 - S(t) if single-event
+                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                        Ok(exact) => exact,
+                        Err(ins) => ins.saturating_sub(1),
+                    };
+                    (1.0 - surv.survival[idx]).max(0.0)
                 }
             })
             .collect()

@@ -47,10 +47,10 @@ uv run maturin develop --release
 - **Rich Splitting Criteria**:
   - *Standard Regression*: `sse`, `friedman_mse`, `absolute_error` (L1 median), `huber`, `poisson`, `sdr` (standard deviation reduction).
   - *Distributional & Censored*: `tweedie` (compound Poisson-Gamma deviance for $1 < p < 2$), `heteroscedastic` (Gaussian NLL deviance isolating variance breaks with identical means), `tobit` (censored continuous hurdle deviance), `cv` (coefficient-of-variation reduction).
-  - *Survival & Causal*: `logrank` (Leblanc-Crowley test statistic), `martingale` (survival residual variance reduction), `causal` / `uplift` (Athey & Imbens treatment effect heterogeneity).
+  - *Survival & Causal*: `logrank` (LeBlanc-Crowley test statistic), `tarone_ware` & `peto` (weighted log-rank), `martingale` (O(N) streaming residual scan), `gray` (Gray's subdistribution test for competing risks), `survival_brier` (multi-cause proper scoring), `causal` / `uplift` (Athey & Imbens treatment effect heterogeneity).
   - *Classification*: `entropy`, `gini`, `gain_ratio` (C4.5 normalized information gain), `twoing` (CART balanced contrast).
   - *Custom*: User-defined Python callables receiving lazy $(y, w)$ candidate slices.
-- **Distributional Leaves**: Gaussian, Binomial (Logit/Probit), Poisson (Rate), Softmax / Multinomial ($C \ge 3$), Survival (Nelson-Aalen / Kaplan-Meier), Tobit (Censored), Tweedie, and Heteroscedastic $(\mu, \sigma)$.
+- **Distributional Leaves**: Gaussian, Binomial (Logit/Probit), Poisson (Rate), Softmax / Multinomial ($C \ge 3$), Survival & Competing Risks (Nelson-Aalen / Kaplan-Meier / Aalen-Johansen CIF), Tobit (Censored), Tweedie, and Heteroscedastic $(\mu, \sigma)$.
 - **Unified Clustering (`ClusterTree`)**: Unified facade supporting Predictive Clustering Trees (PCT), Unsupervised Random Forest (URF), HDBSCAN (condensed hierarchy, GLOSH outlier scores), and CLTree.
 - **Unified Anomaly Detection (`AnomalyTree` & `GritBot`)**: Unified facade supporting Extended Isolation Forest (EIF), Density Estimation Trees (DET), Half-Space Trees (HST), Random Cut Trees (RCT), Active feedback trees (AAD), Context sequence trees (CAT), and RuleQuest GritBot.
 - **Native Categorical Encoders (14)**: CatBoost, Target, Embedding, Weight of Evidence (WoE), James-Stein, Leave-One-Out, M-Estimator, Quantile, One-Hot, Base-N, Sum, Tfidf, Count, and Hashing.
@@ -343,7 +343,7 @@ Every entry tracks native categorical handling and execution resources under str
 - [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
 - [ ] **Anomaly facade**: preserve missing values across engines, expose context scoring and active feedback, and define threshold tie behavior.
 - [ ] **Clustering missingness**: remove implicit `None` to zero conversion in unified clustering engines and check native missing-value behavior.
-- [ ] **Survival and uplift metrics**: expose checked censoring-aware and randomized policy evaluation workflows beyond the examples.
+- [x] **Survival and competing risks**: Gray's subdistribution test, weighted log-rank (Tarone-Ware, Peto-Prentice), Aalen-Johansen CIF with simplex invariant, and checked IPCW metrics (Harrell/Uno C-index, time-dependent Brier score matrix, IBS).
 - [ ] **Probability recalibration**: fit post-hoc calibrators on separate validation or out-of-fold predictions, and evaluate them on independent data. Calibration plots already assess reliability.
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
 - [ ] **R Frontend Package**: CRAN package wrapping `mltreelib-core`.

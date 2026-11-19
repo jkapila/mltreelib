@@ -26,6 +26,17 @@ pub enum KernelKind {
     Polynomial { degree: usize, c: f64 },
 }
 
+/// Weighting schemes for two-sample log-rank tests (Spec 10).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LogRankWeight {
+    /// Standard Mantel-Haenszel / Peto log-rank test (equal weights w_j = 1.0).
+    Standard,
+    /// Tarone-Ware weighted log-rank (w_j = sqrt(n_j)): balances early vs late divergence.
+    TaroneWare,
+    /// Peto-Prentice weighted log-rank (w_j = S(t_j)): emphasizes early divergence.
+    PetoPrentice,
+}
+
 /// Split-quality criterion. Built-ins run the O(1) stats scan where the
 /// math allows (`Sse`, `FriedmanMse`); the rest see lazy (y, w) slices per
 /// candidate. All criteria are sample-weight aware.
@@ -70,6 +81,12 @@ pub enum GainFn {
     /// Log-rank test statistic for survival trees (Leblanc & Crowley 1992):
     /// compares observed vs expected survival events between partitions.
     LogRank,
+    /// Weighted log-rank tests (Tarone-Ware or Peto-Prentice).
+    LogRankWeighted { scheme: LogRankWeight },
+    /// Gray's test for cause-specific cumulative incidence in competing risks (Gray 1988).
+    GrayTest { cause: usize },
+    /// Survival Brier score / proper separable scoring rule with IPCW (AISTATS 2025 SurvivalBoost).
+    SurvivalBrier,
     /// Tweedie unit quasi-deviance reduction for 1 < p < 2 zero-inflated continuous data.
     Tweedie { p: f64 },
     /// Dual-parameter Gaussian negative log-likelihood deviance reduction:
@@ -148,6 +165,9 @@ impl Clone for GainFn {
             GainFn::Twoing => GainFn::Twoing,
             GainFn::Causal => GainFn::Causal,
             GainFn::LogRank => GainFn::LogRank,
+            GainFn::LogRankWeighted { scheme } => GainFn::LogRankWeighted { scheme: *scheme },
+            GainFn::GrayTest { cause } => GainFn::GrayTest { cause: *cause },
+            GainFn::SurvivalBrier => GainFn::SurvivalBrier,
             GainFn::Tweedie { p } => GainFn::Tweedie { p: *p },
             GainFn::Heteroscedastic => GainFn::Heteroscedastic,
             GainFn::Tobit { threshold } => GainFn::Tobit { threshold: *threshold },
@@ -186,6 +206,9 @@ impl std::fmt::Debug for GainFn {
             GainFn::Twoing => write!(f, "Twoing"),
             GainFn::Causal => write!(f, "Causal"),
             GainFn::LogRank => write!(f, "LogRank"),
+            GainFn::LogRankWeighted { scheme } => write!(f, "LogRankWeighted({:?})", scheme),
+            GainFn::GrayTest { cause } => write!(f, "GrayTest(cause={})", cause),
+            GainFn::SurvivalBrier => write!(f, "SurvivalBrier"),
             GainFn::Tweedie { p } => write!(f, "Tweedie(p={})", p),
             GainFn::Heteroscedastic => write!(f, "Heteroscedastic"),
             GainFn::Tobit { threshold } => write!(f, "Tobit(threshold={})", threshold),
@@ -274,7 +297,13 @@ impl std::fmt::Debug for GainFn {
                 let tv = class_total_variation(left, right);
                 2.0 * (wl / w) * (wr / w) * tv * tv
             }
-            GainFn::Causal | GainFn::LogRank | GainFn::Mob | GainFn::Ctree => {
+            GainFn::Causal
+            | GainFn::LogRank
+            | GainFn::LogRankWeighted { .. }
+            | GainFn::GrayTest { .. }
+            | GainFn::SurvivalBrier
+            | GainFn::Mob
+            | GainFn::Ctree => {
                 // Specialized fast-scan criteria: auxiliary channels (treatment/event)
                 // are scored directly in scan_column. Lazy slice fallback defaults to Friedman MSE.
                 let mean = |p: &[(f64, f64)]| {

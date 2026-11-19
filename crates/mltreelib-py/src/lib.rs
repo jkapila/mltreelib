@@ -13,7 +13,7 @@ use mltreelib_core::encode::{
     SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder,
 };
 use mltreelib_core::frame::{Column, Dataset};
-use mltreelib_core::criteria::{CustomGain, GainFn};
+use mltreelib_core::criteria::{CustomGain, GainFn, LogRankWeight};
 use mltreelib_core::family::LeafFamily;
 use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind};
@@ -21,9 +21,10 @@ use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, PurityMetric};
 use mltreelib_core::prune::PruneCost;
 use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
 use mltreelib_core::metrics::{
-    classification_report, grouped_regression_report, regression_report, survival_report,
-    time_series_report, uplift_report, ClassificationReport, RegressionReport, SurvivalReport,
-    TimeSeriesReport, UpliftReport,
+    classification_report, competing_risks_report as core_competing_risks_report,
+    grouped_regression_report, regression_report, survival_report,
+    time_series_report, uplift_report, ClassificationReport, CompetingRisksReport,
+    RegressionReport, SurvivalReport, TimeSeriesReport, UpliftReport,
 };
 use mltreelib_core::generator::{generate as generate_data, GeneratedData, GeneratorParams, TailBehavior, Task};
 use mltreelib_core::index::IndexMapper;
@@ -1427,6 +1428,136 @@ fn survival_to_dict<'py>(py: Python<'py>, s: &SurvivalReport) -> PyResult<Bound<
     Ok(d)
 }
 
+fn competing_risks_to_dict<'py>(py: Python<'py>, r: &CompetingRisksReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n_samples", r.n_samples)?;
+    d.set_item("causes", r.causes.clone())?;
+    d.set_item("cause_counts", r.cause_counts.clone())?;
+    let c_ind = PyDict::new(py);
+    for &(c, v) in &r.cause_c_indices {
+        c_ind.set_item(c, v)?;
+    }
+    d.set_item("cause_c_indices", c_ind)?;
+    let uno_c = PyDict::new(py);
+    for &(c, v) in &r.cause_uno_c_indices {
+        uno_c.set_item(c, v)?;
+    }
+    d.set_item("cause_uno_c_indices", uno_c)?;
+    let ibs = PyDict::new(py);
+    for &(c, v) in &r.cause_ibs {
+        ibs.set_item(c, v)?;
+    }
+    d.set_item("cause_ibs", ibs)?;
+    let brier = PyDict::new(py);
+    for (c, pairs) in &r.brier_at_horizons {
+        let p_dict = PyDict::new(py);
+        for &(t, bs) in pairs {
+            p_dict.set_item(t.to_string(), bs)?;
+        }
+        brier.set_item(c, p_dict)?;
+    }
+    d.set_item("brier_at_horizons", brier)?;
+    Ok(d)
+}
+
+fn run_competing_risks_report(
+    durations: &[f64],
+    events: &[f64],
+    cif_curves_obj: Option<&Bound<'_, PyAny>>,
+    risk_scores_obj: Option<&Bound<'_, PyAny>>,
+    times: Option<&[f64]>,
+) -> Result<CompetingRisksReport, String> {
+    let n = durations.len();
+    let mut causes: Vec<usize> = Vec::new();
+    for &e in events {
+        let c = e.round() as usize;
+        if c > 0 && !causes.contains(&c) {
+            causes.push(c);
+        }
+    }
+    causes.sort_unstable();
+
+    let parsed_risk: Option<Vec<Vec<f64>>> = if let Some(obj) = risk_scores_obj {
+        if let Ok(dict) = obj.cast::<PyDict>() {
+            let mut mat = vec![vec![0.0; causes.len()]; n];
+            for (c_idx, &c) in causes.iter().enumerate() {
+                let item = dict.get_item(c).or_else(|_| dict.get_item(c as i64)).or_else(|_| dict.get_item(c.to_string()));
+                if let Ok(Some(val)) = item {
+                    if let Ok(vec) = val.extract::<Vec<f64>>() {
+                        if vec.len() == n {
+                            for i in 0..n {
+                                mat[i][c_idx] = vec[i];
+                            }
+                        }
+                    }
+                }
+            }
+            Some(mat)
+        } else if let Ok(mat) = obj.extract::<Vec<Vec<f64>>>() {
+            Some(mat)
+        } else if let Ok(vec) = obj.extract::<Vec<f64>>() {
+            Some(vec.into_iter().map(|v| vec![v]).collect())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let parsed_cif: Option<Vec<Vec<Vec<f64>>>> = if let Some(obj) = cif_curves_obj {
+        if let Ok(dict) = obj.cast::<PyDict>() {
+            let mut cause_mats: Vec<Option<Vec<Vec<f64>>>> = Vec::with_capacity(causes.len());
+            let mut t_len = 0;
+            for &c in &causes {
+                let item = dict.get_item(c).or_else(|_| dict.get_item(c as i64)).or_else(|_| dict.get_item(c.to_string()));
+                if let Ok(Some(val)) = item {
+                    if let Ok(m) = val.extract::<Vec<Vec<f64>>>() {
+                        if m.len() == n {
+                            if t_len == 0 && !m.is_empty() {
+                                t_len = m[0].len();
+                            }
+                            cause_mats.push(Some(m));
+                            continue;
+                        }
+                    }
+                }
+                cause_mats.push(None);
+            }
+            if t_len > 0 {
+                let mut out = vec![vec![vec![0.0; t_len]; causes.len()]; n];
+                for (c_idx, mat_opt) in cause_mats.iter().enumerate() {
+                    if let Some(mat) = mat_opt {
+                        for i in 0..n {
+                            for t_idx in 0..t_len {
+                                out[i][c_idx][t_idx] = mat[i][t_idx];
+                            }
+                        }
+                    }
+                }
+                Some(out)
+            } else {
+                None
+            }
+        } else if let Ok(tensor) = obj.extract::<Vec<Vec<Vec<f64>>>>() {
+            Some(tensor)
+        } else if let Ok(mat) = obj.extract::<Vec<Vec<f64>>>() {
+            Some(mat.into_iter().map(|row| vec![row]).collect())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    core_competing_risks_report(
+        durations,
+        events,
+        parsed_cif.as_deref(),
+        parsed_risk.as_deref(),
+        times,
+    )
+}
+
 fn time_series_to_dict<'py>(py: Python<'py>, t: &TimeSeriesReport) -> PyResult<Bound<'py, PyDict>> {
     let d = PyDict::new(py);
     d.set_item("n_periods", t.n_periods)?;
@@ -1549,6 +1680,36 @@ impl PyMetrics {
         )
         .map_err(PyValueError::new_err)?;
         Ok(survival_to_dict(py, &s)?.unbind())
+    }
+
+    /// Complete competing risks report for multi-cause survival endpoints:
+    /// cause-specific Harrell's C, Uno's IPCW C, cause-specific IBS and
+    /// time-dependent Brier scores over specified or sample decile evaluation horizons.
+    ///
+    /// Args:
+    ///     durations: observed follow-up times.
+    ///     events: event indicators (0 = censored, 1..J = mutually exclusive causes).
+    ///     cif_curves: optional CIF curves mapping {cause: (N, T)} or 3D list (N, n_causes, T).
+    ///     risk_scores: optional risk scores mapping {cause: (N,)} or 2D list (N, n_causes).
+    ///     times: optional evaluation horizon times grid.
+    #[pyo3(signature = (durations, events, cif_curves=None, risk_scores=None, times=None))]
+    fn competing_risks(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        cif_curves: Option<Bound<'_, PyAny>>,
+        risk_scores: Option<Bound<'_, PyAny>>,
+        times: Option<Vec<f64>>,
+    ) -> PyResult<Py<PyDict>> {
+        let r = run_competing_risks_report(
+            &durations,
+            &events,
+            cif_curves.as_ref(),
+            risk_scores.as_ref(),
+            times.as_deref(),
+        ).map_err(PyValueError::new_err)?;
+        Ok(competing_risks_to_dict(py, &r)?.unbind())
     }
 
     /// Complete time series forecasting report (MAE, RMSE, MASE, sMAPE, WAPE, MDA, CRPS).
@@ -3085,7 +3246,8 @@ impl PyModelTree {
         mmd_kernel = None, mmd_bandwidth = None,
         fairness_penalty = None, protected_col = None, fairness_metric = None,
         sporf_d = 0, sporf_projections = 10,
-        extratrees = false, ebm_fast = false
+        extratrees = false, ebm_fast = false,
+        target_cause = 1
     ))]
     fn new(
         max_depth: usize,
@@ -3164,6 +3326,7 @@ impl PyModelTree {
         sporf_projections: usize,
         extratrees: bool,
         ebm_fast: bool,
+        target_cause: usize,
     ) -> PyResult<Self> {
         let mut max_depth = max_depth;
         let mut min_rows = min_rows;
@@ -3241,7 +3404,7 @@ impl PyModelTree {
                 )))
             }
         };
-        let family = match leaf_family {
+        let mut family = match leaf_family {
             "gaussian" => LeafFamily::Gaussian,
             "binomial" => LeafFamily::Binomial,
             "poisson" => LeafFamily::Poisson,
@@ -3309,6 +3472,10 @@ impl PyModelTree {
                         "twoing" => GainFn::Twoing,
                         "causal" | "uplift" => GainFn::Causal,
                         "logrank" | "log_rank" => GainFn::LogRank,
+                        "tarone_ware" | "taroneware" => GainFn::LogRankWeighted { scheme: LogRankWeight::TaroneWare },
+                        "peto" | "peto_prentice" => GainFn::LogRankWeighted { scheme: LogRankWeight::PetoPrentice },
+                        "gray" | "gray_test" | "logrank_cr" => GainFn::GrayTest { cause: target_cause },
+                        "survival_brier" | "brier" => GainFn::SurvivalBrier,
                         "tweedie" => GainFn::Tweedie { p: tweedie_p },
                         "heteroscedastic" | "gaussian_nll" | "ngboost" => GainFn::Heteroscedastic,
                         "tobit" => GainFn::Tobit { threshold: tobit_threshold },
@@ -3338,7 +3505,7 @@ impl PyModelTree {
                         }
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale', 'mob', 'ctree', 'energy_distance', 'mmd', 'wasserstein', 'hellinger', 'maxstat', 'fair' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tarone_ware', 'peto', 'gray', 'survival_brier', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale', 'mob', 'ctree', 'energy_distance', 'mmd', 'wasserstein', 'hellinger', 'maxstat', 'fair' or a callable, got {other}"
                             )))
                         }
                     }
@@ -3353,6 +3520,9 @@ impl PyModelTree {
                 }
             }
         };
+        if family == LeafFamily::Gaussian && matches!(gain_fn, GainFn::LogRank | GainFn::LogRankWeighted { .. } | GainFn::GrayTest { .. } | GainFn::SurvivalBrier) {
+            family = LeafFamily::Survival;
+        }
         let order = match &cat_order {
             None => CatOrder::FrequencyDesc,
             Some(co) => {
@@ -3753,13 +3923,17 @@ impl PyModelTree {
             if matches!(self.params.gain, GainFn::Causal) || self.params.treatments.is_some() {
                 self.params.treatments = Some(aux);
                 self.params.gain = GainFn::Causal;
-            } else if self.params.leaf_family == LeafFamily::Survival || event.is_some() {
-                self.params.events = Some(aux);
             } else {
                 self.params.events = Some(aux);
+                if matches!(self.params.leaf_family, LeafFamily::Gaussian) {
+                    self.params.leaf_family = LeafFamily::Survival;
+                }
             }
         } else if let Some(evs) = event {
             self.params.events = Some(evs);
+            if matches!(self.params.leaf_family, LeafFamily::Gaussian) {
+                self.params.leaf_family = LeafFamily::Survival;
+            }
         }
         if let Some(nc) = n_classes {
             self.params.n_classes = Some(nc);
@@ -4045,8 +4219,10 @@ impl PyModelTree {
     ///   kind="dist": (mean, std) location-scale tuples for Heteroscedastic.
     ///   kind="survival": S(t) survival curve over times grid.
     ///   kind="hazard": Lambda(t) cumulative hazard curve over times grid.
+    ///   kind="cif": F_c(t) cumulative incidence function for cause over times grid.
+    ///   kind="risk": predicted risk score (higher score = shorter expected survival / higher risk).
     ///   kind="leaf_id": integer leaf ID per row.
-    #[pyo3(signature = (x, kind = "response", times = None, neighbors = None))]
+    #[pyo3(signature = (x, kind = "response", times = None, neighbors = None, cause = None))]
     fn predict<'py>(
         &mut self,
         py: Python<'py>,
@@ -4054,6 +4230,7 @@ impl PyModelTree {
         kind: Option<&str>,
         times: Option<Vec<f64>>,
         neighbors: Option<usize>,
+        cause: Option<usize>,
     ) -> PyResult<Py<PyAny>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
@@ -4218,6 +4395,16 @@ impl PyModelTree {
                 let haz = t.predict_hazard(&x, &t_grid).map_err(PyValueError::new_err)?;
                 haz.into_py_any(py)
             }
+            "cif" => {
+                let t_grid = times.unwrap_or_else(|| vec![1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0]);
+                let target_cause = cause.unwrap_or(1);
+                let cif = t.predict_cif(&x, &t_grid, target_cause).map_err(PyValueError::new_err)?;
+                cif.into_py_any(py)
+            }
+            "risk" => {
+                let risk = t.predict_risk(&x).map_err(PyValueError::new_err)?;
+                risk.into_py_any(py)
+            }
             "uplift" | "cate" => {
                 let uplift = t.predict_uplift(&x).map_err(PyValueError::new_err)?;
                 uplift.into_py_any(py)
@@ -4227,7 +4414,7 @@ impl PyModelTree {
                 ids.into_py_any(py)
             }
             other => Err(PyValueError::new_err(format!(
-                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'uplift', 'vector', or 'leaf_id'"
+                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'cif', 'risk', 'uplift', 'vector', or 'leaf_id'"
             ))),
         }
     }
@@ -4251,7 +4438,7 @@ impl PyModelTree {
         py: Python<'py>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
     ) -> PyResult<Py<PyAny>> {
-        self.predict(py, x, Some("proba"), None, None)
+        self.predict(py, x, Some("proba"), None, None, None)
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -6152,6 +6339,28 @@ fn fast_interaction_screen(
     Ok(out)
 }
 
+/// Complete competing risks evaluation report (cause C-indices, Uno IPCW C-indices, cause-specific IBS and time-dependent Brier scores).
+#[pyfunction]
+#[pyo3(signature = (durations, events, cif_curves = None, risk_scores = None, times = None))]
+fn competing_risks_report<'py>(
+    py: Python<'py>,
+    durations: Vec<f64>,
+    events: Vec<f64>,
+    cif_curves: Option<Bound<'_, PyAny>>,
+    risk_scores: Option<Bound<'_, PyAny>>,
+    times: Option<Vec<f64>>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let r = run_competing_risks_report(
+        &durations,
+        &events,
+        cif_curves.as_ref(),
+        risk_scores.as_ref(),
+        times.as_deref(),
+    )
+    .map_err(PyValueError::new_err)?;
+    competing_risks_to_dict(py, &r)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMarsRegressor>()?;
@@ -6201,5 +6410,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(trended_transform, m)?)?;
     m.add_function(wrap_pyfunction!(windowed_transform, m)?)?;
     m.add_function(wrap_pyfunction!(fast_interaction_screen, m)?)?;
+    m.add_function(wrap_pyfunction!(competing_risks_report, m)?)?;
     Ok(())
 }

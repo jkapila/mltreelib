@@ -1650,6 +1650,233 @@ pub fn survival_report(
     })
 }
 
+/// Complete competing risks analysis report for mutually exclusive multi-cause endpoints.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompetingRisksReport {
+    pub n_samples: usize,
+    pub causes: Vec<usize>,
+    pub cause_counts: Vec<usize>,
+    pub cause_c_indices: Vec<(usize, f64)>,
+    pub cause_uno_c_indices: Vec<(usize, f64)>,
+    pub cause_ibs: Vec<(usize, f64)>,
+    pub brier_at_horizons: Vec<(usize, Vec<(f64, f64)>)>,
+}
+
+pub fn competing_risks_report(
+    durations: &[f64],
+    events: &[f64],
+    cif_curves: Option<&[Vec<Vec<f64>>]>,
+    risk_scores: Option<&[Vec<f64>]>,
+    times: Option<&[f64]>,
+) -> Result<CompetingRisksReport, String> {
+    let n = durations.len();
+    if n == 0 || events.len() != n {
+        return Err("durations and events must have the same non-zero length".to_string());
+    }
+
+    let mut causes: Vec<usize> = Vec::new();
+    for &e in events {
+        let c = e.round() as usize;
+        if c > 0 && !causes.contains(&c) {
+            causes.push(c);
+        }
+    }
+    causes.sort_unstable();
+    if causes.is_empty() {
+        return Err("competing risks evaluation requires at least one cause > 0".to_string());
+    }
+
+    let mut cause_counts = Vec::with_capacity(causes.len());
+    for &c in &causes {
+        cause_counts.push(events.iter().filter(|&&e| (e.round() as usize) == c).count());
+    }
+
+    // Compute overall censoring distribution G(t) via Kaplan-Meier on censoring indicator
+    let mut time_indices: Vec<usize> = (0..n).collect();
+    time_indices.sort_by(|&a, &b| {
+        durations[a]
+            .partial_cmp(&durations[b])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let mut distinct_times: Vec<f64> = Vec::new();
+    let mut g_vals: Vec<f64> = Vec::new();
+    let mut g_cur = 1.0;
+    let mut at_risk = n;
+
+    let mut i = 0;
+    while i < n {
+        let t = durations[time_indices[i]];
+        let mut d_c = 0;
+        let mut d_total = 0;
+        while i < n && durations[time_indices[i]] == t {
+            if events[time_indices[i]] <= 0.5 {
+                d_c += 1;
+            }
+            d_total += 1;
+            i += 1;
+        }
+        if at_risk > 0 && d_c > 0 {
+            g_cur *= 1.0 - (d_c as f64 / at_risk as f64);
+        }
+        distinct_times.push(t);
+        g_vals.push(g_cur.max(1e-4));
+        at_risk -= d_total;
+    }
+
+    let get_g = |t: f64| -> f64 {
+        if distinct_times.is_empty() || t < distinct_times[0] {
+            return 1.0;
+        }
+        match distinct_times.binary_search_by(|v| v.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+            Ok(idx) => g_vals[idx],
+            Err(0) => 1.0,
+            Err(idx) => g_vals[idx - 1],
+        }
+    };
+
+    let eval_times: Vec<f64> = if let Some(ts) = times {
+        ts.to_vec()
+    } else {
+        let mut ev_times: Vec<f64> = (0..n).filter(|&idx| events[idx] > 0.5).map(|idx| durations[idx]).collect();
+        ev_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        if ev_times.is_empty() {
+            vec![1.0, 5.0, 10.0]
+        } else {
+            (1..10)
+                .map(|d| {
+                    let idx = ((d as f64 / 10.0) * (ev_times.len() - 1) as f64).round() as usize;
+                    ev_times[idx]
+                })
+                .collect()
+        }
+    };
+
+    let mut cause_c_indices = Vec::with_capacity(causes.len());
+    let mut cause_uno_c_indices = Vec::with_capacity(causes.len());
+    let mut cause_ibs = Vec::with_capacity(causes.len());
+    let mut brier_matrices = Vec::with_capacity(causes.len());
+
+    for (c_idx, &cause) in causes.iter().enumerate() {
+        let mut harrell_num = 0.0;
+        let mut harrell_den = 0.0;
+        let mut uno_num = 0.0;
+        let mut uno_den = 0.0;
+
+        for i in 0..n {
+            if (events[i].round() as usize) != cause {
+                continue;
+            }
+            let ti = durations[i];
+            let gi = get_g(ti);
+            let uno_w = 1.0 / (gi * gi).max(1e-8);
+            let ri = risk_scores
+                .and_then(|rs| rs.get(i))
+                .and_then(|row| row.get(c_idx))
+                .copied()
+                .unwrap_or(0.0);
+
+            for j in 0..n {
+                if i == j {
+                    continue;
+                }
+                let tj = durations[j];
+                let rj = risk_scores
+                    .and_then(|rs| rs.get(j))
+                    .and_then(|row| row.get(c_idx))
+                    .copied()
+                    .unwrap_or(0.0);
+
+                if ti < tj {
+                    harrell_den += 1.0;
+                    uno_den += uno_w;
+                    if ri > rj {
+                        harrell_num += 1.0;
+                        uno_num += uno_w;
+                    } else if (ri - rj).abs() < 1e-12 {
+                        harrell_num += 0.5;
+                        uno_num += 0.5 * uno_w;
+                    }
+                }
+            }
+        }
+
+        let harrell_c = if harrell_den > 0.0 { harrell_num / harrell_den } else { 0.5 };
+        let uno_c = if uno_den > 0.0 { uno_num / uno_den } else { 0.5 };
+        cause_c_indices.push((cause, harrell_c));
+        cause_uno_c_indices.push((cause, uno_c));
+
+        // Cause-specific Brier scores across evaluation horizons
+        let mut brier_scores = Vec::with_capacity(eval_times.len());
+        let mut ibs = 0.0;
+        let mut prev_t = 0.0;
+        let mut prev_bs = 0.0;
+
+        for (t_idx, &t) in eval_times.iter().enumerate() {
+            let g_t = get_g(t);
+            let mut bs_sum = 0.0;
+
+            for i in 0..n {
+                let f_hat = if let Some(curves) = cif_curves {
+                    curves
+                        .get(i)
+                        .and_then(|row| row.get(c_idx))
+                        .and_then(|curve| curve.get(t_idx))
+                        .copied()
+                        .unwrap_or(0.1)
+                } else {
+                    0.1
+                };
+
+                let ti = durations[i];
+                let ei = events[i].round() as usize;
+
+                if ti <= t && ei == cause {
+                    let gi = get_g(ti);
+                    bs_sum += (1.0 - f_hat).powi(2) / gi.max(1e-4);
+                } else if ti <= t && ei > 0 && ei != cause {
+                    // Competing risk occurred before t
+                    let gi = get_g(ti);
+                    bs_sum += (0.0 - f_hat).powi(2) / gi.max(1e-4);
+                } else if ti > t {
+                    bs_sum += (0.0 - f_hat).powi(2) / g_t.max(1e-4);
+                }
+            }
+            let bs_t = bs_sum / n as f64;
+            brier_scores.push((t, bs_t));
+
+            if t_idx > 0 {
+                let dt = t - prev_t;
+                ibs += 0.5 * (prev_bs + bs_t) * dt;
+            }
+            prev_t = t;
+            prev_bs = bs_t;
+        }
+
+        if eval_times.len() > 1 {
+            let total_time_span = eval_times.last().unwrap() - eval_times.first().unwrap();
+            if total_time_span > 1e-9 {
+                ibs /= total_time_span;
+            }
+        } else if let Some(&(_, bs)) = brier_scores.first() {
+            ibs = bs;
+        }
+
+        cause_ibs.push((cause, ibs));
+        brier_matrices.push((cause, brier_scores));
+    }
+
+    Ok(CompetingRisksReport {
+        n_samples: n,
+        causes,
+        cause_counts,
+        cause_c_indices,
+        cause_uno_c_indices,
+        cause_ibs,
+        brier_at_horizons: brier_matrices,
+    })
+}
+
 /// Complete time series forecasting report.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TimeSeriesReport {
