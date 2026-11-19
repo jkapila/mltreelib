@@ -601,6 +601,9 @@ impl<'a> Grower<'a> {
                 | GainFn::LogRankWeighted { .. }
                 | GainFn::GrayTest { .. }
                 | GainFn::SurvivalBrier
+                | GainFn::PseudoValue
+                | GainFn::Rmst
+                | GainFn::AftDeviance
         ) {
             return if self.col_type(j) == ColType::Categorical {
                 self.scan_column_categorical_survival(rows, j, scratch)
@@ -2337,13 +2340,15 @@ impl<'a> Grower<'a> {
                         // Evaluate Left vs Right across distinct event times
                         let mut u_stat = 0.0;
                         let mut v_stat = 0.0;
+                        let mut rmst_l = 0.0;
+                        let mut rmst_r = 0.0;
+                        let mut s_l = 1.0;
+                        let mut s_r = 1.0;
+                        let mut prev_t = 0.0;
 
                         for (idx, &tj) in distinct_event_times.iter().enumerate() {
                             let dj = dj_vec[idx];
                             let yj = yj_vec[idx];
-                            if yj <= 1.0 || dj <= 0.0 {
-                                continue;
-                            }
                             let mut d_l = 0.0;
                             let mut y_l = 0.0;
 
@@ -2392,15 +2397,31 @@ impl<'a> Grower<'a> {
                                 }
                             }
 
-                            let e_l = dj * (y_l / yj);
-                            let v_l = (y_l * (yj - y_l) * dj * (yj - dj)) / (yj * yj * (yj - 1.0));
-                            let w_t = match weight_type {
-                                LogRankWeight::Standard => 1.0,
-                                LogRankWeight::TaroneWare => yj.sqrt(),
-                                LogRankWeight::PetoPrentice => s_vec[idx],
-                            };
-                            u_stat += w_t * (d_l - e_l);
-                            v_stat += w_t * w_t * v_l;
+                            let dt = tj - prev_t;
+                            rmst_l += s_l * dt;
+                            rmst_r += s_r * dt;
+                            prev_t = tj;
+
+                            let y_r = (yj - y_l).max(0.0);
+                            let d_r = (dj - d_l).max(0.0);
+                            if y_l > 0.0 {
+                                s_l *= (1.0 - d_l / y_l).clamp(0.0, 1.0);
+                            }
+                            if y_r > 0.0 {
+                                s_r *= (1.0 - d_r / y_r).clamp(0.0, 1.0);
+                            }
+
+                            if yj > 1.0 && dj > 0.0 {
+                                let e_l = dj * (y_l / yj);
+                                let v_l = (y_l * (yj - y_l) * dj * (yj - dj)) / (yj * yj * (yj - 1.0));
+                                let w_t = match weight_type {
+                                    LogRankWeight::Standard => 1.0,
+                                    LogRankWeight::TaroneWare => yj.sqrt(),
+                                    LogRankWeight::PetoPrentice => s_vec[idx],
+                                };
+                                u_stat += w_t * (d_l - e_l);
+                                v_stat += w_t * w_t * v_l;
+                            }
                         }
 
                         if (l_count as f64) < m || (r_count as f64) < m || l_w <= 0.0 || r_w <= 0.0 {
@@ -2410,10 +2431,22 @@ impl<'a> Grower<'a> {
                             continue;
                         }
 
-                        let mut gain = if v_stat > 1e-9 {
-                            (u_stat * u_stat) / v_stat
-                        } else {
-                            0.0
+                        let mut gain = match self.params.gain {
+                            GainFn::Rmst => {
+                                (l_w * r_w / (l_w + r_w)) * (rmst_l - rmst_r).powi(2)
+                            }
+                            GainFn::PseudoValue | GainFn::AftDeviance => {
+                                let l_mean = if l_w > 0.0 { u_stat / l_w } else { 0.0 };
+                                let r_mean = if r_w > 0.0 { -u_stat / r_w } else { 0.0 };
+                                (l_w * r_w / (l_w + r_w)) * (l_mean - r_mean).powi(2)
+                            }
+                            _ => {
+                                if v_stat > 1e-9 {
+                                    (u_stat * u_stat) / v_stat
+                                } else {
+                                    0.0
+                                }
+                            }
                         };
                         if self.params.imbalance_penalty > 0.0 {
                             gain -= self.params.imbalance_penalty * (1.0 / l_count as f64 + 1.0 / r_count as f64);
@@ -2887,8 +2920,8 @@ impl<'a> Grower<'a> {
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }
             LeafFamily::Tobit => 0.0,
-            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => {
-                unreachable!("Gaussian, Softmax, Survival, and Heteroscedastic use SSE/custom scans")
+            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
+                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, and Spline use SSE/custom scans")
             }
         }
     }

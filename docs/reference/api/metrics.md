@@ -79,6 +79,12 @@ Args:
     cif_curves: optional CIF curves mapping {cause: (N, T)} or 3D list (N, n_causes, T).
     risk_scores: optional risk scores mapping {cause: (N,)} or 2D list (N, n_causes).
     times: optional evaluation horizon times grid.
+### Metrics.competing_risks_calibration
+```pythoncompeting_risks_calibration((self, /, durations, events, predicted_cif, horizon))```
+Competing risks calibration report across causes (Alberge et al. 2026).
+### Metrics.d_calibration
+```pythond_calibration((self, /, durations, events, surv_at_durations, n_bins=10))```
+D-Calibration test (Haider et al. 2020) for survival distribution uniformity.
 ### Metrics.decile_table
 ```pythondecile_table((self, /, y_true, scores, n_buckets=10))```
 Decile profile (kds/PerfScoreCard decile table; modelplotpy response at
@@ -123,6 +129,12 @@ Args:
     decision: decision-function margins (signed).
 
 Returns: mean hinge loss.
+### Metrics.ici
+```pythonici((self, /, durations, events, predicted_survival, horizon))```
+Alias for integrated_calibration_index.
+### Metrics.integrated_calibration_index
+```pythonintegrated_calibration_index((self, /, durations, events, predicted_survival, horizon))```
+Integrated Calibration Index (Austin et al. 2020) at fixed horizon.
 ### Metrics.ks_statistic
 ```pythonks_statistic((self, /, y_true, scores))```
 KS sweep + statistic + Score@KS. Task: classification.
@@ -165,6 +177,9 @@ Args:
 Returns: `{"n", "n_labels", "subset_accuracy", "hamming_loss",
 "precision_micro/macro/samples", "recall_*", "f1_*",
 "label_ranking_ap", "coverage_error"}`.
+### Metrics.one_calibration
+```pythonone_calibration((self, /, durations, events, predicted_survival, horizon))```
+1-Calibration slope and intercept (Austin et al. 2020) at fixed horizon.
 ### Metrics.pairwise_distances
 ```pythonpairwise_distances((self, /, a, b, metric='euclidean', p=2.0))```
 Pairwise distances between two row sets. Task: any.

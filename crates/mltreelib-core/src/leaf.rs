@@ -140,6 +140,12 @@ pub struct LeafControl {
     pub max_classes: usize,
     /// Missing value strategy at leaf level: DropFallback (default), ImputeLocal, or Indicator.
     pub leaf_na_policy: LeafNaPolicy,
+    /// AFT parametric distribution (Weibull, LogNormal, LogLogistic).
+    pub aft_dist: crate::node_stats::AftDist,
+    /// Cure fraction for mixture cure rate leaves.
+    pub cure_fraction: Option<f64>,
+    /// Number of interior spline knots for Royston-Parmar leaves (default 3).
+    pub spline_knots: usize,
 }
 
 impl Default for LeafControl {
@@ -174,6 +180,9 @@ impl Default for LeafControl {
             shrinkage: 0.0,
             max_classes: 256,
             leaf_na_policy: LeafNaPolicy::Indicator,
+            aft_dist: crate::node_stats::AftDist::Weibull,
+            cure_fraction: None,
+            spline_knots: 3,
         }
     }
 }
@@ -227,6 +236,9 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             shrinkage: p.shrinkage,
             max_classes: p.max_classes,
             leaf_na_policy: p.leaf_na_policy,
+            aft_dist: p.aft_dist,
+            cure_fraction: p.cure_fraction,
+            spline_knots: p.spline_knots,
         }
     }
 }
@@ -606,6 +618,9 @@ pub fn fit_leaf_model(
             survival: None,
             heteroscedastic: None,
             causal,
+            aft: None,
+            cure: None,
+            spline: None,
             mars: None,
             mars_cols: None,
             knn: None,
@@ -614,7 +629,7 @@ pub fn fit_leaf_model(
         };
     }
 
-    if family == LeafFamily::Survival {
+    if family == LeafFamily::Survival || family == LeafFamily::Aft || family == LeafFamily::Cure || family == LeafFamily::Spline {
         let events = control.events.as_ref();
         let mut records: Vec<(f64, f64, f64)> = rows
             .iter()
@@ -698,23 +713,126 @@ pub fn fit_leaf_model(
             event_counts[c_idx] = records.iter().filter(|&&(_, e, _)| (e.round() as usize) == c).count();
         }
 
+        let surv_stats = SurvivalStats {
+            times: distinct_event_times.clone(),
+            cum_hazard,
+            survival,
+            median_time,
+            causes,
+            cif,
+            event_counts,
+        };
+
+        // 1. Parametric AFT Model fitting
+        let mut aft = None;
+        if family == LeafFamily::Aft {
+            let dist = control.aft_dist;
+            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let p = chosen.len();
+            let log_times: Vec<f64> = records.iter().map(|r| r.0.max(1e-6).ln()).collect();
+            let mut alpha = 0.0;
+            let mut beta = vec![0.0; p];
+            let mut sum_w = 0.0;
+            for (idx, r) in records.iter().enumerate() {
+                alpha += r.2 * log_times[idx];
+                sum_w += r.2;
+            }
+            if sum_w > 0.0 {
+                alpha /= sum_w;
+            }
+            if control.leaf == LeafKind::Linear && p > 0 {
+                let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
+                let mut g = Gram::new(dim);
+                let mut row = vec![0.0; dim];
+                for (rec_idx, &r) in rows.iter().enumerate() {
+                    design_row(&mut row, cols, r, &chosen, any_missing);
+                    let target = log_times[rec_idx.min(log_times.len() - 1)];
+                    g.add_row(&row, target, w[r]);
+                }
+                let lin = fit_linear(
+                    &g,
+                    &chosen,
+                    any_missing,
+                    control.effective_leaf_monotone(),
+                    control.l1,
+                    control.l2,
+                );
+                alpha = lin.intercept;
+                beta = lin.coef;
+            }
+            let mut res_sq = 0.0;
+            for (rec_idx, &r) in rows.iter().enumerate() {
+                let mut pred = alpha;
+                for j in 0..p {
+                    let c = chosen[j];
+                    let v = cols[c][r].unwrap_or(0.0);
+                    pred += beta[j] * v;
+                }
+                let diff = log_times[rec_idx.min(log_times.len() - 1)] - pred;
+                res_sq += w[r] * diff * diff;
+            }
+            let scale = if sum_w > 0.0 { (res_sq / sum_w).sqrt().max(0.05) } else { 1.0 };
+            aft = Some(crate::node_stats::AftModel {
+                dist,
+                intercept: alpha,
+                coef: beta,
+                cols: chosen,
+                scale,
+            });
+        }
+
+        // 2. Mixture Cure Rate model fitting
+        let mut cure = None;
+        if family == LeafFamily::Cure {
+            let cure_rate = control.cure_fraction.unwrap_or_else(|| {
+                current_s.clamp(0.0, 0.99)
+            });
+            cure = Some(crate::node_stats::CureModel {
+                cure_rate,
+                aft: None,
+                survival: Some(surv_stats.clone()),
+            });
+        }
+
+        // 3. Royston-Parmar Restricted Cubic Spline fitting
+        let mut spline = None;
+        if family == LeafFamily::Spline {
+            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let mut knots = Vec::new();
+            if !distinct_event_times.is_empty() {
+                let n_knots = control.spline_knots.max(3);
+                for k in 0..n_knots {
+                    let q = (k as f64 + 0.5) / n_knots as f64;
+                    let idx = ((distinct_event_times.len() - 1) as f64 * q).round() as usize;
+                    knots.push(distinct_event_times[idx].max(1e-6).ln());
+                }
+            }
+            let mut gamma = vec![0.0; knots.len().max(2)];
+            if !distinct_event_times.is_empty() {
+                gamma[0] = -1.0;
+                gamma[1] = 1.0;
+            }
+            let coef = vec![0.0; chosen.len()];
+            spline = Some(crate::node_stats::SplineSurvivalModel {
+                knots,
+                gamma,
+                coef,
+                cols: chosen,
+            });
+        }
+
         return LeafModel {
             stats,
             linear: None,
             center: Some(median_time),
             family,
             softmax: None,
-            survival: Some(SurvivalStats {
-                times: distinct_event_times,
-                cum_hazard,
-                survival,
-                median_time,
-                causes,
-                cif,
-                event_counts,
-            }),
+            survival: Some(surv_stats),
             heteroscedastic: None,
             causal,
+            aft,
+            cure,
+            spline,
             mars: None,
             mars_cols: None,
             knn: None,
@@ -797,6 +915,9 @@ pub fn fit_leaf_model(
                 scale_linear,
             }),
             causal,
+            aft: None,
+            cure: None,
+            spline: None,
             mars: None,
             mars_cols: None,
             knn: None,
@@ -838,6 +959,9 @@ pub fn fit_leaf_model(
             survival: None,
             heteroscedastic: None,
             causal,
+            aft: None,
+            cure: None,
+            spline: None,
             mars: reg.model,
             mars_cols: Some(chosen),
             knn: None,
@@ -873,6 +997,9 @@ pub fn fit_leaf_model(
             survival: None,
             heteroscedastic: None,
             causal,
+            aft: None,
+            cure: None,
+            spline: None,
             mars: None,
             mars_cols: None,
             knn: Some(knn_model),
@@ -896,6 +1023,9 @@ pub fn fit_leaf_model(
             survival: None,
             heteroscedastic: None,
             causal,
+            aft: None,
+            cure: None,
+            spline: None,
             mars: None,
             mars_cols: None,
             knn: None,
@@ -1009,6 +1139,9 @@ pub fn fit_leaf_model(
                     survival: None,
                     heteroscedastic: None,
                     causal,
+                    aft: None,
+                    cure: None,
+                    spline: None,
                     mars: None,
                     mars_cols: None,
                     knn: None,
@@ -1177,6 +1310,9 @@ pub fn fit_leaf_model(
         survival: None,
         heteroscedastic: None,
         causal,
+        aft: None,
+        cure: None,
+        spline: None,
         mars: None,
         mars_cols: None,
         knn: None,

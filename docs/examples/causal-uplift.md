@@ -95,3 +95,40 @@ On the standard **Nie & Wager (2021) / CausalML Setup B** benchmark:
   $$\text{PEHE} = \sqrt{\frac{1}{N}\sum_{i=1}^N (\hat{\tau}_i - \tau_i)^2} = 0.5848$$
 - **ATE Estimation Error**: $|0.8177 - 0.8030| = 0.0147$.
 - **Exact Leaf Verification**: For every terminal leaf, the predicted CATE matches the raw sample difference $\bar{Y}_{1} - \bar{Y}_{0}$ to machine precision ($< 10^{-9}$).
+
+---
+
+## 5. Causal Survival Trees (Research Track)
+
+> [!WARNING]
+> **Research Work Under Consideration**
+> Causal Survival Trees with Honest Sample Splitting are experimental research. Use at your own risk.
+
+In survival settings with right censoring $(T_i, E_i)$ and binary intervention $W_i \in \{0, 1\}$, the target is the Conditional Average Treatment Effect on Restricted Mean Survival Time (RMST):
+$$\tau_{\text{RMST}}(x) = \mathbb{E}[\text{RMST}(1) - \text{RMST}(0) \mid X=x]$$
+
+### Honest Sample Splitting
+Following Wager & Athey (2018) and Cui et al. (2023), `ModelTree(honesty=True, honesty_fraction=0.5)` partitions data into:
+- **Structure Set $S^{\text{tr}}$**: Used exclusively to place partition boundaries (e.g. maximizing $\Delta \text{RMST}$ or pseudo-value variance reduction).
+- **Estimation Set $S^{\text{est}}$**: Independent holdout used to fit leaf survival curves and estimate CATE.
+
+This honest decoupling removes optimistic selection bias in survival trees:
+
+```python
+from mltreelib import ModelTree
+
+# Honest Causal Survival Tree
+tree = ModelTree(
+    max_depth=3,
+    min_rows=15,
+    gain="pseudo_value",     # or "rmst"
+    honesty=True,
+    honesty_fraction=0.5,
+    seed=42,
+)
+
+tree.fit(X, (durations, events))
+```
+
+Executable research script:
+- [`examples/survival/causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/survival/causal_survival_honest.py)

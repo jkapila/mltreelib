@@ -33,7 +33,7 @@ flowchart TD
 
 ### Research Citations & Benchmark Reproductions
 
-The implementation reproduces six key findings from the literature:
+The implementation reproduces eleven key findings from the classical (1988–2014) and frontier (2020–2026) literature:
 
 | Reference | Topic & Method | Benchmark Dataset | Original Paper Finding | mltreelib Reproduction Result |
 | :--- | :--- | :--- | :--- | :--- |
@@ -42,16 +42,21 @@ The implementation reproduces six key findings from the literature:
 | **Fine & Gray (1999)** [JASA] | Subdistribution hazards model | Mayo Clinic PBC cohort | Serum bilirubin and albumin are dominant predictors of primary liver failure mortality. | Tree rules isolate `bili > 3.2` and `albumin <= 3.1` with high subdistribution hazard and rapid CIF accumulation. |
 | **Ishwaran et al. (2014)** [JASA] | Aalen-Johansen leaf CIF estimator & simplex property | Multi-cause oncology simulation ($N=800$) | Competing risk probabilities and overall survival must satisfy the simplex identity $\sum_{c=1}^J F_c(t) + S(t) = 1.0$. | Verified across 1,000 grid points: maximum absolute error is $1.33 \times 10^{-15}$ (machine epsilon). |
 | **Uno et al. (2011)** [Statist. Med.] | IPCW Concordance Index ($C^{\text{Uno}}$) | Mayo Clinic FLCHAIN ($N=7,874$, 2,172 deaths) | Harrell's C is sensitive to study follow-up duration; Uno's IPCW C removes censoring bias via inverse Kaplan-Meier weights. | Native `Metrics().survival(...)` computes Harrell's C (0.784) and Uno's IPCW C (0.781) on raw FLCHAIN data with 1,350 missing creatinine values. |
-| **Graf et al. (1999)** [Statist. Med.] | Integrated Brier Score (IBS) with IPCW censoring weights | Simulation benchmark ($N=800$) | IBS evaluates probability calibration across the full timeline $[0, t_{\max}]$ under arbitrary censoring. | Benchmark across 6 criteria yields IBS between 0.2136 (`tarone_ware`) and 0.2297 (`peto`). |
+| **Graf et al. (1999)** [Statist. Med.] | Integrated Brier Score (IBS) with IPCW censoring weights | Simulation benchmark ($N=800$) | IBS evaluates probability calibration across the full timeline $[0, t_{\max}]$ under arbitrary censoring. | Benchmark across criteria yields IBS between 0.2136 (`tarone_ware`) and 0.2297 (`peto`). |
+| **Liu & Li (2020, 2021)** [Biometrics / CIMS] | RMST area divergence splitting | Crossing hazards simulation | Standard log-rank test loses statistical power when hazards cross. RMST preserves power via integrated area differences. | `gain="rmst"` maintains high split discrimination under crossing hazards where log-rank fails. |
+| **Schenk et al. (2024)** [Lifetime Data Anal.] | Jackknife pseudo-values for survival trees | SurvSet benchmarks | Pseudo-values transform right-censored outcomes into continuous pseudo-observations for $O(N)$ split scanning. | `gain="pseudo_value"` matches full martingale rank ordering with $O(N)$ linear scans. |
+| **Haider et al. (2020)** [JMLR] | D-Calibration for distribution uniformity | SurvSet benchmark suite | Well-calibrated survival estimators distribute event probabilities uniformly across probability bins: $\chi^2$ test $p > 0.05$. | `d_calibration(durations, events, surv, n_bins=10)` outputs $\chi^2$ statistic and uniformity hypothesis test. |
+| **Austin et al. (2020)** [Statist. Med.] | Integrated Calibration Index (ICI) & 1-Calibration | GBSG2 Breast Cancer cohort | ICI computes IPCW-weighted mean absolute error between predicted survival and observed status at horizon $t_0$. | `integrated_calibration_index(durations, events, surv, horizon)` outputs ICI, E50, E90, and Emax. |
+| **Alberge et al. (2026)** [Biometrics] | Multi-cause calibration divergence | Mayo Clinic PBC cohort | Competing risks calibration must evaluate cause-specific calibration divergences and Brier scores simultaneously. | `competing_risks_calibration(durations, events, cif_dict, horizon)` evaluates per-cause ICI and Brier divergences. |
 
 ---
 
-## 2. The 6 Survival Split Criteria
+## 2. The 9 Survival Split Criteria
 
 Set the split criterion using the `gain` parameter in `ModelTree`:
 
 ```python
-tree = ModelTree(max_depth=3, min_rows=20, gain="logrank")
+tree = ModelTree(max_depth=3, min_rows=20, gain="pseudo_value")
 ```
 
 | Criterion (`gain=`) | Mathematical Formula | Weighting Function $w(t_j)$ | Best Used For |
@@ -60,6 +65,9 @@ tree = ModelTree(max_depth=3, min_rows=20, gain="logrank")
 | **`"tarone_ware"`** | Weighted log-rank score test | $w(t_j) = \sqrt{n_j}$ (square root of risk set size) | Moderate non-proportional hazards; balances sensitivity between early and late event horizons. |
 | **`"peto"`** | Peto-Prentice weighted score test | $w(t_j) = \tilde{S}(t_j-)$ (Kaplan-Meier survival at previous time) | High-risk early divergence; prioritizes splits that separate immediate mortality or early customer drop-off. |
 | **`"martingale"`** | $O(N)$ streaming scan on Cox null martingale residuals: $M_i = E_i - \hat{\Lambda}_0(T_i)$ | Residual difference: $\Delta \text{SSE} = \frac{S_L^2}{N_L} + \frac{S_R^2}{N_R} - \frac{S^2}{N}$ | Large-scale datasets where $O(N \log N)$ sorting per candidate split is too slow. Splits at the speed of regression trees. |
+| **`"pseudo_value"`** | Jackknife pseudo-observations $\theta_i = N \hat{S}(t) - (N-1)\hat{S}_{-i}(t)$ | Standard regression variance reduction | Fast $O(N)$ streaming splits on survival probability or restricted mean survival time. |
+| **`"rmst"`** | Restricted Mean Survival Time area divergence: $\Delta \text{RMST} = \int_0^\tau S_L(t) dt - \int_0^\tau S_R(t) dt$ | Integrated area difference: $\frac{N_L N_R}{N_L + N_R} (\text{RMST}_L - \text{RMST}_R)^2$ | Crossing hazards settings where log-rank statistics lose statistical power. |
+| **`"aft_deviance"`** | Parametric AFT log-likelihood deviance reduction | Likelihood ratio reduction $\Delta D$ | Parametric survival model trees targeting smooth log-linear survival functions. |
 | **`"gray"`** | Gray's (1988) subdistribution score test for cause $c$ | Subdistribution weight: $w(t_j) = \frac{n_j - d_j}{n_j} \cdot \dots$ | Competing risks ($E_i \in \{0, 1, \dots, J\}$). Evaluates cumulative incidence separation for `target_cause`. |
 | **`"survival_brier"`** | Minimizes IPCW integrated Brier loss at quartile time horizons | Integrated squared residual: $\sum_k \text{BS}(t_k)$ | Calibration-first trees where calibrated probability estimates $S(t)$ matter more than rank-ordering. |
 
@@ -108,6 +116,24 @@ Inside each leaf, `mltreelib-core` computes non-parametric step functions:
    $$\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) \equiv 1.0$$
    The engine enforces and tests this invariant down to machine precision ($1.33 \times 10^{-15}$).
 
+### Frontier Leaf Models
+
+Standard survival tree libraries fit flat step functions in leaves. `mltreelib` supports parametric and semi-parametric model leaves:
+
+- **Parametric AFT Leaves (`leaf_family="aft"`)**:
+  Fits smooth continuous accelerated failure time distributions inside leaves:
+  $$\ln T = \mu(X) + \sigma \epsilon$$
+  Knobs: `aft_dist="weibull" | "lognormal" | "loglogistic"`.
+  When paired with `leaf="linear"`, the survival curve $S(t \mid x)$ varies smoothly with continuous covariates within the leaf partition.
+- **Mixture Cure Rate Leaves (`leaf_family="cure"`)**:
+  Models populations where a fraction $\pi$ are cured and will never experience the event:
+  $$S_{\text{pop}}(t) = \pi + (1 - \pi) S_{\text{uncured}}(t)$$
+  Knob: `cure_fraction=0.2`. As $t \to \infty$, the survival curve plateaus at $\pi > 0$.
+- **Restricted Cubic Splines Leaves (`leaf_family="spline"`)**:
+  Fits Royston-Parmar flexible spline log cumulative hazard functions:
+  $$\ln \Lambda(t \mid x) = \gamma_0 + \gamma_1 \ln t + \sum_{k=1}^K \gamma_{k+1} v_k(\ln t) + \beta^T x$$
+  Knob: `spline_knots=3`. Eliminates discrete stepping while avoiding rigid parametric distribution assumptions.
+
 ---
 
 ## 4. Fitting & Predictions API
@@ -117,12 +143,14 @@ Fit trees using the standard 2-tuple target `(durations, events)`:
 ```python
 from mltreelib import ModelTree
 
-# Single event or competing risks
+# Frontier parametric AFT tree with smooth Weibull leaves
 tree = ModelTree(
     max_depth=3,
     min_rows=15,
-    gain="gray",          # or "logrank", "tarone_ware", "peto", "martingale"
-    target_cause=1,       # target cause for Gray's test (competing risks)
+    gain="rmst",          # or "pseudo_value", "aft_deviance", "logrank"
+    leaf_family="aft",    # or "cure", "spline", "survival"
+    aft_dist="weibull",   # "weibull", "lognormal", "loglogistic"
+    leaf="linear",        # continuous covariate variation inside leaves
 )
 
 tree.fit(X, (durations, events))
@@ -156,26 +184,48 @@ risk_scores = tree.predict(X_new, kind="risk", cause=1)
 
 ## 5. Model Evaluation with Modern Metrics
 
-Evaluate models with IPCW-calibrated metrics in `Metrics`:
+Evaluate models with classical IPCW concordance and frontier calibration metrics:
 
 ```python
-from mltreelib import Metrics
+from mltreelib import (
+    Metrics,
+    d_calibration,
+    integrated_calibration_index,
+    one_calibration,
+    competing_risks_calibration,
+)
 
 metrics = Metrics()
 
-# Competing risks comprehensive evaluation
-report = metrics.competing_risks(
+# 1. Classical Discrimination & Calibration
+surv_report = metrics.survival(
     durations=test_durations,
     events=test_events,
-    cif_curves={1: cif_cause1, 2: cif_cause2},
-    risk_scores={1: risk_scores_cause1, 2: risk_scores_cause2},
+    risk_scores=test_risk_scores,
+    surv_curves=test_surv_curves,
     times=time_horizons,
 )
+print(f"Harrell's C: {surv_report['harrell_c']:.4f}")
+print(f"Uno's IPCW C: {surv_report['uno_c']:.4f}")
+print(f"Integrated Brier Score: {surv_report['ibs']:.4f}")
 
-print(f"Cause 1 Harrell C:  {report['cause_c_indices'][1]:.4f}")
-print(f"Cause 1 Uno IPCW C: {report['cause_uno_c_indices'][1]:.4f}")
-print(f"Cause 1 IBS:        {report['cause_ibs'][1]:.4f}")
-print(f"Brier at horizons:  {report['brier_at_horizons'][1]}")
+# 2. D-Calibration (Haider et al. JMLR 2020)
+# Tests whether observed events are uniformly distributed across probability deciles
+d_rep = d_calibration(test_durations, test_events, surv_at_horizon, n_bins=10)
+print(f"D-Calibration Chi2: {d_rep['chi2_stat']:.2f}, p-value: {d_rep['p_value']:.4f}")
+
+# 3. Integrated Calibration Index (ICI) (Austin et al. 2020)
+# IPCW-weighted mean absolute error between predicted survival and actual status at horizon t_0
+ici_rep = integrated_calibration_index(test_durations, test_events, surv_at_horizon, horizon=30.0)
+print(f"ICI: {ici_rep['ici']:.4f}, E50: {ici_rep['e50']:.4f}, Emax: {ici_rep['emax']:.4f}")
+
+# 4. 1-Calibration Slope & Intercept
+one_rep = one_calibration(test_durations, test_events, surv_at_horizon, horizon=30.0)
+print(f"1-Calibration: Intercept = {one_rep['intercept']:.3f}, Slope = {one_rep['slope']:.3f}")
+
+# 5. Competing Risks Multi-Cause Calibration (Alberge et al. 2026)
+cr_rep = competing_risks_calibration(test_durations, test_events, cif_preds, horizon=30.0)
+print(f"Cause 1 ICI: {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI: {cr_rep['cause_ici'][2]:.4f}")
 ```
 
 ---

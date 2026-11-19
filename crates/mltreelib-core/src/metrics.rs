@@ -1990,3 +1990,253 @@ pub fn time_series_report(
         crps,
     })
 }
+
+/// D-Calibration report (Haider et al. JMLR 2020).
+#[derive(Clone, Debug, PartialEq)]
+pub struct DCalibrationReport {
+    pub n_samples: usize,
+    pub n_bins: usize,
+    pub chi2_stat: f64,
+    pub p_value: f64,
+    pub bin_counts: Vec<f64>,
+    pub expected_count: f64,
+    pub is_calibrated: bool,
+}
+
+/// Integrated Calibration Index (ICI) report (Austin et al. 2020).
+#[derive(Clone, Debug, PartialEq)]
+pub struct IciReport {
+    pub horizon: f64,
+    pub ici: f64,
+    pub e50: f64,
+    pub e90: f64,
+    pub emax: f64,
+}
+
+/// 1-Calibration slope and intercept at horizon t_0.
+#[derive(Clone, Debug, PartialEq)]
+pub struct OneCalibrationReport {
+    pub horizon: f64,
+    pub intercept: f64,
+    pub slope: f64,
+}
+
+/// Competing risks calibration report across causes (Alberge et al. 2026).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CrCalibrationReport {
+    pub horizon: f64,
+    pub cause_ici: std::collections::HashMap<usize, f64>,
+    pub cause_brier: std::collections::HashMap<usize, f64>,
+}
+
+pub fn d_calibration(
+    durations: &[f64],
+    events: &[f64],
+    surv_at_durations: &[f64],
+    n_bins: usize,
+) -> Result<DCalibrationReport, String> {
+    let n = durations.len();
+    if n == 0 || events.len() != n || surv_at_durations.len() != n {
+        return Err("durations, events, and surv_at_durations must have the same non-zero length".into());
+    }
+    let b = n_bins.max(2);
+    let mut bin_counts = vec![0.0; b];
+    let bin_width = 1.0 / b as f64;
+
+    for i in 0..n {
+        let p = surv_at_durations[i].clamp(0.0, 1.0);
+        let e = events[i];
+        if e >= 0.5 {
+            let bin_idx = ((p / bin_width).floor() as usize).min(b - 1);
+            bin_counts[bin_idx] += 1.0;
+        } else {
+            if p <= 1e-12 {
+                bin_counts[0] += 1.0;
+            } else {
+                for k in 0..b {
+                    let b_low = k as f64 * bin_width;
+                    let b_high = (k + 1) as f64 * bin_width;
+                    if b_low < p {
+                        let overlap = (p.min(b_high) - b_low).max(0.0);
+                        bin_counts[k] += overlap / p;
+                    }
+                }
+            }
+        }
+    }
+
+    let expected = n as f64 / b as f64;
+    let mut chi2 = 0.0;
+    for &obs in &bin_counts {
+        let diff = obs - expected;
+        chi2 += (diff * diff) / expected;
+    }
+
+    let dof = (b - 1) as f64;
+    let p_val = if chi2 <= 0.0 {
+        1.0
+    } else {
+        (statrs::function::gamma::gamma_ur(dof * 0.5, chi2 * 0.5) / statrs::function::gamma::gamma(dof * 0.5)).clamp(0.0, 1.0)
+    };
+
+    Ok(DCalibrationReport {
+        n_samples: n,
+        n_bins: b,
+        chi2_stat: chi2,
+        p_value: p_val,
+        bin_counts,
+        expected_count: expected,
+        is_calibrated: p_val > 0.05,
+    })
+}
+
+pub fn integrated_calibration_index(
+    durations: &[f64],
+    events: &[f64],
+    predicted_survival: &[f64],
+    horizon: f64,
+) -> Result<IciReport, String> {
+    let n = durations.len();
+    if n == 0 || events.len() != n || predicted_survival.len() != n {
+        return Err("durations, events, and predicted_survival must have the same non-zero length".into());
+    }
+
+    let mut cens_order: Vec<usize> = (0..n).collect();
+    cens_order.sort_by(|&a, &b| durations[a].partial_cmp(&durations[b]).unwrap());
+    let mut g_vals = vec![1.0; n];
+    let mut at_risk = n;
+    let mut g_cur = 1.0;
+    for &idx in &cens_order {
+        if events[idx] < 0.5 && at_risk > 0 {
+            g_cur *= 1.0 - 1.0 / at_risk as f64;
+        }
+        g_vals[idx] = g_cur.max(0.01);
+        at_risk -= 1;
+    }
+
+    let mut diffs = Vec::with_capacity(n);
+    for i in 0..n {
+        let p_pred = predicted_survival[i].clamp(0.0, 1.0);
+        let obs_y = if durations[i] > horizon { 1.0 } else { 0.0 };
+        if durations[i] > horizon || events[i] >= 0.5 {
+            let w_i = 1.0 / g_vals[i];
+            let diff = (obs_y - p_pred).abs() * w_i;
+            diffs.push(diff.min(1.0));
+        }
+    }
+
+    if diffs.is_empty() {
+        return Err("no evaluable observations for ICI at specified horizon".into());
+    }
+
+    diffs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let ici = diffs.iter().sum::<f64>() / diffs.len() as f64;
+    let e50 = diffs[diffs.len() / 2];
+    let e90 = diffs[((diffs.len() as f64 * 0.9).round() as usize).min(diffs.len() - 1)];
+    let emax = *diffs.last().unwrap();
+
+    Ok(IciReport {
+        horizon,
+        ici,
+        e50,
+        e90,
+        emax,
+    })
+}
+
+pub fn one_calibration(
+    durations: &[f64],
+    events: &[f64],
+    predicted_survival: &[f64],
+    horizon: f64,
+) -> Result<OneCalibrationReport, String> {
+    let n = durations.len();
+    if n == 0 || events.len() != n || predicted_survival.len() != n {
+        return Err("durations, events, and predicted_survival must have the same non-zero length".into());
+    }
+
+    let mut sum_x = 0.0;
+    let mut sum_y = 0.0;
+    let mut sum_xx = 0.0;
+    let mut sum_xy = 0.0;
+    let mut count = 0.0;
+
+    for i in 0..n {
+        if durations[i] > horizon || events[i] >= 0.5 {
+            let y_i = if durations[i] > horizon { 1.0 } else { 0.0 };
+            let p = predicted_survival[i].clamp(1e-4, 1.0 - 1e-4);
+            let x_i = (p / (1.0 - p)).ln();
+            sum_x += x_i;
+            sum_y += y_i;
+            sum_xx += x_i * x_i;
+            sum_xy += x_i * y_i;
+            count += 1.0;
+        }
+    }
+
+    if count < 3.0 {
+        return Err("insufficient observations for 1-calibration".into());
+    }
+
+    let mean_x = sum_x / count;
+    let mean_y = sum_y / count;
+    let var_x = (sum_xx / count) - (mean_x * mean_x);
+    let cov_xy = (sum_xy / count) - (mean_x * mean_y);
+
+    let slope = if var_x > 1e-9 { cov_xy / var_x } else { 1.0 };
+    let intercept = mean_y - slope * mean_x;
+
+    Ok(OneCalibrationReport {
+        horizon,
+        intercept,
+        slope,
+    })
+}
+
+pub fn competing_risks_calibration(
+    durations: &[f64],
+    events: &[f64],
+    predicted_cif: &std::collections::HashMap<usize, Vec<f64>>,
+    horizon: f64,
+) -> Result<CrCalibrationReport, String> {
+    let n = durations.len();
+    if n == 0 || events.len() != n {
+        return Err("durations and events must have the same non-zero length".into());
+    }
+
+    let mut cause_ici = std::collections::HashMap::new();
+    let mut cause_brier = std::collections::HashMap::new();
+
+    for (&cause, cif_vec) in predicted_cif {
+        if cif_vec.len() != n {
+            continue;
+        }
+        let mut diff_sum = 0.0;
+        let mut brier_sum = 0.0;
+        let mut valid_n = 0.0;
+
+        for i in 0..n {
+            let y_cause = if durations[i] <= horizon && (events[i].round() as usize) == cause {
+                1.0
+            } else {
+                0.0
+            };
+            let p = cif_vec[i].clamp(0.0, 1.0);
+            let diff = (y_cause - p).abs();
+            diff_sum += diff;
+            brier_sum += (y_cause - p).powi(2);
+            valid_n += 1.0;
+        }
+
+        if valid_n > 0.0 {
+            cause_ici.insert(cause, diff_sum / valid_n);
+            cause_brier.insert(cause, brier_sum / valid_n);
+        }
+    }
+
+    Ok(CrCalibrationReport {
+        horizon,
+        cause_ici,
+        cause_brier,
+    })
+}

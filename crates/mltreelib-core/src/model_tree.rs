@@ -244,6 +244,12 @@ pub struct ModelTreeParams {
     pub extratrees: bool,
     /// EBM FAST: prioritize or screen bivariate interaction pairs (Lou et al. 2013).
     pub ebm_fast: bool,
+    /// AFT parametric distribution (Weibull, LogNormal, LogLogistic).
+    pub aft_dist: crate::node_stats::AftDist,
+    /// Cure fraction for mixture cure rate leaves.
+    pub cure_fraction: Option<f64>,
+    /// Number of interior spline knots for Royston-Parmar leaves (default 3).
+    pub spline_knots: usize,
 }
 
 /// Fairness criterion evaluated when fairness_penalty > 0.
@@ -348,6 +354,9 @@ impl Default for ModelTreeParams {
             sporf_projections: 10,
             extratrees: false,
             ebm_fast: false,
+            aft_dist: crate::node_stats::AftDist::Weibull,
+            cure_fraction: None,
+            spline_knots: 3,
         }
     }
 }
@@ -1470,40 +1479,42 @@ impl ModelTree {
 
     /// Survival step probabilities S(t) across a given time grid.
     pub fn predict_survival(&self, x: &[Vec<Option<f64>>], times: &[f64]) -> Result<Vec<Vec<f64>>, String> {
-        if self.params.leaf_family != LeafFamily::Survival {
-            return Err("predict_survival requires leaf_family='survival'".into());
+        if !matches!(self.params.leaf_family, LeafFamily::Survival | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline) {
+            return Err("predict_survival requires leaf_family in ['survival', 'aft', 'cure', 'spline']".into());
         }
         Ok(x.iter()
             .map(|row| {
                 let node = &self.nodes[self.leaf_index(row)];
+                let f64_row: Vec<f64> = row.iter().map(|v| v.unwrap_or(0.0)).collect();
                 node.leaf
                     .as_ref()
                     .expect("tree invariant: leaf holds a model")
-                    .predict_survival_row(times)
+                    .predict_survival_row_with_x(times, Some(&f64_row))
             })
             .collect())
     }
 
     /// Cumulative hazard Lambda(t) across a given time grid.
     pub fn predict_hazard(&self, x: &[Vec<Option<f64>>], times: &[f64]) -> Result<Vec<Vec<f64>>, String> {
-        if self.params.leaf_family != LeafFamily::Survival {
-            return Err("predict_hazard requires leaf_family='survival'".into());
+        if !matches!(self.params.leaf_family, LeafFamily::Survival | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline) {
+            return Err("predict_hazard requires leaf_family in ['survival', 'aft', 'cure', 'spline']".into());
         }
         Ok(x.iter()
             .map(|row| {
                 let node = &self.nodes[self.leaf_index(row)];
+                let f64_row: Vec<f64> = row.iter().map(|v| v.unwrap_or(0.0)).collect();
                 node.leaf
                     .as_ref()
                     .expect("tree invariant: leaf holds a model")
-                    .predict_hazard_row(times)
+                    .predict_hazard_row_with_x(times, Some(&f64_row))
             })
             .collect())
     }
 
     /// Cause-specific Cumulative Incidence Function F_j(t) across a given time grid for competing risks.
     pub fn predict_cif(&self, x: &[Vec<Option<f64>>], times: &[f64], cause: usize) -> Result<Vec<Vec<f64>>, String> {
-        if self.params.leaf_family != LeafFamily::Survival {
-            return Err("predict_cif requires leaf_family='survival'".into());
+        if !matches!(self.params.leaf_family, LeafFamily::Survival | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline) {
+            return Err("predict_cif requires leaf_family in ['survival', 'aft', 'cure', 'spline']".into());
         }
         Ok(x.iter()
             .map(|row| {
@@ -1518,14 +1529,19 @@ impl ModelTree {
 
     /// Prognostic risk score or predicted median survival time per row.
     pub fn predict_risk(&self, x: &[Vec<Option<f64>>]) -> Result<Vec<f64>, String> {
-        if self.params.leaf_family != LeafFamily::Survival {
-            return Err("predict_risk requires leaf_family='survival'".into());
+        if !matches!(self.params.leaf_family, LeafFamily::Survival | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline) {
+            return Err("predict_risk requires leaf_family in ['survival', 'aft', 'cure', 'spline']".into());
         }
         Ok(x.iter()
             .map(|row| {
                 let node = &self.nodes[self.leaf_index(row)];
                 let leaf_model = node.leaf.as_ref().expect("tree invariant: leaf holds a model");
-                if let Some(surv) = &leaf_model.survival {
+                let f64_row: Vec<f64> = row.iter().map(|v| v.unwrap_or(0.0)).collect();
+                if let Some(aft) = &leaf_model.aft {
+                    -aft.predict_median(&f64_row)
+                } else if let Some(cure) = &leaf_model.cure {
+                    -(1.0 - cure.cure_rate)
+                } else if let Some(surv) = &leaf_model.survival {
                     -surv.median_time
                 } else {
                     -leaf_model.stats.mean

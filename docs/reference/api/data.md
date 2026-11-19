@@ -36,14 +36,14 @@ Returns: dict with `columns` (name -> values, None = missing), `target`,
 Raises:
     ValueError: invalid parameter combination.
 ## load_dataset
-```pythonload_dataset((name: 'str') -> 'dict')```
+```pythonload_dataset((name: 'str', auto_download: 'bool' = True) -> 'dict')```
 Load one dataset as ``name``/``columns``/``dtypes``/``n_rows``/``n_cols``.
 
 ``columns`` maps column name to a list with ``None`` for missing values;
 ``dtypes`` is "numeric" or "categorical" (strings/dictionaries).
 ## list_datasets
 ```pythonlist_datasets(() -> 'list[str]')```
-Names of the available benchmark datasets (parquet stems).
+Names of currently available local datasets (parquet stems in repo or cache).
 ## summarize
 ```pythonsummarize((values))```
 Summary of observed values, with missing counts shown by default.

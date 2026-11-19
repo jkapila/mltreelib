@@ -87,6 +87,12 @@ pub enum GainFn {
     GrayTest { cause: usize },
     /// Survival Brier score / proper separable scoring rule with IPCW (AISTATS 2025 SurvivalBoost).
     SurvivalBrier,
+    /// Jackknife pseudo-values for survival / RMST splitting (Schenk, Basten & Schmid 2024).
+    PseudoValue,
+    /// Restricted Mean Survival Time between-node difference (Liu & Li 2020/2021).
+    Rmst,
+    /// Parametric Accelerated Failure Time (AFT) deviance reduction (Chen et al. 2020).
+    AftDeviance,
     /// Tweedie unit quasi-deviance reduction for 1 < p < 2 zero-inflated continuous data.
     Tweedie { p: f64 },
     /// Dual-parameter Gaussian negative log-likelihood deviance reduction:
@@ -168,6 +174,9 @@ impl Clone for GainFn {
             GainFn::LogRankWeighted { scheme } => GainFn::LogRankWeighted { scheme: *scheme },
             GainFn::GrayTest { cause } => GainFn::GrayTest { cause: *cause },
             GainFn::SurvivalBrier => GainFn::SurvivalBrier,
+            GainFn::PseudoValue => GainFn::PseudoValue,
+            GainFn::Rmst => GainFn::Rmst,
+            GainFn::AftDeviance => GainFn::AftDeviance,
             GainFn::Tweedie { p } => GainFn::Tweedie { p: *p },
             GainFn::Heteroscedastic => GainFn::Heteroscedastic,
             GainFn::Tobit { threshold } => GainFn::Tobit { threshold: *threshold },
@@ -209,6 +218,9 @@ impl std::fmt::Debug for GainFn {
             GainFn::LogRankWeighted { scheme } => write!(f, "LogRankWeighted({:?})", scheme),
             GainFn::GrayTest { cause } => write!(f, "GrayTest(cause={})", cause),
             GainFn::SurvivalBrier => write!(f, "SurvivalBrier"),
+            GainFn::PseudoValue => write!(f, "PseudoValue"),
+            GainFn::Rmst => write!(f, "Rmst"),
+            GainFn::AftDeviance => write!(f, "AftDeviance"),
             GainFn::Tweedie { p } => write!(f, "Tweedie(p={})", p),
             GainFn::Heteroscedastic => write!(f, "Heteroscedastic"),
             GainFn::Tobit { threshold } => write!(f, "Tobit(threshold={})", threshold),
@@ -302,6 +314,9 @@ impl std::fmt::Debug for GainFn {
             | GainFn::LogRankWeighted { .. }
             | GainFn::GrayTest { .. }
             | GainFn::SurvivalBrier
+            | GainFn::PseudoValue
+            | GainFn::Rmst
+            | GainFn::AftDeviance
             | GainFn::Mob
             | GainFn::Ctree => {
                 // Specialized fast-scan criteria: auxiliary channels (treatment/event)

@@ -1460,6 +1460,66 @@ fn competing_risks_to_dict<'py>(py: Python<'py>, r: &CompetingRisksReport) -> Py
     Ok(d)
 }
 
+fn d_calibration_to_dict<'py>(py: Python<'py>, r: &mltreelib_core::metrics::DCalibrationReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("n_samples", r.n_samples)?;
+    d.set_item("n_bins", r.n_bins)?;
+    d.set_item("chi2_stat", r.chi2_stat)?;
+    d.set_item("p_value", r.p_value)?;
+    d.set_item("bin_counts", r.bin_counts.clone())?;
+    d.set_item("expected_count", r.expected_count)?;
+    d.set_item("is_calibrated", r.is_calibrated)?;
+    Ok(d)
+}
+
+fn ici_to_dict<'py>(py: Python<'py>, r: &mltreelib_core::metrics::IciReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("horizon", r.horizon)?;
+    d.set_item("ici", r.ici)?;
+    d.set_item("e50", r.e50)?;
+    d.set_item("e90", r.e90)?;
+    d.set_item("emax", r.emax)?;
+    Ok(d)
+}
+
+fn one_calibration_to_dict<'py>(py: Python<'py>, r: &mltreelib_core::metrics::OneCalibrationReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("horizon", r.horizon)?;
+    d.set_item("intercept", r.intercept)?;
+    d.set_item("slope", r.slope)?;
+    Ok(d)
+}
+
+fn cr_calibration_to_dict<'py>(py: Python<'py>, r: &mltreelib_core::metrics::CrCalibrationReport) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("horizon", r.horizon)?;
+    let ici_dict = PyDict::new(py);
+    for (&c, &v) in &r.cause_ici {
+        ici_dict.set_item(c, v)?;
+    }
+    d.set_item("cause_ici", ici_dict)?;
+    let brier_dict = PyDict::new(py);
+    for (&c, &v) in &r.cause_brier {
+        brier_dict.set_item(c, v)?;
+    }
+    d.set_item("cause_brier", brier_dict)?;
+    Ok(d)
+}
+
+fn extract_cif_map(obj: &Bound<'_, PyAny>) -> PyResult<std::collections::HashMap<usize, Vec<f64>>> {
+    if let Ok(map) = obj.extract::<std::collections::HashMap<usize, Vec<f64>>>() {
+        return Ok(map);
+    }
+    if let Ok(list_of_lists) = obj.extract::<Vec<Vec<f64>>>() {
+        let mut map = std::collections::HashMap::new();
+        for (i, row) in list_of_lists.into_iter().enumerate() {
+            map.insert(i + 1, row);
+        }
+        return Ok(map);
+    }
+    Err(PyTypeError::new_err("predicted_cif must be a dict {cause: [probabilities]} or list of lists"))
+}
+
 fn run_competing_risks_report(
     durations: &[f64],
     events: &[f64],
@@ -1710,6 +1770,80 @@ impl PyMetrics {
             times.as_deref(),
         ).map_err(PyValueError::new_err)?;
         Ok(competing_risks_to_dict(py, &r)?.unbind())
+    }
+
+    /// D-Calibration test (Haider et al. 2020) for survival distribution uniformity.
+    #[pyo3(signature = (durations, events, surv_at_durations, n_bins = 10))]
+    fn d_calibration(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        surv_at_durations: Vec<f64>,
+        n_bins: usize,
+    ) -> PyResult<Py<PyDict>> {
+        let r = mltreelib_core::metrics::d_calibration(&durations, &events, &surv_at_durations, n_bins)
+            .map_err(PyValueError::new_err)?;
+        Ok(d_calibration_to_dict(py, &r)?.unbind())
+    }
+
+    /// Integrated Calibration Index (Austin et al. 2020) at fixed horizon.
+    #[pyo3(signature = (durations, events, predicted_survival, horizon))]
+    fn integrated_calibration_index(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        predicted_survival: Vec<f64>,
+        horizon: f64,
+    ) -> PyResult<Py<PyDict>> {
+        let r = mltreelib_core::metrics::integrated_calibration_index(&durations, &events, &predicted_survival, horizon)
+            .map_err(PyValueError::new_err)?;
+        Ok(ici_to_dict(py, &r)?.unbind())
+    }
+
+    /// Alias for integrated_calibration_index.
+    #[pyo3(signature = (durations, events, predicted_survival, horizon))]
+    fn ici(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        predicted_survival: Vec<f64>,
+        horizon: f64,
+    ) -> PyResult<Py<PyDict>> {
+        self.integrated_calibration_index(py, durations, events, predicted_survival, horizon)
+    }
+
+    /// 1-Calibration slope and intercept (Austin et al. 2020) at fixed horizon.
+    #[pyo3(signature = (durations, events, predicted_survival, horizon))]
+    fn one_calibration(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        predicted_survival: Vec<f64>,
+        horizon: f64,
+    ) -> PyResult<Py<PyDict>> {
+        let r = mltreelib_core::metrics::one_calibration(&durations, &events, &predicted_survival, horizon)
+            .map_err(PyValueError::new_err)?;
+        Ok(one_calibration_to_dict(py, &r)?.unbind())
+    }
+
+    /// Competing risks calibration report across causes (Alberge et al. 2026).
+    #[pyo3(signature = (durations, events, predicted_cif, horizon))]
+    fn competing_risks_calibration(
+        &self,
+        py: Python<'_>,
+        durations: Vec<f64>,
+        events: Vec<f64>,
+        predicted_cif: Bound<'_, PyAny>,
+        horizon: f64,
+    ) -> PyResult<Py<PyDict>> {
+        let cif_map = extract_cif_map(&predicted_cif)?;
+        let r = mltreelib_core::metrics::competing_risks_calibration(&durations, &events, &cif_map, horizon)
+            .map_err(PyValueError::new_err)?;
+        Ok(cr_calibration_to_dict(py, &r)?.unbind())
     }
 
     /// Complete time series forecasting report (MAE, RMSE, MASE, sMAPE, WAPE, MDA, CRPS).
@@ -2345,6 +2479,9 @@ fn extract_leaf_control<'py>(
                         "softmax" => LeafFamily::Softmax,
                         "survival" => LeafFamily::Survival,
                         "heteroscedastic" => LeafFamily::Heteroscedastic,
+                        "aft" => LeafFamily::Aft,
+                        "cure" => LeafFamily::Cure,
+                        "spline" => LeafFamily::Spline,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2425,6 +2562,21 @@ fn extract_leaf_control<'py>(
                         other => return Err(PyValueError::new_err(format!("unrecognized leaf_na_policy '{other}' in control dict"))),
                     };
                 }
+                if let Some(item) = dict.get_item("aft_dist")? {
+                    let s = item.extract::<String>()?;
+                    c.aft_dist = match s.to_lowercase().as_str() {
+                        "weibull" => mltreelib_core::node_stats::AftDist::Weibull,
+                        "lognormal" | "log_normal" => mltreelib_core::node_stats::AftDist::LogNormal,
+                        "loglogistic" | "log_logistic" => mltreelib_core::node_stats::AftDist::LogLogistic,
+                        other => return Err(PyValueError::new_err(format!("unrecognized aft_dist '{other}' in control dict"))),
+                    };
+                }
+                if let Some(item) = dict.get_item("cure_fraction")? {
+                    c.cure_fraction = item.extract::<Option<f64>>()?;
+                }
+                if let Some(item) = dict.get_item("spline_knots")? {
+                    c.spline_knots = item.extract::<usize>()?;
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2442,6 +2594,9 @@ fn extract_leaf_control<'py>(
                             | "shrinkage"
                             | "max_classes"
                             | "leaf_na_policy"
+                            | "aft_dist"
+                            | "cure_fraction"
+                            | "spline_knots"
                     ) {
                         if let Ok(num) = v.extract::<f64>() {
                             c.extra.insert(key, num);
@@ -2491,6 +2646,9 @@ fn extract_leaf_control<'py>(
             "softmax" => LeafFamily::Softmax,
             "survival" => LeafFamily::Survival,
             "heteroscedastic" => LeafFamily::Heteroscedastic,
+            "aft" => LeafFamily::Aft,
+            "cure" => LeafFamily::Cure,
+            "spline" => LeafFamily::Spline,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2574,7 +2732,10 @@ impl PyLeafControl {
         n_classes = None,
         shrinkage = 0.0,
         max_classes = 256,
-        leaf_na_policy = "drop_fallback"
+        leaf_na_policy = "drop_fallback",
+        aft_dist = "weibull",
+        cure_fraction = None,
+        spline_knots = 3
     ))]
     fn new(
         leaf: &str,
@@ -2605,6 +2766,9 @@ impl PyLeafControl {
         shrinkage: f64,
         max_classes: usize,
         leaf_na_policy: &str,
+        aft_dist: &str,
+        cure_fraction: Option<f64>,
+        spline_knots: usize,
     ) -> PyResult<Self> {
         let kind = match leaf {
             "linear" => LeafKind::Linear,
@@ -2635,6 +2799,9 @@ impl PyLeafControl {
             "softmax" => LeafFamily::Softmax,
             "survival" => LeafFamily::Survival,
             "heteroscedastic" => LeafFamily::Heteroscedastic,
+            "aft" => LeafFamily::Aft,
+            "cure" => LeafFamily::Cure,
+            "spline" => LeafFamily::Spline,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let solver = match leaf_solver {
@@ -2661,6 +2828,12 @@ impl PyLeafControl {
         let mono = leaf_monotone.or(monotone).unwrap_or_default();
         let knn_var = mltreelib_core::knn::KnnVariant::from_str(knn_variant).map_err(PyValueError::new_err)?;
         let knn_met = mltreelib_core::knn::DistanceMetric::from_str(knn_metric, Some(knn_p)).map_err(PyValueError::new_err)?;
+        let aft_dist_enum = match aft_dist.to_lowercase().as_str() {
+            "weibull" => mltreelib_core::node_stats::AftDist::Weibull,
+            "lognormal" | "log_normal" => mltreelib_core::node_stats::AftDist::LogNormal,
+            "loglogistic" | "log_logistic" => mltreelib_core::node_stats::AftDist::LogLogistic,
+            other => return Err(PyValueError::new_err(format!("unrecognized aft_dist '{other}', expected 'weibull', 'lognormal', or 'loglogistic'"))),
+        };
         Ok(Self {
             inner: mltreelib_core::leaf::LeafControl {
                 leaf: kind,
@@ -2692,6 +2865,9 @@ impl PyLeafControl {
                 shrinkage,
                 max_classes,
                 leaf_na_policy: leaf_na_policy_enum,
+                aft_dist: aft_dist_enum,
+                cure_fraction,
+                spline_knots,
             },
         })
     }
@@ -2725,6 +2901,9 @@ impl PyLeafControl {
             LeafFamily::Softmax => "softmax".to_string(),
             LeafFamily::Survival => "survival".to_string(),
             LeafFamily::Heteroscedastic => "heteroscedastic".to_string(),
+            LeafFamily::Aft => "aft".to_string(),
+            LeafFamily::Cure => "cure".to_string(),
+            LeafFamily::Spline => "spline".to_string(),
         }
     }
 
@@ -3247,7 +3426,8 @@ impl PyModelTree {
         fairness_penalty = None, protected_col = None, fairness_metric = None,
         sporf_d = 0, sporf_projections = 10,
         extratrees = false, ebm_fast = false,
-        target_cause = 1
+        target_cause = 1,
+        aft_dist = "weibull", cure_fraction = None, spline_knots = 3
     ))]
     fn new(
         max_depth: usize,
@@ -3327,6 +3507,9 @@ impl PyModelTree {
         extratrees: bool,
         ebm_fast: bool,
         target_cause: usize,
+        aft_dist: &str,
+        cure_fraction: Option<f64>,
+        spline_knots: usize,
     ) -> PyResult<Self> {
         let mut max_depth = max_depth;
         let mut min_rows = min_rows;
@@ -3415,6 +3598,9 @@ impl PyModelTree {
             "softmax" => LeafFamily::Softmax,
             "survival" => LeafFamily::Survival,
             "heteroscedastic" => LeafFamily::Heteroscedastic,
+            "aft" => LeafFamily::Aft,
+            "cure" => LeafFamily::Cure,
+            "spline" => LeafFamily::Spline,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
@@ -3476,6 +3662,9 @@ impl PyModelTree {
                         "peto" | "peto_prentice" => GainFn::LogRankWeighted { scheme: LogRankWeight::PetoPrentice },
                         "gray" | "gray_test" | "logrank_cr" => GainFn::GrayTest { cause: target_cause },
                         "survival_brier" | "brier" => GainFn::SurvivalBrier,
+                        "pseudo_value" | "pseudovalue" | "pv" => GainFn::PseudoValue,
+                        "rmst" => GainFn::Rmst,
+                        "aft_deviance" | "aftdeviance" => GainFn::AftDeviance,
                         "tweedie" => GainFn::Tweedie { p: tweedie_p },
                         "heteroscedastic" | "gaussian_nll" | "ngboost" => GainFn::Heteroscedastic,
                         "tobit" => GainFn::Tobit { threshold: tobit_threshold },
@@ -3505,7 +3694,7 @@ impl PyModelTree {
                         }
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tarone_ware', 'peto', 'gray', 'survival_brier', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale', 'mob', 'ctree', 'energy_distance', 'mmd', 'wasserstein', 'hellinger', 'maxstat', 'fair' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tarone_ware', 'peto', 'gray', 'survival_brier', 'pseudo_value', 'rmst', 'aft_deviance', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale', 'mob', 'ctree', 'energy_distance', 'mmd', 'wasserstein', 'hellinger', 'maxstat', 'fair' or a callable, got {other}"
                             )))
                         }
                     }
@@ -3520,7 +3709,7 @@ impl PyModelTree {
                 }
             }
         };
-        if family == LeafFamily::Gaussian && matches!(gain_fn, GainFn::LogRank | GainFn::LogRankWeighted { .. } | GainFn::GrayTest { .. } | GainFn::SurvivalBrier) {
+        if family == LeafFamily::Gaussian && matches!(gain_fn, GainFn::LogRank | GainFn::LogRankWeighted { .. } | GainFn::GrayTest { .. } | GainFn::SurvivalBrier | GainFn::PseudoValue | GainFn::Rmst | GainFn::AftDeviance) {
             family = LeafFamily::Survival;
         }
         let order = match &cat_order {
@@ -3695,6 +3884,14 @@ impl PyModelTree {
             sporf_projections,
             extratrees,
             ebm_fast,
+            aft_dist: match aft_dist.to_lowercase().as_str() {
+                "weibull" => mltreelib_core::node_stats::AftDist::Weibull,
+                "lognormal" | "log_normal" => mltreelib_core::node_stats::AftDist::LogNormal,
+                "loglogistic" | "log_logistic" => mltreelib_core::node_stats::AftDist::LogLogistic,
+                other => return Err(PyValueError::new_err(format!("unrecognized aft_dist '{other}', expected 'weibull', 'lognormal', or 'loglogistic'"))),
+            },
+            cure_fraction,
+            spline_knots,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(
@@ -3739,6 +3936,9 @@ impl PyModelTree {
             params.mars_penalty = ctrl.mars_penalty;
             params.tweedie_p = ctrl.tweedie_p;
             params.tobit_threshold = ctrl.tobit_threshold;
+            params.aft_dist = ctrl.aft_dist;
+            params.cure_fraction = ctrl.cure_fraction;
+            params.spline_knots = ctrl.spline_knots;
         }
         Ok(Self {
             params,
@@ -5140,6 +5340,9 @@ impl PyModelTree {
                 LeafFamily::Softmax => "softmax",
                 LeafFamily::Survival => "survival",
                 LeafFamily::Heteroscedastic => "heteroscedastic",
+                LeafFamily::Aft => "aft",
+                LeafFamily::Cure => "cure",
+                LeafFamily::Spline => "spline",
             },
         )?;
         d.set_item("l1", self.params.l1)?;
@@ -6361,6 +6564,67 @@ fn competing_risks_report<'py>(
     competing_risks_to_dict(py, &r)
 }
 
+/// D-Calibration test (Haider et al. 2020) for survival distribution uniformity.
+#[pyfunction]
+#[pyo3(signature = (durations, events, surv_at_durations, n_bins = 10))]
+fn d_calibration<'py>(
+    py: Python<'py>,
+    durations: Vec<f64>,
+    events: Vec<f64>,
+    surv_at_durations: Vec<f64>,
+    n_bins: usize,
+) -> PyResult<Bound<'py, PyDict>> {
+    let r = mltreelib_core::metrics::d_calibration(&durations, &events, &surv_at_durations, n_bins)
+        .map_err(PyValueError::new_err)?;
+    d_calibration_to_dict(py, &r)
+}
+
+/// Integrated Calibration Index (Austin et al. 2020) at fixed horizon.
+#[pyfunction]
+#[pyo3(signature = (durations, events, predicted_survival, horizon))]
+fn integrated_calibration_index<'py>(
+    py: Python<'py>,
+    durations: Vec<f64>,
+    events: Vec<f64>,
+    predicted_survival: Vec<f64>,
+    horizon: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    let r = mltreelib_core::metrics::integrated_calibration_index(&durations, &events, &predicted_survival, horizon)
+        .map_err(PyValueError::new_err)?;
+    ici_to_dict(py, &r)
+}
+
+/// 1-Calibration slope and intercept (Austin et al. 2020) at fixed horizon.
+#[pyfunction]
+#[pyo3(signature = (durations, events, predicted_survival, horizon))]
+fn one_calibration<'py>(
+    py: Python<'py>,
+    durations: Vec<f64>,
+    events: Vec<f64>,
+    predicted_survival: Vec<f64>,
+    horizon: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    let r = mltreelib_core::metrics::one_calibration(&durations, &events, &predicted_survival, horizon)
+        .map_err(PyValueError::new_err)?;
+    one_calibration_to_dict(py, &r)
+}
+
+/// Competing risks calibration report across causes (Alberge et al. 2026).
+#[pyfunction]
+#[pyo3(signature = (durations, events, predicted_cif, horizon))]
+fn competing_risks_calibration<'py>(
+    py: Python<'py>,
+    durations: Vec<f64>,
+    events: Vec<f64>,
+    predicted_cif: Bound<'_, PyAny>,
+    horizon: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    let cif_map = extract_cif_map(&predicted_cif)?;
+    let r = mltreelib_core::metrics::competing_risks_calibration(&durations, &events, &cif_map, horizon)
+        .map_err(PyValueError::new_err)?;
+    cr_calibration_to_dict(py, &r)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMarsRegressor>()?;
@@ -6411,5 +6675,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(windowed_transform, m)?)?;
     m.add_function(wrap_pyfunction!(fast_interaction_screen, m)?)?;
     m.add_function(wrap_pyfunction!(competing_risks_report, m)?)?;
+    m.add_function(wrap_pyfunction!(d_calibration, m)?)?;
+    m.add_function(wrap_pyfunction!(integrated_calibration_index, m)?)?;
+    m.add_function(wrap_pyfunction!(one_calibration, m)?)?;
+    m.add_function(wrap_pyfunction!(competing_risks_calibration, m)?)?;
     Ok(())
 }

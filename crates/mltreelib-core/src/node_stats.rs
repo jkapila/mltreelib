@@ -390,6 +390,168 @@ pub struct CausalStats {
     pub w_control: f64,
 }
 
+/// Parametric distribution for Accelerated Failure Time (AFT) models.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum AftDist {
+    #[default]
+    Weibull,
+    LogNormal,
+    LogLogistic,
+}
+
+/// Fitted parametric Accelerated Failure Time (AFT) model for a leaf.
+/// Models ln(T) = intercept + sum(coef_j * x_j) + scale * epsilon.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AftModel {
+    pub dist: AftDist,
+    pub intercept: f64,
+    pub coef: Vec<f64>,
+    pub cols: Vec<usize>,
+    pub scale: f64,
+}
+
+impl AftModel {
+    pub fn linear_predictor(&self, x: &[f64]) -> f64 {
+        let mut eta = self.intercept;
+        for (k, &col) in self.cols.iter().enumerate() {
+            if col < x.len() && !x[col].is_nan() {
+                eta += self.coef[k] * x[col];
+            }
+        }
+        eta
+    }
+
+    pub fn predict_survival(&self, x: &[f64], t: f64) -> f64 {
+        if t <= 0.0 {
+            return 1.0;
+        }
+        let eta = self.linear_predictor(x);
+        let sigma = self.scale.max(1e-4);
+        let z = (t.ln() - eta) / sigma;
+        match self.dist {
+            AftDist::Weibull => {
+                (-z.exp()).exp().clamp(0.0, 1.0)
+            }
+            AftDist::LogNormal => {
+                (1.0 - std_norm_cdf(z)).clamp(0.0, 1.0)
+            }
+            AftDist::LogLogistic => {
+                (1.0 / (1.0 + z.exp())).clamp(0.0, 1.0)
+            }
+        }
+    }
+
+    pub fn predict_cumulative_hazard(&self, x: &[f64], t: f64) -> f64 {
+        let s = self.predict_survival(x, t).max(1e-15);
+        -s.ln()
+    }
+
+    pub fn predict_median(&self, x: &[f64]) -> f64 {
+        let eta = self.linear_predictor(x);
+        let sigma = self.scale.max(1e-4);
+        match self.dist {
+            AftDist::Weibull => {
+                let z = (2.0f64.ln()).ln();
+                (eta + sigma * z).exp()
+            }
+            AftDist::LogNormal => {
+                eta.exp()
+            }
+            AftDist::LogLogistic => {
+                eta.exp()
+            }
+        }
+    }
+}
+
+/// Fitted mixture cure rate model for a leaf.
+/// Models S(t | x) = cure_rate + (1 - cure_rate) * S_uncured(t | x).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CureModel {
+    pub cure_rate: f64,
+    pub aft: Option<AftModel>,
+    pub survival: Option<SurvivalStats>,
+}
+
+impl CureModel {
+    pub fn predict_survival(&self, x: &[f64], t: f64) -> f64 {
+        let pi = self.cure_rate.clamp(0.0, 1.0);
+        let s_u = if let Some(aft) = &self.aft {
+            aft.predict_survival(x, t)
+        } else if let Some(surv) = &self.survival {
+            if surv.times.is_empty() {
+                1.0
+            } else {
+                match surv.times.binary_search_by(|v| v.partial_cmp(&t).unwrap()) {
+                    Ok(idx) => surv.survival[idx],
+                    Err(0) => 1.0,
+                    Err(idx) => surv.survival[idx - 1],
+                }
+            }
+        } else {
+            1.0
+        };
+        (pi + (1.0 - pi) * s_u).clamp(0.0, 1.0)
+    }
+
+    pub fn predict_cumulative_hazard(&self, x: &[f64], t: f64) -> f64 {
+        let s = self.predict_survival(x, t).max(1e-15);
+        -s.ln()
+    }
+}
+
+/// Fitted Royston-Parmar restricted cubic spline model for a leaf.
+/// Models ln(Lambda(t | x)) = s(ln t; gamma) + beta^T x.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SplineSurvivalModel {
+    pub knots: Vec<f64>,
+    pub gamma: Vec<f64>,
+    pub coef: Vec<f64>,
+    pub cols: Vec<usize>,
+}
+
+impl SplineSurvivalModel {
+    pub fn predict_survival(&self, x: &[f64], t: f64) -> f64 {
+        if t <= 0.0 {
+            return 1.0;
+        }
+        let ln_t = t.ln();
+        let mut s_val = self.gamma.first().copied().unwrap_or(0.0);
+        if self.gamma.len() > 1 {
+            s_val += self.gamma[1] * ln_t;
+        }
+        if self.knots.len() >= 3 && self.gamma.len() >= 3 {
+            let k_min = self.knots[0];
+            let k_max = *self.knots.last().unwrap();
+            for j in 1..(self.knots.len() - 1) {
+                if j + 1 < self.gamma.len() {
+                    let kj = self.knots[j];
+                    let lam = (k_max - kj) / (k_max - k_min);
+                    let term1 = (ln_t - kj).max(0.0).powi(3);
+                    let term2 = lam * (ln_t - k_min).max(0.0).powi(3);
+                    let term3 = (1.0 - lam) * (ln_t - k_max).max(0.0).powi(3);
+                    let basis = term1 - term2 - term3;
+                    s_val += self.gamma[j + 1] * basis;
+                }
+            }
+        }
+        let mut cov_val = 0.0;
+        for (k, &col) in self.cols.iter().enumerate() {
+            if col < x.len() && !x[col].is_nan() && k < self.coef.len() {
+                cov_val += self.coef[k] * x[col];
+            }
+        }
+        let ln_cum_hazard = (s_val + cov_val).clamp(-30.0, 30.0);
+        let cum_hazard = ln_cum_hazard.exp();
+        (-cum_hazard).exp().clamp(0.0, 1.0)
+    }
+
+    pub fn predict_cumulative_hazard(&self, x: &[f64], t: f64) -> f64 {
+        let s = self.predict_survival(x, t).max(1e-15);
+        -s.ln()
+    }
+}
+
 /// Leaf payload: distribution stats always; a linear model for model-tree
 /// leaves (`None` for mean/CART leaves).
 #[derive(Clone, Debug)]
@@ -404,6 +566,9 @@ pub struct LeafModel {
     pub survival: Option<SurvivalStats>,
     pub heteroscedastic: Option<HeteroscedasticModel>,
     pub causal: Option<CausalStats>,
+    pub aft: Option<AftModel>,
+    pub cure: Option<CureModel>,
+    pub spline: Option<SplineSurvivalModel>,
     pub mars: Option<crate::mars::MarsModel>,
     pub mars_cols: Option<Vec<usize>>,
     pub knn: Option<crate::knn::LeafKnnModel>,
@@ -615,6 +780,19 @@ impl LeafModel {
 
     /// Predict survival step probabilities S(t) across a given time grid.
     pub fn predict_survival_row(&self, times: &[f64]) -> Vec<f64> {
+        self.predict_survival_row_with_x(times, None)
+    }
+
+    pub fn predict_survival_row_with_x(&self, times: &[f64], x: Option<&[f64]>) -> Vec<f64> {
+        if let (Some(aft), Some(x_row)) = (&self.aft, x) {
+            return times.iter().map(|&t| aft.predict_survival(x_row, t)).collect();
+        }
+        if let (Some(cure), Some(x_row)) = (&self.cure, x) {
+            return times.iter().map(|&t| cure.predict_survival(x_row, t)).collect();
+        }
+        if let (Some(spline), Some(x_row)) = (&self.spline, x) {
+            return times.iter().map(|&t| spline.predict_survival(x_row, t)).collect();
+        }
         let Some(surv) = &self.survival else {
             return vec![1.0; times.len()];
         };
@@ -636,6 +814,19 @@ impl LeafModel {
 
     /// Predict cumulative hazard Lambda(t) across a given time grid.
     pub fn predict_hazard_row(&self, times: &[f64]) -> Vec<f64> {
+        self.predict_hazard_row_with_x(times, None)
+    }
+
+    pub fn predict_hazard_row_with_x(&self, times: &[f64], x: Option<&[f64]>) -> Vec<f64> {
+        if let (Some(aft), Some(x_row)) = (&self.aft, x) {
+            return times.iter().map(|&t| aft.predict_cumulative_hazard(x_row, t)).collect();
+        }
+        if let (Some(cure), Some(x_row)) = (&self.cure, x) {
+            return times.iter().map(|&t| cure.predict_cumulative_hazard(x_row, t)).collect();
+        }
+        if let (Some(spline), Some(x_row)) = (&self.spline, x) {
+            return times.iter().map(|&t| spline.predict_cumulative_hazard(x_row, t)).collect();
+        }
         let Some(surv) = &self.survival else {
             return vec![0.0; times.len()];
         };
@@ -1502,7 +1693,7 @@ pub(crate) fn fit_glm_imputed(
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
             LeafFamily::Probit => std_norm_inv_cdf(mean),
             LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
-            LeafFamily::Gaussian | LeafFamily::Tobit | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => mean,
+            LeafFamily::Gaussian | LeafFamily::Tobit | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => mean,
         },
         summary: None,
     };
@@ -1609,7 +1800,7 @@ pub(crate) fn fit_glm_imputed(
                     };
                     gram.add_row(&row, y_latent, w[r]);
                 }
-                LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic => {
+                LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
                     gram.add_row(&row, y[r], w[r]);
                 }
             }
