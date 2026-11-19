@@ -13,6 +13,8 @@ uv run python examples/metrics_showcase.py
 
 The script fits `ModelTree` on raw categorical labels and evaluates a held-out slice. It computes its comparison baseline from the training outcomes. The break-down chart uses a separately fitted numeric-only model because `break_down` rejected raw strings in a tested mixed row. A threshold of 0.5 is illustrative; select operational thresholds on validation data. The [evaluation pathway](../guides/evaluation.md) demonstrates that sequence with reproducible synthetic data.
 
+![Evaluation Metrics Multi-Panel Surface](../assets/metrics_panels.png)
+
 ## The chart surface
 
 All sixteen charts from `mltreelib.plots` render as click-to-zoom figures in [Visualization Reference](../reference/plots.md):

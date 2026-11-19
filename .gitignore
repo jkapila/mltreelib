@@ -145,26 +145,32 @@ site/
 examples/out/
 catboost_info/
 
-# local tooling / scratch (never commit)
-.omp/
-.scratch/
+# Agent instructions, IDE rules, and local assistant configs
+AGENTS.md
+CLAUDE.md
+CODEBUDDY.md
+GEMINI.md
+QODER.md
+.cursorrules
+.windsurfrules
 .agents/
-skills-lock.json
-home/
-.gitconfig
 .claude/
 .codebuddy/
-.cursorrules
+.codex/
 .gemini/
 .github/instructions/
 .kiro/
 .mcp.json
 .qoder/
-.windsurfrules
-CODEBUDDY.md
-GEMINI.md
-QODER.md
 opencode.jsonc
+skills-lock.json
+
+# local tooling, caches & scratch (never commit)
+.omp/
+.scratch/
+.ruff_cache/
+home/
+.gitconfig
 
 # vendored legacy material and local experiments
 legacy/
@@ -174,7 +180,8 @@ benchmarks/cla_preds/
 benchmarks/elo_cla_data/
 benchmarks/elo_reg_data/
 
-
+# loose demo artifacts
+/churn_evaluation_dashboard.png
 /churn_tree.svg
 /churn_tree.dot
 
