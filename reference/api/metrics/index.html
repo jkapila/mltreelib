@@ -2549,6 +2549,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricscompeting_risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.competing_risks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsdecile_table" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3038,6 +3049,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metricscompeting_risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics.competing_risks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metricsdecile_table" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3314,6 +3336,17 @@ Task: classification.</p>
 <p>Returns: <code>{"n", "n_classes", "accuracy", "balanced_accuracy",
 "precision_macro/micro/weighted", "recall_*", "f1_*", "mcc",
 "jaccard_macro/micro/weighted", "hamming_loss", "zero_one_loss"}</code>.</p>
+<h3 id="metricscompeting_risks">Metrics.competing_risks<a class="headerlink" href="#metricscompeting_risks" title="Permanent link">&para;</a></h3>
+<p><code>pythoncompeting_risks((self, /, durations, events, cif_curves=None, risk_scores=None, times=None))</code>
+Complete competing risks report for multi-cause survival endpoints:
+cause-specific Harrell's C, Uno's IPCW C, cause-specific IBS and
+time-dependent Brier scores over specified or sample decile evaluation horizons.</p>
+<p>Args:
+    durations: observed follow-up times.
+    events: event indicators (0 = censored, 1..J = mutually exclusive causes).
+    cif_curves: optional CIF curves mapping {cause: (N, T)} or 3D list (N, n_causes, T).
+    risk_scores: optional risk scores mapping {cause: (N,)} or 2D list (N, n_causes).
+    times: optional evaluation horizon times grid.</p>
 <h3 id="metricsdecile_table">Metrics.decile_table<a class="headerlink" href="#metricsdecile_table" title="Permanent link">&para;</a></h3>
 <p><code>pythondecile_table((self, /, y_true, scores, n_buckets=10))</code>
 Decile profile (kds/PerfScoreCard decile table; modelplotpy response at

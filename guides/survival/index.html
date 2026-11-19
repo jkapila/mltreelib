@@ -634,6 +634,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-competing-risks-and-multi-cause-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Competing risks and multi-cause endpoints
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps-and-references" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2800,6 +2811,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-competing-risks-and-multi-cause-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Competing risks and multi-cause endpoints
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps-and-references" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2953,8 +2975,39 @@
 <p><img alt="Held-out censoring-aware Brier scores" src="../../assets/guides/survival-evaluation.svg" /></p>
 <p>The Brier score compares predicted survival probabilities with event outcomes at a fixed horizon. Inverse probability of censoring weights (IPCW) account for records censored before that horizon. Lower is better. This simulation uses the <strong>known</strong> censoring distribution. Real data requires a justified censoring model estimated without using the test outcomes for model selection, adequate follow-up, and positive censoring survival at each evaluated horizon. Conditional censoring requires appropriate conditional weights; a single global curve can be wrong.</p>
 <p>The script also compares predictions with the known synthetic survival probability. Real individual survival probabilities are not observed. Check discrimination and horizon-specific calibration on real held-out data, with uncertainty and risk-set sizes. This example implements the evaluation calculation locally; it does not claim an IPCW metric API exists in the package. See <a href="https://doi.org/10.1002/(SICI)1097-0258(19990915/30)18:17/18%3C2529::AID-SIM274%3E3.0.CO;2-5">Graf et al. (1999)</a>.</p>
+<h2 id="5-competing-risks-and-multi-cause-endpoints">5. Competing risks and multi-cause endpoints<a class="headerlink" href="#5-competing-risks-and-multi-cause-endpoints" title="Permanent link">&para;</a></h2>
+<p>When subjects can experience mutually exclusive event causes (e.g. disease relapse vs treatment-related mortality), treating competing events as ordinary censoring violates the independent censoring assumption and overestimates cumulative incidence by 20–50%.</p>
+<p><code>mltreelib</code> implements native competing risks trees:
+- <strong>Split Criterion</strong>: Gray's subdistribution log-rank test (<code>gain="gray", target_cause=j</code>) maintaining subjects who experienced competing events in the risk set.
+- <strong>Leaf Estimators</strong>: Aalen-Johansen multi-state estimator guaranteeing the probability simplex identity: <span class="arithmatex">\(\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) = 1.0\)</span>.
+- <strong>Unified Prediction API</strong>: <code>tree.predict(X, kind="cif", times=times, cause=1)</code> and <code>tree.predict(X, kind="risk")</code>.
+- <strong>Validation</strong>: <code>Metrics().competing_risks(...)</code> computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier score matrices.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">target_cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="p">(</span><span class="n">durations_train</span><span class="p">,</span> <span class="n">events_train</span><span class="p">))</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Evaluate Aalen-Johansen CIF at specified horizons</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">]</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">cif_cause1</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">cif_cause2</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">surv</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Compute full IPCW competing risks performance report</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">report</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">competing_risks</span><span class="p">(</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">durations</span><span class="o">=</span><span class="n">durations_test</span><span class="p">,</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="n">events</span><span class="o">=</span><span class="n">events_test</span><span class="p">,</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="n">cif_curves</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">cif_cause1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">cif_cause2</span><span class="p">},</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="p">)</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 Harrell C:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_c_indices"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 Uno IPCW C:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_uno_c_indices"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 IBS:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_ibs"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+</span></code></pre></div>
 <h2 id="next-steps-and-references">Next steps and references<a class="headerlink" href="#next-steps-and-references" title="Permanent link">&para;</a></h2>
-<p><a href="../../examples/survival-trees/">Survival trees</a> · <a href="https://doi.org/10.1080/01621459.1958.10501452">Kaplan and Meier (1958)</a></p>
+<p><a href="../../examples/survival-trees/">Survival trees</a> · <a href="https://doi.org/10.1080/01621459.1958.10501452">Kaplan and Meier (1958)</a> · <a href="https://doi.org/10.1214/aos/1176344247">Aalen (1978)</a> · <a href="https://doi.org/10.1214/aos/1176350951">Gray (1988)</a></p>
 
 
 
