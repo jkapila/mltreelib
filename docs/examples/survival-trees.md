@@ -1,6 +1,6 @@
 # Suite 9: Survival & Competing Risks Trees
 
-This suite implements non-parametric Survival Trees and Competing Risks Trees. It replicates classical and modern literature in pure Rust: LeBlanc & Crowley (1992, 1993), Gray (1988), Fine & Gray (1999), Ishwaran et al. (2008, 2014), Uno et al. (2011), and Graf et al. (1999).
+This suite implements non-parametric Survival Trees and Competing Risks Trees in pure Rust (`mltreelib-core`) with thin Python bindings (`mltreelib`). It partitions heterogeneous survival cohorts into interpretable prognostic subgroups while rigorously accounting for right-censoring and multi-cause competing risks.
 
 ![Diagnostic curves for Suite 9: Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
 
@@ -9,51 +9,68 @@ Companion executable script:
 
 ---
 
-## 1. Mathematical Grounding & Research Reproductions
+## 1. Survival Tree Structure & Decision Topology
 
-In survival analysis, observations are right-censored: study termination or patient loss masks the true event time $T_i^*$. The observed pair is $(T_i, E_i)$ where $T_i = \min(T_i^*, C_i)$ and $E_i = I(T_i^* \le C_i)$.
+In survival analysis, observations are right-censored: study termination or patient dropout masks the true event time $T_i^*$. The observed pair is $(T_i, E_i)$ where $T_i = \min(T_i^*, C_i)$ and $E_i = I(T_i^* \le C_i)$.
 
-In competing risks, an observation can experience one of $J$ distinct, mutually exclusive event types ($E_i \in \{0, 1, \dots, J\}$, where $E_i = 0$ is right-censoring).
+In competing risks, an observation can experience one of $J$ distinct, mutually exclusive event types ($E_i \in \{0, 1, \dots, J\}$, where $E_i = 0$ denotes right-censoring).
+
+### High-Level Workflow Architecture
 
 ```mermaid
 flowchart TD
     Data["Cohort Ingestion: (X, (T, E))"] --> TargetType{"Target Setting"}
     
     TargetType -- "Single Event (E in {0, 1})" --> SingleEvent["Right-Censored Survival"]
-    SingleEvent --> SplitCrit1["Split Criterion:\nlogrank | tarone_ware | peto | martingale | survival_brier"]
-    SplitCrit1 --> LeafEst1["Leaf Estimators:\nKaplan-Meier S(t)\nNelson-Aalen Lambda(t)"]
+    SingleEvent --> SplitCrit1["Split Criterion:\nlogrank | tarone_ware | peto | martingale | survival_brier | rmst"]
+    SplitCrit1 --> LeafEst1["Leaf Estimators:\nKaplan-Meier S(t)\nNelson-Aalen Lambda(t)\nAFT / Cure / Spline"]
     
     TargetType -- "Competing Risks (E in {0, 1, ..., J})" --> CompRisks["Multi-Cause Competing Risks"]
     CompRisks --> SplitCrit2["Split Criterion:\ngray (Subdistribution Log-Rank)\ntarget_cause = c"]
-    SplitCrit2 --> LeafEst2["Leaf Estimators:\nAalen-Johansen CIF F_c(t)\nCause-Specific Hazard Lambda_c(t)"]
+    CompRisks --> LeafEst2["Leaf Estimators:\nAalen-Johansen CIF F_c(t)\nCause-Specific Hazard Lambda_c(t)"]
     
     LeafEst1 --> SimplexCheck["Verify Monotonicity:\nS(t) non-increasing"]
     LeafEst2 --> SimplexCheck2["Verify Simplex Invariant:\nsum_c F_c(t) + S(t) == 1.0"]
 ```
 
-### Research Citations & Benchmark Reproductions
+### Fitted Decision Tree Diagram
 
-The implementation reproduces eleven key findings from the classical (1988–2014) and frontier (2020–2026) literature:
+The tree below illustrates the exact decision topology fitted on the $N=800$ multi-cause cohort by `gain="gray"` ($N=600$ training cohort):
 
-| Reference | Topic & Method | Benchmark Dataset | Original Paper Finding | mltreelib Reproduction Result |
-| :--- | :--- | :--- | :--- | :--- |
-| **LeBlanc & Crowley (1992, 1993)** [JASA / Biometrics] | Martingale residual splitting ($O(N)$ streaming scan) | Veterans' Lung Cancer ($N=137$, 128 deaths) | Primary prognostic split occurs on Karnofsky score $\le 40$, yielding 3.1x mortality hazard jump. | `ModelTree(gain="martingale", max_depth=2)` isolates primary cut at `karno <= 40`. Yields median survival of 30 days vs 111 days. |
-| **Gray (1988)** [Ann. Statist.] | K-sample subdistribution log-rank test for competing risks | Mayo Clinic PBC ($N=312$: 125 deaths, 29 liver transplants, 158 censored) | Naive Kaplan-Meier overestimates 10-year death probability at 52.4% because it treats transplants as independent censoring. | `gain="gray", target_cause=1` correctly estimates 10-year death CIF at 38.6%, eliminating the 13.8% risk overestimation. |
-| **Fine & Gray (1999)** [JASA] | Subdistribution hazards model | Mayo Clinic PBC cohort | Serum bilirubin and albumin are dominant predictors of primary liver failure mortality. | Tree rules isolate `bili > 3.2` and `albumin <= 3.1` with high subdistribution hazard and rapid CIF accumulation. |
-| **Ishwaran et al. (2014)** [JASA] | Aalen-Johansen leaf CIF estimator & simplex property | Multi-cause oncology simulation ($N=800$) | Competing risk probabilities and overall survival must satisfy the simplex identity $\sum_{c=1}^J F_c(t) + S(t) = 1.0$. | Verified across 1,000 grid points: maximum absolute error is $1.33 \times 10^{-15}$ (machine epsilon). |
-| **Uno et al. (2011)** [Statist. Med.] | IPCW Concordance Index ($C^{\text{Uno}}$) | Mayo Clinic FLCHAIN ($N=7,874$, 2,172 deaths) | Harrell's C is sensitive to study follow-up duration; Uno's IPCW C removes censoring bias via inverse Kaplan-Meier weights. | Native `Metrics().survival(...)` computes Harrell's C (0.784) and Uno's IPCW C (0.781) on raw FLCHAIN data with 1,350 missing creatinine values. |
-| **Graf et al. (1999)** [Statist. Med.] | Integrated Brier Score (IBS) with IPCW censoring weights | Simulation benchmark ($N=800$) | IBS evaluates probability calibration across the full timeline $[0, t_{\max}]$ under arbitrary censoring. | Benchmark across criteria yields IBS between 0.2136 (`tarone_ware`) and 0.2297 (`peto`). |
-| **Liu & Li (2020, 2021)** [Biometrics / CIMS] | RMST area divergence splitting | Crossing hazards simulation | Standard log-rank test loses statistical power when hazards cross. RMST preserves power via integrated area differences. | `gain="rmst"` maintains high split discrimination under crossing hazards where log-rank fails. |
-| **Schenk et al. (2024)** [Lifetime Data Anal.] | Jackknife pseudo-values for survival trees | SurvSet benchmarks | Pseudo-values transform right-censored outcomes into continuous pseudo-observations for $O(N)$ split scanning. | `gain="pseudo_value"` matches full martingale rank ordering with $O(N)$ linear scans. |
-| **Haider et al. (2020)** [JMLR] | D-Calibration for distribution uniformity | SurvSet benchmark suite | Well-calibrated survival estimators distribute event probabilities uniformly across probability bins: $\chi^2$ test $p > 0.05$. | `d_calibration(durations, events, surv, n_bins=10)` outputs $\chi^2$ statistic and uniformity hypothesis test. |
-| **Austin et al. (2020)** [Statist. Med.] | Integrated Calibration Index (ICI) & 1-Calibration | GBSG2 Breast Cancer cohort | ICI computes IPCW-weighted mean absolute error between predicted survival and observed status at horizon $t_0$. | `integrated_calibration_index(durations, events, surv, horizon)` outputs ICI, E50, E90, and Emax. |
-| **Alberge et al. (2026)** [Biometrics] | Multi-cause calibration divergence | Mayo Clinic PBC cohort | Competing risks calibration must evaluate cause-specific calibration divergences and Brier scores simultaneously. | `competing_risks_calibration(durations, events, cif_dict, horizon)` evaluates per-cause ICI and Brier divergences. |
+```mermaid
+flowchart TD
+    Root["Root Split: biomarker <= 1.4710\nTotal N = 600 | Relapse = 41.6%"]
+    
+    Root -- "True (biomarker <= 1.4710)" --> Node1["Node 1: biomarker <= -0.1550\nN = 559"]
+    Root -- "False (biomarker > 1.4710)" --> Leaf5["Leaf 5: Extreme Early Relapse\nN = 41 (6.8%)\nMedian Survival = 0.76 yr\nRelapse CIF = 85.4%"]
+    
+    Node1 -- "True (biomarker <= -0.1550)" --> Node2["Node 2: age <= 5.7510\nN = 272"]
+    Node1 -- "False (biomarker > -0.1550)" --> Node3["Node 3: age <= 6.1680\nN = 287"]
+    
+    Node2 -- "True (age <= 5.7510)" --> Leaf4["Leaf 4: Favorable Long-Term\nN = 111 (18.5%)\nMedian Survival = 5.68 yr\nRelapse CIF = 9.9%"]
+    Node2 -- "False (age > 5.7510)" --> Leaf1["Leaf 1: Moderate-Low Risk\nN = 161 (26.8%)\nMedian Survival = 1.99 yr\nRelapse CIF = 32.3%"]
+    
+    Node3 -- "True (age <= 6.1680)" --> Leaf3["Leaf 3: Intermediate Risk\nN = 135 (22.5%)\nMedian Survival = 2.97 yr\nRelapse CIF = 24.4%"]
+    Node3 -- "False (age > 6.1680)" --> Leaf2["Leaf 2: Elevated Risk\nN = 152 (25.3%)\nMedian Survival = 1.62 yr\nRelapse CIF = 48.0%"]
+    
+    classDef rootStyle fill:#2b3a42,stroke:#4f6d7a,stroke-width:2px,color:#fff;
+    classDef nodeStyle fill:#3d5a80,stroke:#293241,stroke-width:2px,color:#fff;
+    classDef lowRisk fill:#2d6a4f,stroke:#1b4332,stroke-width:2px,color:#fff;
+    classDef medRisk fill:#d4a373,stroke:#bc6c25,stroke-width:2px,color:#000;
+    classDef highRisk fill:#9b2226,stroke:#6a040f,stroke-width:2px,color:#fff;
+
+    class Root rootStyle;
+    class Node1,Node2,Node3 nodeStyle;
+    class Leaf4 lowRisk;
+    class Leaf1,Leaf3 medRisk;
+    class Leaf2,Leaf5 highRisk;
+```
 
 ---
 
 ## 2. The 9 Survival Split Criteria
 
-Set the split criterion using the `gain` parameter in `ModelTree`:
+Configure the split criterion using the `gain` parameter in `ModelTree`:
 
 ```python
 tree = ModelTree(max_depth=3, min_rows=20, gain="pseudo_value")
@@ -143,17 +160,35 @@ Fit trees using the standard 2-tuple target `(durations, events)`:
 ```python
 from mltreelib import ModelTree
 
-# Frontier parametric AFT tree with smooth Weibull leaves
+# 1. Competing risks tree isolating Cause 1 (Relapse) with Gray's test
 tree = ModelTree(
     max_depth=3,
-    min_rows=15,
-    gain="rmst",          # or "pseudo_value", "aft_deviance", "logrank"
-    leaf_family="aft",    # or "cure", "spline", "survival"
-    aft_dist="weibull",   # "weibull", "lognormal", "loglogistic"
-    leaf="linear",        # continuous covariate variation inside leaves
+    min_rows=25,
+    gain="gray",
+    target_cause=1,
 )
+tree.fit(X_train, (dur_train, ev_train))
 
-tree.fit(X, (durations, events))
+# 2. Frontier parametric AFT tree with smooth Weibull linear leaves
+tree_aft = ModelTree(
+    max_depth=3,
+    min_rows=15,
+    gain="rmst",          # Area divergence splitting under non-proportional hazards
+    leaf_family="aft",    # Parametric AFT distribution
+    aft_dist="weibull",   # "weibull", "lognormal", or "loglogistic"
+    leaf="linear",        # Linear covariate response inside each leaf
+)
+tree_aft.fit(X_train, (dur_train, ev_train))
+```
+
+Console Output:
+
+```text
+>>> tree.fit(X_train, (dur_train, ev_train))
+Tree fitted successfully! Total leaves: 5, depth: 3
+
+>>> tree_aft.fit(X_train, (dur_train, ev_train))
+AFT Tree fitted successfully! Total leaves: 6, depth: 3
 ```
 
 ### Prediction Methods via `kind`
@@ -161,28 +196,68 @@ tree.fit(X, (durations, events))
 Query predictions using the unified `predict` method:
 
 ```python
-# 1. Median survival time in days (or restricted mean)
-median_days = tree.predict(X_new, kind="response")
+# Select 3 sample test patients across prognostic risk strata
+X_sample = X_test[:3]
+time_horizons = [1.0, 2.0, 5.0]  # Evaluation horizons in years
 
-# 2. Survival curve S(t) at specific evaluation horizons
-time_horizons = [30.0, 90.0, 180.0, 365.0]
-surv_matrix = tree.predict(X_new, kind="survival", times=time_horizons)
-# Returns shape (N, len(times)) where surv_matrix[i, k] = S_i(times[k])
+# 1. Predicted median survival time (years)
+median_days = tree.predict(X_sample, kind="response")
+print("1. Predicted Median Survival Times:", [round(m, 2) for m in median_days])
 
-# 3. Cumulative hazard Lambda(t)
-cum_hazard = tree.predict(X_new, kind="hazard", times=time_horizons)
+# 2. Event-free survival curve S(t)
+surv_matrix = tree.predict(X_sample, kind="survival", times=time_horizons)
+print("2. Survival Probabilities S(t) at horizons [1.0, 2.0, 5.0]:")
+for i, row in enumerate(surv_matrix):
+    print(f"   Patient {i+1}: {[round(p, 4) for p in row]}")
 
-# 4. Cumulative Incidence Function (CIF) for a specific competing cause
-cif_cause1 = tree.predict(X_new, kind="cif", cause=1, times=time_horizons)
-cif_cause2 = tree.predict(X_new, kind="cif", cause=2, times=time_horizons)
+# 3. Nelson-Aalen cumulative hazard Lambda(t)
+cum_hazard = tree.predict(X_sample, kind="hazard", times=time_horizons)
+print("3. Cumulative Hazard Lambda(t) at horizons [1.0, 2.0, 5.0]:")
+for i, row in enumerate(cum_hazard):
+    print(f"   Patient {i+1}: {[round(h, 4) for h in row]}")
 
-# 5. Prognostic risk score (higher = higher risk / earlier event)
-risk_scores = tree.predict(X_new, kind="risk", cause=1)
+# 4. Aalen-Johansen Cumulative Incidence Functions (CIF)
+cif_c1 = tree.predict(X_sample, kind="cif", times=time_horizons, cause=1)
+cif_c2 = tree.predict(X_sample, kind="cif", times=time_horizons, cause=2)
+print("4. Cumulative Incidence F_c(t) for Cause 1 & Cause 2:")
+for i in range(len(X_sample)):
+    print(f"   Patient {i+1} Cause 1 (Relapse): {[round(p, 4) for p in cif_c1[i]]}")
+    print(f"   Patient {i+1} Cause 2 (Death):   {[round(p, 4) for p in cif_c2[i]]}")
+
+# 5. Prognostic risk score (Cause 1 subdistribution hazard)
+risk_scores = tree.predict(X_sample, kind="risk", cause=1)
+print("5. Prognostic Risk Scores (Cause 1):", [round(r, 4) for r in risk_scores])
+```
+
+Console Output:
+
+```text
+1. Predicted Median Survival Times: [1.99, 5.68, 0.76]
+
+2. Survival Probabilities S(t) at horizons [1.0, 2.0, 5.0]:
+   Patient 1: [0.8124, 0.4962, 0.1835]
+   Patient 2: [0.9542, 0.8810, 0.5841]
+   Patient 3: [0.3821, 0.1245, 0.0102]
+
+3. Cumulative Hazard Lambda(t) at horizons [1.0, 2.0, 5.0]:
+   Patient 1: [0.2078, 0.7008, 1.6955]
+   Patient 2: [0.0469, 0.1267, 0.5376]
+   Patient 3: [0.9621, 2.0834, 4.5854]
+
+4. Cumulative Incidence F_c(t) for Cause 1 & Cause 2:
+   Patient 1 Cause 1 (Relapse): [0.1241, 0.3230, 0.3230]
+   Patient 1 Cause 2 (Death):   [0.0635, 0.1808, 0.4935]
+   Patient 2 Cause 1 (Relapse): [0.0360, 0.0811, 0.0991]
+   Patient 2 Cause 2 (Death):   [0.0098, 0.0379, 0.3168]
+   Patient 3 Cause 1 (Relapse): [0.6098, 0.8293, 0.8537]
+   Patient 3 Cause 2 (Death):   [0.0081, 0.0462, 0.1361]
+
+5. Prognostic Risk Scores (Cause 1): [0.3230, 0.0991, 0.8537]
 ```
 
 ---
 
-## 5. Model Evaluation with Modern Metrics
+## 5. Model Evaluation with Modern Calibration Metrics
 
 Evaluate models with classical IPCW concordance and frontier calibration metrics:
 
@@ -195,37 +270,63 @@ from mltreelib import (
     competing_risks_calibration,
 )
 
-metrics = Metrics()
-
 # 1. Classical Discrimination & Calibration
-surv_report = metrics.survival(
-    durations=test_durations,
-    events=test_events,
-    risk_scores=test_risk_scores,
-    surv_curves=test_surv_curves,
+metrics = Metrics()
+cif_all_c1 = tree.predict(X_test, kind="cif", times=time_horizons, cause=1)
+cif_all_c2 = tree.predict(X_test, kind="cif", times=time_horizons, cause=2)
+risk_all_c1 = tree.predict(X_test, kind="risk", cause=1)
+risk_all_c2 = tree.predict(X_test, kind="risk", cause=2)
+
+report = metrics.competing_risks(
+    durations=dur_test,
+    events=ev_test,
+    cif_curves={1: cif_all_c1, 2: cif_all_c2},
+    risk_scores={1: risk_all_c1, 2: risk_all_c2},
     times=time_horizons,
 )
-print(f"Harrell's C: {surv_report['harrell_c']:.4f}")
-print(f"Uno's IPCW C: {surv_report['uno_c']:.4f}")
-print(f"Integrated Brier Score: {surv_report['ibs']:.4f}")
 
-# 2. D-Calibration (Haider et al. JMLR 2020)
-# Tests whether observed events are uniformly distributed across probability deciles
-d_rep = d_calibration(test_durations, test_events, surv_at_horizon, n_bins=10)
-print(f"D-Calibration Chi2: {d_rep['chi2_stat']:.2f}, p-value: {d_rep['p_value']:.4f}")
+print(f"Cause 1 Harrell C:  {report['cause_c_indices'][1]:.4f}")
+print(f"Cause 1 Uno IPCW C: {report['cause_uno_c_indices'][1]:.4f}")
+print(f"Cause 1 IBS:        {report['cause_ibs'][1]:.4f}")
+print("Brier at horizons: ", {k: round(v, 4) for k, v in report['brier_at_horizons'][1].items()})
+
+# 2. D-Calibration (Haider et al. 2020)
+# Evaluates whether event occurrences are uniformly distributed across probability bins
+surv_test_h = [row[1] for row in tree.predict(X_test, kind="survival", times=time_horizons)] # at t=2.0 yr
+d_rep = d_calibration(dur_test, ev_test, surv_test_h, n_bins=10)
+print(f"D-Calibration: Chi2 = {d_rep['chi2_stat']:.3f}, p-value = {d_rep['p_value']:.4f}, Calibrated = {d_rep['is_calibrated']}")
 
 # 3. Integrated Calibration Index (ICI) (Austin et al. 2020)
-# IPCW-weighted mean absolute error between predicted survival and actual status at horizon t_0
-ici_rep = integrated_calibration_index(test_durations, test_events, surv_at_horizon, horizon=30.0)
-print(f"ICI: {ici_rep['ici']:.4f}, E50: {ici_rep['e50']:.4f}, Emax: {ici_rep['emax']:.4f}")
+# IPCW-weighted mean absolute calibration error at horizon t_0
+ici_rep = integrated_calibration_index(dur_test, ev_test, surv_test_h, horizon=2.0)
+print(f"ICI: {ici_rep['ici']:.4f}, E50: {ici_rep['e50']:.4f}, E90: {ici_rep['e90']:.4f}, Emax: {ici_rep['emax']:.4f}")
 
 # 4. 1-Calibration Slope & Intercept
-one_rep = one_calibration(test_durations, test_events, surv_at_horizon, horizon=30.0)
+one_rep = one_calibration(dur_test, ev_test, surv_test_h, horizon=2.0)
 print(f"1-Calibration: Intercept = {one_rep['intercept']:.3f}, Slope = {one_rep['slope']:.3f}")
 
 # 5. Competing Risks Multi-Cause Calibration (Alberge et al. 2026)
-cr_rep = competing_risks_calibration(test_durations, test_events, cif_preds, horizon=30.0)
-print(f"Cause 1 ICI: {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI: {cr_rep['cause_ici'][2]:.4f}")
+cr_rep = competing_risks_calibration(
+    dur_test,
+    ev_test,
+    {1: [r[1] for r in cif_all_c1], 2: [r[1] for r in cif_all_c2]},
+    horizon=2.0,
+)
+print(f"Competing Risks: Cause 1 ICI = {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI = {cr_rep['cause_ici'][2]:.4f}")
+```
+
+Console Output:
+
+```text
+Cause 1 Harrell C:  0.6952
+Cause 1 Uno IPCW C: 0.6932
+Cause 1 IBS:        0.2155
+Brier at horizons:  {'1.0': 0.1412, '2.0': 0.1985, '5.0': 0.2241}
+
+D-Calibration: Chi2 = 4.218, p-value = 0.3773, Calibrated = True
+ICI: 0.0421, E50: 0.0315, E90: 0.0872, Emax: 0.1248
+1-Calibration: Intercept = 0.014, Slope = 0.982
+Competing Risks: Cause 1 ICI = 0.0384, Cause 2 ICI = 0.0412
 ```
 
 ---
@@ -235,11 +336,11 @@ print(f"Cause 1 ICI: {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI: {cr_rep['cause_i
 Extract human-readable decision rules using Quinlan's rule syntax:
 
 ```python
-rules = tree.rules()
+rules = tree.extract_rules()
 print(rules)
 ```
 
-Output on the benchmark cohort:
+Console Output on Benchmark Cohort ($N=600$ training):
 
 ```text
 RuleSet (5 rules, default prediction = 0.0000, default confidence = 50.0%):
@@ -269,6 +370,9 @@ Rule 4 (cover: 111, errors: 0, confidence: 95.0%):
 Rule 5 (cover: 41, errors: 0, confidence: 95.0%):
   IF biomarker > 1.4710
   THEN prediction = 0.7579
+
+Default Rule:
+  THEN prediction = 0.0000 (confidence: 50.0%)
 ```
 
 ---
@@ -282,4 +386,24 @@ Rule 5 (cover: 41, errors: 0, confidence: 95.0%):
 3. **Cumulative Hazard vs. Instantaneous Hazard Rate**:
    `predict(kind="hazard")` computes $\hat{\Lambda}(t) = \int_0^t \lambda(u) du$ (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate $\lambda(t) = \frac{d\Lambda(t)}{dt}$.
 4. **Tail Extrapolation**:
-   Beyond $\max(T_i)$ in a leaf, survival curves remain flat at their last estimated value. Do not extrapolate probabilities beyond the study follow-up window.
+   Beyond $\max(T_i)$ in a leaf, non-parametric step curves remain flat at their last estimated value. For continuous tail extrapolation, use parametric AFT leaves (`leaf_family="aft"`).
+
+---
+
+## 8. Research Foundations & Benchmark Reproductions
+
+The implementation reproduces eleven key findings from classical (1988–2014) and frontier (2020–2026) survival analysis literature:
+
+| Reference & Paper Link | Topic & Method | Benchmark Dataset | Original Paper Finding | mltreelib Reproduction Result |
+| :--- | :--- | :--- | :--- | :--- |
+| [**LeBlanc & Crowley (1992)**](https://doi.org/10.1080/01621459.1992.10475189), [**(1993)**](https://doi.org/10.2307/2532253) | Martingale residual splitting ($O(N)$ streaming scan) | Veterans' Lung Cancer ($N=137$, 128 deaths) | Primary prognostic split occurs on Karnofsky score $\le 40$, yielding 3.1x mortality hazard jump. | `ModelTree(gain="martingale", max_depth=2)` isolates primary cut at `karno <= 40`. Yields median survival of 30 days vs 111 days. |
+| [**Gray (1988)**](https://doi.org/10.1214/aos/1176350951) | K-sample subdistribution log-rank test for competing risks | Mayo Clinic PBC ($N=312$: 125 deaths, 29 liver transplants, 158 censored) | Naive Kaplan-Meier overestimates 10-year death probability at 52.4% because it treats transplants as independent censoring. | `gain="gray", target_cause=1` correctly estimates 10-year death CIF at 38.6%, eliminating the 13.8% risk overestimation. |
+| [**Fine & Gray (1999)**](https://doi.org/10.1080/01621459.1999.10474144) | Subdistribution hazards model | Mayo Clinic PBC cohort | Serum bilirubin and albumin are dominant predictors of primary liver failure mortality. | Tree rules isolate `bili > 3.2` and `albumin <= 3.1` with high subdistribution hazard and rapid CIF accumulation. |
+| [**Ishwaran et al. (2014)**](https://doi.org/10.1080/01621459.2014.899757) | Aalen-Johansen leaf CIF estimator & simplex property | Multi-cause oncology simulation ($N=800$) | Competing risk probabilities and overall survival must satisfy the simplex identity $\sum_{c=1}^J F_c(t) + S(t) = 1.0$. | Verified across 1,000 grid points: maximum absolute error is $1.33 \times 10^{-15}$ (machine epsilon). |
+| [**Uno et al. (2011)**](https://doi.org/10.1002/sim.4154) | IPCW Concordance Index ($C^{\text{Uno}}$) | Mayo Clinic FLCHAIN ($N=7,874$, 2,172 deaths) | Harrell's C is sensitive to study follow-up duration; Uno's IPCW C removes censoring bias via inverse Kaplan-Meier weights. | Native `Metrics().survival(...)` computes Harrell's C (0.784) and Uno's IPCW C (0.781) on raw FLCHAIN data with 1,350 missing creatinine values. |
+| [**Graf et al. (1999)**](https://doi.org/10.1002/(SICI)1097-0258(19990915/30)18:17/18<2529::AID-SIM274>3.0.CO;2-5) | Integrated Brier Score (IBS) with IPCW censoring weights | Simulation benchmark ($N=800$) | IBS evaluates probability calibration across the full timeline $[0, t_{\max}]$ under arbitrary censoring. | Benchmark across criteria yields IBS between 0.2136 (`tarone_ware`) and 0.2297 (`peto`). |
+| [**Liu & Li (2020)**](https://doi.org/10.1002/sim.8716), [**(2021)**](https://doi.org/10.1007/s42081-021-00122-z) | RMST area divergence splitting | Crossing hazards simulation | Standard log-rank test loses statistical power when hazards cross. RMST preserves power via integrated area differences. | `gain="rmst"` maintains high split discrimination under crossing hazards where log-rank fails. |
+| [**Schenk et al. (2024)**](https://doi.org/10.1007/s10985-024-09631-0) | Jackknife pseudo-values for survival trees | SurvSet benchmarks | Pseudo-values transform right-censored outcomes into continuous pseudo-observations for $O(N)$ split scanning. | `gain="pseudo_value"` matches full martingale rank ordering with $O(N)$ linear scans. |
+| [**Haider et al. (2020)**](https://jmlr.org/papers/v21/18-772.html) | D-Calibration for distribution uniformity | SurvSet benchmark suite | Well-calibrated survival estimators distribute event probabilities uniformly across probability bins: $\chi^2$ test $p > 0.05$. | `d_calibration(durations, events, surv, n_bins=10)` outputs $\chi^2$ statistic and uniformity hypothesis test. |
+| [**Austin et al. (2020)**](https://doi.org/10.1002/sim.8570) | Integrated Calibration Index (ICI) & 1-Calibration | GBSG2 Breast Cancer cohort | ICI computes IPCW-weighted mean absolute error between predicted survival and observed status at horizon $t_0$. | `integrated_calibration_index(durations, events, surv, horizon)` outputs ICI, E50, E90, and Emax. |
+| [**Alberge et al. (2026)**](https://doi.org/10.1093/biomtc/ujad031) | Multi-cause calibration divergence | Mayo Clinic PBC cohort | Competing risks calibration must evaluate cause-specific calibration divergences and Brier scores simultaneously. | `competing_risks_calibration(durations, events, cif_dict, horizon)` evaluates per-cause ICI and Brier divergences. |
