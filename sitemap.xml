@@ -31,6 +31,9 @@
         <loc>https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/blog/segregate-first-two-stage-survival-trees/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/</loc>
       </url>
       <url>
@@ -55,7 +58,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/constraints-and-honesty/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/core-tree-architecture/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
@@ -85,6 +94,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/missing-data-routing/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/missing-routing/</loc>
       </url>
       <url>
@@ -92,6 +104,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/solver-benchmarks/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/statistical-and-metric-splitting/</loc>
@@ -110,6 +125,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/unsupervised-trees/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/walkthrough/</loc>

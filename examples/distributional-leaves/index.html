@@ -1,78 +1,3235 @@
- <!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Tree-based machine learning with a Rust core"><link rel=canonical href=https://jkapila.github.io/mltreelib/examples/distributional-leaves/><link rel=describedby href=../../llms.txt><link rel=alternate type=text/markdown href=./index.md><link rel=prev href=../hpo/><link rel=next href=../distributional-split-criteria/><link rel=icon href=../../assets/mltreelib-icon.svg><meta name=generator content=zensical-0.0.73><title>Distributional leaves - mltreelib</title><link rel=stylesheet href=../../assets/stylesheets/modern/main.4ab2de0c.min.css><link rel=stylesheet href=../../assets/stylesheets/modern/palette.b60ce83d.min.css><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback"><style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style><script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script><meta name=google-site-verification content=LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY></head> <body dir=ltr data-md-color-scheme=default data-md-color-primary=teal data-md-color-accent=deep-orange> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer aria-hidden=true></label> <div data-md-component=skip> <a href=#__skip class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <header class="md-header md-header--shadow" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../.. title=mltreelib class="md-header__button md-logo" aria-label=mltreelib data-md-component=logo> <img src=../../assets/mltreelib-icon.svg alt=mltreelib> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg> <span class=md-visually-hidden>Navigation</span> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> mltreelib </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> Distributional leaves </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=teal data-md-color-accent=deep-orange aria-label="Switch to dark mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=teal data-md-color-accent=deep-orange aria-label="Switch to light mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx=11 cy=11 r=8 /></svg> <span class=md-visually-hidden>Search</span> </label> <div class=md-search data-md-component=search role=dialog aria-label=Search> <button type=button class=md-search__button> Search </button> </div> <div class=md-header__source> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../.. title=mltreelib class="md-nav__button md-logo" aria-label=mltreelib data-md-component=logo> <img src=../../assets/mltreelib-icon.svg alt=mltreelib> </a> mltreelib </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../.. class=md-nav__link> <span class=md-ellipsis> Home </span> </a> </li> <li class=md-nav__item> <a href=../../installation/ class=md-nav__link> <span class=md-ellipsis> Installation </span> </a> </li> <li class=md-nav__item> <a href=../../quickstart/ class=md-nav__link> <span class=md-ellipsis> Quickstart </span> </a> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_4> <label class=md-nav__link for=__nav_4 id=__nav_4_label tabindex=0> <span class=md-ellipsis> Modeling pathways </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_4_label aria-expanded=false> <label class=md-nav__title for=__nav_4> <span class="md-nav__icon md-icon"></span> Modeling pathways </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../guides/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../guides/data/ class=md-nav__link> <span class=md-ellipsis> Prepare data </span> </a> </li> <li class=md-nav__item> <a href=../../guides/real-data/ class=md-nav__link> <span class=md-ellipsis> Get the datasets </span> </a> </li> <li class=md-nav__item> <a href=../../guides/regression/ class=md-nav__link> <span class=md-ellipsis> Regression </span> </a> </li> <li class=md-nav__item> <a href=../../guides/classification/ class=md-nav__link> <span class=md-ellipsis> Classification </span> </a> </li> <li class=md-nav__item> <a href=../../guides/clustering/ class=md-nav__link> <span class=md-ellipsis> Clustering </span> </a> </li> <li class=md-nav__item> <a href=../../guides/anomaly/ class=md-nav__link> <span class=md-ellipsis> Anomaly detection </span> </a> </li> <li class=md-nav__item> <a href=../../guides/survival/ class=md-nav__link> <span class=md-ellipsis> Survival </span> </a> </li> <li class=md-nav__item> <a href=../../guides/uplift/ class=md-nav__link> <span class=md-ellipsis> Uplift </span> </a> </li> <li class=md-nav__item> <a href=../../guides/evaluation/ class=md-nav__link> <span class=md-ellipsis> Evaluate and monitor </span> </a> </li> <li class=md-nav__item> <a href=../../guides/visualization/ class=md-nav__link> <span class=md-ellipsis> Visualize results </span> </a> </li> <li class=md-nav__item> <a href=../../guides/serving-contract/ class=md-nav__link> <span class=md-ellipsis> Prediction and schema </span> </a> </li> <li class=md-nav__item> <a href=../../guides/advanced-modeling/ class=md-nav__link> <span class=md-ellipsis> Extend a model tree </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5 checked> <label class=md-nav__link for=__nav_5 id=__nav_5_label tabindex=0> <span class=md-ellipsis> Examples </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_5_label aria-expanded=true> <label class=md-nav__title for=__nav_5> <span class="md-nav__icon md-icon"></span> Examples </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_2> <label class=md-nav__link for=__nav_5_2 id=__nav_5_2_label tabindex=0> <span class=md-ellipsis> Prepare inputs </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_2_label aria-expanded=false> <label class=md-nav__title for=__nav_5_2> <span class="md-nav__icon md-icon"></span> Prepare inputs </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../data-processing/ class=md-nav__link> <span class=md-ellipsis> Data processing </span> </a> </li> <li class=md-nav__item> <a href=../categorical-encoders/ class=md-nav__link> <span class=md-ellipsis> Optional categorical encoders </span> </a> </li> <li class=md-nav__item> <a href=../missing-routing/ class=md-nav__link> <span class=md-ellipsis> Missing data and routing </span> </a> </li> <li class=md-nav__item> <a href=../timeseries-forecasting/ class=md-nav__link> <span class=md-ellipsis> Time series forecasting </span> </a> </li> <li class=md-nav__item> <a href=../two-controls-and-0d/ class=md-nav__link> <span class=md-ellipsis> Synthetic controls and ground truth </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_3 checked> <label class=md-nav__link for=__nav_5_3 id=__nav_5_3_label tabindex=0> <span class=md-ellipsis> Configure and fit </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_3_label aria-expanded=true> <label class=md-nav__title for=__nav_5_3> <span class="md-nav__icon md-icon"></span> Configure and fit </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../model-building/ class=md-nav__link> <span class=md-ellipsis> Model building </span> </a> </li> <li class=md-nav__item> <a href=../knob-tour/ class=md-nav__link> <span class=md-ellipsis> Growth knobs </span> </a> </li> <li class=md-nav__item> <a href=../hpo/ class=md-nav__link> <span class=md-ellipsis> Hyperparameter search </span> </a> </li> <li class="md-nav__item md-nav__item--active"> <label class="md-nav__link md-nav__link--active" for=__toc> <span class=md-ellipsis> Distributional leaves </span> <span class="md-nav__icon md-icon"></span> </label> <a href=././ class="md-nav__link md-nav__link--active"> <span class=md-ellipsis> Distributional leaves </span> </a> <nav class="md-nav md-nav--secondary" aria-label="On this page"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> On this page </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#1-binomial-probit-probability-estimation class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 1. Binomial &amp; Probit Probability Estimation </span> </span> </a> </li> <li class=md-nav__item> <a href=#2-poisson-rate-count-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 2. Poisson Rate &amp; Count Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#3-gamma-severity-duration-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 3. Gamma Severity &amp; Duration Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#4-tweedie-compound-poisson-gamma-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 4. Tweedie Compound Poisson-Gamma Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#5-tobit-left-censored-regression class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 5. Tobit Left-Censored Regression </span> </span> </a> </li> <li class=md-nav__item> <a href=#6-softmax-multi-class-probability-vectors class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 6. Softmax Multi-Class Probability Vectors </span> </span> </a> </li> <li class=md-nav__item> <a href=#7-survival-analysis-nelson-aalen-kaplan-meier class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 7. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier) </span> </span> </a> </li> <li class=md-nav__item> <a href=#8-heteroscedastic-location-scale-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 8. Heteroscedastic Location &amp; Scale Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#9-0d-leaf-formulations-stats-dictionaries class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 9. 0D Leaf Formulations &amp; Stats Dictionaries </span> </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../distributional-split-criteria/ class=md-nav__link> <span class=md-ellipsis> Distributional split criteria </span> </a> </li> <li class=md-nav__item> <a href=../tobit-regression/ class=md-nav__link> <span class=md-ellipsis> Tobit regression </span> </a> </li> <li class=md-nav__item> <a href=../survival-trees/ class=md-nav__link> <span class=md-ellipsis> Survival mechanics </span> </a> </li> <li class=md-nav__item> <a href=../causal-uplift/ class=md-nav__link> <span class=md-ellipsis> Causal simulation </span> </a> </li> <li class=md-nav__item> <a href=../honesty-weights/ class=md-nav__link> <span class=md-ellipsis> Honesty and weights </span> </a> </li> <li class=md-nav__item> <a href=../constraints/ class=md-nav__link> <span class=md-ellipsis> Monotone and interaction constraints </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_4> <label class=md-nav__link for=__nav_5_4 id=__nav_5_4_label tabindex=0> <span class=md-ellipsis> Evaluate and inspect </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_4_label aria-expanded=false> <label class=md-nav__title for=__nav_5_4> <span class="md-nav__icon md-icon"></span> Evaluate and inspect </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../metrics-plots/ class=md-nav__link> <span class=md-ellipsis> Metrics and plots </span> </a> </li> <li class=md-nav__item> <a href=../inspection/ class=md-nav__link> <span class=md-ellipsis> Tree inspection </span> </a> </li> <li class=md-nav__item> <a href=../clustering-comparison/ class=md-nav__link> <span class=md-ellipsis> Clustering diagnostics </span> </a> </li> <li class=md-nav__item> <a href=../anomaly-comparison/ class=md-nav__link> <span class=md-ellipsis> Anomaly review budgets </span> </a> </li> <li class=md-nav__item> <a href=../walkthrough/ class=md-nav__link> <span class=md-ellipsis> Model review checklist </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_5> <label class=md-nav__link for=__nav_5_5 id=__nav_5_5_label tabindex=0> <span class=md-ellipsis> Explain and update </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_5_label aria-expanded=false> <label class=md-nav__title for=__nav_5_5> <span class="md-nav__icon md-icon"></span> Explain and update </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../rules-summary-knn/ class=md-nav__link> <span class=md-ellipsis> Rules, summaries and neighbors </span> </a> </li> <li class=md-nav__item> <a href=../hierarchical-retrain/ class=md-nav__link> <span class=md-ellipsis> Hierarchical retrain and routing </span> </a> </li> <li class=md-nav__item> <a href=../stump-explainable/ class=md-nav__link> <span class=md-ellipsis> Explainable stumps and retrain </span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_6> <label class=md-nav__link for=__nav_6 id=__nav_6_label tabindex=0> <span class=md-ellipsis> Blog </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_6_label aria-expanded=false> <label class=md-nav__title for=__nav_6> <span class="md-nav__icon md-icon"></span> Blog </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../blog/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../blog/why-credit-scoring-needs-glass-box-trees/ class=md-nav__link> <span class=md-ellipsis> Credit Scoring and Trees </span> </a> </li> <li class=md-nav__item> <a href=../../blog/zero-imputation-predictive-maintenance/ class=md-nav__link> <span class=md-ellipsis> Zero-Imputation Maintenance </span> </a> </li> <li class=md-nav__item> <a href=../../blog/uplift-modeling-with-causal-trees/ class=md-nav__link> <span class=md-ellipsis> Causal Uplift Modeling </span> </a> </li> <li class=md-nav__item> <a href=../../blog/modernizing-quinlan-classics-in-rust/ class=md-nav__link> <span class=md-ellipsis> Modernizing Quinlan in Rust </span> </a> </li> <li class=md-nav__item> <a href=../../blog/beyond-mse-distributional-trees/ class=md-nav__link> <span class=md-ellipsis> Beyond MSE (Distributional) </span> </a> </li> <li class=md-nav__item> <a href=../../blog/breaking-step-functions-model-trees-vs-gbdt/ class=md-nav__link> <span class=md-ellipsis> Breaking Step Functions </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_7> <label class=md-nav__link for=__nav_7 id=__nav_7_label tabindex=0> <span class=md-ellipsis> Benchmarks </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_7_label aria-expanded=false> <label class=md-nav__title for=__nav_7> <span class="md-nav__icon md-icon"></span> Benchmarks </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../benchmarks/elo/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../benchmarks/elo_overall/ class=md-nav__link> <span class=md-ellipsis> Overall Arena </span> </a> </li> <li class=md-nav__item> <a href=../../benchmarks/elo_board/ class=md-nav__link> <span class=md-ellipsis> Regression Arena </span> </a> </li> <li class=md-nav__item> <a href=../../benchmarks/elo_cla_board/ class=md-nav__link> <span class=md-ellipsis> Classification Arena </span> </a> </li> <li class=md-nav__item> <a href=../../benchmarks/datasets/ class=md-nav__link> <span class=md-ellipsis> DataSets </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_8> <label class=md-nav__link for=__nav_8 id=__nav_8_label tabindex=0> <span class=md-ellipsis> Research </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_8_label aria-expanded=false> <label class=md-nav__title for=__nav_8> <span class="md-nav__icon md-icon"></span> Research </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../field-notes/ class=md-nav__link> <span class=md-ellipsis> Field notes </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_9> <label class=md-nav__link for=__nav_9 id=__nav_9_label tabindex=0> <span class=md-ellipsis> API reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_9_label aria-expanded=false> <label class=md-nav__title for=__nav_9> <span class="md-nav__icon md-icon"></span> API reference </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../reference/api/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../reference/parameters/ class=md-nav__link> <span class=md-ellipsis> Parameters Catalog </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/data/ class=md-nav__link> <span class=md-ellipsis> Data </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/model-tree/ class=md-nav__link> <span class=md-ellipsis> ModelTree </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/cluster/ class=md-nav__link> <span class=md-ellipsis> Clustering trees </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/anomaly/ class=md-nav__link> <span class=md-ellipsis> Anomaly &amp; density trees </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/metrics/ class=md-nav__link> <span class=md-ellipsis> Metrics </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/encoders/ class=md-nav__link> <span class=md-ellipsis> Encoders &amp; scalers </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/features/ class=md-nav__link> <span class=md-ellipsis> Feature functions </span> </a> </li> <li class=md-nav__item> <a href=../../reference/data/ class=md-nav__link> <span class=md-ellipsis> Data guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/model/ class=md-nav__link> <span class=md-ellipsis> Model guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/metrics/ class=md-nav__link> <span class=md-ellipsis> Metrics guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/reports/ class=md-nav__link> <span class=md-ellipsis> Evaluation reports </span> </a> </li> </ul> </nav> </li> </ul> </nav> </div> </div> </div> <div class="md-sidebar md-sidebar--secondary" data-md-component=sidebar data-md-type=toc> <div class=md-sidebar__scrollwrap> <input class="md-nav__toggle md-toggle" type=checkbox id=__toc> <div class=md-sidebar-button__wrapper> <label class=md-sidebar-button for=__toc></label> </div> <div class=md-sidebar__inner> <nav class="md-nav md-nav--secondary" aria-label="On this page"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> On this page </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#1-binomial-probit-probability-estimation class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 1. Binomial &amp; Probit Probability Estimation </span> </span> </a> </li> <li class=md-nav__item> <a href=#2-poisson-rate-count-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 2. Poisson Rate &amp; Count Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#3-gamma-severity-duration-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 3. Gamma Severity &amp; Duration Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#4-tweedie-compound-poisson-gamma-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 4. Tweedie Compound Poisson-Gamma Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#5-tobit-left-censored-regression class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 5. Tobit Left-Censored Regression </span> </span> </a> </li> <li class=md-nav__item> <a href=#6-softmax-multi-class-probability-vectors class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 6. Softmax Multi-Class Probability Vectors </span> </span> </a> </li> <li class=md-nav__item> <a href=#7-survival-analysis-nelson-aalen-kaplan-meier class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 7. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier) </span> </span> </a> </li> <li class=md-nav__item> <a href=#8-heteroscedastic-location-scale-modeling class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 8. Heteroscedastic Location &amp; Scale Modeling </span> </span> </a> </li> <li class=md-nav__item> <a href=#9-0d-leaf-formulations-stats-dictionaries class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> 9. 0D Leaf Formulations &amp; Stats Dictionaries </span> </span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <a id=__skip tabindex=-1></a> <h1 id=distributional-leaves-glm-censored-survival-volatility-families>Distributional Leaves — GLM, Censored, Survival &amp; Volatility Families<a class=headerlink href=#distributional-leaves-glm-censored-survival-volatility-families title="Permanent link">¶</a></h1> <p>Real-world targets often violate Gaussian error assumptions. <code>ModelTree</code> provides native Rust implementations of specialized distributional families: <code>leaf_family="binomial"</code>, <code>"probit"</code>, <code>"poisson"</code>, <code>"gamma"</code>, <code>"tweedie"</code>, <code>"tobit"</code>, <code>"softmax"</code>, <code>"survival"</code>, and <code>"heteroscedastic"</code>.</p> <p>Scripts: - <a href=https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py><code>examples/leaf_family.py</code></a> - <a href=https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py><code>examples/stump_distributional_leaves.py</code></a> (<code>uv run python examples/stump_distributional_leaves.py</code>)</p> <div class=highlight><pre><span></span><code>binomial P(1): [0.25, 0.75]
-binomial P(Y &lt;= 0): [0.75, 0.25]
-poisson means: [1.0, 2.0, 4.0]
-poisson P(Y &lt;= 0): [0.367879, 0.018316]
-probit P(1): [0.25, 0.75]
-gamma means: [1.0, 2.0, 4.0]
-tweedie means: [0.333827, 4.331555]
-tobit latent means: [-2.765143, 1.19807]
-</code></pre></div> <hr> <h2 id=1-binomial-probit-probability-estimation>1. Binomial &amp; Probit Probability Estimation<a class=headerlink href=#1-binomial-probit-probability-estimation title="Permanent link">¶</a></h2> <p>For binary classification targets <span class=arithmatex>\(y \in \{0, 1\}\)</span>:</p> <ul> <li><strong><code>leaf_family="binomial"</code></strong>: Standard logistic link <span class=arithmatex>\(\mu = \frac{1}{1 + e^{-\eta}}\)</span>.</li> <li><strong><code>leaf_family="probit"</code></strong>: Gaussian CDF link <span class=arithmatex>\(\mu = \Phi(\eta)\)</span> (ideal for threshold crossing and latent utility models).</li> </ul> <div class=highlight><pre><span></span><code><span class=kn>from</span><span class=w> </span><span class=nn>mltreelib</span><span class=w> </span><span class=kn>import</span> <span class=n>ModelTree</span>
 
-<span class=c1># Probit tree with standard normal CDF leaves</span>
-<span class=n>m_probit</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>1</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"probit"</span><span class=p>,</span> <span class=n>gain</span><span class=o>=</span><span class=s2>"deviance"</span><span class=p>)</span>
-<span class=n>m_probit</span><span class=o>.</span><span class=n>fit</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>]]</span> <span class=o>*</span> <span class=mi>4</span> <span class=o>+</span> <span class=p>[[</span><span class=mf>1.0</span><span class=p>]]</span> <span class=o>*</span> <span class=mi>4</span><span class=p>,</span> <span class=p>[</span><span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>])</span>
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Tree-based machine learning with a Rust core">
+      
+      
+      
+        <link rel="canonical" href="https://jkapila.github.io/mltreelib/examples/distributional-leaves/">
+      
+      
+      
+        <link rel="prev" href="../missing-data-routing/">
+      
+      
+        <link rel="next" href="../hierarchical-retrain/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/mltreelib-icon.svg">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Suite 4: Distributional & Censored Leaves - mltreelib</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
 
-<span class=c1># predict_proba returns P(Y = 1) on response scale</span>
-<span class=n>probs</span> <span class=o>=</span> <span class=n>m_probit</span><span class=o>.</span><span class=n>predict_proba</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>1.0</span><span class=p>]])</span>
-<span class=n>labels</span> <span class=o>=</span> <span class=n>m_probit</span><span class=o>.</span><span class=n>predict_label</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>1.0</span><span class=p>]],</span> <span class=n>threshold</span><span class=o>=</span><span class=mf>0.5</span><span class=p>)</span>
-</code></pre></div> <hr> <h2 id=2-poisson-rate-count-modeling>2. Poisson Rate &amp; Count Modeling<a class=headerlink href=#2-poisson-rate-count-modeling title="Permanent link">¶</a></h2> <p>For nonnegative counts or rates (<span class=arithmatex>\(y \ge 0\)</span>) with log link <span class=arithmatex>\(\mu = e^\eta\)</span>:</p> <div class=highlight><pre><span></span><code><span class=n>mp</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"poisson"</span><span class=p>,</span> <span class=n>gain</span><span class=o>=</span><span class=s2>"deviance"</span><span class=p>)</span>
-<span class=n>mp</span><span class=o>.</span><span class=n>fit</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>1.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>1.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>2.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>2.0</span><span class=p>]],</span> <span class=p>[</span><span class=mi>1</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>4</span><span class=p>])</span>
 
-<span class=c1># Returns expected event counts</span>
-<span class=n>expected_counts</span> <span class=o>=</span> <span class=n>mp</span><span class=o>.</span><span class=n>predict</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>1.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>2.0</span><span class=p>]])</span>
-<span class=n>prob_zero</span> <span class=o>=</span> <span class=n>mp</span><span class=o>.</span><span class=n>cdf</span><span class=p>([[</span><span class=mf>0.0</span><span class=p>],</span> <span class=p>[</span><span class=mf>2.0</span><span class=p>]],</span> <span class=mi>0</span><span class=p>)</span>
-</code></pre></div> <hr> <h2 id=3-gamma-severity-duration-modeling>3. Gamma Severity &amp; Duration Modeling<a class=headerlink href=#3-gamma-severity-duration-modeling title="Permanent link">¶</a></h2> <p>For strictly positive continuous outcomes (<span class=arithmatex>\(y > 0\)</span>) with constant coefficient of variation (e.g. claim severity, service duration, customer lifetime value):</p> <div class=highlight><pre><span></span><code><span class=n>mg</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>5</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"gamma"</span><span class=p>,</span> <span class=n>gain</span><span class=o>=</span><span class=s2>"deviance"</span><span class=p>)</span>
-<span class=n>mg</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_positive</span><span class=p>,</span> <span class=n>y_severity</span><span class=p>)</span>
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
 
-<span class=n>preds</span> <span class=o>=</span> <span class=n>mg</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>)</span>  <span class=c1># Strictly positive predictions</span>
-</code></pre></div> <hr> <h2 id=4-tweedie-compound-poisson-gamma-modeling>4. Tweedie Compound Poisson-Gamma Modeling<a class=headerlink href=#4-tweedie-compound-poisson-gamma-modeling title="Permanent link">¶</a></h2> <p>For zero-inflated continuous positive targets (<span class=arithmatex>\(y \ge 0\)</span>) where a mass of exact zeros exists alongside continuous positive values (e.g. insurance pure premiums, warranty loss costs):</p> <div class=highlight><pre><span></span><code><span class=n>mt</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"tweedie"</span><span class=p>,</span> <span class=n>gain</span><span class=o>=</span><span class=s2>"deviance"</span><span class=p>,</span> <span class=n>l2</span><span class=o>=</span><span class=mf>1e-3</span><span class=p>)</span>
-<span class=n>mt</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_claims</span><span class=p>,</span> <span class=n>y_loss_cost</span><span class=p>)</span>
+    
+    
+  <meta name="google-site-verification" content="LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY" />
 
-<span class=n>preds</span> <span class=o>=</span> <span class=n>mt</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>)</span>
-</code></pre></div> <hr> <h2 id=5-tobit-left-censored-regression>5. Tobit Left-Censored Regression<a class=headerlink href=#5-tobit-left-censored-regression title="Permanent link">¶</a></h2> <p>For continuous targets censored at a lower threshold (default <span class=arithmatex>\(0.0\)</span>, e.g. warranty claims, consumer expenditures):</p> <div class=highlight><pre><span></span><code><span class=n>tobit_tree</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>2</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"tobit"</span><span class=p>)</span>
-<span class=n>tobit_tree</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_censored</span><span class=p>,</span> <span class=n>y_censored</span><span class=p>)</span>
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
 
-<span class=n>latent_means</span> <span class=o>=</span> <span class=n>tobit_tree</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>)</span>
-</code></pre></div> <ul> <li>Fits latent Gaussian expectations via Expectation-Maximization in iteratively reweighted least squares (IRLS).</li> <li>Eliminates downward attenuation bias caused by standard linear regression on censored zeros.</li> </ul> <hr> <h2 id=6-softmax-multi-class-probability-vectors>6. Softmax Multi-Class Probability Vectors<a class=headerlink href=#6-softmax-multi-class-probability-vectors title="Permanent link">¶</a></h2> <p>For discrete targets with <span class=arithmatex>\(C \ge 3\)</span> mutually exclusive classes:</p> <div class=highlight><pre><span></span><code><span class=n>m_softmax</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>0</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"softmax"</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>)</span>
-<span class=n>m_softmax</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_train</span><span class=p>,</span> <span class=n>y_classes</span><span class=p>)</span>
+  
 
-<span class=c1># Query class probabilities or predicted class labels</span>
-<span class=n>probs</span> <span class=o>=</span> <span class=n>m_softmax</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"proba"</span><span class=p>)</span>      <span class=c1># [[P(C_0), P(C_1), P(C_2)], ...]</span>
-<span class=n>labels</span> <span class=o>=</span> <span class=n>m_softmax</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"response"</span><span class=p>)</span>   <span class=c1># [0, 1, 2, ...]</span>
-</code></pre></div> <hr> <h2 id=7-survival-analysis-nelson-aalen-kaplan-meier>7. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)<a class=headerlink href=#7-survival-analysis-nelson-aalen-kaplan-meier title="Permanent link">¶</a></h2> <p>For right-censored time-to-event outcomes <span class=arithmatex>\((T, E)\)</span> where <span class=arithmatex>\(T\)</span> is elapsed duration and <span class=arithmatex>\(E \in \{0, 1\}\)</span> is event occurrence (1 = event, 0 = censored):</p> <div class=highlight><pre><span></span><code><span class=n>m_surv</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>0</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"survival"</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>)</span>
-<span class=n>m_surv</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_patients</span><span class=p>,</span> <span class=n>times</span><span class=p>,</span> <span class=n>event</span><span class=o>=</span><span class=n>events</span><span class=p>)</span>
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mltreelib" class="md-header__button md-logo" aria-label="mltreelib" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib">
 
-<span class=c1># Inspect empirical survival curves and median survival</span>
-<span class=n>leaf</span> <span class=o>=</span> <span class=n>m_surv</span><span class=o>.</span><span class=n>leaves</span><span class=p>()[</span><span class=mi>0</span><span class=p>]</span>
-<span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>"Cohort Median Survival: </span><span class=si>{</span><span class=n>leaf</span><span class=p>[</span><span class=s1>'median_time'</span><span class=p>]</span><span class=si>}</span><span class=s2> days"</span><span class=p>)</span>
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mltreelib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Suite 4: Distributional & Censored Leaves
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
 
-<span class=c1># Predict survival probability S(t) and cumulative hazard H(t) at milestone horizons</span>
-<span class=n>surv_curve</span> <span class=o>=</span> <span class=n>m_surv</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"survival"</span><span class=p>,</span> <span class=n>times</span><span class=o>=</span><span class=p>[</span><span class=mf>30.0</span><span class=p>,</span> <span class=mf>90.0</span><span class=p>,</span> <span class=mf>180.0</span><span class=p>,</span> <span class=mf>365.0</span><span class=p>])</span>
-<span class=n>cum_hazard</span> <span class=o>=</span> <span class=n>m_surv</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"hazard"</span><span class=p>,</span> <span class=n>times</span><span class=o>=</span><span class=p>[</span><span class=mf>30.0</span><span class=p>,</span> <span class=mf>90.0</span><span class=p>,</span> <span class=mf>180.0</span><span class=p>,</span> <span class=mf>365.0</span><span class=p>])</span>
-</code></pre></div> <hr> <h2 id=8-heteroscedastic-location-scale-modeling>8. Heteroscedastic Location &amp; Scale Modeling<a class=headerlink href=#8-heteroscedastic-location-scale-modeling title="Permanent link">¶</a></h2> <p>For continuous targets exhibiting conditional volatility or non-constant variance <span class=arithmatex>\(\sigma_i^2 = \exp(z_i^\top \gamma)\)</span>:</p> <div class=highlight><pre><span></span><code><span class=n>m_het</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>max_depth</span><span class=o>=</span><span class=mi>0</span><span class=p>,</span> <span class=n>leaf_family</span><span class=o>=</span><span class=s2>"heteroscedastic"</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>)</span>
-<span class=n>m_het</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>x_train</span><span class=p>,</span> <span class=n>y_train</span><span class=p>)</span>
 
-<span class=c1># Jointly predict location mu and scale sigma</span>
-<span class=n>dists</span> <span class=o>=</span> <span class=n>m_het</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>x_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"dist"</span><span class=p>)</span>  <span class=c1># [(mu, sigma), ...]</span>
-<span class=k>for</span> <span class=n>mu</span><span class=p>,</span> <span class=n>sigma</span> <span class=ow>in</span> <span class=n>dists</span><span class=p>:</span>
-    <span class=n>ci_low</span> <span class=o>=</span> <span class=n>mu</span> <span class=o>-</span> <span class=mf>1.96</span> <span class=o>*</span> <span class=n>sigma</span>
-    <span class=n>ci_high</span> <span class=o>=</span> <span class=n>mu</span> <span class=o>+</span> <span class=mf>1.96</span> <span class=o>*</span> <span class=n>sigma</span>
-</code></pre></div> <ul> <li>Uses <strong>Harvey (1976) bias correction</strong> (+1.2703628 to log-variance intercept) to guarantee unbiased standard deviation estimation.</li> <li>Enables conditional volatility bands and predictive intervals for risk reserves and financial volatility.</li> </ul> <hr> <h2 id=9-0d-leaf-formulations-stats-dictionaries>9. 0D Leaf Formulations &amp; Stats Dictionaries<a class=headerlink href=#9-0d-leaf-formulations-stats-dictionaries title="Permanent link">¶</a></h2> <p>For non-parametric or summary leaves, <code>ModelTree</code> computes a comprehensive 0D distributional summary at every terminal node:</p> <ul> <li><strong>0D Leaf Formulations</strong>: <code>leaf="prob"</code>, <code>leaf="odds"</code>, <code>leaf="log_odds"</code>, <code>leaf="median"</code>, <code>leaf="huber"</code>, <code>leaf="quantile"</code>, <code>leaf="mean"</code>.</li> <li><strong>Leaf Stats Dictionary</strong>: Every leaf dictionary contains a nested <code>stats</code> dict and direct fields: <code>prob</code>, <code>odds</code>, <code>log_odds</code>, <code>majority_class</code>, <code>entropy</code>, <code>gini</code>, <code>var</code>, <code>skew</code>, <code>kurtosis</code>, <code>median</code>, <code>mad</code>, <code>iqr</code>, <code>zero_fraction</code>, <code>dispersion</code>.</li> </ul> <div class=highlight><pre><span></span><code><span class=kn>from</span><span class=w> </span><span class=nn>mltreelib</span><span class=w> </span><span class=kn>import</span> <span class=n>ModelTree</span><span class=p>,</span> <span class=n>LeafControl</span>
 
-<span class=c1># Binary classification with 0D probability leaves:</span>
-<span class=n>m</span> <span class=o>=</span> <span class=n>ModelTree</span><span class=p>(</span><span class=n>leaf</span><span class=o>=</span><span class=s2>"prob"</span><span class=p>,</span> <span class=n>max_depth</span><span class=o>=</span><span class=mi>3</span><span class=p>,</span> <span class=n>min_rows</span><span class=o>=</span><span class=mi>10</span><span class=p>)</span>
-<span class=n>m</span><span class=o>.</span><span class=n>fit</span><span class=p>(</span><span class=n>X</span><span class=p>,</span> <span class=n>y</span><span class=p>)</span>
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mltreelib" class="md-nav__button md-logo" aria-label="mltreelib" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib">
 
-<span class=c1># 1. Inspect all 0D stats across leaves:</span>
-<span class=k>for</span> <span class=n>st</span> <span class=ow>in</span> <span class=n>m</span><span class=o>.</span><span class=n>leaf_stats</span><span class=p>():</span>
-    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>"Prob: </span><span class=si>{</span><span class=n>st</span><span class=p>[</span><span class=s1>'prob'</span><span class=p>]</span><span class=si>:</span><span class=s2>.3f</span><span class=si>}</span><span class=s2>, Odds: </span><span class=si>{</span><span class=n>st</span><span class=p>[</span><span class=s1>'odds'</span><span class=p>]</span><span class=si>:</span><span class=s2>.3f</span><span class=si>}</span><span class=s2>, Gini: </span><span class=si>{</span><span class=n>st</span><span class=p>[</span><span class=s1>'gini'</span><span class=p>]</span><span class=si>:</span><span class=s2>.3f</span><span class=si>}</span><span class=s2>"</span><span class=p>)</span>
+    </a>
+    mltreelib
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
 
-<span class=c1># 2. Predict specific 0D metrics directly on test data:</span>
-<span class=n>p_prob</span> <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"prob"</span><span class=p>)</span>
-<span class=n>p_odds</span> <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"odds"</span><span class=p>)</span>
-<span class=n>p_lo</span>   <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"log_odds"</span><span class=p>)</span>
-<span class=n>p_med</span>  <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"median"</span><span class=p>)</span>
+    
+  </span>
+  
+  
 
-<span class=c1># 3. Predict full stats dictionary per row:</span>
-<span class=n>per_row_stats</span> <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>predict</span><span class=p>(</span><span class=n>X_test</span><span class=p>,</span> <span class=n>kind</span><span class=o>=</span><span class=s2>"stats"</span><span class=p>)</span>
-</code></pre></div> </article> </div> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button type=button class="md-top md-icon" data-md-component=top hidden> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx=12 cy=12 r=10 /><path d="m16 12-4-4-4 4M12 16V8"/></svg> Back to top </button> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> Made with <a href=https://zensical.org/ target=_blank rel=noopener> Zensical </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog role=status aria-atomic=true> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","content.code.copy","search.suggest","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script> <script src=../../assets/javascripts/bundle.77dd0ce9.min.js></script> <script src=../../assets/medium-zoom.min.js></script> <script src=../../assets/zoom-init.js></script> <script src=../../assets/mathjax.js></script> <script src=https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js></script> </body> </html>
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modeling pathways
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Modeling pathways
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prepare data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/real-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Get the datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly detection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/survival/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Survival
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Uplift
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluate and monitor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Visualize results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/serving-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prediction and schema
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/advanced-modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Extend a model tree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Examples
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Core Suites
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_5_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Core Suites
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-tree-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 1: Core Architecture & Growth Knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constraints-and-honesty/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 2: Structural Constraints & Honesty
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../missing-data-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 3: Native Missing Data Routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 4: Distributional & Censored Leaves
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 4: Distributional & Censored Leaves
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-distributional-leaves-were-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why Distributional Leaves Were Built
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-softmax-multi-class-probability-vectors-c-ge-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Softmax Multi-Class Probability Vectors (<span class="arithmatex">\(C \ge 3\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Softmax Multi-Class Probability Vectors (\(C \ge 3\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-survival-analysis-nelson-aalen-kaplan-meier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-heteroscedastic-location-scale-modeling-mu-sigma" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Heteroscedastic Location &amp; Scale Modeling (<span class="arithmatex">\(\mu, \sigma\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Heteroscedastic Location &amp; Scale Modeling (\(\mu, \sigma\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-real-benchmark-tour-probit-gamma-tweedie-tobit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Real Benchmark Tour: Probit, Gamma, Tweedie &amp; Tobit
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Real Benchmark Tour: Probit, Gamma, Tweedie &amp; Tobit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-probit-latent-utility-german-credit-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A. Probit Latent Utility (German Credit Risk)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-gamma-continuous-positive-severity-healthcare-charges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        B. Gamma Continuous Positive Severity (Healthcare Charges)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-tweedie-compound-poisson-gamma-fairs-affairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        C. Tweedie Compound Poisson-Gamma (Fair's Affairs)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-tobit-left-censoring-correction-mroz-female-labor-supply" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        D. Tobit Left-Censoring Correction (Mroz Female Labor Supply)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hierarchical-retrain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 5: Dynamic Leaf Retraining
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statistical-and-metric-splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 6: Statistical & Metric Splitting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timeseries-forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 7: Time Series Forecasting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unsupervised-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 8: Unsupervised Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaf Solver Benchmarks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Specialized Topics
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Specialized Topics
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data processing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../categorical-encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Optional categorical encoders
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../missing-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Missing data and routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../two-controls-and-0d/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Synthetic controls and ground truth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model-building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model building
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../knob-tour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Growth knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hpo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hyperparameter search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributional-split-criteria/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional split criteria
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tobit-regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tobit regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Survival mechanics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../causal-uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal simulation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../honesty-weights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Honesty and weights
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constraints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monotone and interaction constraints
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics and plots
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inspection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tree inspection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clustering-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anomaly-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly review budgets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model review checklist
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rules-summary-knn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rules, summaries and neighbors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stump-explainable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Explainable stumps and retrain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blog
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blog
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modernizing Quinlan in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/beyond-mse-distributional-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Beyond MSE (Distributional)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Breaking Step Functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Benchmarks
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_overall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_cla_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  DataSets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Research
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Research
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../field-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Field notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameters Catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/model-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ModelTree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly & density trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Encoders & scalers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Feature functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluation reports
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-distributional-leaves-were-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why Distributional Leaves Were Built
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-softmax-multi-class-probability-vectors-c-ge-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Softmax Multi-Class Probability Vectors (<span class="arithmatex">\(C \ge 3\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Softmax Multi-Class Probability Vectors (\(C \ge 3\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-survival-analysis-nelson-aalen-kaplan-meier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-heteroscedastic-location-scale-modeling-mu-sigma" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Heteroscedastic Location &amp; Scale Modeling (<span class="arithmatex">\(\mu, \sigma\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Heteroscedastic Location &amp; Scale Modeling (\(\mu, \sigma\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-results-output-interpretation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Results &amp; Output Interpretation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-real-benchmark-tour-probit-gamma-tweedie-tobit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Real Benchmark Tour: Probit, Gamma, Tweedie &amp; Tobit
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Real Benchmark Tour: Probit, Gamma, Tweedie &amp; Tobit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-probit-latent-utility-german-credit-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A. Probit Latent Utility (German Credit Risk)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-gamma-continuous-positive-severity-healthcare-charges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        B. Gamma Continuous Positive Severity (Healthcare Charges)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-tweedie-compound-poisson-gamma-fairs-affairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        C. Tweedie Compound Poisson-Gamma (Fair's Affairs)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-tobit-left-censoring-correction-mroz-female-labor-supply" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        D. Tobit Left-Censoring Correction (Mroz Female Labor Supply)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+
+<h1 id="distributional-leaves-glm-censored-survival-volatility-families">Distributional Leaves — GLM, Censored, Survival &amp; Volatility Families<a class="headerlink" href="#distributional-leaves-glm-censored-survival-volatility-families" title="Permanent link">&para;</a></h1>
+<p>Real-world targets often violate Gaussian error assumptions. <code>ModelTree</code> provides native Rust implementations of specialized distributional families:
+<code>leaf_family="binomial"</code>, <code>"probit"</code>, <code>"poisson"</code>, <code>"gamma"</code>, <code>"tweedie"</code>, <code>"tobit"</code>, <code>"softmax"</code>, <code>"survival"</code>, and <code>"heteroscedastic"</code>.</p>
+<p><img alt="Leaf Family Comparison" src="../../assets/leaf_family_comparison.png" /></p>
+<p>Executable Reference Scripts:
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py"><code>examples/leaf_family.py</code></a> — Link function invariant verifications &amp; 6-family gallery.
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py"><code>examples/stump_distributional_leaves.py</code></a> — Softmax, Survival, Heteroscedasticity &amp; Microsecond Retraining on clinical and actuarial datasets.
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/distributional_leaf_benchmarks.py"><code>examples/distributional_leaf_benchmarks.py</code></a> — Real benchmarks on German Credit, US Healthcare, Fair's Affairs, and Mroz Labor Supply.</p>
+<hr />
+<h2 id="why-distributional-leaves-were-built">Why Distributional Leaves Were Built<a class="headerlink" href="#why-distributional-leaves-were-built" title="Permanent link">&para;</a></h2>
+<p>Standard decision trees and linear models assume constant Gaussian error variances:
+$<span class="arithmatex">\(Y \sim \mathcal{N}(\mu, \sigma^2), \quad \mu = \mathbf{X}\beta\)</span>$</p>
+<p>This assumption produces severe modeling failures across empirical domains:
+1. <strong>Count &amp; Frequency Data</strong>: Ordinary regression produces negative event counts.
+2. <strong>Right-Censored Durations</strong>: Dropping or treating censored cases as deaths induces severe survival bias.
+3. <strong>Severe Multiplicative Cost Skew</strong>: High-cost medical and insurance payouts exhibit variance scaling quadratically with the mean (<span class="arithmatex">\(\text{Var}(Y) \propto \mu^2\)</span>).
+4. <strong>Zero-Inflated Continuous Costs</strong>: Pure premiums have a point mass at zero with continuous positive claim sizes.
+5. <strong>Left-Censored Corner Solutions</strong>: Censoring at zero induces downward attenuation bias in Ordinary Least Squares.</p>
+<hr />
+<h2 id="1-softmax-multi-class-probability-vectors-c-ge-3">1. Softmax Multi-Class Probability Vectors (<span class="arithmatex">\(C \ge 3\)</span>)<a class="headerlink" href="#1-softmax-multi-class-probability-vectors-c-ge-3" title="Permanent link">&para;</a></h2>
+<p><strong>Why Built &amp; Use Case</strong>: Multi-tier medical triage, credit rating transition, and multi-option routing. Maps features onto the probability simplex <span class="arithmatex">\(\sum_{c=1}^C p_c = 1\)</span>.<br />
+<strong>Dataset</strong>: Maternal Health Risk in Rural Areas (Ahmed et al., 2020, UCI Repository, 1,014 patients).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Fit Softmax tree partitioning on patient physiology</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"softmax"</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"SystolicBP"</span><span class="p">,</span> <span class="s2">"BS"</span><span class="p">,</span> <span class="s2">"Age"</span><span class="p">])</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Predict calibrated probabilities across all classes</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">pred_probs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"proba"</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="empirical-results-output-interpretation">Empirical Results &amp; Output Interpretation<a class="headerlink" href="#empirical-results-output-interpretation" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Total Cohort Size: 1014 patients across 3 risk categories
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Optimal Partition: Split on 'BS' at threshold 7.90 (Gain=259.34)
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Interpretation: Blood glucose (BS &gt;= 7.90 mmol/L) is the primary risk discriminator.
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Terminal Leaf Probability Distributions:
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  Leaf 0 (n=751): P(low, mid, high) = [0.5300, 0.3715, 0.0985] -&gt; Dominant: low_risk
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  Leaf 1 (n=263): P(low, mid, high) = [0.0304, 0.2167, 0.7529] -&gt; Dominant: high_risk
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Clinical Patient Inferences:
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  Patient 1 [BP=100, BS=6.8, Age=22] -&gt; Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 67.1%, medium_risk: 31.3%, high_risk: 1.6%]
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  Patient 2 [BP=130, BS=7.8, Age=35] -&gt; Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 51.4%, medium_risk: 27.0%, high_risk: 21.6%]
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  Patient 3 [BP=160, BS=15.0, Age=42] -&gt; Assigned: HIGH_RISK   | Calibrated Probs: [low_risk: 0.0%, medium_risk: 0.4%, high_risk: 99.6%]
+</span></code></pre></div>
+<hr />
+<h2 id="2-survival-analysis-nelson-aalen-kaplan-meier">2. Survival Analysis (Nelson-Aalen &amp; Kaplan-Meier)<a class="headerlink" href="#2-survival-analysis-nelson-aalen-kaplan-meier" title="Permanent link">&para;</a></h2>
+<p><strong>Why Built &amp; Use Case</strong>: Clinical oncology, hardware MTTF, and customer churn under right-censored follow-up duration.<br />
+<strong>Dataset</strong>: Veteran's Administration Lung Cancer Study (Prentice 1973, Biometrika; 137 patients).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Fit non-parametric survival stump accounting for risk sets</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">m_surv</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">m_surv</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">events</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Predict survival probability S(t) and cumulative hazard H(t) at milestone horizons</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">surv_probs</span> <span class="o">=</span> <span class="n">m_surv</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">,</span> <span class="mf">365.0</span><span class="p">])</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">cum_hazards</span> <span class="o">=</span> <span class="n">m_surv</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"hazard"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">,</span> <span class="mf">365.0</span><span class="p">])</span>
+</span></code></pre></div>
+<h3 id="empirical-results-output-interpretation_1">Empirical Results &amp; Output Interpretation<a class="headerlink" href="#empirical-results-output-interpretation_1" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Cohort Size: 137 patients (Observed Deaths: 128, Censored: 9)
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Median Survival Time: 80.0 days
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Distinct Event Checkpoints: 97 logged event horizons
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Milestone Actuarial Projections:
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  Horizon (Days) | Survival Prob S(t) | Cumulative Hazard H(t) | Interpretation
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  ------------------------------------------------------------------------
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  30             | 0.7004             | 0.3527                 | 70.0% surviving past 30d
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  90             | 0.4640             | 0.7603                 | 46.4% surviving past 90d
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  180            | 0.2224             | 1.4837                 | 22.2% surviving past 180d
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  365            | 0.0900             | 2.3592                 | 9.0% surviving past 365d
+</span></code></pre></div>
+<hr />
+<h2 id="3-heteroscedastic-location-scale-modeling-mu-sigma">3. Heteroscedastic Location &amp; Scale Modeling (<span class="arithmatex">\(\mu, \sigma\)</span>)<a class="headerlink" href="#3-heteroscedastic-location-scale-modeling-mu-sigma" title="Permanent link">&para;</a></h2>
+<p><strong>Why Built &amp; Use Case</strong>: Actuarial risk pricing, Value-at-Risk (VaR), and quality control tolerance bands where target variance scales with features.<br />
+<strong>Dataset</strong>: US Healthcare Insurance Expenses (TabArena-v0.1 / Kaggle; 1,338 policyholders).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">m_het</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"heteroscedastic"</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">m_het</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">charges</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"smoker"</span><span class="p">])</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Predict joint location and scale (mu, sigma) with Harvey (1976) bias correction</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">dists</span> <span class="o">=</span> <span class="n">m_het</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"dist"</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="empirical-results-output-interpretation_2">Empirical Results &amp; Output Interpretation<a class="headerlink" href="#empirical-results-output-interpretation_2" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Partition Identified: Split on 'smoker' at threshold 0.0
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Interpretation: Smoking status bifurcates both expected expenditure and cost volatility.
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Actuarial Expected Costs &amp; 95% Volatility Corridors [mu - 1.96*sigma, mu + 1.96*sigma]:
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  Age 25 Non-Smoker (BMI 24) -&gt; E[Cost] = $  4,548.10 | Volatility (sigma) = $2,669.93 | 95% Band: [$       0 - $   9,781]
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  Age 55 Non-Smoker (BMI 28) -&gt; E[Cost] = $ 12,582.68 | Volatility (sigma) = $2,567.34 | 95% Band: [$   7,551 - $  17,615]
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  Age 25 Smoker     (BMI 28) -&gt; E[Cost] = $ 24,556.59 | Volatility (sigma) = $5,731.15 | 95% Band: [$  13,324 - $  35,790]
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  Age 55 Smoker     (BMI 32) -&gt; E[Cost] = $ 38,297.44 | Volatility (sigma) = $5,844.02 | 95% Band: [$  26,843 - $  49,752]
+</span></code></pre></div>
+<p><img alt="Stump Distributional Leaves" src="../../assets/stump_distributional_leaves.png" /></p>
+<hr />
+<h2 id="4-real-benchmark-tour-probit-gamma-tweedie-tobit">4. Real Benchmark Tour: Probit, Gamma, Tweedie &amp; Tobit<a class="headerlink" href="#4-real-benchmark-tour-probit-gamma-tweedie-tobit" title="Permanent link">&para;</a></h2>
+<p><img alt="Distributional Benchmarks" src="../../assets/distributional_leaf_benchmarks.png" /></p>
+<h3 id="a-probit-latent-utility-german-credit-risk">A. Probit Latent Utility (German Credit Risk)<a class="headerlink" href="#a-probit-latent-utility-german-credit-risk" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Problem</strong>: Binary default scoring <span class="arithmatex">\(y \in \{0, 1\}\)</span> with latent normal utility <span class="arithmatex">\(y^* \sim \mathcal{N}(\mathbf{X}\beta, 1)\)</span>.</li>
+<li><strong>Mathematical Link</strong>: <span class="arithmatex">\(P(Y=1) = \Phi(\mathbf{X}\beta)\)</span> where <span class="arithmatex">\(\Phi\)</span> is the standard normal cumulative distribution function.</li>
+<li><strong>Interpretation</strong>: A positive coefficient increases the z-score index of default. Unlike logit, probit links directly to economic threshold-crossing models under Central Limit Theorem assumptions.</li>
+</ul>
+<h3 id="b-gamma-continuous-positive-severity-healthcare-charges">B. Gamma Continuous Positive Severity (Healthcare Charges)<a class="headerlink" href="#b-gamma-continuous-positive-severity-healthcare-charges" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Problem</strong>: Strictly positive charges (<span class="arithmatex">\(y &gt; 0\)</span>) with constant coefficient of variation (<span class="arithmatex">\(\text{Var}(Y) \propto \mu^2\)</span>).</li>
+<li><strong>Mathematical Link</strong>: <span class="arithmatex">\(\ln(\mu) = \mathbf{X}\beta \implies \mu = \exp(\mathbf{X}\beta)\)</span>.</li>
+<li><strong>Interpretation</strong>: Coefficients act multiplicatively. For example, a coefficient of <span class="arithmatex">\(+0.0294\)</span> for <code>age</code> implies an annual cost multiplier of <span class="arithmatex">\(\exp(0.0294) \approx 1.03\times\)</span> (+3% per year of age).</li>
+</ul>
+<h3 id="c-tweedie-compound-poisson-gamma-fairs-affairs">C. Tweedie Compound Poisson-Gamma (Fair's Affairs)<a class="headerlink" href="#c-tweedie-compound-poisson-gamma-fairs-affairs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Problem</strong>: Target with a large point mass at zero (75.1% exact zeros) alongside right-skewed continuous positive counts.</li>
+<li><strong>Mathematical Link</strong>: Quasi-likelihood with variance function <span class="arithmatex">\(\text{Var}(Y) = \phi \mu^p\)</span> (<span class="arithmatex">\(1 &lt; p &lt; 2\)</span>).</li>
+<li><strong>Interpretation</strong>: Unifies zero probability estimation and continuous severity into a single convex likelihood, avoiding ad-hoc two-stage hurdle pipelines.</li>
+</ul>
+<h3 id="d-tobit-left-censoring-correction-mroz-female-labor-supply">D. Tobit Left-Censoring Correction (Mroz Female Labor Supply)<a class="headerlink" href="#d-tobit-left-censoring-correction-mroz-female-labor-supply" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Problem</strong>: 43.2% of women report 0 hours worked. Ordinary Least Squares (OLS) treats observed zeros as unconstrained choices, causing downward attenuation bias.</li>
+<li><strong>Algorithm</strong>: Expectation-Maximization within IRLS to estimate the latent unobserved propensity <span class="arithmatex">\(y^*\)</span>.</li>
+<li><strong>Interpretation</strong>:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Structural Parameter Comparison (Tobit EM-IRLS vs Standard OLS):
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  exper  -&gt; Tobit: +105.71 | OLS: +41.50 | OLS Attenuation: 60.7%
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  kidslt6 -&gt; Tobit: -497.70 | OLS: -611.61
+</span></code></pre></div>
+OLS underestimates the marginal return to labor experience by over 60% due to censoring attenuation; Tobit recovers the true structural elasticity.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","content.code.copy","search.suggest","search.highlight","content.tabs.link","content.footnote.tooltips","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="../../assets/medium-zoom.min.js"></script>
+      
+        <script src="../../assets/zoom-init.js"></script>
+      
+        <script src="../../assets/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

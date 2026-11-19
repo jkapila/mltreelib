@@ -1,14 +1,2898 @@
- <!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Tree-based machine learning with a Rust core"><link rel=canonical href=https://jkapila.github.io/mltreelib/benchmarks/elo_overall/><link rel=describedby href=../../llms.txt><link rel=prev href=../elo/><link rel=next href=../elo_board/><link rel=icon href=../../assets/mltreelib-icon.svg><meta name=generator content=zensical-0.0.73><title>Overall Arena - mltreelib</title><link rel=stylesheet href=../../assets/stylesheets/modern/main.4ab2de0c.min.css><link rel=stylesheet href=../../assets/stylesheets/modern/palette.b60ce83d.min.css><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback"><style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style><script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script><meta name=google-site-verification content=LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY></head> <body dir=ltr data-md-color-scheme=default data-md-color-primary=teal data-md-color-accent=deep-orange> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer aria-hidden=true></label> <div data-md-component=skip> <a href=#__skip class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <header class="md-header md-header--shadow" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../.. title=mltreelib class="md-header__button md-logo" aria-label=mltreelib data-md-component=logo> <img src=../../assets/mltreelib-icon.svg alt=mltreelib> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg> <span class=md-visually-hidden>Navigation</span> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> mltreelib </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> Overall Arena </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=teal data-md-color-accent=deep-orange aria-label="Switch to dark mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=teal data-md-color-accent=deep-orange aria-label="Switch to light mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx=11 cy=11 r=8 /></svg> <span class=md-visually-hidden>Search</span> </label> <div class=md-search data-md-component=search role=dialog aria-label=Search> <button type=button class=md-search__button> Search </button> </div> <div class=md-header__source> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../.. title=mltreelib class="md-nav__button md-logo" aria-label=mltreelib data-md-component=logo> <img src=../../assets/mltreelib-icon.svg alt=mltreelib> </a> mltreelib </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../.. class=md-nav__link> <span class=md-ellipsis> Home </span> </a> </li> <li class=md-nav__item> <a href=../../installation/ class=md-nav__link> <span class=md-ellipsis> Installation </span> </a> </li> <li class=md-nav__item> <a href=../../quickstart/ class=md-nav__link> <span class=md-ellipsis> Quickstart </span> </a> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_4> <label class=md-nav__link for=__nav_4 id=__nav_4_label tabindex=0> <span class=md-ellipsis> Modeling pathways </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_4_label aria-expanded=false> <label class=md-nav__title for=__nav_4> <span class="md-nav__icon md-icon"></span> Modeling pathways </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../guides/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../guides/data/ class=md-nav__link> <span class=md-ellipsis> Prepare data </span> </a> </li> <li class=md-nav__item> <a href=../../guides/real-data/ class=md-nav__link> <span class=md-ellipsis> Get the datasets </span> </a> </li> <li class=md-nav__item> <a href=../../guides/regression/ class=md-nav__link> <span class=md-ellipsis> Regression </span> </a> </li> <li class=md-nav__item> <a href=../../guides/classification/ class=md-nav__link> <span class=md-ellipsis> Classification </span> </a> </li> <li class=md-nav__item> <a href=../../guides/clustering/ class=md-nav__link> <span class=md-ellipsis> Clustering </span> </a> </li> <li class=md-nav__item> <a href=../../guides/anomaly/ class=md-nav__link> <span class=md-ellipsis> Anomaly detection </span> </a> </li> <li class=md-nav__item> <a href=../../guides/survival/ class=md-nav__link> <span class=md-ellipsis> Survival </span> </a> </li> <li class=md-nav__item> <a href=../../guides/uplift/ class=md-nav__link> <span class=md-ellipsis> Uplift </span> </a> </li> <li class=md-nav__item> <a href=../../guides/evaluation/ class=md-nav__link> <span class=md-ellipsis> Evaluate and monitor </span> </a> </li> <li class=md-nav__item> <a href=../../guides/visualization/ class=md-nav__link> <span class=md-ellipsis> Visualize results </span> </a> </li> <li class=md-nav__item> <a href=../../guides/serving-contract/ class=md-nav__link> <span class=md-ellipsis> Prediction and schema </span> </a> </li> <li class=md-nav__item> <a href=../../guides/advanced-modeling/ class=md-nav__link> <span class=md-ellipsis> Extend a model tree </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5> <label class=md-nav__link for=__nav_5 id=__nav_5_label tabindex=0> <span class=md-ellipsis> Examples </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_5_label aria-expanded=false> <label class=md-nav__title for=__nav_5> <span class="md-nav__icon md-icon"></span> Examples </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../examples/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_2> <label class=md-nav__link for=__nav_5_2 id=__nav_5_2_label tabindex=0> <span class=md-ellipsis> Prepare inputs </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_2_label aria-expanded=false> <label class=md-nav__title for=__nav_5_2> <span class="md-nav__icon md-icon"></span> Prepare inputs </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../examples/data-processing/ class=md-nav__link> <span class=md-ellipsis> Data processing </span> </a> </li> <li class=md-nav__item> <a href=../../examples/categorical-encoders/ class=md-nav__link> <span class=md-ellipsis> Optional categorical encoders </span> </a> </li> <li class=md-nav__item> <a href=../../examples/missing-routing/ class=md-nav__link> <span class=md-ellipsis> Missing data and routing </span> </a> </li> <li class=md-nav__item> <a href=../../examples/timeseries-forecasting/ class=md-nav__link> <span class=md-ellipsis> Time series forecasting </span> </a> </li> <li class=md-nav__item> <a href=../../examples/two-controls-and-0d/ class=md-nav__link> <span class=md-ellipsis> Synthetic controls and ground truth </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_3> <label class=md-nav__link for=__nav_5_3 id=__nav_5_3_label tabindex=0> <span class=md-ellipsis> Configure and fit </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_3_label aria-expanded=false> <label class=md-nav__title for=__nav_5_3> <span class="md-nav__icon md-icon"></span> Configure and fit </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../examples/model-building/ class=md-nav__link> <span class=md-ellipsis> Model building </span> </a> </li> <li class=md-nav__item> <a href=../../examples/knob-tour/ class=md-nav__link> <span class=md-ellipsis> Growth knobs </span> </a> </li> <li class=md-nav__item> <a href=../../examples/hpo/ class=md-nav__link> <span class=md-ellipsis> Hyperparameter search </span> </a> </li> <li class=md-nav__item> <a href=../../examples/distributional-leaves/ class=md-nav__link> <span class=md-ellipsis> Distributional leaves </span> </a> </li> <li class=md-nav__item> <a href=../../examples/distributional-split-criteria/ class=md-nav__link> <span class=md-ellipsis> Distributional split criteria </span> </a> </li> <li class=md-nav__item> <a href=../../examples/tobit-regression/ class=md-nav__link> <span class=md-ellipsis> Tobit regression </span> </a> </li> <li class=md-nav__item> <a href=../../examples/survival-trees/ class=md-nav__link> <span class=md-ellipsis> Survival mechanics </span> </a> </li> <li class=md-nav__item> <a href=../../examples/causal-uplift/ class=md-nav__link> <span class=md-ellipsis> Causal simulation </span> </a> </li> <li class=md-nav__item> <a href=../../examples/honesty-weights/ class=md-nav__link> <span class=md-ellipsis> Honesty and weights </span> </a> </li> <li class=md-nav__item> <a href=../../examples/constraints/ class=md-nav__link> <span class=md-ellipsis> Monotone and interaction constraints </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_4> <label class=md-nav__link for=__nav_5_4 id=__nav_5_4_label tabindex=0> <span class=md-ellipsis> Evaluate and inspect </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_4_label aria-expanded=false> <label class=md-nav__title for=__nav_5_4> <span class="md-nav__icon md-icon"></span> Evaluate and inspect </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../examples/metrics-plots/ class=md-nav__link> <span class=md-ellipsis> Metrics and plots </span> </a> </li> <li class=md-nav__item> <a href=../../examples/inspection/ class=md-nav__link> <span class=md-ellipsis> Tree inspection </span> </a> </li> <li class=md-nav__item> <a href=../../examples/clustering-comparison/ class=md-nav__link> <span class=md-ellipsis> Clustering diagnostics </span> </a> </li> <li class=md-nav__item> <a href=../../examples/anomaly-comparison/ class=md-nav__link> <span class=md-ellipsis> Anomaly review budgets </span> </a> </li> <li class=md-nav__item> <a href=../../examples/walkthrough/ class=md-nav__link> <span class=md-ellipsis> Model review checklist </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_5_5> <label class=md-nav__link for=__nav_5_5 id=__nav_5_5_label tabindex=0> <span class=md-ellipsis> Explain and update </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_5_5_label aria-expanded=false> <label class=md-nav__title for=__nav_5_5> <span class="md-nav__icon md-icon"></span> Explain and update </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../examples/rules-summary-knn/ class=md-nav__link> <span class=md-ellipsis> Rules, summaries and neighbors </span> </a> </li> <li class=md-nav__item> <a href=../../examples/hierarchical-retrain/ class=md-nav__link> <span class=md-ellipsis> Hierarchical retrain and routing </span> </a> </li> <li class=md-nav__item> <a href=../../examples/stump-explainable/ class=md-nav__link> <span class=md-ellipsis> Explainable stumps and retrain </span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_6> <label class=md-nav__link for=__nav_6 id=__nav_6_label tabindex=0> <span class=md-ellipsis> Blog </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_6_label aria-expanded=false> <label class=md-nav__title for=__nav_6> <span class="md-nav__icon md-icon"></span> Blog </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../blog/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../blog/why-credit-scoring-needs-glass-box-trees/ class=md-nav__link> <span class=md-ellipsis> Credit Scoring and Trees </span> </a> </li> <li class=md-nav__item> <a href=../../blog/zero-imputation-predictive-maintenance/ class=md-nav__link> <span class=md-ellipsis> Zero-Imputation Maintenance </span> </a> </li> <li class=md-nav__item> <a href=../../blog/uplift-modeling-with-causal-trees/ class=md-nav__link> <span class=md-ellipsis> Causal Uplift Modeling </span> </a> </li> <li class=md-nav__item> <a href=../../blog/modernizing-quinlan-classics-in-rust/ class=md-nav__link> <span class=md-ellipsis> Modernizing Quinlan in Rust </span> </a> </li> <li class=md-nav__item> <a href=../../blog/beyond-mse-distributional-trees/ class=md-nav__link> <span class=md-ellipsis> Beyond MSE (Distributional) </span> </a> </li> <li class=md-nav__item> <a href=../../blog/breaking-step-functions-model-trees-vs-gbdt/ class=md-nav__link> <span class=md-ellipsis> Breaking Step Functions </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_7 checked> <label class=md-nav__link for=__nav_7 id=__nav_7_label tabindex=0> <span class=md-ellipsis> Benchmarks </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_7_label aria-expanded=true> <label class=md-nav__title for=__nav_7> <span class="md-nav__icon md-icon"></span> Benchmarks </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../elo/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class="md-nav__item md-nav__item--active"> <label class="md-nav__link md-nav__link--active" for=__toc> <span class=md-ellipsis> Overall Arena </span> <span class="md-nav__icon md-icon"></span> </label> <a href=././ class="md-nav__link md-nav__link--active"> <span class=md-ellipsis> Overall Arena </span> </a> <nav class="md-nav md-nav--secondary" aria-label="On this page"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> On this page </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#overall-leaderboard-56-datasets class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> Overall Leaderboard (56 Datasets) </span> </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../elo_board/ class=md-nav__link> <span class=md-ellipsis> Regression Arena </span> </a> </li> <li class=md-nav__item> <a href=../elo_cla_board/ class=md-nav__link> <span class=md-ellipsis> Classification Arena </span> </a> </li> <li class=md-nav__item> <a href=../datasets/ class=md-nav__link> <span class=md-ellipsis> DataSets </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_8> <label class=md-nav__link for=__nav_8 id=__nav_8_label tabindex=0> <span class=md-ellipsis> Research </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_8_label aria-expanded=false> <label class=md-nav__title for=__nav_8> <span class="md-nav__icon md-icon"></span> Research </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../field-notes/ class=md-nav__link> <span class=md-ellipsis> Field notes </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_9> <label class=md-nav__link for=__nav_9 id=__nav_9_label tabindex=0> <span class=md-ellipsis> API reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_9_label aria-expanded=false> <label class=md-nav__title for=__nav_9> <span class="md-nav__icon md-icon"></span> API reference </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../reference/api/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../reference/parameters/ class=md-nav__link> <span class=md-ellipsis> Parameters Catalog </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/data/ class=md-nav__link> <span class=md-ellipsis> Data </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/model-tree/ class=md-nav__link> <span class=md-ellipsis> ModelTree </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/cluster/ class=md-nav__link> <span class=md-ellipsis> Clustering trees </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/anomaly/ class=md-nav__link> <span class=md-ellipsis> Anomaly &amp; density trees </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/metrics/ class=md-nav__link> <span class=md-ellipsis> Metrics </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/encoders/ class=md-nav__link> <span class=md-ellipsis> Encoders &amp; scalers </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api/features/ class=md-nav__link> <span class=md-ellipsis> Feature functions </span> </a> </li> <li class=md-nav__item> <a href=../../reference/data/ class=md-nav__link> <span class=md-ellipsis> Data guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/model/ class=md-nav__link> <span class=md-ellipsis> Model guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/metrics/ class=md-nav__link> <span class=md-ellipsis> Metrics guide </span> </a> </li> <li class=md-nav__item> <a href=../../reference/reports/ class=md-nav__link> <span class=md-ellipsis> Evaluation reports </span> </a> </li> </ul> </nav> </li> </ul> </nav> </div> </div> </div> <div class="md-sidebar md-sidebar--secondary" data-md-component=sidebar data-md-type=toc> <div class=md-sidebar__scrollwrap> <input class="md-nav__toggle md-toggle" type=checkbox id=__toc> <div class=md-sidebar-button__wrapper> <label class=md-sidebar-button for=__toc></label> </div> <div class=md-sidebar__inner> <nav class="md-nav md-nav--secondary" aria-label="On this page"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> On this page </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#overall-leaderboard-56-datasets class=md-nav__link> <span class=md-ellipsis> <span class=md-typeset> Overall Leaderboard (56 Datasets) </span> </span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <a id=__skip tabindex=-1></a> <h1 id=overall-benchmark-arena>Overall Benchmark Arena<a class=headerlink href=#overall-benchmark-arena title="Permanent link">¶</a></h1> <p><em>Cumulative Elo leaderboard combining all <strong>56 benchmark datasets</strong> (<strong>18 Regression</strong> on test RMSE + <strong>38 Classification</strong> on test Accuracy).</em><br> <em>Click any column header to sort. Evaluates models across <strong>Rust, Python, and R</strong> under identical 300s wall-clock isolation.</em></p> <p><strong>Arena Navigation:</strong><br> - <a href=../elo_board/>Regression Arena (18 datasets)</a><br> - <a href=../elo_cla_board/>Classification Arena (38 datasets)</a><br> - <a href=../datasets/>Datasets Metadata &amp; Sources</a></p> <hr> <h2 id=overall-leaderboard-56-datasets>Overall Leaderboard (56 Datasets)<a class=headerlink href=#overall-leaderboard-56-datasets title="Permanent link">¶</a></h2> <div id=elo-overall-table class=elo-interactive-wrap> <style>
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Tree-based machine learning with a Rust core">
+      
+      
+      
+        <link rel="canonical" href="https://jkapila.github.io/mltreelib/benchmarks/elo_overall/">
+      
+      
+      
+        <link rel="prev" href="../elo/">
+      
+      
+        <link rel="next" href="../elo_board/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/mltreelib-icon.svg">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Overall Arena - mltreelib</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  <meta name="google-site-verification" content="LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY" />
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mltreelib" class="md-header__button md-logo" aria-label="mltreelib" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mltreelib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overall Arena
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mltreelib" class="md-nav__button md-logo" aria-label="mltreelib" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib">
+
+    </a>
+    mltreelib
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modeling pathways
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Modeling pathways
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prepare data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/real-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Get the datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly detection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/survival/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Survival
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Uplift
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluate and monitor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Visualize results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/serving-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prediction and schema
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/advanced-modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Extend a model tree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Examples
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Core Suites
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Core Suites
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/core-tree-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 1: Core Architecture & Growth Knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/constraints-and-honesty/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 2: Structural Constraints & Honesty
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/missing-data-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 3: Native Missing Data Routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/distributional-leaves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 4: Distributional & Censored Leaves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/hierarchical-retrain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 5: Dynamic Leaf Retraining
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/statistical-and-metric-splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 6: Statistical & Metric Splitting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/timeseries-forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 7: Time Series Forecasting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/unsupervised-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 8: Unsupervised Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/solver-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaf Solver Benchmarks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Specialized Topics
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Specialized Topics
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/data-processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data processing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/categorical-encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Optional categorical encoders
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/missing-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Missing data and routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/two-controls-and-0d/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Synthetic controls and ground truth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/model-building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model building
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/knob-tour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Growth knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/hpo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hyperparameter search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/distributional-split-criteria/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional split criteria
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/tobit-regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tobit regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Survival mechanics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/causal-uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal simulation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/honesty-weights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Honesty and weights
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/constraints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monotone and interaction constraints
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics and plots
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/inspection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tree inspection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/clustering-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/anomaly-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly review budgets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model review checklist
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/rules-summary-knn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rules, summaries and neighbors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/stump-explainable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Explainable stumps and retrain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blog
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blog
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modernizing Quinlan in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/beyond-mse-distributional-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Beyond MSE (Distributional)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Breaking Step Functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Benchmarks
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary-cross-task-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Executive Summary &amp; Cross-Task Insights
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executive Summary &amp; Cross-Task Insights">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unified-arena-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Unified Arena Overview
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-high-altitude-rankings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. High-Altitude Rankings
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-language-runtime-economy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Language &amp; Runtime Economy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overall-leaderboard-56-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Overall Leaderboard (56 Datasets)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elo_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elo_cla_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  DataSets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Research
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Research
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../field-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Field notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameters Catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/model-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ModelTree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly & density trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Encoders & scalers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Feature functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluation reports
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary-cross-task-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Executive Summary &amp; Cross-Task Insights
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executive Summary &amp; Cross-Task Insights">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unified-arena-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Unified Arena Overview
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-high-altitude-rankings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. High-Altitude Rankings
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-language-runtime-economy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Language &amp; Runtime Economy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overall-leaderboard-56-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Overall Leaderboard (56 Datasets)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+
+<h1 id="overall-benchmark-arena">Overall Benchmark Arena<a class="headerlink" href="#overall-benchmark-arena" title="Permanent link">&para;</a></h1>
+<p><em>Cumulative Elo leaderboard combining all <strong>56 benchmark datasets</strong> (<strong>18 Regression</strong> on test RMSE + <strong>38 Classification</strong> on test Accuracy).</em><br />
+<em>Click any column header to sort. Evaluates models across <strong>Rust, Python, and R</strong> under identical 300s wall-clock isolation.</em></p>
+<p><strong>Arena Navigation:</strong><br />
+- <a href="../elo_board/">Regression Arena (18 datasets)</a><br />
+- <a href="../elo_cla_board/">Classification Arena (38 datasets)</a><br />
+- <a href="../datasets/">Datasets Metadata &amp; Sources</a></p>
+<hr />
+<h2 id="executive-summary-cross-task-insights">Executive Summary &amp; Cross-Task Insights<a class="headerlink" href="#executive-summary-cross-task-insights" title="Permanent link">&para;</a></h2>
+<h3 id="1-unified-arena-overview">1. Unified Arena Overview<a class="headerlink" href="#1-unified-arena-overview" title="Permanent link">&para;</a></h3>
+<p>The cumulative TabArena-v0.1 arena provides an empirical tournament across <strong>56 diverse datasets</strong> spanning physical sciences, medical diagnosis, financial churn, industrial failures, and web analytics. Every algorithm was tested under strict serial evaluation with a 300-second wall-clock timeout per run.</p>
+<h3 id="2-high-altitude-rankings">2. High-Altitude Rankings<a class="headerlink" href="#2-high-altitude-rankings" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>grf_llf (Rank 1, Elo 1585.4)</strong>: Leads in regression via Generalized Random Forests with local linear leaves.</li>
+<li><strong>CatBoost (Rank 2, Overall Elo 1477.5)</strong>: The most consistent dual-domain performer across all 56 datasets (Reg: 1479.0, Cla: 1388.0).</li>
+<li><strong>perpetual (Rust) (Rank 3, Overall Elo 1391.8)</strong>: High-speed pure-Rust gradient booster with automatic stopping and zero hyperparameters.</li>
+<li><strong>sklearn RF &amp; ChimeraBoost (Ranks 4-5, Elo 1368.5 &amp; 1354.9)</strong>: Random forests remain extraordinarily resilient across diverse tabular domains without manual tuning.</li>
+<li><strong>EBM (Explainable Boosting Machine) (Rank 6, Elo 1353.5)</strong>: Highest-ranking fully interpretable model, though computationally expensive (~44.7s average fit time).</li>
+<li><strong>ModelTree(all) (Rank 7, Overall Elo 1333.9)</strong>: The top-performing pure-Rust model tree architecture. It outperforms traditional trees (<code>ctree</code>, <code>rpart</code>, <code>sklearn tree</code>) by 300+ Elo points and matches or exceeds standard gradient boosters on many tasks by substituting flat leaf constants with regularized local linear models.</li>
+</ol>
+<h3 id="3-language-runtime-economy">3. Language &amp; Runtime Economy<a class="headerlink" href="#3-language-runtime-economy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Rust Core Advantage</strong>: <code>ModelTree</code> and <code>perpetual</code> provide native memory safety and multi-threaded throughput with zero reliance on external BLAS/Fortran runtimes.</li>
+<li><strong>Microsecond Leaf Updates</strong>: While full GBDT re-fitting requires dozens of seconds, <code>ModelTree</code> enables frozen-topology leaf retraining in &lt; 2 ms, allowing high-throughput online serving on streaming data.</li>
+</ul>
+<hr />
+<h2 id="overall-leaderboard-56-datasets">Overall Leaderboard (56 Datasets)<a class="headerlink" href="#overall-leaderboard-56-datasets" title="Permanent link">&para;</a></h2>
+<div id="elo-overall-table" class="elo-interactive-wrap">
+<style>
 #elo-overall-table { overflow-x: auto; margin: 1.2em 0; border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-#elo-overall-table table { border-collapse: separate; border-spacing: 0; font-size: 0.82rem; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
-#elo-overall-table th, #elo-overall-table td { padding: 7px 12px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
+#elo-overall-table table { border-collapse: separate; border-spacing: 0; font-size: 0.72rem; line-height: 1.25; white-space: nowrap; font-family: var(--md-code-font-family, monospace); width: 100%; }
+#elo-overall-table th, #elo-overall-table td { padding: 4px 8px; border-bottom: 1px solid var(--md-default-fg-color--lightest, #e6e6e6); text-align: right; background: var(--md-default-bg-color, #fff); box-sizing: border-box; }
 #elo-overall-table th { cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 4; font-weight: 600; background: var(--md-default-fg-color--lightest, #f8f9fa); border-bottom: 2px solid var(--md-default-fg-color--light, #ccc); }
 #elo-overall-table th:hover { color: var(--md-accent-fg-color, #0288d1); background: #eef7fc; }
 #elo-overall-table td.n { text-align: right; }
 #elo-overall-table td.m-name { text-align: left; }
 #elo-overall-table tr:hover td { background: var(--md-default-fg-color--lightest, #f4f6f8); }
 #elo-overall-table td.elo-top { color: #e65100; font-weight: 700; }
-</style> <table> <thead><tr> <th data-t=0>RANK</th> <th data-t=1>OVERALL ELO</th> <th data-t=2 style=text-align:left;>MODEL</th> <th data-t=3>REG ELO</th> <th data-t=4>CLA ELO</th> <th data-t=5>DATASETS</th> <th data-t=6>FIT TIME (±sd)</th> <th data-t=7>LANG</th> <th data-t=8>CAT HANDLING</th> </tr></thead> <tbody><tr><td class=n style=text-align:center;>1</td><td class="k n elo-top"><b>1585.4</b></td><td class="k n m-name"><b>grf_llf</b></td><td class=n>1585.4</td><td class=n>·</td><td class=n>16/56</td><td class=n>23.17±31.44s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>2</td><td class="k n"><b>1477.5</b></td><td class="k n m-name"><b>CatBoost(200)</b></td><td class=n>1479.0</td><td class=n>1388.0</td><td class=n>56/56</td><td class=n>5.59±19.65s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>3</td><td class="k n"><b>1391.8</b></td><td class="k n m-name"><b>perpetual (Rust)</b></td><td class=n>1490.2</td><td class=n>1302.3</td><td class=n>41/56</td><td class=n>15.04±30.44s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>4</td><td class="k n"><b>1368.5</b></td><td class="k n m-name"><b>sklearn RF</b></td><td class=n>1670.4</td><td class=n>1279.0</td><td class=n>56/56</td><td class=n>9.76±22.40s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>5</td><td class="k n"><b>1354.9</b></td><td class="k n m-name"><b>ChimeraBoost</b></td><td class=n>1723.5</td><td class=n>1265.3</td><td class=n>56/56</td><td class=n>7.42±11.86s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>6</td><td class="k n"><b>1353.5</b></td><td class="k n m-name"><b>EBM</b></td><td class=n>1362.8</td><td class=n>1264.0</td><td class=n>44/56</td><td class=n>44.66±49.61s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>7</td><td class="k n"><b>1333.9</b></td><td class="k n m-name"><b>ModelTree(all)</b></td><td class=n>1123.3</td><td class=n>1244.3</td><td class=n>54/56</td><td class=n>17.13±36.34s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>8</td><td class="k n"><b>1318.3</b></td><td class="k n m-name"><b>bart</b></td><td class=n>1237.2</td><td class=n>1228.8</td><td class=n>36/56</td><td class=n>19.07±29.65s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>9</td><td class="k n"><b>1293.5</b></td><td class="k n m-name"><b>ranger</b></td><td class=n>1685.4</td><td class=n>1204.0</td><td class=n>54/56</td><td class=n>18.10±30.97s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>10</td><td class="k n"><b>1281.7</b></td><td class="k n m-name"><b>sklearn GBM</b></td><td class=n>1120.6</td><td class=n>1192.2</td><td class=n>55/56</td><td class=n>8.77±19.04s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>11</td><td class="k n"><b>1277.4</b></td><td class="k n m-name"><b>c50_rules</b></td><td class=n>·</td><td class=n>1187.8</td><td class=n>33/56</td><td class=n>3.99±5.63s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>12</td><td class="k n"><b>1260.3</b></td><td class="k n m-name"><b>HistGradientBoosting</b></td><td class=n>1411.7</td><td class=n>1170.8</td><td class=n>50/56</td><td class=n>1.34±3.09s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>13</td><td class="k n"><b>1248.9</b></td><td class="k n m-name"><b>c50_tree</b></td><td class=n>·</td><td class=n>1159.4</td><td class=n>36/56</td><td class=n>5.00±7.76s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>14</td><td class="k n"><b>1237.7</b></td><td class="k n m-name"><b>LightGBM(200)</b></td><td class=n>1525.9</td><td class=n>1148.2</td><td class=n>56/56</td><td class=n>0.60±0.80s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>15</td><td class="k n"><b>1200.4</b></td><td class="k n m-name"><b>CTBoost</b></td><td class=n>1283.2</td><td class=n>1110.9</td><td class=n>46/56</td><td class=n>0.65±1.56s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>16</td><td class="k n"><b>1165.8</b></td><td class="k n m-name"><b>ExtraTrees</b></td><td class=n>1623.4</td><td class=n>1076.2</td><td class=n>56/56</td><td class=n>5.77±19.44s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>17</td><td class="k n"><b>1126.4</b></td><td class="k n m-name"><b>forust (Rust)</b></td><td class=n>1363.6</td><td class=n>1036.9</td><td class=n>48/56</td><td class=n>1.19±0.81s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>18</td><td class="k n"><b>1108.3</b></td><td class="k n m-name"><b>MARS (mars-earth)</b></td><td class=n>885.3</td><td class=n>1018.8</td><td class=n>18/56</td><td class=n>27.24±40.59s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>19</td><td class="k n"><b>1066.7</b></td><td class="k n m-name"><b>lmtree</b></td><td class=n>1066.7</td><td class=n>·</td><td class=n>14/56</td><td class=n>20.22±47.48s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>20</td><td class="k n"><b>1065.6</b></td><td class="k n m-name"><b>modeltrees lmtree</b></td><td class=n>1065.6</td><td class=n>·</td><td class=n>14/56</td><td class=n>15.29±51.54s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>21</td><td class="k n"><b>1037.7</b></td><td class="k n m-name"><b>ctree</b></td><td class=n>668.6</td><td class=n>948.1</td><td class=n>44/56</td><td class=n>9.71±37.27s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>22</td><td class="k n"><b>1036.6</b></td><td class="k n m-name"><b>ModelTree(opt)</b></td><td class=n>852.0</td><td class=n>947.1</td><td class=n>56/56</td><td class=n>2.37±8.95s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>23</td><td class="k n"><b>1015.2</b></td><td class="k n m-name"><b>ModelTree(path)</b></td><td class=n>595.9</td><td class=n>925.6</td><td class=n>56/56</td><td class=n>8.23±31.06s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>24</td><td class="k n"><b>1013.9</b></td><td class="k n m-name"><b>ModelTree(mean)</b></td><td class=n>506.5</td><td class=n>924.4</td><td class=n>56/56</td><td class=n>6.11±30.50s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>25</td><td class="k n"><b>999.1</b></td><td class="k n m-name"><b>grf_rf</b></td><td class=n>1242.5</td><td class=n>909.5</td><td class=n>27/56</td><td class=n>15.45±20.17s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>26</td><td class="k n"><b>964.1</b></td><td class="k n m-name"><b>cubist</b></td><td class=n>964.1</td><td class=n>·</td><td class=n>17/56</td><td class=n>6.23±15.19s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>27</td><td class="k n"><b>925.7</b></td><td class="k n m-name"><b>ModelTree(winnow)</b></td><td class=n>980.2</td><td class=n>836.1</td><td class=n>54/56</td><td class=n>6.54±10.19s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>28</td><td class="k n"><b>889.7</b></td><td class="k n m-name"><b>sklearn tree</b></td><td class=n>562.4</td><td class=n>800.1</td><td class=n>56/56</td><td class=n>0.85±3.85s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>29</td><td class="k n"><b>880.5</b></td><td class="k n m-name"><b>KNN</b></td><td class=n>679.5</td><td class=n>791.0</td><td class=n>56/56</td><td class=n>0.26±0.53s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>30</td><td class="k n"><b>849.9</b></td><td class="k n m-name"><b>rpart</b></td><td class=n>335.1</td><td class=n>760.4</td><td class=n>53/56</td><td class=n>2.02±5.98s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>31</td><td class="k n"><b>827.3</b></td><td class="k n m-name"><b>modeltrees glmtree</b></td><td class=n>·</td><td class=n>737.7</td><td class=n>16/56</td><td class=n>23.99±39.03s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>32</td><td class="k n"><b>816.8</b></td><td class="k n m-name"><b>statsmodels MNLogit</b></td><td class=n>·</td><td class=n>727.6</td><td class=n>5/56</td><td class=n>0.03±0.01s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>33</td><td class="k n"><b>814.9</b></td><td class="k n m-name"><b>ModelTree(v0.3.3-default)</b></td><td class=n>814.9</td><td class=n>·</td><td class=n>18/56</td><td class=n>0.11±0.35s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>34</td><td class="k n"><b>790.9</b></td><td class="k n m-name"><b>mboost</b></td><td class=n>859.2</td><td class=n>701.3</td><td class=n>34/56</td><td class=n>16.11±37.99s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>35</td><td class="k n"><b>790.7</b></td><td class="k n m-name"><b>modeltrees multinomtree</b></td><td class=n>·</td><td class=n>701.1</td><td class=n>15/56</td><td class=n>11.53±25.66s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>36</td><td class="k n"><b>777.4</b></td><td class="k n m-name"><b>glmtree</b></td><td class=n>1033.1</td><td class=n>687.9</td><td class=n>30/56</td><td class=n>28.38±48.39s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>37</td><td class="k n"><b>767.4</b></td><td class="k n m-name"><b>mltreelib MARS(deg=2)</b></td><td class=n>767.4</td><td class=n>·</td><td class=n>17/56</td><td class=n>3.19±7.11s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>unknown</td></tr><tr><td class=n style=text-align:center;>38</td><td class="k n"><b>756.3</b></td><td class="k n m-name"><b>earth</b></td><td class=n>654.5</td><td class=n>666.8</td><td class=n>36/56</td><td class=n>5.92±19.25s</td><td class=n style=text-align:center;>R</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>39</td><td class="k n"><b>748.3</b></td><td class="k n m-name"><b>sklearn LogReg</b></td><td class=n>·</td><td class=n>658.7</td><td class=n>38/56</td><td class=n>4.27±6.32s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>40</td><td class="k n"><b>701.7</b></td><td class="k n m-name"><b>statsmodels OLS</b></td><td class=n>701.7</td><td class=n>·</td><td class=n>8/56</td><td class=n>0.33±0.68s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>41</td><td class="k n"><b>686.9</b></td><td class="k n m-name"><b>ModelTree(leaf=mars,deg=1)</b></td><td class=n>686.9</td><td class=n>·</td><td class=n>17/56</td><td class=n>0.30±0.47s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>42</td><td class="k n"><b>677.4</b></td><td class="k n m-name"><b>ModelTree(leaf=mars,deg=2)</b></td><td class=n>677.4</td><td class=n>·</td><td class=n>17/56</td><td class=n>0.74±1.38s</td><td class=n style=text-align:center;>Rust</td><td class=n style=text-align:center;>internal</td></tr><tr><td class=n style=text-align:center;>43</td><td class="k n"><b>656.8</b></td><td class="k n m-name"><b>mltreelib MARS(deg=1)</b></td><td class=n>656.8</td><td class=n>·</td><td class=n>17/56</td><td class=n>0.75±1.30s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>unknown</td></tr><tr><td class=n style=text-align:center;>44</td><td class="k n"><b>583.4</b></td><td class="k n m-name"><b>trust-free</b></td><td class=n>583.4</td><td class=n>·</td><td class=n>4/56</td><td class=n>14.37±7.33s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>45</td><td class="k n"><b>554.9</b></td><td class="k n m-name"><b>sklearn Linear</b></td><td class=n>554.9</td><td class=n>·</td><td class=n>18/56</td><td class=n>0.09±0.23s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>external</td></tr><tr><td class=n style=text-align:center;>46</td><td class="k n"><b>549.6</b></td><td class="k n m-name"><b>statsmodels RLM</b></td><td class=n>549.6</td><td class=n>·</td><td class=n>8/56</td><td class=n>17.48±43.02s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>none</td></tr><tr><td class=n style=text-align:center;>47</td><td class="k n"><b>370.2</b></td><td class="k n m-name"><b>statsmodels QuantReg</b></td><td class=n>370.2</td><td class=n>·</td><td class=n>7/56</td><td class=n>22.52±59.15s</td><td class=n style=text-align:center;>Python</td><td class=n style=text-align:center;>none</td></tr></tbody> </table> <script>
+</style>
+<table>
+<thead><tr>
+<th data-t='0'>RANK</th>
+<th data-t='1'>OVERALL ELO</th>
+<th data-t='2' style='text-align:left;'>MODEL</th>
+<th data-t='3'>REG ELO</th>
+<th data-t='4'>CLA ELO</th>
+<th data-t='5'>DATASETS</th>
+<th data-t='6'>FIT TIME (±sd)</th>
+<th data-t='7'>LANG</th>
+<th data-t='8'>CAT HANDLING</th>
+</tr></thead>
+<tbody><tr><td class='n' style='text-align:center;'>1</td><td class='k n elo-top'><b>1585.4</b></td><td class='k n m-name'><b>grf_llf</b></td><td class='n'>1585.4</td><td class='n'>·</td><td class='n'>16/56</td><td class='n'>23.17±31.44s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>2</td><td class='k n'><b>1477.5</b></td><td class='k n m-name'><b>CatBoost(200)</b></td><td class='n'>1479.0</td><td class='n'>1388.0</td><td class='n'>56/56</td><td class='n'>5.59±19.65s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>3</td><td class='k n'><b>1391.8</b></td><td class='k n m-name'><b>perpetual (Rust)</b></td><td class='n'>1490.2</td><td class='n'>1302.3</td><td class='n'>41/56</td><td class='n'>15.04±30.44s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>4</td><td class='k n'><b>1368.5</b></td><td class='k n m-name'><b>sklearn RF</b></td><td class='n'>1670.4</td><td class='n'>1279.0</td><td class='n'>56/56</td><td class='n'>9.76±22.40s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>5</td><td class='k n'><b>1354.9</b></td><td class='k n m-name'><b>ChimeraBoost</b></td><td class='n'>1723.5</td><td class='n'>1265.3</td><td class='n'>56/56</td><td class='n'>7.42±11.86s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>6</td><td class='k n'><b>1353.5</b></td><td class='k n m-name'><b>EBM</b></td><td class='n'>1362.8</td><td class='n'>1264.0</td><td class='n'>44/56</td><td class='n'>44.66±49.61s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>7</td><td class='k n'><b>1333.9</b></td><td class='k n m-name'><b>ModelTree(all)</b></td><td class='n'>1123.3</td><td class='n'>1244.3</td><td class='n'>54/56</td><td class='n'>17.13±36.34s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>8</td><td class='k n'><b>1318.3</b></td><td class='k n m-name'><b>bart</b></td><td class='n'>1237.2</td><td class='n'>1228.8</td><td class='n'>36/56</td><td class='n'>19.07±29.65s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>9</td><td class='k n'><b>1293.5</b></td><td class='k n m-name'><b>ranger</b></td><td class='n'>1685.4</td><td class='n'>1204.0</td><td class='n'>54/56</td><td class='n'>18.10±30.97s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>10</td><td class='k n'><b>1281.7</b></td><td class='k n m-name'><b>sklearn GBM</b></td><td class='n'>1120.6</td><td class='n'>1192.2</td><td class='n'>55/56</td><td class='n'>8.77±19.04s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>11</td><td class='k n'><b>1277.4</b></td><td class='k n m-name'><b>c50_rules</b></td><td class='n'>·</td><td class='n'>1187.8</td><td class='n'>33/56</td><td class='n'>3.99±5.63s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>12</td><td class='k n'><b>1260.3</b></td><td class='k n m-name'><b>HistGradientBoosting</b></td><td class='n'>1411.7</td><td class='n'>1170.8</td><td class='n'>50/56</td><td class='n'>1.34±3.09s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>13</td><td class='k n'><b>1248.9</b></td><td class='k n m-name'><b>c50_tree</b></td><td class='n'>·</td><td class='n'>1159.4</td><td class='n'>36/56</td><td class='n'>5.00±7.76s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>14</td><td class='k n'><b>1237.7</b></td><td class='k n m-name'><b>LightGBM(200)</b></td><td class='n'>1525.9</td><td class='n'>1148.2</td><td class='n'>56/56</td><td class='n'>0.60±0.80s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>15</td><td class='k n'><b>1200.4</b></td><td class='k n m-name'><b>CTBoost</b></td><td class='n'>1283.2</td><td class='n'>1110.9</td><td class='n'>46/56</td><td class='n'>0.65±1.56s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>16</td><td class='k n'><b>1165.8</b></td><td class='k n m-name'><b>ExtraTrees</b></td><td class='n'>1623.4</td><td class='n'>1076.2</td><td class='n'>56/56</td><td class='n'>5.77±19.44s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>17</td><td class='k n'><b>1126.4</b></td><td class='k n m-name'><b>forust (Rust)</b></td><td class='n'>1363.6</td><td class='n'>1036.9</td><td class='n'>48/56</td><td class='n'>1.19±0.81s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>18</td><td class='k n'><b>1108.3</b></td><td class='k n m-name'><b>MARS (mars-earth)</b></td><td class='n'>885.3</td><td class='n'>1018.8</td><td class='n'>18/56</td><td class='n'>27.24±40.59s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>19</td><td class='k n'><b>1066.7</b></td><td class='k n m-name'><b>lmtree</b></td><td class='n'>1066.7</td><td class='n'>·</td><td class='n'>14/56</td><td class='n'>20.22±47.48s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>20</td><td class='k n'><b>1065.6</b></td><td class='k n m-name'><b>modeltrees lmtree</b></td><td class='n'>1065.6</td><td class='n'>·</td><td class='n'>14/56</td><td class='n'>15.29±51.54s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>21</td><td class='k n'><b>1037.7</b></td><td class='k n m-name'><b>ctree</b></td><td class='n'>668.6</td><td class='n'>948.1</td><td class='n'>44/56</td><td class='n'>9.71±37.27s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>22</td><td class='k n'><b>1036.6</b></td><td class='k n m-name'><b>ModelTree(opt)</b></td><td class='n'>852.0</td><td class='n'>947.1</td><td class='n'>56/56</td><td class='n'>2.37±8.95s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>23</td><td class='k n'><b>1015.2</b></td><td class='k n m-name'><b>ModelTree(path)</b></td><td class='n'>595.9</td><td class='n'>925.6</td><td class='n'>56/56</td><td class='n'>8.23±31.06s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>24</td><td class='k n'><b>1013.9</b></td><td class='k n m-name'><b>ModelTree(mean)</b></td><td class='n'>506.5</td><td class='n'>924.4</td><td class='n'>56/56</td><td class='n'>6.11±30.50s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>25</td><td class='k n'><b>999.1</b></td><td class='k n m-name'><b>grf_rf</b></td><td class='n'>1242.5</td><td class='n'>909.5</td><td class='n'>27/56</td><td class='n'>15.45±20.17s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>26</td><td class='k n'><b>964.1</b></td><td class='k n m-name'><b>cubist</b></td><td class='n'>964.1</td><td class='n'>·</td><td class='n'>17/56</td><td class='n'>6.23±15.19s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>27</td><td class='k n'><b>925.7</b></td><td class='k n m-name'><b>ModelTree(winnow)</b></td><td class='n'>980.2</td><td class='n'>836.1</td><td class='n'>54/56</td><td class='n'>6.54±10.19s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>28</td><td class='k n'><b>889.7</b></td><td class='k n m-name'><b>sklearn tree</b></td><td class='n'>562.4</td><td class='n'>800.1</td><td class='n'>56/56</td><td class='n'>0.85±3.85s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>29</td><td class='k n'><b>880.5</b></td><td class='k n m-name'><b>KNN</b></td><td class='n'>679.5</td><td class='n'>791.0</td><td class='n'>56/56</td><td class='n'>0.26±0.53s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>30</td><td class='k n'><b>849.9</b></td><td class='k n m-name'><b>rpart</b></td><td class='n'>335.1</td><td class='n'>760.4</td><td class='n'>53/56</td><td class='n'>2.02±5.98s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>31</td><td class='k n'><b>827.3</b></td><td class='k n m-name'><b>modeltrees glmtree</b></td><td class='n'>·</td><td class='n'>737.7</td><td class='n'>16/56</td><td class='n'>23.99±39.03s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>32</td><td class='k n'><b>816.8</b></td><td class='k n m-name'><b>statsmodels MNLogit</b></td><td class='n'>·</td><td class='n'>727.6</td><td class='n'>5/56</td><td class='n'>0.03±0.01s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>33</td><td class='k n'><b>814.9</b></td><td class='k n m-name'><b>ModelTree(v0.3.3-default)</b></td><td class='n'>814.9</td><td class='n'>·</td><td class='n'>18/56</td><td class='n'>0.11±0.35s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>34</td><td class='k n'><b>790.9</b></td><td class='k n m-name'><b>mboost</b></td><td class='n'>859.2</td><td class='n'>701.3</td><td class='n'>34/56</td><td class='n'>16.11±37.99s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>35</td><td class='k n'><b>790.7</b></td><td class='k n m-name'><b>modeltrees multinomtree</b></td><td class='n'>·</td><td class='n'>701.1</td><td class='n'>15/56</td><td class='n'>11.53±25.66s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>36</td><td class='k n'><b>777.4</b></td><td class='k n m-name'><b>glmtree</b></td><td class='n'>1033.1</td><td class='n'>687.9</td><td class='n'>30/56</td><td class='n'>28.38±48.39s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>37</td><td class='k n'><b>767.4</b></td><td class='k n m-name'><b>mltreelib MARS(deg=2)</b></td><td class='n'>767.4</td><td class='n'>·</td><td class='n'>17/56</td><td class='n'>3.19±7.11s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>unknown</td></tr><tr><td class='n' style='text-align:center;'>38</td><td class='k n'><b>756.3</b></td><td class='k n m-name'><b>earth</b></td><td class='n'>654.5</td><td class='n'>666.8</td><td class='n'>36/56</td><td class='n'>5.92±19.25s</td><td class='n' style='text-align:center;'>R</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>39</td><td class='k n'><b>748.3</b></td><td class='k n m-name'><b>sklearn LogReg</b></td><td class='n'>·</td><td class='n'>658.7</td><td class='n'>38/56</td><td class='n'>4.27±6.32s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>40</td><td class='k n'><b>701.7</b></td><td class='k n m-name'><b>statsmodels OLS</b></td><td class='n'>701.7</td><td class='n'>·</td><td class='n'>8/56</td><td class='n'>0.33±0.68s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>41</td><td class='k n'><b>686.9</b></td><td class='k n m-name'><b>ModelTree(leaf=mars,deg=1)</b></td><td class='n'>686.9</td><td class='n'>·</td><td class='n'>17/56</td><td class='n'>0.30±0.47s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>42</td><td class='k n'><b>677.4</b></td><td class='k n m-name'><b>ModelTree(leaf=mars,deg=2)</b></td><td class='n'>677.4</td><td class='n'>·</td><td class='n'>17/56</td><td class='n'>0.74±1.38s</td><td class='n' style='text-align:center;'>Rust</td><td class='n' style='text-align:center;'>internal</td></tr><tr><td class='n' style='text-align:center;'>43</td><td class='k n'><b>656.8</b></td><td class='k n m-name'><b>mltreelib MARS(deg=1)</b></td><td class='n'>656.8</td><td class='n'>·</td><td class='n'>17/56</td><td class='n'>0.75±1.30s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>unknown</td></tr><tr><td class='n' style='text-align:center;'>44</td><td class='k n'><b>583.4</b></td><td class='k n m-name'><b>trust-free</b></td><td class='n'>583.4</td><td class='n'>·</td><td class='n'>4/56</td><td class='n'>14.37±7.33s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>45</td><td class='k n'><b>554.9</b></td><td class='k n m-name'><b>sklearn Linear</b></td><td class='n'>554.9</td><td class='n'>·</td><td class='n'>18/56</td><td class='n'>0.09±0.23s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>external</td></tr><tr><td class='n' style='text-align:center;'>46</td><td class='k n'><b>549.6</b></td><td class='k n m-name'><b>statsmodels RLM</b></td><td class='n'>549.6</td><td class='n'>·</td><td class='n'>8/56</td><td class='n'>17.48±43.02s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>none</td></tr><tr><td class='n' style='text-align:center;'>47</td><td class='k n'><b>370.2</b></td><td class='k n m-name'><b>statsmodels QuantReg</b></td><td class='n'>370.2</td><td class='n'>·</td><td class='n'>7/56</td><td class='n'>22.52±59.15s</td><td class='n' style='text-align:center;'>Python</td><td class='n' style='text-align:center;'>none</td></tr></tbody>
+</table>
+<script>
 (function () {
   var t = document.querySelector('#elo-overall-table table');
   if (!t) return;
@@ -26,4 +2910,84 @@
     });
   });
 })();
-</script> </div> </article> </div> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button type=button class="md-top md-icon" data-md-component=top hidden> <svg xmlns=http://www.w3.org/2000/svg fill=none stroke=currentColor stroke-linecap=round stroke-linejoin=round stroke-width=2 class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx=12 cy=12 r=10 /><path d="m16 12-4-4-4 4M12 16V8"/></svg> Back to top </button> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> Made with <a href=https://zensical.org/ target=_blank rel=noopener> Zensical </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog role=status aria-atomic=true> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","content.code.copy","search.suggest","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script> <script src=../../assets/javascripts/bundle.77dd0ce9.min.js></script> <script src=../../assets/medium-zoom.min.js></script> <script src=../../assets/zoom-init.js></script> <script src=../../assets/mathjax.js></script> <script src=https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js></script> </body> </html>
+</script>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","content.code.copy","search.suggest","search.highlight","content.tabs.link","content.footnote.tooltips","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="../../assets/medium-zoom.min.js"></script>
+      
+        <script src="../../assets/zoom-init.js"></script>
+      
+        <script src="../../assets/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
