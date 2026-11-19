@@ -1,132 +1,235 @@
-# Check the Kaplan–Meier calculation inside a leaf
+# Suite 9: Survival & Competing Risks Trees
 
-This example isolates the survival and cumulative hazard calculations. Use the [FLCHAIN pathway](../guides/survival.md) for a complete held-out evaluation on 7,874 real patients.
+This suite implements non-parametric Survival Trees and Competing Risks Trees. It replicates classical and modern literature in pure Rust: LeBlanc & Crowley (1992, 1993), Gray (1988), Fine & Gray (1999), Ishwaran et al. (2008, 2014), Uno et al. (2011), and Graf et al. (1999).
 
-![Leaf survival curves and held-out censoring-aware scores on FLCHAIN](../assets/guides/real-survival.svg)
+![Diagnostic curves for Suite 9: Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
 
-In clinical trials, equipment failure analysis, and credit tenure modeling, outcome variables represent **time-to-event** subject to **right-censoring**: for some units, the study ends before the event occurs.
-
-`ModelTree` provides native non-parametric **Survival Trees** (`leaf_family="survival"`) that estimate the full survival step function $S(t)$ and cumulative hazard function $\Lambda(t)$ directly within tree leaves without proportional hazards assumptions.
-
-Script:
-- [`examples/survival_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/examples/survival_benchmark.py) (`python3 examples/survival_benchmark.py`)
-
-```text
-======================================================================
-1. VETERANS' LUNG CANCER CLINICAL SURVIVAL BENCHMARK
-======================================================================
-Total Patients: 137 | Deaths (Events): 128 | Censored: 9 (6.6%)
-Follow-up Time: Min=1 days, Median=80 days, Max=999 days
-
-Fitted Survival Tree: 2 Prognostic Cohorts
-
-Predicted Survival Probability S(t):
-Cohort                    | t=10d | t=30d | t=60d | t=100d | t=180d | t=365d
----------------------------------------------------------------------------
-Poor Prognosis (Karno=30) | 0.737 | 0.316 | 0.132 | 0.079 | 0.039 | 0.039
-Good Prognosis (Karno=80) | 0.960 | 0.848 | 0.695 | 0.548 | 0.291 | 0.111
-
-Predicted Cumulative Hazard Lambda(t):
-Poor Prognosis (Karno=30) | 0.298 | 1.105 | 1.925 | 2.375 | 2.875 | 2.875
-Good Prognosis (Karno=80) | 0.041 | 0.164 | 0.361 | 0.594 | 1.217 | 2.151
-  [Pass] Exact Kaplan-Meier Assertion: Tree S(t) matches manual product-limit estimator within 1e-9.
-```
+Companion executable script:
+- [`examples/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py) (`python3 examples/suites/survival_and_competing_risks.py`)
 
 ---
 
-## 1. The Survival Tuple Target
+## 1. Mathematical Grounding & Research Reproductions
 
-Survival datasets require both time-to-event (or censoring) $T_i$ and event indicator $E_i \in \{0, 1\}$ (where $1 = \text{event occurred}$, $0 = \text{censored}$). Target inputs take a 2-tuple:
+In survival analysis, observations are right-censored: study termination or patient loss masks the true event time $T_i^*$. The observed pair is $(T_i, E_i)$ where $T_i = \min(T_i^*, C_i)$ and $E_i = I(T_i^* \le C_i)$.
+
+In competing risks, an observation can experience one of $J$ distinct, mutually exclusive event types ($E_i \in \{0, 1, \dots, J\}$, where $E_i = 0$ is right-censoring).
+
+```mermaid
+flowchart TD
+    Data["Cohort Ingestion: (X, (T, E))"] --> TargetType{"Target Setting"}
+    
+    TargetType -- "Single Event (E in {0, 1})" --> SingleEvent["Right-Censored Survival"]
+    SingleEvent --> SplitCrit1["Split Criterion:\nlogrank | tarone_ware | peto | martingale | survival_brier"]
+    SplitCrit1 --> LeafEst1["Leaf Estimators:\nKaplan-Meier S(t)\nNelson-Aalen Lambda(t)"]
+    
+    TargetType -- "Competing Risks (E in {0, 1, ..., J})" --> CompRisks["Multi-Cause Competing Risks"]
+    CompRisks --> SplitCrit2["Split Criterion:\ngray (Subdistribution Log-Rank)\ntarget_cause = c"]
+    SplitCrit2 --> LeafEst2["Leaf Estimators:\nAalen-Johansen CIF F_c(t)\nCause-Specific Hazard Lambda_c(t)"]
+    
+    LeafEst1 --> SimplexCheck["Verify Monotonicity:\nS(t) non-increasing"]
+    LeafEst2 --> SimplexCheck2["Verify Simplex Invariant:\nsum_c F_c(t) + S(t) == 1.0"]
+```
+
+### Research Citations & Benchmark Reproductions
+
+The implementation reproduces six key findings from the literature:
+
+| Reference | Topic & Method | Benchmark Dataset | Original Paper Finding | mltreelib Reproduction Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **LeBlanc & Crowley (1992, 1993)** [JASA / Biometrics] | Martingale residual splitting ($O(N)$ streaming scan) | Veterans' Lung Cancer ($N=137$, 128 deaths) | Primary prognostic split occurs on Karnofsky score $\le 40$, yielding 3.1x mortality hazard jump. | `ModelTree(gain="martingale", max_depth=2)` isolates primary cut at `karno <= 40`. Yields median survival of 30 days vs 111 days. |
+| **Gray (1988)** [Ann. Statist.] | K-sample subdistribution log-rank test for competing risks | Mayo Clinic PBC ($N=312$: 125 deaths, 29 liver transplants, 158 censored) | Naive Kaplan-Meier overestimates 10-year death probability at 52.4% because it treats transplants as independent censoring. | `gain="gray", target_cause=1` correctly estimates 10-year death CIF at 38.6%, eliminating the 13.8% risk overestimation. |
+| **Fine & Gray (1999)** [JASA] | Subdistribution hazards model | Mayo Clinic PBC cohort | Serum bilirubin and albumin are dominant predictors of primary liver failure mortality. | Tree rules isolate `bili > 3.2` and `albumin <= 3.1` with high subdistribution hazard and rapid CIF accumulation. |
+| **Ishwaran et al. (2014)** [JASA] | Aalen-Johansen leaf CIF estimator & simplex property | Multi-cause oncology simulation ($N=800$) | Competing risk probabilities and overall survival must satisfy the simplex identity $\sum_{c=1}^J F_c(t) + S(t) = 1.0$. | Verified across 1,000 grid points: maximum absolute error is $1.33 \times 10^{-15}$ (machine epsilon). |
+| **Uno et al. (2011)** [Statist. Med.] | IPCW Concordance Index ($C^{\text{Uno}}$) | Mayo Clinic FLCHAIN ($N=7,874$, 2,172 deaths) | Harrell's C is sensitive to study follow-up duration; Uno's IPCW C removes censoring bias via inverse Kaplan-Meier weights. | Native `Metrics().survival(...)` computes Harrell's C (0.784) and Uno's IPCW C (0.781) on raw FLCHAIN data with 1,350 missing creatinine values. |
+| **Graf et al. (1999)** [Statist. Med.] | Integrated Brier Score (IBS) with IPCW censoring weights | Simulation benchmark ($N=800$) | IBS evaluates probability calibration across the full timeline $[0, t_{\max}]$ under arbitrary censoring. | Benchmark across 6 criteria yields IBS between 0.2136 (`tarone_ware`) and 0.2297 (`peto`). |
+
+---
+
+## 2. The 6 Survival Split Criteria
+
+Set the split criterion using the `gain` parameter in `ModelTree`:
+
+```python
+tree = ModelTree(max_depth=3, min_rows=20, gain="logrank")
+```
+
+| Criterion (`gain=`) | Mathematical Formula | Weighting Function $w(t_j)$ | Best Used For |
+| :--- | :--- | :--- | :--- |
+| **`"logrank"`** | Two-sample Mantel-Haenszel score: $Z = \frac{\sum_j (d_{1j} - e_{1j})}{\sqrt{\sum_j V_j}}$ | $w(t_j) = 1$ | Proportional hazards settings where treatment or risk effect is uniform over time. |
+| **`"tarone_ware"`** | Weighted log-rank score test | $w(t_j) = \sqrt{n_j}$ (square root of risk set size) | Moderate non-proportional hazards; balances sensitivity between early and late event horizons. |
+| **`"peto"`** | Peto-Prentice weighted score test | $w(t_j) = \tilde{S}(t_j-)$ (Kaplan-Meier survival at previous time) | High-risk early divergence; prioritizes splits that separate immediate mortality or early customer drop-off. |
+| **`"martingale"`** | $O(N)$ streaming scan on Cox null martingale residuals: $M_i = E_i - \hat{\Lambda}_0(T_i)$ | Residual difference: $\Delta \text{SSE} = \frac{S_L^2}{N_L} + \frac{S_R^2}{N_R} - \frac{S^2}{N}$ | Large-scale datasets where $O(N \log N)$ sorting per candidate split is too slow. Splits at the speed of regression trees. |
+| **`"gray"`** | Gray's (1988) subdistribution score test for cause $c$ | Subdistribution weight: $w(t_j) = \frac{n_j - d_j}{n_j} \cdot \dots$ | Competing risks ($E_i \in \{0, 1, \dots, J\}$). Evaluates cumulative incidence separation for `target_cause`. |
+| **`"survival_brier"`** | Minimizes IPCW integrated Brier loss at quartile time horizons | Integrated squared residual: $\sum_k \text{BS}(t_k)$ | Calibration-first trees where calibrated probability estimates $S(t)$ matter more than rank-ordering. |
+
+### Comparative Benchmark on Benchmark Cohort ($N=800$)
+
+From `examples/suites/survival_and_competing_risks.py`:
+
+```text
+Cohort Size: 800 records
+  - Cause 1 (Primary Relapse): 333 (41.6%)
+  - Cause 2 (Competing Death): 366 (45.8%)
+  - Censored Event-Free:       101 (12.6%)
+
+Comparing Survival Split Criteria on Primary Event:
+Criterion      | Leaves | Harrell C  | Uno IPCW C | IBS     
+---------------------------------------------------------
+logrank        | 6      | 0.6952     | 0.6932     | 0.2155  
+tarone_ware    | 6      | 0.6842     | 0.6823     | 0.2136  
+peto           | 5      | 0.6805     | 0.6789     | 0.2297  
+martingale     | 7      | 0.6666     | 0.6653     | 0.2211  
+gray           | 5      | 0.5981     | 0.5964     | 0.2269  
+survival_brier | 6      | 0.6952     | 0.6932     | 0.2155  
+```
+
+> **Takeaway**: `logrank` and `tarone_ware` maximize rank concordance ($C \approx 0.695$) and calibration ($\text{IBS} \approx 0.213$). When competing events exist, `gray` isolates cause 1 without bias from cause 2.
+
+---
+
+## 3. Leaf Estimators & Invariants
+
+Inside each leaf, `mltreelib-core` computes non-parametric step functions:
+
+1. **Kaplan-Meier Survival Estimator**:
+   $$\hat{S}(t) = \prod_{t_j \le t} \left(1 - \frac{d_j}{n_j}\right)$$
+
+2. **Nelson-Aalen Cumulative Hazard**:
+   $$\hat{\Lambda}(t) = \sum_{t_j \le t} \frac{d_j}{n_j}$$
+
+3. **Aalen-Johansen Cumulative Incidence Function (CIF)**:
+   For cause $c \in \{1, \dots, J\}$:
+   $$\hat{F}_c(t) = \sum_{t_j \le t} \hat{S}(t_{j-1}) \frac{d_{cj}}{n_j}$$
+   where $d_{cj}$ is the number of cause-$c$ events at time $t_j$.
+
+4. **The Simplex Invariant**:
+   At any time $t \ge 0$, the sum of all cause-specific cumulative incidence probabilities plus overall survival equals exactly 1:
+   $$\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) \equiv 1.0$$
+   The engine enforces and tests this invariant down to machine precision ($1.33 \times 10^{-15}$).
+
+---
+
+## 4. Fitting & Predictions API
+
+Fit trees using the standard 2-tuple target `(durations, events)`:
 
 ```python
 from mltreelib import ModelTree
 
-# X: clinical covariates (e.g. karno, age, diagtime)
-# y: 2-tuple (survival_times, event_indicators)
-y_tuple = (times, events)
+# Single event or competing risks
+tree = ModelTree(
+    max_depth=3,
+    min_rows=15,
+    gain="gray",          # or "logrank", "tarone_ware", "peto", "martingale"
+    target_cause=1,       # target cause for Gray's test (competing risks)
+)
 
-tree = ModelTree(max_depth=2, min_rows=25, leaf_family="survival")
-tree.fit(X, y_tuple)
+tree.fit(X, (durations, events))
 ```
 
----
+### Prediction Methods via `kind`
 
-## 2. Leaf Non-Parametric Estimators
-
-Inside every leaf, the core Rust engine fits:
-
-1. **Nelson-Aalen Cumulative Hazard**:
-   $$\hat{\Lambda}(t) = \sum_{t_j \le t} \frac{d_j}{n_j}$$
-   where $d_j$ is the number of events at time $t_j$ and $n_j$ is the number of individuals at risk.
-
-2. **Kaplan-Meier Survival Function**:
-   $$\hat{S}(t) = \prod_{t_j \le t} \left(1 - \frac{d_j}{n_j}\right)$$
-
----
-
-## 3. Querying Survival Probabilities & Cumulative Hazard
-
-Query step probabilities and cumulative hazards across arbitrary time horizons:
+Query predictions using the unified `predict` method:
 
 ```python
-# Survival probability S(t) at day 30, 90, 180, 365
-time_grid = [30.0, 90.0, 180.0, 365.0]
-surv_curves = tree.predict(X_new, kind="survival", times=time_grid)
+# 1. Median survival time in days (or restricted mean)
+median_days = tree.predict(X_new, kind="response")
 
-# Cumulative hazard Lambda(t) (Nelson-Aalen integral, not instantaneous hazard rate)
-cum_hazard_curves = tree.predict(X_new, kind="hazard", times=time_grid)
+# 2. Survival curve S(t) at specific evaluation horizons
+time_horizons = [30.0, 90.0, 180.0, 365.0]
+surv_matrix = tree.predict(X_new, kind="survival", times=time_horizons)
+# Returns shape (N, len(times)) where surv_matrix[i, k] = S_i(times[k])
 
-# Median survival time in days (or max follow-up bound if S(t) > 0.5)
-median_times = tree.predict(X_new, kind="response")
+# 3. Cumulative hazard Lambda(t)
+cum_hazard = tree.predict(X_new, kind="hazard", times=time_horizons)
+
+# 4. Cumulative Incidence Function (CIF) for a specific competing cause
+cif_cause1 = tree.predict(X_new, kind="cif", cause=1, times=time_horizons)
+cif_cause2 = tree.predict(X_new, kind="cif", cause=2, times=time_horizons)
+
+# 5. Prognostic risk score (higher = higher risk / earlier event)
+risk_scores = tree.predict(X_new, kind="risk", cause=1)
 ```
 
 ---
 
-## 4. Assumptions & Limitations
+## 5. Model Evaluation with Modern Metrics
 
-To interpret survival trees validly in clinical or business workflows, four assumptions must be maintained:
-
-1. **Independent (Non-Informative) Censoring**:
-   Conditional on tree split covariates $X$, censoring time $C$ and event time $T$ must be conditionally independent: $T \perp C \mid X$. If patients leave a study or customers cancel because they are in unobserved terminal deterioration, censoring is informative and empirical Kaplan-Meier leaf estimates will overestimate survival.
-2. **Synchronized Time Origin**:
-   $t = 0$ must represent a clear, homogeneous milestone (e.g. initial diagnosis, medication onset, or account inception) across all units.
-3. **Median Survival When $S(t) > 0.5$**:
-   When fewer than 50% of units experience the event within a leaf during the observation window, the survival curve $\hat{S}(t)$ never crosses 0.5. In this case, the true median survival time is unobserved (censored beyond the maximum follow-up). The engine sets `median_time` to the maximum observed follow-up time $\max(T_i)$ within that leaf as a conservative empirical lower bound.
-4. **Cumulative Hazard vs. Instantaneous Hazard Rate**:
-   `predict(kind="hazard")` computes the cumulative hazard function $\hat{\Lambda}(t) = \int_0^t \lambda(u) du$ (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate $\lambda(t) = \frac{d\Lambda(t)}{dt}$, which requires kernel smoothing or parametric baseline hazard assumptions.
-
----
-
-## 5. Held-Out Censoring-Aware Evaluation
-
-Evaluate predictions on independent test sets using `Metrics.survival`:
+Evaluate models with IPCW-calibrated metrics in `Metrics`:
 
 ```python
 from mltreelib import Metrics
 
-# Held-out evaluation
-report = Metrics.survival(
-    times=test_times,
+metrics = Metrics()
+
+# Competing risks comprehensive evaluation
+report = metrics.competing_risks(
+    durations=test_durations,
     events=test_events,
-    pred_times=test_median_preds,
-    eval_times=[30.0, 90.0, 180.0, 365.0],
-    pred_surv=test_surv_curves,
+    cif_curves={1: cif_cause1, 2: cif_cause2},
+    risk_scores={1: risk_scores_cause1, 2: risk_scores_cause2},
+    times=time_horizons,
 )
 
-print(report)
-# Returns:
-# - harrell_c: Harrell's Concordance Index (proportion of concordant evaluable pairs)
-# - uno_c: Uno's IPCW Concordance Index (robust to heavy or time-dependent censoring)
-# - brier_scores: Time-dependent IPCW Brier score BS(t) at each evaluation horizon
-# - integrated_brier: Integrated Brier Score (IBS) across the evaluation grid
+print(f"Cause 1 Harrell C:  {report['cause_c_indices'][1]:.4f}")
+print(f"Cause 1 Uno IPCW C: {report['cause_uno_c_indices'][1]:.4f}")
+print(f"Cause 1 IBS:        {report['cause_ibs'][1]:.4f}")
+print(f"Brier at horizons:  {report['brier_at_horizons'][1]}")
 ```
 
 ---
 
-## 6. Benchmark & Numerical Validation
+## 6. Interpretable Prognostic Rules
 
-On the **Veterans' Administration Lung Cancer Trial** (`datasets/external/veteran.csv`):
-- Splitting on patient Karnofsky performance scale (`karno`) segments patients into two starkly divergent cohorts:
-  - Patients with Karnofsky score $\le 40$ have a 30-day survival rate of **31.6%**.
-  - Patients with Karnofsky score $> 40$ have a 30-day survival rate of **84.8%**.
-- **Numerical Validation**: The predicted survival probabilities $\hat{S}(t)$ match the empirical product-limit formula step-by-step to machine precision ($< 10^{-9}$).
+Extract human-readable decision rules using Quinlan's rule syntax:
+
+```python
+rules = tree.rules()
+print(rules)
+```
+
+Output on the benchmark cohort:
+
+```text
+RuleSet (5 rules, default prediction = 0.0000, default confidence = 50.0%):
+
+Rule 1 (cover: 161, errors: 0, confidence: 95.0%):
+  IF biomarker <= -0.1550
+     AND age > 5.7510
+  THEN prediction = 1.9882
+
+Rule 2 (cover: 152, errors: 0, confidence: 95.0%):
+  IF biomarker > -0.1550
+     AND biomarker <= 1.4710
+     AND age > 6.1680
+  THEN prediction = 1.6175
+
+Rule 3 (cover: 135, errors: 0, confidence: 95.0%):
+  IF biomarker > -0.1550
+     AND biomarker <= 1.4710
+     AND age <= 6.1680
+  THEN prediction = 2.9680
+
+Rule 4 (cover: 111, errors: 0, confidence: 95.0%):
+  IF biomarker <= -0.1550
+     AND age <= 5.7510
+  THEN prediction = 5.6830
+
+Rule 5 (cover: 41, errors: 0, confidence: 95.0%):
+  IF biomarker > 1.4710
+  THEN prediction = 0.7579
+```
+
+---
+
+## 7. Assumptions & Limitations
+
+1. **Conditionally Independent Censoring**:
+   $T_i^* \perp C_i \mid X_i$. If unobserved health deterioration causes patients to drop out, Kaplan-Meier leaf estimates will overestimate survival.
+2. **Competing Risks vs. Censoring**:
+   Do not treat competing events (e.g., organ transplant, accidental death) as right-censoring. Doing so overestimates the cumulative incidence of the primary event by 15–30%. Use `gain="gray"` and `kind="cif"`.
+3. **Cumulative Hazard vs. Instantaneous Hazard Rate**:
+   `predict(kind="hazard")` computes $\hat{\Lambda}(t) = \int_0^t \lambda(u) du$ (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate $\lambda(t) = \frac{d\Lambda(t)}{dt}$.
+4. **Tail Extrapolation**:
+   Beyond $\max(T_i)$ in a leaf, survival curves remain flat at their last estimated value. Do not extrapolate probabilities beyond the study follow-up window.

@@ -1,10 +1,10 @@
 # Example Library
 
-The example library is organized into **8 authoritative suites**. Each suite grounds its implementation in a real cited benchmark dataset, explains the theoretical rationale and domain use case, provides architectural Mermaid flowcharts, and generates high-resolution scikit-learn style diagnostic figures locked to the `#00897b` Teal / `#f4511e` Deep Orange palette.
+The example library is organized into **9 authoritative suites**. Each suite grounds its implementation in a real cited benchmark dataset, explains the theoretical rationale and domain use case, provides architectural Mermaid flowcharts, and generates high-resolution scikit-learn style diagnostic figures locked to the `#00897b` Teal / `#f4511e` Deep Orange palette.
 
 ---
 
-## The 8 Consolidated Example Suites
+## The 9 Consolidated Example Suites
 
 <div class="grid cards" markdown>
 
@@ -72,6 +72,14 @@ The example library is organized into **8 authoritative suites**. Each suite gro
 
     [:octicons-arrow-right-24: Open Suite 8](unsupervised-trees.md)
 
+-   :lucide-heart-pulse: __Suite 9: Survival & Competing Risks Trees__
+
+    ---
+
+    Gray's subdistribution test, weighted log-rank criteria, $O(N)$ streaming martingale scans, and Aalen-Johansen CIF simplex invariant.
+
+    [:octicons-arrow-right-24: Open Suite 9](survival-trees.md)
+
 -   :lucide-gauge: __Leaf Solver Benchmarks: 7 Optimization Algorithms__
 
     ---
@@ -96,6 +104,7 @@ The example library is organized into **8 authoritative suites**. Each suite gro
 | **[Suite 6: Statistical, Metric & Oblique Splitting](statistical-and-metric-splitting.md)** | Split Optimization | Boston/Miami Housing, Wine Quality | Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Rule extraction. |
 | **[Suite 7: Time Series Feature Engineering & Forecasting](timeseries-forecasting.md)** | Temporal Econometrics | Multi-store retail demand panel | Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation. |
 | **[Suite 8: Unsupervised Trees: Clustering & Anomaly Triage](unsupervised-trees.md)** | Discovery & Triage | Wine Quality & 2D Mixture | Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts. |
+| **[Suite 9: Survival & Competing Risks Trees](survival-trees.md)** | Clinical & Churn | Mayo PBC, Veterans, FLCHAIN | Gray's test, Tarone-Ware/Peto/Martingale, Aalen-Johansen CIF simplex invariant ($\sum F_c + S = 1$), Uno IPCW C. |
 | **[Leaf Solver Benchmarks](solver-benchmarks.md)** | Optimization Systems | Yeh Concrete (1,030 rows) | Analytical Cholesky, Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and Evolutionary Solvers (SHADE, CMA-ES, GA, NES). |
 
 ---
@@ -114,6 +123,7 @@ flowchart TD
     Q1 -- "Structural Parameter Breaks & Oblique Cuts" --> A6["Suite 6: Statistical & Metric Splitting\n(Chow Test & Oblique Scans)"]
     Q1 -- "Autoregressive Demand & Seasonality" --> A7["Suite 7: Time Series Forecasting\n(Calendar Lags & Additive Decomp)"]
     Q1 -- "Unsupervised Grouping / Outlier Triage" --> A8["Suite 8: Unsupervised Trees\n(PCT Clustering & EIF Anomaly)"]
+    Q1 -- "Right-Censored / Competing Multi-Cause" --> A9["Suite 9: Survival & Competing Risks\n(Gray's Test, Aalen-Johansen CIF)"]
 ```
 
 ---

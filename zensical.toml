@@ -45,6 +45,7 @@ nav = [
       { "Suite 6: Statistical & Metric Splitting" = "examples/statistical-and-metric-splitting.md" },
       { "Suite 7: Time Series Forecasting" = "examples/timeseries-forecasting.md" },
       { "Suite 8: Unsupervised Trees" = "examples/unsupervised-trees.md" },
+      { "Suite 9: Survival & Competing Risks Trees" = "examples/survival-trees.md" },
       { "Leaf Solver Benchmarks" = "examples/solver-benchmarks.md" },
     ] },
     { "Specialized Topics" = [
@@ -57,7 +58,6 @@ nav = [
       { "Hyperparameter search" = "examples/hpo.md" },
       { "Distributional split criteria" = "examples/distributional-split-criteria.md" },
       { "Tobit regression" = "examples/tobit-regression.md" },
-      { "Survival mechanics" = "examples/survival-trees.md" },
       { "Causal simulation" = "examples/causal-uplift.md" },
       { "Honesty and weights" = "examples/honesty-weights.md" },
       { "Monotone and interaction constraints" = "examples/constraints.md" },
