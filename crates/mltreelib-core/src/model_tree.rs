@@ -226,6 +226,18 @@ pub struct ModelTreeParams {
     pub shrinkage: f64,
     /// Missing value strategy at leaf level: DropFallback (default), ImputeLocal, or Indicator.
     pub leaf_na_policy: LeafNaPolicy,
+    /// Optional multi-dimensional vector targets Y in R^D (e.g. embeddings,
+    /// distributions, multi-output regression).
+    pub target_vectors: Option<Vec<Vec<f64>>>,
+    /// Penalty for demographic parity disparity across protected attribute (default 0.0 = off).
+    pub fairness_penalty: f64,
+    /// Column index of the protected attribute for fairness constraints (None = off).
+    pub protected_col: Option<usize>,
+    /// SPORF: number of features to combine in sparse oblique projections (Tomita et al. 2020).
+    /// 0 = off (standard axis-aligned splits); 2 or 3 = sparse random combinations.
+    pub sporf_d: usize,
+    /// SPORF: number of random linear projection hyperplanes to evaluate per node. Default 10.
+    pub sporf_projections: usize,
 }
 
 /// Metric evaluated by the leaf purity gate.
@@ -312,6 +324,11 @@ impl Default for ModelTreeParams {
             knn_p: 2.0,
             shrinkage: 0.0,
             leaf_na_policy: LeafNaPolicy::Indicator,
+            target_vectors: None,
+            fairness_penalty: 0.0,
+            protected_col: None,
+            sporf_d: 0,
+            sporf_projections: 10,
         }
     }
 }
@@ -333,6 +350,9 @@ pub struct Split {
     /// Surrogate-split handle: `Some(i)` = `Tree::sur_parts[i]` lists the
     /// backup splits that route rows missing the split column.
     pub sur: Option<usize>,
+    /// SPORF oblique projection handle: `Some(i)` = `Tree::oblique_parts[i]` lists
+    /// linear combination weights Z = sum_k w_k * X_k.
+    pub oblique: Option<usize>,
 }
 
 /// A prediction decomposed along its decision path (DALEX-style break-down).
@@ -418,6 +438,8 @@ pub struct ModelTree {
     pub(crate) cat_parts: Vec<Vec<f64>>,
     /// Surrogate splits referenced by `Split::sur` (aligned by handle).
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
+    /// SPORF oblique projections referenced by `Split::oblique`.
+    pub(crate) oblique_parts: Vec<crate::split::ObliqueProjection>,
     /// Training log (populated when `params.verbose > 0`).
     pub trace: Vec<String>,
     /// Training memory for nearest-neighbor adjustments.
@@ -504,6 +526,11 @@ impl ModelTree {
             return Err("min_rows must be >= 1".to_string());
         }
         let mut params = params;
+        if let GainFn::FairConstrained { ref base_gain, lambda, protected_col } = params.gain {
+            params.fairness_penalty = lambda;
+            params.protected_col = Some(protected_col);
+            params.gain = *base_gain.clone();
+        }
         if params.tree_monotone.is_empty() && !params.monotone.is_empty() {
             params.tree_monotone = params.monotone.clone();
         }
@@ -551,7 +578,7 @@ impl ModelTree {
             ) {
                 return Err("non-gaussian families support mean, linear, mars, prob, odds, or log_odds leaves".into());
             }
-            if params.split_test != SplitTest::None {
+            if params.split_test == SplitTest::Chow {
                 return Err("split_test='chow' requires the gaussian family".into());
             }
         }
@@ -741,12 +768,14 @@ impl ModelTree {
             y: &yv,
             w: &wv,
             treatments: params.treatments.as_deref(),
+            target_vectors: params.target_vectors.as_deref(),
             params: &params,
             active: &active_cols,
             nodes: Vec::new(),
             profiles: Vec::new(),
             cat_parts: Vec::new(),
             sur_parts: Vec::new(),
+            oblique_parts: Vec::new(),
             trace: Vec::new(),
             costs: Vec::new(),
             rng_counter: 0,
@@ -790,6 +819,7 @@ impl ModelTree {
             profiles,
             cat_parts,
             sur_parts,
+            oblique_parts,
             mut trace,
             ..
         } = grower;
@@ -852,6 +882,7 @@ impl ModelTree {
             profiles,
             cat_parts,
             sur_parts,
+            oblique_parts,
             trace,
             training_memory: None,
         };
@@ -1204,10 +1235,28 @@ impl ModelTree {
             self.nodes[node].left,
             self.nodes[node].right,
         ) {
-            let mapped_col = col_map[sp.col];
-            let go_left = match row.get(mapped_col).and_then(|v| *v) {
-                Some(v) => self.goes_left(sp, v),
-                None => self.surrogate_left_mapped(row, sp, col_map),
+            let go_left = if let Some(ob_idx) = sp.oblique {
+                let proj = &self.oblique_parts[ob_idx];
+                let mut sum = 0.0;
+                let mut has_na = false;
+                for (&c, &w) in proj.cols.iter().zip(proj.weights.iter()) {
+                    let mapped_c = col_map[c];
+                    match row.get(mapped_c).and_then(|v| *v) {
+                        Some(v) => sum += w * v,
+                        None => { has_na = true; break; }
+                    }
+                }
+                if has_na {
+                    self.surrogate_left_mapped(row, sp, col_map)
+                } else {
+                    sum <= sp.threshold
+                }
+            } else {
+                let mapped_col = col_map[sp.col];
+                match row.get(mapped_col).and_then(|v| *v) {
+                    Some(v) => self.goes_left(sp, v),
+                    None => self.surrogate_left_mapped(row, sp, col_map),
+                }
             };
             node = if go_left { l } else { r };
         }
@@ -1291,9 +1340,26 @@ impl ModelTree {
             self.nodes[node].left,
             self.nodes[node].right,
         ) {
-            let go_left = match row.get(sp.col).and_then(|v| *v) {
-                Some(v) => self.goes_left(sp, v),
-                None => self.surrogate_left(row, sp),
+            let go_left = if let Some(ob_idx) = sp.oblique {
+                let proj = &self.oblique_parts[ob_idx];
+                let mut sum = 0.0;
+                let mut has_na = false;
+                for (&c, &w) in proj.cols.iter().zip(proj.weights.iter()) {
+                    match row.get(c).and_then(|v| *v) {
+                        Some(v) => sum += w * v,
+                        None => { has_na = true; break; }
+                    }
+                }
+                if has_na {
+                    self.surrogate_left(row, sp)
+                } else {
+                    sum <= sp.threshold
+                }
+            } else {
+                match row.get(sp.col).and_then(|v| *v) {
+                    Some(v) => self.goes_left(sp, v),
+                    None => self.surrogate_left(row, sp),
+                }
             };
             node = if go_left { l } else { r };
         }
@@ -1328,6 +1394,18 @@ impl ModelTree {
                     .predict(row)
             })
             .collect()
+    }
+
+    /// Predict multi-dimensional vector targets for row-major `x` (when trained on vector targets).
+    pub fn predict_vector(&self, x: &[Vec<Option<f64>>]) -> Option<Vec<Vec<f64>>> {
+        let mut out = Vec::with_capacity(x.len());
+        for row in x {
+            let node = &self.nodes[self.leaf_index(row)];
+            let leaf = node.leaf.as_ref()?;
+            let v = leaf.vector_mean.as_ref()?;
+            out.push(v.clone());
+        }
+        Some(out)
     }
 
     /// One P(class 1) per row for binary families (Binomial, Probit).
@@ -1474,6 +1552,21 @@ impl ModelTree {
             .collect()
     }
 
+    /// Root node split (first decision boundary), if the tree split.
+    pub fn root_split(&self) -> Option<Split> {
+        self.nodes.get(self.root).and_then(|n| n.split)
+    }
+
+    /// Node training profiles (introspection / gates / timing diagnostics).
+    pub fn profiles(&self) -> &[NodeProfile] {
+        &self.profiles
+    }
+
+    /// SPORF oblique projections referenced by `Split::oblique`.
+    pub fn oblique_parts(&self) -> &[crate::split::ObliqueProjection] {
+        &self.oblique_parts
+    }
+
     /// Feature importance — each column's share of the total split gain
     /// (rpart's "variable importance": summed goodness of split). Returns
     /// (column name, share) pairs sorted descending; shares sum to 1.
@@ -1510,9 +1603,26 @@ impl ModelTree {
         let baseline = node.stats.mean;
         let mut steps: Vec<(usize, f64)> = Vec::new();
         while let (Some(sp), Some(l), Some(r)) = (&node.split, node.left, node.right) {
-            let go_left = match x.get(sp.col).and_then(|v| *v) {
-                Some(v) => self.goes_left(sp, v),
-                None => self.surrogate_left(x, sp),
+            let go_left = if let Some(ob_idx) = sp.oblique {
+                let proj = &self.oblique_parts[ob_idx];
+                let mut sum = 0.0;
+                let mut has_na = false;
+                for (&c, &w) in proj.cols.iter().zip(proj.weights.iter()) {
+                    match x.get(c).and_then(|v| *v) {
+                        Some(v) => sum += w * v,
+                        None => { has_na = true; break; }
+                    }
+                }
+                if has_na {
+                    self.surrogate_left(x, sp)
+                } else {
+                    sum <= sp.threshold
+                }
+            } else {
+                match x.get(sp.col).and_then(|v| *v) {
+                    Some(v) => self.goes_left(sp, v),
+                    None => self.surrogate_left(x, sp),
+                }
             };
             let child = &self.nodes[if go_left { l } else { r }];
             steps.push((sp.col, child.stats.mean - node.stats.mean));
@@ -2255,6 +2365,7 @@ pub(crate) struct Grower<'a> {
     pub(crate) y: &'a [f64],
     pub(crate) w: &'a [f64],
     pub(crate) treatments: Option<&'a [f64]>,
+    pub(crate) target_vectors: Option<&'a [Vec<f64>]>,
     pub(crate) params: &'a ModelTreeParams,
     pub(crate) active: &'a [usize],
     pub(crate) nodes: Vec<Node>,
@@ -2264,6 +2375,8 @@ pub(crate) struct Grower<'a> {
     pub(crate) cat_parts: Vec<Vec<f64>>,
     /// Surrogate splits referenced by `Split::sur` (moved into the tree).
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
+    /// SPORF oblique projections referenced by `Split::oblique`.
+    pub(crate) oblique_parts: Vec<crate::split::ObliqueProjection>,
     /// Training log lines (`params.verbose`).
     pub(crate) trace: Vec<String>,
     /// Prune-cost bookkeeping aligned with node indices (`prune != None`).
@@ -2379,7 +2492,34 @@ impl<'a> Grower<'a> {
                         ..Default::default()
                     };
                     let mut best = if depth < self.params.max_depth {
-                        self.best_split(&rows, &path, &mut prof)
+                        if self.params.split_test == SplitTest::Mob || matches!(self.params.gain, GainFn::Mob) {
+                            self.mob_split(&rows, &path, &mut prof)
+                        } else if self.params.split_test == SplitTest::Ctree || matches!(self.params.gain, GainFn::Ctree) {
+                            self.ctree_split(&rows, &path, &mut prof)
+                        } else if self.target_vectors.is_some() && matches!(self.params.gain, GainFn::Wasserstein2) {
+                            self.wasserstein_split(&rows, &path, &mut prof)
+                        } else if self.target_vectors.is_some() && matches!(self.params.gain, GainFn::EnergyDistance | GainFn::Mmd { .. }) {
+                            self.metric_split(&rows, &path, &mut prof)
+                        } else {
+                            let axis_best = self.best_split(&rows, &path, &mut prof);
+                            if self.params.sporf_d >= 2 {
+                                let sporf_cand = self.sporf_split(&rows, &path, &mut prof);
+                                match (axis_best, sporf_cand) {
+                                    (Some((ab, al, ar)), Some((sb, sl, sr))) => {
+                                        if sb.gain > ab.gain {
+                                            Some((sb, sl, sr))
+                                        } else {
+                                            Some((ab, al, ar))
+                                        }
+                                    }
+                                    (None, Some(s)) => Some(s),
+                                    (Some(a), None) => Some(a),
+                                    (None, None) => None,
+                                }
+                            } else {
+                                axis_best
+                            }
+                        }
                     } else {
                         None
                     };
@@ -2405,6 +2545,8 @@ impl<'a> Grower<'a> {
                                 p,
                                 alpha,
                                 passed,
+                                test_name: "chow",
+                                var_p_values: Vec::new(),
                             });
                             if !passed {
                                 best = None;
@@ -2676,7 +2818,7 @@ impl<'a> Grower<'a> {
                     let (l, lu) = results[left_res_idx];
                     let (r, ru) = results[right_res_idx];
                     let used = lu + ru;
-                    if self.params.prune != PruneCost::None {
+                    if self.params.prune != PruneCost::None && self.target_vectors.is_none() {
                         // Bottom-up cost pruning: keep the subtree only when it
                         // codes cheaper than this node as one leaf.
                         let stats = FrameStats::from_ty(self.y, self.w, &rows);

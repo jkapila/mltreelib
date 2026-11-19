@@ -16,16 +16,31 @@ pub enum SplitTest {
     /// lineage: the MOB/ctree family's significance stopping, as a
     /// post-selection gate on the scan's best split.
     Chow,
+    /// Model-based recursive partitioning (MOB / Zeileis et al. 2008):
+    /// evaluates cumulative empirical fluctuation processes of score residuals
+    /// along candidate variables. Selects the variable with minimum p-value
+    /// and tests whether parameter instability is statistically significant
+    /// (Bonferroni-adjusted p < split_alpha), bypassing candidate-level refits.
+    Mob,
+    /// Conditional Inference Trees (CTree / Hothorn, Hornik & Zeileis 2006):
+    /// separates variable selection from splitpoint selection using permutation
+    /// rank hypothesis testing. Tests independence between response and covariates,
+    /// selecting the variable with minimum adjusted p-value. Strictly unbiased
+    /// against variable scale and cardinality (solves the cardinality trap).
+    Ctree,
 }
 
-/// Chow gate result recorded on the node's training-log profile.
-#[derive(Clone, Copy, Debug)]
+/// Statistical gate result recorded on the node's training-log profile.
+#[derive(Clone, Debug, PartialEq)]
 pub struct GateNote {
     pub f: f64,
     pub p: f64,
     /// Effective significance level (`split_alpha`, Bonferroni-divided).
     pub alpha: f64,
     pub passed: bool,
+    pub test_name: &'static str,
+    /// Per-variable test diagnostics: (col_idx, test_statistic, adj_p_value)
+    pub var_p_values: Vec<(usize, f64, f64)>,
 }
 
 impl<'a> Grower<'a> {

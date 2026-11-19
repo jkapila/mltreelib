@@ -111,9 +111,131 @@ pub fn f_sf(f: f64, d1: u32, d2: u32) -> f64 {
     betainc(d2 / (d2 + d1 * f), d2 / 2.0, d1 / 2.0)
 }
 
+/// Regularized lower incomplete gamma series P(a, x).
+fn gamma_p_series(a: f64, x: f64) -> f64 {
+    if x <= 0.0 {
+        return 0.0;
+    }
+    let mut sum_val = 1.0 / a;
+    let mut term = 1.0 / a;
+    for n in 1..200 {
+        term *= x / (a + n as f64);
+        sum_val += term;
+        if term.abs() < sum_val.abs() * 1e-15 {
+            break;
+        }
+    }
+    let log_pre = a * x.ln() - x - ln_gamma(a);
+    (log_pre.exp() * sum_val).clamp(0.0, 1.0)
+}
+
+/// Regularized upper incomplete gamma Lentz continued fraction Q(a, x).
+fn gamma_q_cf(a: f64, x: f64) -> f64 {
+    const FPMIN: f64 = 1e-300;
+    const EPS: f64 = 1e-15;
+    let mut b = x + 1.0 - a;
+    let mut c = 1.0 / FPMIN;
+    let mut d = 1.0 / b;
+    let mut h = d;
+    for i in 1..200 {
+        let an = -(i as f64) * (i as f64 - a);
+        b += 2.0;
+        d = an * d + b;
+        if d.abs() < FPMIN {
+            d = FPMIN;
+        }
+        c = b + an / c;
+        if c.abs() < FPMIN {
+            c = FPMIN;
+        }
+        d = 1.0 / d;
+        let del = d * c;
+        h *= del;
+        if (del - 1.0).abs() < EPS {
+            break;
+        }
+    }
+    let log_pre = a * x.ln() - x - ln_gamma(a);
+    (log_pre.exp() * h).clamp(0.0, 1.0)
+}
+
+/// Survival function (right-tail probability) of the Chi-squared distribution:
+/// P(chi^2_df > x). Matches standard tables (scipy.stats.chi2.sf / R pchisq).
+pub fn chi2_sf(x: f64, df: f64) -> f64 {
+    if !x.is_finite() || x <= 0.0 {
+        return if x.is_nan() { f64::NAN } else if x <= 0.0 { 1.0 } else { 0.0 };
+    }
+    if df <= 0.0 {
+        return 0.0;
+    }
+    let a = df / 2.0;
+    let half_x = x / 2.0;
+    if half_x < a + 1.0 {
+        (1.0 - gamma_p_series(a, half_x)).clamp(0.0, 1.0)
+    } else {
+        gamma_q_cf(a, half_x)
+    }
+}
+
+/// Asymptotic p-value for the supLM (Andrews 1993 / Hansen 1997 / Davies 1987)
+/// parameter instability test: sup_{u in [eps, 1-eps]} ||B^0(u)||^2 / (u(1-u)).
+///
+/// k: degrees of freedom (number of parameters tested, e.g. 1 for mean, 1+p for regression).
+/// eps: trimming fraction (default 0.1 for [0.1, 0.9]).
+pub fn suplm_pvalue(stat: f64, k: usize, eps: f64) -> f64 {
+    if !stat.is_finite() || stat <= 0.0 {
+        return if stat.is_nan() { f64::NAN } else if stat <= 0.0 { 1.0 } else { 0.0 };
+    }
+    let k_f = k as f64;
+    let p_chi2 = chi2_sf(stat, k_f);
+    let eps_clamp = eps.clamp(0.01, 0.49);
+    let log_ratio = ((1.0 - eps_clamp) / eps_clamp).ln();
+
+    // Davies (1987) density term: c^(k/2) * exp(-c/2) / (2^(k/2) * Gamma(k/2))
+    let log_density = (k_f / 2.0) * stat.ln() - stat / 2.0 - (k_f / 2.0) * 2.0f64.ln() - ln_gamma(k_f / 2.0);
+    let density_term = if log_density > -700.0 {
+        log_density.exp()
+    } else {
+        0.0
+    };
+    let davies_p = p_chi2 + density_term * log_ratio;
+    davies_p.clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn chi2_sf_matches_tables() {
+        let cases = [
+            (3.8415, 1.0, 0.05),
+            (5.9915, 2.0, 0.05),
+            (7.8147, 3.0, 0.05),
+            (9.4877, 4.0, 0.05),
+            (11.070, 5.0, 0.05),
+            (18.307, 10.0, 0.05),
+        ];
+        for (q, df, want) in cases {
+            let p = chi2_sf(q, df);
+            assert!(
+                (p - want).abs() < 2e-3,
+                "chi2_sf({q}, {df}) = {p}, want {want}"
+            );
+        }
+    }
+
+    #[test]
+    fn suplm_pvalue_monotonicity_and_bounds() {
+        assert_eq!(suplm_pvalue(0.0, 1, 0.1), 1.0);
+        assert!(suplm_pvalue(100.0, 1, 0.1) < 1e-10);
+        let mut prev = 1.0;
+        for i in 1..100 {
+            let p = suplm_pvalue(i as f64 * 0.5, 2, 0.1);
+            assert!(p <= prev + 1e-12, "p must not rise with stat");
+            prev = p;
+        }
+    }
 
     /// Published F quantiles, cross-checked against `scipy.stats.f.ppf`.
     #[test]

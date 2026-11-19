@@ -3081,7 +3081,10 @@ impl PyModelTree {
         knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
         knn_gamma = None, knn_p = 2.0,
         shrinkage = 0.0, max_classes = 256, leaf_na_policy = "drop_fallback", preset = None,
-        control = None, leaf_control = None
+        control = None, leaf_control = None,
+        mmd_kernel = None, mmd_bandwidth = None,
+        fairness_penalty = None, protected_col = None,
+        sporf_d = 0, sporf_projections = 10
     ))]
     fn new(
         max_depth: usize,
@@ -3151,6 +3154,12 @@ impl PyModelTree {
         preset: Option<&str>,
         control: Option<Bound<'_, PyAny>>,
         leaf_control: Option<Bound<'_, PyAny>>,
+        mmd_kernel: Option<&str>,
+        mmd_bandwidth: Option<f64>,
+        fairness_penalty: Option<f64>,
+        protected_col: Option<usize>,
+        sporf_d: usize,
+        sporf_projections: usize,
     ) -> PyResult<Self> {
         let mut max_depth = max_depth;
         let mut min_rows = min_rows;
@@ -3301,9 +3310,31 @@ impl PyModelTree {
                         "tobit" => GainFn::Tobit { threshold: tobit_threshold },
                         "cv" => GainFn::Cv,
                         "martingale" => GainFn::Martingale,
+                        "mob" => GainFn::Mob,
+                        "ctree" => GainFn::Ctree,
+                        "energy_distance" | "energy" => GainFn::EnergyDistance,
+                        "wasserstein" | "wasserstein2" => GainFn::Wasserstein2,
+                        "hellinger" => GainFn::Hellinger,
+                        "maxstat" | "max_stat" => GainFn::MaxStat,
+                        "fair" => GainFn::FairConstrained {
+                            base_gain: Box::new(GainFn::Sse),
+                            lambda: fairness_penalty.unwrap_or(1.0),
+                            protected_col: protected_col.unwrap_or(0),
+                        },
+                        "mmd" => {
+                            let k = match mmd_kernel.unwrap_or("rbf").to_lowercase().as_str() {
+                                "linear" => mltreelib_core::criteria::KernelKind::Linear,
+                                "poly" | "polynomial" => mltreelib_core::criteria::KernelKind::Polynomial { degree: 2, c: 1.0 },
+                                _ => mltreelib_core::criteria::KernelKind::Rbf,
+                            };
+                            GainFn::Mmd {
+                                kernel: k,
+                                bandwidth: mmd_bandwidth.unwrap_or(0.0),
+                            }
+                        }
                         other => {
                             return Err(PyValueError::new_err(format!(
-                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale' or a callable, got {other}"
+                                "gain must be 'sse', 'deviance', 'friedman_mse', 'absolute_error', 'huber', 'poisson', 'entropy', 'gini', 'gain_ratio', 'sdr', 'twoing', 'causal', 'logrank', 'tweedie', 'heteroscedastic', 'tobit', 'cv', 'martingale', 'mob', 'ctree', 'energy_distance', 'mmd', 'wasserstein', 'hellinger', 'maxstat', 'fair' or a callable, got {other}"
                             )))
                         }
                     }
@@ -3363,11 +3394,21 @@ impl PyModelTree {
             }
         };
         let split_gate = match split_test {
-            "none" => SplitTest::None,
+            "none" => {
+                if matches!(gain_fn, GainFn::Mob) {
+                    SplitTest::Mob
+                } else if matches!(gain_fn, GainFn::Ctree) {
+                    SplitTest::Ctree
+                } else {
+                    SplitTest::None
+                }
+            }
             "chow" => SplitTest::Chow,
+            "mob" => SplitTest::Mob,
+            "ctree" => SplitTest::Ctree,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "split_test must be 'none' or 'chow', got {other}"
+                    "split_test must be 'none', 'chow', 'mob' or 'ctree', got {other}"
                 )))
             }
         };
@@ -3468,6 +3509,11 @@ impl PyModelTree {
             shrinkage,
             max_classes,
             leaf_na_policy: leaf_na_policy_enum,
+            target_vectors: None,
+            fairness_penalty: fairness_penalty.unwrap_or(0.0),
+            protected_col,
+            sporf_d,
+            sporf_projections,
         };
         if let Some(ctrl_obj) = leaf_control.or(control) {
             let ctrl = extract_leaf_control(
@@ -3537,7 +3583,7 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None))]
+    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, sporf_d = None, sporf_projections = None))]
     fn fit(
         &mut self,
         mut x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
@@ -3557,12 +3603,29 @@ impl PyModelTree {
         feature_weights: Option<Vec<f64>>,
         train_groups: Option<bool>,
         train_ids: Option<bool>,
+        fairness_penalty: Option<f64>,
+        protected_col: Option<usize>,
+        protected_attribute: Option<Bound<'_, PyAny>>,
+        sporf_d: Option<usize>,
+        sporf_projections: Option<usize>,
     ) -> PyResult<()> {
+        if let Some(sd) = sporf_d {
+            self.params.sporf_d = sd;
+        }
+        if let Some(sp) = sporf_projections {
+            self.params.sporf_projections = sp;
+        }
         if let Some(tg) = train_groups {
             self.params.train_groups = tg;
         }
         if let Some(ti) = train_ids {
             self.params.train_ids = ti;
+        }
+        if let Some(fp) = fairness_penalty {
+            self.params.fairness_penalty = fp;
+        }
+        if let Some(pc) = protected_col {
+            self.params.protected_col = Some(pc);
         }
         if let Some(tr) = treatment {
             self.params.treatments = Some(tr);
@@ -3581,6 +3644,14 @@ impl PyModelTree {
                 None
             }
         };
+
+        if self.params.protected_col.is_none() {
+            if let Some(ref pa) = protected_attribute {
+                if let Some(idx) = resolve_col(pa, col_names.as_deref()) {
+                    self.params.protected_col = Some(idx);
+                }
+            }
+        }
 
         if !self.params.train_ids {
             if let Some(ref id_spec) = id_col {
@@ -3639,11 +3710,15 @@ impl PyModelTree {
                 let times = pairs.iter().map(|p| Some(p.0)).collect();
                 let evs = pairs.iter().map(|p| p.1).collect();
                 (times, Some(evs))
+            } else if let Ok(multi) = y.extract::<Vec<Vec<f64>>>() {
+                let y_first: Vec<Option<f64>> = multi.iter().map(|v| v.first().copied()).collect();
+                self.params.target_vectors = Some(multi);
+                (y_first, None)
             } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
                 (single, None)
             } else {
                 return Err(PyTypeError::new_err(
-                    "y must be a list of floats, or a 2-tuple (values, aux) e.g. (times, events) or (outcomes, treatments)",
+                    "y must be a list of floats, a 2D list of vector targets, or a 2-tuple (values, aux)",
                 ));
             };
 
@@ -3961,12 +4036,21 @@ impl PyModelTree {
         let t = self.tree()?;
         match kind.unwrap_or("response") {
             "response" => {
+                if t.params.target_vectors.is_some() {
+                    if let Some(vecs) = t.predict_vector(&x) {
+                        return vecs.into_py_any(py);
+                    }
+                }
                 let preds = if let Some(k) = neighbors {
                     t.predict_adjusted(&x, k)
                 } else {
                     t.predict(&x)
                 };
                 preds.into_py_any(py)
+            }
+            "vector" => {
+                let vecs = t.predict_vector(&x).ok_or_else(|| PyValueError::new_err("ModelTree has no vector predictions (was not fitted on vector targets)"))?;
+                vecs.into_py_any(py)
             }
             "proba" | "prob" => {
                 match t.params.leaf_family {
@@ -4120,9 +4204,22 @@ impl PyModelTree {
                 ids.into_py_any(py)
             }
             other => Err(PyValueError::new_err(format!(
-                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'uplift', or 'leaf_id'"
+                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'uplift', 'vector', or 'leaf_id'"
             ))),
         }
+    }
+
+    /// Predict multi-dimensional vector targets for row-major `x` (when trained on vector targets).
+    #[pyo3(signature = (x))]
+    fn predict_vector<'py>(
+        &mut self,
+        py: Python<'py>,
+        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+    ) -> PyResult<Py<PyAny>> {
+        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        let t = self.tree()?;
+        let vecs = t.predict_vector(&x).ok_or_else(|| PyValueError::new_err("ModelTree has no vector predictions (was not fitted on vector targets)"))?;
+        vecs.into_py_any(py)
     }
 
     /// Predict class probabilities (convenience alias for `predict(x, kind="proba")`).
@@ -4542,6 +4639,91 @@ impl PyModelTree {
         Ok(out)
     }
 
+    /// Root node split, if the tree split at the root.
+    fn root_split(&self, py: Python<'_>) -> PyResult<Option<Py<PyAny>>> {
+        let t = self.tree()?;
+        if let Some(s) = t.root_split() {
+            let d = PyDict::new(py);
+            d.set_item("col", t.col_names[s.col].clone())?;
+            d.set_item("threshold", s.threshold)?;
+            d.set_item("missing_left", s.missing_left)?;
+            d.set_item("gain", s.gain)?;
+            if let Some(ob_idx) = s.oblique {
+                if let Some(proj) = t.oblique_parts().get(ob_idx) {
+                    let ob_dict = PyDict::new(py);
+                    let names: Vec<String> = proj.cols.iter().map(|&c| t.col_names.get(c).cloned().unwrap_or_else(|| format!("col_{}", c))).collect();
+                    ob_dict.set_item("cols", names.clone())?;
+                    ob_dict.set_item("weights", proj.weights.clone())?;
+                    let eq = names.iter().zip(proj.weights.iter())
+                        .map(|(n, &w)| format!("{:+.*}*{}", 2, w, n))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    ob_dict.set_item("equation", format!("{} <= {:.4}", eq, s.threshold))?;
+                    d.set_item("oblique", ob_dict)?;
+                }
+            }
+            if let Some(prof) = t.profiles().iter().find(|p| p.depth == 0) {
+                if let Some(gate) = &prof.gate {
+                    let gd = PyDict::new(py);
+                    gd.set_item("test_name", gate.test_name)?;
+                    gd.set_item("statistic", gate.f)?;
+                    gd.set_item("p_value", gate.p)?;
+                    gd.set_item("alpha", gate.alpha)?;
+                    gd.set_item("passed", gate.passed)?;
+                    let mut vars = Vec::new();
+                    for &(col, stat, adj_p) in &gate.var_p_values {
+                        let vd = PyDict::new(py);
+                        vd.set_item("col", col)?;
+                        vd.set_item("name", t.col_names.get(col).cloned().unwrap_or_else(|| format!("col_{}", col)))?;
+                        vd.set_item("statistic", stat)?;
+                        vd.set_item("p_value", adj_p)?;
+                        vars.push(vd.into_any().unbind());
+                    }
+                    gd.set_item("variables", vars)?;
+                    d.set_item("gate", gd)?;
+                }
+            }
+            Ok(Some(d.into_any().unbind()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Statistical split diagnostics per node (MOB / Chow / CTree hypothesis tests).
+    /// Returns a list of dicts with test name, statistic, p-value, alpha,
+    /// passed flag, and per-variable test results.
+    fn split_diagnostics(&self, py: Python<'_>) -> PyResult<Vec<Option<Py<PyAny>>>> {
+        let t = self.tree()?;
+        let mut out = Vec::new();
+        for prof in t.profiles() {
+            if let Some(gate) = &prof.gate {
+                let d = PyDict::new(py);
+                d.set_item("depth", prof.depth)?;
+                d.set_item("rows", prof.rows)?;
+                d.set_item("test_name", gate.test_name)?;
+                d.set_item("statistic", gate.f)?;
+                d.set_item("p_value", gate.p)?;
+                d.set_item("alpha", gate.alpha)?;
+                d.set_item("passed", gate.passed)?;
+
+                let mut vars = Vec::new();
+                for &(col, stat, adj_p) in &gate.var_p_values {
+                    let vd = PyDict::new(py);
+                    vd.set_item("col", col)?;
+                    vd.set_item("name", t.col_names.get(col).cloned().unwrap_or_else(|| format!("col_{}", col)))?;
+                    vd.set_item("statistic", stat)?;
+                    vd.set_item("p_value", adj_p)?;
+                    vars.push(vd.into_any().unbind());
+                }
+                d.set_item("variables", vars)?;
+                out.push(Some(d.into_any().unbind()));
+            } else {
+                out.push(None);
+            }
+        }
+        Ok(out)
+    }
+
     /// Feature importance — supports `"gain"` (default, rpart split gain share),
     /// `"shapley"` (mean absolute TreeSHAP over rows), or `"permutation"` (score degradation).
     #[pyo3(signature = (method="gain", x=None, y=None, metric=None, n_repeats=None, seed=None))]
@@ -4767,6 +4949,8 @@ impl PyModelTree {
             match self.params.split_test {
                 SplitTest::None => "none",
                 SplitTest::Chow => "chow",
+                SplitTest::Mob => "mob",
+                SplitTest::Ctree => "ctree",
             },
         )?;
         d.set_item("split_alpha", self.params.split_alpha)?;

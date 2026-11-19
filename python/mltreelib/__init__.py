@@ -53,7 +53,7 @@ from mltreelib._core import (
     winnow,
 )
 from mltreelib.datasets import list_datasets, load_dataset
-from mltreelib.models import AnomalyTree, ClusterTree
+from mltreelib.models import AnomalyTree, ClusterTree, distributions_to_quantiles, histograms_to_quantiles
 
 __all__ = [
     "HDBSCAN",
@@ -63,6 +63,8 @@ __all__ = [
     "CLTree",
     "CatBoostEncoder",
     "ClusterTree",
+    "distributions_to_quantiles",
+    "histograms_to_quantiles",
     "ContextAnomalyTree",
     "CountEncoder",
     "DatasetBuilder",

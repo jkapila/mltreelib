@@ -610,6 +610,7 @@ pub fn fit_leaf_model(
             mars_cols: None,
             knn: None,
             knn_cols: None,
+            vector_mean: None,
         };
     }
 
@@ -684,6 +685,7 @@ pub fn fit_leaf_model(
             mars_cols: None,
             knn: None,
             knn_cols: None,
+            vector_mean: None,
         };
     }
 
@@ -765,6 +767,7 @@ pub fn fit_leaf_model(
             mars_cols: None,
             knn: None,
             knn_cols: None,
+            vector_mean: None,
         };
     }
 
@@ -805,6 +808,7 @@ pub fn fit_leaf_model(
             mars_cols: Some(chosen),
             knn: None,
             knn_cols: None,
+            vector_mean: None,
         };
     }
 
@@ -839,6 +843,7 @@ pub fn fit_leaf_model(
             mars_cols: None,
             knn: Some(knn_model),
             knn_cols: Some(chosen),
+            vector_mean: None,
         };
     }
 
@@ -861,6 +866,7 @@ pub fn fit_leaf_model(
             mars_cols: None,
             knn: None,
             knn_cols: None,
+            vector_mean: None,
         };
     }
     let linear = if control.leaf == LeafKind::Linear {
@@ -973,6 +979,7 @@ pub fn fit_leaf_model(
                     mars_cols: None,
                     knn: None,
                     knn_cols: None,
+                    vector_mean: None,
                 };
             } else if control.solver == LeafSolver::Ccd {
                 let view = crate::solver::design::ColumnSliceView::new_with_imputation(
@@ -1140,6 +1147,7 @@ pub fn fit_leaf_model(
         mars_cols: None,
         knn: None,
         knn_cols: None,
+        vector_mean: None,
     }
 }
 
@@ -1197,7 +1205,28 @@ impl<'a> Grower<'a> {
 
     /// Fit the leaf model for a node's rows.
     pub(crate) fn make_leaf(&self, rows: &[usize], path: &[usize]) -> LeafModel {
-        self.fit_leaf(rows, path, self.params.leaf_digest)
+        let mut leaf = self.fit_leaf(rows, path, self.params.leaf_digest);
+        if let Some(target_vecs) = self.target_vectors {
+            if let Some(first) = target_vecs.first() {
+                let dim = first.len();
+                let mut sum_v = vec![0.0; dim];
+                let mut sum_w = 0.0;
+                for &r in rows {
+                    let wt = self.w[r];
+                    sum_w += wt;
+                    for (d, &val) in target_vecs[r].iter().enumerate() {
+                        sum_v[d] += wt * val;
+                    }
+                }
+                if sum_w > 0.0 {
+                    for val in &mut sum_v {
+                        *val /= sum_w;
+                    }
+                }
+                leaf.vector_mean = Some(sum_v);
+            }
+        }
+        leaf
     }
 
     /// Candidate fitting shares the payload fitter but does not sort targets

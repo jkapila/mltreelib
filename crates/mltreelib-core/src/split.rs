@@ -11,6 +11,14 @@ use crate::leaf::{LeafCols, LeafKind};
 use crate::model_tree::{Grower, NodeProfile, Split};
 use crate::node_stats::{design_row, fit_linear, solve_normal_sum, Gram, SideTrack, SolveScratch};
 
+/// Oblique hyperplane linear combination projection for SPORF (Tomita et al. 2020).
+/// Defines Z = sum_{k=0}^{d-1} weights[k] * X_{cols[k]}.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ObliqueProjection {
+    pub cols: Vec<usize>,
+    pub weights: Vec<f64>,
+}
+
 /// Below this much work (rows x columns) the scan stays single-threaded —
 /// thread overhead would lose.
 const PAR_MIN_WORK: usize = 20_000;
@@ -105,10 +113,10 @@ struct ScanStats {
 /// Reusable per-thread scratch buffers to eliminate heap allocation during column scans.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct SplitScratch {
-    pub pairs: Vec<(f64, f64, f64)>,
+    pub pairs: Vec<(f64, f64, f64, f64)>,
     pub pairs_yw: Vec<(f64, f64)>,
     pub missing_yws: Vec<(f64, f64)>,
-    pub level_moments: Vec<(f64, usize, f64, f64, f64)>, // (level, n, sw, swy, swy2)
+    pub level_moments: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw, swy, swy2)
     pub pairs_causal: Vec<(f64, f64, f64, f64)>,        // (v, y, w, treat)
     pub level_causal: Vec<(f64, usize, f64, f64, f64, f64)>, // (level, n, sw_t, swy_t, sw_c, swy_c)
     pub h_parent: Vec<f64>,
@@ -121,7 +129,7 @@ pub(crate) struct SplitScratch {
 impl<'a> Grower<'a> {
     /// Interaction constraint (LightGBM-style): a path may only use columns
     /// from one interaction group; ungrouped columns never interact.
-    fn interact_ok(&self, path: &[usize], j: usize) -> bool {
+    pub(crate) fn interact_ok(&self, path: &[usize], j: usize) -> bool {
         let g = &self.params.interaction_groups;
         if g.is_empty() {
             return true;
@@ -383,15 +391,177 @@ impl<'a> Grower<'a> {
         })
     }
 
+    /// SPORF: Sparse Projection Oblique Randomer Forest split search (Tomita et al. 2020).
+    /// Generates random linear combinations of `sporf_d` features: Z = sum_{k=0}^{d-1} w_k * X_{cols[k]}
+    /// with random signs w_k in {-1, +1}, evaluates 1D cutpoint scans on Z, and returns the best
+    /// oblique hyperplane partition if its gain exceeds the threshold.
+    pub(crate) fn sporf_split(
+        &mut self,
+        rows: &[usize],
+        path: &[usize],
+        prof: &mut NodeProfile,
+    ) -> Option<(Split, Vec<usize>, Vec<usize>)> {
+        if rows.len() < self.min_split() {
+            return None;
+        }
+        let d = self.params.sporf_d;
+        let num_cols: Vec<usize> = self.active
+            .iter()
+            .copied()
+            .filter(|&j| self.interact_ok(path, j))
+            .filter(|&j| matches!(self.col_type(j), ColType::Float | ColType::Integer))
+            .collect();
+
+        if num_cols.len() < d {
+            return None;
+        }
+
+        let num_projections = self.params.sporf_projections.max(1);
+        let min_leaf = self.min_child(rows.len());
+        let mut best_gain = self.params.min_gain;
+        let mut best_split: Option<Split> = None;
+        let mut best_proj: Option<ObliqueProjection> = None;
+
+        for _ in 0..num_projections {
+            prof.candidates += 1;
+            // Deterministic pseudo-random selection of d columns and signs
+            let mut sampled_cols = Vec::with_capacity(d);
+            let mut sampled_weights = Vec::with_capacity(d);
+            let mut available = num_cols.clone();
+            for _ in 0..d {
+                self.rng_counter = self.rng_counter.wrapping_add(1);
+                let mut rng = self.params.seed
+                    .wrapping_add(self.rng_counter.wrapping_mul(6364136223846793005))
+                    ^ 0xA076_1D64_78BD_642F;
+                rng ^= rng >> 33;
+                rng = rng.wrapping_mul(0xff51afd7ed558ccd);
+                rng ^= rng >> 33;
+                let idx = (rng as usize) % available.len();
+                let col = available.swap_remove(idx);
+                let sign = if (rng >> 7) & 1 == 0 { 1.0 } else { -1.0 };
+                sampled_cols.push(col);
+                sampled_weights.push(sign);
+            }
+
+            // Project rows: z_r = sum_{k=0}^{d-1} w_k * X_{cols[k], r}
+            let mut vals: Vec<(f64, usize)> = Vec::with_capacity(rows.len());
+            for (local_idx, &r) in rows.iter().enumerate() {
+                let mut z = 0.0;
+                let mut ok = true;
+                for (&c, &w) in sampled_cols.iter().zip(sampled_weights.iter()) {
+                    match self.cols[c][r] {
+                        Some(v) => z += w * v,
+                        None => { ok = false; break; }
+                    }
+                }
+                if ok {
+                    vals.push((z, local_idx));
+                }
+            }
+
+            if vals.len() < 2 * min_leaf {
+                continue;
+            }
+
+            vals.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+            let mut w_l = 0.0;
+            let mut wy_l = 0.0;
+            let mut wy2_l = 0.0;
+            let (mut total_w, mut total_wy, mut total_wy2) = (0.0, 0.0, 0.0);
+            for &(_, local_idx) in &vals {
+                let r = rows[local_idx];
+                let (y, wt) = (self.y[r], self.w[r]);
+                total_w += wt;
+                total_wy += wt * y;
+                total_wy2 += wt * y * y;
+            }
+
+            let parent_sse = total_wy2 - (total_wy * total_wy) / total_w.max(1e-12);
+
+            for m in 0..(vals.len() - 1) {
+                let (z_curr, local_idx) = vals[m];
+                let r = rows[local_idx];
+                let (y, wt) = (self.y[r], self.w[r]);
+                w_l += wt;
+                wy_l += wt * y;
+                wy2_l += wt * y * y;
+
+                let z_next = vals[m + 1].0;
+                let n_l = m + 1;
+                let n_r = vals.len() - n_l;
+
+                if z_curr < z_next && n_l >= min_leaf && n_r >= min_leaf {
+                    let w_r = total_w - w_l;
+                    let wy_r = total_wy - wy_l;
+                    let wy2_r = total_wy2 - wy2_l;
+
+                    let sse_l = wy2_l - (wy_l * wy_l) / w_l;
+                    let sse_r = wy2_r - (wy_r * wy_r) / w_r;
+                    let mut gain = parent_sse - sse_l - sse_r;
+
+                    if self.params.imbalance_penalty > 0.0 {
+                        gain -= self.params.imbalance_penalty * (1.0 / n_l as f64 + 1.0 / n_r as f64);
+                    }
+
+                    if gain > best_gain {
+                        best_gain = gain;
+                        let threshold = (z_curr + z_next) / 2.0;
+                        best_split = Some(Split {
+                            col: sampled_cols[0],
+                            threshold,
+                            missing_left: true,
+                            gain,
+                            cat: None,
+                            sur: None,
+                            oblique: None,
+                        });
+                        best_proj = Some(ObliqueProjection {
+                            cols: sampled_cols.clone(),
+                            weights: sampled_weights.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
+        if let (Some(mut sp), Some(proj)) = (best_split, best_proj) {
+            let ob_idx = self.oblique_parts.len();
+            self.oblique_parts.push(proj);
+            sp.oblique = Some(ob_idx);
+            let (lv, rv) = self.partition_rows(rows, &sp);
+            Some((sp, lv, rv))
+        } else {
+            None
+        }
+    }
+
     /// Route `rows` through a split (missing values follow
     /// `missing_left`). Shared by the structure partition and the honesty
     /// estimation partition.
     pub(crate) fn partition_rows(&self, rows: &[usize], sp: &Split) -> (Vec<usize>, Vec<usize>) {
         let (mut lv, mut rv) = (Vec::new(), Vec::new());
         for &r in rows {
-            let go_left = match self.cols[sp.col][r] {
-                Some(v) => self.goes_left(sp, v),
-                None => sp.missing_left,
+            let go_left = if let Some(ob_idx) = sp.oblique {
+                let proj = &self.oblique_parts[ob_idx];
+                let mut sum = 0.0;
+                let mut has_na = false;
+                for (&c, &w) in proj.cols.iter().zip(proj.weights.iter()) {
+                    match self.cols[c][r] {
+                        Some(v) => sum += w * v,
+                        None => { has_na = true; break; }
+                    }
+                }
+                if has_na {
+                    sp.missing_left
+                } else {
+                    sum <= sp.threshold
+                }
+            } else {
+                match self.cols[sp.col][r] {
+                    Some(v) => self.goes_left(sp, v),
+                    None => sp.missing_left,
+                }
             };
             if go_left {
                 lv.push(r);
@@ -461,13 +631,13 @@ impl<'a> Grower<'a> {
 
     /// Minimum node rows to attempt a split (ctree `minsplit`); defaults to
     /// the historical `2 * min_rows` gate.
-    fn min_split(&self) -> usize {
+    pub(crate) fn min_split(&self) -> usize {
         self.params.minsplit.unwrap_or(2 * self.params.min_rows)
     }
 
     /// Minimum rows per child: the `minbucket` floor and the `minprob`
     /// share of the node (ctree trio).
-    fn min_child(&self, node_rows: usize) -> usize {
+    pub(crate) fn min_child(&self, node_rows: usize) -> usize {
         let floor = self.params.minbucket.unwrap_or(self.params.min_rows).max(1);
         let share = (self.params.minprob * node_rows as f64).ceil() as usize;
         floor.max(share)
@@ -490,24 +660,32 @@ impl<'a> Grower<'a> {
 
         let is_standard_gain = matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
         if is_standard_gain {
-            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64)> =
+            let prot_col_opt = self.params.protected_col;
+            let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64, f64)> =
                 std::collections::HashMap::new();
-            let (mut mn, mut msw, mut mswy, mut mswy2) = (0usize, 0.0, 0.0, 0.0);
+            let (mut mn, mut msw, mut mswy, mut mswy2, mut msw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
             for &r in rows {
                 let (y, w) = (self.y[r], self.w[r]);
+                let p_wt = if let Some(pc) = prot_col_opt {
+                    if self.cols[pc][r].unwrap_or(0.0) >= 0.5 { w } else { 0.0 }
+                } else {
+                    0.0
+                };
                 match self.cols[j][r] {
                     Some(v) => {
-                        let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0));
+                        let e = by_level.entry(v.to_bits()).or_insert((0, 0.0, 0.0, 0.0, 0.0));
                         e.0 += 1;
                         e.1 += w;
                         e.2 += w * y;
                         e.3 += w * y * y;
+                        e.4 += p_wt;
                     }
                     None => {
                         mn += 1;
                         msw += w;
                         mswy += w * y;
                         mswy2 += w * y * y;
+                        msw_prot += p_wt;
                     }
                 }
             }
@@ -516,8 +694,8 @@ impl<'a> Grower<'a> {
                 return (None, st);
             }
             scratch.level_moments.clear();
-            for (b, (n, sw, swy, swy2)) in by_level {
-                scratch.level_moments.push((f64::from_bits(b), n, sw, swy, swy2));
+            for (b, (n, sw, swy, swy2, sw_prot)) in by_level {
+                scratch.level_moments.push((f64::from_bits(b), n, sw, swy, swy2, sw_prot));
             }
 
             // Level order (deterministic: ties by level code ascending).
@@ -554,12 +732,13 @@ impl<'a> Grower<'a> {
 
             let k = scratch.level_moments.len();
             let m = self.min_child(rows.len()) as f64;
-            let (mut tn, mut tsw, mut tswy, mut tswy2) = (0usize, 0.0, 0.0, 0.0);
-            for &(_, n, sw, swy, swy2) in scratch.level_moments.iter() {
+            let (mut tn, mut tsw, mut tswy, mut tswy2, mut tsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
+            for &(_, n, sw, swy, swy2, sw_prot) in scratch.level_moments.iter() {
                 tn += n;
                 tsw += sw;
                 tswy += swy;
                 tswy2 += swy2;
+                tsw_prot += sw_prot;
             }
             let total_w = tsw + msw;
 
@@ -570,7 +749,7 @@ impl<'a> Grower<'a> {
 
             let mut best: Option<(f64, Vec<usize>, bool)> = None;
 
-            let mut eval_split = |left_indices: &[usize], ln: usize, lsw: f64, lswy: f64, lswy2: f64, best: &mut Option<(f64, Vec<usize>, bool)>| -> bool {
+            let mut eval_split = |left_indices: &[usize], ln: usize, lsw: f64, lswy: f64, lswy2: f64, lsw_prot: f64, best: &mut Option<(f64, Vec<usize>, bool)>| -> bool {
                 let rn = tn - ln;
                 let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
                 if (ln as f64) < m || (rn as f64) < m {
@@ -579,15 +758,15 @@ impl<'a> Grower<'a> {
                 st.candidates += 1;
                 let mut candidate_hit = false;
                 for missing_left in [true, false] {
-                    let (aln, alsw, alswy, alswy2) = if missing_left {
-                        (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2)
+                    let (aln, alsw, alswy, alswy2, alsw_prot) = if missing_left {
+                        (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2, lsw_prot + msw_prot)
                     } else {
-                        (ln, lsw, lswy, lswy2)
+                        (ln, lsw, lswy, lswy2, lsw_prot)
                     };
-                    let (arn, arsw, arswy, arswy2) = if missing_left {
-                        (rn, rsw, rswy, rswy2)
+                    let (arn, arsw, arswy, arswy2, arsw_prot) = if missing_left {
+                        (rn, rsw, rswy, rswy2, tsw_prot - lsw_prot)
                     } else {
-                        (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2)
+                        (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2, tsw_prot + msw_prot - lsw_prot)
                     };
                     if (aln as f64) < m || (arn as f64) < m {
                         continue;
@@ -613,6 +792,14 @@ impl<'a> Grower<'a> {
                     } else {
                         gain
                     };
+                    let gain = if self.params.fairness_penalty > 0.0 && self.params.protected_col.is_some() {
+                        let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
+                        let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
+                        let disparity = (p_l - p_r).abs();
+                        (gain - self.params.fairness_penalty * parent_sse * disparity).max(0.0)
+                    } else {
+                        gain
+                    };
                     if gain <= self.params.min_gain {
                         continue;
                     }
@@ -626,42 +813,44 @@ impl<'a> Grower<'a> {
 
             match self.params.cat_search {
                 CatSearch::Cumulative => {
-                    let (mut ln, mut lsw, mut lswy, mut lswy2) = (0usize, 0.0, 0.0, 0.0);
+                    let (mut ln, mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
                     let mut left_indices = Vec::with_capacity(k);
                     for i in 1..k {
-                        let (_, cn, csw, cswy, cswy2) = scratch.level_moments[i - 1];
+                        let (_, cn, csw, cswy, cswy2, csw_prot) = scratch.level_moments[i - 1];
                         ln += cn;
                         lsw += csw;
                         lswy += cswy;
                         lswy2 += cswy2;
+                        lsw_prot += csw_prot;
                         left_indices.push(i - 1);
-                        eval_split(&left_indices, ln, lsw, lswy, lswy2, &mut best);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, &mut best);
                     }
                 }
                 CatSearch::SingleVsRest => {
                     for i in 0..k {
-                        let (_, ln, lsw, lswy, lswy2) = scratch.level_moments[i];
-                        let hit = eval_split(&[i], ln, lsw, lswy, lswy2, &mut best);
+                        let (_, ln, lsw, lswy, lswy2, lsw_prot) = scratch.level_moments[i];
+                        let hit = eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, &mut best);
                         if hit {
                             break;
                         }
                     }
                 }
                 CatSearch::Both => {
-                    let (mut ln, mut lsw, mut lswy, mut lswy2) = (0usize, 0.0, 0.0, 0.0);
+                    let (mut ln, mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0usize, 0.0, 0.0, 0.0, 0.0);
                     let mut left_indices = Vec::with_capacity(k);
                     for i in 1..k {
-                        let (_, cn, csw, cswy, cswy2) = scratch.level_moments[i - 1];
+                        let (_, cn, csw, cswy, cswy2, csw_prot) = scratch.level_moments[i - 1];
                         ln += cn;
                         lsw += csw;
                         lswy += cswy;
                         lswy2 += cswy2;
+                        lsw_prot += csw_prot;
                         left_indices.push(i - 1);
-                        eval_split(&left_indices, ln, lsw, lswy, lswy2, &mut best);
+                        eval_split(&left_indices, ln, lsw, lswy, lswy2, lsw_prot, &mut best);
                     }
                     for i in 0..k {
-                        let (_, ln, lsw, lswy, lswy2) = scratch.level_moments[i];
-                        eval_split(&[i], ln, lsw, lswy, lswy2, &mut best);
+                        let (_, ln, lsw, lswy, lswy2, lsw_prot) = scratch.level_moments[i];
+                        eval_split(&[i], ln, lsw, lswy, lswy2, lsw_prot, &mut best);
                     }
                 }
             }
@@ -679,6 +868,7 @@ impl<'a> Grower<'a> {
                             gain,
                             cat: None,
                             sur: None,
+                            oblique: None,
                         },
                         Some(left_levels),
                     )
@@ -873,6 +1063,7 @@ impl<'a> Grower<'a> {
                             gain,
                             cat: None,
                             sur: None,
+                            oblique: None,
                         },
                         Some(left_levels),
                     )
@@ -1043,6 +1234,7 @@ impl<'a> Grower<'a> {
                         gain,
                         cat: None,
                         sur: None,
+                        oblique: None,
                     },
                     Some(left_levels),
                 )
@@ -1067,9 +1259,10 @@ impl<'a> Grower<'a> {
         scratch.pairs.clear();
         let grid = self.grid_for(j);
         let q = grid.filter(|&p| p > 0.0).map(|p| 1.0 / p);
+        let prot_col_opt = self.params.protected_col;
 
         let mut tn = 0usize;
-        let (mut tsw, mut tswy, mut tswy2) = (0.0, 0.0, 0.0);
+        let (mut tsw, mut tswy, mut tswy2, mut tsw_prot) = (0.0, 0.0, 0.0, 0.0);
 
         for &r in rows {
             if let Some(v_raw) = self.cols[j][r] {
@@ -1078,11 +1271,17 @@ impl<'a> Grower<'a> {
                     None => v_raw,
                 };
                 let (y, w) = (self.y[r], self.w[r]);
-                scratch.pairs.push((v, y, w));
+                let p = if let Some(pc) = prot_col_opt {
+                    if self.cols[pc][r].unwrap_or(0.0) >= 0.5 { 1.0 } else { 0.0 }
+                } else {
+                    0.0
+                };
+                scratch.pairs.push((v, y, w, p));
                 tn += 1;
                 tsw += w;
                 tswy += w * y;
                 tswy2 += w * y * y;
+                tsw_prot += w * p;
             }
         }
 
@@ -1104,6 +1303,18 @@ impl<'a> Grower<'a> {
                 (node_swy2 - tswy2).max(0.0),
             )
         };
+        let mut msw_prot = 0.0;
+        if let Some(pc) = prot_col_opt {
+            if mn > 0 {
+                for &r in rows {
+                    if self.cols[j][r].is_none() {
+                        if self.cols[pc][r].unwrap_or(0.0) >= 0.5 {
+                            msw_prot += self.w[r];
+                        }
+                    }
+                }
+            }
+        }
 
         let is_multiclass_gain = matches!(
             self.params.gain,
@@ -1112,7 +1323,7 @@ impl<'a> Grower<'a> {
         let n_classes_opt = if is_multiclass_gain {
             let mut max_c = self.params.n_classes.unwrap_or(0);
             let mut all_int = true;
-            for &(_, y, _) in &scratch.pairs {
+            for &(_, y, _, _) in &scratch.pairs {
                 if y >= 0.0 && y < 256.0 && y.fract() == 0.0 {
                     max_c = max_c.max((y as usize) + 1);
                 } else {
@@ -1132,7 +1343,7 @@ impl<'a> Grower<'a> {
         if let Some(nc) = n_classes_opt {
             scratch.h_parent.clear();
             scratch.h_parent.resize(nc, 0.0);
-            for &(_, y, w) in &scratch.pairs {
+            for &(_, y, w, _) in &scratch.pairs {
                 scratch.h_parent[y as usize] += w;
             }
             scratch.h_miss.clear();
@@ -1158,7 +1369,7 @@ impl<'a> Grower<'a> {
             let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
             if is_custom_gain {
                 scratch.pairs_yw.clear();
-                scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w)| (y, w)));
+                scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w, _)| (y, w)));
                 scratch.missing_yws.clear();
                 if mn > 0 {
                     for &r in rows {
@@ -1182,16 +1393,17 @@ impl<'a> Grower<'a> {
         let t1 = Instant::now();
 
         let mut ln = 0usize;
-        let (mut lsw, mut lswy, mut lswy2) = (0.0, 0.0, 0.0);
+        let (mut lsw, mut lswy, mut lswy2, mut lsw_prot) = (0.0, 0.0, 0.0, 0.0);
         let mut best: Option<(f64, Split)> = None;
         let total_w = tsw + msw;
 
         for k in 0..n_pairs {
-            let (v, y, w) = scratch.pairs[k];
+            let (v, y, w, p) = scratch.pairs[k];
             ln += 1;
             lsw += w;
             lswy += w * y;
             lswy2 += w * y * y;
+            lsw_prot += w * p;
             if n_classes_opt.is_some() {
                 scratch.h_left[y as usize] += w;
             }
@@ -1207,15 +1419,15 @@ impl<'a> Grower<'a> {
             let (rsw, rswy, rswy2) = (tsw - lsw, tswy - lswy, tswy2 - lswy2);
             st.candidates += 1;
             for missing_left in [true, false] {
-                let (aln, alsw, alswy, alswy2) = if missing_left {
-                    (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2)
+                let (aln, alsw, alswy, alswy2, alsw_prot) = if missing_left {
+                    (ln + mn, lsw + msw, lswy + mswy, lswy2 + mswy2, lsw_prot + msw_prot)
                 } else {
-                    (ln, lsw, lswy, lswy2)
+                    (ln, lsw, lswy, lswy2, lsw_prot)
                 };
-                let (arn, arsw, arswy, arswy2) = if missing_left {
-                    (rn, rsw, rswy, rswy2)
+                let (arn, arsw, arswy, arswy2, arsw_prot) = if missing_left {
+                    (rn, rsw, rswy, rswy2, tsw_prot - lsw_prot)
                 } else {
-                    (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2)
+                    (rn + mn, rsw + msw, rswy + mswy, rswy2 + mswy2, tsw_prot + msw_prot - lsw_prot)
                 };
                 if (aln as f64) < m || (arn as f64) < m {
                     continue;
@@ -1283,6 +1495,15 @@ impl<'a> Grower<'a> {
                 } else {
                     gain
                 };
+                let gain = if self.params.fairness_penalty > 0.0 && self.params.protected_col.is_some() {
+                    let p_l = if alsw > 0.0 { alsw_prot / alsw } else { 0.0 };
+                    let p_r = if arsw > 0.0 { arsw_prot / arsw } else { 0.0 };
+                    let disparity = (p_l - p_r).abs();
+                    let scale = parent_sse.max(1e-12);
+                    (gain - self.params.fairness_penalty * scale * disparity).max(0.0)
+                } else {
+                    gain
+                };
                 if gain <= self.params.min_gain {
                     continue;
                 }
@@ -1296,6 +1517,7 @@ impl<'a> Grower<'a> {
                             gain,
                             cat: None,
                             sur: None,
+                            oblique: None,
                         },
                     ));
                 }
@@ -1454,6 +1676,7 @@ impl<'a> Grower<'a> {
                             gain,
                             cat: None,
                             sur: None,
+                            oblique: None,
                         },
                     ));
                 }
@@ -1641,6 +1864,7 @@ impl<'a> Grower<'a> {
             gain,
             cat: None,
             sur: None,
+            oblique: None,
         };
         (Some((gain, split, Some(left_levels))), st)
     }
@@ -1864,6 +2088,7 @@ impl<'a> Grower<'a> {
                             gain,
                             cat: None,
                             sur: None,
+                            oblique: None,
                         },
                     ));
                 }
@@ -2069,7 +2294,7 @@ impl<'a> Grower<'a> {
                     let part = categorical.then(|| groups.iter().enumerate()
                         .filter(|(gi, _)| in_left(*gi)).map(|(_, g)| g.0).collect());
                     best = Some((gain, Split { col: j, threshold, missing_left,
-                        gain, cat: None, sur: None }, part));
+                        gain, cat: None, sur: None, oblique: None }, part));
                 }
             }
             if categorical && matches!(self.params.cat_search, CatSearch::SingleVsRest)

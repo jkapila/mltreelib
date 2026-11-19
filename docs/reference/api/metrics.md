@@ -225,6 +225,36 @@ Args:
 
 Returns: `{"psi": float, "bins": [{"left", "right", "reference_share",
 "current_share", "contribution"}, ...]}`.
+### Metrics.survival
+```pythonsurvival((self, /, durations, events, risk_scores, surv_curves=None, times=None))```
+Complete survival analysis report (Harrell C-index, Uno IPCW C-index, Integrated Brier Score).
+
+Args:
+    durations: observed duration / time-to-event per row.
+    events: event indicator (1.0 = event observed, 0.0 = right-censored).
+    risk_scores: predicted risk score (higher score = shorter expected survival).
+    surv_curves: optional individual survival probability curves S(t|x) matrix (N, K).
+    times: optional evaluation horizon times grid.
+### Metrics.time_series
+```pythontime_series((self, /, y_true, y_pred, y_train=None, seasonal_period=None, std_pred=None))```
+Complete time series forecasting report (MAE, RMSE, MASE, sMAPE, WAPE, MDA, CRPS).
+
+Args:
+    y_true: actual time series targets.
+    y_pred: predicted values.
+    y_train: optional in-sample training series (used to scale MASE).
+    seasonal_period: optional seasonality m (e.g. 7 for daily, 12 for monthly).
+    std_pred: optional predicted standard deviation per period (used for Gaussian CRPS).
+### Metrics.uplift
+```pythonuplift((self, /, y_true, treatment, tau_pred))```
+Complete causal uplift and Qini curve report.
+
+Args:
+    y_true: observed outcome per row.
+    treatment: binary treatment indicator (1.0 = treated, 0.0 = control).
+    tau_pred: predicted treatment effect / uplift score per row.
+
+Returns: dict with ATE, Qini coefficient, normalized Qini, AUUC, decile uplifts, Qini curve.
 ### Metrics.weighted_kappa
 ```pythonweighted_kappa((self, /, y_true, y_pred, weights='quadratic'))```
 Cohen's kappa with optional weights over the label scale. Task:

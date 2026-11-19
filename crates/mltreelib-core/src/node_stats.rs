@@ -404,6 +404,7 @@ pub struct LeafModel {
     pub mars_cols: Option<Vec<usize>>,
     pub knn: Option<crate::knn::LeafKnnModel>,
     pub knn_cols: Option<Vec<usize>>,
+    pub vector_mean: Option<Vec<f64>>,
 }
 
 impl LeafModel {
