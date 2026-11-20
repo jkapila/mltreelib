@@ -14,7 +14,7 @@ Inspired by the parameter architecture of **CatBoost** and **LightGBM**, every k
 - [5. Categorical Handling & Monotonicity Constraints](#5-categorical-handling-monotonicity-constraints)
 - [6. Pruning, Honesty & Missing Value Routing](#6-pruning-honesty-missing-value-routing)
 - [7. Leaf Models, GLM Families & Penalized Solvers](#7-leaf-models-glm-families-penalized-solvers)
-- [8. Decoupled Leaf Controls & Hierarchical Retraining](#8-decoupled-leaf-controls-hierarchical-retraining)
+- [8. Growth and Leaf Controls](#8-growth-and-leaf-controls)
 - [9. Telemetry & Execution Controls](#9-telemetry-execution-controls)
 
 ---
@@ -22,6 +22,8 @@ Inspired by the parameter architecture of **CatBoost** and **LightGBM**, every k
 ## 1. Core Tree Architecture & Sizing
 
 Controls how deep and wide the tree can grow before termination.
+
+Set the classification class count with `GrowthControl(n_classes=...)`. Existing calls can supply `n_classes` as a flat constructor keyword, a fit keyword, or a legacy `LeafControl` setting.
 
 | Parameter | Type | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -135,15 +137,26 @@ Defines the parametric or non-parametric local model fitted within each terminal
 
 ---
 
-## 8. Decoupled Leaf Controls & Hierarchical Retraining
+## 8. Growth and Leaf Controls
 
-Enables independent configuration of leaf models and decoupled retraining without changing tree topology.
+Use the growth settings in sections 1–6 to configure the partition. Use the leaf settings in section 7 to configure the model fitted in each region. Under constraints, `tree_monotone` governs splits and `leaf_monotone` governs leaf coefficients. Supply data, feature names, types, and row weights to `fit`.
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`control`** / **`leaf_control`** | `LeafControl \| dict \| None` | `None` | Dedicated `LeafControl` configuration object decoupling leaf model architecture (`family`, `l1`, `l2`, `leaf_features`) from split tree parameters. |
+| **`growth_control`** | `GrowthControl \| dict \| None` | `None` | Groups split search, stopping, feature sampling, honesty, and pruning settings. |
+| **`leaf_control`** / **`control`** | `LeafControl \| dict \| None` | `None` | Groups the leaf form, family, solver, penalties, and other leaf settings. |
 | **`train_groups`** | `bool` | `True` | Whether to preserve grouped hierarchical entities during leaf retraining. |
 | **`train_ids`** | `bool` | `False` | Whether to index training entity row keys in leaf sample caches (`leaf_samples()`). |
+
+For solver selection inside a leaf control, use `solver="lbfgs"` or another compatible solver. Flat callers can continue to use `leaf_solver`. Some leaf models use a dedicated fitting method. See the [model reference](model.md#configure-growth-and-leaves) for typed, dictionary, and flat examples.
+
+| Leaf model | Compatible explicit solver choices |
+| --- | --- |
+| Gaussian linear | `irls`, `lbfgs`, `ccd`, `shade`, `cmaes`, `ga`, `nes` |
+| Linear binomial, probit, Poisson, Gamma, Tweedie, or Tobit | `irls`, `lbfgs` |
+| Leaves with a dedicated estimator | Use the estimator selected by the leaf form and family. |
+
+Use L-BFGS with zero L1 penalty and no monotone leaf constraints. It supports ridge penalties. Specialized estimators reject explicit `solver` selections.
 
 ---
 

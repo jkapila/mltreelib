@@ -13,9 +13,10 @@ use crate::node_stats::{design_row, fit_linear, solve_normal_sum, Gram, SideTrac
 
 /// Oblique hyperplane linear combination projection for SPORF (Tomita et al. 2020).
 /// Defines Z = sum_{k=0}^{d-1} weights[k] * X_{cols[k]}.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ObliqueProjection {
     pub cols: Vec<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub weights: Vec<f64>,
 }
 
@@ -39,7 +40,7 @@ struct ParentPre {
 /// distinct value IS a level (identity, never order). Missing (`None`/NA)
 /// is a first-class state: a surrogate split routes it when present, else
 /// `missing_left` — or it can be carried as a level of its own.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ColType {
     /// Integer handler: scan unique values small → big; the cut is exact
     /// (`v < a`) — no precision grid.
@@ -68,7 +69,7 @@ pub(crate) fn grid_of(
 
 /// Order in which a categorical column's levels are visited when building
 /// the candidate partitions.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CatOrder {
     /// Most frequent level first (counted at the node).
     FrequencyDesc,
@@ -76,11 +77,11 @@ pub enum CatOrder {
     TargetMean,
     /// Explicit level order (codes); levels not listed are appended after,
     /// by descending frequency.
-    Explicit(Vec<f64>),
+    Explicit(#[serde(with = "crate::persistence::float")] Vec<f64>),
 }
 
 /// Which candidate partitions a categorical column contributes.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum CatSearch {
     /// Cumulative sweep along the order: {top-1}|rest, {top-2}|rest, ...
     /// `k-1` candidates. Default.
@@ -94,7 +95,7 @@ pub enum CatSearch {
 
 /// Split evaluation strategy: fast scalar variance reduction (M5/Cubist style, default)
 /// vs historical exhaustive candidate-level multivariate regression.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SplitEval {
     /// Fast scalar variance/deviance reduction (O(1) per threshold, M5/Cubist oracle).
     Fast,

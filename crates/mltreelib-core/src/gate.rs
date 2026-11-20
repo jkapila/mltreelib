@@ -5,7 +5,7 @@
 use crate::model_tree::Grower;
 use crate::stats::f_sf;
 /// Split significance gate (statistical stopping).
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum SplitTest {
     /// No gate — every candidate split behaves as before (default: every
     /// knob is default-off until a measured round decides).
@@ -31,16 +31,54 @@ pub enum SplitTest {
 }
 
 /// Statistical gate result recorded on the node's training-log profile.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct GateNote {
+    #[serde(with = "crate::persistence::float")]
     pub f: f64,
+    #[serde(with = "crate::persistence::float")]
     pub p: f64,
     /// Effective significance level (`split_alpha`, Bonferroni-divided).
+    #[serde(with = "crate::persistence::float")]
     pub alpha: f64,
     pub passed: bool,
     pub test_name: &'static str,
     /// Per-variable test diagnostics: (col_idx, test_statistic, adj_p_value)
+    #[serde(with = "crate::persistence::float")]
     pub var_p_values: Vec<(usize, f64, f64)>,
+}
+
+impl<'de> serde::Deserialize<'de> for GateNote {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(serde::Deserialize)]
+        struct State {
+            #[serde(with = "crate::persistence::float")]
+            f: f64,
+            #[serde(with = "crate::persistence::float")]
+            p: f64,
+            #[serde(with = "crate::persistence::float")]
+            alpha: f64,
+            passed: bool,
+            test_name: String,
+            #[serde(with = "crate::persistence::float")]
+            var_p_values: Vec<(usize, f64, f64)>,
+        }
+
+        let state = State::deserialize(d)?;
+        let test_name = match state.test_name.as_str() {
+            "chow" => "chow",
+            "ctree" => "ctree",
+            "mob" => "mob",
+            _ => return Err(serde::de::Error::custom("unknown model split test")),
+        };
+        Ok(Self {
+            f: state.f,
+            p: state.p,
+            alpha: state.alpha,
+            passed: state.passed,
+            test_name,
+            var_p_values: state.var_p_values,
+        })
+    }
 }
 
 impl<'a> Grower<'a> {

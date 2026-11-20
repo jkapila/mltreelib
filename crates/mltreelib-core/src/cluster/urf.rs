@@ -254,6 +254,8 @@ pub struct UnsupervisedProximityForest {
     pub linkage: UrfLinkage,
     pub seed: u64,
     pub trees: Vec<ProximityTree>,
+    /// Leaf assignments for training rows, in input order.
+    training_encodings: Vec<Vec<usize>>,
     /// Pairwise proximity matrix for training instances: [N x N].
     pub proximity_matrix: Vec<Vec<f64>>,
     pub cluster_labels: Vec<usize>,
@@ -271,6 +273,7 @@ impl Default for UnsupervisedProximityForest {
             linkage: UrfLinkage::Average,
             seed: 42,
             trees: Vec::new(),
+            training_encodings: Vec::new(),
             proximity_matrix: Vec::new(),
             cluster_labels: Vec::new(),
             outlier_scores: Vec::new(),
@@ -353,18 +356,14 @@ impl UnsupervisedProximityForest {
         for i in 0..n {
             prox[i][i] = 1.0;
             for j in (i + 1)..n {
-                let mut matches = 0;
-                for t in 0..self.n_trees {
-                    if leaf_assignments[i][t] == leaf_assignments[j][t] {
-                        matches += 1;
-                    }
-                }
+                let matches = Self::matching_leaves(&leaf_assignments[i], &leaf_assignments[j]);
                 let p = (matches as f64) / (self.n_trees as f64);
                 prox[i][j] = p;
                 prox[j][i] = p;
             }
         }
 
+        self.training_encodings = leaf_assignments;
         self.proximity_matrix = prox.clone();
 
         // 4. Calculate Outlier Scores from Proximity
@@ -403,6 +402,46 @@ impl UnsupervisedProximityForest {
             }
         }
         dist
+    }
+
+    fn matching_leaves(query: &[usize], training: &[usize]) -> usize {
+        query.iter().zip(training).filter(|(a, b)| a == b).count()
+    }
+
+    fn leaf_encoding(&self, row: &[f64]) -> Vec<usize> {
+        self.trees.iter().map(|tree| tree.apply(row)).collect()
+    }
+
+    /// Predict the cluster label of the closest training row in proximity space.
+    pub fn predict(&self, data: &[Vec<f64>]) -> Vec<usize> {
+        data.iter()
+            .map(|row| {
+                let query = self.leaf_encoding(row);
+                self.training_encodings
+                    .iter()
+                    .zip(&self.cluster_labels)
+                    .rev()
+                    .max_by_key(|(training, _)| Self::matching_leaves(&query, training))
+                    .map_or(0, |(_, label)| *label)
+            })
+            .collect()
+    }
+
+    /// Compute distances from query rows to the training rows in fit order.
+    pub fn distances(&self, data: &[Vec<f64>]) -> Vec<Vec<f64>> {
+        data.iter()
+            .map(|row| {
+                let query = self.leaf_encoding(row);
+                self.training_encodings
+                    .iter()
+                    .map(|training| {
+                        let proximity = Self::matching_leaves(&query, training) as f64
+                            / self.trees.len() as f64;
+                        (1.0 - proximity).max(0.0).sqrt()
+                    })
+                    .collect()
+            })
+            .collect()
     }
 
     /// Agglomerative hierarchical clustering on distance matrix D = sqrt(1 - P) via Lance-Williams update.

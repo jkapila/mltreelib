@@ -14,29 +14,48 @@ use crate::family::{std_norm_cdf, std_norm_inv_cdf, std_norm_pdf, LeafFamily};
 /// Weighted by sample weights (`w`); `std` is the weighted sample standard
 /// deviation. The t-digest (Cam Davidson-Pilon semantics via the `tdigest`
 /// crate) keeps quantiles queryable without storing every target.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LeafStats {
     pub n: usize,
     /// Sum of the sample weights.
+    #[serde(with = "crate::persistence::float")]
     pub wsum: f64,
+    #[serde(with = "crate::persistence::float")]
     pub mean: f64,
+    #[serde(with = "crate::persistence::float")]
     pub std: f64,
+    #[serde(with = "crate::persistence::float")]
     pub var: f64,
+    #[serde(with = "crate::persistence::float")]
     pub skew: f64,
+    #[serde(with = "crate::persistence::float")]
     pub kurtosis: f64,
+    #[serde(with = "crate::persistence::float")]
     pub median: f64,
+    #[serde(with = "crate::persistence::float")]
     pub mad: f64,
+    #[serde(with = "crate::persistence::float")]
     pub iqr: f64,
+    #[serde(with = "crate::persistence::float")]
     pub min: f64,
+    #[serde(with = "crate::persistence::float")]
     pub max: f64,
+    #[serde(with = "crate::persistence::float")]
     pub prob: f64,
+    #[serde(with = "crate::persistence::float")]
     pub odds: f64,
+    #[serde(with = "crate::persistence::float")]
     pub log_odds: f64,
     pub majority_class: usize,
+    #[serde(with = "crate::persistence::float")]
     pub entropy: f64,
+    #[serde(with = "crate::persistence::float")]
     pub gini: f64,
+    #[serde(with = "crate::persistence::float")]
     pub zero_fraction: f64,
+    #[serde(with = "crate::persistence::float")]
     pub dispersion: f64,
+    #[serde(with = "crate::persistence::digest")]
     pub digest: TDigest,
 }
 
@@ -198,24 +217,33 @@ impl LeafStats {
 }
 
 /// Single coefficient statistics matching R summary(lm) and statsmodels.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CoeffStats {
     pub col_idx: Option<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub estimate: f64,
+    #[serde(with = "crate::persistence::float")]
     pub std_err: f64,
+    #[serde(with = "crate::persistence::float")]
     pub t_value: f64,
+    #[serde(with = "crate::persistence::float")]
     pub p_value: f64,
 }
 
 /// Goodness-of-fit and hypothesis testing summary for a leaf regression model.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RegressionSummary {
     pub n: usize,
     pub df_residuals: usize,
+    #[serde(with = "crate::persistence::float")]
     pub r_squared: f64,
+    #[serde(with = "crate::persistence::float")]
     pub adj_r_squared: f64,
+    #[serde(with = "crate::persistence::float")]
     pub sigma: f64,
+    #[serde(with = "crate::persistence::float")]
     pub f_statistic: f64,
+    #[serde(with = "crate::persistence::float")]
     pub f_p_value: f64,
     pub coefficients: Vec<CoeffStats>,
 }
@@ -289,12 +317,16 @@ impl RegressionSummary {
 /// `intercept + Σ coef·x + Σ na_coef·1{missing}`. Gaussian uses the identity
 /// link. Missing predictors contribute nothing to value terms and have their
 /// own indicator term — missingness is an effect, never a lost row.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LinearModel {
     pub cols: Vec<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub coef: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub na_coef: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub feature_means: Vec<Option<f64>>,
+    #[serde(with = "crate::persistence::float")]
     pub intercept: f64,
     pub summary: Option<RegressionSummary>,
 }
@@ -351,47 +383,59 @@ impl LinearModel {
 
 /// Summary statistics for non-parametric survival curves (Nelson-Aalen / Kaplan-Meier)
 /// and competing risks Cumulative Incidence Functions (Aalen-Johansen CIF).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SurvivalStats {
+    #[serde(with = "crate::persistence::float")]
     pub times: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub cum_hazard: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub survival: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub median_time: f64,
     pub causes: Vec<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub cif: Vec<Vec<f64>>,
     pub event_counts: Vec<usize>,
 }
 
 /// Fitted multinomial softmax parameters for a leaf.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SoftmaxModel {
     pub n_classes: usize,
+    #[serde(with = "crate::persistence::float")]
     pub probs: Vec<f64>,
     pub linear_models: Option<Vec<LinearModel>>,
 }
 
 /// Fitted heteroscedastic location-scale parameters for a leaf.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct HeteroscedasticModel {
+    #[serde(with = "crate::persistence::float")]
     pub scale: f64,
     pub scale_linear: Option<LinearModel>,
 }
 
 /// Fitted causal / treatment effect parameters for a leaf.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CausalStats {
     /// Estimated Conditional Average Treatment Effect (CATE): `mean_treated - mean_control`.
+    #[serde(with = "crate::persistence::float")]
     pub tau: f64,
+    #[serde(with = "crate::persistence::float")]
     pub mean_treated: f64,
+    #[serde(with = "crate::persistence::float")]
     pub mean_control: f64,
     pub n_treated: usize,
     pub n_control: usize,
+    #[serde(with = "crate::persistence::float")]
     pub w_treated: f64,
+    #[serde(with = "crate::persistence::float")]
     pub w_control: f64,
 }
 
 /// Parametric distribution for Accelerated Failure Time (AFT) models.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum AftDist {
     #[default]
     Weibull,
@@ -401,12 +445,15 @@ pub enum AftDist {
 
 /// Fitted parametric Accelerated Failure Time (AFT) model for a leaf.
 /// Models ln(T) = intercept + sum(coef_j * x_j) + scale * epsilon.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct AftModel {
     pub dist: AftDist,
+    #[serde(with = "crate::persistence::float")]
     pub intercept: f64,
+    #[serde(with = "crate::persistence::float")]
     pub coef: Vec<f64>,
     pub cols: Vec<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub scale: f64,
 }
 
@@ -466,8 +513,9 @@ impl AftModel {
 
 /// Fitted mixture cure rate model for a leaf.
 /// Models S(t | x) = cure_rate + (1 - cure_rate) * S_uncured(t | x).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CureModel {
+    #[serde(with = "crate::persistence::float")]
     pub cure_rate: f64,
     pub aft: Option<AftModel>,
     pub survival: Option<SurvivalStats>,
@@ -502,10 +550,13 @@ impl CureModel {
 
 /// Fitted Royston-Parmar restricted cubic spline model for a leaf.
 /// Models ln(Lambda(t | x)) = s(ln t; gamma) + beta^T x.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SplineSurvivalModel {
+    #[serde(with = "crate::persistence::float")]
     pub knots: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub gamma: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub coef: Vec<f64>,
     pub cols: Vec<usize>,
 }
@@ -554,13 +605,14 @@ impl SplineSurvivalModel {
 
 /// Leaf payload: distribution stats always; a linear model for model-tree
 /// leaves (`None` for mean/CART leaves).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LeafModel {
     pub family: LeafFamily,
     pub stats: LeafStats,
     pub linear: Option<LinearModel>,
     /// Fitted response-scale constant (robust Gaussian locations or exact
     /// boundary family means). `None` = the weighted response mean.
+    #[serde(with = "crate::persistence::float")]
     pub center: Option<f64>,
     pub softmax: Option<SoftmaxModel>,
     pub survival: Option<SurvivalStats>,
@@ -573,6 +625,7 @@ pub struct LeafModel {
     pub mars_cols: Option<Vec<usize>>,
     pub knn: Option<crate::knn::LeafKnnModel>,
     pub knn_cols: Option<Vec<usize>>,
+    #[serde(with = "crate::persistence::float")]
     pub vector_mean: Option<Vec<f64>>,
 }
 
@@ -1923,11 +1976,14 @@ pub(crate) fn fit_glm_imputed(
 
 /// Per-node frame statistics for printing (rpart's `frame`): count, weighted
 /// mean and residual SSE. O(rows) to accumulate - no digest.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct FrameStats {
     pub n: usize,
+    #[serde(with = "crate::persistence::float")]
     pub wsum: f64,
+    #[serde(with = "crate::persistence::float")]
     pub mean: f64,
+    #[serde(with = "crate::persistence::float")]
     pub sse: f64,
 }
 

@@ -4,7 +4,7 @@
 use crate::model_tree::Grower;
 /// Optional post-growth pruning cost (bottom-up: a subtree is replaced by
 /// its parent leaf when the leaf's cost is lower).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PruneCost {
     /// No cost pruning (min_gain only).
     None,

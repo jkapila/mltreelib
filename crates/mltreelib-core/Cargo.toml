@@ -19,3 +19,5 @@ rayon = "1"
 tdigest = "1.0.1"
 faer = "0.24.4"
 statrs = { version = "0.18", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }

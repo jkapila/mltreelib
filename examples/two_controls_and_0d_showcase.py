@@ -1,15 +1,15 @@
 """Two-control architecture, 0D leaf formulations, dual monotonicity, weights, and interaction constraints.
 
 Run:
-    python examples/two_controls_and_0d_showcase.py
+    uv run python examples/two_controls_and_0d_showcase.py
 """
 
-from mltreelib import LeafControl, ModelTree
+from mltreelib import GrowthControl, LeafControl, ModelTree
 
 
 def main():
     print("=" * 70)
-    print("1. Two-Control Architecture: ModelTree + LeafControl")
+    print("1. Configure tree growth and leaf models")
     print("=" * 70)
 
     # LeafControl isolates local leaf model configuration:
@@ -22,15 +22,14 @@ def main():
     )
     print("Created LeafControl:", leaf_ctrl)
 
-    # ModelTree constructor accepts control directly, keeping the tree API clean:
-    model = ModelTree(
+    growth = GrowthControl(
         max_depth=3,
         min_rows=10,
         tree_monotone=[1, 0],  # global split ordering
         col_weights=[2.0, 0.5],  # feature split priorities
-        control=leaf_ctrl,
     )
-    print("ModelTree initialized with LeafControl.")
+    model = ModelTree(growth_control=growth, leaf_control=leaf_ctrl)
+    print("ModelTree max depth:", model.get_params()["max_depth"])
 
     print("\n" + "=" * 70)
     print("2. 0D Leaf Formulations & Stats Dictionary")

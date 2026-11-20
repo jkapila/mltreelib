@@ -53,7 +53,9 @@ flowchart TD
 We evaluate clustering on the **Wine Quality** benchmark (chemical attributes: fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, alcohol) and anomaly scoring on a 2D multimodal mixture with peripheral outliers.
 
 ```python
-from mltreelib import AnomalyTree, ClusterTree, load_dataset
+from mltreelib import load_dataset
+from mltreelib.anomaly import AnomalyTree
+from mltreelib.cluster import ClusterTree
 
 # 1. Predictive Clustering Trees (PCT) on Wine Quality
 data = load_dataset("wine_quality")
@@ -65,12 +67,12 @@ pct.fit(X_wine, col_names=features)
 
 print(f"Discovered clusters: {pct.n_clusters_}")
 for idx, rule in enumerate(pct.rules()[:2]):
-    print(f"Cluster {idx} rule: {rule['predicate']}")
+    print(f"Cluster {idx} rule: {rule['rule']}")
 
 # 2. Extended Isolation Forest (EIF) with oblique hyperplanes
 eif = AnomalyTree(kind="eif", max_depth=8, extension_level=1, seed=42)
 eif.fit(X_2d, col_names=["x1", "x2"])
-scores = eif.score_samples(X_query)
+scores = eif.predict(X_query, kind="score")
 ```
 
 ---

@@ -11,7 +11,7 @@ use crate::solver::design::DesignMatrix;
 use crate::stats::{huber_location, w_median, w_quantile};
 
 /// Which columns a leaf's linear model may use.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum LeafCols {
     /// Every usable predictor column.
     All,
@@ -20,7 +20,7 @@ pub enum LeafCols {
 }
 
 /// Missing value policy for leaf model fitting and prediction.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum LeafNaPolicy {
     /// Drop rows with NAs in chosen features from leaf linear fit.
     /// At prediction time, rows with NAs in active features fall back to 0D leaf center (Option A).
@@ -35,7 +35,7 @@ pub enum LeafNaPolicy {
 }
 
 /// What the leaf model is.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum LeafKind {
     /// Linear model over the chosen columns (the model tree).
     Linear,
@@ -45,7 +45,7 @@ pub enum LeafKind {
     /// Weighted median — L1-optimal constant, outlier-robust.
     Median,
     /// Weighted quantile at tau (0.5 = median; any tau in (0, 1)).
-    Quantile(f64),
+    Quantile(#[serde(with = "crate::persistence::float")] f64),
     /// Huber M-location (quadratic near the center, linear in the tails).
     Huber,
     /// Piecewise MARS splines (earth models fit at the leaf).
@@ -61,7 +61,7 @@ pub enum LeafKind {
 }
 
 /// Optimization solver used for fitting leaf regression models.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum LeafSolver {
     /// Iteratively Reweighted Least Squares (IRLS) and exact Cholesky.
     Irls,
@@ -243,7 +243,64 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
     }
 }
 
+impl crate::model_tree::ModelTreeParams {
+    /// Update leaf fitting options without changing growth configuration.
+    pub fn apply_leaf_control(&mut self, control: LeafControl) {
+        self.leaf = control.leaf;
+        self.leaf_solver = control.solver;
+        self.leaf_family = control.family;
+        self.leaf_cols = control.leaf_cols;
+        self.l1 = control.l1;
+        self.l2 = control.l2;
+        self.leaf_digest = control.leaf_digest;
+        self.leaf_monotone = control.leaf_monotone;
+        self.events = control.events;
+        self.treatments = control.treatments;
+        self.mars_degree = control.mars_degree;
+        self.mars_terms = control.mars_terms;
+        self.mars_penalty = control.mars_penalty;
+        self.tweedie_p = control.tweedie_p;
+        self.tobit_threshold = control.tobit_threshold;
+        self.knn_k = control.knn_k;
+        self.knn_k_validity = control.knn_k_validity;
+        self.knn_variant = control.knn_variant;
+        self.knn_metric = control.knn_metric;
+        self.knn_gamma = control.knn_gamma;
+        self.knn_p = control.knn_p;
+        self.shrinkage = control.shrinkage;
+        self.max_classes = control.max_classes;
+        self.leaf_na_policy = control.leaf_na_policy;
+        self.aft_dist = control.aft_dist;
+        self.cure_fraction = control.cure_fraction;
+        self.spline_knots = control.spline_knots;
+    }
+}
+
 impl LeafControl {
+    /// Check that an explicitly selected optimizer applies to this leaf.
+    pub fn validate_solver(&self) -> Result<(), String> {
+        let family_supported = match self.family {
+            LeafFamily::Gaussian => true,
+            LeafFamily::Binomial | LeafFamily::Probit | LeafFamily::Poisson
+            | LeafFamily::Gamma | LeafFamily::Tweedie | LeafFamily::Tobit => {
+                matches!(self.solver, LeafSolver::Irls | LeafSolver::Lbfgs)
+            }
+            _ => false,
+        };
+        if self.leaf != LeafKind::Linear || !family_supported {
+            return Err(format!(
+                "Solver {:?} does not support {:?} leaves with the {:?} family",
+                self.solver, self.leaf, self.family
+            ));
+        }
+        if self.solver == LeafSolver::Lbfgs
+            && (self.l1 != 0.0 || self.effective_leaf_monotone().iter().any(|&sign| sign != 0))
+        {
+            return Err("L-BFGS requires zero L1 penalty and no monotone leaf constraints".into());
+        }
+        Ok(())
+    }
+
     pub fn new() -> Self {
         Self::default()
     }
@@ -1047,12 +1104,13 @@ pub fn fit_leaf_model(
                 .as_ref()
                 .map(|m| m.iter().map(|&v| Some(v)).collect())
                 .unwrap_or_default();
-            let lm = if family != LeafFamily::Gaussian {
-                let fitted = if control.solver == LeafSolver::Lbfgs
+            let use_lbfgs = control.solver == LeafSolver::Lbfgs
                     && control.l1 == 0.0
-                    && control.effective_leaf_monotone().is_empty()
-                {
+                    && !control.effective_leaf_monotone().iter().any(|&sign| sign != 0);
+            let lm = if family != LeafFamily::Gaussian || use_lbfgs {
+                let fitted = if use_lbfgs {
                     let glm_fam = match family {
+                        LeafFamily::Gaussian => Some(crate::solver::GlmFamily::Gaussian),
                         LeafFamily::Binomial => Some(crate::solver::GlmFamily::Binomial),
                         LeafFamily::Probit => Some(crate::solver::GlmFamily::Probit),
                         LeafFamily::Poisson => Some(crate::solver::GlmFamily::Poisson),

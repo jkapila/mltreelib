@@ -16,13 +16,15 @@ use crate::model_tree::{Grower, Split};
 
 /// One backup split: threshold on column `col`, routed like a primary
 /// split (mirrored when `flip`).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Surrogate {
     pub col: usize,
+    #[serde(with = "crate::persistence::float")]
     pub threshold: f64,
     /// The mimic agrees by mirroring the primary (left/right swapped).
     pub flip: bool,
     /// Weighted agreement with the primary partition (observed rows only).
+    #[serde(with = "crate::persistence::float")]
     pub agreement: f64,
 }
 

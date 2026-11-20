@@ -173,7 +173,7 @@ Predicted CATE uplifts (first 4): [0.4215, 0.3891, -0.1502, 0.7314]
 The unified `ClusterTree` interface provides a consistent scikit-learn-shaped API across divisive and density clustering engines (`kind="pct"`, `"urf"`, `"hdbscan"`, `"cltree"`):
 
 ```python
-from mltreelib import ClusterTree
+from mltreelib.cluster import ClusterTree
 
 # 1. Predictive Clustering Tree (divisive clustering with rule extraction)
 pct = ClusterTree(kind="pct", max_depth=2)
@@ -199,12 +199,13 @@ URF cluster assignments: {0, 1, 2}
 The unified `AnomalyTree` facade wraps multiple tree-based anomaly engines (`kind="eif"`, `"det"`, `"hst"`, `"rct"`, `"active"`, `"context"`) under a consistent API:
 
 ```python
-from mltreelib import AnomalyTree, GritBot
+from mltreelib import GritBot
+from mltreelib.anomaly import AnomalyTree
 
 # 1. Extended Isolation Forest (oblique hyperplanes without ghost artifacts)
 detector = AnomalyTree(kind="eif", contamination=0.05, seed=42)
 detector.fit(X)
-scores = detector.score_samples(X)  # Normalized anomaly scores in [0, 1]
+scores = detector.predict(X, kind="score")
 preds = detector.predict(X)         # 1 = anomaly, 0 = inlier
 print(f"Anomaly score range: [{min(scores):.3f}, {max(scores):.3f}]")
 print(f"Total flagged anomalies: {sum(preds)}")
@@ -341,6 +342,7 @@ Every entry tracks native categorical handling and execution resources under str
   - [x] Survival Log-Rank statistic.
 - [x] **Unsupervised & Anomaly Trees**: HDBSCAN, URF, CLTree, TrieKNN, PCT, DET, EIF, HST, RCT, AAD, CAT.
 - [x] **Modern Leaf Optimization**: Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and SOTA continuous evolutionary solvers (CMA-ES, SHADE, sNES, RCGA) augmenting exact Cholesky and IRLS.
+- [ ] **Modular model controls and persistence**. Configure growth and leaves separately, save fitted models as versioned JSON, and expose clustering and anomaly detection in dedicated modules. [Spec 20](specs/20-architecture-two-fold-control-decoupling-serialization-and-agent-skill.md)
 - [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
 - [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
 - [ ] **Anomaly facade**: preserve missing values across engines, expose context scoring and active feedback, and define threshold tie behavior.

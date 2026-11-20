@@ -14,7 +14,7 @@ Run this from the repository root. The second split supports a refit check. Assi
 
 ```python
 import pandas as pd
-from mltreelib import ClusterTree
+from mltreelib.cluster import ClusterTree
 
 df = pd.read_parquet("datasets/wine_quality.parquet").sample(frac=1, random_state=2026)
 features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
@@ -27,13 +27,13 @@ def design(frame):
 
 tree = ClusterTree(kind="pct", max_depth=2, min_rows=150)
 tree.fit(design(train), col_names=features)
-review["segment"] = tree.predict(design(review))
+review["segment"] = tree.predict(design(review), kind="cluster")
 print(review.groupby("segment")[features].median().round(3))
 print(review["segment"].value_counts().sort_index())
 print(tree.rules())
 ```
 
-The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.
+`labels_` stores the training assignments and `n_clusters_` gives the number of assigned clusters. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.
 
 ```bash
 uv run python examples/real_tree_studies.py wine
@@ -68,6 +68,10 @@ The following observations are from a small numeric, two-group synthetic check. 
 | `urf` | Training and new-row labels | Empty list |
 
 The sample check returned 8 PCT leaves, 3 CLTree groups plus unassigned points, 2 HDBSCAN groups, and a highly imbalanced URF assignment. These results depend on the data and settings. They do not rank the engines. Check whether a segment is stable and useful before assigning an action to it.
+
+For URF, `tree.predict(x, kind="distances")` returns one row per query and one column per training row in fit order. Each distance is the square root of one minus the fraction of trees in which the two rows share a leaf.
+
+For a fitted PCT, `tree.save("clusters.json")` stores the model, training assignments, and rules. Use `ClusterTree.load("clusters.json")` to restore the fitted tree. The [API reference](../reference/api/cluster.md) lists the JSON and byte methods.
 
 ### Missing values and categories: product gaps
 

@@ -11,22 +11,29 @@
 //! - Transparent decision rules for every extracted cluster.
 
 use std::cmp::Ordering;
+
+use serde::{Deserialize, Serialize};
+
 use crate::split::ColType;
 
 /// A node / cluster in the Predictive Clustering Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PctNode {
     pub is_leaf: bool,
     pub depth: usize,
     pub cluster_id: usize,
     pub size: usize,
+    #[serde(with = "crate::persistence::float")]
     pub total_variance: f64,
     /// Centroid / prototype of the cluster in target space.
+    #[serde(with = "crate::persistence::float")]
     pub prototype: Vec<f64>,
     /// Split feature index in descriptive attributes X.
     pub split_col: usize,
     pub is_categorical: bool,
+    #[serde(with = "crate::persistence::float")]
     pub threshold: f64,
+    #[serde(with = "crate::persistence::float")]
     pub left_categories: Vec<f64>,
     pub left_child: Option<usize>,
     pub right_child: Option<usize>,
@@ -35,12 +42,14 @@ pub struct PctNode {
 }
 
 /// Predictive Clustering Tree (CLUS) model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PredictiveClusteringTree {
     pub max_depth: usize,
     pub min_samples_split: usize,
     pub min_samples_leaf: usize,
+    #[serde(with = "crate::persistence::float")]
     pub min_variance_reduction: f64,
+    #[serde(with = "crate::persistence::float")]
     pub target_weights: Option<Vec<f64>>,
     pub nodes: Vec<PctNode>,
     pub dtypes: Vec<ColType>,

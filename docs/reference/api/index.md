@@ -11,9 +11,9 @@ code. Narrative guides with verified examples:
 | page | classes | functions |
 |---|---|---|
 | [Data](data/) | DatasetBuilder | generate, load_dataset, list_datasets, summarize, winnow |
-| [ModelTree](model-tree/) | ModelTree, LeafControl | — |
+| [ModelTree](model-tree/) | ModelTree, GrowthControl, LeafControl | — |
 | [Metrics](metrics/) | Metrics | — |
 | [Encoders & scalers](encoders/) | IndexMapper, VariableScaler, GroupedScaler, BaseNEncoder, CatBoostEncoder, CountEncoder, EmbeddingEncoder, HashingEncoder, JamesSteinEncoder, LeaveOneOutEncoder, MEstimatorEncoder, OneHotEncoder, QuantileEncoder, SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder | — |
 | [Feature functions](features/) | — | grouped_scale, grouped_transform, trended_transform, windowed_transform, lag_by_days, decomposed_transform, calendar_features |
-| [Clustering trees](cluster/) | TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
-| [Anomaly & density trees](anomaly/) | GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |
+| [Clustering trees](cluster/) | ClusterTree, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
+| [Anomaly & density trees](anomaly/) | AnomalyTree, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |

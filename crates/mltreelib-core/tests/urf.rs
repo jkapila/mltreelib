@@ -72,4 +72,20 @@ fn test_unsupervised_random_forest_two_blobs() {
     let dist_matrix = urf.pairwise_distances();
     assert_eq!(dist_matrix.len(), data.len());
     assert!((dist_matrix[0][0] - 0.0).abs() < 1e-6);
+    assert_eq!(urf.distances(&data), dist_matrix);
+
+    let query = [vec![0.25, -0.27], vec![20.23, 19.71]];
+    let expected_labels: Vec<_> = urf
+        .distances(&query)
+        .iter()
+        .map(|row| {
+            let (closest, _) = row
+                .iter()
+                .enumerate()
+                .min_by(|(_, a), (_, b)| a.total_cmp(b))
+                .unwrap();
+            urf.cluster_labels[closest]
+        })
+        .collect();
+    assert_eq!(urf.predict(&query), expected_labels);
 }

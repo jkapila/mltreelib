@@ -43,7 +43,7 @@ pub use crate::node_stats::{LeafModel as NodeModel, LeafStats as NodeStats, Line
 pub use crate::split::SplitEval;
 
 /// Growth and leaf parameters.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
     /// Maximum tree depth (0 = a single leaf).
     pub max_depth: usize,
@@ -51,6 +51,7 @@ pub struct ModelTreeParams {
     pub min_rows: usize,
     /// Minimum SSE reduction a split must achieve (noise floor as much as a
     /// tuning knob).
+    #[serde(with = "crate::persistence::float")]
     pub min_gain: f64,
     /// Leaf column policy.
     pub leaf_cols: LeafCols,
@@ -62,9 +63,11 @@ pub struct ModelTreeParams {
     /// Leaf model optimization solver: Irls (default), Lbfgs, or Ccd.
     pub leaf_solver: LeafSolver,
     /// Ridge penalty on leaf coefficients (intercept unpenalized).
+    #[serde(with = "crate::persistence::float")]
     pub l2: f64,
     /// Lasso penalty on leaf coefficients (intercept unpenalized). With
     /// `l2` this is the elastic net. 0 = off.
+    #[serde(with = "crate::persistence::float")]
     pub l1: f64,
     /// Per-column monotone direction for tree splits: -1 / 0 / +1. A split on
     /// a constrained column must order children's target means accordingly.
@@ -80,10 +83,12 @@ pub struct ModelTreeParams {
     /// Per-column importance / priority weights for the split search:
     /// candidate split gains on column j are multiplied by `col_weights[j]`.
     /// Also weights column selection during random `col_sample`. None = uniform 1.0.
+    #[serde(with = "crate::persistence::float")]
     pub col_weights: Option<Vec<f64>>,
     /// Pre-selection: keep only columns whose winnowing-style relevance
     /// (|weighted correlation with y|) reaches this value. `None` = off.
     /// Dropped columns cannot split or enter leaves.
+    #[serde(with = "crate::persistence::float")]
     pub min_relevance: Option<f64>,
     /// Per-column type for the split search (indexed like `x`'s columns).
     /// Empty = all numeric. Categorical columns contribute level-partition
@@ -95,6 +100,7 @@ pub struct ModelTreeParams {
     /// this grid before the scan (0.1 = loop over tenths), thresholds are
     /// grid values. `None` = exact unique-value scan. Prediction always
     /// compares raw values.
+    #[serde(with = "crate::persistence::float")]
     pub split_precision: Option<f64>,
     /// Order categorical levels are visited in.
     pub cat_order: CatOrder,
@@ -111,12 +117,15 @@ pub struct ModelTreeParams {
     /// Minimum child weight fraction of the node's total weight (grf's
     /// `alpha`): a split's children must each carry at least this share.
     /// 0.0 = off (the `min_rows` count gate alone).
+    #[serde(with = "crate::persistence::float")]
     pub alpha: f64,
     /// grf-style imbalance penalty subtracted from the gain:
     /// `imbalance_penalty * (1/n_left + 1/n_right)`. 0.0 = off.
+    #[serde(with = "crate::persistence::float")]
     pub imbalance_penalty: f64,
     /// Per-node random column subset (random-forest spirit): fraction of
     /// the active columns considered at each node's scan. `None` = all.
+    #[serde(with = "crate::persistence::float")]
     pub col_sample: Option<f64>,
     /// Seed for the per-node column subset (deterministic given the seed).
     pub seed: u64,
@@ -125,6 +134,7 @@ pub struct ModelTreeParams {
     /// Split significance gate (statistical stopping) — see [`SplitTest`].
     pub split_test: SplitTest,
     /// Significance level for `split_test` (right-tail p threshold).
+    #[serde(with = "crate::persistence::float")]
     pub split_alpha: f64,
     /// Bonferroni correction: divide `split_alpha` by the number of
     /// candidate splits evaluated at the node (selection multiplicity —
@@ -143,6 +153,7 @@ pub struct ModelTreeParams {
     pub honesty: bool,
     /// Share of rows assigned to the *structure* sample under `honesty`
     /// (grf's `honesty.fraction`).
+    #[serde(with = "crate::persistence::float")]
     pub honesty_fraction: f64,
     /// NA surrogate splits (rpart's `maxsurrogate`): store up to this many
     /// backup splits per node that mimic the primary partition, to route
@@ -152,6 +163,7 @@ pub struct ModelTreeParams {
     /// Cost-complexity penalty per leaf (`prune="cp"`; rpart `cp` / sklearn
     /// `ccp_alpha` semantics): a subtree collapses into its parent leaf
     /// when the children's deviance reduction does not earn `cp_alpha`.
+    #[serde(with = "crate::persistence::float")]
     pub cp_alpha: f64,
     /// Leaf cap (sklearn `max_leaf_nodes` / LightGBM `num_leaves`): stop
     /// splitting once this many leaves exist (depth-first budget, exact
@@ -165,6 +177,7 @@ pub struct ModelTreeParams {
     pub minbucket: Option<usize>,
     /// ctree trio — minimum weight fraction of the node per leaf
     /// (`minprob`). 0.0 = off.
+    #[serde(with = "crate::persistence::float")]
     pub minprob: f64,
     /// Exclusive feature bundling (LightGBM EFB): before the scan, bundle
     /// mutually-exclusive zero-heavy numeric columns into one (disjoint
@@ -175,6 +188,7 @@ pub struct ModelTreeParams {
     pub preselect: crate::preselect::Preselect,
     /// Purity gate: a node whose weighted target variation is at
     /// most this stays a leaf (its signal is exhausted). `None` = off.
+    #[serde(with = "crate::persistence::float")]
     pub purity_gate: Option<f64>,
     /// Metric evaluated by the purity gate: "sd" (weighted standard deviation)
     /// or "cv" (coefficient of variation: w_sd / |w_mean|).
@@ -182,18 +196,23 @@ pub struct ModelTreeParams {
     /// Tail quantile threshold for extrema protection (e.g. 0.05). If set,
     /// nodes containing targets in the lower (<= tau) or upper (>= 1 - tau)
     /// quantiles bypass the purity gate so extrema are always trained.
+    #[serde(with = "crate::persistence::float")]
     pub tail_quantile: Option<f64>,
     /// Power parameter for Tweedie deviance (default 1.5, with 1 < p < 2).
+    #[serde(with = "crate::persistence::float")]
     pub tweedie_p: f64,
     /// Censoring threshold for Tobit response (default 0.0).
+    #[serde(with = "crate::persistence::float")]
     pub tobit_threshold: f64,
     /// Split evaluation strategy (fast scalar variance reduction vs exhaustive linear scan).
     pub split_eval: SplitEval,
     /// Upfront pre-sorting of numeric columns. Default `false` (in-place cache-local PDQsort in SplitScratch).
     pub presort: bool,
     /// Optional event indicators for survival outcome pairs (T, E).
+    #[serde(with = "crate::persistence::float")]
     pub events: Option<Vec<f64>>,
     /// Optional treatment indicators (1=treated, 0=control) for causal outcome pairs (Y, W/T).
+    #[serde(with = "crate::persistence::float")]
     pub treatments: Option<Vec<f64>>,
     /// Whether group columns are eligible for tree building (default true). If false, group columns are dropped.
     pub train_groups: bool,
@@ -208,6 +227,7 @@ pub struct ModelTreeParams {
     /// Maximum number of terms for MARS leaves (default 10).
     pub mars_terms: usize,
     /// GCV penalty for MARS leaves (default 2.0).
+    #[serde(with = "crate::persistence::float")]
     pub mars_penalty: f64,
     /// Number of nearest neighbors to query at leaf KNN inference (default 5).
     pub knn_k: usize,
@@ -218,18 +238,23 @@ pub struct ModelTreeParams {
     /// Distance metric for leaf KNN (Euclidean, Manhattan, Chebyshev, Gower, etc.).
     pub knn_metric: crate::knn::DistanceMetric,
     /// Decay scale gamma for exponential / double weighting (None => auto-scale by median distance).
+    #[serde(with = "crate::persistence::float")]
     pub knn_gamma: Option<f64>,
     /// Power parameter p for inverse distance / Minkowski metric (default 2.0).
+    #[serde(with = "crate::persistence::float")]
     pub knn_p: f64,
     /// Adaptive hierarchical leaf shrinkage penalty lambda (default 0.0 = off).
     /// Shrinks leaf models toward their parent node: beta_shrunk = beta_parent + (N / (N + lambda)) * (beta_leaf - beta_parent).
+    #[serde(with = "crate::persistence::float")]
     pub shrinkage: f64,
     /// Missing value strategy at leaf level: DropFallback (default), ImputeLocal, or Indicator.
     pub leaf_na_policy: LeafNaPolicy,
     /// Optional multi-dimensional vector targets Y in R^D (e.g. embeddings,
     /// distributions, multi-output regression).
+    #[serde(with = "crate::persistence::float")]
     pub target_vectors: Option<Vec<Vec<f64>>>,
     /// Penalty for demographic parity disparity across protected attribute (default 0.0 = off).
+    #[serde(with = "crate::persistence::float")]
     pub fairness_penalty: f64,
     /// Column index of the protected attribute for fairness constraints (None = off).
     pub protected_col: Option<usize>,
@@ -247,13 +272,14 @@ pub struct ModelTreeParams {
     /// AFT parametric distribution (Weibull, LogNormal, LogLogistic).
     pub aft_dist: crate::node_stats::AftDist,
     /// Cure fraction for mixture cure rate leaves.
+    #[serde(with = "crate::persistence::float")]
     pub cure_fraction: Option<f64>,
     /// Number of interior spline knots for Royston-Parmar leaves (default 3).
     pub spline_knots: usize,
 }
 
 /// Fairness criterion evaluated when fairness_penalty > 0.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum FairnessMetric {
     /// Demographic Parity: equalizes acceptance/routing rate across groups |P(L|S=1) - P(L|S=0)|.
     #[default]
@@ -263,7 +289,7 @@ pub enum FairnessMetric {
 }
 
 /// Metric evaluated by the leaf purity gate.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PurityMetric {
     /// Weighted standard deviation (absolute scale).
     #[default]
@@ -364,13 +390,15 @@ impl Default for ModelTreeParams {
 /// One binary split: values `<= threshold` go left (numeric), or
 /// `left_levels` membership goes left (categorical, `cat = Some(i)` indexes
 /// `Tree::cat_parts`).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Split {
     pub col: usize,
+    #[serde(with = "crate::persistence::float")]
     pub threshold: f64,
     pub missing_left: bool,
     /// Goodness of split (parent SSE - children SSE) — the raw material of
     /// feature importance.
+    #[serde(with = "crate::persistence::float")]
     pub gain: f64,
     /// Categorical partition handle: `Some(i)` = `Tree::cat_parts[i]` lists
     /// the level codes routed left. `None` = threshold split.
@@ -405,7 +433,7 @@ pub struct Shapley {
     pub prediction: f64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Node {
     pub(crate) split: Option<Split>,
     pub(crate) left: Option<usize>,
@@ -417,7 +445,7 @@ pub(crate) struct Node {
 }
 
 /// Per-node timing breakdown — the debug-on-every-level instrumentation.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct NodeProfile {
     pub depth: usize,
     pub rows: usize,
@@ -444,18 +472,24 @@ pub struct DepthProfile {
 }
 
 /// Compact training sample memory for Cubist's signature k-NN neighbor adjustment.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct TrainingMemory {
+    #[serde(with = "crate::persistence::float")]
     pub x: Vec<Vec<Option<f64>>>,
+    #[serde(with = "crate::persistence::float")]
     pub y: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub base_preds: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub col_stds: Vec<f64>,
 }
 
 /// A fitted model tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTree {
     pub col_names: Vec<String>,
+    /// Optional string-to-code vocabulary attached by the language bindings.
+    pub category_levels: Vec<Option<std::collections::BTreeMap<String, f64>>>,
     pub params: ModelTreeParams,
     /// Columns that survived pre-selection (original indices).
     pub active_cols: Vec<usize>,
@@ -463,6 +497,7 @@ pub struct ModelTree {
     pub(crate) root: usize,
     pub(crate) profiles: Vec<NodeProfile>,
     /// Categorical partitions referenced by `Split::cat`.
+    #[serde(with = "crate::persistence::float")]
     pub(crate) cat_parts: Vec<Vec<f64>>,
     /// Surrogate splits referenced by `Split::sur` (aligned by handle).
     pub(crate) sur_parts: Vec<Vec<crate::surrogate::Surrogate>>,
@@ -919,6 +954,7 @@ impl ModelTree {
         }
         let mut tree = Self {
             col_names,
+            category_levels: Vec::new(),
             params,
             active_cols,
             nodes,
@@ -1240,23 +1276,11 @@ impl ModelTree {
         self.col_names = data_col_names.to_vec();
         self.active_cols = active_cols;
 
-        // 5. Update tree parameters to reflect new leaf controls
-        self.params.leaf = control.leaf;
-        self.params.leaf_family = control.family;
-        self.params.leaf_cols = control.leaf_cols;
-        self.params.l2 = control.l2;
-        self.params.l1 = control.l1;
-        self.params.leaf_digest = control.leaf_digest;
-        self.params.events = control.events.clone();
-        self.params.n_classes = control.n_classes;
-        self.params.mars_degree = control.mars_degree;
-        self.params.mars_terms = control.mars_terms;
-        self.params.mars_penalty = control.mars_penalty;
-        self.params.tweedie_p = control.tweedie_p;
-        self.params.tobit_threshold = control.tobit_threshold;
         if !control.monotone.is_empty() {
-            self.params.monotone = control.monotone;
+            self.params.monotone.clone_from(&control.monotone);
         }
+        self.params.n_classes = control.n_classes.or(self.params.n_classes);
+        self.params.apply_leaf_control(control);
 
         Ok(())
     }

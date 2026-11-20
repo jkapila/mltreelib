@@ -4,14 +4,17 @@
 //! on target residuals using 2D quad-stump partitions.
 
 /// Result of an interaction test between two features.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct FastInteraction {
     pub col1: usize,
     pub col2: usize,
     pub col1_name: String,
     pub col2_name: String,
+    #[serde(with = "crate::persistence::float")]
     pub score: f64,
+    #[serde(with = "crate::persistence::float")]
     pub cut1: f64,
+    #[serde(with = "crate::persistence::float")]
     pub cut2: f64,
 }
 
