@@ -380,7 +380,7 @@ Note:  Screens all 15 pairs in O(P²); reduces test MSE by 33.1% over purely add
 
 ## Unified Comparison Summary
 
-Running the standalone suite via `uv run python examples/statistical_and_metric_splitting.py`:
+Running the standalone suite via `uv run python examples/suites/statistical_and_metric_splitting.py`:
 
 ```text
 ==============================================================================================

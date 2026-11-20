@@ -2,7 +2,7 @@
 
 This guide details `mltreelib`'s unsupervised tree architectures—unifying **Predictive Clustering Trees (PCT)** for interpretable multi-target segmentation with rule extraction and **Extended Isolation Forests (EIF)** for artifact-free operational anomaly detection.
 
-Script: [`examples/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/examples/unsupervised_trees.py) (`uv run python examples/unsupervised_trees.py`).
+Script: [`examples/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/unsupervised_trees.py) (`uv run python examples/suites/unsupervised_trees.py`).
 
 ---
 

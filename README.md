@@ -34,6 +34,16 @@ uv run maturin develop --release
 
 See the [changelog](CHANGELOG.md) for release history and the [release guide](RELEASING.md) for publishing steps.
 
+### Example suites and agent skill
+
+Follow the [example suites](https://jkapila.github.io/mltreelib/examples/) for runnable walkthroughs. Start with the [quickstart](https://jkapila.github.io/mltreelib/quickstart/) to fit and inspect your first model tree.
+
+Install the mltreelib skill for an agent that supports the Skills CLI. The skill includes recipes for selecting, fitting, evaluating, and saving models. Install the Python package separately to run the recipes. [Skill source](https://github.com/jkapila/mltreelib/tree/main/skills/mltreelib)
+
+```sh
+npx skills add jkapila/mltreelib --skill mltreelib
+```
+
 ---
 
 ## Core Capabilities
@@ -342,7 +352,8 @@ Every entry tracks native categorical handling and execution resources under str
   - [x] Survival Log-Rank statistic.
 - [x] **Unsupervised & Anomaly Trees**: HDBSCAN, URF, CLTree, TrieKNN, PCT, DET, EIF, HST, RCT, AAD, CAT.
 - [x] **Modern Leaf Optimization**: Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and SOTA continuous evolutionary solvers (CMA-ES, SHADE, sNES, RCGA) augmenting exact Cholesky and IRLS.
-- [ ] **Modular model controls and persistence**. Configure growth and leaves separately, save fitted models as versioned JSON, and expose clustering and anomaly detection in dedicated modules. [Spec 20](specs/20-architecture-two-fold-control-decoupling-serialization-and-agent-skill.md)
+- [x] **Modular model controls and persistence**. Configure growth and leaves separately. Save ModelTree, PCT, and EIF models as versioned JSON. [Spec 20](specs/20-architecture-two-fold-control-decoupling-serialization-and-agent-skill.md)
+- [ ] **Snapshots for additional clustering and anomaly engines**. Extend JSON persistence after each native engine can restore its fitted state.
 - [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
 - [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
 - [ ] **Anomaly facade**: preserve missing values across engines, expose context scoring and active feedback, and define threshold tie behavior.

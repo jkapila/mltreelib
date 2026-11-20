@@ -5,7 +5,7 @@ This suite implements non-parametric Survival Trees and Competing Risks Trees in
 ![Diagnostic curves for Suite 9: Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
 
 Companion executable script:
-- [`examples/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py) (`python3 examples/suites/survival_and_competing_risks.py`)
+- [`examples/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py) (`uv run python examples/suites/survival_and_competing_risks.py`)
 
 ---
 

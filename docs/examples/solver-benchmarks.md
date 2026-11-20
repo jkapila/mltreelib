@@ -15,10 +15,10 @@ keywords:
 
 Benchmark the seven numerical, quasi-Newton, and continuous evolutionary leaf solvers implemented natively in `mltreelib-core`.
 
-The complete benchmark script lives at [`examples/solver_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/solver_benchmarks.py):
+Run the benchmark from the repository root after [building the release extension](../installation.md#from-source). It compares fit time and holdout error on Yeh Concrete.
 
 ```bash
-uv run python examples/solver_benchmarks.py
+uv run python examples/suites/solver_benchmarks.py
 ```
 
 ---
@@ -28,7 +28,9 @@ uv run python examples/solver_benchmarks.py
 In standard model trees, evaluating complex optimization problems at every candidate split threshold incurs prohibitive computational cost. `ModelTree` solves this through **two-control decoupling**:
 
 1. **Tree Search**: Fast scalar heuristics (Variance reduction, Chow test, Log-rank) discover spatial partition boundaries.
-2. **Leaf Optimization**: Once terminal regions are established, the configured `leaf_solver` solves the local parameter system.
+2. **Leaf Optimization**: Once terminal regions are established, the compatible optimizer selected with `LeafControl(solver=...)` fits each local model.
+
+All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear GLMs use IRLS or L-BFGS. L-BFGS requires zero L1 penalty and no monotone leaf constraints. See the [parameter reference](../reference/parameters.md) for details.
 
 ```mermaid
 flowchart TD
@@ -61,7 +63,7 @@ flowchart TD
 
 | Solver (`leaf_solver`) | Mathematical Paradigm | Gradient Required? | Primary Strengths | Recommended Setting |
 | :--- | :--- | :---: | :--- | :--- |
-| **`"irls"`** | Cholesky / Iteratively Reweighted Least Squares | Yes | Sub-millisecond closed-form solution via `faer`; exact Gram matrix factorization. | Default for Gaussian ridge and standard GLM models. |
+| **`"irls"`** | Cholesky / Iteratively Reweighted Least Squares | Yes | Direct weighted least squares via `faer`, with iterative reweighting for supported GLMs. | Gaussian ridge or a supported GLM. |
 | **`"lbfgs"`** | Quasi-Newton L-BFGS with Armijo line search | Yes | Superlinear convergence on smooth likelihoods (Gaussian, Binomial, Poisson, Gamma, Tobit, Tweedie). | Default for non-Gaussian GLM families and censored regression. |
 | **`"ccd"`** | Cyclic Coordinate Descent | Yes (Subgradient) | Exact soft-thresholding producing true zero-coefficient sparsity under $L_1$ penalty. | High-dimensional feature selection and sparse leaves. |
 | **`"shade"`** | Success-History Adaptive Differential Evolution | **No** | Continuous mutation scale ($F$) and crossover rate ($CR$) adaptation with external archive. | Rugged, discontinuous, or multi-modal loss surfaces. |

@@ -1106,7 +1106,7 @@ wheels = [
 
 [[package]]
 name = "mltreelib"
-version = "0.4.10"
+version = "0.4.11"
 source = { editable = "." }
 
 [package.optional-dependencies]

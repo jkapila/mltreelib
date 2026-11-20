@@ -1,8 +1,17 @@
 # Example Library
 
-The example library is organized into **9 authoritative suites**. Each suite grounds its implementation in a real cited benchmark dataset, explains the theoretical rationale and domain use case, provides architectural Mermaid flowcharts, and generates high-resolution scikit-learn style diagnostic figures locked to the `#00897b` Teal / `#f4511e` Deep Orange palette.
+Start with the [quickstart](../quickstart.md), then choose a suite for the modeling problem you want to solve. The guides explain the inputs, the model settings, and how to interpret the outputs.
 
----
+## Run an example
+
+Follow the [source installation instructions](../installation.md#from-source), then run the script from the repository root.
+
+```bash
+uv run python examples/quickstart.py
+uv run python examples/suites/core_tree_architecture.py
+```
+
+Each guide identifies its datasets and shows the command for its suite. Dataset-backed examples can download data on first use. Plotting examples write figures under `docs/assets/`. Use the release extension for timing comparisons.
 
 ## The 9 Consolidated Example Suites
 

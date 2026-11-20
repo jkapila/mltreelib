@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mltreelib"
-version = "0.4.10"
+version = "0.4.11"
 description = "Tree-based machine learning: Rust core with Python and R frontends"
 requires-python = ">=3.10"
 authors = [{ name = "Jitin Kapila" }]
@@ -85,3 +85,8 @@ manifest-path = "crates/mltreelib-py/Cargo.toml"
 module-name = "mltreelib._core"
 python-source = "python"
 features = ["extension-module"]
+include = [
+    { path = "examples/quickstart.py", format = "sdist" },
+    { path = "examples/suites/*.py", format = "sdist" },
+    { path = "skills/mltreelib/**/*", format = "sdist" },
+]

@@ -11,7 +11,7 @@ examples/
 ├── quickstart.py                      <-- Start Here: 10-second end-to-end Concrete walkthrough
 ├── gen_api_doc.py                     <-- Tooling: Generates docs/reference/api/*.md
 │
-├── suites/                            <-- The 8 Consolidated Authoritative Feature Suites
+├── suites/                            <-- Nine example suites and a solver benchmark
 │   ├── core_tree_architecture.py      (Suite 1: Two-Control decoupling, 0D stats, Chow gate)
 │   ├── constraints_and_honesty.py     (Suite 2: Monotone splits/slopes, honesty, interaction isolation)
 │   ├── missing_routing_benchmark.py   (Suite 3: Native missing data routing & surrogates on Scania APS)
@@ -20,6 +20,7 @@ examples/
 │   ├── statistical_and_metric_splitting.py (Suite 6: Chow, oblique ridge, Gain Ratio, Twoing, SDR)
 │   ├── timeseries_additive_forecasting.py (Suite 7: Rust calendar features, day lags, trend extrapolation)
 │   ├── unsupervised_trees.py          (Suite 8: Predictive Clustering Trees & Extended Isolation Forest)
+│   ├── survival_and_competing_risks.py (Suite 9: Survival curves and competing risks)
 │   └── solver_benchmarks.py           (Solver Pareto: Cholesky, L-BFGS, CCD, SHADE, CMA-ES, GA, sNES)
 │
 ├── survival/                          <-- Time-to-Event & Competing Risks Suite
@@ -37,19 +38,19 @@ examples/
 
 ## 1. Quickstart
 
-Run from repository root:
+Follow the [source installation instructions](https://jkapila.github.io/mltreelib/installation/#from-source). Run from the repository root:
 
 ```bash
 uv run python examples/quickstart.py
 ```
 
 - **Dataset**: Yeh Concrete Compressive Strength (1,030 rows, 8 features).
-- **Execution**: Fits standard CART vs `mltreelib` linear `ModelTree` in under 2 seconds.
+- **Execution**: Compares a constant-leaf tree with a linear-leaf model tree on held-out concrete strength measurements.
 - **Output**: Prints rpart-style ASCII tree, exports `docs/assets/quickstart_tree.dot`, and saves `docs/assets/quickstart_tree_vs_flat.png`.
 
 ---
 
-## 2. The 8 Consolidated Suites (`examples/suites/`)
+## 2. The 9 Consolidated Suites (`examples/suites/`)
 
 Each suite corresponds to an authoritative chapter in [docs/examples/](../docs/examples/index.md):
 
@@ -63,6 +64,7 @@ Each suite corresponds to an authoritative chapter in [docs/examples/](../docs/e
 | `statistical_and_metric_splitting.py` | [Statistical & Metric Splitting](../docs/examples/statistical-and-metric-splitting.md) | Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Quinlan rule extraction. |
 | `timeseries_additive_forecasting.py` | [Time Series Forecasting](../docs/examples/timeseries-forecasting.md) | Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, trend extrapolation. |
 | `unsupervised_trees.py` | [Unsupervised Trees](../docs/examples/unsupervised-trees.md) | Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts. |
+| `survival_and_competing_risks.py` | [Survival & Competing Risks](../docs/examples/survival-trees.md) | Right-censored survival and competing-risk trees. |
 | `solver_benchmarks.py` | [Leaf Solver Benchmarks](../docs/examples/solver-benchmarks.md) | Pareto frontier of fit latency vs accuracy across Analytical, Quasi-Newton, Coordinate, and Evolutionary solvers. |
 
 ---

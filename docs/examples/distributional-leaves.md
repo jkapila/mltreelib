@@ -3,12 +3,18 @@
 Real-world targets often violate Gaussian error assumptions. `ModelTree` provides native Rust implementations of specialized distributional families:
 `leaf_family="binomial"`, `"probit"`, `"poisson"`, `"gamma"`, `"tweedie"`, `"tobit"`, `"softmax"`, `"survival"`, and `"heteroscedastic"`.
 
+Run the suite from the repository root. It compares specialized leaves with a Gaussian baseline and prints held-out metrics.
+
+```sh
+uv run python examples/suites/distributional_leaf_benchmarks.py
+```
+
 ![Leaf Family Comparison](../assets/leaf_family_comparison.png)
 
 Executable Reference Scripts:
 - [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py) — Link function invariant verifications & 6-family gallery.
 - [`examples/stump_distributional_leaves.py`](https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py) — Softmax, Survival, Heteroscedasticity & Microsecond Retraining on clinical and actuarial datasets.
-- [`examples/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/distributional_leaf_benchmarks.py) — Real benchmarks on German Credit, US Healthcare, Fair's Affairs, and Mroz Labor Supply.
+- [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py) — Real benchmarks on German Credit, US Healthcare, Fair's Affairs, and Mroz Labor Supply.
 
 ---
 

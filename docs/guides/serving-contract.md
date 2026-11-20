@@ -26,7 +26,7 @@ sequenceDiagram
     Client->>Guard: Submit Raw Record (JSON Payload)
     Note over Guard: Check required keys, field order, and valid types
     Guard->>Normalizer: Verified Named Features
-    Note over Normalizer: Map unobserved keys & NaNs to None; map unseen category levels to missing
+    Note over Normalizer: Treat unobserved keys, NaNs, and unseen category levels as missing
     Normalizer->>Core: Fast Vector Traversal [x1, x2, ..., xk]
     Note over Core: Traverse internal split nodes using learned missing_left and surrogates
     Core->>Leaf: Deliver to Terminal Leaf Node
