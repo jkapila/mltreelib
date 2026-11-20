@@ -32,6 +32,8 @@ uv sync
 uv run maturin develop --release
 ```
 
+See the [changelog](CHANGELOG.md) for release history and the [release guide](RELEASING.md) for publishing steps.
+
 ---
 
 ## Core Capabilities
