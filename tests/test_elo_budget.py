@@ -25,7 +25,7 @@ def test_run_with_budget_timeout_kill():
     # Process sleeps for 10s with budget of 1s; should be killed via SIGKILL
     t0 = time.monotonic()
     cmd = [sys.executable, "-c", "import time; time.sleep(10.0); print('UNREACHABLE')"]
-    out, code, timed_out = run_with_budget(cmd, budget_s=1.0)
+    out, _code, timed_out = run_with_budget(cmd, budget_s=1.0)
     dt = time.monotonic() - t0
     assert timed_out
     assert dt < 4.0  # Process killed and reaped promptly

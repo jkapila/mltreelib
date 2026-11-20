@@ -1,8 +1,6 @@
 """Tests for Wasserstein-2 Optimal Transport and Fairness-Constrained Splitting (Spec 12 Phase 12D)."""
 
-import math
 import random
-import pytest
 
 from mltreelib import ModelTree, distributions_to_quantiles, histograms_to_quantiles
 

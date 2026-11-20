@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from mltreelib import ModelTree
 
 
@@ -34,7 +33,7 @@ def test_mob_linear_structural_break():
 
     # Diagnostics verification (User Story 7)
     diags = tree.split_diagnostics()
-    root_diag = [d for d in diags if d is not None and d["depth"] == 0][0]
+    root_diag = next(d for d in diags if d is not None and d["depth"] == 0)
     assert root_diag["test_name"] == "mob"
     assert root_diag["passed"] is True
     assert root_diag["p_value"] < 0.001
@@ -74,7 +73,7 @@ def test_mob_mean_structural_break():
     splits = tree.splits()
     assert len(splits) > 0
     # Root split must have cutpoint near 0.0
-    root_diag = [d for d in tree.split_diagnostics() if d is not None and d["depth"] == 0][0]
+    root_diag = next(d for d in tree.split_diagnostics() if d is not None and d["depth"] == 0)
     assert root_diag["passed"] is True
 
 

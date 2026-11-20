@@ -78,7 +78,7 @@ impl ContextAnomalyTree {
         self.nodes = vec![ContextNode::default()];
         for seq in sequences {
             for i in 1..seq.len() {
-                let ctx_start = if i > self.max_depth { i - self.max_depth } else { 0 };
+                let ctx_start = i.saturating_sub(self.max_depth);
                 let context = &seq[ctx_start..i];
                 let symbol = seq[i];
                 self.insert(context, symbol);

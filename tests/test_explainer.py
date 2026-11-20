@@ -86,7 +86,7 @@ def test_permutation_importance_and_unified_api():
     )
     assert perm_unified[0][0] == "x0"
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         model.feature_importance(method="unknown_method")
 
 

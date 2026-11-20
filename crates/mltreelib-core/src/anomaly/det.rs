@@ -413,12 +413,12 @@ impl DensityEstimationTree {
 
         // Support check: outside bounding support, density is 0.0
         for (j, &(lo, hi)) in self.bounds.iter().enumerate() {
-            if j < row.len() && !row[j].is_nan() {
-                if self.dtypes.get(j) != Some(&ColType::Categorical) {
-                    if row[j] < lo || row[j] > hi {
-                        return 0.0;
-                    }
-                }
+            if j < row.len()
+                && !row[j].is_nan()
+                && self.dtypes.get(j) != Some(&ColType::Categorical)
+                && (row[j] < lo || row[j] > hi)
+            {
+                return 0.0;
             }
         }
 

@@ -16,7 +16,7 @@ Validates:
 """
 
 import pytest
-from mltreelib import ModelTree, Metrics, competing_risks_report
+from mltreelib import Metrics, ModelTree, competing_risks_report
 
 
 def test_survival_single_event_criteria_and_predictions():

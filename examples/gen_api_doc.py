@@ -36,32 +36,40 @@ PAGES = [
         "Data",
         ["DatasetBuilder"],
         ["generate", "load_dataset", "list_datasets", "summarize", "winnow"],
-        "Typed ingest, the synthetic generator, dataset helpers and column "
-        "screening. Guide with real examples: [Data](../data.md).",
+        (
+            "Typed ingest, the synthetic generator, dataset helpers and column "
+            "screening. Guide with real examples: [Data](../data.md)."
+        ),
     ),
     (
         "model-tree.md",
         "ModelTree",
         ["ModelTree", "GrowthControl", "LeafControl"],
         [],
-        "The model tree: typed fit, split-search knobs, quantiles, training "
-        "log. Guide: [Model](../model.md).",
+        (
+            "The model tree: typed fit, split-search knobs, quantiles, training "
+            "log. Guide: [Model](../model.md)."
+        ),
     ),
     (
         "metrics.md",
         "Metrics",
         ["Metrics"],
         [],
-        "Complete evaluation reports at once. Guides: [Metrics](../metrics.md), "
-        "[Evaluation reports](../reports.md).",
+        (
+            "Complete evaluation reports at once. Guides: [Metrics](../metrics.md), "
+            "[Evaluation reports](../reports.md)."
+        ),
     ),
     (
         "encoders.md",
         "Encoders & scalers",
         ["IndexMapper", "VariableScaler", "GroupedScaler"] + ENCODERS,
         [],
-        "Pipeline tools for feeding downstream algorithms (sklearn and "
-        "friends) — never invoked by the tree. Guide: [Data](../data.md).",
+        (
+            "Pipeline tools for feeding downstream algorithms (sklearn and "
+            "friends) — never invoked by the tree. Guide: [Data](../data.md)."
+        ),
     ),
     (
         "features.md",
@@ -76,8 +84,10 @@ PAGES = [
             "decomposed_transform",
             "calendar_features",
         ],
-        "Grouped/trended/windowed transforms, lags and calendar parts. Guide: "
-        "[Data processing](../../examples/data-processing.md).",
+        (
+            "Grouped/trended/windowed transforms, lags and calendar parts. Guide: "
+            "[Data processing](../../examples/data-processing.md)."
+        ),
     ),
     (
         "cluster.md",
@@ -91,8 +101,10 @@ PAGES = [
             "UnsupervisedRandomForest",
         ],
         [],
-        "Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), "
-        "CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF).",
+        (
+            "Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), "
+            "CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF)."
+        ),
     ),
     (
         "anomaly.md",
@@ -108,8 +120,10 @@ PAGES = [
             "ContextAnomalyTree",
         ],
         [],
-        "Tree-based anomaly detection, density estimation, streaming mass scoring, "
-        "collusive displacement (CoDisp), active human feedback, and contextual surprise.",
+        (
+            "Tree-based anomaly detection, density estimation, streaming mass scoring, "
+            "collusive displacement (CoDisp), active human feedback, and contextual surprise."
+        ),
     ),
 ]
 

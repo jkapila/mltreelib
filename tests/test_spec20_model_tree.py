@@ -83,6 +83,27 @@ def test_model_round_trips_as_json_bytes_file_and_pickle(tmp_path):
         assert str(loaded.extract_rules()) == rules
 
 
+def test_pruned_model_round_trip_preserves_live_tree_state():
+    x = [[0.0], [0.1], [0.9], [1.0]]
+    y = [0.0, 0.0, 10.0, 10.0]
+    grown = ModelTree(max_depth=1, min_rows=2, prune="none", leaf="mean")
+    pruned = ModelTree(
+        max_depth=1,
+        min_rows=2,
+        prune="cp",
+        cp_alpha=1e9,
+        leaf="mean",
+    )
+    grown.fit(x, y)
+    pruned.fit(x, y)
+    assert grown.n_leaves() > pruned.n_leaves()
+
+    restored = ModelTree.from_json(pruned.to_json())
+    assert restored.n_leaves() == pruned.n_leaves()
+    assert restored.predict(x) == pruned.predict(x)
+    assert str(restored.extract_rules()) == str(pruned.extract_rules())
+
+
 def test_persistence_rejects_unfitted_and_invalid_models(tmp_path):
     path = tmp_path / "model.json"
     path.write_text("existing")

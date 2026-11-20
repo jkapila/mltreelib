@@ -3,7 +3,7 @@ and split gate diagnostics inspection.
 """
 
 import random
-import pytest
+
 from mltreelib import ModelTree
 
 

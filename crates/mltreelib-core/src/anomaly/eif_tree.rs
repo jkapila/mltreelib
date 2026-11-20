@@ -480,7 +480,7 @@ pub fn expected_path_length(n: usize) -> f64 {
         1.0
     } else {
         let n_f = n as f64;
-        let euler_gamma = 0.5772156649015328606;
+        let euler_gamma = 0.577_215_664_901_532_9;
         2.0 * ((n_f - 1.0).ln() + euler_gamma) - (2.0 * (n_f - 1.0) / n_f)
     }
 }

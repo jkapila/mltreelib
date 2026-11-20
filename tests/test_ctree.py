@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from mltreelib import ModelTree
 
 
@@ -28,10 +27,10 @@ def test_ctree_strong_signal_recovery():
 
     splits = tree.splits()
     assert len(splits) > 0, "CTree must detect strong signal on x0"
-    root_split = splits[0]
+    splits[0]
     # In tree.splits(), check root split or diagnostics
     diags = tree.split_diagnostics()
-    root_diag = [d for d in diags if d is not None and d["depth"] == 0][0]
+    root_diag = next(d for d in diags if d is not None and d["depth"] == 0)
     assert root_diag["test_name"] == "ctree"
     assert root_diag["passed"] is True
     assert root_diag["p_value"] < 1e-6
@@ -73,7 +72,7 @@ def test_ctree_cardinality_bias_comparison():
 
     # Diagnostics show all variables have valid p-values under null
     diags = tree_ctree.split_diagnostics()
-    root_diag = [d for d in diags if d is not None and d["depth"] == 0][0]
+    root_diag = next(d for d in diags if d is not None and d["depth"] == 0)
     p_vals = [v["p_value"] for v in root_diag["variables"]]
     # All p-values under null should be in (0, 1) without 100-level dominating
     for p in p_vals:
