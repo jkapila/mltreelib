@@ -5,11 +5,8 @@ bounds. It is the public entry point for the shared optimization seam in the
 Rust core. One objective, bounds, budget, request, and result contract backs
 every method, so the result never changes shape when the method changes.
 
-This guide covers every optimizer in the seam: the two that ship today and the
-eight that land in the later waves of
-[Spec 26](https://github.com/jkapila/mltreelib/blob/main/specs/26-generic-global-and-constrained-optimizers.md).
-Methods that are not implemented yet raise one error naming the method. The
-library never substitutes another algorithm silently.
+The library never substitutes another algorithm silently. Unknown methods
+raise `ValueError`. Incompatible problems return an `unsupported` result.
 
 ## Python surface
 
@@ -37,18 +34,21 @@ result = optimize(
 | `start` | Starting point. Warm-starts the search. |
 | `max_evaluations` | Cap on objective calls. |
 | `max_iterations` | Cap on solver iterations. |
-| `tol` | Convergence tolerance. |
+| `tol` | Convergence tolerance used by the evolutionary methods. Other methods use their Rust method defaults. |
 | `seed` | Seed for stochastic methods. |
 | `gradient` | Optional callable returning one derivative per parameter. |
 | `samples` | Candidate count for the sampling methods. |
 | `initial_population` | Optional first candidates for population methods. |
+| `constraints` | COBYLA callback returning a fixed-length sequence of finite residuals. |
+| `constraint_kind` | Defaults to `"inequality"`. COBYLA rejects `"equality"`. |
+| `local_method` | Basin hopping's inner solver. Defaults to `"lbfgs_b"`. |
 
 The result reports:
 
 | Field | Meaning |
 |---|---|
-| `best_x` | Best point found. Finite and inside the bounds. |
-| `best_value` | Objective value at `best_x`. |
+| `best_x` | Best evaluated point, or an empty list when the method rejects the problem. |
+| `best_value` | Objective value at `best_x`, or NaN when no objective value is available. |
 | `iterations` | Solver iterations performed. |
 | `evaluations` | User objective evaluations performed. |
 | `status` | Termination status. |
@@ -86,14 +86,18 @@ converged status.
 |---|---|---|---|---|---|
 | `random_search` | available | objective only | finite box | linear | Honest baseline for every comparison. |
 | `latin_hypercube` | available | objective only | finite box | linear | Stratified initialization for population methods. |
-| `lbfgs_b` | planned | gradient | box bounds | linear | Smooth bounded objectives with many parameters. |
-| `bfgs` | planned | gradient | unbounded only | quadratic | Small smooth problems where curvature pays off. |
-| `nonlinear_cg` | planned | gradient | unbounded only | linear | First-order competitor with no curvature history. |
-| `nelder_mead` | planned | objective only | finite box | linear | Black-box local search and basin-hopping inner solves. |
-| `powell` | planned | objective only | finite box | linear | Derivative-free search with different basin behaviour. |
-| `simulated_annealing` | planned | objective only | finite box | linear | Cheap global search over non-smooth objectives. |
-| `cobyla` | planned | objective only | finite box | linear | Nonlinear inequality constraints without gradients. |
-| `basin_hopping` | planned | inner local solver | finite box | linear | Rugged landscapes with separated local minima. |
+| `lbfgs_b` | available | gradient or central differences | box bounds | linear | Smooth bounded objectives with many parameters. |
+| `bfgs` | available | gradient or central differences | unbounded only | quadratic | Small smooth problems where curvature pays off. |
+| `nonlinear_cg` | available | gradient or central differences | unbounded only | linear | First-order competitor with no curvature history. |
+| `nelder_mead` | available | objective only | box bounds | quadratic | Black-box local search and basin-hopping inner solves. |
+| `powell` | available | objective only | box bounds | quadratic | Derivative-free search with different basin behaviour. |
+| `simulated_annealing` | available | objective only | finite box | linear | Cheap global search over non-smooth objectives. |
+| `cobyla` | available | objective only | box bounds | quadratic in dimension, plus constraint models | Nonlinear inequality constraints without gradients. |
+| `basin_hopping` | available | inner local solver | depends on inner solver | depends on inner solver | Rugged landscapes with separated local minima. |
+| `cmaes` | available | objective only | box bounds | dense covariance plus population | Continuous problems with coupled parameters. |
+| `shade` | available | objective only | box bounds | population and archive | Differential evolution with adaptive mutation and crossover. |
+| `nes` | available | objective only | box bounds | population | Evolution strategy with diagonal scales. |
+| `ga` | available | objective only | box bounds | population | Real-coded genetic search with strict elitism. |
 
 ### Random Search
 
@@ -136,8 +140,8 @@ the search direction.
 
 Derivative-free simplex search. It replaces the worst vertex each iteration
 with reflection, expansion, contraction, or shrink. The initial simplex shape
-and the two tolerances are configurable. It clips or reflects simplex vertices
-into the box according to a documented policy.
+and the two tolerances are configurable in Rust. It clips simplex vertices to
+the box.
 
 ### Powell
 
@@ -156,12 +160,22 @@ degrades. The method ships as a heuristic with no optimality claim.
 
 ### COBYLA
 
-The one nonlinear constraint solver. It models the objective and the
-constraints by linear interpolation over an interpolation set and solves a
-small linear subproblem inside a shrinking trust region. It needs function
-values only. Bounds act as unrelaxable constraints, so every evaluated point
-stays inside the box. Equality constraints are rejected explicitly. The
-result reports the largest constraint violation.
+This derivative-free variant fits linear models over nearby evaluated points.
+It uses a box-shaped trust region and cyclic projection in place of Powell's
+original model subproblem solver. It keeps all evaluations inside the bounds.
+An `infeasible` result means the search found no feasible point. It does not
+prove that no feasible point exists.
+
+```python
+result = optimize(
+    lambda x: (x[0] - 2.0) ** 2 + x[1] ** 2,
+    [(-5.0, 5.0)] * 2,
+    method="cobyla",
+    start=[1.5, 0.0],
+    constraints=lambda x: [1.0 - x[0] ** 2 - x[1] ** 2],
+    max_evaluations=200,
+)
+```
 
 ### Basin hopping
 
@@ -170,6 +184,19 @@ inner local solve through the same seam, and accepts the result with a
 constant-temperature Metropolis test. The step size is either fixed or adapted
 toward a target acceptance rate. Inner solve evaluations count against the
 outer budget, and a failed inner solve never erases the incumbent.
+Pass `local_method` to select `lbfgs_b`, `bfgs`, `nonlinear_cg`, `nelder_mead`,
+or `powell`. Use unbounded limits when the inner method is BFGS or nonlinear CG.
+
+### Evolutionary methods
+
+The generic entry point and standalone GLM fits share the same population
+kernels. Generic optimization clips candidates to the supplied bounds. If you
+pass `initial_population`, the adapter evaluates those candidates against the
+same budget and starts the kernel from the best candidate. It reports the best
+evaluated point even if the budget ends partway through a generation.
+
+Use unbounded limits for `bfgs` and `nonlinear_cg`. Only `cobyla` accepts a
+nonlinear constraint callback.
 
 ## Budgets and determinism
 
@@ -181,12 +208,10 @@ default seed, so omitted seeds stay reproducible.
 
 ## Constraint semantics
 
-An inequality constraint is feasible when its value is `>= 0`. An equality
-constraint is feasible when its value is zero within the feasibility
-tolerance. Every constrained result reports the largest constraint violation,
-so a slightly infeasible point never looks feasible. Bounds stay separate from
-general constraints, and each method uses the strongest native bound support it
-has.
+An inequality residual is nonnegative at a feasible point. COBYLA accepts
+residuals down to `-1e-8` by default and reports the largest raw violation at
+the returned point. The Rust `CobylaOptions` can change the tolerance.
+COBYLA rejects equalities before it evaluates the objective.
 
 ## Leaf solver decoupling
 
@@ -200,7 +225,7 @@ supported pairing or one precise rejection reason.
 | `irls` | yes | no | yes | yes | no | no | no | quadratic |
 | `lbfgs` | yes | no | no | no | no | no | no | linear |
 | `ccd` | no | yes | yes | yes | no | no | no | linear |
-| `cmaes`, `shade`, `nes`, `ga` | no | yes | yes | yes | no | no | no | population |
+| `cmaes`, `shade`, `nes`, `ga` | no | yes | yes | yes (GLM fits) | yes (`optimize`) | no | no | population |
 
 Rejected pairings name the missing capability, for example
 `solver Lbfgs does not support L1 penalties`.
@@ -267,7 +292,19 @@ uv run python examples/optimize_generic.py --dataset airfoil_self_noise --budget
 }
 ```
 
-The real-data tests in `tests/test_optimize_real_data.py` optimize a bounded
-two-parameter least-squares objective on the same file and check both sampling
-methods against the closed-form least-squares optimum. Those tests skip when
-the suite is not downloaded locally.
+The real-data tests in `tests/test_optimize.py` check both sampling methods
+against the closed-form least-squares optimum. They skip if the dataset is
+not available locally.
+
+## Canonical benchmark
+
+```sh
+uv run python examples/benchmark_optimizers.py --budget 200 --offline --output-dir /tmp/mltreelib-optimizers
+```
+
+The runner writes JSON records and a Markdown summary. It covers analytic
+regression, synthetic landscapes, constrained problems, a binomial likelihood,
+tree tuning on Airfoil, and a split-threshold search. It records the domain
+because BFGS and nonlinear conjugate gradient require unbounded problems.
+It reports no objective gap for infeasible results or problems with no known
+optimum.

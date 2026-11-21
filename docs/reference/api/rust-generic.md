@@ -6,6 +6,42 @@ The Rust core owns the shared optimization seam. Python callers reach it through
 
 Reach the module through `mltreelib_core::generic` or `mltreelib_core::solver::generic`. The short names `Bounds`, `Budget`, `Constraint`, `ConstraintKind`, `Objective`, `ObjectiveError`, `OptimizationRequest`, `OptimizationResult`, `OptimizerKind`, `SmoothObjective`, and `SolveStatus` are re-exported from `mltreelib_core::solver`.
 
+## solver/generic/annealing.rs
+
+### simulated_annealing
+
+```rust
+pub fn simulated_annealing( objective: &dyn Objective, budget: &Budget, options: &AnnealingOptions, seed: u64, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs bounded simulated annealing.
+
+The starting point defaults to the middle of the box. The initial temperature comes from the observed objective spread when the caller does not supply one.
+
+## solver/generic/basin_hopping.rs
+
+### basin_hopping
+
+```rust
+pub fn basin_hopping( objective: &dyn Objective, smooth: &dyn SmoothObjective, budget: &Budget, options: &BasinHoppingOptions, seed: u64, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs basin hopping.
+
+The inner local solver comes from the shared seam. The perturbation scales with the bound width, so one step size fits heterogeneous parameter scales.
+
+## solver/generic/bfgs.rs
+
+### bfgs
+
+```rust
+pub fn bfgs( objective: &dyn Objective, smooth: &dyn SmoothObjective, budget: &Budget, options: &BfgsOptions, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs BFGS on an unbounded smooth objective.
+
+The starting point defaults to the origin. The run stops when the gradient falls under the tolerance, when the iteration limit is reached, or when a budget ends the run.
+
 ## solver/generic/bounds.rs
 
 ### Bounds
@@ -46,7 +82,7 @@ pub struct Budget {
 
 Counts user objective evaluations and solver iterations.
 
-One counter covers every user objective call, including calls inside local solves, perturbation steps, population initialization, and archive updates.
+One counter covers every user objective call, including calls inside local solves, perturbation steps, population initialization, finite-difference gradients, and archive updates. The counters use interior mutability, so the objective wrapper and the solver share one budget without aliasing borrows.
 
 ### Budget.new
 
@@ -55,6 +91,30 @@ pub fn new(max_evaluations: Option<usize>, max_iterations: Option<usize>) -> Sel
 ```
 
 Builds a budget with optional limits. `None` means unlimited.
+
+## solver/generic/cobyla.rs
+
+### cobyla
+
+```rust
+pub fn cobyla( objective: &dyn Objective, budget: &Budget, options: &CobylaOptions, start: Option<&[f64]>, constraints: Option<&dyn ConstraintEvaluator>, kind: ConstraintKind, ) -> OptimizationResult {
+```
+
+Runs COBYLA on a bounded problem with inequality constraints.
+
+The starting point defaults to the middle of the box. The method stops when the trust region collapses, when the model step vanishes, when the iteration limit is reached, or when a budget ends the run.
+
+## solver/generic/conjugate_gradient.rs
+
+### nonlinear_conjugate_gradient
+
+```rust
+pub fn nonlinear_conjugate_gradient( objective: &dyn Objective, smooth: &dyn SmoothObjective, budget: &Budget, options: &NonlinearCgOptions, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs nonlinear conjugate gradient on an unbounded smooth objective.
+
+The starting point defaults to the origin. The run stops when the gradient falls under the tolerance, when the iteration limit is reached, or when a budget ends the run.
 
 ## solver/generic/constraint.rs
 
@@ -134,7 +194,67 @@ fn values(&self, x: &[f64]) -> Result<Vec<f64>, String>;
 
 Returns one value per constraint.
 
+## solver/generic/finite_difference.rs
+
+### FiniteDifferenceObjective
+
+```rust
+pub struct FiniteDifferenceObjective<'a> {
+```
+
+Objective that supplies a central-difference gradient.
+
+The perturbation calls the wrapped objective, so the shared budget counts them like every other objective call.
+
+## solver/generic/lbfgs_b.rs
+
+### solve_lbfgs_b
+
+```rust
+pub fn solve_lbfgs_b( objective: &dyn Objective, budget: &Budget, options: &LbfgsBOptions, start: Option<&[f64]>, smooth: &dyn SmoothObjective, ) -> OptimizationResult {
+```
+
+Runs L-BFGS-B on one bounded smooth objective.
+
+The returned point is always projected into the box.  Evaluation budget exhaustion is reported as `EvaluationLimit`; iteration budget exhaustion is reported as `IterationLimit`.
+
+## solver/generic/line_search.rs
+
+### LineSearchOptions
+
+```rust
+pub struct LineSearchOptions {
+```
+
+Line search parameters.
+
+### LineSearchResult
+
+```rust
+pub struct LineSearchResult {
+```
+
+Result of one line search.
+
+### strong_wolfe
+
+```rust
+pub fn strong_wolfe( objective: &dyn Objective, smooth: &dyn SmoothObjective, point: &[f64], direction: &[f64], options: &LineSearchOptions, ) -> Result<LineSearchResult, ObjectiveError> {
+```
+
+Runs a strong Wolfe line search along one direction.
+
+The search returns the step, the objective value, and the gradient at the accepted point. It falls back to the steepest descent direction when the supplied direction is not a descent direction.
+
 ## solver/generic/mod.rs
+
+### FINITE_DIFFERENCE_STEP
+
+```rust
+pub const FINITE_DIFFERENCE_STEP: f64 = 1e-6;
+```
+
+Step size used by the central-difference gradient fallback.
 
 ### optimize
 
@@ -144,7 +264,29 @@ pub fn optimize(request: &OptimizationRequest) -> Result<OptimizationResult, Str
 
 Runs one optimization with the shared contracts.
 
-The method dispatch resolves the method-specific options, evaluates the objective through one shared budget, and returns the shared result type. A method that is not implemented yet returns one error naming the method.
+The method dispatch resolves the method-specific options, evaluates the objective through one shared budget, and returns the shared result type.
+
+### optimize_with_budget
+
+```rust
+pub fn optimize_with_budget( request: &OptimizationRequest, budget: &Budget, ) -> Result<OptimizationResult, String> {
+```
+
+Runs one optimization against a budget that the caller owns.
+
+A composition method uses this entry point so the inner local solve spends the outer budget and no objective call escapes the count.
+
+## solver/generic/nelder_mead.rs
+
+### nelder_mead
+
+```rust
+pub fn nelder_mead( objective: &dyn Objective, budget: &Budget, options: &NelderMeadOptions, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs bounded Nelder-Mead.
+
+The starting point defaults to the middle of the box. The method stops when the objective spread and the simplex spread fall under the configured tolerances, when the iteration limit is reached, or when a budget ends the run.
 
 ## solver/generic/objective.rs
 
@@ -222,6 +364,28 @@ pub fn require_dimension(expected: usize, x: &[f64]) -> Result<(), ObjectiveErro
 
 Checks that a point matches the objective dimension.
 
+### CountedObjective
+
+```rust
+pub struct CountedObjective<'a> {
+```
+
+Objective wrapper that charges the shared budget for every value call.
+
+Wrapping the user objective keeps one counter for every objective call, including the calls a finite-difference gradient makes.
+
+## solver/generic/powell.rs
+
+### powell
+
+```rust
+pub fn powell( objective: &dyn Objective, budget: &Budget, options: &PowellOptions, start: Option<&[f64]>, ) -> OptimizationResult {
+```
+
+Runs bounded Powell.
+
+The starting point defaults to the middle of the box. The method stops when the objective and the point stop moving, when the iteration limit is reached, or when a budget ends the run.
+
 ## solver/generic/random.rs
 
 ### latin_hypercube_samples
@@ -237,7 +401,7 @@ Every dimension is stratified independently into `samples` strata. One point tak
 ### random_search
 
 ```rust
-pub fn random_search( objective: &dyn Objective, budget: &mut Budget, options: &RandomSearchOptions, seed: u64, initial_population: Option<&[Vec<f64>]>, ) -> OptimizationResult {
+pub fn random_search( objective: &dyn Objective, budget: &Budget, options: &RandomSearchOptions, seed: u64, initial_population: Option<&[Vec<f64>]>, ) -> OptimizationResult {
 ```
 
 Runs uniform random search inside bounds.
@@ -247,7 +411,7 @@ Candidates come from `initial_population` first when one is supplied. The remain
 ### latin_hypercube_search
 
 ```rust
-pub fn latin_hypercube_search( objective: &dyn Objective, budget: &mut Budget, options: &LatinHypercubeOptions, seed: u64, ) -> OptimizationResult {
+pub fn latin_hypercube_search( objective: &dyn Objective, budget: &Budget, options: &LatinHypercubeOptions, seed: u64, ) -> OptimizationResult {
 ```
 
 Runs Latin hypercube sampling inside bounds.

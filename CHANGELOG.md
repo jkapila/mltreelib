@@ -13,7 +13,11 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 - Add the shared generic optimization seam in the Rust core. One objective, bounds, constraint, budget, request, and result contract now backs every optimizer method. [Spec 26](specs/26-generic-global-and-constrained-optimizers.md)
 - Minimize a callable scalar objective with `mltreelib.solvers.optimize`. Pass one `(lower, upper)` pair per parameter. The optional `gradient` callable supplies exact derivatives, and smooth methods fall back to central differences.
+- Pass nonlinear inequality constraints to `cobyla` with the `constraints` callable. Other methods reject nonlinear constraints instead of ignoring them.
+- Run local, global, and constrained methods through one entry point. CMA-ES, SHADE, sNES, and GA share population kernels with standalone and leaf fits.
 - Report the best point, best objective, iterations, evaluations, termination status, and optional history from every optimization run. Budget exhaustion never reports success.
+- Count every objective call in one shared budget, including the calls a finite-difference gradient makes.
+- Choose basin hopping's inner solver with `local_method`. Keep the best evaluated point when an L-BFGS-B gradient exceeds the remaining budget.
 
 ## v0.4.12
 

@@ -19,7 +19,7 @@ Gaussian path when it fits the family and the requested penalties.
 ## optimize
 
 ```python
-optimize(objective, bounds, *, method='random_search', start=None, max_evaluations=None, max_iterations=None, tol=1e-06, seed=0, gradient=None, samples=None, initial_population=None)
+optimize(objective, bounds, *, method='random_search', start=None, max_evaluations=None, max_iterations=None, tol=1e-06, seed=0, gradient=None, samples=None, initial_population=None, constraints=None, constraint_kind='inequality', local_method=None)
 ```
 
 Minimizes a callable scalar objective inside bounds.
@@ -28,6 +28,9 @@ The objective receives one list of parameter values and returns one finite
 scalar. The optional `gradient` callable receives the same list and returns
 one value per parameter. Smooth methods use a central-difference fallback
 when no gradient is supplied.
+For COBYLA, `constraints` returns a fixed-length sequence of finite
+inequality residuals. Nonnegative residuals are feasible.
+For basin hopping, `local_method` selects the inner optimizer.
 
 ## FitResult
 
