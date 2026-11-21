@@ -28,7 +28,7 @@
     
     
       
-        <title>Evaluate and monitor - mltreelib v0.4.11</title>
+        <title>Evaluate and monitor - mltreelib v0.4.12</title>
       
     
     
@@ -99,9 +99,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.11" class="md-header__button md-logo" aria-label="mltreelib v0.4.11" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.12" class="md-header__button md-logo" aria-label="mltreelib v0.4.12" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.11">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.12">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +113,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.11
+            mltreelib v0.4.12
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -209,12 +209,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.11" class="md-nav__button md-logo" aria-label="mltreelib v0.4.11" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.12" class="md-nav__button md-logo" aria-label="mltreelib v0.4.12" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.11">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.12">
 
     </a>
-    mltreelib v0.4.11
+    mltreelib v0.4.12
   </label>
   
     <div class="md-nav__source">
@@ -2946,6 +2946,17 @@
 <p>A precision–recall curve shows the tradeoff as the score threshold changes. Compare it with the positive event rate and the capacity of the review team. It does not establish calibration.</p>
 <p><img alt="Held-out calibration plot" src="../../assets/guides/data-calibration.svg" /></p>
 <p>Calibration compares predicted probabilities with observed event frequencies in bins. Small bins make the plot unstable. The 1,000 test rows come from a synthetic distribution; the plot alone does not establish calibration in production.</p>
+<p>Use <code>IsotonicCalibrator</code> to fit a monotone mapping for binary event probabilities.
+Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsotonicCalibrator</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">calibrator</span> <span class="o">=</span> <span class="n">IsotonicCalibrator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">calibrated</span> <span class="o">=</span> <span class="n">calibrator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">raw</span><span class="p">),</span> <span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">calibrated</span><span class="p">))</span>
+</span></code></pre></div>
 <p><img alt="Held-out confusion matrix" src="../../assets/guides/data-confusion.svg" /></p>
 <p>The confusion matrix describes decisions at one chosen threshold. Change the cost assumptions or capacity and repeat threshold selection on validation data. Keep the test set independent of that selection.</p>
 <h3 id="inspect-the-tree">Inspect the tree<a class="headerlink" href="#inspect-the-tree" title="Permanent link">&para;</a></h3>
