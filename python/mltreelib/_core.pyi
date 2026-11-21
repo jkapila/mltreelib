@@ -150,3 +150,38 @@ def fit_glm(
     tweedie_p: float | None = ...,
     tobit_threshold: float | None = ...,
 ) -> FitResult: ...
+
+class OptimizationResult:
+    @property
+    def best_x(self) -> list[float]: ...
+    @property
+    def best_value(self) -> float: ...
+    @property
+    def iterations(self) -> int: ...
+    @property
+    def evaluations(self) -> int: ...
+    @property
+    def status(self) -> str: ...
+    @property
+    def converged(self) -> bool: ...
+    @property
+    def message(self) -> str | None: ...
+    @property
+    def max_constraint_violation(self) -> float | None: ...
+    @property
+    def history(self) -> list[dict[str, float]] | None: ...
+
+def optimize(
+    objective: Callable[[list[float]], float],
+    bounds: Sequence[tuple[float, float]],
+    *,
+    method: str = ...,
+    start: Sequence[float] | None = ...,
+    max_evaluations: int | None = ...,
+    max_iterations: int | None = ...,
+    tol: float = ...,
+    seed: int = ...,
+    gradient: Callable[[list[float]], Sequence[float]] | None = ...,
+    samples: int | None = ...,
+    initial_population: Sequence[Sequence[float]] | None = ...,
+) -> OptimizationResult: ...

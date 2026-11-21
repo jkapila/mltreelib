@@ -12,6 +12,8 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 ### Generic optimization seam
 
 - Add the shared generic optimization seam in the Rust core. One objective, bounds, constraint, budget, request, and result contract now backs every optimizer method. [Spec 26](specs/26-generic-global-and-constrained-optimizers.md)
+- Minimize a callable scalar objective with `mltreelib.solvers.optimize`. Pass one `(lower, upper)` pair per parameter. The optional `gradient` callable supplies exact derivatives, and smooth methods fall back to central differences.
+- Report the best point, best objective, iterations, evaluations, termination status, and optional history from every optimization run. Budget exhaustion never reports success.
 
 ## v0.4.12
 

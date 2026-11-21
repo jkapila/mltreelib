@@ -11,6 +11,8 @@ pub enum ObjectiveError {
     DimensionMismatch { expected: usize, actual: usize },
     /// The objective returned a NaN or infinite value.
     NotFinite(f64),
+    /// The objective callback failed.
+    Callback(String),
 }
 
 impl fmt::Display for ObjectiveError {
@@ -21,6 +23,7 @@ impl fmt::Display for ObjectiveError {
                 "objective dimension mismatch: expected {expected} values, got {actual}"
             ),
             Self::NotFinite(value) => write!(f, "objective value is not finite: {value}"),
+            Self::Callback(message) => write!(f, "objective callback failed: {message}"),
         }
     }
 }

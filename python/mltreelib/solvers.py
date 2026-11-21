@@ -12,9 +12,15 @@ stochastic solvers use `seed` for reproducibility.
 
 CCD and GLM IRLS apply L1 and L2 to scaled coefficients when L1 is positive.
 The remaining solvers penalize coefficients on the original scale.
+
+`optimize` minimizes a callable scalar objective inside bounds. The objective
+receives one list of parameter values and returns one finite scalar. Pass
+`bounds` as one `(lower, upper)` pair per parameter. The optional `gradient`
+callable returns one value per parameter; smooth methods use a
+central-difference fallback when no gradient is supplied.
 """
 
-from mltreelib._core import FitResult
+from mltreelib._core import FitResult, OptimizationResult, optimize
 from mltreelib._core import fit_glm as fit
 
-__all__ = ["FitResult", "fit"]
+__all__ = ["FitResult", "OptimizationResult", "fit", "optimize"]

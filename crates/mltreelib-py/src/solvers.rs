@@ -1,5 +1,12 @@
+use std::sync::{Arc, Mutex};
+
+use mltreelib_core::solver::generic::{
+    self as generic, Bounds, LatinHypercubeOptions, MethodOptions, Objective, ObjectiveError,
+    OptimizationRequest, OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions,
+    SmoothObjective,
+};
 use mltreelib_core::solver::{fit_dense, FittedGlm, GlmFamily, SolverOptions};
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyDictMethods, PyList};
 
@@ -154,5 +161,264 @@ fn fit_glm(
 
 pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFitResult>()?;
-    m.add_function(wrap_pyfunction!(fit_glm, m)?)
+    m.add_class::<PyOptimizationResult>()?;
+    m.add_function(wrap_pyfunction!(fit_glm, m)?)?;
+    m.add_function(wrap_pyfunction!(optimize, m)?)
+}
+
+/// Python objective callable wrapped for the generic seam.
+struct PyObjective {
+    callable: Py<PyAny>,
+    dim: usize,
+    bounds: Bounds,
+    failure: Arc<Mutex<Option<String>>>,
+}
+
+impl PyObjective {
+    /// Records one callback failure so the Python caller sees the original error.
+    fn fail(&self, message: String) -> ObjectiveError {
+        if let Ok(mut slot) = self.failure.lock() {
+            *slot = Some(message.clone());
+        }
+        ObjectiveError::Callback(message)
+    }
+
+    /// Calls the Python objective with one point.
+    fn call_value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        Python::attach(|py| {
+            let list = PyList::new(py, x)
+                .map_err(|err| self.fail(format!("objective callback failed: {err}")))?;
+            let output = self
+                .callable
+                .call1(py, (list,))
+                .map_err(|err| self.fail(format!("objective callback failed: {err}")))?;
+            output.extract::<f64>(py).map_err(|_| {
+                self.fail("objective must return one finite scalar".to_string())
+            })
+        })
+    }
+}
+
+impl Objective for PyObjective {
+    fn dim(&self) -> usize {
+        self.dim
+    }
+
+    fn bounds(&self) -> &Bounds {
+        &self.bounds
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        self.call_value(x)
+    }
+}
+
+/// Objective with an exact gradient or a central-difference fallback.
+struct PySmoothObjective {
+    base: PyObjective,
+    gradient: Option<Py<PyAny>>,
+    step: f64,
+}
+
+impl Objective for PySmoothObjective {
+    fn dim(&self) -> usize {
+        self.base.dim()
+    }
+
+    fn bounds(&self) -> &Bounds {
+        self.base.bounds()
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        self.base.call_value(x)
+    }
+}
+
+impl SmoothObjective for PySmoothObjective {
+    fn gradient(&self, x: &[f64]) -> Result<Vec<f64>, ObjectiveError> {
+        if let Some(gradient) = &self.gradient {
+            return Python::attach(|py| {
+                let list = PyList::new(py, x)
+                    .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
+                let output = gradient
+                    .call1(py, (list,))
+                    .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
+                output.extract::<Vec<f64>>(py).map_err(|_| {
+                    self.base.fail("gradient must return one value per parameter".to_string())
+                })
+            });
+        }
+        let mut gradient = vec![0.0; x.len()];
+        for (index, value) in x.iter().enumerate() {
+            let step = self.step * value.abs().max(1.0);
+            let mut plus = x.to_vec();
+            let mut minus = x.to_vec();
+            plus[index] += step;
+            minus[index] -= step;
+            let plus_value = self.base.call_value(&plus)?;
+            let minus_value = self.base.call_value(&minus)?;
+            gradient[index] = (plus_value - minus_value) / (2.0 * step);
+        }
+        Ok(gradient)
+    }
+}
+
+/// Result of one generic optimization run.
+#[pyclass(name = "OptimizationResult", module = "mltreelib._core")]
+struct PyOptimizationResult(OptimizationResult);
+
+#[pymethods]
+impl PyOptimizationResult {
+    #[getter]
+    fn best_x(&self) -> Vec<f64> {
+        self.0.best_x.clone()
+    }
+
+    #[getter]
+    fn best_value(&self) -> f64 {
+        self.0.best_value
+    }
+
+    #[getter]
+    fn iterations(&self) -> usize {
+        self.0.iterations
+    }
+
+    #[getter]
+    fn evaluations(&self) -> usize {
+        self.0.evaluations
+    }
+
+    #[getter]
+    fn status(&self) -> &'static str {
+        self.0.status.as_str()
+    }
+
+    #[getter]
+    fn converged(&self) -> bool {
+        self.0.status.is_success()
+    }
+
+    #[getter]
+    fn message(&self) -> Option<String> {
+        self.0.message.clone()
+    }
+
+    #[getter]
+    fn max_constraint_violation(&self) -> Option<f64> {
+        self.0.max_constraint_violation
+    }
+
+    #[getter]
+    fn history<'py>(&self, py: Python<'py>) -> PyResult<Option<Vec<Bound<'py, PyDict>>>> {
+        let Some(history) = &self.0.history else {
+            return Ok(None);
+        };
+        let mut rows = Vec::with_capacity(history.len());
+        for entry in history {
+            let row = PyDict::new(py);
+            row.set_item("iteration", entry.iteration)?;
+            row.set_item("value", entry.value)?;
+            row.set_item("best_value", entry.best_value)?;
+            rows.push(row);
+        }
+        Ok(Some(rows))
+    }
+}
+
+/// Minimizes a callable scalar objective inside bounds.
+///
+/// The objective receives one list of parameter values and returns one finite
+/// scalar. The optional `gradient` callable receives the same list and returns
+/// one value per parameter. Smooth methods use a central-difference fallback
+/// when no gradient is supplied.
+#[pyfunction]
+#[pyo3(signature = (objective, bounds, *, method="random_search", start=None, max_evaluations=None, max_iterations=None, tol=1e-6, seed=0, gradient=None, samples=None, initial_population=None))]
+#[allow(clippy::too_many_arguments)]
+fn optimize(
+    py: Python<'_>,
+    objective: Py<PyAny>,
+    bounds: Vec<(f64, f64)>,
+    method: &str,
+    start: Option<Vec<f64>>,
+    max_evaluations: Option<usize>,
+    max_iterations: Option<usize>,
+    tol: f64,
+    seed: u64,
+    gradient: Option<Py<PyAny>>,
+    samples: Option<usize>,
+    initial_population: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyOptimizationResult> {
+    let kind = OptimizerKind::from_name(method)
+        .ok_or_else(|| PyValueError::new_err(format!("Unknown method {method:?}")))?;
+    let dim = bounds.len();
+    let mut lower = Vec::with_capacity(dim);
+    let mut upper = Vec::with_capacity(dim);
+    for (low, high) in &bounds {
+        lower.push(*low);
+        upper.push(*high);
+    }
+    let box_bounds = Bounds::new(lower, upper).map_err(PyValueError::new_err)?;
+
+    let base = PyObjective {
+        callable: objective.clone_ref(py),
+        dim,
+        bounds: box_bounds.clone(),
+        failure: Arc::new(Mutex::new(None)),
+    };
+    let smooth = if gradient.is_some() || kind.uses_gradient() {
+        let gradient_callable = gradient.map(|callable| callable.clone_ref(py));
+        Some(PySmoothObjective {
+            base: PyObjective {
+                callable: objective.clone_ref(py),
+                dim,
+                bounds: box_bounds.clone(),
+                failure: base.failure.clone(),
+            },
+            gradient: gradient_callable,
+            step: 1e-6,
+        })
+    } else {
+        None
+    };
+
+    let shared = SharedOptions {
+        max_evaluations,
+        max_iterations,
+        tol,
+        seed,
+        initial_population,
+        verbose: 0,
+    };
+    let objective_ref: &dyn Objective = match &smooth {
+        Some(smooth) => smooth as &dyn Objective,
+        None => &base as &dyn Objective,
+    };
+    let smooth_ref: Option<&dyn SmoothObjective> = smooth
+        .as_ref()
+        .map(|smooth| smooth as &dyn SmoothObjective);
+
+    let mut request = OptimizationRequest::new(objective_ref, smooth_ref, kind, shared);
+    match kind {
+        OptimizerKind::RandomSearch => {
+            request = request.with_options(MethodOptions::Random(RandomSearchOptions {
+                samples: samples.unwrap_or(64),
+            }));
+        }
+        OptimizerKind::LatinHypercube => {
+            request = request.with_options(MethodOptions::LatinHypercube(LatinHypercubeOptions {
+                samples: samples.unwrap_or(64),
+            }));
+        }
+        _ => {}
+    }
+    if let Some(start) = start {
+        request = request.with_start(start);
+    }
+
+    let result = generic::optimize(&request).map_err(PyValueError::new_err)?;
+    if let Some(message) = base.failure.lock().ok().and_then(|slot| slot.clone()) {
+        return Err(PyRuntimeError::new_err(message));
+    }
+    Ok(PyOptimizationResult(result))
 }
