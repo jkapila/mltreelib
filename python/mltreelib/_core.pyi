@@ -184,4 +184,7 @@ def optimize(
     gradient: Callable[[list[float]], Sequence[float]] | None = ...,
     samples: int | None = ...,
     initial_population: Sequence[Sequence[float]] | None = ...,
+    constraints: Callable[[list[float]], Sequence[float]] | None = ...,
+    constraint_kind: str = ...,
+    local_method: str | None = ...,
 ) -> OptimizationResult: ...

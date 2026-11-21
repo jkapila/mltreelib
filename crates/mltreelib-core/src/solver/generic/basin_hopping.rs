@@ -38,10 +38,24 @@ pub fn basin_hopping(
     start: Option<&[f64]>,
 ) -> OptimizationResult {
     let bounds = objective.bounds();
-    if !bounds.is_bounded() {
-        return OptimizationResult::new(Vec::new(), f64::NAN)
-            .with_status(SolveStatus::Unsupported)
-            .with_message("basin hopping needs finite bounds");
+    match options.inner {
+        OptimizerKind::Bfgs | OptimizerKind::NonlinearConjugateGradient
+            if bounds.has_finite_limit() =>
+        {
+            return OptimizationResult::new(Vec::new(), f64::NAN)
+                .with_status(SolveStatus::Unsupported)
+                .with_message("this basin hopping local method requires unbounded parameters");
+        }
+        OptimizerKind::LbfgsB
+        | OptimizerKind::Bfgs
+        | OptimizerKind::NonlinearConjugateGradient
+        | OptimizerKind::NelderMead
+        | OptimizerKind::Powell => {}
+        _ => {
+            return OptimizationResult::new(Vec::new(), f64::NAN)
+                .with_status(SolveStatus::Unsupported)
+                .with_message("basin hopping requires a supported local method");
+        }
     }
     let mut current = match start {
         Some(start) => bounds.project(start),
@@ -49,7 +63,13 @@ pub fn basin_hopping(
             .lower()
             .iter()
             .zip(bounds.upper().iter())
-            .map(|(&lo, &hi)| 0.5 * (lo + hi))
+            .map(|(&lo, &hi)| {
+                if lo.is_finite() && hi.is_finite() {
+                    lo.midpoint(hi)
+                } else {
+                    0.0_f64.clamp(lo, hi)
+                }
+            })
             .collect(),
     };
 
@@ -88,6 +108,7 @@ pub fn basin_hopping(
         let perturbed: Vec<f64> = (0..current.len())
             .map(|axis| {
                 let width = bounds.width(axis);
+                let width = if width.is_finite() { width } else { 1.0 };
                 current[axis] + step_size * width * normal.sample(&mut rng)
             })
             .collect();
@@ -99,7 +120,7 @@ pub fn basin_hopping(
                 objective,
                 smooth,
                 options.inner,
-                Some(perturbed.clone()),
+                Some(perturbed),
                 budget,
                 seed,
             ),
@@ -109,11 +130,14 @@ pub fn basin_hopping(
             Ok(inner) => {
                 local_solves += 1;
                 if inner.status == SolveStatus::EvaluationLimit {
-                    // The inner solve exhausted the shared budget.
+                    if inner.best_value < best_value && bounds.contains(&inner.best_x) {
+                        best_value = inner.best_value;
+                        best_point = inner.best_x;
+                    }
                     status = SolveStatus::EvaluationLimit;
                     break 'outer;
                 }
-                if inner.best_x.is_empty() {
+                if !inner.best_value.is_finite() || !bounds.contains(&inner.best_x) {
                     // The inner solve failed. Keep the incumbent and continue.
                     window_attempts += 1;
                     history.push(HistoryEntry {

@@ -97,3 +97,23 @@ def test_model_tree_leaf_solver_ccd_sparse_gaussian():
     )
     tree.fit(X, y)
     assert tree.n_leaves() >= 1
+
+
+@pytest.mark.parametrize("solver", ["cmaes", "shade", "nes", "ga"])
+def test_evolutionary_model_fit_matches_a_single_weighted_leaf(solver):
+    x = [[i / 10] for i in range(-15, 16)]
+    y = [1.0 + 2.0 * row[0] + 0.1 * (i % 3) for i, row in enumerate(x)]
+    weights = [1.0 + (i % 4) for i in range(len(x))]
+    options = {"l1": 0.05, "l2": 0.1}
+    standalone = fit(x, y, solver=solver, sample_weight=weights, max_iter=100, tol=1e-6, **options)
+    model = ModelTree(max_depth=0, leaf="linear", leaf_solver=solver, **options)
+    model.fit(x, y, sample_weight=weights)
+    assert model.predict(x) == pytest.approx(standalone.predict(x), abs=1e-10)
+
+
+def test_standalone_and_leaf_reject_the_same_incompatible_solver():
+    with pytest.raises(ValueError, match="does not support L1") as standalone:
+        fit([[0.0], [1.0]], [0.0, 1.0], solver="lbfgs", l1=0.5)
+    with pytest.raises(ValueError, match="does not support L1") as leaf:
+        LeafControl(solver="lbfgs", l1=0.5)
+    assert str(standalone.value) == str(leaf.value)

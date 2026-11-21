@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use mltreelib_core::solver::generic::{
-    self as generic, Bounds, LatinHypercubeOptions, MethodOptions, Objective, ObjectiveError,
-    OptimizationRequest, OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions,
-    SmoothObjective,
+    self as generic, BasinHoppingOptions, Bounds, ConstraintEvaluator, ConstraintKind,
+    LatinHypercubeOptions, MethodOptions, Objective, ObjectiveError, OptimizationRequest,
+    OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions, SmoothObjective,
 };
 use mltreelib_core::solver::{fit_dense, FittedGlm, GlmFamily, SolverOptions};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
@@ -267,6 +267,38 @@ impl SmoothObjective for PyGradientObjective {
     }
 }
 
+/// Python constraint callable wrapped for the generic seam.
+struct PyConstraintEvaluator {
+    callable: Py<PyAny>,
+    failure: Arc<Mutex<Option<String>>>,
+}
+
+impl PyConstraintEvaluator {
+    /// Records one callback failure so the Python caller sees the original error.
+    fn fail(&self, message: String) -> String {
+        if let Ok(mut slot) = self.failure.lock() {
+            *slot = Some(message.clone());
+        }
+        message
+    }
+}
+
+impl ConstraintEvaluator for PyConstraintEvaluator {
+    fn values(&self, x: &[f64]) -> Result<Vec<f64>, String> {
+        Python::attach(|py| {
+            let list = PyList::new(py, x)
+                .map_err(|err| self.fail(format!("constraint callback failed: {err}")))?;
+            let output = self
+                .callable
+                .call1(py, (list,))
+                .map_err(|err| self.fail(format!("constraint callback failed: {err}")))?;
+            output.extract::<Vec<f64>>(py).map_err(|_| {
+                self.fail("constraint callback must return one value per constraint".to_string())
+            })
+        })
+    }
+}
+
 /// Result of one generic optimization run from `mltreelib.solvers.optimize`.
 ///
 /// Reports the best point, the best objective value, the iteration and
@@ -349,8 +381,11 @@ impl PyOptimizationResult {
 /// scalar. The optional `gradient` callable receives the same list and returns
 /// one value per parameter. Smooth methods use a central-difference fallback
 /// when no gradient is supplied.
+/// For COBYLA, `constraints` returns a fixed-length sequence of finite
+/// inequality residuals. Nonnegative residuals are feasible.
+/// For basin hopping, `local_method` selects the inner optimizer.
 #[pyfunction]
-#[pyo3(signature = (objective, bounds, *, method="random_search", start=None, max_evaluations=None, max_iterations=None, tol=1e-6, seed=0, gradient=None, samples=None, initial_population=None))]
+#[pyo3(signature = (objective, bounds, *, method="random_search", start=None, max_evaluations=None, max_iterations=None, tol=1e-6, seed=0, gradient=None, samples=None, initial_population=None, constraints=None, constraint_kind="inequality", local_method=None))]
 #[allow(clippy::too_many_arguments)]
 fn optimize(
     py: Python<'_>,
@@ -365,9 +400,15 @@ fn optimize(
     gradient: Option<Py<PyAny>>,
     samples: Option<usize>,
     initial_population: Option<Vec<Vec<f64>>>,
+    constraints: Option<Py<PyAny>>,
+    constraint_kind: &str,
+    local_method: Option<&str>,
 ) -> PyResult<PyOptimizationResult> {
     let kind = OptimizerKind::from_name(method)
         .ok_or_else(|| PyValueError::new_err(format!("Unknown method {method:?}")))?;
+    if local_method.is_some() && kind != OptimizerKind::BasinHopping {
+        return Err(PyValueError::new_err("local_method applies only to basin_hopping"));
+    }
     let dim = bounds.len();
     let mut lower = Vec::with_capacity(dim);
     let mut upper = Vec::with_capacity(dim);
@@ -412,6 +453,22 @@ fn optimize(
         .map(|smooth| smooth as &dyn SmoothObjective);
 
     let mut request = OptimizationRequest::new(objective_ref, smooth_ref, kind, shared);
+    let constraint_kind = match constraint_kind {
+        "inequality" => ConstraintKind::Inequality,
+        "equality" => ConstraintKind::Equality,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "unknown constraint kind {other:?}"
+            )));
+        }
+    };
+    let constraint_evaluator = constraints.map(|callable| PyConstraintEvaluator {
+        callable: callable.clone_ref(py),
+        failure: base.failure.clone(),
+    });
+    if let Some(evaluator) = &constraint_evaluator {
+        request = request.with_constraints(evaluator, constraint_kind);
+    }
     match kind {
         OptimizerKind::RandomSearch => {
             request = request.with_options(MethodOptions::Random(RandomSearchOptions {
@@ -422,6 +479,16 @@ fn optimize(
             request = request.with_options(MethodOptions::LatinHypercube(LatinHypercubeOptions {
                 samples: samples.unwrap_or(64),
             }));
+        }
+        OptimizerKind::BasinHopping => {
+            if let Some(name) = local_method {
+                let inner = OptimizerKind::from_name(name)
+                    .ok_or_else(|| PyValueError::new_err(format!("Unknown local method {name:?}")))?;
+                request = request.with_options(MethodOptions::BasinHopping(BasinHoppingOptions {
+                    inner,
+                    ..BasinHoppingOptions::default()
+                }));
+            }
         }
         _ => {}
     }

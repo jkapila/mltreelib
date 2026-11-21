@@ -74,6 +74,52 @@ pub enum EvolutionaryKind {
     GeneticAlgorithm,
 }
 
+impl EvolutionaryKind {
+    /// Canonical name shared by all solver interfaces.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::CmaEs => "cmaes",
+            Self::Shade => "shade",
+            Self::NaturalGradient => "nes",
+            Self::GeneticAlgorithm => "ga",
+        }
+    }
+
+    /// Parses a canonical name or a standalone solver alias.
+    pub fn from_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "cmaes" | "cma_es" => Self::CmaEs,
+            "shade" | "de" => Self::Shade,
+            "nes" | "snes" | "natural_gradient" => Self::NaturalGradient,
+            "ga" | "rcga" | "genetic" => Self::GeneticAlgorithm,
+            _ => return None,
+        })
+    }
+
+    /// Returns the selector for the same kernel in a model fit.
+    pub fn leaf_solver(self) -> crate::leaf::LeafSolver {
+        use crate::leaf::LeafSolver;
+        match self {
+            Self::CmaEs => LeafSolver::CmaEs,
+            Self::Shade => LeafSolver::Shade,
+            Self::NaturalGradient => LeafSolver::NaturalGradient,
+            Self::GeneticAlgorithm => LeafSolver::GeneticAlgorithm,
+        }
+    }
+
+    /// Resolves a model-fit selector to its population kernel.
+    pub fn from_leaf_solver(solver: crate::leaf::LeafSolver) -> Option<Self> {
+        use crate::leaf::LeafSolver;
+        Some(match solver {
+            LeafSolver::CmaEs => Self::CmaEs,
+            LeafSolver::Shade => Self::Shade,
+            LeafSolver::NaturalGradient => Self::NaturalGradient,
+            LeafSolver::GeneticAlgorithm => Self::GeneticAlgorithm,
+            _ => return None,
+        })
+    }
+}
+
 /// Options controlling evolutionary optimization.
 #[derive(Clone, Debug)]
 pub struct EvolutionaryOptions {
@@ -104,6 +150,71 @@ impl Default for EvolutionaryOptions {
             verbose: 0,
         }
     }
+}
+
+/// Settings shared by the population kernels, independent of the fitness.
+pub(super) struct PopulationOptions {
+    pub population_size: Option<usize>,
+    pub max_generations: usize,
+    pub tol: f64,
+    pub seed: u64,
+    pub verbose: u8,
+}
+
+pub(super) fn run_population<E>(
+    kind: EvolutionaryKind,
+    start: Vec<f64>,
+    options: &PopulationOptions,
+    evaluate: impl FnMut(&mut [f64]) -> Result<f64, E>,
+    next_generation: impl FnMut() -> Result<(), E>,
+) -> Result<(Vec<f64>, super::Convergence), E> {
+    match kind {
+        EvolutionaryKind::CmaEs => cmaes(start, options, evaluate, next_generation),
+        EvolutionaryKind::Shade => shade(start, options, evaluate, next_generation),
+        EvolutionaryKind::NaturalGradient => snes(start, options, evaluate, next_generation),
+        EvolutionaryKind::GeneticAlgorithm => rcga(start, options, evaluate, next_generation),
+    }
+}
+
+fn fit_population<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+    kind: EvolutionaryKind,
+) -> Result<(Vec<f64>, super::Convergence), String> {
+    let n = design.n_features();
+    if n == 0 {
+        return Err("Zero features in design matrix".into());
+    }
+    let mut start = vec![0.0; n];
+    if let Some(warm) = warm_start {
+        let copied = n.min(warm.len());
+        start[..copied].copy_from_slice(&warm[..copied]);
+    } else {
+        start[0] = initial_intercept(design, &options.family);
+    }
+    run_population(
+        kind,
+        start,
+        &PopulationOptions {
+            population_size: options.population_size,
+            max_generations: options.max_generations,
+            tol: options.tol,
+            seed: options.seed,
+            verbose: options.verbose,
+        },
+        |point| {
+            Ok(eval_fitness(
+                design,
+                &options.family,
+                point,
+                options.l1,
+                options.l2,
+                &options.monotone,
+            ))
+        },
+        || Ok(()),
+    )
 }
 
 /// Evaluates objective value (deviance + penalties) and applies monotone projection.
@@ -180,17 +291,7 @@ pub(super) fn solve_evolutionary_report<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<(Vec<f64>, super::Convergence), String> {
-    let p = design.n_features();
-    if p == 0 {
-        return Err("Zero features in design matrix".to_string());
-    }
-
-    match options.kind {
-        EvolutionaryKind::CmaEs => solve_cmaes_report(design, options, warm_start),
-        EvolutionaryKind::Shade => solve_shade_report(design, options, warm_start),
-        EvolutionaryKind::NaturalGradient => solve_snes_report(design, options, warm_start),
-        EvolutionaryKind::GeneticAlgorithm => solve_rcga_report(design, options, warm_start),
-    }
+    fit_population(design, options, warm_start, options.kind)
 }
 
 /// Covariance Matrix Adaptation Evolution Strategy (Hansen & Ostermeier 2001).
@@ -207,16 +308,17 @@ pub(super) fn solve_cmaes_report<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<(Vec<f64>, super::Convergence), String> {
-    let n = p_dim(design);
-    let mut rng = Rng64::new(options.seed);
+    fit_population(design, options, warm_start, EvolutionaryKind::CmaEs)
+}
 
-    let mut m = vec![0.0; n];
-    if let Some(warm) = warm_start {
-        let copy_len = n.min(warm.len());
-        m[..copy_len].copy_from_slice(&warm[..copy_len]);
-    } else {
-        m[0] = initial_intercept(design, &options.family);
-    }
+fn cmaes<E>(
+    mut m: Vec<f64>,
+    options: &PopulationOptions,
+    mut evaluate: impl FnMut(&mut [f64]) -> Result<f64, E>,
+    mut next_generation: impl FnMut() -> Result<(), E>,
+) -> Result<(Vec<f64>, super::Convergence), E> {
+    let n = m.len();
+    let mut rng = Rng64::new(options.seed);
 
     let lambda = options
         .population_size
@@ -250,20 +352,14 @@ pub(super) fn solve_cmaes_report<D: DesignMatrix>(
     }
 
     let mut best_solution = m.clone();
-    let mut best_fitness = eval_fitness(
-        design,
-        &options.family,
-        &mut best_solution,
-        options.l1,
-        options.l2,
-        &options.monotone,
-    );
+    let mut best_fitness = evaluate(&mut best_solution)?;
 
     let mut candidates: Vec<(Vec<f64>, Vec<f64>, f64)> = (0..lambda)
         .map(|_| (vec![0.0; n], vec![0.0; n], 0.0))
         .collect();
 
     for gen in 0..options.max_generations {
+        next_generation()?;
         let l_mat = cholesky_factor(&cov, n);
 
         for (x_k, y_k, fit_k) in candidates.iter_mut() {
@@ -279,14 +375,7 @@ pub(super) fn solve_cmaes_report<D: DesignMatrix>(
                 y_k[i] = sum;
                 x_k[i] = m[i] + sigma * sum;
             }
-            *fit_k = eval_fitness(
-                design,
-                &options.family,
-                x_k,
-                options.l1,
-                options.l2,
-                &options.monotone,
-            );
+            *fit_k = evaluate(x_k)?;
         }
 
         candidates.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
@@ -377,20 +466,22 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<(Vec<f64>, super::Convergence), String> {
-    let n = p_dim(design);
+    fit_population(design, options, warm_start, EvolutionaryKind::Shade)
+}
+
+fn shade<E>(
+    start: Vec<f64>,
+    options: &PopulationOptions,
+    mut evaluate: impl FnMut(&mut [f64]) -> Result<f64, E>,
+    mut next_generation: impl FnMut() -> Result<(), E>,
+) -> Result<(Vec<f64>, super::Convergence), E> {
+    let n = start.len();
     let mut rng = Rng64::new(options.seed);
 
     let pop_size = options.population_size.unwrap_or(25).max(6);
     let mut pop: Vec<Vec<f64>> = Vec::with_capacity(pop_size);
 
-    let mut ind0 = vec![0.0; n];
-    if let Some(warm) = warm_start {
-        let copy_len = n.min(warm.len());
-        ind0[..copy_len].copy_from_slice(&warm[..copy_len]);
-    } else {
-        ind0[0] = initial_intercept(design, &options.family);
-    }
-    pop.push(ind0);
+    pop.push(start);
 
     for _ in 1..pop_size {
         let mut ind = vec![0.0; n];
@@ -403,14 +494,7 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
 
     let mut fitness: Vec<f64> = vec![0.0; pop_size];
     for i in 0..pop_size {
-        fitness[i] = eval_fitness(
-            design,
-            &options.family,
-            &mut pop[i],
-            options.l1,
-            options.l2,
-            &options.monotone,
-        );
+        fitness[i] = evaluate(&mut pop[i])?;
     }
 
     let h_mem = 6;
@@ -431,6 +515,7 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
     }
 
     for gen in 0..options.max_generations {
+        next_generation()?;
         let mut s_cr = Vec::new();
         let mut s_f = Vec::new();
         let mut delta_f = Vec::new();
@@ -488,14 +573,7 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
                 }
             }
 
-            let trial_fit = eval_fitness(
-                design,
-                &options.family,
-                &mut trial,
-                options.l1,
-                options.l2,
-                &options.monotone,
-            );
+            let trial_fit = evaluate(&mut trial)?;
 
             if trial_fit <= fitness[i] {
                 let diff = fitness[i] - trial_fit;
@@ -567,16 +645,17 @@ pub(super) fn solve_snes_report<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<(Vec<f64>, super::Convergence), String> {
-    let n = p_dim(design);
-    let mut rng = Rng64::new(options.seed);
+    fit_population(design, options, warm_start, EvolutionaryKind::NaturalGradient)
+}
 
-    let mut m = vec![0.0; n];
-    if let Some(warm) = warm_start {
-        let copy_len = n.min(warm.len());
-        m[..copy_len].copy_from_slice(&warm[..copy_len]);
-    } else {
-        m[0] = initial_intercept(design, &options.family);
-    }
+fn snes<E>(
+    mut m: Vec<f64>,
+    options: &PopulationOptions,
+    mut evaluate: impl FnMut(&mut [f64]) -> Result<f64, E>,
+    mut next_generation: impl FnMut() -> Result<(), E>,
+) -> Result<(Vec<f64>, super::Convergence), E> {
+    let n = m.len();
+    let mut rng = Rng64::new(options.seed);
 
     let mut sigma = vec![0.5f64; n];
     let lambda = options
@@ -595,33 +674,20 @@ pub(super) fn solve_snes_report<D: DesignMatrix>(
     let eta_s = (3.0 + (n as f64).ln()) / (5.0 * (n as f64).sqrt());
 
     let mut best_solution = m.clone();
-    let mut best_fitness = eval_fitness(
-        design,
-        &options.family,
-        &mut best_solution,
-        options.l1,
-        options.l2,
-        &options.monotone,
-    );
+    let mut best_fitness = evaluate(&mut best_solution)?;
 
     let mut candidates: Vec<(Vec<f64>, Vec<f64>, f64)> = (0..lambda)
         .map(|_| (vec![0.0; n], vec![0.0; n], 0.0))
         .collect();
 
     for gen in 0..options.max_generations {
+        next_generation()?;
         for (x_k, z_k, fit_k) in candidates.iter_mut() {
             for j in 0..n {
                 z_k[j] = rng.next_gaussian();
                 x_k[j] = m[j] + sigma[j] * z_k[j];
             }
-            *fit_k = eval_fitness(
-                design,
-                &options.family,
-                x_k,
-                options.l1,
-                options.l2,
-                &options.monotone,
-            );
+            *fit_k = evaluate(x_k)?;
         }
 
         candidates.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
@@ -684,20 +750,22 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<(Vec<f64>, super::Convergence), String> {
-    let n = p_dim(design);
+    fit_population(design, options, warm_start, EvolutionaryKind::GeneticAlgorithm)
+}
+
+fn rcga<E>(
+    start: Vec<f64>,
+    options: &PopulationOptions,
+    mut evaluate: impl FnMut(&mut [f64]) -> Result<f64, E>,
+    mut next_generation: impl FnMut() -> Result<(), E>,
+) -> Result<(Vec<f64>, super::Convergence), E> {
+    let n = start.len();
     let mut rng = Rng64::new(options.seed);
 
     let pop_size = options.population_size.unwrap_or(40).max(10);
     let mut population: Vec<Vec<f64>> = Vec::with_capacity(pop_size);
 
-    let mut ind0 = vec![0.0; n];
-    if let Some(warm) = warm_start {
-        let copy_len = n.min(warm.len());
-        ind0[..copy_len].copy_from_slice(&warm[..copy_len]);
-    } else {
-        ind0[0] = initial_intercept(design, &options.family);
-    }
-    population.push(ind0);
+    population.push(start);
 
     for _ in 1..pop_size {
         let mut ind = vec![0.0; n];
@@ -710,14 +778,7 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
 
     let mut fitness: Vec<f64> = vec![0.0; pop_size];
     for i in 0..pop_size {
-        fitness[i] = eval_fitness(
-            design,
-            &options.family,
-            &mut population[i],
-            options.l1,
-            options.l2,
-            &options.monotone,
-        );
+        fitness[i] = evaluate(&mut population[i])?;
     }
 
     let eta_c = 20.0;
@@ -726,6 +787,7 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
     let mut best_fitness = fitness[0];
 
     for gen in 0..options.max_generations {
+        next_generation()?;
         let mut next_pop: Vec<Vec<f64>> = Vec::with_capacity(pop_size);
 
         let mut order: Vec<usize> = (0..pop_size).collect();
@@ -791,14 +853,7 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
 
         population = next_pop;
         for i in 0..pop_size {
-            fitness[i] = eval_fitness(
-                design,
-                &options.family,
-                &mut population[i],
-                options.l1,
-                options.l2,
-                &options.monotone,
-            );
+            fitness[i] = evaluate(&mut population[i])?;
         }
 
         if options.verbose >= 3 && (gen % 20 == 0 || gen == options.max_generations - 1) {
@@ -825,10 +880,6 @@ fn tournament_select(fitness: &[f64], k: usize, rng: &mut Rng64) -> usize {
     best_idx
 }
 
-#[inline]
-fn p_dim<D: DesignMatrix>(design: &D) -> usize {
-    design.n_features()
-}
 
 fn initial_intercept<D: DesignMatrix>(design: &D, family: &GlmFamily) -> f64 {
     let n = design.n_rows();

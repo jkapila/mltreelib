@@ -280,7 +280,7 @@ pub fn solver_capabilities(solver: LeafSolver) -> SolverCapabilities {
             supports_derivative_free: true,
             supports_l1: true,
             supports_monotone: true,
-            supports_finite_bounds: false,
+            supports_finite_bounds: true,
             supports_unbounded: true,
             supports_equality_constraints: false,
             supports_nonlinear_inequality_constraints: false,
@@ -434,13 +434,8 @@ pub(crate) fn solve_iterative<D: DesignMatrix>(
         ),
         LeafSolver::Irls => Err("Use the IRLS design solver".into()),
         solver => {
-            let kind = match solver {
-                LeafSolver::CmaEs => EvolutionaryKind::CmaEs,
-                LeafSolver::Shade => EvolutionaryKind::Shade,
-                LeafSolver::NaturalGradient => EvolutionaryKind::NaturalGradient,
-                LeafSolver::GeneticAlgorithm => EvolutionaryKind::GeneticAlgorithm,
-                _ => unreachable!(),
-            };
+            let kind = EvolutionaryKind::from_leaf_solver(solver)
+                .expect("non-evolutionary solvers are handled above");
             evolutionary::solve_evolutionary_report(
                 design,
                 &EvolutionaryOptions {
@@ -704,40 +699,25 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
                 tol: 1e-6,
                 verbose: problem.verbose,
             };
-            match solve_iterative(&view, problem.solver, &options, 42, None) {
-                Ok((solution, _)) => {
-                    let mut model = crate::node_stats::LinearModel {
-                        cols: problem.chosen.to_vec(),
-                        coef: solution[1..1 + nc].to_vec(),
-                        na_coef: if problem.with_indicators {
-                            solution[1 + nc..].to_vec()
-                        } else {
-                            Vec::new()
-                        },
-                        feature_means: Vec::new(),
-                        intercept: solution[0],
-                        summary: None,
-                    };
-                    apply_feature_means(&mut model, problem.impute_means);
-                    Ok(LeafSolveOutput {
-                        linear: Some(model),
-                        center: None,
-                        diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
-                    })
-                }
-                Err(_) => Ok(LeafSolveOutput {
-                    linear: Some(crate::node_stats::LinearModel {
-                        cols: problem.chosen.to_vec(),
-                        coef: vec![0.0; nc],
-                        na_coef: Vec::new(),
-                        feature_means: Vec::new(),
-                        intercept: problem.mean,
-                        summary: None,
-                    }),
-                    center: None,
-                    diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
-                }),
-            }
+            let (solution, _) = solve_iterative(&view, problem.solver, &options, 42, None)?;
+            let mut model = crate::node_stats::LinearModel {
+                cols: problem.chosen.to_vec(),
+                coef: solution[1..1 + nc].to_vec(),
+                na_coef: if problem.with_indicators {
+                    solution[1 + nc..].to_vec()
+                } else {
+                    Vec::new()
+                },
+                feature_means: Vec::new(),
+                intercept: solution[0],
+                summary: None,
+            };
+            apply_feature_means(&mut model, problem.impute_means);
+            Ok(LeafSolveOutput {
+                linear: Some(model),
+                center: None,
+                diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+            })
         }
     }
 }

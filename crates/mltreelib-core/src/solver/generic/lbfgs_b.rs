@@ -359,7 +359,7 @@ pub fn solve_lbfgs_b(
     x = bounds.project(&x);
     let mut value = match counted.value(&x) {
         Ok(value) => value,
-        Err(error) => return failure_result(error, x, budget),
+        Err(error) => return failure_result(error, Vec::new(), f64::NAN, budget),
     };
     let mut best_x = x.clone();
     let mut best_value = value;
@@ -370,7 +370,7 @@ pub fn solve_lbfgs_b(
     for _ in 0..options.max_iter {
         let gradient = match smooth.gradient(&x) {
             Ok(gradient) => gradient,
-            Err(error) => return failure_result(error, best_x, budget),
+            Err(error) => return failure_result(error, best_x, best_value, budget),
         };
         let projected_gradient = projected_gradient_norm(&x, &gradient, bounds);
         if projected_gradient <= options.gtol {
@@ -429,7 +429,7 @@ pub fn solve_lbfgs_b(
             match projected_line_search(&x, value, &gradient, &direction, bounds, &counted, smooth)
             {
                 Ok(line) => line,
-                Err(error) => return failure_result(error, best_x, budget),
+                Err(error) => return failure_result(error, best_x, best_value, budget),
             };
         let Some((new_x, new_value, new_gradient, _alpha)) = line else {
             return build_result(
@@ -499,7 +499,12 @@ fn projected_gradient_norm(x: &[f64], gradient: &[f64], bounds: &Bounds) -> f64 
     norm
 }
 
-fn failure_result(error: ObjectiveError, point: Vec<f64>, budget: &Budget) -> OptimizationResult {
+fn failure_result(
+    error: ObjectiveError,
+    point: Vec<f64>,
+    value: f64,
+    budget: &Budget,
+) -> OptimizationResult {
     let (status, message) = match error {
         ObjectiveError::BudgetExhausted(BudgetStatus::EvaluationLimit) => (
             SolveStatus::EvaluationLimit,
@@ -521,7 +526,7 @@ fn failure_result(error: ObjectiveError, point: Vec<f64>, budget: &Budget) -> Op
         ),
         ObjectiveError::Callback(message) => (SolveStatus::HardError, Some(message)),
     };
-    let mut result = OptimizationResult::new(point, f64::NAN);
+    let mut result = OptimizationResult::new(point, value);
     result.status = status;
     result.evaluations = budget.evaluations();
     result.iterations = budget.iterations();

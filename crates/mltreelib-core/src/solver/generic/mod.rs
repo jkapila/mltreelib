@@ -9,9 +9,11 @@ pub mod basin_hopping;
 pub mod bfgs;
 pub mod bounds;
 pub mod budget;
+pub mod cobyla;
 pub mod conjugate_gradient;
 pub mod constraint;
 pub mod finite_difference;
+mod evolutionary;
 pub mod lbfgs_b;
 pub mod line_search;
 pub mod nelder_mead;
@@ -26,6 +28,7 @@ pub use basin_hopping::basin_hopping;
 pub use bfgs::bfgs;
 pub use bounds::Bounds;
 pub use budget::{Budget, BudgetStatus};
+pub use cobyla::cobyla;
 pub use conjugate_gradient::nonlinear_conjugate_gradient;
 pub use constraint::{
     is_feasible, max_violation, violation, Constraint, ConstraintEvaluator, ConstraintKind,
@@ -54,7 +57,6 @@ pub const FINITE_DIFFERENCE_STEP: f64 = 1e-6;
 ///
 /// The method dispatch resolves the method-specific options, evaluates the
 /// objective through one shared budget, and returns the shared result type.
-/// A method that is not implemented yet returns one error naming the method.
 pub fn optimize(request: &OptimizationRequest) -> Result<OptimizationResult, String> {
     request.validate()?;
     let budget = Budget::new(
@@ -73,6 +75,14 @@ pub fn optimize_with_budget(
     budget: &Budget,
 ) -> Result<OptimizationResult, String> {
     request.validate()?;
+    if request.constraints.is_some() && request.method != OptimizerKind::Cobyla {
+        return Ok(OptimizationResult::new(Vec::new(), f64::NAN)
+            .with_status(SolveStatus::Unsupported)
+            .with_message(format!(
+                "{} does not support nonlinear constraints",
+                request.method.as_str()
+            )));
+    }
     // Smooth methods use the supplied gradient source or the central-difference
     // fallback. The fallback wraps the counted objective, so its perturbation
     // calls land in the same budget as the solver's own calls.
@@ -185,6 +195,20 @@ pub fn optimize_with_budget(
                 request.start.as_deref(),
             ))
         }
+        OptimizerKind::Cobyla => {
+            let options = match &request.options {
+                MethodOptions::Cobyla(options) => options,
+                _ => return Err("method options do not match the selected method".to_string()),
+            };
+            Ok(cobyla::cobyla(
+                request.objective,
+                budget,
+                options,
+                request.start.as_deref(),
+                request.constraints,
+                request.constraint_kind,
+            ))
+        }
         OptimizerKind::BasinHopping => {
             let options = match &request.options {
                 MethodOptions::BasinHopping(options) => options,
@@ -199,7 +223,7 @@ pub fn optimize_with_budget(
                 request.start.as_deref(),
             ))
         }
-        method => Err(format!("method {} is not implemented yet", method.as_str())),
+        OptimizerKind::Evolutionary(kind) => Ok(evolutionary::optimize(request, budget, kind)),
     }
 }
 

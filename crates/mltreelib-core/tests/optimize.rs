@@ -7,7 +7,6 @@
 use std::cell::Cell;
 
 use mltreelib_core::solver::generic::annealing::simulated_annealing;
-use mltreelib_core::solver::generic::basin_hopping::basin_hopping;
 use mltreelib_core::solver::generic::bfgs::bfgs;
 use mltreelib_core::solver::generic::conjugate_gradient::nonlinear_conjugate_gradient;
 use mltreelib_core::solver::generic::nelder_mead::nelder_mead;
@@ -345,6 +344,8 @@ fn request_validation_rejects_bad_configuration() {
         objective: &objective,
         smooth: None,
         start: None,
+        constraints: None,
+        constraint_kind: ConstraintKind::Inequality,
         method: OptimizerKind::LbfgsB,
         options: MethodOptions::Annealing(AnnealingOptions::default()),
         shared: shared.clone(),
@@ -510,7 +511,7 @@ fn generic_entry_point_runs_a_method() {
 }
 
 #[test]
-fn generic_entry_point_names_unimplemented_methods() {
+fn generic_entry_point_runs_cobyla() {
     let objective =
         Quadratic::sum_of_squares(Bounds::new(vec![-2.0], vec![2.0]).expect("valid bounds"));
     let request = OptimizationRequest::new(
@@ -519,8 +520,9 @@ fn generic_entry_point_names_unimplemented_methods() {
         OptimizerKind::Cobyla,
         SharedOptions::default(),
     );
-    let error = optimize(&request).expect_err("method missing");
-    assert!(error.contains("cobyla"), "error was {error}");
+    let result = optimize(&request).expect("method runs");
+    assert_eq!(result.status, SolveStatus::Converged);
+    assert!(result.best_value < 1e-6, "value was {}", result.best_value);
 }
 
 #[test]
@@ -936,6 +938,7 @@ fn derivative_free_solvers_report_every_objective_call() {
         &PowellOptions::default(),
         Some(&[1.5, 1.5]),
     );
+    assert_eq!(powell.evaluations, objective.calls.get());
     assert_eq!(
         objective.calls.get() - calls_after_nelder,
         budget.evaluations() - evaluations_after_nelder
@@ -1221,4 +1224,240 @@ fn basin_hopping_stops_at_the_evaluation_budget() {
     let result = optimize(&request).expect("method runs");
     assert_eq!(result.status, SolveStatus::EvaluationLimit);
     assert_eq!(result.evaluations, 30);
+}
+
+// -- COBYLA ---------------------------------------------------------------
+
+/// Inequality constraint that keeps the sum of the parameters under a limit.
+///
+/// The seam convention holds an inequality constraint feasible when its value
+/// is `>= 0`, so the value is `limit - sum`.
+struct SumConstraint {
+    limit: f64,
+}
+
+impl mltreelib_core::solver::generic::ConstraintEvaluator for SumConstraint {
+    fn values(&self, x: &[f64]) -> Result<Vec<f64>, String> {
+        Ok(vec![self.limit - x.iter().sum::<f64>()])
+    }
+}
+
+/// Bounded quadratic that counts every call, for the COBYLA section.
+struct CountedQuadratic {
+    quadratic: Quadratic,
+    calls: Cell<usize>,
+}
+
+impl Objective for CountedQuadratic {
+    fn dim(&self) -> usize {
+        self.quadratic.dim()
+    }
+
+    fn bounds(&self) -> &Bounds {
+        self.quadratic.bounds()
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        self.calls.set(self.calls.get() + 1);
+        self.quadratic.value(x)
+    }
+}
+
+/// Bounds of the COBYLA section.
+fn cobyla_bounds() -> Bounds {
+    Bounds::uniform(2, -5.0, 5.0).expect("bounds hold")
+}
+
+/// Quadratic of the COBYLA section. Its unconstrained minimum sits at
+/// (0.3, -1.5) with the value 0.
+fn cobyla_quadratic() -> Quadratic {
+    Quadratic::new(cobyla_bounds(), vec![0.3, -1.5], vec![1.0, 0.5])
+}
+
+#[test]
+fn cobyla_finds_a_known_constrained_optimum() {
+    // The constraint x + y <= -1.5 is active at the optimum. The analytic
+    // solution of the constrained problem is (0.1, -1.6) with the value 0.06.
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![-1.0, -1.0]);
+    let result = optimize(&request).expect("method runs");
+    assert_eq!(
+        result.status,
+        SolveStatus::Converged,
+        "status was {:?}",
+        result.status
+    );
+    assert!(
+        result.best_value < 0.0601,
+        "value was {} at {:?}",
+        result.best_value,
+        result.best_x
+    );
+    assert!(
+        (result.best_x[0] - 0.1).abs() < 1e-2,
+        "point was {:?}",
+        result.best_x
+    );
+    assert!(
+        (result.best_x[1] + 1.6).abs() < 1e-2,
+        "point was {:?}",
+        result.best_x
+    );
+}
+
+#[test]
+fn cobyla_reports_the_maximum_constraint_violation() {
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![-1.0, -1.0]);
+    let result = optimize(&request).expect("method runs");
+    let violation = result
+        .max_constraint_violation
+        .expect("violation is reported");
+    assert!(
+        violation <= 1e-6,
+        "violation was {violation} at {:?}",
+        result.best_x
+    );
+}
+
+#[test]
+fn cobyla_reports_an_infeasible_problem() {
+    // The constraint x + y <= -50 cannot hold inside the box.
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -50.0 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![0.0, 0.0]);
+    let result = optimize(&request).expect("method runs");
+    assert_eq!(result.status, SolveStatus::Infeasible);
+    assert!(result.max_constraint_violation.unwrap_or(0.0) > 0.0);
+}
+
+#[test]
+fn cobyla_rejects_equality_constraints() {
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Equality)
+    .with_start(vec![-1.0, -1.0]);
+    let result = optimize(&request).expect("method runs");
+    assert_eq!(result.status, SolveStatus::Unsupported);
+    let message = result.message.expect("message names the rejection");
+    assert!(
+        message.contains("equality"),
+        "message was {message}"
+    );
+}
+
+#[test]
+fn cobyla_keeps_the_point_inside_the_bounds() {
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![4.5, 4.5]);
+    let result = optimize(&request).expect("method runs");
+    assert!(result.best_x.iter().all(|value| value.is_finite()));
+    assert!(cobyla_bounds().contains(&result.best_x), "point was {:?}", result.best_x);
+}
+
+#[test]
+fn cobyla_counts_every_objective_call() {
+    let objective = CountedQuadratic {
+        quadratic: cobyla_quadratic(),
+        calls: Cell::new(0),
+    };
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![-1.0, -1.0]);
+    let result = optimize(&request).expect("method runs");
+    assert_eq!(result.evaluations, objective.calls.get());
+    assert!(result.iterations > 0);
+    assert!(result.iterations <= result.evaluations);
+}
+
+#[test]
+fn cobyla_recovers_from_an_infeasible_start() {
+    // The start point violates the constraint, but the problem stays feasible.
+    let objective = cobyla_quadratic();
+    let constraint = SumConstraint { limit: -1.5 };
+    let request = OptimizationRequest::new(
+        &objective,
+        None,
+        OptimizerKind::Cobyla,
+        SharedOptions::default(),
+    )
+    .with_constraints(&constraint, ConstraintKind::Inequality)
+    .with_start(vec![4.0, 4.0]);
+    let result = optimize(&request).expect("method runs");
+    assert_ne!(result.status, SolveStatus::Infeasible);
+    let violation = result
+        .max_constraint_violation
+        .expect("violation is reported");
+    assert!(
+        violation <= 1e-6,
+        "violation was {violation} at {:?}",
+        result.best_x
+    );
+}
+
+#[test]
+fn evolutionary_methods_spend_the_shared_budget_and_keep_a_feasible_incumbent() {
+    for name in ["cmaes", "shade", "nes", "ga"] {
+        let objective = CountingQuadratic::new(
+            Bounds::uniform(2, -2.0, 2.0).unwrap(),
+            vec![0.3, -0.6],
+            vec![1.0, 1.0],
+        );
+        let request = OptimizationRequest::new(
+            &objective,
+            None,
+            OptimizerKind::from_name(name).unwrap(),
+            SharedOptions { max_evaluations: Some(37), ..SharedOptions::default() },
+        ).with_start(vec![1.0, 1.0]);
+        let result = optimize(&request).unwrap();
+        assert_eq!(result.status, SolveStatus::EvaluationLimit, "{name}");
+        assert_eq!(result.evaluations, 37);
+        assert_eq!(result.evaluations, objective.calls.get());
+        assert!(objective.bounds().contains(&result.best_x));
+        assert!(result.best_value < 1.0, "{name}: {result:?}");
+        assert_eq!(result.best_value, objective.quadratic.value(&result.best_x).unwrap());
+    }
 }

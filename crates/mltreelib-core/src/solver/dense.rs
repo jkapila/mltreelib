@@ -152,11 +152,25 @@ pub fn fit_dense(
     if direct && (family != GlmFamily::Gaussian || l1 > 0.0 || constrained) {
         return Err("The direct Gaussian solver supports Gaussian with L2 only; use ccd for constrained or L1 Gaussian fits".into());
     }
-    if solver == Some(LeafSolver::Ccd) && family != GlmFamily::Gaussian {
-        return Err("ccd supports only Gaussian fits".into());
-    }
-    if solver == Some(LeafSolver::Lbfgs) && (l1 > 0.0 || constrained) {
-        return Err("lbfgs supports L2 only".into());
+    let leaf_family = match family {
+        GlmFamily::Gaussian => LeafFamily::Gaussian,
+        GlmFamily::Binomial => LeafFamily::Binomial,
+        GlmFamily::Probit => LeafFamily::Probit,
+        GlmFamily::Poisson => LeafFamily::Poisson,
+        GlmFamily::Gamma => LeafFamily::Gamma,
+        GlmFamily::Tweedie { .. } => LeafFamily::Tweedie,
+        GlmFamily::Tobit { .. } => LeafFamily::Tobit,
+    };
+    if let Some(solver) = solver {
+        super::check_leaf_solver_compatibility(
+            crate::leaf::LeafKind::Linear,
+            leaf_family,
+            solver,
+            super::LeafSolverRequirements {
+                l1: l1 > 0.0,
+                monotone: constrained,
+            },
+        )?;
     }
 
     let design = DenseView::new(x, y, weights, true);
@@ -173,21 +187,15 @@ pub fn fit_dense(
         )
     } else if solver == Some(LeafSolver::Irls) {
         let mut extra = std::collections::HashMap::new();
-        let leaf_family = match family {
-            GlmFamily::Gaussian => unreachable!(),
-            GlmFamily::Binomial => LeafFamily::Binomial,
-            GlmFamily::Probit => LeafFamily::Probit,
-            GlmFamily::Poisson => LeafFamily::Poisson,
-            GlmFamily::Gamma => LeafFamily::Gamma,
+        match family {
             GlmFamily::Tweedie { p } => {
                 extra.insert("tweedie_p".into(), p);
-                LeafFamily::Tweedie
             }
             GlmFamily::Tobit { threshold } => {
                 extra.insert("tobit_threshold".into(), threshold);
-                LeafFamily::Tobit
             }
-        };
+            _ => {}
+        }
         let mut mean = (0..y.len())
             .map(|i| design.get_weight(i) * y[i])
             .sum::<f64>()

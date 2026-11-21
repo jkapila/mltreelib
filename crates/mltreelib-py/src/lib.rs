@@ -23,6 +23,7 @@ use mltreelib_core::gate::SplitTest;
 use mltreelib_core::leaf::{LeafCols, LeafKind, LeafSolver};
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, PurityMetric};
 use mltreelib_core::prune::PruneCost;
+use mltreelib_core::solver::EvolutionaryKind;
 use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
 use mltreelib_core::metrics::{
     classification_report, competing_risks_report as core_competing_risks_report,
@@ -2422,13 +2423,11 @@ fn parse_leaf_solver(name: &str) -> PyResult<LeafSolver> {
         "irls" => Ok(LeafSolver::Irls),
         "lbfgs" => Ok(LeafSolver::Lbfgs),
         "ccd" => Ok(LeafSolver::Ccd),
-        "cmaes" | "cma_es" => Ok(LeafSolver::CmaEs),
-        "shade" | "de" => Ok(LeafSolver::Shade),
-        "nes" | "snes" | "natural_gradient" => Ok(LeafSolver::NaturalGradient),
-        "ga" | "rcga" | "genetic" => Ok(LeafSolver::GeneticAlgorithm),
-        other => Err(PyValueError::new_err(format!(
-            "solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other:?}"
-        ))),
+        other => EvolutionaryKind::from_name(other)
+            .map(EvolutionaryKind::leaf_solver)
+            .ok_or_else(|| PyValueError::new_err(format!(
+                "solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other:?}"
+            ))),
     }
 }
 
@@ -2437,10 +2436,9 @@ fn leaf_solver_name(solver: LeafSolver) -> &'static str {
         LeafSolver::Irls => "irls",
         LeafSolver::Lbfgs => "lbfgs",
         LeafSolver::Ccd => "ccd",
-        LeafSolver::CmaEs => "cmaes",
-        LeafSolver::Shade => "shade",
-        LeafSolver::NaturalGradient => "nes",
-        LeafSolver::GeneticAlgorithm => "ga",
+        other => EvolutionaryKind::from_leaf_solver(other)
+            .expect("non-evolutionary solvers are handled above")
+            .as_str(),
     }
 }
 

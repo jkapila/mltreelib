@@ -1,5 +1,8 @@
 //! Request, method, and option contracts for the generic optimization seam.
 
+use crate::solver::EvolutionaryKind;
+
+use super::constraint::{ConstraintEvaluator, ConstraintKind};
 use super::objective::{Objective, SmoothObjective};
 
 /// Default seed used by every stochastic method when no seed is supplied.
@@ -30,6 +33,8 @@ pub enum OptimizerKind {
     Cobyla,
     /// Basin hopping composition.
     BasinHopping,
+    /// An existing evolutionary population kernel.
+    Evolutionary(EvolutionaryKind),
 }
 
 impl OptimizerKind {
@@ -46,6 +51,7 @@ impl OptimizerKind {
             Self::SimulatedAnnealing => "simulated_annealing",
             Self::Cobyla => "cobyla",
             Self::BasinHopping => "basin_hopping",
+            Self::Evolutionary(kind) => kind.as_str(),
         }
     }
 
@@ -62,7 +68,7 @@ impl OptimizerKind {
             "simulated_annealing" => Self::SimulatedAnnealing,
             "cobyla" => Self::Cobyla,
             "basin_hopping" => Self::BasinHopping,
-            _ => return None,
+            _ => return EvolutionaryKind::from_name(name).map(Self::Evolutionary),
         })
     }
 
@@ -352,6 +358,8 @@ pub enum MethodOptions {
     Cobyla(CobylaOptions),
     /// Basin hopping options.
     BasinHopping(BasinHoppingOptions),
+    /// Selects an evolutionary kernel with its default population size.
+    Evolutionary(EvolutionaryKind),
 }
 
 impl MethodOptions {
@@ -368,6 +376,7 @@ impl MethodOptions {
             Self::Annealing(_) => OptimizerKind::SimulatedAnnealing,
             Self::Cobyla(_) => OptimizerKind::Cobyla,
             Self::BasinHopping(_) => OptimizerKind::BasinHopping,
+            Self::Evolutionary(kind) => OptimizerKind::Evolutionary(*kind),
         }
     }
 }
@@ -387,6 +396,10 @@ pub struct OptimizationRequest<'a> {
     pub smooth: Option<&'a dyn SmoothObjective>,
     /// Starting point. `None` lets the method draw one.
     pub start: Option<Vec<f64>>,
+    /// Constraint values at one point. `None` means the problem is unconstrained.
+    pub constraints: Option<&'a dyn ConstraintEvaluator>,
+    /// Constraint type of the constraint values.
+    pub constraint_kind: ConstraintKind,
     /// Selected method.
     pub method: OptimizerKind,
     /// Method-specific options.
@@ -422,15 +435,29 @@ impl<'a> OptimizationRequest<'a> {
             OptimizerKind::BasinHopping => {
                 MethodOptions::BasinHopping(BasinHoppingOptions::default())
             }
+            OptimizerKind::Evolutionary(kind) => MethodOptions::Evolutionary(kind),
         };
         Self {
             objective,
             smooth,
             start: None,
+            constraints: None,
+            constraint_kind: ConstraintKind::Inequality,
             method,
             options,
             shared,
         }
+    }
+
+    /// Sets the constraint source and its kind.
+    pub fn with_constraints(
+        mut self,
+        constraints: &'a dyn ConstraintEvaluator,
+        kind: ConstraintKind,
+    ) -> Self {
+        self.constraints = Some(constraints);
+        self.constraint_kind = kind;
+        self
     }
 
     /// Sets the starting point.
