@@ -1,5 +1,6 @@
 """Tree-based anomaly detection."""
 
+import math
 from collections.abc import Sequence
 from typing import Any, Literal, overload
 
@@ -8,7 +9,7 @@ from mltreelib._core import DensityEstimationTree as _DET
 from mltreelib._core import ExtendedIsolationTree as _EIF
 from mltreelib._core import HalfSpaceTree as _HST
 from mltreelib._core import RandomCutTree as _RCT
-from mltreelib._model_inputs import _impute_float_matrix
+from mltreelib._model_inputs import _numeric_cell, _numeric_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 
 __all__ = ["AnomalyTree"]
@@ -35,6 +36,7 @@ class AnomalyTree(_UnsupervisedSnapshot):
         Minimum leaf samples.
     contamination : float, default=0.05
         Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
+        If the cutoff splits a group of equal scores, the entire group is labeled as inliers.
     seed : int, default=42
         Random seed for stochastic engines (EIF, HST, RCT, Active).
     extension_level, subsample_size : int, optional
@@ -58,7 +60,7 @@ class AnomalyTree(_UnsupervisedSnapshot):
     """
 
     _snapshot_format = "mltreelib.anomaly_tree"
-    _snapshot_engines = ("eif", "isolation", "extended_isolation")
+    _snapshot_engines = ("eif", "isolation", "extended_isolation", "det", "density", "density_estimation", "hst", "half_space", "rct", "random_cut", "active", "aad", "context", "sequence")
 
     def __init__(
         self,
@@ -105,7 +107,6 @@ class AnomalyTree(_UnsupervisedSnapshot):
         self._threshold: float | None = None
         self._threshold_strict: bool = False
         self._fitted = False
-        self._col_means: list[float] | None = None
         self._inner: Any = None
 
         k = self.kind
@@ -163,8 +164,11 @@ class AnomalyTree(_UnsupervisedSnapshot):
     ) -> "AnomalyTree":
         """Fit the anomaly model on training data.
 
-        Accepts native python lists (floats, ints, strings, None for missing values).
+        Accepts native Python lists. None and NaN cells stay missing. In context
+        sequences, each missing symbol breaks the transition history.
         """
+        if len(x) == 0:
+            raise ValueError("AnomalyTree requires at least one training row.")
         k = self.kind
         if k in (
             "eif",
@@ -178,14 +182,15 @@ class AnomalyTree(_UnsupervisedSnapshot):
             dts = list(dtypes) if dtypes is not None else None
             self._inner.fit(x, col_names=cnames, dtypes=dts)
         elif k in ("context", "sequence"):
-            # Expects sequence of integers
-            self._inner.fit(x)
+            self._inner.fit([[None if value != value else value for value in row] for row in x])
         else:
             # Float matrix algorithms (HST, RCT, Active)
-            float_mat, self._col_means = _impute_float_matrix(x)
+            float_mat = _numeric_rows(x)
             self._inner.fit(float_mat)
 
         self._fitted = True
+        self._threshold = None
+        self._threshold_strict = False
 
         # Calibrate threshold on training data if contamination > 0
         if self.contamination > 0.0 and k not in ("context", "sequence"):
@@ -224,7 +229,11 @@ class AnomalyTree(_UnsupervisedSnapshot):
             type(strict) is not bool
             or (
                 threshold is not None
-                and (type(threshold) not in (float, int) or not 0 <= threshold <= 1)
+                and (
+                    type(threshold) not in (float, int)
+                    or not math.isfinite(float(threshold))
+                    or threshold < 0
+                )
             )
             or (strict and threshold is None)
         ):
@@ -246,13 +255,13 @@ class AnomalyTree(_UnsupervisedSnapshot):
         elif k in ("det", "density", "density_estimation"):
             return self._inner.predict_anomaly_score(x)
         elif k in ("hst", "half_space"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             return self._inner.anomaly_score(float_mat)
         elif k in ("rct", "random_cut"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             return self._inner.codisp(float_mat)
         elif k in ("active", "aad"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             return self._inner.anomaly_score(float_mat)
         elif k in ("context", "sequence"):
             raise ValueError(
@@ -310,42 +319,58 @@ class AnomalyTree(_UnsupervisedSnapshot):
 
     def predict_density(self, x: Sequence[Sequence[Any]]) -> list[float]:
         """Compute estimated probability density (only for density trees)."""
+        if not self._fitted:
+            raise ValueError("AnomalyTree is not fitted yet.")
         if not hasattr(self._inner, "predict_density"):
             raise ValueError(
                 f"predict_density is not supported by {self.kind} anomaly tree"
             )
         return self._inner.predict_density(x)
 
-    def surprise_score(self, context: Sequence[int], symbol: int) -> float:
-        """Compute surprise score -log2 P(symbol | context) for sequence context tree."""
+    def surprise_score(
+        self, context: Sequence[int | float | None], symbol: int | float | None
+    ) -> float | None:
+        """Compute surprise in bits after the last gap. A missing symbol has no score."""
         if not hasattr(self._inner, "surprise_score"):
             raise ValueError(
                 f"surprise_score is only supported by 'context' anomaly tree, got kind='{self.kind}'"
             )
-        return self._inner.surprise_score(list(context), symbol)
+        if not self._fitted:
+            raise ValueError("AnomalyTree is not fitted yet.")
+        if symbol is None or symbol != symbol:
+            return None
+        return self._inner.surprise_score(_observed_suffix(context), symbol)
 
-    def conditional_prob(self, context: Sequence[int], symbol: int) -> float:
-        """Compute conditional probability P(symbol | context) for sequence context tree."""
+    def conditional_prob(
+        self, context: Sequence[int | float | None], symbol: int | float | None
+    ) -> float | None:
+        """Estimate a symbol's probability from the context after the last gap."""
         if not hasattr(self._inner, "conditional_prob"):
             raise ValueError(
                 f"conditional_prob is only supported by 'context' anomaly tree, got kind='{self.kind}'"
             )
-        return self._inner.conditional_prob(list(context), symbol)
+        if not self._fitted:
+            raise ValueError("AnomalyTree is not fitted yet.")
+        if symbol is None or symbol != symbol:
+            return None
+        return self._inner.conditional_prob(_observed_suffix(context), symbol)
 
     def update_feedback(
-        self, point: Sequence[float], is_anomaly: bool, eta: float = 0.5
+        self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
     ) -> "AnomalyTree":
         """Update model weights based on expert feedback (for Active anomaly tree)."""
         if not hasattr(self._inner, "update_feedback"):
             raise ValueError(
                 f"update_feedback is only supported by 'active' anomaly tree, got kind='{self.kind}'"
             )
-        pt = [float(v) for v in point]
+        if not self._fitted:
+            raise ValueError("AnomalyTree is not fitted yet.")
+        pt = [_numeric_cell(v) for v in point]
         self._inner.update_feedback(pt, is_anomaly, eta)
         return self
 
     def feedback(
-        self, point: Sequence[float], is_anomaly: bool, eta: float = 0.5
+        self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
     ) -> "AnomalyTree":
         """Alias for update_feedback."""
         return self.update_feedback(point, is_anomaly, eta)
@@ -357,3 +382,13 @@ class AnomalyTree(_UnsupervisedSnapshot):
 
     def __repr__(self) -> str:
         return f"AnomalyTree(kind='{self.kind}', max_depth={self.max_depth}, min_rows={self.min_rows}, contamination={self.contamination})"
+
+
+def _observed_suffix(context: Sequence[int | float | None]) -> list[int | float]:
+    observed = []
+    for value in context:
+        if value is None or value != value:
+            observed.clear()
+        else:
+            observed.append(value)
+    return observed

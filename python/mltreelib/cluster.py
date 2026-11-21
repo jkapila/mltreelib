@@ -7,7 +7,7 @@ from mltreelib._core import HDBSCAN as _HDBSCAN
 from mltreelib._core import CLTree as _CLTree
 from mltreelib._core import PredictiveClusteringTree as _PCT
 from mltreelib._core import UnsupervisedRandomForest as _URF
-from mltreelib._model_inputs import _impute_float_matrix
+from mltreelib._model_inputs import _numeric_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 
 __all__ = ["ClusterTree"]
@@ -63,7 +63,7 @@ class ClusterTree(_UnsupervisedSnapshot):
     """
 
     _snapshot_format = "mltreelib.cluster_tree"
-    _snapshot_engines = ("pct", "predictive", "clus")
+    _snapshot_engines = ("pct", "predictive", "clus", "cltree", "density", "hdbscan", "hierarchical", "urf", "proximity", "forest")
 
     def __init__(
         self,
@@ -111,7 +111,6 @@ class ClusterTree(_UnsupervisedSnapshot):
         }
         self._fitted = False
         self._inner: Any = None
-        self._col_means: list[float] | None = None
         self._labels: list[int | None] | None = None
 
         k = self.kind
@@ -164,7 +163,14 @@ class ClusterTree(_UnsupervisedSnapshot):
         dtypes: Sequence[str] | None = None,
         target_names: Sequence[str] | None = None,
     ) -> "ClusterTree":
-        """Fit the clustering tree on dataset x (and optional targets y for PCT)."""
+        """Fit on x, with optional PCT targets y.
+
+        None and NaN cells stay missing. CLTree and URF route them to the left
+        during split search and prediction. HDBSCAN uses jointly observed
+        coordinates and treats rows with too few comparable neighbors as noise.
+        """
+        if len(x) == 0:
+            raise ValueError("ClusterTree requires at least one training row.")
         k = self.kind
         if k in ("pct", "predictive", "clus"):
             cnames = list(col_names) if col_names is not None else None
@@ -176,16 +182,16 @@ class ClusterTree(_UnsupervisedSnapshot):
             )
             self._labels = self._inner.predict_cluster(x)
         elif k in ("cltree", "density"):
-            float_mat, self._col_means = _impute_float_matrix(x)
+            float_mat = _numeric_rows(x)
             cnames = list(col_names) if col_names is not None else None
             self._inner.fit(float_mat, col_names=cnames)
             self._labels = self._inner.predict_cluster(float_mat)
         elif k in ("hdbscan", "hierarchical"):
-            float_mat, self._col_means = _impute_float_matrix(x)
+            float_mat = _numeric_rows(x)
             self._inner.fit(float_mat)
             self._labels = self._inner.labels
         elif k in ("urf", "proximity", "forest"):
-            float_mat, self._col_means = _impute_float_matrix(x)
+            float_mat = _numeric_rows(x)
             n_c = self.n_clusters if self.n_clusters is not None else 2
             self._inner.fit(float_mat, n_clusters=n_c)
             self._labels = self._inner.labels
@@ -214,7 +220,7 @@ class ClusterTree(_UnsupervisedSnapshot):
             not isinstance(labels, list)
             or len(labels) != self._inner._snapshot_rows
             or any(
-                type(label) is not int or not 0 <= label < n_clusters
+                (label is not None and (type(label) is not int or not 0 <= label < n_clusters))
                 for label in labels
             )
         ):
@@ -256,13 +262,13 @@ class ClusterTree(_UnsupervisedSnapshot):
         if k in ("pct", "predictive", "clus"):
             return self._inner.predict_cluster(x)
         elif k in ("cltree", "density"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             return self._inner.predict_cluster(float_mat)
         elif k in ("hdbscan", "hierarchical"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             return self._inner.predict(float_mat)
         elif k in ("urf", "proximity", "forest"):
-            float_mat, _ = _impute_float_matrix(x, self._col_means)
+            float_mat = _numeric_rows(x)
             if kind == "distances":
                 return self._inner.distances(float_mat)
             return self._inner.predict(float_mat)

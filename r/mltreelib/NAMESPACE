@@ -1,0 +1,4 @@
+useDynLib(mltreelib, .registration = TRUE)
+export(model_tree)
+export(fit_model_tree)
+export(predict_model_tree)

@@ -1,10 +1,13 @@
 //! Thin PyO3 shell around `mltreelib-core`. Exposed to Python as
 //! `mltreelib._core`; the Python package in `python/mltreelib` re-exports it.
 
+
 use pyo3::exceptions::{PyAttributeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
+
+mod calibration;
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
 use mltreelib_core::encode::{
@@ -3433,7 +3436,8 @@ impl PyModelTree {
     ///        all). Splits only — leaves see all columns.
     ///     col_sample: per-node random column subset fraction (None = all).
     ///     seed: seed for the per-node column subset.
-    ///     split_eval: split evaluation mode — "fast" (default) or "exhaustive".
+    ///     split_eval: "fast" (default), "histogram" (up to 256 bins for
+    ///         classification gains), or "exhaustive".
     ///     presort: upfront numeric column sorting (default false).
     ///   LEAF
     ///     leaf: "linear", "mean", "median", "quantile" (with tau), "huber", or "mars".
@@ -3742,10 +3746,11 @@ impl PyModelTree {
         };
         let eval_mode = match split_eval {
             "fast" => SplitEval::Fast,
+            "histogram" => SplitEval::Histogram,
             "exhaustive" => SplitEval::Exhaustive,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "split_eval must be 'fast' or 'exhaustive', got {other}"
+                    "split_eval must be 'fast', 'histogram', or 'exhaustive', got {other}"
                 )))
             }
         };
@@ -5544,6 +5549,7 @@ impl PyModelTree {
             "split_eval",
             match self.params.split_eval {
                 SplitEval::Fast => "fast",
+                SplitEval::Histogram => "histogram",
                 SplitEval::Exhaustive => "exhaustive",
             },
         )?;
@@ -5742,6 +5748,15 @@ pub struct PyDensityEstimationTree {
 
 #[pymethods]
 impl PyDensityEstimationTree {
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, self.vocabs.clone())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        let inner = mltreelib_core::anomaly::DensityEstimationTree::from_json(data).map_err(model_persistence_error)?;
+        check_unsupervised_vocabs(&vocabs, &inner.dtypes)?;
+        Ok(Self { inner, vocabs })
+    }
     #[new]
     #[pyo3(signature = (max_depth=8, min_samples_split=10, min_leaf_samples=5, min_density_gain=0.0, alpha=0.0))]
     fn new(
@@ -5962,6 +5977,30 @@ impl PyExtendedIsolationTree {
     }
 }
 
+fn numeric_row(row: Vec<Option<f64>>) -> Vec<f64> {
+    row.into_iter()
+        .map(|cell| cell.filter(|value| value.is_finite()).unwrap_or(f64::NAN))
+        .collect()
+}
+
+fn numeric_rows(data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<Vec<f64>>> {
+    if let Some(first) = data.first() {
+        if first.is_empty() || data.iter().any(|row| row.len() != first.len()) {
+            return Err(PyValueError::new_err(
+                "numeric input must have nonempty rows of equal width",
+            ));
+        }
+    }
+    Ok(data.into_iter().map(numeric_row).collect())
+}
+
+fn check_numeric_width(data: &[Vec<Option<f64>>], width: usize) -> PyResult<()> {
+    if data.iter().any(|row| row.len() != width) {
+        return Err(PyValueError::new_err("x width must match fitted numeric tree"));
+    }
+    Ok(())
+}
+
 #[pyclass(name = "HalfSpaceTree")]
 pub struct PyHalfSpaceTree {
     inner: mltreelib_core::anomaly::hs_tree::HalfSpaceTree,
@@ -5969,6 +6008,15 @@ pub struct PyHalfSpaceTree {
 
 #[pymethods]
 impl PyHalfSpaceTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.n_samples }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::anomaly::HalfSpaceTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (max_depth=6, window_size=250, initial_mass=0.0, seed=42))]
     fn new(max_depth: usize, window_size: usize, initial_mass: f64, seed: u64) -> Self {
@@ -5980,21 +6028,29 @@ impl PyHalfSpaceTree {
         }
     }
 
-    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
-        self.inner.fit(&data);
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?);
         Ok(())
     }
 
-    fn anomaly_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
-        Ok(data.iter().map(|r| self.inner.anomaly_score(r)).collect())
+    fn anomaly_score(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+        check_numeric_width(&data, self.inner.bounds.len())?;
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.anomaly_score(r))
+            .collect())
     }
 
-    fn mass_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
-        Ok(data.iter().map(|r| self.inner.mass_score(r)).collect())
+    fn mass_score(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+        check_numeric_width(&data, self.inner.bounds.len())?;
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.mass_score(r))
+            .collect())
     }
 
-    fn insert(&mut self, point: Vec<f64>) -> PyResult<()> {
-        self.inner.insert(&point);
+    fn insert(&mut self, point: Vec<Option<f64>>) -> PyResult<()> {
+        self.inner.insert(&numeric_row(point));
         Ok(())
     }
 }
@@ -6006,6 +6062,15 @@ pub struct PyRandomCutTree {
 
 #[pymethods]
 impl PyRandomCutTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.n_points }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::anomaly::RandomCutTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (sample_size=256, seed=42))]
     fn new(sample_size: usize, seed: u64) -> Self {
@@ -6016,13 +6081,18 @@ impl PyRandomCutTree {
         }
     }
 
-    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
-        self.inner.fit(&data);
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?);
         Ok(())
     }
 
-    fn codisp(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
-        Ok(data.iter().map(|r| self.inner.codisp(r)).collect())
+    fn codisp(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+        let width = self.inner.nodes.first().map_or(0, |node| node.bbox.len());
+        check_numeric_width(&data, width)?;
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.codisp(r))
+            .collect())
     }
 }
 
@@ -6033,6 +6103,15 @@ pub struct PyActiveAnomalyTree {
 
 #[pymethods]
 impl PyActiveAnomalyTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.n_samples }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::anomaly::ActiveAnomalyTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (max_depth=8, eta=0.1, prior_weight=1.0, seed=42))]
     fn new(max_depth: usize, eta: f64, prior_weight: f64, seed: u64) -> Self {
@@ -6044,18 +6123,30 @@ impl PyActiveAnomalyTree {
         }
     }
 
-    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
-        self.inner.fit(&data);
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?);
         Ok(())
     }
 
-    fn anomaly_score(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
-        Ok(data.iter().map(|r| self.inner.score(r)).collect())
+    fn anomaly_score(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<f64>> {
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.score(r))
+            .collect())
     }
 
     #[pyo3(signature = (point, is_anomaly, eta=0.5))]
-    fn update_feedback(&mut self, point: Vec<f64>, is_anomaly: bool, eta: f64) -> PyResult<()> {
-        self.inner.update_feedback(&point, is_anomaly, eta);
+    fn update_feedback(
+        &mut self,
+        point: Vec<Option<f64>>,
+        is_anomaly: bool,
+        eta: f64,
+    ) -> PyResult<()> {
+        if !eta.is_finite() || eta < 0.0 {
+            return Err(PyValueError::new_err("eta must be finite and nonnegative"));
+        }
+        self.inner
+            .update_feedback(&numeric_row(point), is_anomaly, eta);
         Ok(())
     }
 }
@@ -6067,6 +6158,15 @@ pub struct PyContextAnomalyTree {
 
 #[pymethods]
 impl PyContextAnomalyTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.nodes.first().map_or(0, |n| n.total_count) }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::anomaly::ContextAnomalyTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (max_depth=5, alphabet_size=256, smoothing_discount=0.5))]
     fn new(max_depth: usize, alphabet_size: usize, smoothing_discount: f64) -> Self {
@@ -6077,8 +6177,8 @@ impl PyContextAnomalyTree {
         }
     }
 
-    fn fit(&mut self, sequences: Vec<Vec<u64>>) -> PyResult<()> {
-        self.inner.fit(&sequences);
+    fn fit(&mut self, sequences: Vec<Vec<Option<u64>>>) -> PyResult<()> {
+        self.inner.fit_with_gaps(&sequences);
         Ok(())
     }
 
@@ -6380,6 +6480,15 @@ pub struct PyClTree {
 
 #[pymethods]
 impl PyClTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.nodes.first().map_or(0, |n| n.n_data) }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::cluster::ClTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (max_depth=6, min_samples_leaf=5, min_density=0.6))]
     fn new(max_depth: usize, min_samples_leaf: usize, min_density: f64) -> Self {
@@ -6389,13 +6498,16 @@ impl PyClTree {
     }
 
     #[pyo3(signature = (data, col_names=None))]
-    fn fit(&mut self, data: Vec<Vec<f64>>, col_names: Option<Vec<String>>) -> PyResult<()> {
-        self.inner.fit(&data, col_names.as_deref());
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>, col_names: Option<Vec<String>>) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?, col_names.as_deref());
         Ok(())
     }
 
-    fn predict_cluster(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Option<usize>>> {
-        Ok(data.iter().map(|r| self.inner.predict_cluster(r)).collect())
+    fn predict_cluster(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<Option<usize>>> {
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.predict_cluster(r))
+            .collect())
     }
 
     fn cluster_bounding_boxes(&self) -> PyResult<Vec<(usize, Vec<(f64, f64)>, usize, f64)>> {
@@ -6415,6 +6527,15 @@ pub struct PyHdbscanTree {
 
 #[pymethods]
 impl PyHdbscanTree {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.train_data.len() }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::cluster::HdbscanTree::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (
         min_cluster_size=5,
@@ -6464,13 +6585,18 @@ impl PyHdbscanTree {
         Ok(PyHdbscanTree { inner })
     }
 
-    fn fit(&mut self, data: Vec<Vec<f64>>) -> PyResult<()> {
-        self.inner.fit(&data);
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?);
         Ok(())
     }
 
-    fn predict(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Option<usize>>> {
-        Ok(data.iter().map(|r| self.inner.predict(r)).collect())
+    fn predict(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<Option<usize>>> {
+        let width = self.inner.train_data.first().map_or(0, |row| row.len());
+        check_numeric_width(&data, width)?;
+        Ok(numeric_rows(data)?
+            .iter()
+            .map(|r| self.inner.predict(r))
+            .collect())
     }
 
     #[getter]
@@ -6512,6 +6638,15 @@ pub struct PyUnsupervisedProximityForest {
 
 #[pymethods]
 impl PyUnsupervisedProximityForest {
+    #[getter]
+    fn _snapshot_rows(&self) -> usize { self.inner.cluster_labels.len() }
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        self.inner.to_json().map(|data| (data, Vec::new())).map_err(model_persistence_error)
+    }
+    #[staticmethod]
+    fn _from_snapshot(data: &str, _vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        Ok(Self { inner: mltreelib_core::cluster::UnsupervisedProximityForest::from_json(data).map_err(model_persistence_error)? })
+    }
     #[new]
     #[pyo3(signature = (
         n_trees=50,
@@ -6551,8 +6686,8 @@ impl PyUnsupervisedProximityForest {
     }
 
     #[pyo3(signature = (data, n_clusters=2))]
-    fn fit(&mut self, data: Vec<Vec<f64>>, n_clusters: usize) -> PyResult<()> {
-        self.inner.fit(&data, n_clusters);
+    fn fit(&mut self, data: Vec<Vec<Option<f64>>>, n_clusters: usize) -> PyResult<()> {
+        self.inner.fit(&numeric_rows(data)?, n_clusters);
         Ok(())
     }
 
@@ -6565,12 +6700,12 @@ impl PyUnsupervisedProximityForest {
         self.inner.pairwise_distances()
     }
 
-    fn predict(&self, data: Vec<Vec<f64>>) -> Vec<usize> {
-        self.inner.predict(&data)
+    fn predict(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<usize>> {
+        Ok(self.inner.predict(&numeric_rows(data)?))
     }
 
-    fn distances(&self, data: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-        self.inner.distances(&data)
+    fn distances(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<Vec<f64>>> {
+        Ok(self.inner.distances(&numeric_rows(data)?))
     }
 
     #[getter]
@@ -6588,7 +6723,8 @@ impl PyUnsupervisedProximityForest {
         self.inner.n_clusters
     }
 
-    fn apply(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Vec<usize>>> {
+    fn apply(&self, data: Vec<Vec<Option<f64>>>) -> PyResult<Vec<Vec<usize>>> {
+        let data = numeric_rows(data)?;
         let mut res = Vec::with_capacity(data.len());
         for row in &data {
             let row_leaves: Vec<usize> = self.inner.trees.iter().map(|t| t.apply(row)).collect();
@@ -6870,6 +7006,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLeaveOneOutEncoder>()?;
     m.add_class::<PyMEstimatorEncoder>()?;
     m.add_class::<PyMetrics>()?;
+    m.add_class::<calibration::PyIsotonicCalibrator>()?;
     m.add_class::<PyLeafControl>()?;
     m.add_class::<PyModelTree>()?;
     m.add_class::<PyRule>()?;

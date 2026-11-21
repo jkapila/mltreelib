@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from mltreelib import AnomalyTree, ClusterTree
 
@@ -16,6 +18,12 @@ def test_anomaly_tree_context_surprise():
     with pytest.raises(ValueError, match="surprise_score is only supported by 'context'"):
         at.surprise_score([1, 2], 3)
 
+
+def test_context_missing_symbol_breaks_transition_history():
+    ct = AnomalyTree(kind="context", max_depth=3, alphabet_size=20)
+    ct.fit([[1, 2, None, 3]])
+    assert ct.conditional_prob([], 3) == ct.conditional_prob([2], 3)
+
 def test_anomaly_tree_active_feedback():
     at = AnomalyTree(kind="active", max_depth=4)
     at.fit([[1.0, 2.0], [1.1, 2.1], [10.0, 10.0]])
@@ -29,6 +37,9 @@ def test_anomaly_tree_active_feedback():
     with pytest.raises(ValueError, match="update_feedback is only supported by 'active'"):
         ct.feedback([1.0, 2.0], is_anomaly=True)
 
+    with pytest.raises(ValueError, match="eta must be finite and nonnegative"):
+        at.feedback([10.0, 10.0], is_anomaly=True, eta=-1.0)
+
 def test_anomaly_tree_threshold_tie_behavior():
     # If all inliers have exact same score (e.g. 0.0), strict tie-breaking ensures inliers aren't marked anomalies
     data = [[0.0, 0.0]] * 95 + [[10.0, 10.0]] * 5
@@ -37,6 +48,10 @@ def test_anomaly_tree_threshold_tie_behavior():
     preds = at.predict(data)
     # The anomalies should be flagged, but the 95 inliers should not all be 1
     assert sum(preds) <= 10
+
+    tied = AnomalyTree(kind="hst", contamination=0.1, seed=42)
+    tied.fit([[1.0, 1.0]] * 10)
+    assert sum(tied.predict([[1.0, 1.0]] * 10)) == 0
 
 def test_anomaly_and_cluster_missing_value_handling():
     data = [[1.0, 2.0], [1.2, None], [0.9, 2.1], [10.0, 10.0]]
@@ -50,3 +65,19 @@ def test_anomaly_and_cluster_missing_value_handling():
     clt.fit(data)
     preds_clt = clt.predict(data)
     assert len(preds_clt) == 4
+
+
+def test_native_unsupervised_snapshots_round_trip_and_reject_bad_topology():
+    data = [[0.0, 0.0], [0.1, 0.1], [5.0, 5.0], [5.1, 5.1]]
+    anomaly = AnomalyTree(kind="hst", max_depth=3).fit(data)
+    restored_anomaly = AnomalyTree.from_json(anomaly.to_json())
+    assert restored_anomaly.score_samples(data) == anomaly.score_samples(data)
+
+    cluster = ClusterTree(kind="cltree", min_rows=2).fit(data)
+    restored_cluster = ClusterTree.from_json(cluster.to_json())
+    assert restored_cluster.predict(data) == cluster.predict(data)
+
+    broken = json.loads(anomaly.to_json())
+    broken["native"]["model"]["nodes"][0]["left_child"] = 0
+    with pytest.raises(ValueError, match="topology|node"):
+        AnomalyTree.from_json(json.dumps(broken))

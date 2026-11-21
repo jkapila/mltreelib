@@ -1,0 +1,8 @@
+src/target/
+src/Cargo.lock
+src/*.o
+src/*.so
+tools/rust/target/
+tools/rust/Cargo.lock
+src/*.a
+src/symbols.rds

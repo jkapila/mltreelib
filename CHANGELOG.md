@@ -4,6 +4,22 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.12
+
+### Python model behavior
+
+- Fix multiclass split scoring when feature values are missing. Numeric and categorical scans now account for missing class mass in candidate gains. [Issue #10](https://github.com/jkapila/mltreelib/issues/10)
+- Use `split_eval="histogram"` to opt into at most 256 bins per numeric feature. This mode supports Gini, entropy, gain ratio, and twoing without ExtraTrees. The default remains `"fast"`.
+- Fit a binary isotonic calibrator with `mltreelib.calibration.IsotonicCalibrator`. Fit on held-out or out-of-fold scores and evaluate on separate test data.
+- Preserve missing numeric values in anomaly and clustering workflows. Save and reload fitted DET, half-space, random cut, active anomaly, context anomaly, CLTree, HDBSCAN, and unsupervised proximity forest models as versioned JSON.
+
+### R source package
+
+- Build and install the first R source package from the repository. It exposes ModelTree fitting and prediction. Ubuntu 24.04 with R 4.3.3 is the checked platform. Installation requires a Rust toolchain and a C compiler.
+- Run the `airquality` example for an ozone holdout with missing predictors. The example compares the tree with a training-mean baseline.
+
+[Classification results](https://github.com/jkapila/mltreelib/blob/v0.4.12/references/research/2026-11-21-real-classification-results.md) · [Unsupervised results](https://github.com/jkapila/mltreelib/blob/v0.4.12/references/research/2026-11-21-real-unsupervised-results.md) · [R results](https://github.com/jkapila/mltreelib/blob/v0.4.12/references/research/2026-11-21-r-airquality-results.md) · [Changes](https://github.com/jkapila/mltreelib/compare/v0.4.11...v0.4.12)
+
 ## v0.4.11
 
 ### Model controls and JSON persistence

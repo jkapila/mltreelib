@@ -13,7 +13,7 @@
 use std::cmp::Ordering;
 
 /// Linkage criterion for agglomerative clustering on proximity distances.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum UrfLinkage {
     Average,
     Single,
@@ -21,10 +21,11 @@ pub enum UrfLinkage {
 }
 
 /// A node in an individual Unsupervised Proximity Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ProximityTreeNode {
     pub is_leaf: bool,
     pub split_dim: usize,
+    #[serde(with = "crate::persistence::float")]
     pub split_val: f64,
     pub left_child: Option<usize>,
     pub right_child: Option<usize>,
@@ -32,7 +33,7 @@ pub struct ProximityTreeNode {
 }
 
 /// An individual decision tree trained to separate real data from synthetic marginal noise.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ProximityTree {
     pub max_depth: usize,
     pub min_samples_leaf: usize,
@@ -133,7 +134,16 @@ impl ProximityTree {
 
             vals.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
 
-            for i in (self.min_samples_leaf - 1)..(vals.len() - self.min_samples_leaf) {
+            let missing_count = n - vals.len();
+            let missing_pos = n_pos - vals.iter().filter(|(row, _)| labels[*row] == 1).count();
+            let mut left_pos = missing_pos;
+            let start = self.min_samples_leaf - 1;
+            left_pos += vals[..start]
+                .iter()
+                .filter(|(row, _)| labels[*row] == 1)
+                .count();
+            for i in start..(vals.len() - self.min_samples_leaf) {
+                left_pos += usize::from(labels[vals[i].0] == 1);
                 let v_curr = vals[i].1;
                 let v_next = vals[i + 1].1;
                 if (v_next - v_curr).abs() < 1e-9 {
@@ -142,13 +152,7 @@ impl ProximityTree {
 
                 let thresh = 0.5 * (v_curr + v_next);
 
-                let mut left_pos = 0;
-                for k in 0..=i {
-                    if labels[vals[k].0] == 1 {
-                        left_pos += 1;
-                    }
-                }
-                let left_tot = i + 1;
+                let left_tot = i + 1 + missing_count;
                 let right_pos = n_pos - left_pos;
                 let right_tot = n - left_tot;
 
@@ -232,9 +236,9 @@ impl ProximityTree {
         while !self.nodes[curr].is_leaf {
             let dim = self.nodes[curr].split_dim;
             let val = self.nodes[curr].split_val;
-            let v = row.get(dim).copied().unwrap_or(0.0);
+            let v = row.get(dim).copied().unwrap_or(f64::NAN);
 
-            curr = if v <= val {
+            curr = if v.is_nan() || v <= val {
                 self.nodes[curr].left_child.unwrap()
             } else {
                 self.nodes[curr].right_child.unwrap()
@@ -245,7 +249,7 @@ impl ProximityTree {
 }
 
 /// Unsupervised Random Forest & Proximity Model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct UnsupervisedProximityForest {
     pub n_trees: usize,
     pub max_depth: usize,
@@ -255,10 +259,12 @@ pub struct UnsupervisedProximityForest {
     pub seed: u64,
     pub trees: Vec<ProximityTree>,
     /// Leaf assignments for training rows, in input order.
-    training_encodings: Vec<Vec<usize>>,
+    pub(crate) training_encodings: Vec<Vec<usize>>,
     /// Pairwise proximity matrix for training instances: [N x N].
+    #[serde(with = "crate::persistence::float")]
     pub proximity_matrix: Vec<Vec<f64>>,
     pub cluster_labels: Vec<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub outlier_scores: Vec<f64>,
     pub n_clusters: usize,
 }

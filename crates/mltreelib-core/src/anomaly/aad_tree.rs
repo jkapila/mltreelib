@@ -6,7 +6,7 @@
 //! node weights without restructuring the tree.
 
 /// A node in the Active Anomaly Discovery Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct AadNode {
     pub is_leaf: bool,
     pub split_dim: usize,
@@ -18,7 +18,7 @@ pub struct AadNode {
 }
 
 /// Active Anomaly Discovery single base tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ActiveAnomalyTree {
     pub max_depth: usize,
     pub eta: f64,
@@ -187,9 +187,9 @@ impl ActiveAnomalyTree {
         while !self.nodes[curr].is_leaf {
             let dim = self.nodes[curr].split_dim;
             let val = self.nodes[curr].split_val;
-            let v = row.get(dim).copied().unwrap_or(0.0);
+            let v = row.get(dim).copied().unwrap_or(f64::NAN);
 
-            curr = if v <= val {
+            curr = if v.is_nan() || v <= val {
                 self.nodes[curr].left_child.unwrap()
             } else {
                 self.nodes[curr].right_child.unwrap()

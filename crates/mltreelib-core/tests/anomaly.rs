@@ -111,3 +111,22 @@ fn test_context_anomaly_tree_sequence_surprise() {
     let rare_surprise = cat.surprise_score(&[1, 2], 99);
     assert!(rare_surprise > normal_surprise, "Rare transition must have higher surprise in bits");
 }
+
+#[test]
+fn test_context_fit_with_gaps_does_not_join_segments() {
+    let mut cat = ContextAnomalyTree::new(3, 20);
+    cat.fit_with_gaps(&[vec![Some(1), Some(2), None, Some(3)]]);
+
+    // The missing symbol breaks history, so 3 must use the smoothed root model.
+    let after_gap = cat.conditional_prob(&[], 3);
+    let joined = cat.conditional_prob(&[2], 3);
+    assert_eq!(joined, after_gap);
+}
+
+#[test]
+fn test_numeric_anomaly_missing_values_follow_left_branch() {
+    let mut hst = HalfSpaceTree::new(4, 42);
+    hst.fit(&[vec![0.0, 0.0], vec![1.0, 1.0], vec![2.0, 2.0]]);
+    let score = hst.anomaly_score(&[f64::NAN, 1.0]);
+    assert!(score.is_finite());
+}

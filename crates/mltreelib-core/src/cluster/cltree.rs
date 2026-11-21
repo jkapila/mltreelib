@@ -13,7 +13,7 @@
 use std::cmp::Ordering;
 
 /// A node in the Clustering Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ClTreeNode {
     pub is_leaf: bool,
     pub is_cluster: bool,
@@ -30,7 +30,7 @@ pub struct ClTreeNode {
 }
 
 /// Clustering Tree (CLTree) model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ClTree {
     pub max_depth: usize,
     pub min_samples_leaf: usize,
@@ -205,7 +205,7 @@ impl ClTree {
                 let u_l = n_virtual * frac_l;
                 let u_r = n_virtual * frac_r;
 
-                let d_l = (i + 1) as f64;
+                let d_l = (i + 1 + n_data - vals.len()) as f64;
                 let d_r = (vals.len() - (i + 1)) as f64;
 
                 let total_l = d_l + u_l;
@@ -340,9 +340,9 @@ impl ClTree {
         while !self.nodes[curr].is_leaf {
             let dim = self.nodes[curr].split_dim;
             let val = self.nodes[curr].split_val;
-            let v = row.get(dim).copied().unwrap_or(0.0);
+            let v = row.get(dim).copied().unwrap_or(f64::NAN);
 
-            curr = if v <= val {
+            curr = if v.is_nan() || v <= val {
                 self.nodes[curr].left_child.unwrap()
             } else {
                 self.nodes[curr].right_child.unwrap()

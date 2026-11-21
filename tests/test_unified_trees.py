@@ -125,6 +125,43 @@ def test_cluster_tree_hdbscan_and_urf():
     assert ct_urf.predict(query, kind="cluster") == nearest
 
 
+def test_hdbscan_and_urf_native_snapshots_round_trip(tmp_path):
+    X = [[0.0, 0.0], [0.1, 0.1], [10.0, 10.0], [10.1, 10.1]]
+    for kind in ("hdbscan", "urf"):
+        model = ClusterTree(kind=kind, min_rows=2, n_clusters=2, n_trees=4)
+        model.fit(X)
+        restored = ClusterTree.from_json(model.to_json())
+        assert restored.predict(X) == model.predict(X)
+
+
+@pytest.mark.parametrize("kind", ["eif", "det", "hst", "rct", "active"])
+def test_every_numeric_anomaly_engine_round_trips(kind):
+    X = [[0.0, 0.0], [0.1, 0.2], [4.9, 5.0], [5.1, 4.8]]
+    model = AnomalyTree(kind=kind, max_depth=4, contamination=0.25, seed=7)
+    model.fit(X)
+    restored = AnomalyTree.from_json(model.to_json())
+    assert restored.predict(X, kind="score") == model.predict(X, kind="score")
+    assert restored.predict(X) == model.predict(X)
+
+
+def test_context_anomaly_engine_round_trips():
+    model = AnomalyTree(kind="context", max_depth=3, alphabet_size=16)
+    model.fit([[1, 2, 3, 1, 2, 3]])
+    restored = AnomalyTree.from_json(model.to_json())
+    assert restored.conditional_prob([1, 2], 3) == model.conditional_prob([1, 2], 3)
+    assert restored.surprise_score([1, 2], 3) == model.surprise_score([1, 2], 3)
+
+
+@pytest.mark.parametrize("kind", ["pct", "cltree", "hdbscan", "urf"])
+def test_every_cluster_engine_round_trips(kind):
+    X = [[0.0, 0.0], [0.1, 0.2], [4.9, 5.0], [5.1, 4.8]]
+    model = ClusterTree(kind=kind, max_depth=4, min_rows=2, n_clusters=2, n_trees=4, seed=7)
+    model.fit(X)
+    restored = ClusterTree.from_json(model.to_json())
+    assert restored.predict(X) == model.predict(X)
+    assert restored.labels_ == model.labels_
+
+
 @pytest.mark.parametrize("kind", ["eif", "pct"])
 def test_unsupervised_json_restores_fitted_state(kind, tmp_path):
     features = [
@@ -176,13 +213,9 @@ def test_unsupervised_json_restores_fitted_state(kind, tmp_path):
         model_class.from_json(json.dumps(snapshot))
 
 
-def test_unsupervised_snapshot_requires_a_supported_fitted_engine():
+def test_unsupervised_snapshot_requires_a_fitted_engine():
     with pytest.raises(ValueError, match="not fitted"):
         AnomalyTree().to_json()
-
-    tree = AnomalyTree("hst", max_depth=2).fit([[0.0], [1.0], [2.0]])
-    with pytest.raises(ValueError, match="JSON snapshots are available for eif"):
-        tree.to_json()
 
 
 if __name__ == "__main__":
