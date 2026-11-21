@@ -147,6 +147,7 @@ catboost_info/
 
 # Agent instructions, IDE rules, and local assistant configs
 AGENTS.md
+!/AGENTS.md
 CLAUDE.md
 CODEBUDDY.md
 GEMINI.md

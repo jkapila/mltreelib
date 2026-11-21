@@ -260,7 +260,8 @@ if (task %in% c("cla", "classification")) {
                     check.names = FALSE, stringsAsFactors = TRUE)
   test <- read.csv(file.path(data_dir, paste0(ds, "_test.csv")),
                    check.names = FALSE, stringsAsFactors = TRUE)
-  ycol <- "y"
+  ycol <- tail(names(train), 1L)
+  response <- deparse(as.name(ycol), backtick = TRUE)
   xs <- setdiff(names(train), ycol)
 
   train_mat <- data.matrix(train[, xs, drop = FALSE])
@@ -269,7 +270,7 @@ if (task %in% c("cla", "classification")) {
   t0 <- proc.time()[["elapsed"]]
   pred <- switch(model,
     rpart = {
-      fit <- rpart::rpart(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- rpart::rpart(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     cubist = {
@@ -277,19 +278,19 @@ if (task %in% c("cla", "classification")) {
       predict(fit, test[, xs, drop = FALSE])
     },
     lmtree = {
-      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+      f <- as.formula(paste(response, "~", paste0("`", xs, "`", collapse = " + "), "|",
                             paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::lmtree(f, data = train)
       predict(fit, test)
     },
     glmtree = {
-      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+      f <- as.formula(paste(response, "~", paste0("`", xs, "`", collapse = " + "), "|",
                             paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::glmtree(f, data = train)
       predict(fit, test, type = "response")
     },
     ctree = {
-      fit <- partykit::ctree(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- partykit::ctree(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     grf_llf = {
@@ -301,11 +302,11 @@ if (task %in% c("cla", "classification")) {
       predict(fit, test_mat)$predictions
     },
     earth = {
-      fit <- earth::earth(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- earth::earth(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     mboost = {
-      fit <- mboost::blackboost(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- mboost::blackboost(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     ranger = {

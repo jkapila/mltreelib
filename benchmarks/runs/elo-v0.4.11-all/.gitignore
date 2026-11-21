@@ -1,0 +1,14 @@
+/corrected/elo_data/*_train.csv
+/corrected/elo_data/*_test.csv
+/diamonds-peers/work/
+/diamonds-peers/phase.lock
+/diamonds-peers/legacy-source-path
+/diamonds-peers/continue-peers.sh
+/diamonds-peers/finish-peers.sh
+/diamonds-peers/corrected_reg_field.csv
+/diamonds-peers/corrected_overall.md
+/preflight-*
+/original-*
+/frozen_overall.md
+/comparison_historical*
+/comparison_rerun.md
