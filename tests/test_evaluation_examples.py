@@ -1,7 +1,7 @@
 """Check the math used by the survival and uplift evaluation examples."""
+from math import isclose
 from pathlib import Path
 from runpy import run_path
-from math import isclose
 
 example = run_path(str(Path(__file__).parents[1] / "examples/survival_uplift_evaluation.py"))
 ipcw_brier = example["ipcw_brier"]

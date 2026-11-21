@@ -2,10 +2,10 @@
 
 `ModelTree` decouples tree growth from leaf modeling and provides rich 0D statistical profiles across terminal nodes:
 
-1. **Two-Control Structure**:
-   - `ModelTree`: Governs greedy tree partitioning, stopping, and pruning.
-   - `LeafControl`: Encapsulates leaf model family, regression kind, penalties, and local slope constraints.
-   - Inject `control=LeafControl(...)` directly into `ModelTree(...)` to prevent parameter bloat.
+1. **Model configuration**:
+   - `GrowthControl` configures split search, stopping, and pruning.
+   - `LeafControl` configures the leaf form, family, solver, penalties, and local slope constraints.
+   - Pass each control to `ModelTree` as an object or a dictionary.
 2. **Rich 0D Formulations**:
    - Produce exact 0D statistics across leaves: `prob`, `odds`, `log_odds`, `majority_class`, `var`, `skew`, `kurtosis`, `median`, `mad`, `iqr`, `entropy`, `gini`, `zero_fraction`, `dispersion`.
    - Access directly via `leaf["stats"]` or `tree.leaf_stats()`.
@@ -19,19 +19,22 @@
 5. **Interaction Groups with Column Names**:
    - Restrict root-to-leaf paths using semantic column names (e.g. `interaction_groups=[["age", "income"], ["city_tier"]]`).
 
-Script: [`examples/two_controls_and_0d_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/two_controls_and_0d_showcase.py) (`python examples/two_controls_and_0d_showcase.py`).
+Run the [full example](https://github.com/jkapila/mltreelib/blob/main/examples/two_controls_and_0d_showcase.py).
+
+```bash
+uv run python examples/two_controls_and_0d_showcase.py
+```
 
 ---
 
-## 1. Two-Control Architecture: `LeafControl`
+## 1. Configure growth and leaf controls
 
-Separate tree topology from leaf model complexity:
+Give the tree a global split constraint on the first feature. Give each local linear model slope constraints on both features.
 
 ```python
-from mltreelib import ModelTree, LeafControl
+from mltreelib import GrowthControl, LeafControl, ModelTree
 
-# Step 1: Configure leaf models independently
-leaf_ctrl = LeafControl(
+leaves = LeafControl(
     leaf="linear",
     leaf_family="gaussian",
     l1=0.0,
@@ -39,15 +42,16 @@ leaf_ctrl = LeafControl(
     leaf_monotone=[1, -1],  # local feature slope constraints
 )
 
-# Step 2: Configure tree partitioning and inject leaf controls
-model = ModelTree(
+growth = GrowthControl(
     max_depth=3,
     min_rows=10,
     tree_monotone=[1, 0],   # global split ordering
     col_weights=[2.0, 0.5], # feature split priorities
-    control=leaf_ctrl,
 )
+model = ModelTree(growth_control=growth, leaf_control=leaves)
 ```
+
+Use the [constructor examples](../reference/model.md#configure-growth-and-leaves) to pass the same settings through a configuration dictionary or flat keywords.
 
 ---
 

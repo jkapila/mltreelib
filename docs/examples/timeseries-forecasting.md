@@ -2,7 +2,7 @@
 
 This guide details `mltreelib`'s pure Rust time-feature engine—including entity-grouped calendar day lags, trailing rolling statistics, calendar cycles, and additive trend decomposition—evaluating out-of-time demand forecasting where piecewise linear model trees outperform standard CART step functions.
 
-Script: [`examples/timeseries_additive_forecasting.py`](https://github.com/jkapila/mltreelib/blob/main/examples/timeseries_additive_forecasting.py) (`uv run python examples/timeseries_additive_forecasting.py`).
+Script: [`examples/suites/timeseries_additive_forecasting.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/timeseries_additive_forecasting.py) (`uv run python examples/suites/timeseries_additive_forecasting.py`).
 
 ---
 

@@ -1,4 +1,3 @@
-import pytest
 from mltreelib import ModelTree
 from mltreelib._core import MarsRegressor
 

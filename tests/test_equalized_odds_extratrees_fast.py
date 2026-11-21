@@ -1,7 +1,8 @@
 """Tests for Equalized Odds fairness penalty, ExtraTrees randomized splits, and EBM FAST interaction screening."""
 
-import pytest
 import random
+
+import pytest
 from mltreelib import ModelTree, fast_interaction_screen
 
 

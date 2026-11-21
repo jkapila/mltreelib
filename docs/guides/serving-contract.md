@@ -1,6 +1,6 @@
 # Prepare a model for prediction
 
-This guide starts the deployment and schema workflow. It covers a fitted `ModelTree` in a running Python process. Persistence and cross-version compatibility need a separate implementation and contract check.
+Record the fitted model's prediction contract, then save the model and check predictions after reloading.
 
 ## Record the prediction contract
 
@@ -26,7 +26,7 @@ sequenceDiagram
     Client->>Guard: Submit Raw Record (JSON Payload)
     Note over Guard: Check required keys, field order, and valid types
     Guard->>Normalizer: Verified Named Features
-    Note over Normalizer: Map unobserved keys & NaNs to None; map unseen category levels to missing
+    Note over Normalizer: Treat unobserved keys, NaNs, and unseen category levels as missing
     Normalizer->>Core: Fast Vector Traversal [x1, x2, ..., xk]
     Note over Core: Traverse internal split nodes using learned missing_left and surrogates
     Core->>Leaf: Deliver to Terminal Leaf Node
@@ -61,6 +61,36 @@ print("Prediction:", model.predict([row])[0])
 
 Check types, units, ranges and batch sizes at the application boundary as well. The short example checks field names only. It does not provide a complete serving validator.
 
+## Persist a fitted model
+
+`ModelTree.save()` writes a versioned UTF-8 JSON file. `ModelTree.load()` restores the fitted tree, including the state used for inference.
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+expected = model.predict([row])
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "model.json"
+    model.save(path)
+    restored = ModelTree.load(path)
+    assert restored.predict([row]) == expected
+```
+
+Use `model.to_json()` and `ModelTree.from_json(text)` for JSON strings. Use `model.to_bytes()` and `ModelTree.from_bytes(data)` when the transport requires bytes. The bytes contain the same JSON encoded in UTF-8. Standard Python pickle uses the same model state.
+
+```python
+import pickle
+
+assert ModelTree.from_json(model.to_json()).predict([row]) == expected
+assert ModelTree.from_bytes(model.to_bytes()).predict([row]) == expected
+assert pickle.loads(pickle.dumps(model)).predict([row]) == expected
+```
+
+Persistence rejects Python callbacks in the model configuration. Keep the package version with each artifact and check predictions before upgrading the serving environment. Use `extract_rules()` for rule inspection and load pickle data only from trusted sources.
+
+The artifact contains the training rows and targets retained for neighbor adjustments. Apply the same access controls you use for training data.
+
 ## Checks before release
 
 1. Compare a known in-process prediction with the intended serving path.
@@ -73,7 +103,6 @@ The following gaps were reproduced in the current worktree and are tracked for i
 
 - A short or extra-long row was accepted in one test. Do not assume the model rejects a schema mismatch.
 - An unseen category routed differently from a missing category in a tested tree, despite the stated unseen-as-missing rule.
-- Python `pickle` raised `TypeError` for a fitted `ModelTree` in a test. A saved-model and reload contract needs implementation or a separately checked supported method.
 - `break_down` rejected a raw string category in a tested row, although `predict` accepted it.
 
 Do not present the checks above as complete deployment coverage. See the [data guide](data.md), [evaluation guide](evaluation.md), and [documentation audit](https://github.com/jkapila/mltreelib/tree/main/references/research) for further work.

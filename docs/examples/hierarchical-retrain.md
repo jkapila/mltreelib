@@ -6,9 +6,15 @@ Tree partitions carve heterogeneous feature spaces into homogeneous sub-populati
 2. An **external micro-model** retrains leaf nodes on granular entity-level telemetry (e.g. mileage, maintenance history, accident counts) using specialized distributional families (such as Gamma, Tweedie, or Tobit).
 3. Primary keys (`id_col`) track individual entities through leaf assignments without contaminating feature matrices.
 
+Run the suite from the repository root to compare leaf fits while keeping the split fixed.
+
+```sh
+uv run python examples/suites/stump_leaf_retrain.py
+```
+
 Scripts:
 - [`examples/hierarchical_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/hierarchical_leaf_retrain.py) — Macro cohort tree with micro telematics retrain.
-- [`examples/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/stump_leaf_retrain.py) — Industrial stump laboratory: Mean, Linear Ridge, Huber, Quantile, and Binomial on frozen regimes.
+- [`examples/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/stump_leaf_retrain.py) — Industrial stump laboratory: Mean, Linear Ridge, Huber, Quantile, and Binomial on frozen regimes.
 
 ![Stump Leaf Retrain](../assets/stump_leaf_retrain.png)
 

@@ -4,6 +4,22 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.11
+
+### Model controls and JSON persistence
+
+- Configure tree growth with `GrowthControl` and leaf fitting with `LeafControl`. Both accept structured options through `ModelTree`, and existing flat keywords still work.
+- Choose a compatible optimizer through `LeafControl(solver=...)`. Use `predict(kind=...)` for intervals, adjusted predictions, and class labels.
+- Save and reload fitted models as versioned JSON. The release supports `ModelTree`, predictive clustering trees (PCT), and extended isolation trees (EIF). Python pickle uses the same saved state.
+- Start from the guided example suites for regression, classification, survival, clustering, anomaly detection, and time series.
+- Install the mltreelib agent skill for task selection, runnable recipes, model evaluation, and serving guidance.
+
+```sh
+npx skills add jkapila/mltreelib --skill mltreelib
+```
+
+[Example suites](https://jkapila.github.io/mltreelib/examples/) · [Model persistence](https://jkapila.github.io/mltreelib/guides/serving-contract/) · [Agent skill](https://github.com/jkapila/mltreelib/tree/v0.4.11/skills/mltreelib) · [Changes](https://github.com/jkapila/mltreelib/compare/v0.4.10...v0.4.11)
+
 ## v0.4.10
 
 ### Frontier survival trees

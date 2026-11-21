@@ -1,5 +1,6 @@
 import pytest
-from mltreelib import ModelTree, LeafControl
+from mltreelib import LeafControl, ModelTree
+
 
 def test_preset_accurate():
     m = ModelTree(preset="accurate")

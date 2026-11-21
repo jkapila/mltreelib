@@ -1,5 +1,5 @@
-import pytest
 from mltreelib import LeafControl, ModelTree
+
 
 def test_leaf_control_solver_property():
     ctrl_default = LeafControl(leaf="linear")

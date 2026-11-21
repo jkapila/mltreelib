@@ -1,5 +1,5 @@
-import pytest
 from mltreelib import Metrics
+
 
 def test_metrics_uplift_report():
     m = Metrics()

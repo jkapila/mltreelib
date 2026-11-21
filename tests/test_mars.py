@@ -3,7 +3,6 @@ from mltreelib import MarsRegressor
 
 
 def test_mars_regressor_1d_hinge():
-    rng = np.random.default_rng(42)
     x = np.linspace(0.0, 10.0, 51)
     # y = 3.0 + 2.0 * max(0, x - 5.0)
     y = 3.0 + 2.0 * np.maximum(0.0, x - 5.0)
@@ -24,7 +23,6 @@ def test_mars_regressor_1d_hinge():
 
 
 def test_mars_regressor_2d_interaction():
-    rng = np.random.default_rng(123)
     grid_1d = np.linspace(0.0, 10.0, 21)
     X0, X1 = np.meshgrid(grid_1d, grid_1d)
     x0 = X0.ravel()
@@ -46,7 +44,6 @@ def test_mars_regressor_2d_interaction():
 
 def test_mars_linpreds_and_sample_weights():
     # x0 is linear, x1 is hinged
-    rng = np.random.default_rng(42)
     x0 = np.linspace(0.0, 5.0, 30)
     x1 = np.linspace(0.0, 5.0, 30)
     X0, X1 = np.meshgrid(x0, x1)

@@ -1,63 +1,34 @@
 # API reference — Model
 
-`ModelTree` — the tree: greedy splits by fitted-leaf SSE reduction, linear or
-mean leaves, NA-aware (learned split directions + NA-indicator leaf terms).
-Rust core is the source of truth; this page mirrors it.
+`ModelTree` finds partitions using the selected split criterion and fits a local model in each leaf. It supports raw categorical values and routes missing predictors through the fitted tree.
 
 ## Constructor
 
-```python
-ModelTree(
-    # Growth & stopping
-    max_depth=5, min_rows=50, minsplit=None, minbucket=None,
-    minprob=0.02, max_leaf_nodes=None, min_gain=1e-9, purity_gate=None,
-    # Search
-    gain=None, split_precision=0.001, split_cols=None,
-    col_sample=None, seed=42,
-    # Leaf & family (or pass control=LeafControl(...))
-    leaf="linear", leaf_family="gaussian", tau=0.5, l1=0.0, l2=0.5,
-    leaf_cols="all", leaf_digest=True,
-    control=None, leaf_control=None,
-    # Categorical
-    cat_order=None, cat_search="cumulative",
-    # Constraints & weights
-    tree_monotone=None, leaf_monotone=None, col_weights=None,
-    interaction_groups=None,
-    # Balance (grf)
-    alpha=0.0, imbalance_penalty=0.0,
-    # Pruning
-    prune="cp", cp_alpha=5.0,
-    # Honesty & surrogates
-    honesty=False, honesty_fraction=0.5, maxsurrogate=0,
-    # Significance gates (MOB)
-    split_test="none", split_alpha=0.05, bonferroni=False,
-    # Screening
-    preselect="none", min_relevance=None,
-    # Diagnostics
-    verbose=0,
-)
-```
+See the [generated API reference](api/model-tree.md) for the constructor signature and the [parameter reference](parameters.md) for available settings.
 
-### Two-Control Architecture: `LeafControl`
+### Configure growth and leaves
 
-Leaf models can be independently configured or retrained via `LeafControl`:
+Use `GrowthControl` for partitioning, stopping, and pruning. Use `LeafControl` for the models fitted inside those partitions.
 
 ```python
-from mltreelib import ModelTree, LeafControl
+from mltreelib import GrowthControl, LeafControl, ModelTree
 
-# Define leaf model controls separately:
-leaf_ctrl = LeafControl(
-    leaf="linear",           # "linear", "mean", "median", "quantile", "huber", "mars", "prob", "odds", "log_odds"
-    leaf_family="gaussian",   # "gaussian", "binomial", "poisson", "probit", "gamma", "tweedie", "tobit", "softmax"
-    l1=0.0, l2=1e-3,
-    leaf_cols="all",         # "all" or "path_used"
-    leaf_monotone=[1, -1],   # local slope sign constraints per feature
-    mars_degree=1, mars_terms=10,
+model = ModelTree(
+    growth_control=GrowthControl(max_depth=4, min_rows=8),
+    leaf_control=LeafControl(leaf="linear", solver="lbfgs", l2=0.01),
 )
 
-# Pass control directly to constructor without parameter bloat:
-model = ModelTree(max_depth=4, control=leaf_ctrl)
+from_config = ModelTree(
+    growth_control={"max_depth": 4, "min_rows": 8},
+    leaf_control={"leaf": "linear", "solver": "lbfgs", "l2": 0.01},
+)
+
+from_flat = ModelTree(max_depth=4, min_rows=8, leaf="linear", leaf_solver="lbfgs", l2=0.01)
 ```
+
+These calls show three ways to supply explicit settings. Dictionaries inherit the defaults of `ModelTree` for omitted keys. A typed `LeafControl` uses its own defaults. Existing flat keywords and the `control=` alias for `leaf_control=` are supported. Use `solver` inside a leaf control and `leaf_solver` in flat calls. Supply each setting once.
+
+The leaf model and family determine which solvers can fit it. The built-in linear and GLM paths offer the choices listed in the [parameter reference](parameters.md). Specialized leaves can use their own fitting methods. See [persist a fitted model](../guides/serving-contract.md#persist-a-fitted-model) for JSON, file, byte, and pickle examples.
 
 The gain family is **sample-weight aware end to end**: weighted class
 masses for entropy/gini/gain_ratio/twoing, weighted moments for sdr/SSE,

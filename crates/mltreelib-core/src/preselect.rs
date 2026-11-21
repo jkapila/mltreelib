@@ -89,7 +89,7 @@ pub fn select_columns(
 /// Selection only (feature engineering like EFB bundling belongs to
 /// [`crate::transform`]). Extensible like `gain` / `leaf`: `winnow`
 /// (univariate relevance), `boruta` (shadow comparison), …
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Preselect {
     /// No screening (default).
     None,

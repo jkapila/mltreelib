@@ -12,9 +12,10 @@
 use faer::prelude::*;
 
 /// A single factor: either a hinge function or a pure linear predictor.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct HingeFactor {
     pub feature: usize,
+    #[serde(with = "crate::persistence::float")]
     pub knot: f64,
     /// If true: max(0, x - knot); if false: max(0, knot - x).
     pub is_forward: bool,
@@ -68,7 +69,7 @@ impl HingeFactor {
 }
 
 /// A basis function: product of zero or more factors (empty = intercept 1.0).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BasisFunction {
     pub factors: Vec<HingeFactor>,
 }
@@ -103,7 +104,7 @@ impl BasisFunction {
 }
 
 /// GLM family for MARS model.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MarsGlmFamily {
     Gaussian,
     Binomial,
@@ -122,7 +123,7 @@ impl MarsGlmFamily {
 }
 
 /// Pruning method for MARS backward pass.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MarsPruningMethod {
     Backward,
     None,
@@ -142,15 +143,17 @@ impl MarsPruningMethod {
 }
 
 /// Parameters for training a MARS model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MarsParams {
     /// Maximum degree of interaction (1 = additive splines, 2 = pairwise interactions).
     pub degree: usize,
     /// Maximum number of basis terms in forward pass (including intercept).
     pub max_terms: usize,
     /// Generalized Cross Validation (GCV) penalty per knot parameter (typically 2.0 to 3.0).
+    #[serde(with = "crate::persistence::float")]
     pub penalty: f64,
     /// Forward pass stopping threshold: minimum RSS improvement fraction.
+    #[serde(with = "crate::persistence::float")]
     pub thresh: f64,
     /// Minimum observations between candidate knots (0 = automatic).
     pub minspan: usize,
@@ -190,12 +193,15 @@ impl Default for MarsParams {
 }
 
 /// Fitted Multivariate Adaptive Regression Splines model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MarsModel {
     pub params: MarsParams,
     pub basis: Vec<BasisFunction>,
+    #[serde(with = "crate::persistence::float")]
     pub coef: Vec<f64>,
+    #[serde(with = "crate::persistence::float")]
     pub rss: f64,
+    #[serde(with = "crate::persistence::float")]
     pub gcv: f64,
     pub n_train: usize,
     pub n_features: usize,

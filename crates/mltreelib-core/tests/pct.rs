@@ -44,6 +44,16 @@ fn test_pct_multi_target_variance_reduction() {
         assert_eq!(proto.len(), 2);
         println!("Cluster {}: rule '{}', size {}", cid, rule, size);
     }
+
+    let snapshot = pct.to_json().unwrap();
+    let restored = PredictiveClusteringTree::from_json(&snapshot).unwrap();
+    assert_eq!(restored.cluster_rules(), pct.cluster_rules());
+    assert_eq!(restored.predict_cluster(&[1.5]), cluster_a);
+    assert_eq!(restored.predict_prototype(&[11.5]), proto_b);
+
+    let mut damaged: serde_json::Value = serde_json::from_str(&snapshot).unwrap();
+    damaged["model"]["nodes"][0]["split_col"] = serde_json::json!(1);
+    assert!(PredictiveClusteringTree::from_json(&damaged.to_string()).is_err());
 }
 
 #[test]

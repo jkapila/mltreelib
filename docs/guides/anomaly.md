@@ -42,7 +42,8 @@ Standard Isolation Forests construct trees by sampling orthogonal, axis-aligned 
 You can evaluate on industrial telemetry using `load_dataset("APSFailure")` or the UCI Statlog Shuttle benchmark:
 
 ```python
-from mltreelib import AnomalyTree, Metrics, load_dataset
+from mltreelib import Metrics, load_dataset
+from mltreelib.anomaly import AnomalyTree
 
 # 1. Load industrial sensor telemetry
 data = load_dataset("APSFailure")
@@ -63,7 +64,7 @@ tree = AnomalyTree(kind="eif", max_depth=10, extension_level=1, seed=42)
 tree.fit(X_train, col_names=features)
 
 # 3. Score held-out telemetry
-scores = tree.score_samples(X_test)
+scores = tree.predict(X_test, kind="score")
 
 # 4. Allocate fixed 5% operational review budget
 budget = round(0.05 * len(scores))
@@ -78,6 +79,10 @@ print(f"Recall at Budget   : {hits / max(1, total_anomalies):.4f}")
 metrics = Metrics()
 print(f"ROC-AUC            : {metrics.roc_curve(y_test, scores)['auc']:.4f}")
 ```
+
+`kind="binary"` returns labels from the fitted threshold, and `kind="score"` returns the same scores as `score_samples()`. The extended isolation tree and its aliases also expose `kind="path_length"`.
+
+For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted threshold. Use `AnomalyTree.load("anomalies.json")` to restore scoring and labels. The [API reference](../reference/api/anomaly.md) lists the JSON and byte methods.
 
 ---
 

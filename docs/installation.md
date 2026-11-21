@@ -1,7 +1,6 @@
 # Installation
 
-mltreelib is a Python package with a Rust core — one wheel; pulls `pyarrow>=14`
-(required runtime dependency).
+Install mltreelib as a Python wheel with a Rust core. Model fitting and inference require no additional Python packages.
 
 ## From PyPI
 
@@ -23,18 +22,27 @@ Building from source needs a Rust toolchain ([rustup](https://rustup.rs)) and
 ```bash
 git clone https://github.com/jkapila/mltreelib
 cd mltreelib
-uv run maturin develop --release   # builds the Rust core into your environment with release optimizations
+uv sync --group dev
+uv run maturin develop --release
 ```
 
 ## Verify the install
 
 ```bash
-uv run python -c "from mltreelib import ModelTree; print(ModelTree())"
+python -c "import mltreelib; print(mltreelib.__version__)"
 ```
 
-An unfitted tree refuses to print its structure (by design); the call should
-raise `ValueError: ModelTree is not fitted`. Fit anything and `print(model)`
-shows the rpart-style tree.
+If you use uv, run the command with `uv run python`. Continue to the [quickstart](quickstart.md) to fit and inspect your first tree.
+
+## Dataset loading (optional extra)
+
+Install the dataset extra to read the package's Parquet datasets.
+
+```bash
+pip install "mltreelib[dataset]"
+# or
+uv add "mltreelib[dataset]"
+```
 
 ## Plotting (optional extra)
 
@@ -42,7 +50,7 @@ Charts and diagrams ride on the standard rendering wheels — install them
 only when you build figures:
 
 ```bash
-pip install mltreelib[plotting]     # matplotlib + pygraphviz + seaborn
+pip install "mltreelib[plotting]"   # matplotlib + pygraphviz + seaborn
 # or
 uv sync --extra plotting
 ```

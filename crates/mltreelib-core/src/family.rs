@@ -18,7 +18,7 @@ pub fn std_norm_inv_cdf(p: f64) -> f64 {
     std::f64::consts::SQRT_2 * statrs::function::erf::erf_inv(2.0 * p_clamped - 1.0)
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum LeafFamily {
     #[default]
     Gaussian,

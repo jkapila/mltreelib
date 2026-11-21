@@ -33,7 +33,7 @@ def cohort_micro_data():
 
 
 def test_retrain_control_dict(cohort_micro_data):
-    x, y, _, col_names = cohort_micro_data
+    x, y, _, _col_names = cohort_micro_data
     # Fit initial tree on macro features
     tree = ModelTree(max_depth=1, min_rows=10, leaf="mean", prune="none")
     tree.fit([r[:2] for r in x], y)
@@ -55,7 +55,7 @@ def test_retrain_control_dict(cohort_micro_data):
 
 
 def test_retrain_mode_external_vs_internal(cohort_micro_data):
-    x, y, _, col_names = cohort_micro_data
+    x, y, _, _col_names = cohort_micro_data
     # Base macro tree with constant mean leaves
     tree = ModelTree(max_depth=1, min_rows=10, leaf="mean", prune="none")
     tree.fit([r[:2] for r in x], y)
@@ -142,7 +142,7 @@ def test_retrain_split_column_validation():
 
 
 def test_leaf_samples_id_col(cohort_micro_data):
-    x, y, vins, col_names = cohort_micro_data
+    x, y, vins, _col_names = cohort_micro_data
     tree = ModelTree(max_depth=1, min_rows=10, leaf="mean", prune="none")
     tree.fit([r[:2] for r in x], y)
 

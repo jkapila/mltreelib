@@ -16,18 +16,18 @@ pub(crate) fn beats(gain: f64, best: f64) -> bool {
     gain > best * (1.0 + 1e-12)
 }
 /// Kernel kind for Maximum Mean Discrepancy (MMD) splitting.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum KernelKind {
     /// Radial Basis Function (Gaussian) kernel: exp(-||x - y||^2 / (2 * sigma^2)).
     Rbf,
     /// Linear kernel: <x, y>.
     Linear,
     /// Polynomial kernel: (<x, y> + c)^degree.
-    Polynomial { degree: usize, c: f64 },
+    Polynomial { degree: usize, #[serde(with = "crate::persistence::float")] c: f64 },
 }
 
 /// Weighting schemes for two-sample log-rank tests (Spec 10).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum LogRankWeight {
     /// Standard Mantel-Haenszel / Peto log-rank test (equal weights w_j = 1.0).
     Standard,
@@ -40,6 +40,7 @@ pub enum LogRankWeight {
 /// Split-quality criterion. Built-ins run the O(1) stats scan where the
 /// math allows (`Sse`, `FriedmanMse`); the rest see lazy (y, w) slices per
 /// candidate. All criteria are sample-weight aware.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum GainFn {
     /// Variance reduction (weighted sum of squares). The regression default.
     Sse,
@@ -94,13 +95,13 @@ pub enum GainFn {
     /// Parametric Accelerated Failure Time (AFT) deviance reduction (Chen et al. 2020).
     AftDeviance,
     /// Tweedie unit quasi-deviance reduction for 1 < p < 2 zero-inflated continuous data.
-    Tweedie { p: f64 },
+    Tweedie { #[serde(with = "crate::persistence::float")] p: f64 },
     /// Dual-parameter Gaussian negative log-likelihood deviance reduction:
     /// detects variance breaks even when means are identical.
     Heteroscedastic,
     /// Censored continuous regression hurdle gain combining binary classification
     /// of non-zero/censored indicator with Gaussian deviance on positive slice.
-    Tobit { threshold: f64 },
+    Tobit { #[serde(with = "crate::persistence::float")] threshold: f64 },
     /// Coefficient of variation reduction: CV(P) - [w_l/w * CV(L) + w_r/w * CV(R)].
     Cv,
     /// Survival martingale residual variance reduction: SSE reduction on M_i.
@@ -120,7 +121,7 @@ pub enum GainFn {
     /// maximizes two-sample RKHS distance between child target distributions:
     /// (w_l * w_r / (w_l + w_r)) * [E[k(Y_l, Y_l')] + E[k(Y_r, Y_r')] - 2 E[k(Y_l, Y_r)]].
     /// Distinguishes complex multi-modal and covariance differences with characteristic kernels.
-    Mmd { kernel: KernelKind, bandwidth: f64 },
+    Mmd { kernel: KernelKind, #[serde(with = "crate::persistence::float")] bandwidth: f64 },
     /// Wasserstein-2 optimal transport metric splitting (Villani 2003, Agueh & Carlier 2011):
     /// maximizes Wasserstein-2 Fréchet dispersion reduction across distribution targets Y in R^D
     /// or scalar distributions: (w_l * w_r / (w_l + w_r)) * W_2^2(barycenter_l, barycenter_r).
@@ -130,7 +131,7 @@ pub enum GainFn {
     /// BaseGain(L, R) - lambda * scale * |P(S=1 | L) - P(S=1 | R)|.
     FairConstrained {
         base_gain: Box<GainFn>,
-        lambda: f64,
+        #[serde(with = "crate::persistence::float")] lambda: f64,
         protected_col: usize,
     },
     /// Hellinger distance splitting (Cieslak & Chawla 2008):
@@ -144,6 +145,7 @@ pub enum GainFn {
     /// User criterion. Receives lazy `(y, w)` slices of the two sides per
     /// candidate split and returns the split quality (higher = better).
     /// Pinball/quantile losses and anything exotic live here.
+    #[serde(skip)]
     Custom(std::sync::Arc<dyn CustomGain>),
 }
 

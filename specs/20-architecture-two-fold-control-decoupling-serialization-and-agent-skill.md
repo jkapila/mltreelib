@@ -1,10 +1,10 @@
 # Spec 20: Modular Control Architecture (GrowthControl & LeafControl), Leaf/Solver Decoupling, Native Serialization & Agent Skill
 
-Status: ready-for-agent
+Status: implemented for ModelTree and the default unsupervised engines. Native snapshots for other unsupervised engines remain open.
 
 ## Problem Statement
 
-As `mltreelib` has grown across 19 specifications—incorporating frontier survival models, exotic split metrics, causal trees, distributional families, and unsupervised algorithms—the user-facing interface faces five major structural friction points:
+As `mltreelib` has grown across 19 specifications, six areas of the public interface need clearer contracts.
 
 1. **Parameter Explosion and Control Conflation**: The root `ModelTree` constructor has ballooned into an unwieldy flat bag of over 70 parameters. Tree topology controls (`max_depth`, `min_rows`, `gain`, `col_sample`, `extratrees`, `honesty`) are tangled with leaf estimation details (`leaf_solver`, `l1`, `l2`, `tweedie_p`, `tobit_threshold`, `mars_degree`, `aft_dist`, `cure_fraction`, `spline_knots`, `knn_k`). Users cannot tell which parameters govern tree growth versus leaf estimation, or where custom knobs should be passed.
 2. **Coupling of Leaf Types to Solvers**: Leaf modeling forms (constant, linear, polynomial, spline, hurdle) are conceptually orthogonal to the optimization solver used to fit them (IRLS, L-BFGS, Coordinate Descent, evolutionary algorithms like SHADE/CMA-ES). Currently, certain leaf types are implicitly coupled or assumed to use specific solvers, preventing users from pairing arbitrary leaf representations with specialized numerical optimizers.
@@ -26,8 +26,9 @@ Refactor and formalize the architecture into a clean, modular, and production-re
      - Causal & honesty: `honesty`, `honesty_fraction`.
      - Pruning & stopping: `prune`, `cp_alpha`, `purity_gate`, `purity_gate_metric`, `min_gain`.
      - Routing & constraints: `cat_search`, `cat_order`, `maxsurrogate`, `tree_monotone`.
+     - Classification target shape: `n_classes`. The resolved class count is available to splitting and leaf fitting. The old flat and fit inputs remain valid.
    - **`LeafControl` (Leaf Modeling & Optimization)**: Encapsulates all terminal leaf behavior:
-     - Leaf functional kind: `leaf` (Constant, Linear, Huber, Quantile, Mars, AFT).
+     - Leaf functional kind: `leaf` (constant, linear, Huber, quantile, MARS, or KNN).
      - Optimization solver: `solver` (Faer/IRLS, L-BFGS, CCD, SHADE, CMA-ES, GA, NES).
      - Distribution / Loss family: `family` (Gaussian, Binomial, Poisson, Tweedie, AFT, Cure, Spline).
      - Regularization: `l1`, `l2`, `tau`.
@@ -45,8 +46,8 @@ Refactor and formalize the architecture into a clean, modular, and production-re
 5. **Canonical Unified `predict(..., kind=...)` Interface**:
    - Standardize `predict(X, kind=...)` as the universal inference engine supporting `"response"`, `"proba"`, `"interval"`, `"adjusted"`, `"survival"`, `"hazard"`, `"cif"`, `"risk"`, and `"uplift"`. Deprecate legacy auxiliary methods into thin convenience aliases or retire them cleanly.
 6. **High-Performance Model Serialization**:
-   - Implement native zero-copy binary serialization (`to_bytes()` and `from_bytes()`) and disk persistence (`save(path)` and `ModelTree.load(path)`) using portable, version-tagged binary encoding (Bincode / JSON state).
-   - Implement standard Python `__getstate__` and `__setstate__` protocols so all models are natively picklable via standard Python `pickle`.
+   - Use a versioned Rust JSON document as the model format. Provide text, UTF-8 bytes, and file entry points.
+   - Let Python pickle use the same JSON state. Keep rule export as a separate inspection feature.
 7. **Comprehensive `mltreelib` Agent Skill**:
    - Create a specialized agent skill (`skills/mltreelib/SKILL.md`) that guides agents through task classification, parameter selection, modular control configuration, training, evaluation, rule extraction, and diagnostic plotting across all seven modeling pathways.
 
@@ -63,9 +64,9 @@ Refactor and formalize the architecture into a clean, modular, and production-re
 8. As an API user, I want the parameter catalog documentation to clearly tag every parameter with its scope (`[Growth Control]`, `[Leaf Control]`, or `[Fit Data]`), so that I instantly know where and how to supply each setting.
 
 ### Leaf Type & Solver Decoupling
-9. As a quantitative researcher, I want to pair a linear leaf model with an evolutionary solver (`LeafControl(leaf="linear", solver="shade")`), so that I can optimize leaf coefficients on non-convex or discontinuous objective functions.
-10. As a biostatistician, I want to pair an AFT leaf with L-BFGS or IRLS (`LeafControl(leaf="aft", solver="lbfgs")`), so that parametric survival curves converge rapidly via analytic gradients.
-11. As a machine learning engineer, I want to pair a Huber robust leaf with Coordinate Descent (`LeafControl(leaf="huber", solver="ccd")`), so that I achieve exact sparse coefficients resistant to heavy-tailed outliers.
+9. As a quantitative researcher, I want to use SHADE for Gaussian linear leaves with `LeafControl(leaf="linear", solver="shade")`.
+10. As a biostatistician, I want to use L-BFGS or IRLS for a supported GLM leaf and retain the built-in estimator for AFT survival leaves.
+11. As a machine learning engineer, I want coordinate descent for sparse Gaussian linear leaves and the built-in robust location estimator for Huber leaves.
 12. As a developer, I want clear validation errors when an incompatible leaf and solver combination is requested (e.g., closed-form Cholesky on a non-linear neural leaf), so that invalid configurations fail fast with actionable guidance.
 
 ### Centralized Unsupervised Class Identity
@@ -82,10 +83,10 @@ Refactor and formalize the architecture into a clean, modular, and production-re
 21. As an API caller, I want `tree.predict(X, kind="...")` to throw an informative `ValueError` listing all valid `kind` options for the fitted model when an invalid kind is supplied.
 
 ### Model Persistence & Serialization
-22. As an MLOps engineer, I want `tree.save("model.mltree")` and `ModelTree.load("model.mltree")`, so that I can persist trained models to disk and reload them in a production scoring service.
+22. As an MLOps engineer, I want `tree.save("model.json")` and `ModelTree.load("model.json")`, so that I can reload a trained model in a scoring service.
 23. As a pipeline author, I want `pickle.dump(tree, f)` and `pickle.load(f)` to work seamlessly, so that `mltreelib` models integrate natively with Python multiprocessing, joblib, and standard caching frameworks.
 24. As an edge device developer, I want `tree.to_bytes()` and `ModelTree.from_bytes(data)`, so that model states can be transferred across network sockets or stored in binary databases without touching the filesystem.
-25. As a systems engineer, I want serialized model binaries to include a schema version header, so that future engine upgrades detect and gracefully migrate or reject incompatible serialized artifacts.
+25. As a systems engineer, I want model JSON to include a schema version so an incompatible reader can reject it with a clear error.
 26. As a quality engineer, I want deserialized models to produce bitwise identical predictions and rule sets compared to the pre-serialization model instance across all prediction kinds.
 
 ### Agent Skill
@@ -110,7 +111,9 @@ Refactor and formalize the architecture into a clean, modular, and production-re
 - The leaf optimization engine will separate the leaf parameter representation from the optimization solver.
 - Leaf representations define the model equation and parameter vector (e.g. Constant, Linear, Polynomial, AFT, Hurdle).
 - Leaf solvers define the numerical optimization algorithm (e.g. Analytic Cholesky/Faer, Iteratively Reweighted Least Squares, L-BFGS Quasi-Newton, Coordinate Descent, or Evolutionary Strategy).
-- The engine will validate compatibility upon initialization. Solvers requiring smooth gradients will verify that the chosen leaf family provides analytic or numerical score functions; derivative-free solvers will operate on any evaluable loss function.
+- Validate explicit `solver` choices against the fitting path. Gaussian linear leaves support all seven existing choices. Binomial, probit, Poisson, Gamma, Tweedie, and Tobit linear leaves support IRLS and L-BFGS. L-BFGS requires zero L1 and no monotone leaf constraints. Other leaf forms keep their family-specific estimators.
+- Use `LeafControl(solver=..., family=...)` and accept the legacy names `leaf_solver` and `leaf_family`. A nested dictionary supplies overrides of the tree defaults. Typed `LeafControl` retains its own defaults. Passing the same effective values gives the same fit.
+- Standalone fitting, new optimizers, and broader objective support are planned in [Spec 21](21-standalone-solvers-and-benchmarks.md).
 
 ### Decision 3: First-Class Python Namespace Reorganization
 - Unsupervised models will be organized into dedicated public modules:
@@ -129,18 +132,17 @@ Refactor and formalize the architecture into a clean, modular, and production-re
   - Clustering: `"cluster"`, `"distances"`.
 - Legacy methods (`predict_proba`, `predict_interval`, `predict_adjusted`, `predict_label`, `predict_uplift`) will be marked as legacy convenience wrappers that delegate directly to `predict(..., kind=...)`.
 
-### Decision 5: Serialization Architecture & Binary Format
-- Serialization will operate via Rust `serde` and `bincode` (with an optional JSON export mode).
-- The binary format will include:
-  - A magic byte header (`MLTREE\x01`).
-  - An engine version tag.
-  - Serialized tree topology, split conditions, categorical index mappings, and leaf parameters.
-- In Python, `ModelTree`, `ClusterTree`, and `AnomalyTree` will implement:
+### Decision 5: Portable JSON Model Format
+- Rust owns serialization and deserialization. Python and future R bindings use the same versioned UTF-8 JSON format.
+- Store topology, split conditions, categorical level mappings, fitted leaf parameters, and state required by supported prediction kinds. Preserve finite floating-point values exactly. Reject unknown schema versions, invalid state, and Python callbacks.
+- Support fitted `ModelTree` artifacts and the default engines of the unsupervised facades. These are PCT for `ClusterTree` and EIF for `AnomalyTree`. Other unsupervised engines still need native fitted-state readers.
+- Python `ModelTree` exposes the following methods. PCT and EIF provide the same methods on their Python facades.
   - `save(filepath: str | Path)`
-  - `@classmethod load(filepath: str | Path) -> Model`
+  - `load(filepath: str | Path) -> ModelTree`
+  - `to_json() -> str` and `from_json(data: str) -> ModelTree`
   - `to_bytes() -> bytes`
-  - `@classmethod from_bytes(data: bytes) -> Model`
-  - `__getstate__()` and `__setstate__()` using `to_bytes()` and `from_bytes()` to enable standard Python `pickle.dump()` and `pickle.load()`.
+  - `from_bytes(data: bytes) -> ModelTree`
+  - Standard Python pickle over the same document. Use the JSON APIs for interchange and keep rule export for inspecting the model.
 
 ### Decision 6: Dedicated Agent Skill Architecture
 - A comprehensive skill definition will be authored at `skills/mltreelib/SKILL.md`.
@@ -171,8 +173,8 @@ Refactor and formalize the architecture into a clean, modular, and production-re
   Verify that standard `pickle.dumps(model)` and `pickle.loads(data)` execute without error and preserve model state across all target families.
 - **Unsupervised API Testing**:
   Test `ClusterTree` and `AnomalyTree` with explicit constructor parameters, verifying `fit()`, `predict()`, `labels_`, `n_clusters_`, and `rules()` output.
-- **Deprecation and Warning Verification**:
-  Assert that passing legacy flat leaf parameters emits appropriate `FutureWarning` notices without halting execution.
+- **Compatibility**:
+  Check that legacy flat kwargs and prediction helpers still work through their existing entry points.
 
 ## Out of Scope
 

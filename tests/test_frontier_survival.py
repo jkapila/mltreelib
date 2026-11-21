@@ -23,14 +23,15 @@ Validates:
 """
 
 import math
+
 import pytest
 from mltreelib import (
-    ModelTree,
     Metrics,
+    ModelTree,
+    competing_risks_calibration,
     d_calibration,
     integrated_calibration_index,
     one_calibration,
-    competing_risks_calibration,
 )
 
 

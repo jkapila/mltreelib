@@ -41,6 +41,17 @@ fn test_eif_tree_categorical_and_numeric() {
     let outlier_path = eif.path_length(&[100.0, 0.0]);
     assert!(outlier_path < cluster_path, "Outlier isolates faster than cluster points");
     assert!(eif.anomaly_score(&[100.0, 0.0]) > eif.anomaly_score(&[1.5, 1.0]));
+
+    let snapshot = eif.to_json().unwrap();
+    let restored = ExtendedIsolationTree::from_json(&snapshot).unwrap();
+    for row in &data {
+        assert_eq!(restored.path_length(row), eif.path_length(row));
+        assert_eq!(restored.anomaly_score(row), eif.anomaly_score(row));
+    }
+
+    let mut damaged: serde_json::Value = serde_json::from_str(&snapshot).unwrap();
+    damaged["model"]["nodes"][0]["left_child"] = serde_json::json!(0);
+    assert!(ExtendedIsolationTree::from_json(&damaged.to_string()).is_err());
 }
 
 #[test]

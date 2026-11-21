@@ -331,10 +331,8 @@ impl ClTree {
 
         // Support check: if strictly outside initial bounds, it's noise
         for (j, &(lo, hi)) in self.bounds.iter().enumerate() {
-            if j < row.len() && !row[j].is_nan() {
-                if row[j] < lo || row[j] > hi {
-                    return None;
-                }
+            if j < row.len() && !row[j].is_nan() && (row[j] < lo || row[j] > hi) {
+                return None;
             }
         }
 

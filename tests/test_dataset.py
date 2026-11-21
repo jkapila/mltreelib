@@ -410,6 +410,7 @@ def test_encoding_demo_runs():
     script = Path(__file__).resolve().parents[1] / "examples" / "encoding_demo.py"
     proc = subprocess.run(
         [sys.executable, str(script), "churn"],
+        check=False,
         capture_output=True,
         text=True,
         timeout=300,
@@ -472,6 +473,7 @@ def test_demo_script_runs():
         pytest.skip("demo script not present")
     proc = subprocess.run(
         [sys.executable, str(script), "blood-transfusion-service-center"],
+        check=False,
         capture_output=True,
         text=True,
         timeout=300,

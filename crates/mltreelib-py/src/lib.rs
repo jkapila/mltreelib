@@ -3,7 +3,7 @@
 
 use pyo3::exceptions::{PyAttributeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyModule, PyModuleMethods};
+use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
@@ -16,7 +16,7 @@ use mltreelib_core::frame::{Column, Dataset};
 use mltreelib_core::criteria::{CustomGain, GainFn, LogRankWeight};
 use mltreelib_core::family::LeafFamily;
 use mltreelib_core::gate::SplitTest;
-use mltreelib_core::leaf::{LeafCols, LeafKind};
+use mltreelib_core::leaf::{LeafCols, LeafKind, LeafSolver};
 use mltreelib_core::model_tree::{ModelTree, ModelTreeParams, PurityMetric};
 use mltreelib_core::prune::PruneCost;
 use mltreelib_core::split::{CatOrder, CatSearch, ColType, SplitEval};
@@ -2413,6 +2413,58 @@ fn parse_feature_indices(
     Ok(indices)
 }
 
+fn parse_leaf_solver(name: &str) -> PyResult<LeafSolver> {
+    match name {
+        "irls" => Ok(LeafSolver::Irls),
+        "lbfgs" => Ok(LeafSolver::Lbfgs),
+        "ccd" => Ok(LeafSolver::Ccd),
+        "cmaes" | "cma_es" => Ok(LeafSolver::CmaEs),
+        "shade" | "de" => Ok(LeafSolver::Shade),
+        "nes" | "snes" | "natural_gradient" => Ok(LeafSolver::NaturalGradient),
+        "ga" | "rcga" | "genetic" => Ok(LeafSolver::GeneticAlgorithm),
+        other => Err(PyValueError::new_err(format!(
+            "solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other:?}"
+        ))),
+    }
+}
+
+fn leaf_solver_name(solver: LeafSolver) -> &'static str {
+    match solver {
+        LeafSolver::Irls => "irls",
+        LeafSolver::Lbfgs => "lbfgs",
+        LeafSolver::Ccd => "ccd",
+        LeafSolver::CmaEs => "cmaes",
+        LeafSolver::Shade => "shade",
+        LeafSolver::NaturalGradient => "nes",
+        LeafSolver::GeneticAlgorithm => "ga",
+    }
+}
+
+fn select_alias<'a>(
+    canonical: Option<&'a str>,
+    legacy: Option<&'a str>,
+    name: &str,
+) -> PyResult<Option<&'a str>> {
+    if let (Some(_), Some(_)) = (canonical, legacy) {
+        return Err(PyValueError::new_err(format!(
+            "Supply either {name} or leaf_{name}"
+        )));
+    }
+    Ok(canonical.or(legacy))
+}
+
+fn inherit_leaf_inputs(
+    mut control: mltreelib_core::leaf::LeafControl,
+    params: &ModelTreeParams,
+) -> mltreelib_core::leaf::LeafControl {
+    control.events = control.events.or_else(|| params.events.clone());
+    control.treatments = control.treatments.or_else(|| params.treatments.clone());
+    if control.leaf_monotone.is_empty() {
+        control.leaf_monotone.clone_from(&params.leaf_monotone);
+    }
+    control
+}
+
 fn extract_leaf_control<'py>(
     _py: Python<'py>,
     control: Option<Bound<'py, PyAny>>,
@@ -2488,6 +2540,14 @@ fn extract_leaf_control<'py>(
                             )))
                         }
                     };
+                }
+                let solver = dict.get_item("solver")?;
+                let legacy_solver = dict.get_item("leaf_solver")?;
+                if solver.is_some() && legacy_solver.is_some() {
+                    return Err(PyValueError::new_err("Supply either solver or leaf_solver"));
+                }
+                if let Some(item) = solver.or(legacy_solver) {
+                    c.solver = parse_leaf_solver(item.extract::<&str>()?)?;
                 }
                 if let Some(item) = dict.get_item("leaf_cols")? {
                     let s = item.extract::<String>()?;
@@ -2679,6 +2739,11 @@ fn extract_leaf_control<'py>(
     if let Some(ref feat_obj) = leaf_features_arg {
         ctrl.leaf_features = Some(parse_feature_indices(feat_obj, effective_col_names)?);
     }
+    if let Some(dict) = control.as_ref().and_then(|obj| obj.cast::<PyDict>().ok()) {
+        if dict.contains("solver")? {
+            ctrl.validate_solver().map_err(PyValueError::new_err)?;
+        }
+    }
 
     Ok(ctrl)
 }
@@ -2706,8 +2771,8 @@ impl PyLeafControl {
     #[new]
     #[pyo3(signature = (
         leaf = "linear",
-        leaf_family = "gaussian",
-        leaf_solver = "irls",
+        leaf_family = None,
+        leaf_solver = None,
         leaf_cols = "all",
         l1 = 0.0,
         l2 = 1e-3,
@@ -2735,12 +2800,12 @@ impl PyLeafControl {
         leaf_na_policy = "drop_fallback",
         aft_dist = "weibull",
         cure_fraction = None,
-        spline_knots = 3
+        spline_knots = 3, *, family = None, solver = None
     ))]
     fn new(
         leaf: &str,
-        leaf_family: &str,
-        leaf_solver: &str,
+        leaf_family: Option<&str>,
+        leaf_solver: Option<&str>,
         leaf_cols: &str,
         l1: f64,
         l2: f64,
@@ -2769,7 +2834,12 @@ impl PyLeafControl {
         aft_dist: &str,
         cure_fraction: Option<f64>,
         spline_knots: usize,
+        family: Option<&str>,
+        solver: Option<&str>,
     ) -> PyResult<Self> {
+        let strict_solver = solver.is_some();
+        let leaf_solver = select_alias(solver, leaf_solver, "solver")?;
+        let leaf_family = select_alias(family, leaf_family, "family")?.unwrap_or("gaussian");
         let kind = match leaf {
             "linear" => LeafKind::Linear,
             "mean" => LeafKind::Mean,
@@ -2804,16 +2874,7 @@ impl PyLeafControl {
             "spline" => LeafFamily::Spline,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
-        let solver = match leaf_solver {
-            "irls" => mltreelib_core::leaf::LeafSolver::Irls,
-            "lbfgs" => mltreelib_core::leaf::LeafSolver::Lbfgs,
-            "ccd" => mltreelib_core::leaf::LeafSolver::Ccd,
-            "cmaes" | "cma_es" => mltreelib_core::leaf::LeafSolver::CmaEs,
-            "shade" | "de" => mltreelib_core::leaf::LeafSolver::Shade,
-            "nes" | "snes" | "natural_gradient" => mltreelib_core::leaf::LeafSolver::NaturalGradient,
-            "ga" | "rcga" | "genetic" => mltreelib_core::leaf::LeafSolver::GeneticAlgorithm,
-            other => return Err(PyValueError::new_err(format!("unrecognized leaf_solver '{other}'"))),
-        };
+        let solver = parse_leaf_solver(leaf_solver.unwrap_or("irls"))?;
         let leaf_na_policy_enum = match leaf_na_policy {
             "drop_fallback" | "drop" | "fallback" => mltreelib_core::leaf::LeafNaPolicy::DropFallback,
             "impute_local" | "impute" | "local" => mltreelib_core::leaf::LeafNaPolicy::ImputeLocal,
@@ -2834,7 +2895,7 @@ impl PyLeafControl {
             "loglogistic" | "log_logistic" => mltreelib_core::node_stats::AftDist::LogLogistic,
             other => return Err(PyValueError::new_err(format!("unrecognized aft_dist '{other}', expected 'weibull', 'lognormal', or 'loglogistic'"))),
         };
-        Ok(Self {
+        let control = Self {
             inner: mltreelib_core::leaf::LeafControl {
                 leaf: kind,
                 solver,
@@ -2869,7 +2930,11 @@ impl PyLeafControl {
                 cure_fraction,
                 spline_knots,
             },
-        })
+        };
+        if strict_solver {
+            control.inner.validate_solver().map_err(PyValueError::new_err)?;
+        }
+        Ok(control)
     }
 
     #[getter]
@@ -2909,15 +2974,17 @@ impl PyLeafControl {
 
     #[getter]
     fn get_leaf_solver(&self) -> String {
-        match self.inner.solver {
-            mltreelib_core::leaf::LeafSolver::Irls => "irls".to_string(),
-            mltreelib_core::leaf::LeafSolver::Lbfgs => "lbfgs".to_string(),
-            mltreelib_core::leaf::LeafSolver::Ccd => "ccd".to_string(),
-            mltreelib_core::leaf::LeafSolver::CmaEs => "cmaes".to_string(),
-            mltreelib_core::leaf::LeafSolver::Shade => "shade".to_string(),
-            mltreelib_core::leaf::LeafSolver::NaturalGradient => "nes".to_string(),
-            mltreelib_core::leaf::LeafSolver::GeneticAlgorithm => "ga".to_string(),
-        }
+        leaf_solver_name(self.inner.solver).to_string()
+    }
+
+    #[getter]
+    fn solver(&self) -> String {
+        self.get_leaf_solver()
+    }
+
+    #[getter]
+    fn family(&self) -> String {
+        self.get_leaf_family()
     }
 
     #[getter]
@@ -3214,7 +3281,7 @@ impl PyRuleSet {
 /// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
-#[pyclass(name = "ModelTree")]
+#[pyclass(name = "ModelTree", module = "mltreelib._core")]
 #[derive(Clone)]
 pub struct PyModelTree {
     params: ModelTreeParams,
@@ -3231,6 +3298,27 @@ impl PyModelTree {
         self.inner
             .as_ref()
             .ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))
+    }
+
+    fn from_fitted_tree(tree: ModelTree) -> Self {
+        let vocabs = tree
+            .category_levels
+            .iter()
+            .map(|levels| levels.as_ref().map(|levels| levels.clone().into_iter().collect()))
+            .collect();
+        Self {
+            params: tree.params.clone(),
+            inner: Some(tree),
+            vocabs,
+            interaction_group_names: None,
+        }
+    }
+}
+
+fn model_persistence_error(error: mltreelib_core::PersistenceError) -> PyErr {
+    match error {
+        mltreelib_core::PersistenceError::Io(error) => error.into(),
+        other => PyValueError::new_err(other.to_string()),
     }
 }
 
@@ -3397,6 +3485,30 @@ impl PyModelTree {
     ///
     /// Returns: the model tree; call `.fit()` next.
     #[new]
+    #[pyo3(
+        signature = (*args, **kwargs),
+        text_signature = "(*args, growth_control=None, leaf_control=None, **kwargs)"
+    )]
+    fn new(
+        py: Python<'_>,
+        args: &Bound<'_, PyTuple>,
+        kwargs: Option<&Bound<'_, PyDict>>,
+    ) -> PyResult<Py<Self>> {
+        let factory = py.get_type::<Self>().getattr("_from_flat")?;
+        if kwargs.is_none() {
+            return Ok(factory.call1(args)?.cast_into::<Self>()?.unbind());
+        }
+        let options = py
+            .import("mltreelib._controls")?
+            .getattr("_normalize_model_options")?
+            .call1((&factory, args, kwargs))?;
+        Ok(factory
+            .call(args, Some(options.cast::<PyDict>()?))?
+            .cast_into::<Self>()?
+            .unbind())
+    }
+
+    #[staticmethod]
     #[pyo3(signature = (
         max_depth = 6, min_rows = 15, minsplit = None, minbucket = None,
         minprob = 0.02, max_leaf_nodes = None, min_gain = 1e-9, purity_gate = None,
@@ -3414,7 +3526,7 @@ impl PyModelTree {
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
         preselect = "none", min_relevance = None,
-        verbose = 0, leaf_family = "gaussian", leaf_solver = "lbfgs", split_eval = "fast",
+        verbose = 0, leaf_family = None, leaf_solver = None, split_eval = "fast",
         presort = false, events = None, treatments = None, train_groups = true, train_ids = false, n_classes = None,
         tweedie_p = 1.5, tobit_threshold = 0.0,
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
@@ -3427,9 +3539,10 @@ impl PyModelTree {
         sporf_d = 0, sporf_projections = 10,
         extratrees = false, ebm_fast = false,
         target_cause = 1,
-        aft_dist = "weibull", cure_fraction = None, spline_knots = 3
+        aft_dist = "weibull", cure_fraction = None, spline_knots = 3, *,
+        family = None, solver = None
     ))]
-    fn new(
+    fn _from_flat(
         max_depth: usize,
         min_rows: usize,
         minsplit: Option<usize>,
@@ -3471,8 +3584,8 @@ impl PyModelTree {
         preselect: &str,
         min_relevance: Option<f64>,
         verbose: u8,
-        leaf_family: &str,
-        leaf_solver: &str,
+        leaf_family: Option<&str>,
+        leaf_solver: Option<&str>,
         split_eval: &str,
         presort: bool,
         events: Option<Vec<f64>>,
@@ -3510,7 +3623,12 @@ impl PyModelTree {
         aft_dist: &str,
         cure_fraction: Option<f64>,
         spline_knots: usize,
+        family: Option<&str>,
+        solver: Option<&str>,
     ) -> PyResult<Self> {
+        let strict_solver = solver.is_some();
+        let leaf_solver = select_alias(solver, leaf_solver, "solver")?;
+        let leaf_family = select_alias(family, leaf_family, "family")?.unwrap_or("gaussian");
         let mut max_depth = max_depth;
         let mut min_rows = min_rows;
         let mut shrinkage = shrinkage;
@@ -3563,7 +3681,7 @@ impl PyModelTree {
         }
         let policy = match leaf_cols {
             "all" => LeafCols::All,
-            "path" => LeafCols::PathUsed,
+            "path" | "path_used" => LeafCols::PathUsed,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_cols must be 'all' or 'path', got {other}"
@@ -3608,18 +3726,9 @@ impl PyModelTree {
             }
         };
         let leaf_solver_enum = match leaf_solver {
-            "irls" => mltreelib_core::leaf::LeafSolver::Irls,
-            "lbfgs" => mltreelib_core::leaf::LeafSolver::Lbfgs,
-            "ccd" => mltreelib_core::leaf::LeafSolver::Ccd,
-            "cmaes" | "cma_es" => mltreelib_core::leaf::LeafSolver::CmaEs,
-            "shade" | "de" => mltreelib_core::leaf::LeafSolver::Shade,
-            "nes" | "snes" | "natural_gradient" => mltreelib_core::leaf::LeafSolver::NaturalGradient,
-            "ga" | "rcga" | "genetic" => mltreelib_core::leaf::LeafSolver::GeneticAlgorithm,
-            other => {
-                return Err(PyValueError::new_err(format!(
-                    "leaf_solver must be 'irls', 'lbfgs', 'ccd', 'cmaes', 'shade', 'nes', or 'ga', got {other}"
-                )))
-            }
+            Some(name) => parse_leaf_solver(name)?,
+            None if family == LeafFamily::Gaussian => LeafSolver::Irls,
+            None => LeafSolver::Lbfgs,
         };
         let leaf_na_policy_enum = match leaf_na_policy {
             "drop_fallback" | "drop" | "fallback" => mltreelib_core::leaf::LeafNaPolicy::DropFallback,
@@ -3908,37 +4017,13 @@ impl PyModelTree {
                 None,
                 &[],
             )?;
-            params.leaf = ctrl.leaf;
-            params.leaf_family = ctrl.family;
-            params.leaf_cols = ctrl.leaf_cols;
-            params.l1 = ctrl.l1;
-            params.l2 = ctrl.l2;
-            params.leaf_digest = ctrl.leaf_digest;
-            params.knn_k = ctrl.knn_k;
-            params.knn_k_validity = ctrl.knn_k_validity;
-            params.knn_variant = ctrl.knn_variant;
-            params.knn_metric = ctrl.knn_metric;
-            params.knn_gamma = ctrl.knn_gamma;
-            params.knn_p = ctrl.knn_p;
-            params.shrinkage = ctrl.shrinkage;
-            params.max_classes = ctrl.max_classes;
-            if !ctrl.leaf_monotone.is_empty() {
-                params.leaf_monotone = ctrl.leaf_monotone;
-            }
-            if ctrl.events.is_some() {
-                params.events = ctrl.events;
-            }
-            if ctrl.n_classes.is_some() {
-                params.n_classes = ctrl.n_classes;
-            }
-            params.mars_degree = ctrl.mars_degree;
-            params.mars_terms = ctrl.mars_terms;
-            params.mars_penalty = ctrl.mars_penalty;
-            params.tweedie_p = ctrl.tweedie_p;
-            params.tobit_threshold = ctrl.tobit_threshold;
-            params.aft_dist = ctrl.aft_dist;
-            params.cure_fraction = ctrl.cure_fraction;
-            params.spline_knots = ctrl.spline_knots;
+            params.n_classes = params.n_classes.or(ctrl.n_classes);
+            params.apply_leaf_control(inherit_leaf_inputs(ctrl, &params));
+        }
+        if strict_solver {
+            mltreelib_core::leaf::LeafControl::from(&params)
+                .validate_solver()
+                .map_err(PyValueError::new_err)?;
         }
         Ok(Self {
             params,
@@ -4153,18 +4238,9 @@ impl PyModelTree {
                 None,
                 &[],
             )?;
-            self.params.leaf = ctrl.leaf;
-            self.params.leaf_family = ctrl.family;
-            self.params.leaf_cols = ctrl.leaf_cols;
-            self.params.l1 = ctrl.l1;
-            self.params.l2 = ctrl.l2;
-            self.params.leaf_digest = ctrl.leaf_digest;
-            if ctrl.events.is_some() {
-                self.params.events = ctrl.events;
-            }
-            if ctrl.n_classes.is_some() {
-                self.params.n_classes = ctrl.n_classes;
-            }
+            self.params.n_classes = self.params.n_classes.or(ctrl.n_classes);
+            self.params
+                .apply_leaf_control(inherit_leaf_inputs(ctrl, &self.params));
         }
         if let Some(dts) = dtypes {
             self.params.dtypes = dts
@@ -4190,8 +4266,13 @@ impl PyModelTree {
             )));
         }
         let weights = effective_w.unwrap_or_else(|| vec![1.0; x.len()]);
-        let tree = ModelTree::fit_weighted_named(names, &x, &y_vec, &weights, self.params.clone())
+        let mut tree = ModelTree::fit_weighted_named(names, &x, &y_vec, &weights, self.params.clone())
             .map_err(PyValueError::new_err)?;
+        tree.category_levels = self
+            .vocabs
+            .iter()
+            .map(|levels| levels.as_ref().map(|levels| levels.clone().into_iter().collect()))
+            .collect();
 
         self.inner = Some(tree);
         Ok(())
@@ -4311,28 +4392,17 @@ impl PyModelTree {
                 if events_vec.is_some() {
                     ctrl.events = events_vec.clone();
                 }
-                if n_classes.is_some() {
-                    ctrl.n_classes = n_classes;
-                }
+                ctrl.n_classes = n_classes.or(b.params.n_classes).or(ctrl.n_classes);
                 let mut vocabs = b.vocabs.clone();
                 let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
                 let mut new_tree = b.clone();
                 new_tree.vocabs = vocabs;
                 (new_tree, data_col_names, coerced_x, ctrl)
             };
-            {
-                let t = new_tree.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
-                t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl.clone())
-                    .map_err(PyValueError::new_err)?;
-            }
-            new_tree.params.leaf = ctrl.leaf;
-            new_tree.params.leaf_family = ctrl.family;
-            new_tree.params.leaf_cols = ctrl.leaf_cols;
-            new_tree.params.l1 = ctrl.l1;
-            new_tree.params.l2 = ctrl.l2;
-            new_tree.params.leaf_digest = ctrl.leaf_digest;
-            new_tree.params.events = ctrl.events;
-            new_tree.params.n_classes = ctrl.n_classes;
+            let t = new_tree.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
+            t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl)
+                .map_err(PyValueError::new_err)?;
+            new_tree.params = t.params.clone();
             Py::new(slf.py(), new_tree)
         } else {
             let (data_col_names, coerced_x, vocabs, ctrl) = {
@@ -4359,27 +4429,18 @@ impl PyModelTree {
                 if events_vec.is_some() {
                     ctrl.events = events_vec.clone();
                 }
-                if n_classes.is_some() {
-                    ctrl.n_classes = n_classes;
-                }
+                ctrl.n_classes = n_classes.or(b.params.n_classes).or(ctrl.n_classes);
                 let mut vocabs = b.vocabs.clone();
                 let coerced_x = coerce_rows(x, &b.params.dtypes, &mut vocabs, false)?;
                 (data_col_names, coerced_x, vocabs, ctrl)
             };
             {
                 let mut b = slf.borrow_mut();
-                b.vocabs = vocabs;
                 let t = b.inner.as_mut().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
-                t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl.clone())
+                t.retrain_weighted_named(&data_col_names, &coerced_x, &y_vec, &w_vec, ctrl)
                     .map_err(PyValueError::new_err)?;
-                b.params.leaf = ctrl.leaf;
-                b.params.leaf_family = ctrl.family;
-                b.params.leaf_cols = ctrl.leaf_cols;
-                b.params.l1 = ctrl.l1;
-                b.params.l2 = ctrl.l2;
-                b.params.leaf_digest = ctrl.leaf_digest;
-                b.params.events = ctrl.events;
-                b.params.n_classes = ctrl.n_classes;
+                b.params = t.params.clone();
+                b.vocabs = vocabs;
             }
             Ok(slf.clone().unbind())
         }
@@ -4413,6 +4474,55 @@ impl PyModelTree {
         Ok(self.tree()?.trace.clone())
     }
 
+    /// Serialize the fitted model as versioned JSON.
+    fn to_json(&self) -> PyResult<String> {
+        self.tree()?.to_json().map_err(model_persistence_error)
+    }
+
+    /// Restore a fitted model from versioned JSON.
+    #[staticmethod]
+    fn from_json(data: &str) -> PyResult<Self> {
+        ModelTree::from_json(data)
+            .map(Self::from_fitted_tree)
+            .map_err(model_persistence_error)
+    }
+
+    /// Serialize the fitted model as UTF-8 JSON bytes.
+    fn to_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let data = self.tree()?.to_bytes().map_err(model_persistence_error)?;
+        Ok(PyBytes::new(py, &data))
+    }
+
+    /// Restore a fitted model from UTF-8 JSON bytes.
+    #[staticmethod]
+    fn from_bytes(data: &[u8]) -> PyResult<Self> {
+        ModelTree::from_bytes(data)
+            .map(Self::from_fitted_tree)
+            .map_err(model_persistence_error)
+    }
+
+    /// Save the fitted model to a UTF-8 JSON file.
+    fn save(&self, path: std::path::PathBuf) -> PyResult<()> {
+        self.tree()?.save(path).map_err(model_persistence_error)
+    }
+
+    /// Load a fitted model from a UTF-8 JSON file.
+    #[staticmethod]
+    fn load(path: std::path::PathBuf) -> PyResult<Self> {
+        ModelTree::load(path)
+            .map(Self::from_fitted_tree)
+            .map_err(model_persistence_error)
+    }
+
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        self.to_bytes(py)
+    }
+
+    fn __setstate__(&mut self, state: &[u8]) -> PyResult<()> {
+        *self = Self::from_bytes(state)?;
+        Ok(())
+    }
+
     /// Predict with flexible output kinds:
     ///   kind="response" (default): expected value / class / median survival time.
     ///   kind="proba": class probabilities ((N, C) matrix for Softmax, 1D float list for Binomial/Probit).
@@ -4422,7 +4532,10 @@ impl PyModelTree {
     ///   kind="cif": F_c(t) cumulative incidence function for cause over times grid.
     ///   kind="risk": predicted risk score (higher score = shorter expected survival / higher risk).
     ///   kind="leaf_id": integer leaf ID per row.
-    #[pyo3(signature = (x, kind = "response", times = None, neighbors = None, cause = None))]
+    #[pyo3(signature = (
+        x, kind = "response", times = None, neighbors = None, cause = None,
+        *, coverage = None, alpha = None, threshold = 0.5
+    ))]
     fn predict<'py>(
         &mut self,
         py: Python<'py>,
@@ -4431,6 +4544,9 @@ impl PyModelTree {
         times: Option<Vec<f64>>,
         neighbors: Option<usize>,
         cause: Option<usize>,
+        coverage: Option<f64>,
+        alpha: Option<f64>,
+        threshold: f64,
     ) -> PyResult<Py<PyAny>> {
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
@@ -4448,6 +4564,19 @@ impl PyModelTree {
                 };
                 preds.into_py_any(py)
             }
+            "adjusted" => t.predict_adjusted(&x, neighbors.unwrap_or(5)).into_py_any(py),
+            "interval" => {
+                if coverage.is_some() && alpha.is_some() {
+                    return Err(PyValueError::new_err("Supply either coverage or alpha"));
+                }
+                let coverage = coverage.or_else(|| alpha.map(|alpha| 1.0 - alpha)).unwrap_or(0.90);
+                t.predict_interval(&x, coverage)
+                    .map_err(PyValueError::new_err)?
+                    .into_py_any(py)
+            }
+            "label" => t.predict_label(&x, threshold)
+                .map_err(PyValueError::new_err)?
+                .into_py_any(py),
             "vector" => {
                 let vecs = t.predict_vector(&x).ok_or_else(|| PyValueError::new_err("ModelTree has no vector predictions (was not fitted on vector targets)"))?;
                 vecs.into_py_any(py)
@@ -4613,9 +4742,31 @@ impl PyModelTree {
                 let ids = t.apply(&x);
                 ids.into_py_any(py)
             }
-            other => Err(PyValueError::new_err(format!(
-                "unrecognized prediction kind '{other}': expected 'response', 'proba', 'dist', 'survival', 'hazard', 'cif', 'risk', 'uplift', 'vector', or 'leaf_id'"
-            ))),
+            other => {
+                let mut kinds = vec!["response", "interval", "adjusted", "odds", "log_odds", "median", "stats", "leaf_id"];
+                if t.params.target_vectors.is_some() {
+                    kinds.push("vector");
+                }
+                if t.params.treatments.is_some() {
+                    kinds.extend(["uplift", "cate"]);
+                }
+                match t.params.leaf_family {
+                    LeafFamily::Binomial | LeafFamily::Probit => kinds.extend(["proba", "label"]),
+                    LeafFamily::Softmax => kinds.push("proba"),
+                    LeafFamily::Heteroscedastic => kinds.push("dist"),
+                    LeafFamily::Survival | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
+                        kinds.extend(["survival", "hazard", "cif", "risk"]);
+                    }
+                    _ if matches!(t.params.leaf, LeafKind::Prob | LeafKind::Odds | LeafKind::LogOdds) => {
+                        kinds.push("proba");
+                    }
+                    _ => {}
+                }
+                Err(PyValueError::new_err(format!(
+                    "unrecognized prediction kind {other:?}; available kinds: {}",
+                    kinds.join(", ")
+                )))
+            }
         }
     }
 
@@ -4638,7 +4789,7 @@ impl PyModelTree {
         py: Python<'py>,
         x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
     ) -> PyResult<Py<PyAny>> {
-        self.predict(py, x, Some("proba"), None, None, None)
+        self.predict(py, x, Some("proba"), None, None, None, None, None, 0.5)
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -5347,6 +5498,7 @@ impl PyModelTree {
         )?;
         d.set_item("l1", self.params.l1)?;
         d.set_item("l2", self.params.l2)?;
+        d.set_item("leaf_solver", leaf_solver_name(self.params.leaf_solver))?;
         d.set_item(
             "leaf_cols",
             match self.params.leaf_cols {
@@ -5684,6 +5836,26 @@ pub struct PyExtendedIsolationTree {
     vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
 }
 
+fn check_unsupervised_vocabs(
+    vocabs: &[Option<std::collections::HashMap<String, f64>>],
+    dtypes: &[ColType],
+) -> PyResult<()> {
+    if vocabs.len() != dtypes.len()
+        || vocabs.iter().zip(dtypes).any(|(vocab, dtype)| {
+            vocab.as_ref().is_some_and(|map| {
+                *dtype != ColType::Categorical
+                    || map.values().any(|code| {
+                        !code.is_finite() || *code < 0.0 || *code >= map.len() as f64
+                            || code.fract() != 0.0
+                    })
+            })
+        })
+    {
+        return Err(PyValueError::new_err("invalid model category vocabulary"));
+    }
+    Ok(())
+}
+
 #[pymethods]
 impl PyExtendedIsolationTree {
     #[new]
@@ -5702,6 +5874,19 @@ impl PyExtendedIsolationTree {
             inner: eif,
             vocabs: Vec::new(),
         }
+    }
+
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        let data = self.inner.to_json().map_err(|err| PyValueError::new_err(err.to_string()))?;
+        Ok((data, self.vocabs.clone()))
+    }
+
+    #[staticmethod]
+    fn _from_snapshot(data: &str, vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        let inner = mltreelib_core::anomaly::ExtendedIsolationTree::from_json(data)
+            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        check_unsupervised_vocabs(&vocabs, &inner.dtypes)?;
+        Ok(Self { inner, vocabs })
     }
 
     #[pyo3(signature = (x, col_names=None, dtypes=None))]
@@ -5751,6 +5936,9 @@ impl PyExtendedIsolationTree {
     }
 
     fn path_length(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        if x.first().is_some_and(|row| row.len() != self.inner.dtypes.len()) {
+            return Err(PyValueError::new_err("x width must match fitted isolation tree"));
+        }
         let mut vocabs = self.vocabs.clone();
         let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
         let data: Vec<Vec<f64>> = coerced
@@ -5761,6 +5949,9 @@ impl PyExtendedIsolationTree {
     }
 
     fn anomaly_score(&self, x: Vec<Vec<Option<Bound<'_, PyAny>>>>) -> PyResult<Vec<f64>> {
+        if x.first().is_some_and(|row| row.len() != self.inner.dtypes.len()) {
+            return Err(PyValueError::new_err("x width must match fitted isolation tree"));
+        }
         let mut vocabs = self.vocabs.clone();
         let coerced = coerce_rows(x, &self.inner.dtypes, &mut vocabs, false)?;
         let data: Vec<Vec<f64>> = coerced
@@ -6077,6 +6268,25 @@ impl PyPredictiveClusteringTree {
         }
     }
 
+    fn _snapshot(&self) -> PyResult<(String, Vec<Option<std::collections::HashMap<String, f64>>>)> {
+        let data = self.inner.to_json().map_err(|err| PyValueError::new_err(err.to_string()))?;
+        Ok((data, self.vocabs.clone()))
+    }
+
+    #[staticmethod]
+    fn _from_snapshot(data: &str, vocabs: Vec<Option<std::collections::HashMap<String, f64>>>) -> PyResult<Self> {
+        let inner = mltreelib_core::cluster::PredictiveClusteringTree::from_json(data)
+            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        check_unsupervised_vocabs(&vocabs, &inner.dtypes)?;
+        let dtypes = inner.dtypes.clone();
+        Ok(Self { inner, dtypes, vocabs })
+    }
+
+    #[getter]
+    fn _snapshot_rows(&self) -> usize {
+        self.inner.nodes.first().map_or(0, |node| node.size)
+    }
+
     #[pyo3(signature = (x, y=None, col_names=None, dtypes=None, target_names=None))]
     fn fit(
         &mut self,
@@ -6353,6 +6563,14 @@ impl PyUnsupervisedProximityForest {
 
     fn pairwise_distances(&self) -> Vec<Vec<f64>> {
         self.inner.pairwise_distances()
+    }
+
+    fn predict(&self, data: Vec<Vec<f64>>) -> Vec<usize> {
+        self.inner.predict(&data)
+    }
+
+    fn distances(&self, data: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+        self.inner.distances(&data)
     }
 
     #[getter]

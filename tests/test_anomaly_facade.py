@@ -1,6 +1,7 @@
 import pytest
 from mltreelib import AnomalyTree, ClusterTree
 
+
 def test_anomaly_tree_context_surprise():
     ct = AnomalyTree(kind="context", max_depth=3)
     ct.fit([[1, 2, 3, 4, 1, 2, 3, 4]])
@@ -18,7 +19,7 @@ def test_anomaly_tree_context_surprise():
 def test_anomaly_tree_active_feedback():
     at = AnomalyTree(kind="active", max_depth=4)
     at.fit([[1.0, 2.0], [1.1, 2.1], [10.0, 10.0]])
-    scores_before = at.score_samples([[10.0, 10.0]])
+    at.score_samples([[10.0, 10.0]])
     at.feedback([10.0, 10.0], is_anomaly=True, eta=0.5)
     scores_after = at.score_samples([[10.0, 10.0]])
     assert len(scores_after) == 1

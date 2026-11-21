@@ -1,5 +1,6 @@
 from mltreelib import ModelTree
 
+
 def test_unseen_categorical_level_maps_to_missing_without_explosion():
     # Train on categories 'A' and 'B'
     xtr = [

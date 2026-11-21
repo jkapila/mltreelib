@@ -19,6 +19,15 @@ monotone & interaction constraints.
 - 51 TabArena-v0.1 benchmark datasets on board, plus a generator whose knobs
   control how much signal lives in group and hierarchy structure
 
+The canonical suite is documented in the [dataset manifest](benchmarks/datasets.md).
+Use it to find each dataset's target, size, license, and OpenML source before
+running a benchmark.
+
+!!! tip "Optional agent skill"
+    Install the repository skill separately from the Python package:
+    `npx skills add jkapila/mltreelib --skill mltreelib`. See the
+    [public skill source](https://github.com/jkapila/mltreelib/tree/main/skills/mltreelib).
+
 <p align="center">
   <img src="assets/quickstart_tree_vs_flat.png" alt="ModelTree Piecewise Linear vs CART Step Function" width="96%">
 </p>

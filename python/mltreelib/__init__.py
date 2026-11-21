@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING
 
+from mltreelib._controls import GrowthControl
 from mltreelib._core import (
     HDBSCAN,
     ActiveAnomalyTree,
@@ -108,8 +109,6 @@ __all__ = [
     "CLTree",
     "CatBoostEncoder",
     "ClusterTree",
-    "distributions_to_quantiles",
-    "histograms_to_quantiles",
     "ContextAnomalyTree",
     "CountEncoder",
     "DatasetBuilder",
@@ -118,6 +117,7 @@ __all__ = [
     "ExtendedIsolationTree",
     "GritBot",
     "GroupedScaler",
+    "GrowthControl",
     "HalfSpaceTree",
     "HashingEncoder",
     "IndexMapper",
@@ -145,12 +145,14 @@ __all__ = [
     "competing_risks_calibration",
     "competing_risks_report",
     "d_calibration",
-    "decomposed_transform",
     "dataset_path",
+    "decomposed_transform",
+    "distributions_to_quantiles",
     "fast_interaction_screen",
     "generate",
     "grouped_scale",
     "grouped_transform",
+    "histograms_to_quantiles",
     "integrated_calibration_index",
     "lag_by_days",
     "list_datasets",
@@ -162,4 +164,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.4.10"
+__version__ = "0.4.11"

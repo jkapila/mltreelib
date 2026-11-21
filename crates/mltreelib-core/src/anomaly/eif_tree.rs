@@ -9,18 +9,23 @@
 //! allowing categorical dimensions to participate natively in oblique hyperplanes.
 
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
 use crate::split::ColType;
 
 /// A split in an Extended Isolation Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IsolationSplit {
     /// Oblique hyperplane cut:
     ///   Σ_{j ∈ Cont} (n_j * x_j) + Σ_{c ∈ Cat} (cat_weights[c][x_c]) <= threshold
     Oblique {
         cont_cols: Vec<usize>,
+        #[serde(with = "crate::persistence::float")]
         cont_weights: Vec<f64>,
         cat_cols: Vec<usize>,
         cat_weights: Vec<HashMap<u64, f64>>,
+        #[serde(with = "crate::persistence::float")]
         threshold: f64,
         missing_left: bool,
     },
@@ -81,7 +86,7 @@ impl IsolationSplit {
 }
 
 /// A node in the Extended Isolation Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IsolationNode {
     pub is_leaf: bool,
     pub split: Option<IsolationSplit>,
@@ -94,7 +99,7 @@ pub struct IsolationNode {
 }
 
 /// Extended Isolation Tree estimator (single base tree).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExtendedIsolationTree {
     /// Maximum tree height (default: ceil(log2(max(n, 2)))).
     pub max_depth: Option<usize>,
@@ -475,7 +480,7 @@ pub fn expected_path_length(n: usize) -> f64 {
         1.0
     } else {
         let n_f = n as f64;
-        let euler_gamma = 0.5772156649015328606;
+        let euler_gamma = 0.577_215_664_901_532_9;
         2.0 * ((n_f - 1.0).ln() + euler_gamma) - (2.0 * (n_f - 1.0) / n_f)
     }
 }

@@ -15,7 +15,7 @@
 use crate::family::LeafFamily;
 
 /// The weighting variant for KNN inference and neighbor contribution.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum KnnVariant {
     /// Equal weight for all k neighbors.
     #[default]
@@ -57,7 +57,7 @@ impl KnnVariant {
 }
 
 /// Distance metric used to calculate pairwise proximity between samples.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum DistanceMetric {
     /// Standard L2 norm: sqrt(sum (x_j - z_j)^2).
     Euclidean,
@@ -66,7 +66,7 @@ pub enum DistanceMetric {
     /// L_infinity norm: max |x_j - z_j|.
     Chebyshev,
     /// General Minkowski norm with power p: (sum |x_j - z_j|^p)^(1/p).
-    Minkowski(f64),
+    Minkowski(#[serde(with = "crate::persistence::float")] f64),
     /// Cosine distance: 1 - (x . z) / (|x| |z|).
     Cosine,
     /// Pearson correlation distance: 1 - r(x, z).
@@ -320,21 +320,27 @@ pub fn compute_distance(
 }
 
 /// Leaf-resident KNN model instance containing partitioned samples and precomputed weights.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LeafKnnModel {
     /// Active predictor column indices in the original frame.
     pub chosen_cols: Vec<usize>,
     /// Sample feature vectors in this leaf: [N_L, P_chosen].
+    #[serde(with = "crate::persistence::float")]
     pub samples: Vec<Vec<Option<f64>>>,
     /// Target values: continuous for regression, integer class for classification.
+    #[serde(with = "crate::persistence::float")]
     pub targets: Vec<f64>,
     /// Observation weights.
+    #[serde(with = "crate::persistence::float")]
     pub weights: Vec<f64>,
     /// Precomputed neighbor reliability / validity scores v_i for DW-KNN (in [0, 1]).
+    #[serde(with = "crate::persistence::float")]
     pub validity_scores: Vec<f64>,
     /// Precomputed compactness scores for Dual-Weighted KNN.
+    #[serde(with = "crate::persistence::float")]
     pub compactness_scores: Vec<f64>,
     /// Per-feature scales (range for Gower, variance for Mahalanobis).
+    #[serde(with = "crate::persistence::float")]
     pub feature_scales: Vec<f64>,
     /// Number of nearest neighbors to query at test time.
     pub k: usize,
@@ -345,12 +351,16 @@ pub struct LeafKnnModel {
     /// Proximity metric.
     pub metric: DistanceMetric,
     /// Exponential decay parameter gamma. None => auto-scale by inverse median distance.
+    #[serde(with = "crate::persistence::float")]
     pub gamma: Option<f64>,
     /// Power parameter p for inverse distance / Minkowski.
+    #[serde(with = "crate::persistence::float")]
     pub p: f64,
     /// Fallback mean / mode when leaf sample count is tiny.
+    #[serde(with = "crate::persistence::float")]
     pub fallback_mean: f64,
     /// Fallback empirical class probabilities.
+    #[serde(with = "crate::persistence::float")]
     pub fallback_probs: Vec<f64>,
     /// Number of distinct classes for classification tasks.
     pub n_classes: usize,
