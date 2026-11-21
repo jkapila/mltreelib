@@ -22,10 +22,7 @@ struct Evaluation {
 }
 
 /// Evaluates candidates in order and keeps the best one.
-fn evaluate_candidates(
-    objective: &dyn Objective,
-    candidates: &[Vec<f64>],
-) -> Evaluation {
+fn evaluate_candidates(objective: &dyn Objective, candidates: &[Vec<f64>]) -> Evaluation {
     let mut best_x = Vec::new();
     let mut best_value = f64::INFINITY;
 
@@ -87,13 +84,15 @@ fn uniform_point(rng: &mut ChaCha8Rng, bounds: &Bounds) -> Vec<f64> {
         .lower()
         .iter()
         .zip(bounds.upper().iter())
-        .map(|(&lo, &hi)| {
-            if hi > lo {
-                rng.gen_range(lo..hi)
-            } else {
-                lo
-            }
-        })
+        .map(
+            |(&lo, &hi)| {
+                if hi > lo {
+                    rng.gen_range(lo..hi)
+                } else {
+                    lo
+                }
+            },
+        )
         .collect()
 }
 
