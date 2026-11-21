@@ -58,7 +58,10 @@ The result reports:
 | `message` | Failure detail when the run did not succeed. |
 
 The API reference page [Solvers & optimization](../reference/api/solvers/)
-holds the exact signatures and docstrings.
+holds the exact signatures and docstrings. Rust callers use the same contracts
+from `mltreelib_core::generic`; the
+[Rust generic seam](../reference/api/rust-generic/) page lists every type,
+trait, and function with its doc comment.
 
 ## Statuses
 

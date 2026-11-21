@@ -105,6 +105,7 @@ nav = [
     { "Encoders & scalers" = "reference/api/encoders.md" },
     { "Feature functions" = "reference/api/features.md" },
     { "Solvers & optimization" = "reference/api/solvers.md" },
+    { "Rust generic seam" = "reference/api/rust-generic.md" },
     { "Data guide" = "reference/data.md" },
     { "Model guide" = "reference/model.md" },
     { "Metrics guide" = "reference/metrics.md" },

@@ -18,3 +18,4 @@ code. Narrative guides with verified examples:
 | [Clustering trees](cluster/) | ClusterTree, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
 | [Anomaly & density trees](anomaly/) | AnomalyTree, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |
 | [Solvers & optimization](solvers/) | FitResult, OptimizationResult | fit, optimize |
+| [Rust generic seam](rust-generic/) | Rust core seam | — |

@@ -179,6 +179,170 @@ def emit_fn(buf, name, fn):
         buf.append(doc + "\n\n")
 
 
+CORE_GENERIC = Path("crates/mltreelib-core/src/solver/generic")
+
+RUST_PAGE = "rust-generic.md"
+
+RUST_BLURB = (
+    "The Rust core owns the shared optimization seam. Python callers reach it "
+    "through `mltreelib.solvers.optimize`. Guide: "
+    "[Generic optimizer](../../examples/generic-optimizer.md)."
+)
+
+
+def clean_doc(lines):
+    """Join doc-comment lines into paragraphs."""
+    paragraphs = []
+    current = []
+    for line in lines:
+        if line:
+            current.append(line)
+        elif current:
+            paragraphs.append(" ".join(current))
+            current = []
+    if current:
+        paragraphs.append(" ".join(current))
+    return "\n\n".join(paragraphs)
+
+
+def method_entries(lines, header_index, type_name, prefix):
+    """Collect documented methods inside one trait or impl block."""
+    entries = []
+    doc = []
+    depth = 1
+    index = header_index + 1
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        if stripped.startswith("///"):
+            doc.append(stripped[3:].strip())
+            index += 1
+            continue
+        indent = len(line) - len(line.lstrip())
+        if depth == 1 and indent == 4 and stripped.startswith(prefix):
+            signature = stripped
+            while not (signature.rstrip().endswith(";") or signature.rstrip().endswith("{")):
+                index += 1
+                if index >= len(lines):
+                    break
+                signature += " " + lines[index].strip()
+            name = (
+                signature.split("(")[0]
+                .replace("pub fn ", "")
+                .replace("fn ", "")
+                .strip()
+            )
+            entries.append((f"{type_name}.{name}", signature, clean_doc(doc)))
+            doc = []
+            index += 1
+            continue
+        depth += line.count("{") - line.count("}")
+        if depth <= 0:
+            break
+        if stripped and not stripped.startswith("//"):
+            doc = []
+        index += 1
+    return entries
+
+
+def rust_items(path):
+    """Extract public items with their doc comments from one Rust source file."""
+    lines = path.read_text().splitlines()
+    entries = []
+    doc = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        if stripped.startswith("///"):
+            doc.append(stripped[3:].strip())
+            index += 1
+            continue
+        if stripped.startswith("#["):
+            index += 1
+            continue
+        if line.startswith(("pub ", "impl ")):
+            header = stripped
+            while not header.rstrip().endswith(("{", ";", "}")):
+                index += 1
+                if index >= len(lines):
+                    break
+                header += " " + lines[index].strip()
+            parts = header.split()
+            if parts[0] == "impl":
+                if " for " in header:
+                    type_name = (
+                        header.split(" for ")[1].split("<")[0].rstrip("{").rstrip(":").strip()
+                    )
+                else:
+                    type_name = parts[1].split("<")[0].rstrip(":").strip()
+                for name, signature, method_doc in method_entries(
+                    lines, index, type_name, "pub fn "
+                ):
+                    entries.append((name, signature, method_doc))
+                doc = []
+                index += 1
+                continue
+            kind = parts[1]
+            if kind in {"use", "mod"}:
+                doc = []
+                index += 1
+                continue
+            name = (
+                parts[2]
+                .split("(")[0]
+                .split("<")[0]
+                .rstrip("{")
+                .rstrip(":;")
+                .strip()
+            )
+            entries.append((name, header, clean_doc(doc)))
+            if kind == "trait":
+                for method_name, signature, method_doc in method_entries(
+                    lines, index, name, "fn "
+                ):
+                    entries.append((method_name, signature, method_doc))
+            doc = []
+            index += 1
+            continue
+        if stripped and not stripped.startswith("//"):
+            doc = []
+        index += 1
+    return entries
+
+
+def write_rust_page():
+    """Write the Rust seam reference page from the core source."""
+    buf = [
+        "# API reference — Rust generic seam\n",
+        "\n",
+        HEADER,
+        "\n",
+        RUST_BLURB,
+        "\n\n",
+        (
+            "Reach the module through `mltreelib_core::generic` or "
+            "`mltreelib_core::solver::generic`. The short names `Bounds`, `Budget`, "
+            "`Constraint`, `ConstraintKind`, `Objective`, `ObjectiveError`, "
+            "`OptimizationRequest`, `OptimizationResult`, `OptimizerKind`, "
+            "`SmoothObjective`, and `SolveStatus` are re-exported from "
+            "`mltreelib_core::solver`.\n\n"
+        ),
+    ]
+    for source in sorted(CORE_GENERIC.glob("*.rs")):
+        entries = rust_items(source)
+        if not entries:
+            continue
+        buf.append(f"## solver/generic/{source.name}\n\n")
+        for name, signature, doc in entries:
+            buf.append(f"### {name}\n\n")
+            buf.append(f"```rust\n{signature}\n```\n\n")
+            if doc:
+                buf.append(doc + "\n\n")
+    (OUT / RUST_PAGE).write_text("".join(buf).rstrip() + "\n")
+    print(f"wrote {OUT / RUST_PAGE}")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     def members(module):
@@ -223,6 +387,9 @@ def main():
             f"| [{title}]({fname[:-3]}/) | {', '.join(cl) if cl else '—'} "
             f"| {', '.join(fn) if fn else '—'} |\n"
         )
+    index.append(
+        f"| [Rust generic seam]({RUST_PAGE[:-3]}/) | Rust core seam | — |\n"
+    )
     (OUT / "index.md").write_text("".join(index))
 
     for fname, title, module, cl, fn, blurb in pages:
@@ -237,6 +404,7 @@ def main():
         (OUT / fname).write_text("".join(buf).rstrip() + "\n")
         print(f"wrote {OUT / fname} ({len(buf)} blocks)")
     print(f"wrote {OUT / 'index.md'}")
+    write_rust_page()
 
 
 if __name__ == "__main__":
