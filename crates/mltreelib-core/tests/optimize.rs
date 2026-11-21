@@ -3,8 +3,9 @@
 use mltreelib_core::solver::generic::{
     is_feasible, latin_hypercube_samples, latin_hypercube_search, max_violation, random_search,
     violation, AnnealingOptions, Bounds, Budget, BudgetStatus, Constraint, ConstraintKind,
-    LatinHypercubeOptions, MethodOptions, Objective, ObjectiveError, OptimizationRequest,
-    OptimizerKind, RandomSearchOptions, SharedOptions, SolveStatus,
+    CountedObjective, FiniteDifferenceObjective, LatinHypercubeOptions, MethodOptions, Objective,
+    ObjectiveError, OptimizationRequest, OptimizerKind, RandomSearchOptions, SharedOptions,
+    SmoothObjective, SolveStatus,
 };
 
 /// Quadratic objective over a bounded box.
@@ -59,7 +60,7 @@ fn bounds_report_domain_and_projection() {
 
 #[test]
 fn budget_counts_evaluations_and_iterations() {
-    let mut budget = Budget::new(Some(2), Some(1));
+    let budget = Budget::new(Some(2), Some(1));
     assert_eq!(budget.remaining_evaluations(), Some(2));
     assert!(budget.charge_evaluation().is_ok());
     assert!(budget.charge_evaluation().is_ok());
@@ -77,7 +78,7 @@ fn budget_counts_evaluations_and_iterations() {
 
 #[test]
 fn unlimited_budget_never_stops() {
-    let mut budget = Budget::unlimited();
+    let budget = Budget::unlimited();
     for _ in 0..1000 {
         assert!(budget.charge_evaluation().is_ok());
         assert!(budget.charge_iteration().is_ok());
@@ -180,8 +181,10 @@ fn request_validation_rejects_bad_configuration() {
     };
     assert!(mismatch.validate().is_err());
 
-    let needs_gradient = OptimizationRequest::new(&objective, None, OptimizerKind::LbfgsB, shared);
-    assert!(needs_gradient.validate().is_err());
+    // A smooth method without a gradient source stays valid: the seam falls
+    // back to a central-difference gradient over the counted objective.
+    let without_gradient = OptimizationRequest::new(&objective, None, OptimizerKind::LbfgsB, shared);
+    assert!(without_gradient.validate().is_ok());
 }
 
 #[test]
@@ -227,10 +230,10 @@ fn random_search_finds_a_known_optimum() {
     let objective = Quadratic {
         bounds: Bounds::new(vec![-5.0, -5.0], vec![5.0, 5.0]).expect("valid bounds"),
     };
-    let mut budget = Budget::unlimited();
+    let budget = Budget::unlimited();
     let result = random_search(
         &objective,
-        &mut budget,
+        &budget,
         &RandomSearchOptions { samples: 4000 },
         7,
         None,
@@ -246,10 +249,10 @@ fn random_search_stops_at_the_evaluation_budget() {
     let objective = Quadratic {
         bounds: Bounds::new(vec![-5.0, -5.0], vec![5.0, 5.0]).expect("valid bounds"),
     };
-    let mut budget = Budget::new(Some(10), None);
+    let budget = Budget::new(Some(10), None);
     let result = random_search(
         &objective,
-        &mut budget,
+        &budget,
         &RandomSearchOptions { samples: 100 },
         7,
         None,
@@ -264,10 +267,10 @@ fn random_search_rejects_unbounded_domains() {
     let objective = Quadratic {
         bounds: Bounds::unbounded(2),
     };
-    let mut budget = Budget::unlimited();
+    let budget = Budget::unlimited();
     let result = random_search(
         &objective,
-        &mut budget,
+        &budget,
         &RandomSearchOptions { samples: 10 },
         7,
         None,
@@ -281,10 +284,10 @@ fn non_finite_objective_values_end_the_run() {
     let objective = BrokenObjective {
         bounds: Bounds::new(vec![-1.0], vec![1.0]).expect("valid bounds"),
     };
-    let mut budget = Budget::unlimited();
+    let budget = Budget::unlimited();
     let result = random_search(
         &objective,
-        &mut budget,
+        &budget,
         &RandomSearchOptions { samples: 10 },
         7,
         None,
@@ -322,10 +325,10 @@ fn latin_hypercube_search_reports_its_evaluations() {
     let objective = Quadratic {
         bounds: Bounds::new(vec![-1.0], vec![1.0]).expect("valid bounds"),
     };
-    let mut budget = Budget::new(Some(5), None);
+    let budget = Budget::new(Some(5), None);
     let result = latin_hypercube_search(
         &objective,
-        &mut budget,
+        &budget,
         &LatinHypercubeOptions { samples: 20 },
         5,
     );
@@ -367,4 +370,20 @@ fn generic_entry_point_names_unimplemented_methods() {
     );
     let error = mltreelib_core::solver::generic::optimize(&request).expect_err("method missing");
     assert!(error.contains("powell"), "error was {error}");
+}
+
+#[test]
+fn finite_difference_gradient_charges_the_shared_budget() {
+    let objective = Quadratic {
+        bounds: Bounds::new(vec![-5.0, -5.0], vec![5.0, 5.0]).expect("valid bounds"),
+    };
+    let budget = Budget::new(Some(10), None);
+    let counted = CountedObjective::new(&objective, &budget);
+    let finite_difference = FiniteDifferenceObjective::new(&counted, 1e-6);
+    let gradient = finite_difference
+        .gradient(&[1.0, 2.0])
+        .expect("central difference gradient");
+    assert!((gradient[0] - 2.0).abs() < 1e-6, "gradient was {gradient:?}");
+    assert!((gradient[1] - 4.0).abs() < 1e-6, "gradient was {gradient:?}");
+    assert_eq!(budget.evaluations(), 4);
 }

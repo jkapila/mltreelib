@@ -3,6 +3,7 @@
 use std::fmt;
 
 use super::bounds::Bounds;
+use super::budget::{Budget, BudgetStatus};
 
 /// Failure reported by an objective or gradient evaluation.
 #[derive(Clone, Debug, PartialEq)]
@@ -13,6 +14,8 @@ pub enum ObjectiveError {
     NotFinite(f64),
     /// The objective callback failed.
     Callback(String),
+    /// The evaluation budget ended the run.
+    BudgetExhausted(BudgetStatus),
 }
 
 impl fmt::Display for ObjectiveError {
@@ -24,6 +27,7 @@ impl fmt::Display for ObjectiveError {
             ),
             Self::NotFinite(value) => write!(f, "objective value is not finite: {value}"),
             Self::Callback(message) => write!(f, "objective callback failed: {message}"),
+            Self::BudgetExhausted(status) => write!(f, "budget exhausted: {status:?}"),
         }
     }
 }
@@ -70,5 +74,38 @@ pub fn require_dimension(expected: usize, x: &[f64]) -> Result<(), ObjectiveErro
             expected,
             actual: x.len(),
         })
+    }
+}
+
+/// Objective wrapper that charges the shared budget for every value call.
+///
+/// Wrapping the user objective keeps one counter for every objective call,
+/// including the calls a finite-difference gradient makes.
+pub struct CountedObjective<'a> {
+    inner: &'a dyn Objective,
+    budget: &'a Budget,
+}
+
+impl<'a> CountedObjective<'a> {
+    /// Wraps one objective with one budget.
+    pub fn new(inner: &'a dyn Objective, budget: &'a Budget) -> Self {
+        Self { inner, budget }
+    }
+}
+
+impl Objective for CountedObjective<'_> {
+    fn dim(&self) -> usize {
+        self.inner.dim()
+    }
+
+    fn bounds(&self) -> &Bounds {
+        self.inner.bounds()
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        self.budget
+            .charge_evaluation()
+            .map_err(ObjectiveError::BudgetExhausted)?;
+        self.inner.value(x)
     }
 }

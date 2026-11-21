@@ -231,14 +231,13 @@ impl Objective for PyObjective {
     }
 }
 
-/// Objective with an exact gradient or a central-difference fallback.
-struct PySmoothObjective {
+/// Objective with an exact gradient from a Python callable.
+struct PyGradientObjective {
     base: PyObjective,
-    gradient: Option<Py<PyAny>>,
-    step: f64,
+    gradient: Py<PyAny>,
 }
 
-impl Objective for PySmoothObjective {
+impl Objective for PyGradientObjective {
     fn dim(&self) -> usize {
         self.base.dim()
     }
@@ -252,32 +251,19 @@ impl Objective for PySmoothObjective {
     }
 }
 
-impl SmoothObjective for PySmoothObjective {
+impl SmoothObjective for PyGradientObjective {
     fn gradient(&self, x: &[f64]) -> Result<Vec<f64>, ObjectiveError> {
-        if let Some(gradient) = &self.gradient {
-            return Python::attach(|py| {
-                let list = PyList::new(py, x)
-                    .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
-                let output = gradient
-                    .call1(py, (list,))
-                    .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
-                output.extract::<Vec<f64>>(py).map_err(|_| {
-                    self.base.fail("gradient must return one value per parameter".to_string())
-                })
-            });
-        }
-        let mut gradient = vec![0.0; x.len()];
-        for (index, value) in x.iter().enumerate() {
-            let step = self.step * value.abs().max(1.0);
-            let mut plus = x.to_vec();
-            let mut minus = x.to_vec();
-            plus[index] += step;
-            minus[index] -= step;
-            let plus_value = self.base.call_value(&plus)?;
-            let minus_value = self.base.call_value(&minus)?;
-            gradient[index] = (plus_value - minus_value) / (2.0 * step);
-        }
-        Ok(gradient)
+        Python::attach(|py| {
+            let list = PyList::new(py, x)
+                .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
+            let output = self
+                .gradient
+                .call1(py, (list,))
+                .map_err(|err| self.base.fail(format!("gradient callback failed: {err}")))?;
+            output.extract::<Vec<f64>>(py).map_err(|_| {
+                self.base.fail("gradient must return one value per parameter".to_string())
+            })
+        })
     }
 }
 
@@ -397,21 +383,17 @@ fn optimize(
         bounds: box_bounds.clone(),
         failure: Arc::new(Mutex::new(None)),
     };
-    let smooth = if gradient.is_some() || kind.uses_gradient() {
-        let gradient_callable = gradient.map(|callable| callable.clone_ref(py));
-        Some(PySmoothObjective {
-            base: PyObjective {
-                callable: objective.clone_ref(py),
-                dim,
-                bounds: box_bounds.clone(),
-                failure: base.failure.clone(),
-            },
-            gradient: gradient_callable,
-            step: 1e-6,
-        })
-    } else {
-        None
-    };
+    // The seam supplies a central-difference gradient when no gradient source
+    // is given, so the binding only forwards an exact gradient callable.
+    let smooth = gradient.map(|gradient| PyGradientObjective {
+        base: PyObjective {
+            callable: objective.clone_ref(py),
+            dim,
+            bounds: box_bounds.clone(),
+            failure: base.failure.clone(),
+        },
+        gradient: gradient.clone_ref(py),
+    });
 
     let shared = SharedOptions {
         max_evaluations,

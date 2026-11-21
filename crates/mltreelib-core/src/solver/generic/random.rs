@@ -9,7 +9,7 @@ use rand_chacha::ChaCha8Rng;
 
 use super::bounds::Bounds;
 use super::budget::Budget;
-use super::objective::Objective;
+use super::objective::{CountedObjective, Objective, ObjectiveError};
 use super::request::{LatinHypercubeOptions, RandomSearchOptions};
 use super::result::{OptimizationResult, SolveStatus};
 
@@ -24,21 +24,12 @@ struct Evaluation {
 /// Evaluates candidates in order and keeps the best one.
 fn evaluate_candidates(
     objective: &dyn Objective,
-    budget: &mut Budget,
     candidates: &[Vec<f64>],
 ) -> Evaluation {
     let mut best_x = Vec::new();
     let mut best_value = f64::INFINITY;
 
     for candidate in candidates {
-        if budget.charge_evaluation().is_err() {
-            return Evaluation {
-                best_x,
-                best_value,
-                status: SolveStatus::EvaluationLimit,
-                message: None,
-            };
-        }
         match objective.value(candidate) {
             Ok(value) if value.is_finite() => {
                 if value < best_value {
@@ -52,6 +43,14 @@ fn evaluate_candidates(
                     best_value,
                     status: SolveStatus::InvalidObjective,
                     message: Some(format!("objective value is not finite: {value}")),
+                };
+            }
+            Err(ObjectiveError::BudgetExhausted(_)) => {
+                return Evaluation {
+                    best_x,
+                    best_value,
+                    status: SolveStatus::EvaluationLimit,
+                    message: None,
                 };
             }
             Err(err) => {
@@ -88,15 +87,13 @@ fn uniform_point(rng: &mut ChaCha8Rng, bounds: &Bounds) -> Vec<f64> {
         .lower()
         .iter()
         .zip(bounds.upper().iter())
-        .map(
-            |(&lo, &hi)| {
-                if hi > lo {
-                    rng.gen_range(lo..hi)
-                } else {
-                    lo
-                }
-            },
-        )
+        .map(|(&lo, &hi)| {
+            if hi > lo {
+                rng.gen_range(lo..hi)
+            } else {
+                lo
+            }
+        })
         .collect()
 }
 
@@ -141,7 +138,7 @@ pub fn latin_hypercube_samples(
 /// remaining candidates are uniform draws.
 pub fn random_search(
     objective: &dyn Objective,
-    budget: &mut Budget,
+    budget: &Budget,
     options: &RandomSearchOptions,
     seed: u64,
     initial_population: Option<&[Vec<f64>]>,
@@ -170,14 +167,16 @@ pub fn random_search(
         candidates.push(uniform_point(&mut rng, bounds));
     }
 
-    let evaluation = evaluate_candidates(objective, budget, &candidates);
+    // One wrapper charges the budget for every objective call.
+    let counted = CountedObjective::new(objective, budget);
+    let evaluation = evaluate_candidates(&counted, &candidates);
     build_result(evaluation, budget)
 }
 
 /// Runs Latin hypercube sampling inside bounds.
 pub fn latin_hypercube_search(
     objective: &dyn Objective,
-    budget: &mut Budget,
+    budget: &Budget,
     options: &LatinHypercubeOptions,
     seed: u64,
 ) -> OptimizationResult {
@@ -191,7 +190,9 @@ pub fn latin_hypercube_search(
         }
     };
 
-    let evaluation = evaluate_candidates(objective, budget, &candidates);
+    // One wrapper charges the budget for every objective call.
+    let counted = CountedObjective::new(objective, budget);
+    let evaluation = evaluate_candidates(&counted, &candidates);
     build_result(evaluation, budget)
 }
 

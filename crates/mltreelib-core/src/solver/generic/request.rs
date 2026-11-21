@@ -382,7 +382,8 @@ impl Default for MethodOptions {
 pub struct OptimizationRequest<'a> {
     /// Objective to minimize.
     pub objective: &'a dyn Objective,
-    /// Gradient source for smooth methods.
+    /// Gradient source for smooth methods. `None` makes the seam use a
+    /// central-difference gradient over the counted objective.
     pub smooth: Option<&'a dyn SmoothObjective>,
     /// Starting point. `None` lets the method draw one.
     pub start: Option<Vec<f64>>,
@@ -449,7 +450,8 @@ impl<'a> OptimizationRequest<'a> {
     ///
     /// Returns one error for a method and option mismatch, one for a starting
     /// point with the wrong length, and one for a starting point outside the
-    /// bounds.
+    /// bounds. Smooth methods accept a missing gradient source because the seam
+    /// falls back to central differences.
     pub fn validate(&self) -> Result<(), String> {
         if self.options.kind() != self.method {
             return Err(format!(
@@ -469,12 +471,6 @@ impl<'a> OptimizationRequest<'a> {
             if !self.objective.bounds().contains(start) {
                 return Err("starting point lies outside the bounds".to_string());
             }
-        }
-        if self.method.uses_gradient() && self.smooth.is_none() {
-            return Err(format!(
-                "method {} needs a gradient source",
-                self.method.as_str()
-            ));
         }
         Ok(())
     }
