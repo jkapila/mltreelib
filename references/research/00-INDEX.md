@@ -1,6 +1,6 @@
 # Master Research Index & Architecture Taxonomy
 
-**Updated**: 2026-11-01  
+**Updated**: 2026-11-21
 **Curators**: Jitin Kapila & Antigravity  
 **Repository**: `mltreelib` (`crates/mltreelib-core`, `crates/mltreelib-py`, `python/mltreelib`)  
 **Mission**: Advance tree and ensemble methods beyond flat tabular heuristics by unlocking **categorical, grouped, hierarchical, longitudinal, and structural signal**.
@@ -60,15 +60,25 @@
 22. [2026-11-01-advanced-tree-frontiers-tda-copulas-anomalies.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-advanced-tree-frontiers-tda-copulas-anomalies.md): Contextual anomaly detection (**GritBot**), Density Estimation Trees (**DET**), Vine Copulas (R-Vines), TDA Persistent Homology, and Tree-Wasserstein optimal transport.
 23. [2026-11-01-cross-paradigm-ai-trees-survey.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-cross-paradigm-ai-trees-survey.md): Trees across Reinforcement Learning (FQI, RLT, VIPER), Causal Inference (Honest IV-Forests), Symbolic Logic (TILDE), Operations Research (MIP Learn-to-Branch), and Probabilistic Circuits (Generative Forests GeFs).
 24. [2026-11-01-tree-based-clustering-frontiers.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-01-tree-based-clustering-frontiers.md): Unsupervised Random Forest Proximities, Predictive Clustering Trees (PCT), Jitin's Evidence Tree Clustering (Polychoric Odds), and Random Projection Trees.
+25. [2026-11-21-anomaly-detection-implementation-landscape.md](references/research/2026-11-21-anomaly-detection-implementation-landscape.md): Implementation landscape for ECOD/COPOD, LODA, Matrix Profile, explainability, streaming, grouped, hierarchical, and time-series anomaly detection.
+26. [2026-11-21-clustering-implementation-landscape.md](references/research/2026-11-21-clustering-implementation-landscape.md): Explainable k-means trees, Gower k-medoids/k-prototypes, convex clustering, spectral proximity clustering, evidence accumulation, and optimal multi-way clustering.
+27. [2026-11-21-optimization-solvers-implementation-landscape.md](references/research/2026-11-21-optimization-solvers-implementation-landscape.md): FISTA, bounded exact trees, convex-clustering solvers, PSO, island models, DE/CMA/ES variants, NSGA-II/III, MOEA/D, and optional MIP/SAT backends.
+28. [2026-11-21-general-solver-api-roadmap.md](references/research/2026-11-21-general-solver-api-roadmap.md): Public bounded optimization module design, selected algorithms, Rust/Python interfaces, adapters, use cases, and delivery sequence.
+29. [2026-11-21-association-rule-mining-landscape.md](references/research/2026-11-21-association-rule-mining-landscape.md): FP-growth, Eclat, closed itemsets, tabular and neurosymbolic ARM, associative classifiers, sequential patterns, and separate rules-module architecture.
+30. [2026-11-21-discriminant-analysis-leaf-landscape.md](references/research/2026-11-21-discriminant-analysis-leaf-landscape.md): LDA, QDA, RDA, sparse and robust discriminant analysis, Community Bayes, EFDA, and leaf implementation ladder.
+31. [2026-11-21-naive-bayes-bayesian-leaf-landscape.md](references/research/2026-11-21-naive-bayes-bayesian-leaf-landscape.md): Categorical, Gaussian and mixed NB leaves; NB-tree; AODE, TAN, KDB, generalized and neural Bayesian classifiers.
+32. [2026-11-21-core-ml-leaf-family-gap-analysis.md](references/research/2026-11-21-core-ml-leaf-family-gap-analysis.md): Remaining core ML leaf gaps including ordinal regression, GAMs, mixtures, prototypes, kernels, Gaussian processes, and structured leaves.
+33. [2026-11-21-component-analysis-and-unified-model-reports.md](references/research/2026-11-21-component-analysis-and-unified-model-reports.md): Consolidated PCA, SVD, whitening, FastICA, NMF, anomaly/clustering adapters, SVM difficulty, and common objective/learner/controller/diagnostics reports.
+34. [2026-11-21-generic-global-and-constrained-solvers.md](references/research/2026-11-21-generic-global-and-constrained-solvers.md): Bounded simulated annealing, basin hopping, and COBYLA as the one nonlinear constraint solver, with dependency order, seam requirements, reuse decision against the `basin` and `cobyla` crates, and verification rules.
 
 ### Pillar 6: Ecosystem, Positioning, Audits & Search Intent
-25. [2026-11-12-mltreelib-relevance-and-ecosystem.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-mltreelib-relevance-and-ecosystem.md): Competitive landscape vs LightGBM, CatBoost, Scikit-learn, and TabNet.
-26. [2026-11-12-microprediction-positioning-patterns.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-microprediction-positioning-patterns.md): Streaming prediction patterns and micro-forecasting integrations.
-27. [2026-11-12-modularity-coverage-audit.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-modularity-coverage-audit.md): Codebase modularity, dependency boundaries, and test coverage audit.
-28. [2026-11-16-seo-keyword-volume-and-search-intent.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-seo-keyword-volume-and-search-intent.md): Live Google US search volumes via `treg` (Serpstat) and high-intent keyword mapping for mltreelib.
-29. [2026-11-16-tree-use-cases-prediction-explanation-intervention.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-tree-use-cases-prediction-explanation-intervention.md): Use-case keyword volumes across Prediction (risk/fraud/churn), Explanation (glass-box/rules/auditing), and Intervention (uplift/CATE/policy learning).
-30. [2026-11-16-global-regional-search-volumes-and-commercial-pockets.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-global-regional-search-volumes-and-commercial-pockets.md): Regional search volume and commercial intent analysis across India, UK, Germany, UAE, and Australia.
-31. [2026-11-16-competitor-landscape-and-bowling-pin-strategy.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-competitor-landscape-and-bowling-pin-strategy.md): Competitor vulnerabilities (Scikit-Learn, LightGBM, XGBoost, CatBoost) and the staged Bowling Pin Wedge Strategy.
+35. [2026-11-12-mltreelib-relevance-and-ecosystem.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-mltreelib-relevance-and-ecosystem.md): Competitive landscape vs LightGBM, CatBoost, Scikit-learn, and TabNet.
+36. [2026-11-12-microprediction-positioning-patterns.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-microprediction-positioning-patterns.md): Streaming prediction patterns and micro-forecasting integrations.
+37. [2026-11-12-modularity-coverage-audit.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-12-modularity-coverage-audit.md): Codebase modularity, dependency boundaries, and test coverage audit.
+38. [2026-11-16-seo-keyword-volume-and-search-intent.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-seo-keyword-volume-and-search-intent.md): Live Google US search volumes via `treg` (Serpstat) and high-intent keyword mapping for mltreelib.
+39. [2026-11-16-tree-use-cases-prediction-explanation-intervention.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-tree-use-cases-prediction-explanation-intervention.md): Use-case keyword volumes across Prediction (risk/fraud/churn), Explanation (glass-box/rules/auditing), and Intervention (uplift/CATE/policy learning).
+40. [2026-11-16-global-regional-search-volumes-and-commercial-pockets.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-global-regional-search-volumes-and-commercial-pockets.md): Regional search volume and commercial intent analysis across India, UK, EU, UAE, and US.
+41. [2026-11-16-competitor-landscape-and-bowling-pin-strategy.md](file:///mnt/d/Programs/mltreelib/references/research/2026-11-16-competitor-landscape-and-bowling-pin-strategy.md): Competitor vulnerabilities (Scikit-Learn, LightGBM, XGBoost, CatBoost) and the staged Bowling Pin Wedge Strategy.
 
 ---
 
