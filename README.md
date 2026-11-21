@@ -9,7 +9,7 @@
 [![Zero Sklearn](https://img.shields.io/badge/dependencies-zero--sklearn-brightgreen)](#)
 [![Missing Data](https://img.shields.io/badge/missing--data-first--class-blueviolet)](#)
 
-Tree-based machine learning with a **pure Rust core** (`mltreelib-core`) and a high-performance **Python frontend** (with **R** bindings underway). 
+Tree-based machine learning with a **pure Rust core** (`mltreelib-core`) and a high-performance **Python frontend** and an **R** source package for ModelTree.
 
 Modern tree and ensemble architectures often outperform flat tabular foundation models on complex structured data. `mltreelib` brings together the best of classical algorithmic lineages (Quinlan's M5, C4.5, C5.0, Cubist, GritBot; Breiman's CART and URF; Athey & Imbens' Causal Trees) modernized in memory-safe Rust with sub-millisecond execution, zero scikit-learn dependency, first-class missing data routing, and rich distributional leaves.
 
@@ -33,6 +33,18 @@ uv run maturin develop --release
 ```
 
 See the [changelog](CHANGELOG.md) for release history and the [release guide](RELEASING.md) for publishing steps.
+
+### R ModelTree
+
+From a v0.4.12 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
+
+```sh
+r/build-r-package.sh dist
+R CMD INSTALL dist/mltreelib_0.4.12.tar.gz
+Rscript --vanilla r/airquality_model_tree.R
+```
+
+The package exposes ModelTree fitting and prediction. The source tarball was checked on Ubuntu 24.04 with R 4.3.3. [Holdout results and source checks](references/research/2026-11-21-r-airquality-results.md)
 
 ### Example suites and agent skill
 
@@ -353,15 +365,16 @@ Every entry tracks native categorical handling and execution resources under str
 - [x] **Unsupervised & Anomaly Trees**: HDBSCAN, URF, CLTree, TrieKNN, PCT, DET, EIF, HST, RCT, AAD, CAT.
 - [x] **Modern Leaf Optimization**: Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and SOTA continuous evolutionary solvers (CMA-ES, SHADE, sNES, RCGA) augmenting exact Cholesky and IRLS.
 - [x] **Modular model controls and persistence**. Configure growth and leaves separately. Save ModelTree, PCT, and EIF models as versioned JSON. [Spec 20](specs/20-architecture-two-fold-control-decoupling-serialization-and-agent-skill.md)
-- [ ] **Snapshots for additional clustering and anomaly engines**. Extend JSON persistence after each native engine can restore its fitted state.
-- [ ] **Streaming Multiclass Split Optimization**: $O(N \cdot C)$ streaming class-frequency histogram and 256-bin histogram subtraction trick for multiclass splits.
+- [x] **Snapshots for additional clustering and anomaly engines**. Save and restore fitted DET, half-space, random cut, active anomaly, context anomaly, CLTree, HDBSCAN, and unsupervised proximity forest models.
+- [x] **Streaming multiclass splits**. Use class-frequency histograms for multiclass gains and opt into at most 256 bins per numeric feature.
 - [x] **Live Training Logging & Telemetry**: Configurable real-time verbosity levels (`verbose=1/2/3`) for split search progress, candidate gains, and leaf GLM convergence.
-- [ ] **Anomaly facade**: preserve missing values across engines, expose context scoring and active feedback, and define threshold tie behavior.
-- [ ] **Clustering missingness**: remove implicit `None` to zero conversion in unified clustering engines and check native missing-value behavior.
+- [x] **Anomaly missing values**. Preserve missing numeric observations across engines and support context scoring and active feedback.
+- [x] **Clustering missing values**. Pass missing numeric observations to the native engines.
 - [x] **Survival and competing risks**: Gray's subdistribution test, weighted log-rank (Tarone-Ware, Peto-Prentice), Aalen-Johansen CIF with simplex invariant, and checked IPCW metrics (Harrell/Uno C-index, time-dependent Brier score matrix, IBS).
-- [ ] **Probability recalibration**: fit post-hoc calibrators on separate validation or out-of-fold predictions, and evaluate them on independent data. Calibration plots already assess reliability.
+- [x] **Binary isotonic calibration**. Fit the mapping on held-out or out-of-fold probabilities. Evaluate the mapping on independent data.
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
-- [ ] **R Frontend Package**: CRAN package wrapping `mltreelib-core`.
+- [x] **R source package**. Build the Linux-checked ModelTree frontend from the repository. [R example and checks](references/research/2026-11-21-r-airquality-results.md)
+- [ ] **R package distribution**. Prepare a CRAN submission.
 
 ---
 

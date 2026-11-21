@@ -15,7 +15,7 @@ use std::cmp::Ordering;
 use crate::split::ColType;
 
 /// Split specification in a DET node.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum DetSplit {
     /// Continuous threshold split: x[col] <= threshold goes Left, > threshold goes Right.
     Continuous {
@@ -33,7 +33,7 @@ pub enum DetSplit {
 }
 
 /// A node in the Density Estimation Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DetNode {
     pub is_leaf: bool,
     pub split: Option<DetSplit>,
@@ -48,7 +48,7 @@ pub struct DetNode {
 }
 
 /// Density Estimation Tree estimator.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DensityEstimationTree {
     pub max_depth: usize,
     pub min_samples_split: usize,

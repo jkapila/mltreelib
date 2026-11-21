@@ -12,7 +12,7 @@
 use std::cmp::Ordering;
 
 /// Method for extracting flat clusters from the condensed tree.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ClusterSelectionMethod {
     /// Excess of Mass: selects most persistent subtrees maximizing stability.
     Eom,
@@ -21,7 +21,7 @@ pub enum ClusterSelectionMethod {
 }
 
 /// Distance metric used for core distance and reachability graphs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Metric {
     Euclidean,
     Manhattan,
@@ -29,7 +29,7 @@ pub enum Metric {
 }
 
 /// An edge in the Minimum Spanning Tree or Dendrogram.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MstEdge {
     pub u: usize,
     pub v: usize,
@@ -37,27 +37,32 @@ pub struct MstEdge {
 }
 
 /// A node in the HDBSCAN Condensed Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CondensedNode {
     pub node_id: usize,
     pub parent_id: Option<usize>,
+    #[serde(with = "crate::persistence::float")]
     pub lambda_birth: f64,
+    #[serde(with = "crate::persistence::float")]
     pub lambda_death: f64,
     pub size: usize,
     pub children: Vec<usize>,
     /// (point_index, lambda_fallout) for points that shed from this cluster.
+    #[serde(with = "crate::persistence::float")]
     pub points: Vec<(usize, f64)>,
     /// Excess of mass (stability): sum_{p} (lambda_p - lambda_birth).
+    #[serde(with = "crate::persistence::float")]
     pub stability: f64,
     pub selected: bool,
 }
 
 /// HDBSCAN Condensed Tree Clustering Model.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HdbscanTree {
     pub min_cluster_size: usize,
     pub min_samples: usize,
     pub cluster_selection_method: ClusterSelectionMethod,
+    #[serde(with = "crate::persistence::float")]
     pub cluster_selection_epsilon: f64,
     pub allow_single_cluster: bool,
     pub max_cluster_size: Option<usize>,
@@ -66,9 +71,12 @@ pub struct HdbscanTree {
     /// Cluster label for each training point: Some(cluster_id) or None (-1 for noise).
     pub labels: Vec<Option<usize>>,
     /// GLOSH outlier score in [0, 1] for each training point.
+    #[serde(with = "crate::persistence::float")]
     pub outlier_scores: Vec<f64>,
     pub n_clusters: usize,
+    #[serde(with = "crate::persistence::float")]
     pub train_data: Vec<Vec<f64>>,
+    #[serde(with = "crate::persistence::float")]
     pub core_distances: Vec<f64>,
 }
 
@@ -109,6 +117,7 @@ impl HdbscanTree {
         self.outlier_scores = vec![1.0; n];
         self.n_clusters = 0;
         self.train_data = data.to_vec();
+        self.core_distances.clear();
 
         if n < self.min_cluster_size {
             return;
@@ -128,6 +137,9 @@ impl HdbscanTree {
             core_dists[i] = dists[k - 1].max(1e-12);
         }
         self.core_distances = core_dists.clone();
+        if core_dists.iter().filter(|d| d.is_finite()).count() < self.min_cluster_size {
+            return;
+        }
 
         // 2. Build Minimum Spanning Tree (MST) on Mutual Reachability Distance via Prim's algorithm
         let mut in_tree = vec![false; n];
@@ -147,10 +159,8 @@ impl HdbscanTree {
                 }
             }
 
-            let u = match u {
-                Some(idx) => idx,
-                None => break,
-            };
+            // A zero-density edge joins disconnected components in the hierarchy.
+            let u = u.unwrap_or_else(|| in_tree.iter().position(|&seen| !seen).unwrap());
 
             in_tree[u] = true;
             if u != 0 {
@@ -446,7 +456,10 @@ impl HdbscanTree {
             };
 
             for &(pt, lam) in &node.points {
-                if target_cluster.is_some() && point_clusters[pt].is_none() {
+                if target_cluster.is_some()
+                    && point_clusters[pt].is_none()
+                    && self.core_distances[pt].is_finite()
+                {
                     point_clusters[pt] = target_cluster;
                     point_lambdas[pt] = lam;
                 }
@@ -494,50 +507,50 @@ impl HdbscanTree {
         }
 
         let mut best_dist = f64::INFINITY;
-        let mut best_pt = 0;
+        let mut best_label = None;
 
         for (i, train_pt) in self.train_data.iter().enumerate() {
             let d = self.compute_dist(query, train_pt);
             if d < best_dist {
                 best_dist = d;
-                best_pt = i;
+                best_label = self.labels[i];
             }
         }
 
-        self.labels[best_pt]
+        best_label
     }
 
-    /// Compute pairwise distance according to selected metric.
+    /// Compute the distance on jointly observed coordinates. For Euclidean and
+    /// Manhattan distances, scale the aggregate by the inverse observed fraction.
+    /// Rows without overlap have infinite distance.
     pub fn compute_dist(&self, a: &[f64], b: &[f64]) -> f64 {
-        match self.metric {
-            Metric::Euclidean => Self::euclidean_dist(a, b),
-            Metric::Manhattan => {
-                let mut sum = 0.0f64;
-                for i in 0..a.len() {
-                    sum += (a[i] - b[i]).abs();
-                }
-                sum
-            }
-            Metric::Chebyshev => {
-                let mut max_diff = 0.0f64;
-                for i in 0..a.len() {
-                    let d = (a[i] - b[i]).abs();
-                    if d > max_diff {
-                        max_diff = d;
-                    }
-                }
-                max_diff
-            }
+        if a.len() != b.len() {
+            return f64::INFINITY;
         }
-    }
 
-    fn euclidean_dist(a: &[f64], b: &[f64]) -> f64 {
-        let mut sum = 0.0f64;
-        for i in 0..a.len() {
-            let diff = a[i] - b[i];
-            sum += diff * diff;
+        let mut distance = 0.0_f64;
+        let mut observed = 0;
+        for (&x, &y) in a.iter().zip(b) {
+            if x.is_finite() && y.is_finite() {
+                let difference = (x - y).abs();
+                distance = match self.metric {
+                    Metric::Euclidean => distance + difference * difference,
+                    Metric::Manhattan => distance + difference,
+                    Metric::Chebyshev => distance.max(difference),
+                };
+                observed += 1;
+            }
         }
-        sum.sqrt()
+        if observed == 0 {
+            return f64::INFINITY;
+        }
+
+        let scale = a.len() as f64 / observed as f64;
+        match self.metric {
+            Metric::Euclidean => (distance * scale).sqrt(),
+            Metric::Manhattan => distance * scale,
+            Metric::Chebyshev => distance,
+        }
     }
 }
 

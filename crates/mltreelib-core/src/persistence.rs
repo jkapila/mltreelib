@@ -427,6 +427,17 @@ pub(crate) mod float {
                 .map(|(col, Owned(stat), Owned(p))| (col, stat, p))
         }
     }
+
+    impl FloatState for (usize, f64) {
+        fn write<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            (self.0, Ref(&self.1)).serialize(serializer)
+        }
+
+        fn read<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            <(usize, Owned<f64>)>::deserialize(deserializer)
+                .map(|(index, Owned(value))| (index, value))
+        }
+    }
 }
 
 /// Encode the digest through its public centroid snapshot interface.

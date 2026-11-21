@@ -1,0 +1,10 @@
+PKG_LIBS = libmltreelib_r.a -lpthread -ldl -lm
+
+$(SHLIB): libmltreelib_r.a
+
+libmltreelib_r.a: ../tools/rust/Cargo.toml ../tools/rust/lib.rs
+	cargo build --manifest-path ../tools/rust/Cargo.toml --release
+	cp "$${CARGO_TARGET_DIR:-../tools/rust/target}/release/libmltreelib_r.a" $@
+
+clean:
+	rm -f $(SHLIB) $(OBJECTS) libmltreelib_r.a

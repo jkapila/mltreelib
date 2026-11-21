@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 
 /// A node in the Context Anomaly Tree.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct ContextNode {
     /// Symbol frequency counts conditioned on this context prefix.
     pub symbol_counts: HashMap<u64, usize>,
@@ -21,7 +21,7 @@ pub struct ContextNode {
 }
 
 /// Suffix Context Anomaly Tree estimator.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ContextAnomalyTree {
     pub max_depth: usize,
     pub alphabet_size: usize,
@@ -77,12 +77,27 @@ impl ContextAnomalyTree {
     pub fn fit(&mut self, sequences: &[Vec<u64>]) {
         self.nodes = vec![ContextNode::default()];
         for seq in sequences {
-            for i in 1..seq.len() {
-                let ctx_start = i.saturating_sub(self.max_depth);
-                let context = &seq[ctx_start..i];
-                let symbol = seq[i];
-                self.insert(context, symbol);
+            self.observe_sequence(seq);
+        }
+    }
+
+    /// Fit sequences with missing symbols. A gap breaks the transition history.
+    pub fn fit_with_gaps(&mut self, sequences: &[Vec<Option<u64>>]) {
+        self.nodes = vec![ContextNode::default()];
+        let mut observed = Vec::new();
+        for seq in sequences {
+            for segment in seq.split(Option::is_none) {
+                observed.clear();
+                observed.extend(segment.iter().flatten().copied());
+                self.observe_sequence(&observed);
             }
+        }
+    }
+
+    fn observe_sequence(&mut self, seq: &[u64]) {
+        for i in 1..seq.len() {
+            let ctx_start = i.saturating_sub(self.max_depth);
+            self.insert(&seq[ctx_start..i], seq[i]);
         }
     }
 

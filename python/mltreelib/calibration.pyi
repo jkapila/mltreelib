@@ -1,0 +1,6 @@
+from collections.abc import Sequence
+
+class IsotonicCalibrator:
+    @staticmethod
+    def fit(y_true: Sequence[float], probabilities: Sequence[float]) -> IsotonicCalibrator: ...
+    def predict(self, probabilities: Sequence[float]) -> list[float]: ...

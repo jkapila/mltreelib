@@ -7,7 +7,7 @@
 //! of remaining points. Robust to duplicates and masking.
 
 /// A node in the Random Cut Tree.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RcNode {
     pub is_leaf: bool,
     /// Bounding box: [min_j, max_j] for each dimension.
@@ -25,7 +25,7 @@ pub struct RcNode {
 }
 
 /// Random Cut Tree estimator (single base tree).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RandomCutTree {
     pub seed: u64,
     pub sample_size: usize,
@@ -222,9 +222,9 @@ impl RandomCutTree {
             path.push(curr);
             let dim = self.nodes[curr].split_dim;
             let val = self.nodes[curr].split_val;
-            let v = row.get(dim).copied().unwrap_or(0.0);
+            let v = row.get(dim).copied().unwrap_or(f64::NAN);
 
-            curr = if v <= val {
+            curr = if v.is_nan() || v <= val {
                 self.nodes[curr].left_child.unwrap()
             } else {
                 self.nodes[curr].right_child.unwrap()

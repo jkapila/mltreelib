@@ -37,6 +37,20 @@ A precision–recall curve shows the tradeoff as the score threshold changes. Co
 
 Calibration compares predicted probabilities with observed event frequencies in bins. Small bins make the plot unstable. The 1,000 test rows come from a synthetic distribution; the plot alone does not establish calibration in production.
 
+Use `IsotonicCalibrator` to fit a monotone mapping for binary event probabilities.
+Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows.
+
+```python
+from mltreelib import Metrics
+from mltreelib.calibration import IsotonicCalibrator
+
+calibrator = IsotonicCalibrator.fit(y_val, model.predict_proba(X_val))
+raw = model.predict_proba(X_test)
+calibrated = calibrator.predict(raw)
+metrics = Metrics()
+print(metrics.brier_score(y_test, raw), metrics.brier_score(y_test, calibrated))
+```
+
 ![Held-out confusion matrix](../assets/guides/data-confusion.svg)
 
 The confusion matrix describes decisions at one chosen threshold. Change the cost assumptions or capacity and repeat threshold selection on validation data. Keep the test set independent of that selection.

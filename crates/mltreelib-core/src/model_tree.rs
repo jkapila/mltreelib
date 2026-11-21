@@ -596,6 +596,11 @@ impl ModelTree {
             params.protected_col = Some(protected_col);
             params.gain = *base_gain.clone();
         }
+        if params.split_eval == SplitEval::Histogram
+            && (!crate::split::uses_class_histogram(&params.gain) || params.extratrees)
+        {
+            return Err("histogram split evaluation requires gini, entropy, gain_ratio or twoing without extratrees".into());
+        }
         if params.tree_monotone.is_empty() && !params.monotone.is_empty() {
             params.tree_monotone = params.monotone.clone();
         }
@@ -843,6 +848,8 @@ impl ModelTree {
             col_names: &col_names,
             y: &yv,
             w: &wv,
+            histogram_cuts: (params.split_eval == SplitEval::Histogram)
+                .then(|| crate::split::histogram_cuts(&cols, &rows, &params)),
             treatments: params.treatments.as_deref(),
             target_vectors: params.target_vectors.as_deref(),
             events: params.events.as_deref(),
@@ -2478,6 +2485,7 @@ pub(crate) struct Grower<'a> {
     pub(crate) col_names: &'a [String],
     pub(crate) y: &'a [f64],
     pub(crate) w: &'a [f64],
+    pub(crate) histogram_cuts: Option<Vec<Vec<f64>>>,
     pub(crate) treatments: Option<&'a [f64]>,
     pub(crate) target_vectors: Option<&'a [Vec<f64>]>,
     pub(crate) events: Option<&'a [f64]>,

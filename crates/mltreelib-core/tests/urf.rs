@@ -89,3 +89,16 @@ fn test_unsupervised_random_forest_two_blobs() {
         .collect();
     assert_eq!(urf.predict(&query), expected_labels);
 }
+
+#[test]
+fn test_urf_snapshot_round_trip_and_rejects_bad_encoding() {
+    let data: Vec<Vec<f64>> = (0..12).map(|i| vec![i as f64, (i % 3) as f64]).collect();
+    let mut model = UnsupervisedProximityForest::new(4, 4, 2, 42);
+    model.fit(&data, 2);
+    let snapshot = model.to_json().unwrap();
+    let restored = UnsupervisedProximityForest::from_json(&snapshot).unwrap();
+    assert_eq!(restored.cluster_labels, model.cluster_labels);
+    let mut broken: serde_json::Value = serde_json::from_str(&snapshot).unwrap();
+    broken["model"]["training_encodings"][0][0] = serde_json::json!(999999);
+    assert!(UnsupervisedProximityForest::from_json(&broken.to_string()).is_err());
+}
