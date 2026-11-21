@@ -4,6 +4,15 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+### Standalone solver surface
+
+- Fit a weighted Gaussian or generalized linear model without growing a tree. Use `mltreelib.solvers.fit` with `sample_weight`. The result exposes coefficients, predictions, convergence, and the solver stop reason.
+- Share one solver dispatch across standalone fits and leaf fitting. CCD, L-BFGS, and the evolutionary solvers now run through the same options, status, and convergence contract.
+
+### Generic optimization seam
+
+- Add the shared generic optimization seam in the Rust core. One objective, bounds, constraint, budget, request, and result contract now backs every optimizer method. [Spec 26](specs/26-generic-global-and-constrained-optimizers.md)
+
 ## v0.4.12
 
 ### Python model behavior
