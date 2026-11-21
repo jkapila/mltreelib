@@ -25,13 +25,23 @@ logging.basicConfig(
 )
 log = logging.getLogger("elo.table")
 
-SCORES_REG = Path("benchmarks/elo_scores.csv")
-SCORES_CLA = Path("benchmarks/elo_cla_scores.csv")
-CLA_DATA_DIR = Path("benchmarks/elo_cla_data")
+SCORES_DIR = Path("docs/benchmarks/scores/v0.4.11")
+SCORES_REG = SCORES_DIR / "elo_scores.csv"
+SCORES_CLA = SCORES_DIR / "elo_cla_scores.csv"
+CLA_TASKS = SCORES_DIR / "classification_tasks.json"
 
 DOC_OVERALL = Path("docs/benchmarks/elo_overall.md")
 DOC_REG = Path("docs/benchmarks/elo_board.md")
 DOC_CLA = Path("docs/benchmarks/elo_cla_board.md")
+
+
+def read_scores(path: Path, metric: str) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as source:
+        return [
+            row
+            for row in csv.DictReader(source)
+            if row.get("model") and row["model"] != "model" and row.get(metric)
+        ]
 
 
 def compute_elo_ratings(
@@ -195,11 +205,7 @@ def build_interactive_table(
 def generate_regression():
     if not SCORES_REG.exists():
         return
-    rows = [
-        r
-        for r in csv.DictReader(open(SCORES_REG))
-        if r.get("model") and r["model"] != "model" and r.get("rmse")
-    ]
+    rows = read_scores(SCORES_REG, "rmse")
     by = {(r["dataset"], r["model"]): float(r["rmse"]) for r in rows}
     datasets = sorted({d for (d, _) in by})
     models = sorted({m for (_, m) in by})
@@ -231,7 +237,7 @@ def generate_regression():
 *Across **{len(datasets)} benchmark datasets** evaluated on **test RMSE** (round-robin pairwise, K=32).*  
 *Click any column header to sort. Sticky headers and frozen key columns on the left.*
 
-[← Overall Arena](elo_overall.md) | [Classification Arena →](elo_cla_board.md)
+[Overall Arena](elo_overall.md) · [Classification Arena](elo_cla_board.md) · [Run notes and score files](elo.md)
 
 ---
 """
@@ -242,11 +248,7 @@ def generate_regression():
 def generate_classification():
     if not SCORES_CLA.exists():
         return
-    rows = [
-        r
-        for r in csv.DictReader(open(SCORES_CLA))
-        if r.get("model") and r["model"] != "model" and r.get("accuracy")
-    ]
+    rows = read_scores(SCORES_CLA, "accuracy")
 
     by_acc = {
         (r["dataset"], r["model"]): float(r["accuracy"])
@@ -262,19 +264,13 @@ def generate_classification():
     all_datasets = sorted({d for (d, _) in by_acc})
     all_models = sorted({m for (_, m) in by_acc})
 
-    # Partition binary vs multiclass
-    binary_ds = []
-    multiclass_ds = []
-    for ds in all_datasets:
-        meta_p = CLA_DATA_DIR / f"{ds}.meta.json"
-        if meta_p.exists():
-            meta = json.loads(meta_p.read_text())
-            if len(meta.get("classes", [])) == 2:
-                binary_ds.append(ds)
-            else:
-                multiclass_ds.append(ds)
-        else:
-            binary_ds.append(ds)
+    task_types = json.loads(CLA_TASKS.read_text())
+    if set(task_types) != set(all_datasets) or not set(task_types.values()) <= {
+        "binary", "multiclass"
+    }:
+        raise ValueError("Classification task types must match the score snapshot")
+    binary_ds = [ds for ds in all_datasets if task_types[ds] == "binary"]
+    multiclass_ds = [ds for ds in all_datasets if task_types[ds] == "multiclass"]
 
     fits = {}
     for r in rows:
@@ -348,7 +344,8 @@ def generate_classification():
 
     doc_text = f"""# Classification Elo Arena
 
-*Across **{len(all_datasets)} TabArena benchmark datasets** ({len(binary_ds)} binary, {len(multiclass_ds)} multiclass).*  
+*Across **{len(all_datasets)} classification datasets** ({len(binary_ds)} binary, {len(multiclass_ds)} multiclass).*
+
 *Click any column header to sort. Frozen key columns (ELO, Fit Time, Model) remain sticky.*
 
 **Navigation:**  
@@ -356,7 +353,7 @@ def generate_classification():
 - [2. Binary Datasets ({len(binary_ds)})](#2-binary-classification-datasets-{len(binary_ds)})  
 - [3. Multiclass Datasets ({len(multiclass_ds)})](#3-multiclass-classification-datasets-{len(multiclass_ds)})  
 - [4. All Datasets (Test LogLoss)](#4-all-datasets-test-logloss-elo)  
-- [← Overall Combined Arena](elo_overall.md) | [Regression Arena →](elo_board.md)
+- [Overall Arena](elo_overall.md) · [Regression Arena](elo_board.md) · [Run notes and score files](elo.md)
 
 ---
 
@@ -375,7 +372,7 @@ def generate_classification():
 ---
 
 ## 3. Multiclass Classification Datasets ({len(multiclass_ds)})
-*Evaluates models supporting multi-label / multi-class classification.*
+*Evaluates multiclass classification accuracy.*
 
 {html_mc}
 
@@ -394,16 +391,8 @@ def generate_overall():
     if not SCORES_REG.exists() or not SCORES_CLA.exists():
         return
 
-    rows_reg = [
-        r
-        for r in csv.DictReader(open(SCORES_REG))
-        if r.get("model") and r["model"] != "model" and r.get("rmse")
-    ]
-    rows_cla = [
-        r
-        for r in csv.DictReader(open(SCORES_CLA))
-        if r.get("model") and r["model"] != "model" and r.get("accuracy")
-    ]
+    rows_reg = read_scores(SCORES_REG, "rmse")
+    rows_cla = read_scores(SCORES_CLA, "accuracy")
 
     by_reg = {(r["dataset"], r["model"]): float(r["rmse"]) for r in rows_reg}
     by_cla = {(r["dataset"], r["model"]): float(r["accuracy"]) for r in rows_cla}
@@ -412,6 +401,7 @@ def generate_overall():
     dss_cla = sorted({d for (d, _) in by_cla})
 
     all_models = sorted({m for (_, m) in by_reg} | {m for (_, m) in by_cla})
+    total_datasets = len(dss_reg) + len(dss_cla)
 
     # Combined round-robin Elo
     ratings = {m: 1000.0 for m in all_models}
@@ -475,7 +465,7 @@ def generate_overall():
             f"<td class='k n m-name'><b>{m}</b></td>"
             f"<td class='n'>{r_reg_str}</td>"
             f"<td class='n'>{r_cla_str}</td>"
-            f"<td class='n'>{tot_ds}/56</td>"
+            f"<td class='n'>{tot_ds}/{total_datasets}</td>"
             f"<td class='n'>{fit_str}</td>"
             f"<td class='n' style='text-align:center;'>{lang_str}</td>"
             f"<td class='n' style='text-align:center;'>{cat_str}</td>"
@@ -534,22 +524,18 @@ def generate_overall():
 
     doc_text = f"""# Overall Benchmark Arena
 
-*Cumulative Elo leaderboard combining all **56 benchmark datasets** (**18 Regression** on test RMSE + **38 Classification** on test Accuracy).*  
-*Click any column header to sort. Evaluates models across **Rust, Python, and R** under identical 300s wall-clock isolation.*
+The local arena combines **{total_datasets} datasets** across **{len(all_models)} entrants**. It uses test RMSE for {len(dss_reg)} regression tasks and test accuracy for {len(dss_cla)} classification tasks.
 
-**Arena Navigation:**  
-- [Regression Arena (18 datasets)](elo_board.md)  
-- [Classification Arena (38 datasets)](elo_cla_board.md)  
-- [Datasets Metadata & Sources](datasets.md)
+[Run notes and score files](elo.md) · [Regression Arena](elo_board.md) · [Classification Arena](elo_cla_board.md) · [Dataset sources](datasets.md)
 
----
+## Overall leaderboard
 
-## Overall Leaderboard (56 Datasets)
+Select a column heading to sort.
 
 {table_html}
 """
     DOC_OVERALL.write_text(doc_text)
-    log.info(f"wrote {DOC_OVERALL} ({len(all_models)} models across 56 datasets)")
+    log.info(f"wrote {DOC_OVERALL} ({len(all_models)} models across {total_datasets} datasets)")
 
 
 def main():

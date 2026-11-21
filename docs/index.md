@@ -62,6 +62,7 @@ uv run python examples/real_tree_studies.py wine  # after downloading Wine Quali
 | I want to… | go to |
 |---|---|
 | install it | [Installation](installation.md) |
+| check the current release | [v0.4.11 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.11) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |
 | solve a real problem | [Real datasets and worked studies](guides/real-data.md) |
@@ -70,7 +71,7 @@ uv run python examples/real_tree_studies.py wine  # after downloading Wine Quali
 | know every knob | [Examples — Model building & predictions](examples/model-building.md) |
 | read the numbers | [Examples — Inspection](examples/inspection.md) |
 | draw the tree | [Visualization](guides/visualization.md) |
-| see how it compares | [Benchmarks — ELO](benchmarks/elo.md) |
+| see how it compares | [Overall Elo Arena](benchmarks/elo_overall.md) |
 | read technical deep dives & blogs | [Blog & Technical Insights](blog/index.md) |
 | look up every parameter | [API reference](reference/model.md) |
 
