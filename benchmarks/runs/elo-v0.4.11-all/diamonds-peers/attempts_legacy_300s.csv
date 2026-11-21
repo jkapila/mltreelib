@@ -1,0 +1,2 @@
+dataset,model,status,seconds
+ta_diamonds,ModelTree(v0.3.3-default),ok,0.6

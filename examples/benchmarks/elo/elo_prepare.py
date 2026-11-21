@@ -8,7 +8,7 @@ Data is kept RAW:
 - Categorical columns remain raw strings (NO get_dummies / one-hot encoding)
 - No artificial column variance trimming (the 300s budget handles wide data)
 - Missing values written as empty string ("")
-- Target column written as the last column named "y"
+- Target column written last, named "y" unless that name belongs to a feature
 - Outputs <ds>_{train,test}.csv and <ds>.meta.json (column roles, target, split info)
 
 Run:
@@ -79,10 +79,10 @@ def write_dataset(
 ):
     tr, te = split_indices(len(x))
 
-    # Target always written as last column named 'y'
+    target_header = target_name if "y" in x.columns else "y"
     for split, idx in (("train", tr), ("test", te)):
         frame = x.iloc[idx].copy()
-        frame["y"] = y.iloc[idx].values
+        frame.insert(len(frame.columns), target_header, y.iloc[idx].values)
         frame.to_csv(OUT / f"{name}_{split}.csv", index=False, na_rep="")
 
     na_count = int(x.isna().sum().sum())

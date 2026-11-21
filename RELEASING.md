@@ -6,6 +6,7 @@ Use one release pull request for the version bump and the user-facing notes. Tag
 
 1. Choose the next version. Use a patch for compatible fixes, a minor for compatible capabilities, and a major for breaking changes after 1.0. Before 1.0, use a minor bump for breaking changes and describe the migration in the notes.
 2. Set the version in `Cargo.toml`, `pyproject.toml`, and `python/mltreelib/__init__.py`. Update the expected version in `tests/test_audit_gap_fixes.py`.
+   Update the version shown in `zensical.toml` and the release link in `docs/index.md`.
 3. Refresh both lockfiles. Move the relevant notes from `Unreleased` to a heading such as `## v0.4.11` in [CHANGELOG.md](CHANGELOG.md). Describe user-visible changes and include upgrade steps when needed.
 4. Run the checks below in order. Open the release pull request after they pass.
 

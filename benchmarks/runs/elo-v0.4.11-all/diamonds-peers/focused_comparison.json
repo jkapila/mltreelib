@@ -1,0 +1,73 @@
+{
+  "elo": {
+    "ModelTree(all)": {
+      "rank": 9,
+      "overall": 1290.1
+    },
+    "CatBoost(200)": {
+      "rank": 2,
+      "overall": 1457.8
+    },
+    "LightGBM(200)": {
+      "rank": 14,
+      "overall": 1240.9
+    },
+    "ChimeraBoost": {
+      "rank": 6,
+      "overall": 1340.0
+    }
+  },
+  "modeltree_head_to_head": {
+    "CatBoost(200)": {
+      "rmse": {
+        "wins": 0,
+        "ties": 0,
+        "losses": 18
+      },
+      "accuracy": {
+        "wins": 10,
+        "ties": 1,
+        "losses": 27
+      },
+      "logloss": {
+        "wins": 2,
+        "ties": 0,
+        "losses": 36
+      }
+    },
+    "LightGBM(200)": {
+      "rmse": {
+        "wins": 2,
+        "ties": 0,
+        "losses": 16
+      },
+      "accuracy": {
+        "wins": 13,
+        "ties": 1,
+        "losses": 24
+      },
+      "logloss": {
+        "wins": 4,
+        "ties": 0,
+        "losses": 34
+      }
+    },
+    "ChimeraBoost": {
+      "rmse": {
+        "wins": 0,
+        "ties": 0,
+        "losses": 18
+      },
+      "accuracy": {
+        "wins": 10,
+        "ties": 2,
+        "losses": 26
+      },
+      "logloss": {
+        "wins": 1,
+        "ties": 0,
+        "losses": 37
+      }
+    }
+  }
+}

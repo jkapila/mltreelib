@@ -26,9 +26,10 @@ fit_predict <- function(model, train, test, ycol, xs) {
   # fits go through the python-side subprocess harness; this bounds R-level work.
   setTimeLimit(elapsed = 300, transient = TRUE)
   on.exit(setTimeLimit(cpu = Inf, elapsed = Inf), add = TRUE)
+  response <- deparse(as.name(ycol), backtick = TRUE)
   switch(model,
     rpart = {
-      fit <- rpart::rpart(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- rpart::rpart(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     cubist = {
@@ -36,7 +37,7 @@ fit_predict <- function(model, train, test, ycol, xs) {
       predict(fit, test[, xs, drop = FALSE])
     },
     lmtree = {
-      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+      f <- as.formula(paste(response, "~", paste0("`", xs, "`", collapse = " + "), "|",
                             paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::lmtree(f, data = train)
       predict(fit, test)
@@ -50,11 +51,11 @@ fit_predict <- function(model, train, test, ycol, xs) {
       as.numeric(predict(fit, as.matrix(test[, xs]))$predictions)
     },
     ctree = {
-      fit <- partykit::ctree(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- partykit::ctree(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     glmtree = {
-      f <- as.formula(paste(ycol, "~", paste0("`", xs, "`", collapse = " + "), "|",
+      f <- as.formula(paste(response, "~", paste0("`", xs, "`", collapse = " + "), "|",
                             paste0("`", xs, "`", collapse = " + ")))
       fit <- partykit::glmtree(f, data = train)
       predict(fit, test, type = "response")
@@ -66,11 +67,11 @@ fit_predict <- function(model, train, test, ycol, xs) {
     mboost = {
       # statistical gradient boosting with tree base-learners (ctree
       # stumps, mstop=100 stock) - the boosting school's reference entry.
-      fit <- mboost::blackboost(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- mboost::blackboost(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)
     },
     ranger = {
-      fit <- ranger::ranger(as.formula(paste(ycol, "~ .")), data = train)
+      fit <- ranger::ranger(as.formula(paste(response, "~ .")), data = train)
       predict(fit, test)$predictions
     },
     bart = {
@@ -102,7 +103,7 @@ append_row <- function(ds, model, rmse, mae, dt) {
 for (ds in datasets) {
   train <- read.csv(file.path(data_dir, paste0(ds, "_train.csv")), check.names = FALSE)
   test <- read.csv(file.path(data_dir, paste0(ds, "_test.csv")), check.names = FALSE)
-  ycol <- "y"
+  ycol <- tail(names(train), 1L)
   xs <- setdiff(names(train), ycol)
   for (model in c("rpart", "cubist", "lmtree", "grf_llf", "grf_rf",
                   "ctree", "glmtree", "earth")) {

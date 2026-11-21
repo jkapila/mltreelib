@@ -1,0 +1,49 @@
+{
+  "coverage": {
+    "reg": {
+      "historical": 16,
+      "scored": 18,
+      "expected": 18
+    },
+    "cla": {
+      "historical": 38,
+      "scored": 38,
+      "expected": 38
+    }
+  },
+  "published": {
+    "rank": 7,
+    "overall": 1333.9,
+    "regression": "1123.3",
+    "classification": "1244.3",
+    "coverage": "54/56"
+  },
+  "historical_comparable": {
+    "rank": 7,
+    "overall": 1335.7,
+    "regression": "1123.8",
+    "classification": "1244.3",
+    "coverage": "53/55"
+  },
+  "rerun": {
+    "rank": 9,
+    "overall": 1289.7,
+    "regression": "717.9",
+    "classification": "1204.7",
+    "coverage": "55/55"
+  },
+  "catboost": {
+    "rank": 2,
+    "overall": 1457.3,
+    "regression": "1494.8",
+    "classification": "1372.4",
+    "coverage": "55/55"
+  },
+  "lightgbm": {
+    "rank": 14,
+    "overall": 1240.4,
+    "regression": "1539.7",
+    "classification": "1155.5",
+    "coverage": "55/55"
+  }
+}

@@ -1,0 +1,12 @@
+dataset,model,status,seconds
+ta_diamonds,rpart,ok,0.8
+ta_diamonds,cubist,ok,3.3
+ta_diamonds,lmtree,ok,37.4
+ta_diamonds,glmtree,ok,64.8
+ta_diamonds,ctree,ok,6.1
+ta_diamonds,grf_llf,ok,51.5
+ta_diamonds,grf_rf,ok,47.9
+ta_diamonds,earth,ok,2.8
+ta_diamonds,mboost,ok,9.9
+ta_diamonds,ranger,ok,22.1
+ta_diamonds,bart,ok,68.1

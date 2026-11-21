@@ -1,0 +1,25 @@
+dataset,model,status,seconds
+ta_diamonds,CTBoost,ok,10.0
+ta_diamonds,CatBoost(200),ok,8.0
+ta_diamonds,ChimeraBoost,error,5.8
+ta_diamonds,EBM,ok,52.1
+ta_diamonds,ExtraTrees,ok,13.5
+ta_diamonds,HistGradientBoosting,ok,6.3
+ta_diamonds,KNN,ok,6.2
+ta_diamonds,LightGBM(200),ok,5.9
+ta_diamonds,ModelTree(mean),ok,3.9
+ta_diamonds,ModelTree(path),ok,4.0
+ta_diamonds,ModelTree(winnow),ok,3.9
+ta_diamonds,forust (Rust),ok,7.2
+ta_diamonds,perpetual (Rust),ok,9.1
+ta_diamonds,sklearn GBM,ok,9.4
+ta_diamonds,sklearn Linear,ok,5.8
+ta_diamonds,sklearn RF,ok,17.7
+ta_diamonds,sklearn tree,ok,5.8
+ta_diamonds,ModelTree(v0.3.3-default),missing-v0.3.3,0.0
+ta_diamonds,"ModelTree(leaf=mars,deg=1)",ok,4.5
+ta_diamonds,"ModelTree(leaf=mars,deg=2)",ok,5.6
+ta_diamonds,ModelTree(opt),ok,4.1
+ta_diamonds,mltreelib MARS(deg=1),ok,4.5
+ta_diamonds,mltreelib MARS(deg=2),ok,6.4
+ta_diamonds,ChimeraBoost,ok,44.8

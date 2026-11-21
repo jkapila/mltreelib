@@ -1,0 +1,36 @@
+dataset,model,lang,cat_handling,rmse,mae,fit_s
+ta_diamonds,ModelTree(all),Rust,internal,761.1020,412.5600,0.1940
+ta_diamonds,rpart,R,internal,1304.3562,849.4843,0.2470
+ta_diamonds,cubist,R,internal,626.2948,317.5952,2.7900
+ta_diamonds,lmtree,R,internal,785.0665,300.1405,39.8470
+ta_diamonds,glmtree,R,internal,809.3327,304.8756,70.1140
+ta_diamonds,ctree,R,internal,602.8063,314.5440,8.5560
+ta_diamonds,grf_llf,R,none,558.6592,280.2904,53.4710
+ta_diamonds,grf_rf,R,none,605.3041,296.4019,52.7820
+ta_diamonds,earth,R,internal,1078.9485,711.7752,2.2500
+ta_diamonds,mboost,R,internal,817.4384,473.5581,9.2640
+ta_diamonds,ranger,R,internal,587.8723,288.8368,24.4730
+ta_diamonds,bart,R,internal,550.2202,291.0947,73.3170
+ta_diamonds,CTBoost,Python,internal,541.9656,281.2708,0.3014
+ta_diamonds,CatBoost(200),Python,internal,537.5838,287.4701,2.2281
+ta_diamonds,EBM,Python,internal,598.2681,338.3618,42.3224
+ta_diamonds,ExtraTrees,Python,external,545.2711,269.3965,7.3765
+ta_diamonds,HistGradientBoosting,Python,internal,548.4213,283.6077,0.3837
+ta_diamonds,KNN,Python,external,919.4835,481.6936,0.3591
+ta_diamonds,LightGBM(200),Python,internal,539.0756,276.7713,0.2131
+ta_diamonds,ModelTree(mean),Rust,internal,1074.2320,580.7306,0.1326
+ta_diamonds,ModelTree(path),Rust,internal,856.6243,463.2602,0.1494
+ta_diamonds,ModelTree(winnow),Rust,internal,1386.2136,780.1869,0.1450
+ta_diamonds,forust (Rust),Rust,external,562.3085,287.0908,1.3738
+ta_diamonds,perpetual (Rust),Rust,external,538.7096,268.3357,3.4769
+ta_diamonds,sklearn GBM,Python,external,676.3957,365.9943,3.7261
+ta_diamonds,sklearn Linear,Python,external,1352.3301,863.2924,0.0171
+ta_diamonds,sklearn RF,Python,external,554.7153,274.9288,11.6390
+ta_diamonds,sklearn tree,Python,external,749.5335,363.8645,0.1960
+ta_diamonds,"ModelTree(leaf=mars,deg=1)",Rust,internal,1259.5547,685.7542,0.7055
+ta_diamonds,"ModelTree(leaf=mars,deg=2)",Rust,internal,1258.9591,686.5840,1.6449
+ta_diamonds,ModelTree(opt),Rust,internal,711.5285,360.3864,0.2485
+ta_diamonds,mltreelib MARS(deg=1),Python,unknown,1422.5316,832.3728,0.6497
+ta_diamonds,mltreelib MARS(deg=2),Python,unknown,1414.5237,815.6256,2.5421
+ta_diamonds,ModelTree(v0.3.3-default),Rust,internal,886.1333,481.7262,0.1100
+ta_diamonds,ChimeraBoost,Python,internal,520.6389,264.8531,35.3097

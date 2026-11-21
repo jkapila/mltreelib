@@ -1,7 +1,9 @@
 [project]
-site_name = "mltreelib"
+site_name = "mltreelib v0.4.11"
 site_url = "https://jkapila.github.io/mltreelib/"
 site_description = "Tree-based machine learning with a Rust core"
+repo_url = "https://github.com/jkapila/mltreelib"
+repo_name = "jkapila/mltreelib"
 exclude_docs = """
 agents/*
 examples/visualization.md
@@ -19,6 +21,7 @@ nav = [
   { "Home" = "index.md" },
   { "Installation" = "installation.md" },
   { "Quickstart" = "quickstart.md" },
+  { "Releases" = "https://github.com/jkapila/mltreelib/releases" },
   { "Modeling pathways" = [
     { "Overview" = "guides/index.md" },
     { "Prepare data" = "guides/data.md" },
@@ -85,7 +88,7 @@ nav = [
     { "Overall Arena" = "benchmarks/elo_overall.md" },
     { "Regression Arena" = "benchmarks/elo_board.md" },
     { "Classification Arena" = "benchmarks/elo_cla_board.md" },
-    { "DataSets" = "benchmarks/datasets.md" },
+    { "Datasets" = "benchmarks/datasets.md" },
   ] },
   { "Research" = [
     { "Field notes" = "field-notes.md" },
@@ -116,6 +119,7 @@ features = [
   "navigation.instant",
   "navigation.tracking",
   "navigation.top",
+  "navigation.footer",
   "content.code.copy",
   "search.suggest",
   "search.highlight",
