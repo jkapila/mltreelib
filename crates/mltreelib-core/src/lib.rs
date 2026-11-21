@@ -39,6 +39,7 @@ pub mod solver;
 pub mod fast_interaction;
 mod persistence;
 
+pub use solver::generic;
 pub use fast_interaction::{fast_interaction_screen, FastInteraction};
 pub use knn::{DistanceMetric, KnnVariant, LeafKnnModel};
 pub use rules::{ConditionOp, Rule, RuleCondition, RuleSet};
