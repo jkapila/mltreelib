@@ -258,6 +258,12 @@ For a standalone weighted fit, use `mltreelib.solvers.fit`. It accepts
 `sample_weight` and returns a fitted `FitResult` with coefficients, predictions,
 convergence status, and the solver stop reason.
 
+For a bounded scalar objective of any shape, use `mltreelib.solvers.optimize`.
+It takes a callable, one `(lower, upper)` pair per parameter, and a method
+name, and returns the best point, the best objective, the evaluation count,
+and the termination status. See the
+[generic optimizer guide](docs/examples/generic-optimizer.md).
+
 ```python
 # Fit global OLS regression with full R-style statistical tables
 ols = ModelTree(max_depth=0, leaf="linear", leaf_solver="irls", l2=0.0)
