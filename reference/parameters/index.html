@@ -2435,10 +2435,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-decoupled-leaf-controls-hierarchical-retraining" class="md-nav__link">
+  <a href="#8-growth-and-leaf-controls" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        8. Decoupled Leaf Controls &amp; Hierarchical Retraining
+        8. Growth and Leaf Controls
       </span>
     </span>
   </a>
@@ -2899,10 +2899,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-decoupled-leaf-controls-hierarchical-retraining" class="md-nav__link">
+  <a href="#8-growth-and-leaf-controls" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        8. Decoupled Leaf Controls &amp; Hierarchical Retraining
+        8. Growth and Leaf Controls
       </span>
     </span>
   </a>
@@ -2950,12 +2950,13 @@
 <li><a href="#5-categorical-handling-monotonicity-constraints">5. Categorical Handling &amp; Monotonicity Constraints</a></li>
 <li><a href="#6-pruning-honesty-missing-value-routing">6. Pruning, Honesty &amp; Missing Value Routing</a></li>
 <li><a href="#7-leaf-models-glm-families-penalized-solvers">7. Leaf Models, GLM Families &amp; Penalized Solvers</a></li>
-<li><a href="#8-decoupled-leaf-controls-hierarchical-retraining">8. Decoupled Leaf Controls &amp; Hierarchical Retraining</a></li>
+<li><a href="#8-growth-and-leaf-controls">8. Growth and Leaf Controls</a></li>
 <li><a href="#9-telemetry-execution-controls">9. Telemetry &amp; Execution Controls</a></li>
 </ul>
 <hr />
 <h2 id="1-core-tree-architecture-sizing">1. Core Tree Architecture &amp; Sizing<a class="headerlink" href="#1-core-tree-architecture-sizing" title="Permanent link">&para;</a></h2>
 <p>Controls how deep and wide the tree can grow before termination.</p>
+<p>Set the classification class count with <code>GrowthControl(n_classes=...)</code>. Existing calls can supply <code>n_classes</code> as a flat constructor keyword, a fit keyword, or a legacy <code>LeafControl</code> setting.</p>
 <table>
 <thead>
 <tr>
@@ -3437,8 +3438,8 @@
 </tbody>
 </table>
 <hr />
-<h2 id="8-decoupled-leaf-controls-hierarchical-retraining">8. Decoupled Leaf Controls &amp; Hierarchical Retraining<a class="headerlink" href="#8-decoupled-leaf-controls-hierarchical-retraining" title="Permanent link">&para;</a></h2>
-<p>Enables independent configuration of leaf models and decoupled retraining without changing tree topology.</p>
+<h2 id="8-growth-and-leaf-controls">8. Growth and Leaf Controls<a class="headerlink" href="#8-growth-and-leaf-controls" title="Permanent link">&para;</a></h2>
+<p>Use the growth settings in sections 1–6 to configure the partition. Use the leaf settings in section 7 to configure the model fitted in each region. Under constraints, <code>tree_monotone</code> governs splits and <code>leaf_monotone</code> governs leaf coefficients. Supply data, feature names, types, and row weights to <code>fit</code>.</p>
 <table>
 <thead>
 <tr>
@@ -3450,10 +3451,16 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong><code>control</code></strong> / <strong><code>leaf_control</code></strong></td>
+<td style="text-align: left;"><strong><code>growth_control</code></strong></td>
+<td style="text-align: left;"><code>GrowthControl \| dict \| None</code></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">Groups split search, stopping, feature sampling, honesty, and pruning settings.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>leaf_control</code></strong> / <strong><code>control</code></strong></td>
 <td style="text-align: left;"><code>LeafControl \| dict \| None</code></td>
 <td style="text-align: left;"><code>None</code></td>
-<td style="text-align: left;">Dedicated <code>LeafControl</code> configuration object decoupling leaf model architecture (<code>family</code>, <code>l1</code>, <code>l2</code>, <code>leaf_features</code>) from split tree parameters.</td>
+<td style="text-align: left;">Groups the leaf form, family, solver, penalties, and other leaf settings.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>train_groups</code></strong></td>
@@ -3469,6 +3476,30 @@
 </tr>
 </tbody>
 </table>
+<p>For solver selection inside a leaf control, use <code>solver="lbfgs"</code> or another compatible solver. Flat callers can continue to use <code>leaf_solver</code>. Some leaf models use a dedicated fitting method. See the <a href="../model/#configure-growth-and-leaves">model reference</a> for typed, dictionary, and flat examples.</p>
+<table>
+<thead>
+<tr>
+<th>Leaf model</th>
+<th>Compatible explicit solver choices</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gaussian linear</td>
+<td><code>irls</code>, <code>lbfgs</code>, <code>ccd</code>, <code>shade</code>, <code>cmaes</code>, <code>ga</code>, <code>nes</code></td>
+</tr>
+<tr>
+<td>Linear binomial, probit, Poisson, Gamma, Tweedie, or Tobit</td>
+<td><code>irls</code>, <code>lbfgs</code></td>
+</tr>
+<tr>
+<td>Leaves with a dedicated estimator</td>
+<td>Use the estimator selected by the leaf form and family.</td>
+</tr>
+</tbody>
+</table>
+<p>Use L-BFGS with zero L1 penalty and no monotone leaf constraints. It supports ridge penalties. Specialized estimators reject explicit <code>solver</code> selections.</p>
 <hr />
 <h2 id="9-telemetry-execution-controls">9. Telemetry &amp; Execution Controls<a class="headerlink" href="#9-telemetry-execution-controls" title="Permanent link">&para;</a></h2>
 <table>

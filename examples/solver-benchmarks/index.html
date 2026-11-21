@@ -2921,16 +2921,17 @@
 
 <h1 id="leaf-solver-benchmarks">Leaf Solver Benchmarks<a class="headerlink" href="#leaf-solver-benchmarks" title="Permanent link">&para;</a></h1>
 <p>Benchmark the seven numerical, quasi-Newton, and continuous evolutionary leaf solvers implemented natively in <code>mltreelib-core</code>.</p>
-<p>The complete benchmark script lives at <a href="https://github.com/jkapila/mltreelib/blob/main/examples/solver_benchmarks.py"><code>examples/solver_benchmarks.py</code></a>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/solver_benchmarks.py
+<p>Run the benchmark from the repository root after <a href="../../installation/#from-source">building the release extension</a>. It compares fit time and holdout error on Yeh Concrete.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/suites/solver_benchmarks.py
 </span></code></pre></div>
 <hr />
 <h2 id="1-architectural-decoupling-tree-partitions-vs-leaf-solvers">1. Architectural Decoupling: Tree Partitions vs. Leaf Solvers<a class="headerlink" href="#1-architectural-decoupling-tree-partitions-vs-leaf-solvers" title="Permanent link">&para;</a></h2>
 <p>In standard model trees, evaluating complex optimization problems at every candidate split threshold incurs prohibitive computational cost. <code>ModelTree</code> solves this through <strong>two-control decoupling</strong>:</p>
 <ol>
 <li><strong>Tree Search</strong>: Fast scalar heuristics (Variance reduction, Chow test, Log-rank) discover spatial partition boundaries.</li>
-<li><strong>Leaf Optimization</strong>: Once terminal regions are established, the configured <code>leaf_solver</code> solves the local parameter system.</li>
+<li><strong>Leaf Optimization</strong>: Once terminal regions are established, the compatible optimizer selected with <code>LeafControl(solver=...)</code> fits each local model.</li>
 </ol>
+<p>All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear GLMs use IRLS or L-BFGS. L-BFGS requires zero L1 penalty and no monotone leaf constraints. See the <a href="../../reference/parameters/">parameter reference</a> for details.</p>
 <pre class="mermaid"><code>flowchart TD
     Data["Candidate Data in Leaf Node\n[X, y]"] --&gt; Fam{"Is the loss smooth\nand convex?"}
 
@@ -2970,8 +2971,8 @@
 <td style="text-align: left;"><strong><code>"irls"</code></strong></td>
 <td style="text-align: left;">Cholesky / Iteratively Reweighted Least Squares</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: left;">Sub-millisecond closed-form solution via <code>faer</code>; exact Gram matrix factorization.</td>
-<td style="text-align: left;">Default for Gaussian ridge and standard GLM models.</td>
+<td style="text-align: left;">Direct weighted least squares via <code>faer</code>, with iterative reweighting for supported GLMs.</td>
+<td style="text-align: left;">Gaussian ridge or a supported GLM.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>"lbfgs"</code></strong></td>

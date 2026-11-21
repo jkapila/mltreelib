@@ -345,6 +345,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dataset-loading-optional-extra" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dataset loading (optional extra)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plotting-optional-extra" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2809,6 +2820,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dataset-loading-optional-extra" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dataset loading (optional extra)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plotting-optional-extra" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2848,8 +2870,7 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<p>mltreelib is a Python package with a Rust core — one wheel; pulls <code>pyarrow&gt;=14</code>
-(required runtime dependency).</p>
+<p>Install mltreelib as a Python wheel with a Rust core. Model fitting and inference require no additional Python packages.</p>
 <h2 id="from-pypi">From PyPI<a class="headerlink" href="#from-pypi" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mltreelib
 </span></code></pre></div>
@@ -2861,20 +2882,25 @@
 <a href="https://www.maturin.rs">maturin</a>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/jkapila/mltreelib
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>mltreelib
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release<span class="w">   </span><span class="c1"># builds the Rust core into your environment with release optimizations</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
 </span></code></pre></div>
 <h2 id="verify-the-install">Verify the install<a class="headerlink" href="#verify-the-install" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"from mltreelib import ModelTree; print(ModelTree())"</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import mltreelib; print(mltreelib.__version__)"</span>
 </span></code></pre></div>
-<p>An unfitted tree refuses to print its structure (by design); the call should
-raise <code>ValueError: ModelTree is not fitted</code>. Fit anything and <code>print(model)</code>
-shows the rpart-style tree.</p>
+<p>If you use uv, run the command with <code>uv run python</code>. Continue to the <a href="../quickstart/">quickstart</a> to fit and inspect your first tree.</p>
+<h2 id="dataset-loading-optional-extra">Dataset loading (optional extra)<a class="headerlink" href="#dataset-loading-optional-extra" title="Permanent link">&para;</a></h2>
+<p>Install the dataset extra to read the package's Parquet datasets.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"mltreelib[dataset]"</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># or</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"mltreelib[dataset]"</span>
+</span></code></pre></div>
 <h2 id="plotting-optional-extra">Plotting (optional extra)<a class="headerlink" href="#plotting-optional-extra" title="Permanent link">&para;</a></h2>
 <p>Charts and diagrams ride on the standard rendering wheels — install them
 only when you build figures:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mltreelib<span class="o">[</span>plotting<span class="o">]</span><span class="w">     </span><span class="c1"># matplotlib + pygraphviz + seaborn</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># or</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>plotting
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"mltreelib[plotting]"</span><span class="w">   </span><span class="c1"># matplotlib + pygraphviz + seaborn</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># or</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>plotting
 </span></code></pre></div>
 <p><code>mltreelib.plots</code> (metric charts) and <code>ModelTree.to_dot()</code> + pygraphviz
 (tree diagrams) are the two consumers. The core library never imports them.</p>

@@ -2865,7 +2865,7 @@
 
 <h1 id="core-tree-architecture-two-control-decoupling-growth-knobs">Core Tree Architecture, Two-Control Decoupling &amp; Growth Knobs<a class="headerlink" href="#core-tree-architecture-two-control-decoupling-growth-knobs" title="Permanent link">&para;</a></h1>
 <p>This guide unifies the architectural mechanics of <code>mltreelib</code>: the decoupling between greedy tree topology growth and terminal leaf models, 0D distributional profiles across partitioned leaves, and hypothesis-driven structural break gating via the Chow test.</p>
-<p>Script: <a href="https://github.com/jkapila/mltreelib/blob/main/examples/core_tree_architecture.py"><code>examples/core_tree_architecture.py</code></a> (<code>uv run python examples/core_tree_architecture.py</code>).</p>
+<p>Script: <a href="https://github.com/jkapila/mltreelib/blob/main/examples/suites/core_tree_architecture.py"><code>examples/suites/core_tree_architecture.py</code></a> (<code>uv run python examples/suites/core_tree_architecture.py</code>).</p>
 <hr />
 <h2 id="1-domain-context-architectural-rationale">1. Domain Context &amp; Architectural Rationale<a class="headerlink" href="#1-domain-context-architectural-rationale" title="Permanent link">&para;</a></h2>
 <p>Classical decision tree libraries (such as <code>scikit-learn</code> or <code>rpart</code>) couple recursive partitioning directly to scalar leaf statistics (mean, median, or class frequency). This coupling introduces two severe structural limitations:</p>

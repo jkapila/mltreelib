@@ -806,6 +806,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#run-an-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run an example
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-9-consolidated-example-suites" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2751,6 +2762,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#run-an-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run an example
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-9-consolidated-example-suites" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2818,8 +2840,13 @@
 
 
 <h1 id="example-library">Example Library<a class="headerlink" href="#example-library" title="Permanent link">&para;</a></h1>
-<p>The example library is organized into <strong>9 authoritative suites</strong>. Each suite grounds its implementation in a real cited benchmark dataset, explains the theoretical rationale and domain use case, provides architectural Mermaid flowcharts, and generates high-resolution scikit-learn style diagnostic figures locked to the <code>#00897b</code> Teal / <code>#f4511e</code> Deep Orange palette.</p>
-<hr />
+<p>Start with the <a href="../quickstart/">quickstart</a>, then choose a suite for the modeling problem you want to solve. The guides explain the inputs, the model settings, and how to interpret the outputs.</p>
+<h2 id="run-an-example">Run an example<a class="headerlink" href="#run-an-example" title="Permanent link">&para;</a></h2>
+<p>Follow the <a href="../installation/#from-source">source installation instructions</a>, then run the script from the repository root.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/quickstart.py
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/suites/core_tree_architecture.py
+</span></code></pre></div>
+<p>Each guide identifies its datasets and shows the command for its suite. Dataset-backed examples can download data on first use. Plotting examples write figures under <code>docs/assets/</code>. Use the release extension for timing comparisons.</p>
 <h2 id="the-9-consolidated-example-suites">The 9 Consolidated Example Suites<a class="headerlink" href="#the-9-consolidated-example-suites" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>

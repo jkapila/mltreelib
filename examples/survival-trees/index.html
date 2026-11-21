@@ -3113,7 +3113,7 @@
 <p>This suite implements non-parametric Survival Trees and Competing Risks Trees in pure Rust (<code>mltreelib-core</code>) with thin Python bindings (<code>mltreelib</code>). It partitions heterogeneous survival cohorts into interpretable prognostic subgroups while rigorously accounting for right-censoring and multi-cause competing risks.</p>
 <p><img alt="Diagnostic curves for Suite 9: Survival and Competing Risks" src="../../assets/suite9_survival_competing_risks.png" /></p>
 <p>Companion executable script:
-- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py"><code>examples/suites/survival_and_competing_risks.py</code></a> (<code>python3 examples/suites/survival_and_competing_risks.py</code>)</p>
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py"><code>examples/suites/survival_and_competing_risks.py</code></a> (<code>uv run python examples/suites/survival_and_competing_risks.py</code>)</p>
 <hr />
 <h2 id="1-survival-tree-structure-decision-topology">1. Survival Tree Structure &amp; Decision Topology<a class="headerlink" href="#1-survival-tree-structure-decision-topology" title="Permanent link">&para;</a></h2>
 <p>In survival analysis, observations are right-censored: study termination or patient dropout masks the true event time <span class="arithmatex">\(T_i^*\)</span>. The observed pair is <span class="arithmatex">\((T_i, E_i)\)</span> where <span class="arithmatex">\(T_i = \min(T_i^*, C_i)\)</span> and <span class="arithmatex">\(E_i = I(T_i^* \le C_i)\)</span>.</p>
