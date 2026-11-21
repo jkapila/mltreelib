@@ -50,6 +50,7 @@ nav = [
       { "Suite 8: Unsupervised Trees" = "examples/unsupervised-trees.md" },
       { "Suite 9: Survival & Competing Risks Trees" = "examples/survival-trees.md" },
       { "Leaf Solver Benchmarks" = "examples/solver-benchmarks.md" },
+      { "Generic optimizer and real-data tuning" = "examples/generic-optimizer.md" },
     ] },
     { "Specialized Topics" = [
       { "Data processing" = "examples/data-processing.md" },

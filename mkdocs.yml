@@ -107,6 +107,7 @@ nav:
           - "Suite 7: Time Series Forecasting": examples/timeseries-forecasting.md
           - "Suite 8: Unsupervised Trees": examples/unsupervised-trees.md
           - "Leaf Solver Benchmarks": examples/solver-benchmarks.md
+          - "Generic optimizer and real-data tuning": examples/generic-optimizer.md
       - Specialized Topics:
           - Data processing: examples/data-processing.md
           - Optional categorical encoders: examples/categorical-encoders.md
