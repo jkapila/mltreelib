@@ -171,10 +171,11 @@ non-native reader will parse.
 - **Codex is a standing buddy.** Use the `codex` CLI freely — ask it for
   design advice, have it code or review parts in parallel, and test its
   output. Don't hesitate; it's part of the workflow.
-- **Model cost and delegation.** Choose the lowest-cost model and reasoning level
-  that can complete each task reliably. Use low-cost subagents for independent
-  research, implementation, and review when they improve speed or reduce cost.
-  Use a stronger model when complexity, risk, or failed checks warrant it.
+- **Model cost and delegation.** The primary assistant coordinates the user-facing
+  work and reviews the integrated result. Delegate investigation, implementation,
+  diagnostics, and test execution to the lowest-cost capable subagent. Use GPT-5.6
+  Luna for routine scoped work when available. Upgrade for complexity, risk, or
+  failed checks. The primary assistant owns completeness and final evidence.
 - **Tests are behavior, not wiring.** Every new capability lands with Rust tests
   (core) and pytest coverage of the user-visible API. Run both suites before
   committing. No test may pin incidental implementation details.
