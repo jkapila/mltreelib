@@ -30,6 +30,7 @@ min_rows : int, default=10
     Minimum leaf samples.
 contamination : float, default=0.05
     Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
+    If the cutoff splits a group of equal scores, the entire group is labeled as inliers.
 seed : int, default=42
     Random seed for stochastic engines (EIF, HST, RCT, Active).
 extension_level, subsample_size : int, optional
@@ -54,15 +55,15 @@ smoothing_discount : float, default=0.5
 ### AnomalyTree.conditional_prob
 
 ```python
-conditional_prob(self, context: collections.abc.Sequence[int], symbol: int) -> float
+conditional_prob(self, context: collections.abc.Sequence[int | float | None], symbol: int | float | None) -> float | None
 ```
 
-Compute conditional probability P(symbol | context) for sequence context tree.
+Estimate a symbol's probability from the context after the last gap.
 
 ### AnomalyTree.feedback
 
 ```python
-feedback(self, point: collections.abc.Sequence[float], is_anomaly: bool, eta: float = 0.5) -> 'AnomalyTree'
+feedback(self, point: collections.abc.Sequence[float | None], is_anomaly: bool, eta: float = 0.5) -> 'AnomalyTree'
 ```
 
 Alias for update_feedback.
@@ -75,12 +76,13 @@ fit(self, x: collections.abc.Sequence[collections.abc.Sequence[typing.Any]], col
 
 Fit the anomaly model on training data.
 
-Accepts native python lists (floats, ints, strings, None for missing values).
+Accepts native Python lists. None and NaN cells stay missing. In context
+sequences, each missing symbol breaks the transition history.
 
 ### AnomalyTree.from_bytes
 
 ```python
-from_bytes(data: bytes)
+from_bytes(data: bytes) -> ~_SnapshotT
 ```
 
 Restore a fitted model from UTF-8 JSON bytes.
@@ -88,7 +90,7 @@ Restore a fitted model from UTF-8 JSON bytes.
 ### AnomalyTree.from_json
 
 ```python
-from_json(data: str)
+from_json(data: str) -> ~_SnapshotT
 ```
 
 Restore a fitted model from a versioned JSON string.
@@ -96,7 +98,7 @@ Restore a fitted model from a versioned JSON string.
 ### AnomalyTree.load
 
 ```python
-load(path: str | pathlib.Path)
+load(path: str | pathlib.Path) -> ~_SnapshotT
 ```
 
 Restore a fitted model from a JSON file.
@@ -141,10 +143,10 @@ Higher scores indicate greater degree of anomalousness.
 ### AnomalyTree.surprise_score
 
 ```python
-surprise_score(self, context: collections.abc.Sequence[int], symbol: int) -> float
+surprise_score(self, context: collections.abc.Sequence[int | float | None], symbol: int | float | None) -> float | None
 ```
 
-Compute surprise score -log2 P(symbol | context) for sequence context tree.
+Compute surprise in bits after the last gap. A missing symbol has no score.
 
 ### AnomalyTree.to_bytes
 
@@ -165,7 +167,7 @@ Return the fitted model as a versioned JSON string.
 ### AnomalyTree.update_feedback
 
 ```python
-update_feedback(self, point: collections.abc.Sequence[float], is_anomaly: bool, eta: float = 0.5) -> 'AnomalyTree'
+update_feedback(self, point: collections.abc.Sequence[float | None], is_anomaly: bool, eta: float = 0.5) -> 'AnomalyTree'
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).

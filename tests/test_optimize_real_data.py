@@ -5,32 +5,30 @@ suite is not downloaded locally.
 """
 
 from math import sqrt
-from pathlib import Path
 
 import pytest
+from mltreelib.datasets import load_dataset
 from mltreelib.solvers import optimize
-
-DATASETS = Path(__file__).resolve().parent.parent / "datasets"
-AIRFOIL = DATASETS / "airfoil_self_noise.parquet"
-
-pytestmark = pytest.mark.skipif(
-    not AIRFOIL.exists(),
-    reason="TabArena dataset not downloaded; run the dataset downloader first",
-)
 
 
 def load_airfoil():
-    """Read the airfoil self-noise table as one numeric feature and one target."""
-    import pyarrow.parquet as pq
+    """Read the airfoil self-noise table as one numeric feature and one target.
 
-    data = pq.read_table(AIRFOIL).to_pydict()
-    target = data.pop("scaled-sound-pressure")
-    feature = data["frequency"]
+    The dataset is read from the repository folder or the local cache. The test
+    skips when the suite is not available, because the files are not tracked in
+    git and a test run never downloads them.
+    """
+    try:
+        data = load_dataset("airfoil_self_noise", auto_download=False)
+    except (ImportError, ValueError) as error:
+        pytest.skip(f"airfoil dataset is not available locally: {error}")
+    columns = data["columns"]
     rows = [
         (float(x), float(y))
-        for x, y in zip(feature, target)
-        if isinstance(x, (int, float)) and isinstance(y, (int, float))
+        for x, y in zip(columns["frequency"], columns["scaled-sound-pressure"])
     ]
+    if not rows:
+        pytest.skip("airfoil dataset has no rows")
     return rows
 
 

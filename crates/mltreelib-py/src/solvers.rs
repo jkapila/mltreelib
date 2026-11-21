@@ -10,41 +10,52 @@ use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyDictMethods, PyList};
 
+/// Fitted standalone model from `mltreelib.solvers.fit`.
+///
+/// Holds the intercept, the coefficient vector, the convergence state, and the
+/// statistical summary when the fitted family supports inference statistics.
 #[pyclass(name = "FitResult", module = "mltreelib._core")]
 struct PyFitResult(FittedGlm);
 
 #[pymethods]
 impl PyFitResult {
+    /// Fitted intercept.
     #[getter]
     fn intercept(&self) -> f64 {
         self.0.intercept
     }
 
+    /// Fitted feature coefficients, without the intercept.
     #[getter]
     fn coef(&self) -> Vec<f64> {
         self.0.coef.clone()
     }
 
+    /// Iterations the solver performed.
     #[getter]
     fn iterations(&self) -> usize {
         self.0.convergence.iterations
     }
 
+    /// Reports whether the solver reached its convergence test.
     #[getter]
     fn converged(&self) -> bool {
         self.0.convergence.converged()
     }
 
+    /// Reason the solver stopped, for example "exact" or "tolerance".
     #[getter]
     fn stop_reason(&self) -> &'static str {
         self.0.convergence.reason.as_str()
     }
 
+    /// Objective value at the fitted coefficients.
     #[getter]
     fn objective(&self) -> f64 {
         self.0.objective
     }
 
+    /// R-style statistical summary, when the fitted family supports it.
     #[getter]
     fn summary<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyDict>>> {
         let Some(summary) = &self.0.summary else {
@@ -73,12 +84,14 @@ impl PyFitResult {
         Ok(Some(values))
     }
 
+    /// Predicts the response for one numeric design matrix.
     #[pyo3(signature = (X))]
     #[allow(non_snake_case)]
     fn predict(&self, X: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
         self.0.predict(&X).map_err(PyValueError::new_err)
     }
 
+    /// Mean deviance of the fit on one evaluation set.
     #[pyo3(signature = (X, y, *, sample_weight=None))]
     #[allow(non_snake_case)]
     fn mean_deviance(
@@ -93,6 +106,11 @@ impl PyFitResult {
     }
 }
 
+/// Fits a weighted Gaussian or generalized linear model without growing a tree.
+///
+/// Pass one numeric design matrix and one response per row. Use nonnegative
+/// case weights with a positive total weight. The solver picks the exact
+/// Gaussian path when it fits the family and the requested penalties.
 #[pyfunction]
 #[pyo3(signature = (X, y, *, family="gaussian", solver="auto", l1=0.0, l2=0.0, sample_weight=None, monotone=None, max_iter=250, tol=1e-9, seed=42, tweedie_p=None, tobit_threshold=None))]
 #[allow(non_snake_case, clippy::too_many_arguments)]
@@ -263,52 +281,65 @@ impl SmoothObjective for PySmoothObjective {
     }
 }
 
-/// Result of one generic optimization run.
+/// Result of one generic optimization run from `mltreelib.solvers.optimize`.
+///
+/// Reports the best point, the best objective value, the iteration and
+/// evaluation counts, the termination status, and optional convergence
+/// history.
 #[pyclass(name = "OptimizationResult", module = "mltreelib._core")]
 struct PyOptimizationResult(OptimizationResult);
 
 #[pymethods]
 impl PyOptimizationResult {
+    /// Best point found. Finite and inside the bounds.
     #[getter]
     fn best_x(&self) -> Vec<f64> {
         self.0.best_x.clone()
     }
 
+    /// Objective value at the best point.
     #[getter]
     fn best_value(&self) -> f64 {
         self.0.best_value
     }
 
+    /// Solver iterations performed.
     #[getter]
     fn iterations(&self) -> usize {
         self.0.iterations
     }
 
+    /// User objective evaluations performed.
     #[getter]
     fn evaluations(&self) -> usize {
         self.0.evaluations
     }
 
+    /// Termination status. Budget exhaustion never reports success.
     #[getter]
     fn status(&self) -> &'static str {
         self.0.status.as_str()
     }
 
+    /// Reports whether the run reached an accepted optimum.
     #[getter]
     fn converged(&self) -> bool {
         self.0.status.is_success()
     }
 
+    /// Failure detail, when the run did not succeed.
     #[getter]
     fn message(&self) -> Option<String> {
         self.0.message.clone()
     }
 
+    /// Largest constraint violation at the best point.
     #[getter]
     fn max_constraint_violation(&self) -> Option<f64> {
         self.0.max_constraint_violation
     }
 
+    /// Convergence history, when the method records one.
     #[getter]
     fn history<'py>(&self, py: Python<'py>) -> PyResult<Option<Vec<Bound<'py, PyDict>>>> {
         let Some(history) = &self.0.history else {

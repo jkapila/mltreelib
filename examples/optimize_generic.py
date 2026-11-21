@@ -20,40 +20,39 @@ from __future__ import annotations
 import argparse
 import json
 from math import sqrt
-from pathlib import Path
 
 from mltreelib import ModelTree
+from mltreelib.datasets import load_dataset
 from mltreelib.solvers import optimize
-
-DATASETS = Path(__file__).resolve().parent.parent / "datasets"
 
 # Bounded search space: tree depth, minimum rows per leaf, and leaf L2 penalty.
 BOUNDS = [(1.0, 6.0), (2.0, 60.0), (0.0, 1.0)]
 
 
-def load_numeric_table(path: Path):
-    """Read one Parquet file into numeric features and one numeric target.
+def load_numeric_table(name: str, offline: bool):
+    """Read one benchmark dataset into numeric features and one numeric target.
 
-    Non-numeric columns are dropped. The returned names list holds the kept
-    feature columns only.
+    Categorical columns are dropped. The returned names list holds the kept
+    feature columns only. The dataset is downloaded on demand unless the run
+    stays offline.
     """
-    import pyarrow.parquet as pq
-
-    table = pq.read_table(path)
-    data = table.to_pydict()
-    target = list(data)[-1]
-    values = data.pop(target)
-    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in values):
+    data = load_dataset(name, auto_download=not offline)
+    columns = data["columns"]
+    dtypes = data["dtypes"]
+    target = list(columns)[-1]
+    if dtypes[target] != "numeric":
         raise TypeError(f"target column {target} is not numeric")
-    names = [
-        name
-        for name in data
-        if all(
-            not isinstance(value, bool) and isinstance(value, (int, float))
-            for value in data[name]
-        )
-    ]
-    rows = [[float(data[name][index]) for name in names] for index in range(len(values))]
+    values = columns.pop(target)
+    names = [name for name in columns if dtypes[name] == "numeric"]
+    rows = []
+    for index in range(len(values)):
+        row = []
+        for column in names:
+            value = columns[column][index]
+            if value is None:
+                raise ValueError(f"column {column} has a missing value")
+            row.append(float(value))
+        rows.append(row)
     y = [float(value) for value in values]
     return names, rows, y
 
@@ -119,13 +118,14 @@ def main() -> None:
     parser.add_argument("--budget", type=int, default=40)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--holdout", type=float, default=0.2)
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="never download; fail when the dataset is missing locally.",
+    )
     args = parser.parse_args()
 
-    path = DATASETS / f"{args.dataset}.parquet"
-    if not path.exists():
-        raise SystemExit(f"missing dataset {path}. Download the TabArena suite first.")
-
-    names, x, y = load_numeric_table(path)
+    names, x, y = load_numeric_table(args.dataset, args.offline)
     cut = int(len(y) * (1.0 - args.holdout))
     x_train, y_train = x[:cut], y[:cut]
     x_test, y_test = x[cut:], y[cut:]

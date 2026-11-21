@@ -63,12 +63,16 @@ linkage : str, default="average"
 fit(self, x: collections.abc.Sequence[collections.abc.Sequence[typing.Any]], y: collections.abc.Sequence[collections.abc.Sequence[float]] | None = None, col_names: collections.abc.Sequence[str] | None = None, dtypes: collections.abc.Sequence[str] | None = None, target_names: collections.abc.Sequence[str] | None = None) -> 'ClusterTree'
 ```
 
-Fit the clustering tree on dataset x (and optional targets y for PCT).
+Fit on x, with optional PCT targets y.
+
+None and NaN cells stay missing. CLTree and URF route them to the left
+during split search and prediction. HDBSCAN uses jointly observed
+coordinates and treats rows with too few comparable neighbors as noise.
 
 ### ClusterTree.from_bytes
 
 ```python
-from_bytes(data: bytes)
+from_bytes(data: bytes) -> ~_SnapshotT
 ```
 
 Restore a fitted model from UTF-8 JSON bytes.
@@ -76,7 +80,7 @@ Restore a fitted model from UTF-8 JSON bytes.
 ### ClusterTree.from_json
 
 ```python
-from_json(data: str)
+from_json(data: str) -> ~_SnapshotT
 ```
 
 Restore a fitted model from a versioned JSON string.
@@ -84,7 +88,7 @@ Restore a fitted model from a versioned JSON string.
 ### ClusterTree.load
 
 ```python
-load(path: str | pathlib.Path)
+load(path: str | pathlib.Path) -> ~_SnapshotT
 ```
 
 Restore a fitted model from a JSON file.

@@ -17,3 +17,4 @@ code. Narrative guides with verified examples:
 | [Feature functions](features/) | — | grouped_scale, grouped_transform, trended_transform, windowed_transform, lag_by_days, decomposed_transform, calendar_features |
 | [Clustering trees](cluster/) | ClusterTree, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
 | [Anomaly & density trees](anomaly/) | AnomalyTree, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |
+| [Solvers & optimization](solvers/) | FitResult, OptimizationResult | fit, optimize |
