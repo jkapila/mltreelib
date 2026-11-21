@@ -77,12 +77,7 @@ fn eval_objective_and_grad<D: DesignMatrix>(
 }
 
 /// Evaluates objective value only (used during line search).
-fn eval_objective<D: DesignMatrix>(
-    design: &D,
-    family: &GlmFamily,
-    beta: &[f64],
-    l2: f64,
-) -> f64 {
+fn eval_objective<D: DesignMatrix>(design: &D, family: &GlmFamily, beta: &[f64], l2: f64) -> f64 {
     let n = design.n_rows();
     let p = design.n_features();
     let mut total_loss = 0.0;
@@ -328,7 +323,8 @@ pub(super) fn solve_lbfgs_report<D: DesignMatrix>(
             if options.verbose >= 3 {
                 println!(
                     "      [L-BFGS converged] iters={} final_loss={:.6}",
-                    iter + 1, current_loss
+                    iter + 1,
+                    current_loss
                 );
             }
             return Ok((beta, super::Convergence::tolerance(iter + 1)));

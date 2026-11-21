@@ -121,7 +121,11 @@ pub(super) fn solve_ccd_report<D: DesignMatrix>(
                     let raw = rho.signum() * (rho.abs() - l1_pen).max(0.0) / denom;
 
                     // Monotone constraint
-                    let mono = options.monotone.get(j.saturating_sub(1)).copied().unwrap_or(0);
+                    let mono = options
+                        .monotone
+                        .get(j.saturating_sub(1))
+                        .copied()
+                        .unwrap_or(0);
                     match mono {
                         1 => raw.max(0.0),
                         -1 => raw.min(0.0),
@@ -163,7 +167,11 @@ pub(super) fn solve_ccd_report<D: DesignMatrix>(
                 let l2_pen = options.l2 * scale * scale;
                 let denom = diag + l2_pen;
                 let raw = rho.signum() * (rho.abs() - l1_pen) / denom;
-                let mono = options.monotone.get(j.saturating_sub(1)).copied().unwrap_or(0);
+                let mono = options
+                    .monotone
+                    .get(j.saturating_sub(1))
+                    .copied()
+                    .unwrap_or(0);
                 let next_b = match mono {
                     1 => raw.max(0.0),
                     -1 => raw.min(0.0),

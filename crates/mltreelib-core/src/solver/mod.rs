@@ -27,7 +27,7 @@ pub use evolutionary::{
 pub use family::GlmFamily;
 pub use generic::{
     Bounds, Budget, Constraint, ConstraintKind, Objective, ObjectiveError, OptimizationRequest,
-    OptimizationResult, OptimizerKind, SolveStatus, SmoothObjective,
+    OptimizationResult, OptimizerKind, SmoothObjective, SolveStatus,
 };
 pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
@@ -166,7 +166,240 @@ impl Convergence {
     }
 }
 
-use crate::leaf::LeafSolver;
+use crate::family::LeafFamily;
+use crate::leaf::{LeafObjective, LeafProblemType, LeafSolver, LeafSolverDiagnostic};
+
+const GLM_FAMILIES: &[LeafFamily] = &[
+    LeafFamily::Gaussian,
+    LeafFamily::Binomial,
+    LeafFamily::Probit,
+    LeafFamily::Poisson,
+    LeafFamily::Gamma,
+    LeafFamily::Tweedie,
+    LeafFamily::Tobit,
+];
+
+/// Solver memory profile used for leaf compatibility and cost comparisons.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SolverMemoryProfile {
+    /// Linear memory in parameter count.
+    Linear,
+    /// Quadratic memory in parameter count.
+    Quadratic,
+    /// Population memory proportional to population size and parameter count.
+    Population,
+}
+
+/// Capabilities declared once for each leaf solver.
+#[derive(Clone, Copy, Debug)]
+pub struct SolverCapabilities {
+    /// Solver consumes exact gradients.
+    pub supports_gradients: bool,
+    /// Solver can operate without derivatives.
+    pub supports_derivative_free: bool,
+    /// Solver supports L1 penalties.
+    pub supports_l1: bool,
+    /// Solver supports monotone coefficient constraints.
+    pub supports_monotone: bool,
+    /// Solver supports finite box bounds.
+    pub supports_finite_bounds: bool,
+    /// Solver supports unbounded parameter domains.
+    pub supports_unbounded: bool,
+    /// Solver supports equality constraints.
+    pub supports_equality_constraints: bool,
+    /// Solver supports nonlinear inequality constraints.
+    pub supports_nonlinear_inequality_constraints: bool,
+    /// Response families accepted by the solver.
+    pub supported_families: &'static [LeafFamily],
+    /// Memory profile of the solver.
+    pub memory_profile: SolverMemoryProfile,
+}
+
+/// Requirements introduced by leaf controls.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LeafSolverRequirements {
+    /// Leaf requests an L1 penalty.
+    pub l1: bool,
+    /// Leaf requests monotone coefficient constraints.
+    pub monotone: bool,
+}
+
+/// Result of one leaf-solver compatibility lookup.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LeafSolverCompatibility {
+    /// Solver selected by the caller.
+    pub solver: LeafSolver,
+    /// Solver participates in the declared leaf problem.
+    pub solver_applies: bool,
+}
+
+/// Returns the single capability declaration for one solver.
+pub fn solver_capabilities(solver: LeafSolver) -> SolverCapabilities {
+    match solver {
+        LeafSolver::Irls => SolverCapabilities {
+            supports_gradients: true,
+            supports_derivative_free: false,
+            supports_l1: true,
+            supports_monotone: true,
+            supports_finite_bounds: false,
+            supports_unbounded: true,
+            supports_equality_constraints: false,
+            supports_nonlinear_inequality_constraints: false,
+            supported_families: GLM_FAMILIES,
+            memory_profile: SolverMemoryProfile::Quadratic,
+        },
+        LeafSolver::Lbfgs => SolverCapabilities {
+            supports_gradients: true,
+            supports_derivative_free: false,
+            supports_l1: false,
+            supports_monotone: false,
+            supports_finite_bounds: false,
+            supports_unbounded: true,
+            supports_equality_constraints: false,
+            supports_nonlinear_inequality_constraints: false,
+            supported_families: GLM_FAMILIES,
+            memory_profile: SolverMemoryProfile::Linear,
+        },
+        LeafSolver::Ccd => SolverCapabilities {
+            supports_gradients: false,
+            supports_derivative_free: true,
+            supports_l1: true,
+            supports_monotone: true,
+            supports_finite_bounds: false,
+            supports_unbounded: true,
+            supports_equality_constraints: false,
+            supports_nonlinear_inequality_constraints: false,
+            supported_families: &[LeafFamily::Gaussian],
+            memory_profile: SolverMemoryProfile::Linear,
+        },
+        LeafSolver::CmaEs
+        | LeafSolver::Shade
+        | LeafSolver::NaturalGradient
+        | LeafSolver::GeneticAlgorithm => SolverCapabilities {
+            supports_gradients: false,
+            supports_derivative_free: true,
+            supports_l1: true,
+            supports_monotone: true,
+            supports_finite_bounds: false,
+            supports_unbounded: true,
+            supports_equality_constraints: false,
+            supports_nonlinear_inequality_constraints: false,
+            supported_families: GLM_FAMILIES,
+            memory_profile: SolverMemoryProfile::Population,
+        },
+    }
+}
+
+/// Checks one leaf problem, response family, and solver pairing.
+///
+/// Closed-form and internally fitted leaves accept every solver and report
+/// that the solver does not apply. Other leaves return one precise missing
+/// capability when pairing is unsupported.
+pub fn check_leaf_solver_compatibility(
+    leaf: crate::leaf::LeafKind,
+    family: LeafFamily,
+    solver: LeafSolver,
+    requirements: LeafSolverRequirements,
+) -> Result<LeafSolverCompatibility, String> {
+    let problem = LeafProblemType::for_leaf(leaf, family);
+    let capabilities = solver_capabilities(solver);
+    match problem {
+        LeafProblemType::ClosedFormMean(_)
+        | LeafProblemType::ClosedFormMeanTransform(_)
+        | LeafProblemType::InternalMars(_)
+        | LeafProblemType::Knn(_)
+        | LeafProblemType::MulticlassGlm(_)
+        | LeafProblemType::Survival(_)
+        | LeafProblemType::Heteroscedastic(_)
+        | LeafProblemType::Aft(_)
+        | LeafProblemType::Cure(_)
+        | LeafProblemType::Spline(_) => Ok(LeafSolverCompatibility {
+            solver,
+            solver_applies: false,
+        }),
+        LeafProblemType::WeightedMedian(_) | LeafProblemType::WeightedQuantile { .. } => {
+            if solver == LeafSolver::Irls {
+                return Ok(LeafSolverCompatibility {
+                    solver,
+                    solver_applies: false,
+                });
+            }
+            if !capabilities.supports_derivative_free {
+                return Err(format!(
+                    "solver {solver:?} does not support gradients for the nonsmooth leaf objective"
+                ));
+            }
+            Ok(LeafSolverCompatibility {
+                solver,
+                solver_applies: true,
+            })
+        }
+        LeafProblemType::HuberLocation(_) => {
+            if solver == LeafSolver::Irls {
+                return Ok(LeafSolverCompatibility {
+                    solver,
+                    solver_applies: false,
+                });
+            }
+            if !capabilities.supports_gradients && !capabilities.supports_derivative_free {
+                return Err(format!(
+                    "solver {solver:?} supports neither gradients nor derivative-free operation"
+                ));
+            }
+            Ok(LeafSolverCompatibility {
+                solver,
+                solver_applies: true,
+            })
+        }
+        LeafProblemType::PenalizedGlm(_) => {
+            if !capabilities.supported_families.contains(&family) {
+                return Err(format!(
+                    "solver {solver:?} does not support the {family:?} response family"
+                ));
+            }
+            if requirements.l1 && !capabilities.supports_l1 {
+                return Err(format!("solver {solver:?} does not support L1 penalties"));
+            }
+            if requirements.monotone && !capabilities.supports_monotone {
+                return Err(format!(
+                    "solver {solver:?} does not support monotone coefficient constraints"
+                ));
+            }
+            if !capabilities.supports_gradients && !capabilities.supports_derivative_free {
+                return Err(format!(
+                    "solver {solver:?} supports neither gradients nor derivative-free operation"
+                ));
+            }
+            if !capabilities.supports_unbounded {
+                return Err(format!(
+                    "solver {solver:?} does not support unbounded parameters"
+                ));
+            }
+            Ok(LeafSolverCompatibility {
+                solver,
+                solver_applies: true,
+            })
+        }
+        LeafProblemType::Unknown => Ok(LeafSolverCompatibility {
+            solver,
+            solver_applies: false,
+        }),
+    }
+}
+
+/// Builds the persisted solver diagnostic for one leaf pairing.
+pub fn leaf_solver_diagnostic(
+    leaf: crate::leaf::LeafKind,
+    family: LeafFamily,
+    solver: LeafSolver,
+    requirements: LeafSolverRequirements,
+) -> LeafSolverDiagnostic {
+    match check_leaf_solver_compatibility(leaf, family, solver, requirements) {
+        Ok(compatibility) if compatibility.solver_applies => LeafSolverDiagnostic::Applied(solver),
+        Ok(_) => LeafSolverDiagnostic::NotApplicable(solver),
+        Err(reason) => LeafSolverDiagnostic::Rejected { solver, reason },
+    }
+}
 
 pub(crate) fn solve_iterative<D: DesignMatrix>(
     design: &D,
@@ -225,5 +458,489 @@ pub(crate) fn solve_iterative<D: DesignMatrix>(
                 warm_start,
             )
         }
+    }
+}
+
+/// Linear leaf problem passed to the unified solver entry point.
+pub(crate) struct LeafLinearProblem<'a> {
+    pub cols: &'a [Vec<Option<f64>>],
+    pub y: &'a [f64],
+    pub w: &'a [f64],
+    pub rows: &'a [usize],
+    pub chosen: &'a [usize],
+    pub with_indicators: bool,
+    pub impute_means: Option<&'a [f64]>,
+    pub family: LeafFamily,
+    pub solver: LeafSolver,
+    pub l1: f64,
+    pub l2: f64,
+    pub monotone: &'a [i8],
+    pub mean: f64,
+    pub extra: Option<&'a std::collections::HashMap<String, f64>>,
+    pub tweedie_p: f64,
+    pub tobit_threshold: f64,
+    pub verbose: u8,
+}
+
+/// One leaf optimization problem routed through the unified solver entry.
+pub(crate) enum LeafFitProblem<'a> {
+    Linear(LeafLinearProblem<'a>),
+    Location {
+        solver: LeafSolver,
+        objective: LeafObjective,
+        max_iter: usize,
+        tol: f64,
+    },
+}
+
+/// Result of one unified leaf solve.
+pub(crate) struct LeafSolveOutput {
+    pub linear: Option<crate::node_stats::LinearModel>,
+    pub center: Option<f64>,
+    pub diagnostic: LeafSolverDiagnostic,
+}
+
+/// Solves one declared leaf optimization problem.
+///
+/// Solver identity dispatch stays inside this module. Leaf construction only
+/// supplies problem data and maps the returned coefficients or location back
+/// into its model.
+pub(crate) fn solve_leaf_problem(problem: &LeafFitProblem<'_>) -> Result<LeafSolveOutput, String> {
+    match problem {
+        LeafFitProblem::Linear(problem) => solve_linear_leaf(problem),
+        LeafFitProblem::Location {
+            solver,
+            objective,
+            max_iter,
+            tol,
+        } => solve_location_leaf(*solver, objective, *max_iter, *tol),
+    }
+}
+
+fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput, String> {
+    check_leaf_solver_compatibility(
+        crate::leaf::LeafKind::Linear,
+        problem.family,
+        problem.solver,
+        LeafSolverRequirements {
+            l1: problem.l1 != 0.0,
+            monotone: problem.monotone.iter().any(|&sign| sign != 0),
+        },
+    )?;
+    let view = ColumnSliceView::new_with_imputation(
+        problem.cols,
+        problem.y,
+        problem.w,
+        problem.rows,
+        problem.chosen,
+        problem.with_indicators,
+        problem.impute_means,
+    );
+    let nc = problem.chosen.len();
+    match problem.solver {
+        LeafSolver::Irls if problem.family == LeafFamily::Gaussian => {
+            let mut gram = crate::node_stats::Gram::new(view.n_features());
+            let mut row = vec![0.0; view.n_features()];
+            for i in 0..view.n_rows() {
+                view.copy_design_row(i, &mut row);
+                gram.add_row(&row, view.get_y(i), view.get_weight(i));
+            }
+            let mut model = crate::node_stats::fit_linear(
+                &gram,
+                problem.chosen,
+                problem.with_indicators,
+                problem.monotone,
+                problem.l1,
+                problem.l2,
+            );
+            apply_feature_means(&mut model, problem.impute_means);
+            Ok(LeafSolveOutput {
+                linear: Some(model),
+                center: None,
+                diagnostic: LeafSolverDiagnostic::Applied(LeafSolver::Irls),
+            })
+        }
+        LeafSolver::Irls => {
+            let options = SolverOptions {
+                l1: problem.l1,
+                l2: problem.l2,
+                max_iter: 100,
+                tol: 1e-11,
+                verbose: problem.verbose,
+                ..Default::default()
+            };
+            let (mut model, convergence) = crate::node_stats::fit_glm_design(
+                &view,
+                problem.chosen,
+                problem.monotone,
+                problem.family,
+                problem.mean,
+                problem.extra,
+                &options,
+            )?;
+            if convergence.reason != StopReason::Tolerance {
+                return Err("GLM fit did not reach tolerance".into());
+            }
+            apply_feature_means(&mut model, problem.impute_means);
+            Ok(LeafSolveOutput {
+                linear: Some(model),
+                center: None,
+                diagnostic: LeafSolverDiagnostic::Applied(LeafSolver::Irls),
+            })
+        }
+        LeafSolver::Lbfgs => {
+            let family = glm_family(
+                problem.family,
+                problem.extra,
+                problem.tweedie_p,
+                problem.tobit_threshold,
+            );
+            let family = family.ok_or_else(|| {
+                format!(
+                    "solver {:?} does not support the {:?} response family",
+                    LeafSolver::Lbfgs,
+                    problem.family
+                )
+            })?;
+            let options = SolverOptions {
+                family,
+                l2: problem.l2,
+                max_iter: 250,
+                tol: 1e-9,
+                verbose: problem.verbose,
+                ..Default::default()
+            };
+            let (solution, _) = solve_iterative(&view, LeafSolver::Lbfgs, &options, 42, None)?;
+            if !solution.iter().all(|value| value.is_finite())
+                || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+            {
+                return Err("L-BFGS produced a non-finite leaf model".into());
+            }
+            let mut model = crate::node_stats::LinearModel {
+                cols: problem.chosen.to_vec(),
+                coef: solution[1..1 + nc].to_vec(),
+                na_coef: if problem.with_indicators {
+                    solution[1 + nc..].to_vec()
+                } else {
+                    Vec::new()
+                },
+                feature_means: Vec::new(),
+                intercept: solution[0],
+                summary: None,
+            };
+            apply_feature_means(&mut model, problem.impute_means);
+            Ok(LeafSolveOutput {
+                linear: Some(model),
+                center: None,
+                diagnostic: LeafSolverDiagnostic::Applied(LeafSolver::Lbfgs),
+            })
+        }
+        LeafSolver::Ccd => {
+            let options = SolverOptions {
+                l1: problem.l1,
+                l2: problem.l2,
+                max_iter: 1000,
+                tol: 1e-7,
+                monotone: problem.monotone.to_vec(),
+                ..Default::default()
+            };
+            match solve_iterative(&view, LeafSolver::Ccd, &options, 42, None) {
+                Ok((solution, _)) => {
+                    let mut model = crate::node_stats::LinearModel {
+                        cols: problem.chosen.to_vec(),
+                        coef: solution[1..1 + nc].to_vec(),
+                        na_coef: if problem.with_indicators {
+                            solution[1 + nc..].to_vec()
+                        } else {
+                            Vec::new()
+                        },
+                        feature_means: Vec::new(),
+                        intercept: solution[0],
+                        summary: None,
+                    };
+                    apply_feature_means(&mut model, problem.impute_means);
+                    Ok(LeafSolveOutput {
+                        linear: Some(model),
+                        center: None,
+                        diagnostic: LeafSolverDiagnostic::Applied(LeafSolver::Ccd),
+                    })
+                }
+                Err(_) => Ok(LeafSolveOutput {
+                    linear: Some(crate::node_stats::LinearModel {
+                        cols: problem.chosen.to_vec(),
+                        coef: vec![0.0; nc],
+                        na_coef: Vec::new(),
+                        feature_means: Vec::new(),
+                        intercept: problem.mean,
+                        summary: None,
+                    }),
+                    center: None,
+                    diagnostic: LeafSolverDiagnostic::Applied(LeafSolver::Ccd),
+                }),
+            }
+        }
+        LeafSolver::CmaEs
+        | LeafSolver::Shade
+        | LeafSolver::NaturalGradient
+        | LeafSolver::GeneticAlgorithm => {
+            let family = glm_family(
+                problem.family,
+                problem.extra,
+                problem.tweedie_p,
+                problem.tobit_threshold,
+            )
+            .ok_or_else(|| {
+                format!(
+                    "solver {:?} does not support the {:?} response family",
+                    problem.solver, problem.family
+                )
+            })?;
+            let options = SolverOptions {
+                family,
+                l1: problem.l1,
+                l2: problem.l2,
+                monotone: problem.monotone.to_vec(),
+                max_iter: 100,
+                tol: 1e-6,
+                verbose: problem.verbose,
+            };
+            match solve_iterative(&view, problem.solver, &options, 42, None) {
+                Ok((solution, _)) => {
+                    let mut model = crate::node_stats::LinearModel {
+                        cols: problem.chosen.to_vec(),
+                        coef: solution[1..1 + nc].to_vec(),
+                        na_coef: if problem.with_indicators {
+                            solution[1 + nc..].to_vec()
+                        } else {
+                            Vec::new()
+                        },
+                        feature_means: Vec::new(),
+                        intercept: solution[0],
+                        summary: None,
+                    };
+                    apply_feature_means(&mut model, problem.impute_means);
+                    Ok(LeafSolveOutput {
+                        linear: Some(model),
+                        center: None,
+                        diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+                    })
+                }
+                Err(_) => Ok(LeafSolveOutput {
+                    linear: Some(crate::node_stats::LinearModel {
+                        cols: problem.chosen.to_vec(),
+                        coef: vec![0.0; nc],
+                        na_coef: Vec::new(),
+                        feature_means: Vec::new(),
+                        intercept: problem.mean,
+                        summary: None,
+                    }),
+                    center: None,
+                    diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+                }),
+            }
+        }
+    }
+}
+
+fn solve_location_leaf(
+    solver: LeafSolver,
+    objective: &LeafObjective,
+    max_iter: usize,
+    tol: f64,
+) -> Result<LeafSolveOutput, String> {
+    let leaf = match objective {
+        LeafObjective::WeightedMedian { .. } => crate::leaf::LeafKind::Median,
+        LeafObjective::WeightedQuantile { tau, .. } => crate::leaf::LeafKind::Quantile(*tau),
+        LeafObjective::Huber(_) => crate::leaf::LeafKind::Huber,
+    };
+    check_leaf_solver_compatibility(
+        leaf,
+        LeafFamily::Gaussian,
+        solver,
+        LeafSolverRequirements::default(),
+    )?;
+    if solver == LeafSolver::Irls {
+        let center = match objective {
+            LeafObjective::WeightedMedian {
+                values, weights, ..
+            } => crate::stats::w_median(
+                &values
+                    .iter()
+                    .copied()
+                    .zip(weights.iter().copied())
+                    .collect::<Vec<_>>(),
+            ),
+            LeafObjective::WeightedQuantile {
+                values,
+                weights,
+                tau,
+                ..
+            } => crate::stats::w_quantile(
+                &values
+                    .iter()
+                    .copied()
+                    .zip(weights.iter().copied())
+                    .collect::<Vec<_>>(),
+                *tau,
+            ),
+            LeafObjective::Huber(objective) => crate::stats::huber_location(
+                &objective
+                    .values()
+                    .iter()
+                    .copied()
+                    .zip(objective.weights().iter().copied())
+                    .collect::<Vec<_>>(),
+            ),
+        };
+        return Ok(LeafSolveOutput {
+            linear: None,
+            center: Some(center),
+            diagnostic: LeafSolverDiagnostic::NotApplicable(solver),
+        });
+    }
+
+    let center = match (solver, objective) {
+        (LeafSolver::Lbfgs, LeafObjective::Huber(objective)) => {
+            solve_huber_location(objective, max_iter, tol)?
+        }
+        (
+            LeafSolver::Ccd
+            | LeafSolver::CmaEs
+            | LeafSolver::Shade
+            | LeafSolver::NaturalGradient
+            | LeafSolver::GeneticAlgorithm,
+            _,
+        ) => golden_section_location(objective, max_iter, tol)?,
+        (LeafSolver::Lbfgs, _) => {
+            return Err(
+                "solver Lbfgs does not support gradients for the nonsmooth leaf objective".into(),
+            )
+        }
+        _ => {
+            return Err(format!(
+                "solver {solver:?} does not support the leaf objective"
+            ))
+        }
+    };
+    Ok(LeafSolveOutput {
+        linear: None,
+        center: Some(center),
+        diagnostic: LeafSolverDiagnostic::Applied(solver),
+    })
+}
+
+fn golden_section_location(
+    objective: &LeafObjective,
+    max_iter: usize,
+    tol: f64,
+) -> Result<f64, String> {
+    let mut lower = objective.bounds().lower()[0];
+    let mut upper = objective.bounds().upper()[0];
+    if (upper - lower).abs() <= f64::EPSILON {
+        return Ok(lower);
+    }
+    let ratio = 0.5 * (5.0_f64.sqrt() - 1.0);
+    let mut left = upper - ratio * (upper - lower);
+    let mut right = lower + ratio * (upper - lower);
+    let mut left_value = objective
+        .value(&[left])
+        .map_err(|error| error.to_string())?;
+    let mut right_value = objective
+        .value(&[right])
+        .map_err(|error| error.to_string())?;
+    let iterations = max_iter.max(64);
+    for _ in 0..iterations {
+        if (upper - lower).abs() <= tol * (1.0 + upper.abs()) {
+            break;
+        }
+        if left_value <= right_value {
+            upper = right;
+            right = left;
+            right_value = left_value;
+            left = upper - ratio * (upper - lower);
+            left_value = objective
+                .value(&[left])
+                .map_err(|error| error.to_string())?;
+        } else {
+            lower = left;
+            left = right;
+            left_value = right_value;
+            right = lower + ratio * (upper - lower);
+            right_value = objective
+                .value(&[right])
+                .map_err(|error| error.to_string())?;
+        }
+    }
+    Ok(0.5 * (lower + upper))
+}
+
+fn solve_huber_location(
+    objective: &crate::leaf::LeafHuberObjective,
+    max_iter: usize,
+    tol: f64,
+) -> Result<f64, String> {
+    let mut sum_weight = 0.0;
+    let mut sum_value = 0.0;
+    for (&value, &weight) in objective.values().iter().zip(objective.weights()) {
+        sum_weight += weight;
+        sum_value += weight * value;
+    }
+    let mut location = if sum_weight > 0.0 {
+        sum_value / sum_weight
+    } else {
+        0.0
+    };
+    for _ in 0..max_iter.max(64) {
+        let gradient = objective
+            .gradient(&[location])
+            .map_err(|error| error.to_string())?[0];
+        let curvature = objective.curvature(location);
+        if curvature <= f64::EPSILON {
+            break;
+        }
+        let step = gradient / curvature;
+        let lower = objective.bounds().lower()[0];
+        let upper = objective.bounds().upper()[0];
+        let next = (location - step).clamp(lower, upper);
+        if (next - location).abs() <= tol * (1.0 + location.abs()) {
+            location = next;
+            break;
+        }
+        location = next;
+    }
+    Ok(location)
+}
+
+fn apply_feature_means(model: &mut crate::node_stats::LinearModel, impute_means: Option<&[f64]>) {
+    if let Some(means) = impute_means {
+        model.feature_means = means.iter().copied().map(Some).collect();
+    }
+}
+
+fn glm_family(
+    family: LeafFamily,
+    extra: Option<&std::collections::HashMap<String, f64>>,
+    tweedie_p: f64,
+    tobit_threshold: f64,
+) -> Option<GlmFamily> {
+    match family {
+        LeafFamily::Gaussian => Some(GlmFamily::Gaussian),
+        LeafFamily::Binomial => Some(GlmFamily::Binomial),
+        LeafFamily::Probit => Some(GlmFamily::Probit),
+        LeafFamily::Poisson => Some(GlmFamily::Poisson),
+        LeafFamily::Gamma => Some(GlmFamily::Gamma),
+        LeafFamily::Tweedie => Some(GlmFamily::Tweedie {
+            p: extra
+                .and_then(|values| values.get("tweedie_p"))
+                .copied()
+                .unwrap_or(tweedie_p),
+        }),
+        LeafFamily::Tobit => Some(GlmFamily::Tobit {
+            threshold: extra
+                .and_then(|values| values.get("tobit_threshold"))
+                .copied()
+                .unwrap_or(tobit_threshold),
+        }),
+        _ => None,
     }
 }

@@ -107,8 +107,16 @@ impl GlmSummary {
         }
 
         out.push_str("\nCoefficients:\n");
-        let stat_col_name = if self.is_gaussian { "t value" } else { "z value" };
-        let p_col_name = if self.is_gaussian { "Pr(>|t|)" } else { "Pr(>|z|)" };
+        let stat_col_name = if self.is_gaussian {
+            "t value"
+        } else {
+            "z value"
+        };
+        let p_col_name = if self.is_gaussian {
+            "Pr(>|t|)"
+        } else {
+            "Pr(>|z|)"
+        };
         out.push_str(&format!(
             "{:<20} {:>12} {:>12} {:>10} {:>12} \n",
             "", "Estimate", "Std. Error", stat_col_name, p_col_name

@@ -189,7 +189,9 @@ impl GlmFamily {
         match self {
             Self::Gaussian | Self::Tobit { .. } => weighted_mean,
             Self::Binomial | Self::Probit => self.link(weighted_mean.clamp(0.01, 0.99)),
-            Self::Poisson | Self::Gamma | Self::Tweedie { .. } => self.link(weighted_mean.max(1e-6)),
+            Self::Poisson | Self::Gamma | Self::Tweedie { .. } => {
+                self.link(weighted_mean.max(1e-6))
+            }
         }
     }
 }

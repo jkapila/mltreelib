@@ -86,7 +86,8 @@ pub fn solve_normal<D: DesignMatrix>(
             let y_mean = gram.wy / gram.ws;
             let tss = (gram.yty - gram.ws * y_mean * y_mean).max(1e-12);
             let r_squared = (1.0 - rss / tss).clamp(0.0, 1.0);
-            let adj_r_squared = (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
+            let adj_r_squared =
+                (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
 
             let p_pred = p.saturating_sub(1);
             let f_statistic = if p_pred > 0 && rss > 1e-12 {
@@ -105,7 +106,13 @@ pub fn solve_normal<D: DesignMatrix>(
                 let p_val = GlmSummary::p_value_t(t_val, df_residuals);
                 let name = match feature_names.and_then(|names| names.get(i)) {
                     Some(s) => s.clone(),
-                    None => if i == 0 { "(Intercept)".to_string() } else { format!("x{}", i) },
+                    None => {
+                        if i == 0 {
+                            "(Intercept)".to_string()
+                        } else {
+                            format!("x{}", i)
+                        }
+                    }
                 };
                 coefficients.push(CoeffStats {
                     name,
@@ -123,9 +130,12 @@ pub fn solve_normal<D: DesignMatrix>(
                 df_residual: df_residuals,
                 null_deviance: tss,
                 residual_deviance: rss,
-                log_likelihood: -0.5 * (n as f64) * (2.0 * std::f64::consts::PI * sigma2).ln() - 0.5 * rss / sigma2,
-                aic: 2.0 * (p as f64) + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
-                bic: (p as f64) * (n as f64).ln() + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
+                log_likelihood: -0.5 * (n as f64) * (2.0 * std::f64::consts::PI * sigma2).ln()
+                    - 0.5 * rss / sigma2,
+                aic: 2.0 * (p as f64)
+                    + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
+                bic: (p as f64) * (n as f64).ln()
+                    + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
                 dispersion: sigma2,
                 r_squared: Some(r_squared),
                 adj_r_squared: Some(adj_r_squared),

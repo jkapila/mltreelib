@@ -235,13 +235,11 @@ pub(super) fn solve_cmaes_report<D: DesignMatrix>(
     let cc = (4.0 + mueff / (n as f64)) / ((n as f64) + 4.0 + 2.0 * mueff / (n as f64));
     let cs = (mueff + 2.0) / ((n as f64) + mueff + 5.0);
     let c1 = 2.0 / (((n as f64) + 1.3).powi(2) + mueff);
-    let cmu = (1.0 - c1).min(
-        2.0 * (mueff - 2.0 + 1.0 / mueff) / (((n as f64) + 2.0).powi(2) + mueff),
-    );
-    let damps = 1.0
-        + 2.0 * (0.0f64).max(((mueff - 1.0) / ((n as f64) + 1.0)).sqrt() - 1.0)
-        + cs;
-    let chi_n = (n as f64).sqrt() * (1.0 - 1.0 / (4.0 * (n as f64)) + 1.0 / (21.0 * (n as f64).powi(2)));
+    let cmu =
+        (1.0 - c1).min(2.0 * (mueff - 2.0 + 1.0 / mueff) / (((n as f64) + 2.0).powi(2) + mueff));
+    let damps = 1.0 + 2.0 * (0.0f64).max(((mueff - 1.0) / ((n as f64) + 1.0)).sqrt() - 1.0) + cs;
+    let chi_n =
+        (n as f64).sqrt() * (1.0 - 1.0 / (4.0 * (n as f64)) + 1.0 / (21.0 * (n as f64).powi(2)));
 
     let mut sigma = 0.5f64;
     let mut pc = vec![0.0; n];
@@ -438,7 +436,11 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
         let mut delta_f = Vec::new();
 
         let mut pbest_order: Vec<usize> = (0..pop_size).collect();
-        pbest_order.sort_by(|&a, &b| fitness[a].partial_cmp(&fitness[b]).unwrap_or(std::cmp::Ordering::Equal));
+        pbest_order.sort_by(|&a, &b| {
+            fitness[a]
+                .partial_cmp(&fitness[b])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         let p_best_count = ((pop_size as f64) * p_best_rate).ceil().max(1.0) as usize;
 
@@ -478,7 +480,8 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
             let j_rand = (rng.next_u64() as usize) % n;
             for j in 0..n {
                 if rng.next_f64() < cr_i || j == j_rand {
-                    let val = pop[i][j] + f_i * (x_pbest[j] - pop[i][j]) + f_i * (x_r1[j] - x_r2[j]);
+                    let val =
+                        pop[i][j] + f_i * (x_pbest[j] - pop[i][j]) + f_i * (x_r1[j] - x_r2[j]);
                     trial[j] = val;
                 } else {
                     trial[j] = pop[i][j];
@@ -537,7 +540,9 @@ pub(super) fn solve_shade_report<D: DesignMatrix>(
         if options.verbose >= 3 && (gen % 10 == 0 || gen == options.max_generations - 1) {
             println!(
                 "      [SHADE gen {}] best_fit={:.6} archive_sz={}",
-                gen, best_fitness, archive.len()
+                gen,
+                best_fitness,
+                archive.len()
             );
         }
     }
@@ -724,7 +729,11 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
         let mut next_pop: Vec<Vec<f64>> = Vec::with_capacity(pop_size);
 
         let mut order: Vec<usize> = (0..pop_size).collect();
-        order.sort_by(|&a, &b| fitness[a].partial_cmp(&fitness[b]).unwrap_or(std::cmp::Ordering::Equal));
+        order.sort_by(|&a, &b| {
+            fitness[a]
+                .partial_cmp(&fitness[b])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         next_pop.push(population[order[0]].clone());
         next_pop.push(population[order[1]].clone());
 
@@ -793,10 +802,7 @@ pub(super) fn solve_rcga_report<D: DesignMatrix>(
         }
 
         if options.verbose >= 3 && (gen % 20 == 0 || gen == options.max_generations - 1) {
-            println!(
-                "      [RCGA gen {}] best_fit={:.6}",
-                gen, best_fitness
-            );
+            println!("      [RCGA gen {}] best_fit={:.6}", gen, best_fitness);
         }
     }
 

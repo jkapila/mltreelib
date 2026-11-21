@@ -34,10 +34,17 @@ def test_control_validation_points_to_the_parameter_and_solver():
         ModelTree(2, growth_control={"max_depth": 3})
     with pytest.raises(ValueError, match="supplied more than once"):
         ModelTree(leaf_solver="irls", leaf_control={"solver": "lbfgs"})
-    with pytest.raises(ValueError, match="requires zero L1"):
+    with pytest.raises(ValueError, match="does not support L1"):
         LeafControl(solver="lbfgs", l1=0.5)
-    with pytest.raises(ValueError, match="does not support"):
-        ModelTree(leaf_control={"family": "aft", "solver": "lbfgs"})
+
+
+def test_closed_form_leaf_reports_that_the_solver_does_not_apply():
+    model = ModelTree(max_depth=0, leaf="mean", leaf_solver="lbfgs")
+    model.fit([[i / 10] for i in range(30)], [1 + 3 * (i / 10) for i in range(30)])
+    payload = json.loads(model.to_json())["model"]
+    leaf = payload["nodes"][0]["leaf"]
+    assert leaf["solver_used"] == {"NotApplicable": "Lbfgs"}
+    assert leaf["leaf_problem_type"] == {"ClosedFormMean": "Gaussian"}
 
 
 def test_class_count_is_a_growth_control():
