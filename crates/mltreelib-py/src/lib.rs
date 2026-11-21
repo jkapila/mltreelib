@@ -8,6 +8,7 @@ use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 mod calibration;
+mod solvers;
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
 use mltreelib_core::encode::{
@@ -6981,6 +6982,7 @@ fn competing_risks_calibration<'py>(
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    solvers::register(m)?;
     m.add_class::<PyMarsRegressor>()?;
     m.add_class::<PyHdbscanTree>()?;
     m.add_class::<PyUnsupervisedProximityForest>()?;

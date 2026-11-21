@@ -1129,16 +1129,22 @@ pub fn fit_leaf_model(
                         let view = crate::solver::design::ColumnSliceView::new_with_imputation(
                             cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
                         );
-                        let opts = crate::solver::lbfgs::LbfgsOptions {
+                        let opts = crate::solver::SolverOptions {
                             family: g_fam,
                             l2: control.l2,
                             max_iter: 250,
-                            m: 6,
                             tol: 1e-9,
                             verbose: control.verbose,
+                            ..Default::default()
                         };
-                        match crate::solver::lbfgs::solve_lbfgs(&view, &opts, None) {
-                            Ok(sol) => {
+                        match crate::solver::solve_iterative(
+                            &view,
+                            LeafSolver::Lbfgs,
+                            &opts,
+                            42,
+                            None,
+                        ) {
+                            Ok((sol, _)) => {
                                 if sol.iter().all(|b| b.is_finite()) {
                                     let mut finite_fit = true;
                                     for i in 0..view.n_rows() {
@@ -1210,15 +1216,16 @@ pub fn fit_leaf_model(
                 let view = crate::solver::design::ColumnSliceView::new_with_imputation(
                     cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
                 );
-                let opts = crate::solver::ccd::CcdOptions {
+                let opts = crate::solver::SolverOptions {
                     l1: control.l1,
                     l2: control.l2,
                     max_iter: 1000,
                     tol: 1e-7,
                     monotone: control.effective_leaf_monotone().to_vec(),
+                    ..Default::default()
                 };
-                match crate::solver::ccd::solve_ccd(&view, &opts, None) {
-                    Ok(sol) => {
+                match crate::solver::solve_iterative(&view, LeafSolver::Ccd, &opts, 42, None) {
+                    Ok((sol, _)) => {
                         let nc = chosen.len();
                         LinearModel {
                             cols: chosen.clone(),
@@ -1244,13 +1251,6 @@ pub fn fit_leaf_model(
                 control.solver,
                 LeafSolver::CmaEs | LeafSolver::Shade | LeafSolver::NaturalGradient | LeafSolver::GeneticAlgorithm
             ) {
-                let evo_kind = match control.solver {
-                    LeafSolver::CmaEs => crate::solver::EvolutionaryKind::CmaEs,
-                    LeafSolver::Shade => crate::solver::EvolutionaryKind::Shade,
-                    LeafSolver::NaturalGradient => crate::solver::EvolutionaryKind::NaturalGradient,
-                    LeafSolver::GeneticAlgorithm => crate::solver::EvolutionaryKind::GeneticAlgorithm,
-                    _ => unreachable!(),
-                };
                 let glm_fam = match family {
                     LeafFamily::Gaussian => crate::solver::GlmFamily::Gaussian,
                     LeafFamily::Binomial => crate::solver::GlmFamily::Binomial,
@@ -1270,20 +1270,17 @@ pub fn fit_leaf_model(
                 let view = crate::solver::design::ColumnSliceView::new_with_imputation(
                     cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
                 );
-                let opts = crate::solver::EvolutionaryOptions {
-                    kind: evo_kind,
+                let opts = crate::solver::SolverOptions {
                     family: glm_fam,
                     l1: control.l1,
                     l2: control.l2,
                     monotone: control.effective_leaf_monotone().to_vec(),
-                    population_size: None,
-                    max_generations: 100,
+                    max_iter: 100,
                     tol: 1e-6,
-                    seed: 42,
                     verbose: control.verbose,
                 };
-                match crate::solver::solve_evolutionary(&view, &opts, None) {
-                    Ok(sol) => {
+                match crate::solver::solve_iterative(&view, control.solver, &opts, 42, None) {
+                    Ok((sol, _)) => {
                         let nc = chosen.len();
                         LinearModel {
                             cols: chosen.clone(),

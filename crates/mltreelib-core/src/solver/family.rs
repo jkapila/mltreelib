@@ -58,6 +58,14 @@ impl GlmFamily {
         }
     }
 
+    /// Tobit deviance uses the uncensored latent mean.
+    pub(super) fn mean_for_loss(self, eta: f64) -> f64 {
+        match self {
+            Self::Tobit { .. } => eta,
+            _ => self.inverse_link(eta),
+        }
+    }
+
     /// Variance function $V(\mu)$.
     pub fn variance(&self, mu: f64) -> f64 {
         match self {
@@ -101,10 +109,10 @@ impl GlmFamily {
                 let p_val = *p;
                 let m = mu.max(1e-12);
                 if (p_val - 1.0).abs() < 1e-6 {
-                    return self.deviance(y, m);
+                    return Self::Poisson.deviance(y, m);
                 }
                 if (p_val - 2.0).abs() < 1e-6 {
-                    return 2.0 * ((y / m).ln() + (m - y) / m);
+                    return Self::Gamma.deviance(y, m);
                 }
                 let t1 = y * m.powf(1.0 - p_val) / (1.0 - p_val);
                 let t2 = m.powf(2.0 - p_val) / (2.0 - p_val);
@@ -159,7 +167,7 @@ impl GlmFamily {
             }
             Self::Tweedie { p } => {
                 let weight = w * mu.max(1e-12).powf(2.0 - *p);
-                let grad = w * (mu - y) / mu.max(1e-12);
+                let grad = weight * (mu - y) / mu.max(1e-12);
                 (grad, weight.max(1e-12))
             }
             Self::Tobit { threshold } => {

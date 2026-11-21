@@ -1,4 +1,31 @@
+import pytest
+
 from mltreelib import LeafControl, ModelTree
+from mltreelib.solvers import fit
+
+
+def test_standalone_weighted_gaussian_fit():
+    X = [[0.0], [1.0], [2.0], [3.0]]
+    result = fit(X, [1.0, 3.0, 5.0, 7.0], sample_weight=[1.0, 3.0, 2.0, 1.0])
+    assert abs(result.intercept - 1.0) < 1e-10
+    assert abs(result.coef[0] - 2.0) < 1e-10
+    assert result.converged
+    assert result.predict([[4.0]])[0] == pytest.approx(9.0)
+
+
+def test_standalone_weighted_binomial_fit():
+    X = [[-2.0], [-1.0], [0.0], [1.0], [2.0]]
+    result = fit(
+        X,
+        [0.0, 0.0, 0.0, 1.0, 1.0],
+        family="binomial",
+        solver="lbfgs",
+        l2=0.1,
+        sample_weight=[1.0, 2.0, 1.0, 2.0, 1.0],
+    )
+    predictions = result.predict(X)
+    assert all(left < right for left, right in zip(predictions, predictions[1:]))
+    assert all(0.0 <= value <= 1.0 for value in predictions)
 
 
 def test_leaf_control_solver_property():

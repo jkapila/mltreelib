@@ -1,8 +1,63 @@
 use mltreelib_core::solver::{
-    fit_model, solve_ccd, solve_cmaes, solve_lbfgs, solve_normal, solve_rcga,
+    fit_dense, fit_model, solve_ccd, solve_cmaes, solve_lbfgs, solve_normal, solve_rcga,
     solve_shade, solve_snes, CcdOptions, ColumnSliceView, DenseView, DesignMatrix, EvolutionaryKind,
     EvolutionaryOptions, GlmFamily, LbfgsOptions, SolverOptions,
 };
+
+#[test]
+fn test_standalone_weighted_gaussian_matches_replicated_rows() {
+    let x = vec![vec![0.0], vec![1.0], vec![2.0], vec![3.0]];
+    let y = vec![1.0, 3.0, 5.0, 7.0];
+    let weights = vec![1.0, 3.0, 2.0, 1.0];
+    let options = SolverOptions::default();
+    let fitted = fit_dense(&x, &y, Some(&weights), None, &options, 42).unwrap();
+    assert!((fitted.intercept - 1.0).abs() < 1e-10);
+    assert!((fitted.coef[0] - 2.0).abs() < 1e-10);
+    assert!(fitted.convergence.converged());
+    assert!(fitted.objective < 1e-12);
+
+    let replicated_x = vec![
+        vec![0.0],
+        vec![1.0],
+        vec![1.0],
+        vec![1.0],
+        vec![2.0],
+        vec![2.0],
+        vec![3.0],
+    ];
+    let replicated_y = vec![1.0, 3.0, 3.0, 3.0, 5.0, 5.0, 7.0];
+    let replicated = fit_dense(&replicated_x, &replicated_y, None, None, &options, 42).unwrap();
+    assert!((fitted.intercept - replicated.intercept).abs() < 1e-10);
+    assert!((fitted.coef[0] - replicated.coef[0]).abs() < 1e-10);
+}
+
+
+#[test]
+fn test_standalone_weighted_binomial_fit_predicts_response_scale() {
+    let x = vec![vec![-2.0], vec![-1.0], vec![0.0], vec![1.0], vec![2.0]];
+    let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    let weights = vec![1.0, 2.0, 1.0, 2.0, 1.0];
+    let options = SolverOptions {
+        family: GlmFamily::Binomial,
+        l2: 0.1,
+        max_iter: 250,
+        tol: 1e-9,
+        ..Default::default()
+    };
+    let fitted = fit_dense(
+        &x,
+        &y,
+        Some(&weights),
+        Some(mltreelib_core::leaf::LeafSolver::Lbfgs),
+        &options,
+        42,
+    )
+    .unwrap();
+    let predictions = fitted.predict(&x).unwrap();
+    assert!(predictions.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(predictions.iter().all(|p| (0.0..=1.0).contains(p)));
+    assert!(fitted.objective.is_finite());
+}
 
 #[test]
 fn test_ols_normal_exact_and_summary() {

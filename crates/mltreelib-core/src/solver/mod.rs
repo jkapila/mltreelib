@@ -8,6 +8,7 @@
 //! - Zero-copy slice views (`design`) for decision tree leaf fits
 
 pub mod ccd;
+pub mod dense;
 pub mod design;
 pub mod evolutionary;
 pub mod family;
@@ -16,6 +17,7 @@ pub mod normal;
 pub mod summary;
 
 pub use ccd::{solve_ccd, CcdOptions};
+pub use dense::{fit_dense, FittedGlm};
 pub use design::{ColumnSliceView, DenseView, DesignMatrix};
 pub use evolutionary::{
     solve_cmaes, solve_evolutionary, solve_rcga, solve_shade, solve_snes, EvolutionaryKind,
@@ -86,14 +88,7 @@ pub fn fit_model<D: DesignMatrix>(
             solve_normal(design, options.l2, feature_names)?
         } else {
             // ElasticNet or monotone constraints for Gaussian: Coordinate Descent
-            let ccd_opts = CcdOptions {
-                l1: options.l1,
-                l2: options.l2,
-                max_iter: options.max_iter,
-                tol: options.tol,
-                monotone: options.monotone.clone(),
-            };
-            let sol = solve_ccd(design, &ccd_opts, warm_start)?;
+            let (sol, _) = solve_iterative(design, LeafSolver::Ccd, options, 42, warm_start)?;
             (sol, None)
         }
     } else {
@@ -101,15 +96,7 @@ pub fn fit_model<D: DesignMatrix>(
             return Err("L1 regularization currently supported for Gaussian family. Use L2 with GLM families.".to_string());
         }
         // Non-linear GLM: Quasi-Newton L-BFGS
-        let lbfgs_opts = LbfgsOptions {
-            family: options.family,
-            l2: options.l2,
-            max_iter: options.max_iter,
-            m: 6,
-            tol: options.tol,
-            verbose: options.verbose,
-        };
-        let sol = solve_lbfgs(design, &lbfgs_opts, warm_start)?;
+        let (sol, _) = solve_iterative(design, LeafSolver::Lbfgs, options, 42, warm_start)?;
         (sol, None)
     };
 
@@ -126,4 +113,112 @@ pub fn fit_model<D: DesignMatrix>(
         na_coef: Vec::new(),
         summary,
     })
+}
+
+/// Reason an optimizer stopped.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StopReason {
+    Exact,
+    Tolerance,
+    IterationLimit,
+    LineSearchFailed,
+}
+
+impl StopReason {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Exact => "exact",
+            Self::Tolerance => "tolerance",
+            Self::IterationLimit => "iteration_limit",
+            Self::LineSearchFailed => "line_search_failed",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Convergence {
+    pub iterations: usize,
+    pub reason: StopReason,
+}
+
+impl Convergence {
+    pub(crate) fn tolerance(iterations: usize) -> Self {
+        Self {
+            iterations,
+            reason: StopReason::Tolerance,
+        }
+    }
+
+    pub(crate) fn limit(iterations: usize) -> Self {
+        Self {
+            iterations,
+            reason: StopReason::IterationLimit,
+        }
+    }
+
+    pub fn converged(self) -> bool {
+        matches!(self.reason, StopReason::Exact | StopReason::Tolerance)
+    }
+}
+
+use crate::leaf::LeafSolver;
+
+pub(crate) fn solve_iterative<D: DesignMatrix>(
+    design: &D,
+    solver: LeafSolver,
+    options: &SolverOptions,
+    seed: u64,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, Convergence), String> {
+    match solver {
+        LeafSolver::Ccd => ccd::solve_ccd_report(
+            design,
+            &CcdOptions {
+                l1: options.l1,
+                l2: options.l2,
+                max_iter: options.max_iter,
+                tol: options.tol,
+                monotone: options.monotone.clone(),
+            },
+            warm_start,
+        ),
+        LeafSolver::Lbfgs => lbfgs::solve_lbfgs_report(
+            design,
+            &LbfgsOptions {
+                family: options.family,
+                l2: options.l2,
+                max_iter: options.max_iter,
+                m: 6,
+                tol: options.tol,
+                verbose: options.verbose,
+            },
+            warm_start,
+        ),
+        LeafSolver::Irls => Err("Use the IRLS design solver".into()),
+        solver => {
+            let kind = match solver {
+                LeafSolver::CmaEs => EvolutionaryKind::CmaEs,
+                LeafSolver::Shade => EvolutionaryKind::Shade,
+                LeafSolver::NaturalGradient => EvolutionaryKind::NaturalGradient,
+                LeafSolver::GeneticAlgorithm => EvolutionaryKind::GeneticAlgorithm,
+                _ => unreachable!(),
+            };
+            evolutionary::solve_evolutionary_report(
+                design,
+                &EvolutionaryOptions {
+                    kind,
+                    family: options.family,
+                    l1: options.l1,
+                    l2: options.l2,
+                    monotone: options.monotone.clone(),
+                    population_size: None,
+                    max_generations: options.max_iter,
+                    tol: options.tol,
+                    seed,
+                    verbose: options.verbose,
+                },
+                warm_start,
+            )
+        }
+    }
 }

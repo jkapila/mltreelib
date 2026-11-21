@@ -1047,6 +1047,10 @@ pub struct SolveScratch {
 }
 
 impl SolveScratch {
+    pub(crate) fn coefficients(&self) -> &[f64] {
+        &self.b
+    }
+
     pub fn new(dim: usize) -> Self {
         Self {
             a: vec![0.0; dim * dim],
@@ -1735,13 +1739,63 @@ pub(crate) fn fit_glm_imputed(
     extra: Option<&std::collections::HashMap<String, f64>>,
     verbose: u8,
 ) -> Option<LinearModel> {
+    let design = crate::solver::ColumnSliceView::new_with_imputation(
+        cols,
+        y,
+        w,
+        rows,
+        chosen,
+        with_indicators,
+        impute_means,
+    );
+    let options = crate::solver::SolverOptions {
+        l1,
+        l2,
+        max_iter: 100,
+        tol: 1e-11,
+        verbose,
+        ..Default::default()
+    };
+    let (mut model, convergence) =
+        fit_glm_design(&design, chosen, mono, family, mean, extra, &options).ok()?;
+    if convergence.reason != crate::solver::StopReason::Tolerance {
+        return None;
+    }
+    model.feature_means = impute_means
+        .map(|means| means.iter().copied().map(Some).collect())
+        .unwrap_or_default();
+    Some(model)
+}
+
+pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
+    design: &D,
+    chosen: &[usize],
+    mono: &[i8],
+    family: LeafFamily,
+    mean: f64,
+    extra: Option<&std::collections::HashMap<String, f64>>,
+    options: &crate::solver::SolverOptions,
+) -> Result<(LinearModel, crate::solver::Convergence), String> {
     let nc = chosen.len();
-    let dim = 1 + nc + if with_indicators { nc } else { 0 };
+    let dim = design.n_features();
+    let with_indicators = dim > nc + 1;
+    let crate::solver::SolverOptions {
+        l1,
+        l2,
+        max_iter,
+        tol,
+        verbose,
+        ..
+    } = *options;
     let mut current = LinearModel {
         cols: chosen.to_vec(),
         coef: vec![0.0; nc],
-        na_coef: if with_indicators { vec![0.0; nc] } else { Vec::new() },
-        feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
+        na_coef: if with_indicators {
+            vec![0.0; nc]
+        } else {
+            Vec::new()
+        },
+        feature_means: Vec::new(),
         intercept: match family {
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
             LeafFamily::Probit => std_norm_inv_cdf(mean),
@@ -1754,10 +1808,7 @@ pub(crate) fn fit_glm_imputed(
     let mut row = vec![0.0; dim];
     let mut scales = vec![1.0; dim];
     if l1 > 0.0 {
-        for &r in rows {
-            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
-            gram.add_row(&row, 0.0, w[r]);
-        }
+        gram = design.compute_gram(None);
         for j in 1..dim {
             let variance = gram.xtx[j * dim + j]
                 - gram.xtx[j] * gram.xtx[j] / gram.ws;
@@ -1772,101 +1823,122 @@ pub(crate) fn fit_glm_imputed(
             l1 * standardized.abs() + 0.5 * l2 * standardized * standardized
         }).sum()
     };
+    let tweedie_p = extra
+        .and_then(|m| m.get("tweedie_p"))
+        .copied()
+        .unwrap_or(1.5);
+    let tobit_threshold = extra
+        .and_then(|m| m.get("tobit_threshold"))
+        .copied()
+        .unwrap_or(0.0);
     let objective = |model: &LinearModel, row: &mut [f64]| -> f64 {
         let mut loss = 0.0;
-        for &r in rows {
-            if w[r] <= 0.0 {
+        for r in 0..design.n_rows() {
+            let w = design.get_weight(r);
+            let y = design.get_y(r);
+            if w <= 0.0 {
                 continue;
             }
-            design_row_imputed(row, cols, r, chosen, with_indicators, impute_means);
+            design.copy_design_row(r, row);
             let mean = family.inverse_link(model.eval_design(row));
-            loss += 0.5 * w[r] * family.deviance(y[r], mean);
+            loss += 0.5 * w * family.deviance_with_params(y, mean, tweedie_p, tobit_threshold);
         }
         loss + penalty(model)
     };
     let constrained = chosen.iter().any(|&c| mono.get(c).copied().unwrap_or(0) != 0);
     let mut old_objective = objective(&current, &mut row);
     if !old_objective.is_finite() {
-        return None;
+        return Err("IRLS produced a non-finite objective or weighted design".into());
     }
     if verbose >= 3 {
         println!(
             "      [glm start] family={:?} rows={} dim={} initial_obj={:.6}",
             family,
-            rows.len(),
+            design.n_rows(),
             dim,
             old_objective
         );
     }
     let mut beta = vec![0.0; dim];
-    for iter in 0..100 {
+    for iter in 0..max_iter {
         gram.xtx.fill(0.0);
         gram.xty.fill(0.0);
         gram.yty = 0.0;
         gram.wy = 0.0;
         gram.ws = 0.0;
         gram.n = 0;
-        for &r in rows {
-            if w[r] <= 0.0 {
+        for r in 0..design.n_rows() {
+            let w = design.get_weight(r);
+            let y = design.get_y(r);
+            if w <= 0.0 {
                 continue;
             }
-            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
+            design.copy_design_row(r, &mut row);
             let eta = current.eval_design(&row);
             let mean = family.inverse_link(eta);
             match family {
                 LeafFamily::Binomial => {
                     let variance = (mean * (1.0 - mean)).max(1e-12);
-                    let working = eta + (y[r] - mean) / variance;
-                    gram.add_row(&row, working, w[r] * variance);
+                    let working = eta + (y - mean) / variance;
+                    gram.add_row(&row, working, w * variance);
                 }
                 LeafFamily::Probit => {
                     let phi = std_norm_pdf(eta).max(1e-12);
                     let variance = (mean * (1.0 - mean)).max(1e-12);
-                    let weight = w[r] * (phi * phi) / variance;
-                    let working = eta + (y[r] - mean) / phi;
+                    let weight = w * (phi * phi) / variance;
+                    let working = eta + (y - mean) / phi;
                     gram.add_row(&row, working, weight.max(1e-12));
                 }
                 LeafFamily::Poisson => {
                     let variance = mean.max(1e-12);
-                    let working = eta + (y[r] - mean) / variance;
-                    gram.add_row(&row, working, w[r] * variance);
+                    let working = eta + (y - mean) / variance;
+                    gram.add_row(&row, working, w * variance);
                 }
                 LeafFamily::Gamma => {
-                    let working = eta + (y[r] - mean) / mean.max(1e-12);
-                    gram.add_row(&row, working, w[r]);
+                    let working = eta + (y - mean) / mean.max(1e-12);
+                    gram.add_row(&row, working, w);
                 }
                 LeafFamily::Tweedie => {
-                    let p = extra.and_then(|m| m.get("tweedie_p")).copied().unwrap_or(1.5);
-                    let weight = w[r] * mean.max(1e-12).powf(2.0 - p);
-                    let working = eta + (y[r] - mean) / mean.max(1e-12);
+                    let weight = w * mean.max(1e-12).powf(2.0 - tweedie_p);
+                    let working = eta + (y - mean) / mean.max(1e-12);
                     gram.add_row(&row, working, weight.max(1e-12));
                 }
                 LeafFamily::Tobit => {
-                    let tobit_thresh = extra.and_then(|m| m.get("tobit_threshold")).copied().unwrap_or(0.0);
-                    let y_latent = if y[r] <= tobit_thresh {
-                        let delta = tobit_thresh - eta;
+                    let y_latent = if y <= tobit_threshold {
+                        let delta = tobit_threshold - eta;
                         let cdf = std_norm_cdf(delta).max(1e-12);
                         let pdf = std_norm_pdf(delta);
                         eta - pdf / cdf
                     } else {
-                        y[r]
+                        y
                     };
-                    gram.add_row(&row, y_latent, w[r]);
+                    gram.add_row(&row, y_latent, w);
                 }
-                LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
-                    gram.add_row(&row, y[r], w[r]);
+                LeafFamily::Gaussian
+                | LeafFamily::Softmax
+                | LeafFamily::Survival
+                | LeafFamily::Heteroscedastic
+                | LeafFamily::Aft
+                | LeafFamily::Cure
+                | LeafFamily::Spline => {
+                    gram.add_row(&row, y, w);
                 }
             }
         }
-        if gram.xtx.iter().chain(&gram.xty).any(|value| !value.is_finite()) {
-            return None;
+        if gram
+            .xtx
+            .iter()
+            .chain(&gram.xty)
+            .any(|value| !value.is_finite())
+        {
+            return Err("IRLS produced a non-finite objective or weighted design".into());
         }
         let mut candidate = if l1 == 0.0 && !constrained {
             // Normalize working mass so the shared solver's rank threshold
             // stays relative even when separation makes Fisher weights tiny.
             let mass = gram.ws;
             if !(mass > 0.0 && mass.is_finite()) {
-                return None;
+                return Err("IRLS produced a non-finite objective or weighted design".into());
             }
             for value in gram.xtx.iter_mut().chain(&mut gram.xty) {
                 *value /= mass;
@@ -1915,13 +1987,17 @@ pub(crate) fn fit_glm_imputed(
                 }
             }
             if !converged {
-                return None;
+                return Err("IRLS penalized least-squares step did not converge".into());
             }
             LinearModel {
                 cols: chosen.to_vec(),
                 coef: beta[1..1 + nc].to_vec(),
-                na_coef: if with_indicators { beta[1 + nc..].to_vec() } else { Vec::new() },
-                feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
+                na_coef: if with_indicators {
+                    beta[1 + nc..].to_vec()
+                } else {
+                    Vec::new()
+                },
+                feature_means: Vec::new(),
                 intercept: beta[0],
                 summary: None,
             }
@@ -1929,7 +2005,7 @@ pub(crate) fn fit_glm_imputed(
         if !candidate.intercept.is_finite()
             || candidate.coef.iter().chain(&candidate.na_coef).any(|b| !b.is_finite())
         {
-            return None;
+            return Err("IRLS produced non-finite coefficients".into());
         }
         let mut next_objective = objective(&candidate, &mut row);
         for _ in 0..20 {
@@ -1946,7 +2022,13 @@ pub(crate) fn fit_glm_imputed(
             next_objective = objective(&candidate, &mut row);
         }
         if !next_objective.is_finite() || next_objective > old_objective {
-            return None;
+            return Ok((
+                current,
+                crate::solver::Convergence {
+                    iterations: iter,
+                    reason: crate::solver::StopReason::LineSearchFailed,
+                },
+            ));
         }
         let improvement = old_objective - next_objective;
         current = candidate;
@@ -1956,7 +2038,7 @@ pub(crate) fn fit_glm_imputed(
                 iter, next_objective, improvement
             );
         }
-        if improvement <= 1e-11 * (1.0 + old_objective) {
+        if improvement <= tol * (1.0 + old_objective) {
             if verbose >= 3 {
                 println!(
                     "      [glm converged] iters={} final_obj={:.6}",
@@ -1964,14 +2046,14 @@ pub(crate) fn fit_glm_imputed(
                     next_objective
                 );
             }
-            return Some(current);
+            return Ok((current, crate::solver::Convergence::tolerance(iter + 1)));
         }
         old_objective = next_objective;
     }
     if verbose >= 3 {
-        println!("      [glm did not converge after 100 iters]");
+        println!("      [glm did not converge after {max_iter} iters]");
     }
-    None
+    Ok((current, crate::solver::Convergence::limit(max_iter)))
 }
 
 /// Per-node frame statistics for printing (rpart's `frame`): count, weighted

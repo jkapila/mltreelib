@@ -254,6 +254,10 @@ case 51: [0.0000] x1 = 999.00 (51 cases, mean 100.00, 98.0% <= 100.00)
 - **Quasi-Newton L-BFGS (`leaf_solver="lbfgs"`)**: Two-loop recursion L-BFGS for GLM deviance minimization (Binomial logit, Poisson rate, Tweedie, Tobit).
 - **Evolutionary Solvers (`leaf_solver="cmaes" | "shade" | "nes" | "ga"`)**: Derivative-free and natural-gradient global search for non-convex or discontinuous loss surfaces.
 
+For a standalone weighted fit, use `mltreelib.solvers.fit`. It accepts
+`sample_weight` and returns a fitted `FitResult` with coefficients, predictions,
+convergence status, and the solver stop reason.
+
 ```python
 # Fit global OLS regression with full R-style statistical tables
 ols = ModelTree(max_depth=0, leaf="linear", leaf_solver="irls", l2=0.0)

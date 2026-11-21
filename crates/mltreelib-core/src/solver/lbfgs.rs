@@ -54,7 +54,7 @@ fn eval_objective_and_grad<D: DesignMatrix>(
         }
         let yi = design.get_y(i);
         let eta = design.eval_row(i, beta);
-        let mu = family.inverse_link(eta);
+        let mu = family.mean_for_loss(eta);
         let dev = family.deviance(yi, mu);
         total_loss += 0.5 * wi * dev;
 
@@ -93,7 +93,7 @@ fn eval_objective<D: DesignMatrix>(
         }
         let yi = design.get_y(i);
         let eta = design.eval_row(i, beta);
-        let mu = family.inverse_link(eta);
+        let mu = family.mean_for_loss(eta);
         total_loss += 0.5 * wi * family.deviance(yi, mu);
     }
     if l2 > 0.0 {
@@ -110,6 +110,14 @@ pub fn solve_lbfgs<D: DesignMatrix>(
     options: &LbfgsOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_lbfgs_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_lbfgs_report<D: DesignMatrix>(
+    design: &D,
+    options: &LbfgsOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = design.n_rows();
     let p = design.n_features();
     if n == 0 || p == 0 {
@@ -175,7 +183,7 @@ pub fn solve_lbfgs<D: DesignMatrix>(
                     iter, current_loss, max_grad
                 );
             }
-            return Ok(beta);
+            return Ok((beta, super::Convergence::tolerance(iter)));
         }
 
         // Two-Loop Recursion to compute descent direction dir = - H_k grad
@@ -268,7 +276,13 @@ pub fn solve_lbfgs<D: DesignMatrix>(
             if options.verbose >= 3 {
                 println!("      [L-BFGS line search terminated] iter={}", iter);
             }
-            return Ok(beta);
+            return Ok((
+                beta,
+                super::Convergence {
+                    iterations: iter,
+                    reason: super::StopReason::LineSearchFailed,
+                },
+            ));
         }
 
         let loss_diff = current_loss - trial_loss;
@@ -317,9 +331,9 @@ pub fn solve_lbfgs<D: DesignMatrix>(
                     iter + 1, current_loss
                 );
             }
-            return Ok(beta);
+            return Ok((beta, super::Convergence::tolerance(iter + 1)));
         }
     }
 
-    Ok(beta)
+    Ok((beta, super::Convergence::limit(options.max_iter)))
 }

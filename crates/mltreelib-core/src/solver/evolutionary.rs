@@ -143,7 +143,7 @@ pub fn eval_fitness<D: DesignMatrix>(
         }
         let yi = design.get_y(i);
         let eta = design.eval_row(i, beta);
-        let mu = family.inverse_link(eta);
+        let mu = family.mean_for_loss(eta);
         let dev = family.deviance(yi, mu);
         total_loss += 0.5 * wi * dev;
     }
@@ -172,16 +172,24 @@ pub fn solve_evolutionary<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_evolutionary_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_evolutionary_report<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let p = design.n_features();
     if p == 0 {
         return Err("Zero features in design matrix".to_string());
     }
 
     match options.kind {
-        EvolutionaryKind::CmaEs => solve_cmaes(design, options, warm_start),
-        EvolutionaryKind::Shade => solve_shade(design, options, warm_start),
-        EvolutionaryKind::NaturalGradient => solve_snes(design, options, warm_start),
-        EvolutionaryKind::GeneticAlgorithm => solve_rcga(design, options, warm_start),
+        EvolutionaryKind::CmaEs => solve_cmaes_report(design, options, warm_start),
+        EvolutionaryKind::Shade => solve_shade_report(design, options, warm_start),
+        EvolutionaryKind::NaturalGradient => solve_snes_report(design, options, warm_start),
+        EvolutionaryKind::GeneticAlgorithm => solve_rcga_report(design, options, warm_start),
     }
 }
 
@@ -191,6 +199,14 @@ pub fn solve_cmaes<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_cmaes_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_cmaes_report<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = p_dim(design);
     let mut rng = Rng64::new(options.seed);
 
@@ -333,12 +349,17 @@ pub fn solve_cmaes<D: DesignMatrix>(
             );
         }
 
-        if sigma < options.tol || (candidates.last().unwrap().2 - candidates[0].2).abs() < options.tol {
-            break;
+        if sigma < options.tol
+            || (candidates.last().unwrap().2 - candidates[0].2).abs() < options.tol
+        {
+            return Ok((best_solution, super::Convergence::tolerance(gen + 1)));
         }
     }
 
-    Ok(best_solution)
+    Ok((
+        best_solution,
+        super::Convergence::limit(options.max_generations),
+    ))
 }
 
 /// Success-History Based Adaptive Differential Evolution (SHADE).
@@ -350,6 +371,14 @@ pub fn solve_shade<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_shade_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_shade_report<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = p_dim(design);
     let mut rng = Rng64::new(options.seed);
 
@@ -513,7 +542,10 @@ pub fn solve_shade<D: DesignMatrix>(
         }
     }
 
-    Ok(best_solution)
+    Ok((
+        best_solution,
+        super::Convergence::limit(options.max_generations),
+    ))
 }
 
 /// Separable Natural Evolution Strategies (sNES / Natural Gradient Learning).
@@ -522,6 +554,14 @@ pub fn solve_snes<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_snes_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_snes_report<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = p_dim(design);
     let mut rng = Rng64::new(options.seed);
 
@@ -615,11 +655,14 @@ pub fn solve_snes<D: DesignMatrix>(
         }
 
         if max_step < options.tol {
-            break;
+            return Ok((best_solution, super::Convergence::tolerance(gen + 1)));
         }
     }
 
-    Ok(best_solution)
+    Ok((
+        best_solution,
+        super::Convergence::limit(options.max_generations),
+    ))
 }
 
 /// Real-Coded Genetic Algorithm (RCGA) with SBX crossover and polynomial mutation.
@@ -628,6 +671,14 @@ pub fn solve_rcga<D: DesignMatrix>(
     options: &EvolutionaryOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_rcga_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_rcga_report<D: DesignMatrix>(
+    design: &D,
+    options: &EvolutionaryOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = p_dim(design);
     let mut rng = Rng64::new(options.seed);
 
@@ -749,7 +800,10 @@ pub fn solve_rcga<D: DesignMatrix>(
         }
     }
 
-    Ok(best_solution)
+    Ok((
+        best_solution,
+        super::Convergence::limit(options.max_generations),
+    ))
 }
 
 fn tournament_select(fitness: &[f64], k: usize, rng: &mut Rng64) -> usize {
