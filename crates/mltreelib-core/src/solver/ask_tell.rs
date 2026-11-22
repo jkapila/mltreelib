@@ -10,6 +10,9 @@
 //! 5. `Snes`: Separable Natural Evolution Strategies with coordinate updates.
 //! 6. `Rcga`: Real-Coded Genetic Algorithm with SBX and polynomial mutation.
 //! 7. `Nsga2`: Non-dominated Sorting Genetic Algorithm II for multi-objective Pareto front discovery.
+//! 8. `Moead`: Multi-Objective Evolutionary Algorithm based on Decomposition (Tchebycheff).
+//! 9. `Nsga3`: Reference-Direction Non-dominated Sorting GA for Many-Objective ($M \ge 3$) optimization.
+//! 10. `Island`: Multi-Island parallel model with periodic elite ring migration.
 
 use nalgebra::{DMatrix, DVector};
 use crate::solver::evolutionary::Rng64;
@@ -25,6 +28,9 @@ pub enum AskTellKind {
     Snes,
     Rcga,
     Nsga2,
+    Moead,
+    Nsga3,
+    Island,
 }
 
 impl AskTellKind {
@@ -37,6 +43,9 @@ impl AskTellKind {
             "snes" | "natural_gradient" => Some(Self::Snes),
             "rcga" | "ga" | "genetic_algorithm" => Some(Self::Rcga),
             "nsga2" | "nsga_2" | "nsga" => Some(Self::Nsga2),
+            "moead" | "moea_d" => Some(Self::Moead),
+            "nsga3" | "nsga_3" => Some(Self::Nsga3),
+            "island" | "island_model" => Some(Self::Island),
             _ => None,
         }
     }
@@ -50,6 +59,9 @@ impl AskTellKind {
             Self::Snes => "snes",
             Self::Rcga => "rcga",
             Self::Nsga2 => "nsga2",
+            Self::Moead => "moead",
+            Self::Nsga3 => "nsga3",
+            Self::Island => "island",
         }
     }
 }
@@ -69,6 +81,11 @@ pub struct AskTellOptions {
     pub pso_w: Option<f64>,
     pub pso_c1: Option<f64>,
     pub pso_c2: Option<f64>,
+    pub moead_t: Option<usize>,
+    pub nsga3_partitions: Option<usize>,
+    pub island_count: Option<usize>,
+    pub migration_interval: Option<usize>,
+    pub migration_rate: Option<usize>,
 }
 
 impl Default for AskTellOptions {
@@ -86,6 +103,11 @@ impl Default for AskTellOptions {
             pso_w: Some(0.7298),
             pso_c1: Some(1.49618),
             pso_c2: Some(1.49618),
+            moead_t: Some(5),
+            nsga3_partitions: None,
+            island_count: Some(4),
+            migration_interval: Some(10),
+            migration_rate: Some(1),
         }
     }
 }
@@ -123,6 +145,9 @@ enum InternalState {
     Snes(SnesState),
     Rcga(RcgaState),
     Nsga2(Nsga2State),
+    Moead(MoeadState),
+    Nsga3(Nsga3State),
+    Island(IslandState),
 }
 
 // ---------------------------------------------------------------------------
@@ -307,6 +332,51 @@ struct Nsga2State {
 }
 
 // ---------------------------------------------------------------------------
+// 8. Multi-Objective MOEA/D State Machine
+// ---------------------------------------------------------------------------
+
+struct MoeadState {
+    pop_size: usize,
+    weights: Vec<Vec<f64>>,
+    neighborhoods: Vec<Vec<usize>>,
+    t_size: usize,
+    current_pop: Vec<Vec<f64>>,
+    current_objs: Vec<Vec<f64>>,
+    ideal_point: Vec<f64>,
+    offspring_pop: Vec<Vec<f64>>,
+    is_initial: bool,
+    pareto_front: Vec<ParetoSolution>,
+}
+
+// ---------------------------------------------------------------------------
+// 9. Many-Objective NSGA-III State Machine
+// ---------------------------------------------------------------------------
+
+struct Nsga3State {
+    pop_size: usize,
+    parent_pop: Vec<Vec<f64>>,
+    parent_objs: Vec<Vec<f64>>,
+    offspring_pop: Vec<Vec<f64>>,
+    ref_points: Vec<Vec<f64>>,
+    partitions: Option<usize>,
+    is_initial: bool,
+    pareto_front: Vec<ParetoSolution>,
+}
+
+// ---------------------------------------------------------------------------
+// 10. Multi-Island Population State Machine
+// ---------------------------------------------------------------------------
+
+struct IslandState {
+    islands: Vec<AskTell>,
+    _island_count: usize,
+    migration_interval: usize,
+    _migration_rate: usize,
+    batch_sizes: Vec<usize>,
+    pareto_front: Vec<ParetoSolution>,
+}
+
+// ---------------------------------------------------------------------------
 // AskTell Main Implementation
 // ---------------------------------------------------------------------------
 
@@ -445,6 +515,73 @@ impl AskTell {
                     parent_objs: Vec::new(),
                     offspring_pop: Vec::new(),
                     is_initial: true,
+                    pareto_front: Vec::new(),
+                })
+            }
+            AskTellKind::Moead => {
+                let pop_size = options.population_size.unwrap_or(40).max(10);
+                let mut pop = Vec::with_capacity(pop_size);
+                for _ in 0..pop_size {
+                    let cand: Vec<f64> = bounds.iter().map(|&(lo, hi)| lo + (hi - lo) * rng.next_f64()).collect();
+                    pop.push(cand);
+                }
+                let t_size = options.moead_t.unwrap_or(pop_size / 5).clamp(2, pop_size);
+                InternalState::Moead(MoeadState {
+                    pop_size,
+                    weights: Vec::new(),
+                    neighborhoods: Vec::new(),
+                    t_size,
+                    current_pop: pop,
+                    current_objs: Vec::new(),
+                    ideal_point: Vec::new(),
+                    offspring_pop: Vec::new(),
+                    is_initial: true,
+                    pareto_front: Vec::new(),
+                })
+            }
+            AskTellKind::Nsga3 => {
+                let pop_size = options.population_size.unwrap_or(40).max(10);
+                let mut pop = Vec::with_capacity(pop_size);
+                for _ in 0..pop_size {
+                    let cand: Vec<f64> = bounds.iter().map(|&(lo, hi)| lo + (hi - lo) * rng.next_f64()).collect();
+                    pop.push(cand);
+                }
+                InternalState::Nsga3(Nsga3State {
+                    pop_size,
+                    parent_pop: pop,
+                    parent_objs: Vec::new(),
+                    offspring_pop: Vec::new(),
+                    ref_points: Vec::new(),
+                    partitions: options.nsga3_partitions,
+                    is_initial: true,
+                    pareto_front: Vec::new(),
+                })
+            }
+            AskTellKind::Island => {
+                let k = options.island_count.unwrap_or(4).clamp(2, 16);
+                let total_pop = options.population_size.unwrap_or(40);
+                let sub_pop = (total_pop / k).max(6);
+                let sub_kinds = [
+                    AskTellKind::CmaEs,
+                    AskTellKind::De,
+                    AskTellKind::Rcga,
+                    AskTellKind::Pso,
+                ];
+                let mut islands = Vec::with_capacity(k);
+                for i in 0..k {
+                    let mut sub_opts = options.clone();
+                    sub_opts.population_size = Some(sub_pop);
+                    sub_opts.seed = Some(options.seed.unwrap_or(42).wrapping_add((i as u64) * 1000 + 7));
+                    let sub_kind = sub_kinds[i % sub_kinds.len()];
+                    let island = AskTell::new(sub_kind, bounds.clone(), sub_opts)?;
+                    islands.push(island);
+                }
+                InternalState::Island(IslandState {
+                    islands,
+                    _island_count: k,
+                    migration_interval: options.migration_interval.unwrap_or(10).max(1),
+                    _migration_rate: options.migration_rate.unwrap_or(1).max(1),
+                    batch_sizes: Vec::new(),
                     pareto_front: Vec::new(),
                 })
             }
@@ -654,6 +791,63 @@ impl AskTell {
                     st.offspring_pop = offspring.clone();
                     offspring
                 }
+            }
+            InternalState::Moead(st) => {
+                if st.is_initial {
+                    st.current_pop.clone()
+                } else {
+                    let mut offspring = Vec::with_capacity(st.pop_size);
+                    for i in 0..st.pop_size {
+                        let nbrs = &st.neighborhoods[i];
+                        let idx1 = (self.rng.next_u64() as usize) % nbrs.len();
+                        let mut idx2 = (self.rng.next_u64() as usize) % nbrs.len();
+                        while idx2 == idx1 && nbrs.len() > 1 {
+                            idx2 = (self.rng.next_u64() as usize) % nbrs.len();
+                        }
+                        let p1 = &st.current_pop[nbrs[idx1]];
+                        let p2 = &st.current_pop[nbrs[idx2]];
+
+                        let (mut c1, _) = sbx_crossover(p1, p2, &self.bounds, 20.0, &mut self.rng);
+                        poly_mutation(&mut c1, &self.bounds, 20.0, &mut self.rng);
+                        offspring.push(c1);
+                    }
+                    st.offspring_pop = offspring.clone();
+                    offspring
+                }
+            }
+            InternalState::Nsga3(st) => {
+                if st.is_initial {
+                    st.parent_pop.clone()
+                } else {
+                    let mut offspring = Vec::with_capacity(st.pop_size);
+                    while offspring.len() < st.pop_size {
+                        let p1 = nsga2_tournament(&st.parent_pop, &st.parent_objs, &mut self.rng);
+                        let p2 = nsga2_tournament(&st.parent_pop, &st.parent_objs, &mut self.rng);
+                        let (mut c1, mut c2) = sbx_crossover(&p1, &p2, &self.bounds, 20.0, &mut self.rng);
+                        poly_mutation(&mut c1, &self.bounds, 20.0, &mut self.rng);
+                        poly_mutation(&mut c2, &self.bounds, 20.0, &mut self.rng);
+                        offspring.push(c1);
+                        if offspring.len() < st.pop_size {
+                            offspring.push(c2);
+                        }
+                    }
+                    st.offspring_pop = offspring.clone();
+                    offspring
+                }
+            }
+            InternalState::Island(st) => {
+                let mut all_cands = Vec::new();
+                st.batch_sizes.clear();
+                for isl in &mut st.islands {
+                    match isl.ask() {
+                        Ok(b) => {
+                            st.batch_sizes.push(b.len());
+                            all_cands.extend(b);
+                        }
+                        Err(e) => return Err(e),
+                    }
+                }
+                all_cands
             }
         };
 
@@ -910,10 +1104,42 @@ impl AskTell {
                     }
                 }
             }
-            InternalState::Nsga2(_) => {
-                // If user called scalar tell on NSGA-2, wrap scalar in 1-element vector
+            InternalState::Nsga2(_) | InternalState::Moead(_) | InternalState::Nsga3(_) => {
+                // If user called scalar tell on multi-objective solver, wrap scalar in 1-element vector
                 let wrapped: Vec<Vec<f64>> = fitnesses.iter().map(|&f| vec![f]).collect();
                 return self.tell_multi(&wrapped);
+            }
+            InternalState::Island(st) => {
+                let mut offset = 0;
+                for (i, isl) in st.islands.iter_mut().enumerate() {
+                    let sz = st.batch_sizes[i];
+                    if offset + sz <= fitnesses.len() {
+                        isl.tell_scalar(&fitnesses[offset..offset + sz])?;
+                        offset += sz;
+                    }
+                }
+                for isl in &st.islands {
+                    if let Some((x, v)) = isl.best_solution() {
+                        if v < self.best_value {
+                            self.best_value = v;
+                            self.best_x = x;
+                        }
+                    }
+                }
+                if self.iterations > 0 && self.iterations % st.migration_interval == 0 {
+                    let best_per_island: Vec<Option<Vec<f64>>> = st
+                        .islands
+                        .iter()
+                        .map(|isl| isl.best_solution().map(|(x, _)| x))
+                        .collect();
+                    let k = st.islands.len();
+                    for i in 0..k {
+                        let target = (i + 1) % k;
+                        if let Some(ref best_cand) = best_per_island[i] {
+                            st.islands[target].inject_candidate(best_cand);
+                        }
+                    }
+                }
             }
         }
 
@@ -989,6 +1215,144 @@ impl AskTell {
                     st.parent_objs = next_objs;
                 }
             }
+            InternalState::Moead(st) => {
+                let m_dim = objectives[0].len();
+                if st.is_initial {
+                    st.current_objs = objectives.to_vec();
+                    st.weights = generate_simplex_weights(st.pop_size, m_dim);
+                    st.neighborhoods = compute_neighborhoods(&st.weights, st.t_size);
+                    st.ideal_point = vec![f64::INFINITY; m_dim];
+                    for obj in objectives {
+                        for m in 0..m_dim {
+                            if obj[m] < st.ideal_point[m] {
+                                st.ideal_point[m] = obj[m];
+                            }
+                        }
+                    }
+                    let fronts = non_dominated_sort(&st.current_objs);
+                    st.pareto_front = fronts[0]
+                        .iter()
+                        .map(|&idx| ParetoSolution {
+                            point: st.current_pop[idx].clone(),
+                            objectives: st.current_objs[idx].clone(),
+                        })
+                        .collect();
+                    st.is_initial = false;
+                } else {
+                    for obj in objectives {
+                        for m in 0..m_dim {
+                            if obj[m] < st.ideal_point[m] {
+                                st.ideal_point[m] = obj[m];
+                            }
+                        }
+                    }
+                    for k in 0..st.pop_size {
+                        let y = &st.offspring_pop[k];
+                        let f_y = &objectives[k];
+                        let nbrs = st.neighborhoods[k].clone();
+                        for &j in &nbrs {
+                            let lambda_j = &st.weights[j];
+                            let g_curr = tchebycheff(&st.current_objs[j], lambda_j, &st.ideal_point);
+                            let g_off = tchebycheff(f_y, lambda_j, &st.ideal_point);
+                            if g_off <= g_curr {
+                                st.current_pop[j] = y.clone();
+                                st.current_objs[j] = f_y.clone();
+                            }
+                        }
+                    }
+                    let fronts = non_dominated_sort(&st.current_objs);
+                    st.pareto_front = fronts[0]
+                        .iter()
+                        .map(|&idx| ParetoSolution {
+                            point: st.current_pop[idx].clone(),
+                            objectives: st.current_objs[idx].clone(),
+                        })
+                        .collect();
+                }
+            }
+            InternalState::Nsga3(st) => {
+                let m_dim = objectives[0].len();
+                if st.is_initial {
+                    st.parent_objs = objectives.to_vec();
+                    st.ref_points = if let Some(p) = st.partitions {
+                        generate_das_dennis(m_dim, p)
+                    } else if m_dim == 2 {
+                        generate_das_dennis(m_dim, st.pop_size.saturating_sub(1).max(1))
+                    } else {
+                        generate_das_dennis(m_dim, 12)
+                    };
+                    let fronts = non_dominated_sort(&st.parent_objs);
+                    st.pareto_front = fronts[0]
+                        .iter()
+                        .map(|&idx| ParetoSolution {
+                            point: st.parent_pop[idx].clone(),
+                            objectives: st.parent_objs[idx].clone(),
+                        })
+                        .collect();
+                    st.is_initial = false;
+                } else {
+                    let mut r_pop = st.parent_pop.clone();
+                    r_pop.extend_from_slice(&st.offspring_pop);
+                    let mut r_objs = st.parent_objs.clone();
+                    r_objs.extend_from_slice(objectives);
+
+                    let fronts = non_dominated_sort(&r_objs);
+                    st.pareto_front = fronts[0]
+                        .iter()
+                        .map(|&idx| ParetoSolution {
+                            point: r_pop[idx].clone(),
+                            objectives: r_objs[idx].clone(),
+                        })
+                        .collect();
+
+                    let (next_pop, next_objs) = nsga3_select(
+                        st.pop_size,
+                        &fronts,
+                        &r_pop,
+                        &r_objs,
+                        &st.ref_points,
+                        m_dim,
+                    );
+                    st.parent_pop = next_pop;
+                    st.parent_objs = next_objs;
+                }
+            }
+            InternalState::Island(st) => {
+                let mut offset = 0;
+                for (i, isl) in st.islands.iter_mut().enumerate() {
+                    let sz = st.batch_sizes[i];
+                    if offset + sz <= objectives.len() {
+                        isl.tell_multi(&objectives[offset..offset + sz])?;
+                        offset += sz;
+                    }
+                }
+                let mut all_solutions = Vec::new();
+                for isl in &st.islands {
+                    all_solutions.extend(isl.pareto_front());
+                }
+                if !all_solutions.is_empty() {
+                    let all_objs: Vec<Vec<f64>> = all_solutions.iter().map(|s| s.objectives.clone()).collect();
+                    let fronts = non_dominated_sort(&all_objs);
+                    st.pareto_front = fronts[0].iter().map(|&idx| all_solutions[idx].clone()).collect();
+                }
+                if self.iterations > 0 && self.iterations % st.migration_interval == 0 {
+                    let best_per_island: Vec<Option<Vec<f64>>> = st
+                        .islands
+                        .iter()
+                        .map(|isl| {
+                            isl.pareto_front().first().map(|s| s.point.clone())
+                                .or_else(|| isl.best_solution().map(|(x, _)| x))
+                        })
+                        .collect();
+                    let k = st.islands.len();
+                    for i in 0..k {
+                        let target = (i + 1) % k;
+                        if let Some(ref best_cand) = best_per_island[i] {
+                            st.islands[target].inject_candidate(best_cand);
+                        }
+                    }
+                }
+            }
             _ => {
                 // If multi-objective passed to single-objective solver, reduce using L2 norm
                 let scalar_fits: Vec<f64> = objectives
@@ -1021,10 +1385,30 @@ impl AskTell {
 
     /// Best evaluated candidate and objective value (for single-objective runs).
     pub fn best_solution(&self) -> Option<(Vec<f64>, f64)> {
-        if self.best_value.is_finite() {
-            Some((self.best_x.clone(), self.best_value))
-        } else {
-            None
+        match &self.state {
+            InternalState::Island(st) => {
+                let mut best: Option<(Vec<f64>, f64)> = None;
+                for isl in &st.islands {
+                    if let Some((x, v)) = isl.best_solution() {
+                        match &best {
+                            None => best = Some((x, v)),
+                            Some((_, cur_v)) => {
+                                if v < *cur_v {
+                                    best = Some((x, v));
+                                }
+                            }
+                        }
+                    }
+                }
+                best
+            }
+            _ => {
+                if self.best_value.is_finite() {
+                    Some((self.best_x.clone(), self.best_value))
+                } else {
+                    None
+                }
+            }
         }
     }
 
@@ -1032,6 +1416,21 @@ impl AskTell {
     pub fn pareto_front(&self) -> Vec<ParetoSolution> {
         match &self.state {
             InternalState::Nsga2(st) => st.pareto_front.clone(),
+            InternalState::Moead(st) => st.pareto_front.clone(),
+            InternalState::Nsga3(st) => st.pareto_front.clone(),
+            InternalState::Island(st) => {
+                let mut all_solutions = Vec::new();
+                for isl in &st.islands {
+                    all_solutions.extend(isl.pareto_front());
+                }
+                if all_solutions.is_empty() {
+                    Vec::new()
+                } else {
+                    let all_objs: Vec<Vec<f64>> = all_solutions.iter().map(|s| s.objectives.clone()).collect();
+                    let fronts = non_dominated_sort(&all_objs);
+                    fronts[0].iter().map(|&idx| all_solutions[idx].clone()).collect()
+                }
+            }
             _ => {
                 if let Some((x, v)) = self.best_solution() {
                     vec![ParetoSolution {
@@ -1042,6 +1441,63 @@ impl AskTell {
                     Vec::new()
                 }
             }
+        }
+    }
+
+    /// Inject an elite candidate into the population (used for island migration).
+    pub fn inject_candidate(&mut self, cand: &[f64]) {
+        match &mut self.state {
+            InternalState::De(st) => {
+                if let Some(worst_idx) = (0..st.pop_size).max_by(|&a, &b| st.fitness[a].partial_cmp(&st.fitness[b]).unwrap()) {
+                    st.pop[worst_idx] = cand.to_vec();
+                    st.fitness[worst_idx] = f64::INFINITY;
+                }
+            }
+            InternalState::Rcga(st) => {
+                if let Some(worst_idx) = (0..st.pop_size).max_by(|&a, &b| st.fitness[a].partial_cmp(&st.fitness[b]).unwrap()) {
+                    st.pop[worst_idx] = cand.to_vec();
+                    st.fitness[worst_idx] = f64::INFINITY;
+                }
+            }
+            InternalState::Pso(st) => {
+                if let Some(worst_idx) = (0..st.pop_size).max_by(|&a, &b| st.p_best_fit[a].partial_cmp(&st.p_best_fit[b]).unwrap()) {
+                    st.x[worst_idx] = cand.to_vec();
+                    st.p_best[worst_idx] = cand.to_vec();
+                    st.p_best_fit[worst_idx] = f64::INFINITY;
+                }
+            }
+            InternalState::CmaEs(st) => {
+                for j in 0..self.dim {
+                    st.m[j] = 0.8 * st.m[j] + 0.2 * cand[j];
+                }
+            }
+            InternalState::Moead(st) => {
+                let n = st.current_pop.len();
+                if n > 0 {
+                    let replace_idx = (self.rng.next_u64() as usize) % n;
+                    st.current_pop[replace_idx] = cand.to_vec();
+                }
+            }
+            InternalState::Nsga2(st) => {
+                let n = st.parent_pop.len();
+                if n > 0 {
+                    let replace_idx = (self.rng.next_u64() as usize) % n;
+                    st.parent_pop[replace_idx] = cand.to_vec();
+                }
+            }
+            InternalState::Nsga3(st) => {
+                let n = st.parent_pop.len();
+                if n > 0 {
+                    let replace_idx = (self.rng.next_u64() as usize) % n;
+                    st.parent_pop[replace_idx] = cand.to_vec();
+                }
+            }
+            InternalState::Island(st) => {
+                if !st.islands.is_empty() {
+                    st.islands[0].inject_candidate(cand);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -1256,4 +1712,246 @@ fn sort_by_crowding_distance(front: &[usize], objs: &[Vec<f64>], m_dim: usize) -
     let mut result_indices: Vec<usize> = (0..front.len()).collect();
     result_indices.sort_by(|&a, &b| dists[b].partial_cmp(&dists[a]).unwrap());
     result_indices.iter().map(|&i| front[i]).collect()
+}
+
+// ---------------------------------------------------------------------------
+// MOEA/D & NSGA-III Specialized Helpers
+// ---------------------------------------------------------------------------
+
+fn tchebycheff(f: &[f64], lambda: &[f64], z_star: &[f64]) -> f64 {
+    let mut max_val = 0.0f64;
+    for m in 0..f.len() {
+        let diff = (f[m] - z_star[m]).abs();
+        let val = lambda[m].max(1e-6) * diff;
+        if val > max_val {
+            max_val = val;
+        }
+    }
+    max_val
+}
+
+fn compute_neighborhoods(weights: &[Vec<f64>], t: usize) -> Vec<Vec<usize>> {
+    let n = weights.len();
+    let mut nbrs = Vec::with_capacity(n);
+    for i in 0..n {
+        let mut dists: Vec<(usize, f64)> = (0..n)
+            .map(|j| {
+                let d = weights[i]
+                    .iter()
+                    .zip(&weights[j])
+                    .map(|(&a, &b)| (a - b).powi(2))
+                    .sum::<f64>();
+                (j, d)
+            })
+            .collect();
+        dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        nbrs.push(dists.iter().take(t.min(n)).map(|&(idx, _)| idx).collect());
+    }
+    nbrs
+}
+
+fn generate_das_dennis(m: usize, p: usize) -> Vec<Vec<f64>> {
+    if m == 0 {
+        return Vec::new();
+    }
+    if m == 1 {
+        return vec![vec![1.0]];
+    }
+    let mut points = Vec::new();
+    let mut current = vec![0usize; m];
+    das_dennis_recurse(0, p, &mut current, &mut points);
+    points
+        .into_iter()
+        .map(|pt| pt.into_iter().map(|x| x as f64 / p.max(1) as f64).collect())
+        .collect()
+}
+
+fn das_dennis_recurse(
+    dim: usize,
+    remaining: usize,
+    current: &mut [usize],
+    result: &mut Vec<Vec<usize>>,
+) {
+    if dim == current.len() - 1 {
+        current[dim] = remaining;
+        result.push(current.to_vec());
+        return;
+    }
+    for val in 0..=remaining {
+        current[dim] = val;
+        das_dennis_recurse(dim + 1, remaining - val, current, result);
+    }
+}
+
+fn generate_simplex_weights(n: usize, m: usize) -> Vec<Vec<f64>> {
+    if m <= 1 {
+        return vec![vec![1.0]; n];
+    }
+    if m == 2 {
+        let mut weights = Vec::with_capacity(n);
+        for i in 0..n {
+            let w1 = i as f64 / ((n - 1).max(1) as f64);
+            weights.push(vec![w1, 1.0 - w1]);
+        }
+        weights
+    } else {
+        let p = ((n as f64).powf(1.0 / (m as f64 - 1.0)).round() as usize).clamp(2, 30);
+        let mut pts = generate_das_dennis(m, p);
+        if pts.len() < n {
+            let remaining = n - pts.len();
+            for i in 0..remaining {
+                let w1 = i as f64 / remaining as f64;
+                let mut pt = vec![(1.0 - w1) / (m - 1) as f64; m];
+                pt[0] = w1;
+                pts.push(pt);
+            }
+        } else {
+            pts.truncate(n);
+        }
+        pts
+    }
+}
+
+fn perpendicular_distance(point: &[f64], ref_line: &[f64]) -> f64 {
+    let norm_sq: f64 = ref_line.iter().map(|&x| x * x).sum();
+    if norm_sq < 1e-14 {
+        return point.iter().map(|&x| x * x).sum::<f64>().sqrt();
+    }
+    let dot: f64 = point.iter().zip(ref_line.iter()).map(|(&a, &b)| a * b).sum();
+    let scale = dot / norm_sq;
+    let mut dist_sq = 0.0;
+    for (&p, &r) in point.iter().zip(ref_line.iter()) {
+        let diff = p - scale * r;
+        dist_sq += diff * diff;
+    }
+    dist_sq.sqrt()
+}
+
+fn nsga3_select(
+    pop_size: usize,
+    fronts: &[Vec<usize>],
+    r_pop: &[Vec<f64>],
+    r_objs: &[Vec<f64>],
+    ref_points: &[Vec<f64>],
+    m_dim: usize,
+) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+    let mut selected_indices = Vec::new();
+    let mut l_front_idx = 0;
+
+    for (f_idx, front) in fronts.iter().enumerate() {
+        if selected_indices.len() + front.len() <= pop_size {
+            selected_indices.extend(front.iter().copied());
+        } else {
+            l_front_idx = f_idx;
+            break;
+        }
+    }
+
+    if selected_indices.len() == pop_size {
+        let next_pop = selected_indices.iter().map(|&i| r_pop[i].clone()).collect();
+        let next_objs = selected_indices.iter().map(|&i| r_objs[i].clone()).collect();
+        return (next_pop, next_objs);
+    }
+
+    let remaining_k = pop_size - selected_indices.len();
+    let fl = &fronts[l_front_idx];
+
+    let mut pool = selected_indices.clone();
+    pool.extend_from_slice(fl);
+
+    let mut z_min = vec![f64::INFINITY; m_dim];
+    for &idx in &pool {
+        for m in 0..m_dim {
+            if r_objs[idx][m] < z_min[m] {
+                z_min[m] = r_objs[idx][m];
+            }
+        }
+    }
+
+    let mut intercepts = vec![1.0; m_dim];
+    for m in 0..m_dim {
+        let mut max_diff = 1e-6f64;
+        for &idx in &pool {
+            let diff = (r_objs[idx][m] - z_min[m]).abs();
+            if diff > max_diff {
+                max_diff = diff;
+            }
+        }
+        intercepts[m] = max_diff;
+    }
+
+    let mut assoc_ref = vec![0usize; pool.len()];
+    let mut assoc_dist = vec![0.0f64; pool.len()];
+
+    for (p_i, &idx) in pool.iter().enumerate() {
+        let norm_pt: Vec<f64> = (0..m_dim)
+            .map(|m| (r_objs[idx][m] - z_min[m]) / intercepts[m])
+            .collect();
+        let mut min_d = f64::INFINITY;
+        let mut best_r = 0;
+        for (r_i, r_line) in ref_points.iter().enumerate() {
+            let d = perpendicular_distance(&norm_pt, r_line);
+            if d < min_d {
+                min_d = d;
+                best_r = r_i;
+            }
+        }
+        assoc_ref[p_i] = best_r;
+        assoc_dist[p_i] = min_d;
+    }
+
+    let mut rho = vec![0usize; ref_points.len()];
+    for p_i in 0..selected_indices.len() {
+        if assoc_ref[p_i] < rho.len() {
+            rho[assoc_ref[p_i]] += 1;
+        }
+    }
+
+    let mut fl_available: Vec<(usize, usize, f64)> = fl
+        .iter()
+        .enumerate()
+        .map(|(fl_i, &orig_idx)| {
+            let p_idx = selected_indices.len() + fl_i;
+            (orig_idx, assoc_ref[p_idx], assoc_dist[p_idx])
+        })
+        .collect();
+
+    let mut added_from_fl = Vec::new();
+    while added_from_fl.len() < remaining_k && !fl_available.is_empty() {
+        let mut min_rho = usize::MAX;
+        let mut chosen_ref = None;
+
+        for r in 0..ref_points.len() {
+            if fl_available.iter().any(|&(_, r_idx, _)| r_idx == r) && rho[r] < min_rho {
+                min_rho = rho[r];
+                chosen_ref = Some(r);
+            }
+        }
+
+        let Some(target_ref) = chosen_ref else { break; };
+
+        let cand_pos = if rho[target_ref] == 0 {
+            fl_available
+                .iter()
+                .enumerate()
+                .filter(|(_, &(_, r_idx, _))| r_idx == target_ref)
+                .min_by(|a, b| a.1.2.partial_cmp(&b.1.2).unwrap())
+                .map(|(pos, _)| pos)
+                .unwrap()
+        } else {
+            fl_available
+                .iter()
+                .position(|&(_, r_idx, _)| r_idx == target_ref)
+                .unwrap()
+        };
+
+        let (chosen_orig_idx, _, _) = fl_available.remove(cand_pos);
+        added_from_fl.push(chosen_orig_idx);
+        rho[target_ref] += 1;
+    }
+
+    selected_indices.extend(added_from_fl);
+    let next_pop = selected_indices.iter().map(|&i| r_pop[i].clone()).collect();
+    let next_objs = selected_indices.iter().map(|&i| r_objs[i].clone()).collect();
+    (next_pop, next_objs)
 }

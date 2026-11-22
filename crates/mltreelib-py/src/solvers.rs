@@ -195,7 +195,7 @@ pub struct PyAskTell(Arc<Mutex<AskTell>>);
 #[pymethods]
 impl PyAskTell {
     #[new]
-    #[pyo3(signature = (method, bounds, *, population_size=None, seed=None, max_iterations=None, max_evaluations=None, tol=None, ipop=None, max_restarts=None, de_f=None, de_cr=None, pso_w=None, pso_c1=None, pso_c2=None))]
+    #[pyo3(signature = (method, bounds, *, population_size=None, seed=None, max_iterations=None, max_evaluations=None, tol=None, ipop=None, max_restarts=None, de_f=None, de_cr=None, pso_w=None, pso_c1=None, pso_c2=None, moead_t=None, nsga3_partitions=None, island_count=None, migration_interval=None, migration_rate=None))]
     fn new(
         method: &str,
         bounds: Vec<(f64, f64)>,
@@ -211,6 +211,11 @@ impl PyAskTell {
         pso_w: Option<f64>,
         pso_c1: Option<f64>,
         pso_c2: Option<f64>,
+        moead_t: Option<usize>,
+        nsga3_partitions: Option<usize>,
+        island_count: Option<usize>,
+        migration_interval: Option<usize>,
+        migration_rate: Option<usize>,
     ) -> PyResult<Self> {
         let kind = AskTellKind::from_str(method)
             .ok_or_else(|| PyValueError::new_err(format!("unknown AskTell optimizer method {method:?}")))?;
@@ -227,6 +232,11 @@ impl PyAskTell {
             pso_w,
             pso_c1,
             pso_c2,
+            moead_t,
+            nsga3_partitions,
+            island_count,
+            migration_interval,
+            migration_rate,
         };
         let opt = AskTell::new(kind, bounds, options).map_err(PyValueError::new_err)?;
         Ok(Self(Arc::new(Mutex::new(opt))))
@@ -325,6 +335,11 @@ fn minimize_many<'py>(
         seed,
         max_iterations,
         max_evaluations,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,

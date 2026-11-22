@@ -1,3 +1,4 @@
+from collections.abc import Callable, Sequence
 from os import PathLike
 from typing import Any
 
@@ -207,6 +208,11 @@ class AskTell:
         pso_w: float | None = ...,
         pso_c1: float | None = ...,
         pso_c2: float | None = ...,
+        moead_t: int | None = ...,
+        nsga3_partitions: int | None = ...,
+        island_count: int | None = ...,
+        migration_interval: int | None = ...,
+        migration_rate: int | None = ...,
     ) -> None: ...
     def ask(self) -> list[list[float]]: ...
     def tell(self, feedback: Sequence[float] | Sequence[Sequence[float]]) -> None: ...

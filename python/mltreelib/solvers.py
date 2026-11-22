@@ -20,7 +20,13 @@ callable returns one value per parameter; smooth methods use a
 central-difference fallback when no gradient is supplied.
 """
 
-from mltreelib._core import AskTell, FitResult, OptimizationResult, minimize_many, optimize
+from mltreelib._core import (
+    AskTell,
+    FitResult,
+    OptimizationResult,
+    minimize_many,
+    optimize,
+)
 from mltreelib._core import fit_glm as fit
 
 __all__ = ["AskTell", "FitResult", "OptimizationResult", "fit", "minimize_many", "optimize"]
