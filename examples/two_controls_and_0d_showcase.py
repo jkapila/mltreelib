@@ -29,7 +29,7 @@ def main():
         col_weights=[2.0, 0.5],  # feature split priorities
     )
     model = ModelTree(growth_control=growth, leaf_control=leaf_ctrl)
-    print("ModelTree max depth:", model.get_params()["max_depth"])
+    print("ModelTree max depth:", model.config()["max_depth"])
 
     print("\n" + "=" * 70)
     print("2. 0D Leaf Formulations & Stats Dictionary")
@@ -100,7 +100,7 @@ def main():
 
     paths = tree_interact.split_paths()
     print("Interaction groups successfully mapped from column names:")
-    print("Resolved index groups:", tree_interact.get_params()["interaction_groups"])
+    print("Resolved index groups:", tree_interact.config()["interaction_groups"])
     print("Split paths across tree:")
     for path in paths:
         print("  Root ->", " -> ".join(path) if path else "(stump)")
@@ -119,7 +119,7 @@ def main():
         col_names=["age", "income", "city_tier"],
     )
     print("Tree fitted with row weights and column weights.")
-    print("Reported params col_weights:", tree_weighted.get_params()["col_weights"])
+    print("Reported params col_weights:", tree_weighted.config()["col_weights"])
     print("Finished showcase successfully!")
 
 

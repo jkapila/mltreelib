@@ -114,10 +114,6 @@ class GrowthControl:
         """Return the explicitly configured growth options."""
         return self._options.copy()
 
-    def get_params(self):
-        """Return the explicitly configured growth options (deprecated: use config())."""
-        return self.config()
-
     def __getattr__(self, name):
         try:
             return object.__getattribute__(self, "_options")[name]
@@ -138,7 +134,7 @@ def _normalize_model_options(factory, args, kwargs):
 
     growth = kwargs.pop("growth_control", None)
     if isinstance(growth, GrowthControl):
-        growth = growth.get_params()
+        growth = growth.config()
     if growth is not None:
         if not isinstance(growth, dict):
             raise TypeError("growth_control must be a GrowthControl or dict")

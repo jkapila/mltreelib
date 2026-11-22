@@ -59,7 +59,7 @@ Ordered by what unblocks the most work and what the local benchmark says is wort
 | Order | Spec | Phases | Why |
 |---:|---|---:|---|
 | 3 | **28** Phases 0 to 2 | 3 | `ModelForest` skeleton, bagging, and the Cubist committee. The local board shows `ModelTree(all)` at 715.9 regression Elo against ranger's 1700.6. The tree is under-ensembled on regression, and bagging is the direct fix. This is the largest measured improvement available |
-| 4 | **25** Decision 11 | 1 | Remove the remaining sklearn `get_params` from `python/mltreelib/_controls.py` and `crates/mltreelib-py/src/lib.rs`. The deprecation landed; the method did not go |
+| 4 | **25** Decision 11 | **Completed** | Remove the remaining sklearn `get_params` from `python/mltreelib/_controls.py` and `crates/mltreelib-py/src/lib.rs`. Replaced with `.config()` |
 
 ### Tier 2 — The remaining families
 

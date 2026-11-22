@@ -113,7 +113,7 @@ def test_gain_ctree_alias():
     tree = ModelTree(gain="ctree", max_depth=1, min_rows=10, prune="none")
     tree.fit(X, y)
     assert len(tree.splits()) == 1
-    assert tree.get_params()["split_test"] == "ctree"
+    assert tree.config()["split_test"] == "ctree"
     diags = [d for d in tree.split_diagnostics() if d is not None]
     assert len(diags) > 0
     assert diags[0]["test_name"] == "ctree"
