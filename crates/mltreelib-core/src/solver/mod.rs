@@ -12,16 +12,19 @@ pub mod ccd;
 pub mod dense;
 pub mod design;
 pub mod evolutionary;
+pub mod ensemble_prune;
 pub mod family;
 pub mod generic;
 pub mod lbfgs;
 pub mod normal;
+pub mod sparse_rule;
 pub mod summary;
 
 pub use ask_tell::{AskTell, AskTellKind, AskTellOptions, ParetoSolution};
 pub use ccd::{solve_ccd, CcdOptions};
 pub use dense::{fit_dense, FittedGlm};
 pub use design::{ColumnSliceView, DenseView, DesignMatrix};
+pub use ensemble_prune::{prune_ensemble_stepwise, PruningResult};
 pub use evolutionary::{
     solve_cmaes, solve_evolutionary, solve_rcga, solve_shade, solve_snes, EvolutionaryKind,
     EvolutionaryOptions,
@@ -33,6 +36,7 @@ pub use generic::{
 };
 pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
+pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
 
 /// General solver options for fitting a linear or generalized linear model.

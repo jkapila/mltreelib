@@ -244,6 +244,47 @@ def minimize_many(
     seed: int | None = ...,
 ) -> list[tuple[list[float], list[float]]]: ...
 
+class PruningResult:
+    @property
+    def selected_indices(self) -> list[int]: ...
+    @property
+    def weights(self) -> list[float]: ...
+    @property
+    def loss_history(self) -> list[float]: ...
+    @property
+    def final_loss(self) -> float: ...
+
+def prune_ensemble(
+    preds: Sequence[Sequence[float]],
+    y: Sequence[float],
+    *,
+    max_trees: int = ...,
+    tol: float = ...,
+) -> PruningResult: ...
+
+class SparseRuleResult:
+    @property
+    def selected_indices(self) -> list[int]: ...
+    @property
+    def coefficients(self) -> list[float]: ...
+    @property
+    def intercept(self) -> float: ...
+    @property
+    def importances(self) -> list[float]: ...
+    @property
+    def supports(self) -> list[float]: ...
+    def predict(self, rule_matrix: Sequence[Sequence[float]]) -> list[float]: ...
+
+def select_sparse_rules(
+    rule_matrix: Sequence[Sequence[float]],
+    y: Sequence[float],
+    *,
+    alpha: float = ...,
+    lambda_reg: float = ...,
+    max_iter: int = ...,
+    tol: float = ...,
+) -> SparseRuleResult: ...
+
 class ModelReport:
     @property
     def title(self) -> str: ...

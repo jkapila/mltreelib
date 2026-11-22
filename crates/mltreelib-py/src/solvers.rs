@@ -6,7 +6,9 @@ use mltreelib_core::solver::generic::{
     OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions, SmoothObjective,
 };
 use mltreelib_core::solver::{
-    fit_dense, AskTell, AskTellKind, AskTellOptions, FittedGlm, GlmFamily, SolverOptions,
+    fit_dense, fit_sparse_rule_selection, predict_sparse_rules, prune_ensemble_stepwise,
+    AskTell, AskTellKind, AskTellOptions, FittedGlm, GlmFamily, PruningResult, SolverOptions,
+    SparseRuleResult,
 };
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
@@ -183,9 +185,114 @@ pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFitResult>()?;
     m.add_class::<PyOptimizationResult>()?;
     m.add_class::<PyAskTell>()?;
+    m.add_class::<PyPruningResult>()?;
+    m.add_class::<PySparseRuleResult>()?;
     m.add_function(wrap_pyfunction!(fit_glm, m)?)?;
     m.add_function(wrap_pyfunction!(optimize, m)?)?;
-    m.add_function(wrap_pyfunction!(minimize_many, m)?)
+    m.add_function(wrap_pyfunction!(minimize_many, m)?)?;
+    m.add_function(wrap_pyfunction!(prune_ensemble, m)?)?;
+    m.add_function(wrap_pyfunction!(select_sparse_rules, m)?)
+}
+
+/// Result of sparse ensemble pruning.
+#[pyclass(name = "PruningResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PyPruningResult(PruningResult);
+
+#[pymethods]
+impl PyPruningResult {
+    #[getter]
+    fn selected_indices(&self) -> Vec<usize> {
+        self.0.selected_indices.clone()
+    }
+
+    #[getter]
+    fn weights(&self) -> Vec<f64> {
+        self.0.weights.clone()
+    }
+
+    #[getter]
+    fn loss_history(&self) -> Vec<f64> {
+        self.0.loss_history.clone()
+    }
+
+    #[getter]
+    fn final_loss(&self) -> f64 {
+        self.0.final_loss
+    }
+}
+
+/// Prunes an ensemble of tree predictions down to a sparse sub-ensemble.
+#[pyfunction]
+#[pyo3(signature = (preds, y, *, max_trees=20, tol=1e-5))]
+pub fn prune_ensemble(
+    preds: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    max_trees: usize,
+    tol: f64,
+) -> PyResult<PyPruningResult> {
+    prune_ensemble_stepwise(&preds, &y, max_trees, tol)
+        .map(PyPruningResult)
+        .map_err(PyValueError::new_err)
+}
+
+/// Result of L1/ElasticNet sparse rule selection.
+#[pyclass(name = "SparseRuleResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PySparseRuleResult(SparseRuleResult);
+
+#[pymethods]
+impl PySparseRuleResult {
+    #[getter]
+    fn selected_indices(&self) -> Vec<usize> {
+        self.0.selected_indices.clone()
+    }
+
+    #[getter]
+    fn coefficients(&self) -> Vec<f64> {
+        self.0.coefficients.clone()
+    }
+
+    #[getter]
+    fn intercept(&self) -> f64 {
+        self.0.intercept
+    }
+
+    #[getter]
+    fn importances(&self) -> Vec<f64> {
+        self.0.importances.clone()
+    }
+
+    #[getter]
+    fn supports(&self) -> Vec<f64> {
+        self.0.supports.clone()
+    }
+
+    #[pyo3(signature = (rule_matrix))]
+    fn predict(&self, rule_matrix: Vec<Vec<f64>>) -> Vec<f64> {
+        predict_sparse_rules(
+            &rule_matrix,
+            self.0.intercept,
+            &self.0.selected_indices,
+            &self.0.coefficients,
+        )
+    }
+}
+
+/// Selects a sparse sub-ensemble of rules using ElasticNet coordinate descent.
+#[pyfunction]
+#[pyo3(signature = (rule_matrix, y, *, alpha=1.0, lambda_reg=0.01, max_iter=500, tol=1e-4))]
+pub fn select_sparse_rules(
+    rule_matrix: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    alpha: f64,
+    lambda_reg: f64,
+    max_iter: usize,
+    tol: f64,
+) -> PyResult<PySparseRuleResult> {
+    fit_sparse_rule_selection(&rule_matrix, &y, alpha, lambda_reg, max_iter, tol)
+        .map(PySparseRuleResult)
+        .map_err(PyValueError::new_err)
 }
 
 /// First-class batch population Ask/Tell optimizer.
