@@ -13,7 +13,12 @@ Provide a native, pure-Rust causal and uplift modeling framework in `mltreelib` 
 2. **Doubly Robust (AIPW) Leaves & Splits**: Utilize Augmented Inverse Probability Weighting (AIPW) scores $\Gamma_i$, providing double robustness (unbiased even if either the propensity model or the conditional outcome model is misspecified).
 3. **R-Learner (Robinson Residual) Leaves & Splits**: Regress residualized outcomes $(Y - \hat{m}(X))$ on residualized treatments $(W - \hat{e}(X))$ with Neyman-orthogonal weighting, bypassing regularisation bias.
 4. **Instrumental Variables (IV / 2SLS) Trees**: Implement Wald/2SLS leaf estimators and covariance splitting to estimate Local Average Treatment Effects (LATE) under unmeasured confounding.
-5. **Divergence-Based Uplift Splitting**: Support Kullback-Leibler (KL), Euclidean Distance (ED), and Chi-Square ($\chi^2$) divergence criteria for binary and multi-treatment campaign targeting.
+5. **Regression Discontinuity (RD / RDD) Trees**: Estimate heterogeneous treatment effects at threshold boundaries.
+   - **Sharp RD**: Fit centered local linear slopes on either side of cutoff $c$ on running variable $R$, estimating $\tau(X) = (\alpha^+ - \alpha^-) + (\beta^+ - \beta^-)^T (X - c)$.
+   - **Fuzzy RD**: Modeled as 2SLS / IV with cutoff indicator $Z = \mathbf{1}(R \ge c)$ instrumenting endogenous treatment adoption $W$.
+   - **RD Tree Splitting**: Partition remaining covariates $X_{-R}$ to find subgroups where the discontinuity jump is largest.
+6. **Difference-in-Differences (DiD) Trees**: Estimate heterogeneous treatment effects $\tau(X)$ across pre/post policy windows, integrating with Spec 27's panel fixed effects.
+7. **Divergence-Based Uplift Splitting**: Support Kullback-Leibler (KL), Euclidean Distance (ED), and Chi-Square ($\chi^2$) divergence criteria for binary and multi-treatment campaign targeting.
 
 ## User Stories
 
@@ -23,8 +28,9 @@ Provide a native, pure-Rust causal and uplift modeling framework in `mltreelib` 
 4. As a machine learning engineer, I want `leaf="doubly_robust"`, so that my treatment effect predictions are protected against misspecification of either the propensity score or the baseline outcome models.
 5. As a causal inference practitioner, I want to pass precomputed propensity scores `propensity=probs` to `fit()`, so that first-stage cross-fitted propensity estimates can drive double-robust splitting without recalculation.
 6. As a policy researcher, I want `gain="r_learner"`, so that I can train Neyman-orthogonal causal trees on residualized outcomes and residualized treatment indicators.
-7. As an applied microeconomist, I want instrumental variable splitting (`gain="iv"`, `instrument=Z`), so that I can estimate treatment effects when unobserved confounders violate unconfoundedness.
-8. As a pricing analyst, I want continuous treatment leaves (`treatment_type="continuous"`), so that I can estimate price elasticity curves $\frac{\partial E[Y \mid W=w, X=x]}{\partial w}$ across market segments.
+7. As an applied microeconomist, I want instrumental variable splitting (`gain="iv"`, `instrument=Z`) and 2SLS leaf estimation (`leaf="iv_2sls"`), so that I can estimate treatment effects when unobserved confounders violate unconfoundedness.
+8. As a policy researcher, I want Regression Discontinuity trees (`design="rd_sharp"` and `design="rd_fuzzy"` with running variable $R$ and cutoff $c$), so that I can estimate heterogeneous treatment effects around eligibility cutoffs.
+9. As a pricing analyst, I want continuous treatment leaves (`treatment_type="continuous"`), so that I can estimate price elasticity curves $\frac{\partial E[Y \mid W=w, X=x]}{\partial w}$ across market segments.
 9. As an uplift modeler, I want multi-treatment uplift trees (`treatment=[0, 1, 2]`), so that I can compare multiple competing discount offers against a control holdout simultaneously.
 10. As a production engineer, I want `tree.predict_uplift(X)` to run in sub-millisecond Rust time, so that live bidding and real-time intervention systems can evaluate causal uplift without latency bottlenecks.
 11. As an auditor, I want `leaf.summary()` on causal leaves to report standard errors and $t$-statistics for treatment coefficients $\tau$, so that I can verify statistical significance per segment.
@@ -44,6 +50,11 @@ Provide a native, pure-Rust causal and uplift modeling framework in `mltreelib` 
   - `LeafKind::LinearCATE`: Solves bivariate or multivariate linear system estimating base coefficients $\beta_0$ and interaction treatment coefficients $\tau$.
   - `LeafKind::DoublyRobust`: Fits linear regression directly on AIPW scores $\Gamma_i$.
   - `LeafKind::Iv2SLS`: Two-Stage Least Squares solver inside terminal leaves using instrument matrix $Z$.
+  - `LeafKind::RdLocalLinear`: Local linear regression centered at threshold $c$ on running variable $R$, estimating boundary jump $\tau(c)$.
+- **Quasi-Experimental Seam**:
+  - Sharp RD maps to centered `LinearCATE` on observations within bandwidth $h$: $|R - c| \le h$.
+  - Fuzzy RD maps to `Iv2SLS` with instrument $Z_i = \mathbf{1}(R_i \ge c)$ on endogenous treatment $W_i$.
+  - RD Tree splitting optimizes heterogeneity across other features $X_{-R}$, isolating which subgroups experience the largest policy jump at cutoff $c$.
 - **High Seam**:
   All causal models interface through `ModelTree` with `predict_uplift(X)` and `predict_cate(X)` returning treatment effect arrays.
 
