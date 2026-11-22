@@ -25,7 +25,7 @@ awk 'BEGIN { in_deps=0 } /^\[dependencies\]/ { in_deps=1 } in_deps { print }' \
 cat > "$stage/mltreelib/tools/rust/core/Cargo.toml" <<'EOF'
 [package]
 name = "mltreelib-core"
-version = "0.4.13"
+version = "0.4.14"
 edition = "2021"
 license = "Apache-2.0"
 
