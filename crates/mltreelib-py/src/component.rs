@@ -1,8 +1,8 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use mltreelib_core::component::{
-    ComponentModelCore, FastIcaModel, NmfModel, PcaModel, TruncatedSvdModel,
-    WhiteningKind, WhiteningModel,
+    ComponentModelCore, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod,
+    TruncatedSvdModel, WhiteningKind, WhiteningModel,
 };
 use mltreelib_core::report::ModelReport;
 
@@ -55,7 +55,22 @@ pub struct PyComponentModel {
 #[pymethods]
 impl PyComponentModel {
     #[staticmethod]
-    #[pyo3(signature = (data, kind = "pca", n_components = None, standardize = true, max_iter = None, tol = None, seed = None, whitening_kind = None, eps = None))]
+    #[pyo3(signature = (
+        data,
+        kind = "pca",
+        n_components = None,
+        standardize = true,
+        max_iter = None,
+        tol = None,
+        seed = None,
+        whitening_kind = None,
+        eps = None,
+        rotation = None,
+        promax_m = None,
+        solver = None,
+        l1_reg = None,
+        l2_reg = None
+    ))]
     fn fit(
         data: Vec<Vec<f64>>,
         kind: &str,
@@ -66,11 +81,18 @@ impl PyComponentModel {
         seed: Option<u64>,
         whitening_kind: Option<&str>,
         eps: Option<f64>,
+        rotation: Option<&str>,
+        promax_m: Option<f64>,
+        solver: Option<&str>,
+        l1_reg: Option<f64>,
+        l2_reg: Option<f64>,
     ) -> PyResult<Self> {
         let k = kind.to_lowercase();
         let core = match k.as_str() {
             "pca" => {
-                let m = PcaModel::fit(&data, n_components, standardize.unwrap_or(true))
+                let rot_method = RotationMethod::parse(rotation.unwrap_or("none"), promax_m)
+                    .map_err(|e| PyValueError::new_err(e))?;
+                let m = PcaModel::fit(&data, n_components, standardize.unwrap_or(true), Some(rot_method))
                     .map_err(|e| PyValueError::new_err(e))?;
                 ComponentModelCore::Pca(m)
             }
@@ -94,8 +116,19 @@ impl PyComponentModel {
                 ComponentModelCore::Ica(m)
             }
             "nmf" => {
-                let m = NmfModel::fit(&data, n_components, max_iter, tol, seed)
+                let nmf_solver = NmfSolver::parse(solver.unwrap_or("hals"))
                     .map_err(|e| PyValueError::new_err(e))?;
+                let m = NmfModel::fit(
+                    &data,
+                    n_components,
+                    Some(nmf_solver),
+                    max_iter,
+                    tol,
+                    seed,
+                    l1_reg,
+                    l2_reg,
+                )
+                .map_err(|e| PyValueError::new_err(e))?;
                 ComponentModelCore::Nmf(m)
             }
             other => {
@@ -151,6 +184,22 @@ impl PyComponentModel {
         match &self.inner {
             ComponentModelCore::Pca(m) => Ok(Some(m.explained_variance_ratio.clone())),
             ComponentModelCore::Svd(m) => Ok(Some(m.explained_variance_ratio.clone())),
+            _ => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn rotation_matrix(&self) -> PyResult<Option<Vec<Vec<f64>>>> {
+        match &self.inner {
+            ComponentModelCore::Pca(m) => Ok(m.rotation_matrix.clone()),
+            _ => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn reconstruction_error(&self) -> PyResult<Option<f64>> {
+        match &self.inner {
+            ComponentModelCore::Nmf(m) => Ok(Some(m.reconstruction_error)),
             _ => Ok(None),
         }
     }

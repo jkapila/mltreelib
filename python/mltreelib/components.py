@@ -86,6 +86,11 @@ class ComponentModel:
         seed: int = 42,
         whitening_kind: str = "zca",
         eps: float = 1e-5,
+        rotation: str = "none",
+        promax_m: float = 4.0,
+        solver: str = "hals",
+        l1_reg: float = 0.0,
+        l2_reg: float = 0.0,
     ) -> None:
         self.kind = kind.lower().strip()
         self.n_components = n_components
@@ -95,6 +100,11 @@ class ComponentModel:
         self.seed = seed
         self.whitening_kind = whitening_kind.lower().strip()
         self.eps = eps
+        self.rotation = rotation.lower().strip()
+        self.promax_m = promax_m
+        self.solver = solver.lower().strip()
+        self.l1_reg = l1_reg
+        self.l2_reg = l2_reg
 
         self._fitted = False
         self._inner: _CoreComponentModel | None = None
@@ -112,6 +122,11 @@ class ComponentModel:
             seed=self.seed,
             whitening_kind=self.whitening_kind,
             eps=self.eps,
+            rotation=self.rotation,
+            promax_m=self.promax_m,
+            solver=self.solver,
+            l1_reg=self.l1_reg,
+            l2_reg=self.l2_reg,
         )
         self._fitted = True
         return self
@@ -170,6 +185,20 @@ class ComponentModel:
         return self._inner.explained_variance_ratio
 
     @property
+    def rotation_matrix_(self) -> list[list[float]] | None:
+        """Rotation transformation matrix T if rotation was applied, else None."""
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        return self._inner.rotation_matrix
+
+    @property
+    def reconstruction_error_(self) -> float | None:
+        """Reconstruction error for NMF models."""
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        return self._inner.reconstruction_error
+
+    @property
     def report(self) -> ModelReport:
         """Return the structured ModelReport."""
         if not self._fitted or self._inner is None:
@@ -187,6 +216,11 @@ class ComponentModel:
             "seed": self.seed,
             "whitening_kind": self.whitening_kind,
             "eps": self.eps,
+            "rotation": self.rotation,
+            "promax_m": self.promax_m,
+            "solver": self.solver,
+            "l1_reg": self.l1_reg,
+            "l2_reg": self.l2_reg,
         }
 
     def to_json(self) -> str:

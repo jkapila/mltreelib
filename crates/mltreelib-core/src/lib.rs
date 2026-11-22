@@ -46,5 +46,5 @@ pub use fast_interaction::{fast_interaction_screen, FastInteraction};
 pub use knn::{DistanceMetric, KnnVariant, LeafKnnModel};
 pub use rules::{ConditionOp, Rule, RuleCondition, RuleSet};
 pub use report::ModelReport;
-pub use component::{ComponentModelCore, FastIcaModel, NmfModel, PcaModel, TruncatedSvdModel, WhiteningKind, WhiteningModel};
+pub use component::{ComponentModelCore, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod, TruncatedSvdModel, WhiteningKind, WhiteningModel};
 pub use persistence::PersistenceError;

@@ -157,3 +157,77 @@ def test_invalid_input_handling():
     nmf = ComponentModel(kind="nmf")
     with pytest.raises(ValueError, match="non-negative"):
         nmf.fit([[1.0, -2.0], [3.0, 4.0]])
+
+
+def test_pca_rotations_varimax_quartimax_promax():
+    # 4-feature dataset with two underlying factor clusters
+    data = [
+        [
+            float(i) * 0.1,
+            2.0 * float(i) * 0.1 + (i % 3) * 0.05,
+            (i % 7) * 1.5,
+            -1.2 * (i % 7) * 1.5 + (i % 5) * 0.02,
+        ]
+        for i in range(100)
+    ]
+
+    # Raw PCA has no rotation matrix
+    raw_pca = ComponentModel(kind="pca", n_components=2, rotation="none")
+    raw_pca.fit(data)
+    assert raw_pca.rotation_matrix_ is None
+
+    # Varimax
+    varimax_pca = ComponentModel(kind="pca", n_components=2, rotation="varimax")
+    varimax_pca.fit(data)
+    assert varimax_pca.rotation_matrix_ is not None
+    rot_mat = varimax_pca.rotation_matrix_
+    assert len(rot_mat) == 2
+    assert len(rot_mat[0]) == 2
+    # Verify orthogonality: column 0 dot column 1 approx 0
+    dot_cross = rot_mat[0][0] * rot_mat[0][1] + rot_mat[1][0] * rot_mat[1][1]
+    assert abs(dot_cross) < 1e-4
+
+    # Other Orthomax rotations
+    for rot in ["quartimax", "equamax", "parsimax", "biquartimax"]:
+        m = ComponentModel(kind="pca", n_components=2, rotation=rot)
+        m.fit(data)
+        assert m.rotation_matrix_ is not None
+
+    # Promax oblique rotation
+    promax_pca = ComponentModel(kind="pca", n_components=2, rotation="promax", promax_m=4.0)
+    promax_pca.fit(data)
+    assert promax_pca.rotation_matrix_ is not None
+
+
+def test_nmf_solvers_and_regularization():
+    data = [
+        [float(i % 5 + 1), float(i % 4 + 2), float(i % 6 + 1)]
+        for i in range(50)
+    ]
+
+    # Multiplicative Updates (MU)
+    model_mu = ComponentModel(kind="nmf", n_components=2, solver="mu", seed=42)
+    model_mu.fit(data)
+    assert model_mu.reconstruction_error_ is not None
+    assert model_mu.config()["solver"] == "mu"
+
+    # Projected ALS
+    model_als = ComponentModel(kind="nmf", n_components=2, solver="als", l2_reg=0.01, seed=42)
+    model_als.fit(data)
+    assert model_als.reconstruction_error_ is not None
+    assert model_als.config()["solver"] == "als"
+    assert model_als.score_samples(data)[0] >= 0.0
+
+    # Hierarchical ALS (HALS) with L1/L2
+    model_hals = ComponentModel(
+        kind="nmf",
+        n_components=2,
+        solver="hals",
+        l1_reg=0.005,
+        l2_reg=0.01,
+        seed=42,
+    )
+    model_hals.fit(data)
+    assert model_hals.reconstruction_error_ is not None
+    assert model_hals.config()["solver"] == "hals"
+    assert sum(model_hals.score_samples(data)) / 50.0 < 1.5

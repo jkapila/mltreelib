@@ -1,4 +1,4 @@
-use mltreelib_core::component::{FastIcaModel, NmfModel, PcaModel, TruncatedSvdModel, WhiteningKind, WhiteningModel};
+use mltreelib_core::component::{FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod, TruncatedSvdModel, WhiteningKind, WhiteningModel};
 
 #[test]
 fn test_pca_variance_and_reconstruction() {
@@ -11,7 +11,7 @@ fn test_pca_variance_and_reconstruction() {
         data.push(vec![x, y, z]);
     }
 
-    let pca = PcaModel::fit(&data, Some(2), false).expect("fit PCA");
+    let pca = PcaModel::fit(&data, Some(2), false, None).expect("fit PCA");
     assert_eq!(pca.n_components, 2);
     assert_eq!(pca.components.len(), 2);
     assert_eq!(pca.components[0].len(), 3);
@@ -54,7 +54,7 @@ fn test_pca_reconstruction_anomaly_detection() {
         train.push(vec![x1, x2, x3]);
     }
 
-    let pca = PcaModel::fit(&train, Some(2), false).expect("fit");
+    let pca = PcaModel::fit(&train, Some(2), false, None).expect("fit");
 
     // Inlier test row: follows the subspace
     let inlier = vec![vec![10.0, -25.0, 0.01]];
@@ -165,7 +165,7 @@ fn test_nmf_multiplicative_updates() {
         data.push(r);
     }
 
-    let nmf = NmfModel::fit(&data, Some(2), Some(100), Some(1e-4), Some(42)).expect("fit NMF");
+    let nmf = NmfModel::fit(&data, Some(2), Some(NmfSolver::Mu), Some(100), Some(1e-4), Some(42), None, None).expect("fit NMF");
     assert_eq!(nmf.n_components, 2);
     assert_eq!(nmf.components.len(), 2);
     assert_eq!(nmf.components[0].len(), 3);
@@ -190,4 +190,105 @@ fn test_nmf_multiplicative_updates() {
     let rep = nmf.report();
     assert_eq!(rep.learner.kind, "NMF");
     assert!(rep.to_text().contains("Non-negative Matrix Factorization"));
+}
+
+#[test]
+fn test_pca_rotations() {
+    // Generate 4-feature data with two distinct clusters of features:
+    // (f1, f2) driven by factor 1; (f3, f4) driven by factor 2
+    let mut data = Vec::new();
+    for i in 0..120 {
+        let f1 = (i as f64) * 0.1;
+        let f2 = 2.0 * f1 + (i % 3) as f64 * 0.05;
+        let f3 = (i % 7) as f64 * 1.5;
+        let f4 = -1.2 * f3 + (i % 5) as f64 * 0.02;
+        data.push(vec![f1, f2, f3, f4]);
+    }
+
+    // Unrotated PCA
+    let pca_raw = PcaModel::fit(&data, Some(2), true, None).expect("fit raw PCA");
+    assert!(pca_raw.rotation_matrix.is_none());
+
+    // Varimax rotation
+    let pca_varimax = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Varimax)).expect("fit varimax");
+    assert!(pca_varimax.rotation_matrix.is_some());
+    let rot_m = pca_varimax.rotation_matrix.as_ref().unwrap();
+    assert_eq!(rot_m.len(), 2);
+    assert_eq!(rot_m[0].len(), 2);
+
+    // Check orthogonality of T: T^T T approx I
+    let t00 = rot_m[0][0];
+    let t01 = rot_m[0][1];
+    let t10 = rot_m[1][0];
+    let t11 = rot_m[1][1];
+    let dot_col0 = t00 * t00 + t10 * t10;
+    let dot_col1 = t01 * t01 + t11 * t11;
+    let dot_cross = t00 * t01 + t10 * t11;
+    assert!((dot_col0 - 1.0).abs() < 1e-4, "Orthogonal col 0 norm: {}", dot_col0);
+    assert!((dot_col1 - 1.0).abs() < 1e-4, "Orthogonal col 1 norm: {}", dot_col1);
+    assert!(dot_cross.abs() < 1e-4, "Orthogonal cross product: {}", dot_cross);
+
+    // Quartimax, Equamax, Parsimax, Biquartimax
+    let _pca_quarti = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Quartimax)).expect("fit quartimax");
+    let _pca_equa = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Equamax)).expect("fit equamax");
+    let _pca_parsi = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Parsimax)).expect("fit parsimax");
+    let _pca_biquarti = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Biquartimax)).expect("fit biquartimax");
+
+    // Promax oblique rotation
+    let pca_promax = PcaModel::fit(&data, Some(2), true, Some(RotationMethod::Promax(4.0))).expect("fit promax");
+    assert!(pca_promax.rotation_matrix.is_some());
+
+    // Reconstruction error with rotated loadings should remain comparable
+    let raw_errs = pca_raw.reconstruction_errors(&data).expect("raw errors");
+    let varimax_errs = pca_varimax.reconstruction_errors(&data).expect("varimax errors");
+    let mean_raw: f64 = raw_errs.iter().sum::<f64>() / (data.len() as f64);
+    let mean_varimax: f64 = varimax_errs.iter().sum::<f64>() / (data.len() as f64);
+    assert!(
+        (mean_raw - mean_varimax).abs() < 0.5,
+        "Rotated subspace reconstruction error ({}) should match raw ({})",
+        mean_varimax,
+        mean_raw
+    );
+}
+
+#[test]
+fn test_nmf_als_and_hals_solvers() {
+    let mut data = Vec::new();
+    for i in 0..50 {
+        let a = (i % 4) as f64 + 1.0;
+        let b = (i % 6) as f64 + 0.5;
+        data.push(vec![2.0 * a, a + 3.0 * b, 4.0 * b]);
+    }
+
+    // Projected ALS solver
+    let nmf_als = NmfModel::fit(
+        &data,
+        Some(2),
+        Some(NmfSolver::Als),
+        Some(100),
+        Some(1e-4),
+        Some(42),
+        Some(0.0),
+        Some(0.01),
+    ).expect("fit ALS");
+    assert_eq!(nmf_als.solver, NmfSolver::Als);
+    let als_errs = nmf_als.reconstruction_errors(&data).expect("als errors");
+    let mean_als: f64 = als_errs.iter().sum::<f64>() / 50.0;
+    assert!(mean_als < 1.0, "ALS error: {}", mean_als);
+
+    // Hierarchical ALS (HALS) solver with L1 and L2 regularization
+    let nmf_hals = NmfModel::fit(
+        &data,
+        Some(2),
+        Some(NmfSolver::Hals),
+        Some(150),
+        Some(1e-4),
+        Some(42),
+        Some(0.005),
+        Some(0.01),
+    ).expect("fit HALS");
+    assert_eq!(nmf_hals.solver, NmfSolver::Hals);
+    let hals_errs = nmf_hals.reconstruction_errors(&data).expect("hals errors");
+    let mean_hals: f64 = hals_errs.iter().sum::<f64>() / 50.0;
+    assert!(mean_hals < 1.0, "HALS error: {}", mean_hals);
 }

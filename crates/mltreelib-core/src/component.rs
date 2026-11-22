@@ -1,11 +1,14 @@
 //! Consolidated Component Analysis, Matrix Factorization, and Reconstruction Anomaly Scoring.
 //!
 //! Provides native Rust implementations of:
-//! - Classical PCA (centered and standardized)
+//! - Classical PCA (centered and standardized) with R-aligned factor rotations
+//!   (Varimax, Quartimax, Equamax, Parsimax, Biquartimax, Orthomax, Promax)
 //! - Truncated SVD (uncentered dimensionality reduction)
 //! - Whitening (ZCA and PCA whitening transforms)
 //! - FastICA (independent component analysis with symmetric orthogonalization)
-//! - NMF (non-negative matrix factorization via multiplicative updates)
+//! - NMF (non-negative matrix factorization via Multiplicative Updates,
+//!   Projected Alternating Least Squares (ALS), and Hierarchical ALS (HALS)
+//!   with L1/L2 penalties)
 //! - Reconstruction-based Anomaly Scoring for PCA and NMF
 
 use std::collections::BTreeMap;
@@ -65,6 +68,197 @@ fn matrix_to_rows(mat: &DMatrix<f64>) -> Vec<Vec<f64>> {
 }
 
 // ---------------------------------------------------------------------------
+// Factor / PCA Rotation Methods (R-aligned)
+// ---------------------------------------------------------------------------
+
+/// Rotation methods for PCA loadings (aligned with R's `stats` and `GPArotation`).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RotationMethod {
+    None,
+    Varimax,
+    Quartimax,
+    Equamax,
+    Parsimax,
+    Biquartimax,
+    Orthomax(f64),
+    Promax(f64), // power m (default 4.0 in R)
+}
+
+impl RotationMethod {
+    pub fn parse(s: &str, m: Option<f64>) -> Result<Self, String> {
+        match s.to_lowercase().trim() {
+            "none" | "" => Ok(Self::None),
+            "varimax" => Ok(Self::Varimax),
+            "quartimax" => Ok(Self::Quartimax),
+            "equamax" => Ok(Self::Equamax),
+            "parsimax" => Ok(Self::Parsimax),
+            "biquartimax" => Ok(Self::Biquartimax),
+            "promax" => Ok(Self::Promax(m.unwrap_or(4.0))),
+            other => {
+                if let Some(rest) = other.strip_prefix("orthomax:") {
+                    let gamma = rest.parse::<f64>().map_err(|_| "invalid orthomax gamma")?;
+                    Ok(Self::Orthomax(gamma))
+                } else {
+                    Err(format!("unknown rotation method: {}", other))
+                }
+            }
+        }
+    }
+
+    pub fn is_oblique(&self) -> bool {
+        matches!(self, Self::Promax(_))
+    }
+}
+
+/// Rotates a loadings matrix L of shape (p, k) using the specified method.
+/// Returns (rotated_loadings, rotation_matrix T).
+pub fn rotate_loadings(
+    loadings: &DMatrix<f64>,
+    method: RotationMethod,
+    normalize: bool,
+    max_iter: usize,
+    eps: f64,
+) -> Result<(DMatrix<f64>, DMatrix<f64>), String> {
+    let (p, k) = (loadings.nrows(), loadings.ncols());
+    if k < 2 || method == RotationMethod::None {
+        return Ok((loadings.clone(), DMatrix::identity(k, k)));
+    }
+
+    match method {
+        RotationMethod::None => Ok((loadings.clone(), DMatrix::identity(k, k))),
+        RotationMethod::Varimax
+        | RotationMethod::Quartimax
+        | RotationMethod::Equamax
+        | RotationMethod::Parsimax
+        | RotationMethod::Biquartimax
+        | RotationMethod::Orthomax(_) => {
+            let gamma = match method {
+                RotationMethod::Varimax => 1.0,
+                RotationMethod::Quartimax => 0.0,
+                RotationMethod::Equamax => (k as f64) / 2.0,
+                RotationMethod::Parsimax => {
+                    let pf = p as f64;
+                    let kf = k as f64;
+                    (pf * (kf - 1.0)) / (pf + kf - 2.0)
+                }
+                RotationMethod::Biquartimax => 0.5,
+                RotationMethod::Orthomax(g) => g,
+                _ => 1.0,
+            };
+            rotate_orthomax(loadings, gamma, normalize, max_iter, eps)
+        }
+        RotationMethod::Promax(m) => {
+            rotate_promax(loadings, m, normalize, max_iter, eps)
+        }
+    }
+}
+
+/// Generalized Orthomax rotation (Kaiser's algorithm matching R's `stats::varimax`).
+fn rotate_orthomax(
+    x: &DMatrix<f64>,
+    gamma: f64,
+    normalize: bool,
+    max_iter: usize,
+    eps: f64,
+) -> Result<(DMatrix<f64>, DMatrix<f64>), String> {
+    let (p, k) = (x.nrows(), x.ncols());
+    let mut x_work = x.clone();
+    let mut sc = vec![1.0; p];
+    if normalize {
+        for i in 0..p {
+            let row_norm = (0..k).map(|j| x[(i, j)].powi(2)).sum::<f64>().sqrt();
+            sc[i] = if row_norm > 1e-12 { row_norm } else { 1.0 };
+            for j in 0..k {
+                x_work[(i, j)] /= sc[i];
+            }
+        }
+    }
+
+    let mut tt = DMatrix::identity(k, k);
+    let mut d = 0.0;
+    let pf = p as f64;
+
+    for _ in 0..max_iter {
+        let z = &x_work * &tt; // p x k
+        // B = t(x_work) %*% (z^3 - gamma * z %*% diag(colSums(z^2)) / p)
+        let mut target = DMatrix::zeros(p, k);
+        for j in 0..k {
+            let col_sum_sq: f64 = (0..p).map(|i| z[(i, j)].powi(2)).sum();
+            for i in 0..p {
+                let zij = z[(i, j)];
+                target[(i, j)] = zij.powi(3) - (gamma * zij * col_sum_sq) / pf;
+            }
+        }
+        let b = x_work.transpose() * &target; // k x k
+        let svd = b.svd(true, true);
+        let u = svd.u.ok_or_else(|| "SVD failed in rotation".to_string())?;
+        let vt = svd.v_t.ok_or_else(|| "SVD failed in rotation".to_string())?;
+        tt = &u * &vt;
+
+        let d_past = d;
+        d = svd.singular_values.iter().sum::<f64>();
+        if d < d_past * (1.0 + eps) {
+            break;
+        }
+    }
+
+    let mut z = &x_work * &tt;
+    if normalize {
+        for i in 0..p {
+            for j in 0..k {
+                z[(i, j)] *= sc[i];
+            }
+        }
+    }
+
+    Ok((z, tt))
+}
+
+/// Oblique Promax rotation (matching R's `stats::promax`).
+fn rotate_promax(
+    x: &DMatrix<f64>,
+    m: f64,
+    normalize: bool,
+    max_iter: usize,
+    eps: f64,
+) -> Result<(DMatrix<f64>, DMatrix<f64>), String> {
+    let (varimax_loadings, varimax_rot) = rotate_orthomax(x, 1.0, normalize, max_iter, eps)?;
+    let (p, k) = (x.nrows(), x.ncols());
+
+    // Q = x * |x|^(m - 1)
+    let power = m.max(1.0) - 1.0;
+    let mut q = DMatrix::zeros(p, k);
+    for i in 0..p {
+        for j in 0..k {
+            let val = varimax_loadings[(i, j)];
+            q[(i, j)] = val * val.abs().powf(power);
+        }
+    }
+
+    // U = (varimax_loadings^T * varimax_loadings)^(-1) * varimax_loadings^T * Q
+    let xtx = varimax_loadings.transpose() * &varimax_loadings;
+    let xtq = varimax_loadings.transpose() * &q;
+    let xtx_inv = xtx.clone().try_inverse().unwrap_or_else(|| xtx.pseudo_inverse(1e-12).unwrap());
+    let mut u = &xtx_inv * &xtq; // k x k
+
+    // d = diag(solve(t(U) %*% U)), U = U %*% diag(sqrt(d))
+    let utu = u.transpose() * &u;
+    let utu_inv = utu.clone().try_inverse().unwrap_or_else(|| utu.pseudo_inverse(1e-12).unwrap());
+    for j in 0..k {
+        let diag_val = utu_inv[(j, j)].max(1e-12);
+        let scale = diag_val.sqrt();
+        for i in 0..k {
+            u[(i, j)] *= scale;
+        }
+    }
+
+    let z = &varimax_loadings * &u;
+    let rotmat = &varimax_rot * &u;
+    Ok((z, rotmat))
+}
+
+// ---------------------------------------------------------------------------
 // PCA
 // ---------------------------------------------------------------------------
 
@@ -73,6 +267,7 @@ fn matrix_to_rows(mat: &DMatrix<f64>) -> Vec<Vec<f64>> {
 pub struct PcaModel {
     pub n_components: usize,
     pub standardize: bool,
+    pub rotation: RotationMethod,
     pub n_samples: usize,
     pub n_features: usize,
     pub mean: Vec<f64>,
@@ -82,6 +277,7 @@ pub struct PcaModel {
     pub explained_variance_ratio: Vec<f64>,
     pub cumulative_explained_variance: Vec<f64>,
     pub components: Vec<Vec<f64>>, // shape: (n_components, n_features)
+    pub rotation_matrix: Option<Vec<Vec<f64>>>, // shape: (n_components, n_components)
     pub total_variance: f64,
 }
 
@@ -90,6 +286,7 @@ impl PcaModel {
         data: &[Vec<f64>],
         n_components: Option<usize>,
         standardize: bool,
+        rotation: Option<RotationMethod>,
     ) -> Result<Self, String> {
         let x = rows_to_matrix(data)?;
         let n = x.nrows();
@@ -102,6 +299,7 @@ impl PcaModel {
         if k == 0 {
             return Err("n_components must be > 0".into());
         }
+        let rot_method = rotation.unwrap_or(RotationMethod::None);
 
         // 1. Column means and stds
         let mut mean = vec![0.0; p];
@@ -157,25 +355,60 @@ impl PcaModel {
             cum_var.push(running.min(1.0));
         }
 
-        // 4. Extract components with sign determinism
+        // 4. Initial V matrix of shape (p, k)
+        let mut v_mat = DMatrix::zeros(p, k);
+        for j in 0..p {
+            for comp_idx in 0..k {
+                v_mat[(j, comp_idx)] = vt[(comp_idx, j)];
+            }
+        }
+
+        // Apply rotation if requested (on loadings L = V * diag(s/sqrt(df)) or directions V)
+        let (final_v_mat, rot_mat_opt) = if rot_method != RotationMethod::None && k >= 2 {
+            // Compute loadings
+            let mut loadings = DMatrix::zeros(p, k);
+            for j in 0..p {
+                for comp_idx in 0..k {
+                    loadings[(j, comp_idx)] = v_mat[(j, comp_idx)] * (s[comp_idx] / df.sqrt());
+                }
+            }
+            let (rot_loadings, t_mat) = rotate_loadings(&loadings, rot_method, true, 1000, 1e-5)?;
+            // Recalculate component directions from rotated loadings
+            let mut rot_v = DMatrix::zeros(p, k);
+            for comp_idx in 0..k {
+                let col_norm = (0..p).map(|j| rot_loadings[(j, comp_idx)].powi(2)).sum::<f64>().sqrt();
+                let denom = if col_norm > 1e-12 { col_norm } else { 1.0 };
+                for j in 0..p {
+                    rot_v[(j, comp_idx)] = rot_loadings[(j, comp_idx)] / denom;
+                }
+            }
+            (rot_v, Some(matrix_to_rows(&t_mat)))
+        } else {
+            // Sign determinism for unrotated components
+            for comp_idx in 0..k {
+                let mut max_val = 0.0;
+                let mut max_abs = 0.0;
+                for j in 0..p {
+                    let val = v_mat[(j, comp_idx)];
+                    if val.abs() > max_abs {
+                        max_abs = val.abs();
+                        max_val = val;
+                    }
+                }
+                if max_val < 0.0 {
+                    for j in 0..p {
+                        v_mat[(j, comp_idx)] = -v_mat[(j, comp_idx)];
+                    }
+                }
+            }
+            (v_mat, None)
+        };
+
         let mut components = Vec::with_capacity(k);
         for comp_idx in 0..k {
             let mut comp = vec![0.0; p];
-            let mut max_abs = 0.0;
-            let mut max_val = 0.0;
             for j in 0..p {
-                let val = vt[(comp_idx, j)];
-                comp[j] = val;
-                if val.abs() > max_abs {
-                    max_abs = val.abs();
-                    max_val = val;
-                }
-            }
-            // Flip sign if max abs value is negative
-            if max_val < 0.0 {
-                for j in 0..p {
-                    comp[j] = -comp[j];
-                }
+                comp[j] = final_v_mat[(j, comp_idx)];
             }
             components.push(comp);
         }
@@ -188,6 +421,7 @@ impl PcaModel {
         Ok(Self {
             n_components: k,
             standardize,
+            rotation: rot_method,
             n_samples: n,
             n_features: p,
             mean,
@@ -197,6 +431,7 @@ impl PcaModel {
             explained_variance_ratio: exp_var_ratio,
             cumulative_explained_variance: cum_var,
             components,
+            rotation_matrix: rot_mat_opt,
             total_variance: total_var,
         })
     }
@@ -252,13 +487,11 @@ impl PcaModel {
         Ok(x_hat)
     }
 
-    /// Reconstruct data by transforming to component space and inverse-transforming.
     pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let scores = self.transform(data)?;
         self.inverse_transform(&scores)
     }
 
-    /// Compute row-wise squared Euclidean reconstruction error ||x - x_hat||^2.
     pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
         let x_hat = self.reconstruct(data)?;
         let mut errors = Vec::with_capacity(data.len());
@@ -273,7 +506,6 @@ impl PcaModel {
         Ok(errors)
     }
 
-    /// Generate structured ModelReport.
     pub fn report(&self) -> ModelReport {
         let mut struct_map = BTreeMap::new();
         struct_map.insert("n_components".into(), self.n_components.to_string());
@@ -284,9 +516,22 @@ impl PcaModel {
             format!("{:.4}", self.cumulative_explained_variance.last().copied().unwrap_or(0.0)),
         );
 
+        let rot_name = match self.rotation {
+            RotationMethod::None => "none",
+            RotationMethod::Varimax => "varimax",
+            RotationMethod::Quartimax => "quartimax",
+            RotationMethod::Equamax => "equamax",
+            RotationMethod::Parsimax => "parsimax",
+            RotationMethod::Biquartimax => "biquartimax",
+            RotationMethod::Orthomax(_) => "orthomax",
+            RotationMethod::Promax(_) => "promax",
+        };
+        struct_map.insert("rotation".into(), rot_name.into());
+
         let mut cfg_map = BTreeMap::new();
         cfg_map.insert("standardize".into(), self.standardize.to_string());
         cfg_map.insert("n_components".into(), self.n_components.to_string());
+        cfg_map.insert("rotation".into(), rot_name.into());
 
         let mut metrics = BTreeMap::new();
         metrics.insert("total_variance".into(), self.total_variance);
@@ -312,7 +557,7 @@ impl PcaModel {
             LearnerSection {
                 family: "Component Analysis".into(),
                 kind: if self.standardize { "Standardized PCA" } else { "Centered PCA" }.into(),
-                representation: "Orthogonal linear basis vectors V^T".into(),
+                representation: format!("Orthogonal/Rotated linear basis vectors V^T ({})", rot_name),
                 structure: struct_map,
                 nominal_complexity: self.n_components * self.n_features,
                 effective_complexity: Some(self.n_components as f64),
@@ -349,7 +594,7 @@ impl PcaModel {
 // Truncated SVD
 // ---------------------------------------------------------------------------
 
-/// Truncated SVD Model (linear factor decomposition without centering).
+/// Truncated SVD Model.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TruncatedSvdModel {
     pub n_components: usize,
@@ -376,7 +621,6 @@ impl TruncatedSvdModel {
             return Err("n_components must be > 0".into());
         }
 
-        // Direct SVD without centering: X = U S V^T
         let svd = x.svd(false, true);
         let s = svd.singular_values;
         let vt = svd.v_t.ok_or_else(|| "SVD failed to compute V^T".to_string())?;
@@ -553,7 +797,6 @@ impl TruncatedSvdModel {
 // Whitening
 // ---------------------------------------------------------------------------
 
-/// Whitening Algorithm Variant.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WhiteningKind {
@@ -561,15 +804,14 @@ pub enum WhiteningKind {
     Pca,
 }
 
-/// Whitening Transformation Model.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WhiteningModel {
     pub kind: WhiteningKind,
     pub n_features: usize,
     pub n_samples: usize,
     pub mean: Vec<f64>,
-    pub whitening_matrix: Vec<Vec<f64>>,   // shape: (n_features, n_features)
-    pub dewhitening_matrix: Vec<Vec<f64>>, // shape: (n_features, n_features)
+    pub whitening_matrix: Vec<Vec<f64>>,
+    pub dewhitening_matrix: Vec<Vec<f64>>,
 }
 
 impl WhiteningModel {
@@ -582,13 +824,11 @@ impl WhiteningModel {
         }
         let epsilon = eps.unwrap_or(1e-5).max(1e-12);
 
-        // Compute mean
         let mut mean = vec![0.0; p];
         for j in 0..p {
             mean[j] = (0..n).map(|i| x[(i, j)]).sum::<f64>() / (n as f64);
         }
 
-        // Center
         let mut xc = DMatrix::zeros(n, p);
         for i in 0..n {
             for j in 0..p {
@@ -596,15 +836,11 @@ impl WhiteningModel {
             }
         }
 
-        // Covariance: C = X_c^T X_c / (n - 1)
         let cov = (&xc.transpose() * &xc) / ((n - 1) as f64);
-
-        // Symmetric eigendecomposition: C = V Lambda V^T
         let eigen = cov.symmetric_eigen();
         let ev = eigen.eigenvalues;
         let v = eigen.eigenvectors;
 
-        // Diagonal scale matrices Lambda^(-1/2) and Lambda^(1/2)
         let mut inv_sqrt_d = DMatrix::zeros(p, p);
         let mut sqrt_d = DMatrix::zeros(p, p);
         for j in 0..p {
@@ -613,17 +849,11 @@ impl WhiteningModel {
             sqrt_d[(j, j)] = lambda.sqrt();
         }
 
-        // W_whitening:
-        // PCA: W = Lambda^(-1/2) * V^T
-        // ZCA: W = V * Lambda^(-1/2) * V^T
         let w_mat = match kind {
             WhiteningKind::Pca => &inv_sqrt_d * &v.transpose(),
             WhiteningKind::Zca => &v * &inv_sqrt_d * &v.transpose(),
         };
 
-        // De-whitening matrix:
-        // PCA: W_inv = V * Lambda^(1/2)
-        // ZCA: W_inv = V * Lambda^(1/2) * V^T
         let de_mat = match kind {
             WhiteningKind::Pca => &v * &sqrt_d,
             WhiteningKind::Zca => &v * &sqrt_d * &v.transpose(),
@@ -639,7 +869,6 @@ impl WhiteningModel {
         })
     }
 
-    /// Transform input: Z = (X - mean) * W^T
     pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let x = rows_to_matrix(data)?;
         let (n, p) = (x.nrows(), x.ncols());
@@ -653,7 +882,7 @@ impl WhiteningModel {
                 let mut sum = 0.0;
                 for k in 0..p {
                     let centered = x[(i, k)] - self.mean[k];
-                    sum += centered * w[(j, k)]; // W is p x p
+                    sum += centered * w[(j, k)];
                 }
                 z[i][j] = sum;
             }
@@ -661,7 +890,6 @@ impl WhiteningModel {
         Ok(z)
     }
 
-    /// Invert whitening: X_hat = Z * W_inv^T + mean
     pub fn inverse_transform(&self, whitened: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let z = rows_to_matrix(whitened)?;
         let (n, p) = (z.nrows(), z.ncols());
@@ -732,7 +960,6 @@ impl WhiteningModel {
 // FastICA
 // ---------------------------------------------------------------------------
 
-/// FastICA Model for Independent Component Analysis.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FastIcaModel {
     pub n_components: usize,
@@ -742,8 +969,8 @@ pub struct FastIcaModel {
     pub n_samples: usize,
     pub n_features: usize,
     pub mean: Vec<f64>,
-    pub components: Vec<Vec<f64>>,     // unmixing matrix W_total (n_components, n_features)
-    pub mixing_matrix: Vec<Vec<f64>>,  // mixing matrix A (n_features, n_components)
+    pub components: Vec<Vec<f64>>,
+    pub mixing_matrix: Vec<Vec<f64>>,
     pub n_iter: usize,
     pub converged: bool,
 }
@@ -767,7 +994,6 @@ impl FastIcaModel {
         let tolerance = tol.unwrap_or(1e-4);
         let random_seed = seed.unwrap_or(42);
 
-        // 1. Center data
         let mut mean = vec![0.0; p];
         for j in 0..p {
             mean[j] = (0..n).map(|i| x[(i, j)]).sum::<f64>() / (n as f64);
@@ -779,13 +1005,11 @@ impl FastIcaModel {
             }
         }
 
-        // 2. SVD Whitening to k components: Xc = U S V^T
         let svd = xc.clone().svd(false, true);
         let s = svd.singular_values;
         let vt = svd.v_t.ok_or_else(|| "SVD failed in FastICA".to_string())?;
 
         let scale = ((n - 1) as f64).sqrt();
-        // Whitening matrix K: k x p
         let mut k_mat = DMatrix::zeros(k, p);
         for i in 0..k {
             let inv_s = scale / s[i].max(1e-12);
@@ -793,10 +1017,8 @@ impl FastIcaModel {
                 k_mat[(i, j)] = inv_s * vt[(i, j)];
             }
         }
-        // Whitened data: Xw = Xc * K^T, shape: n x k
         let xw = &xc * &k_mat.transpose();
 
-        // 3. FastICA fixed point iteration for W (k x k)
         let mut rng = ChaCha8Rng::seed_from_u64(random_seed);
         let unif = Uniform::new(-1.0, 1.0);
         let mut w = DMatrix::zeros(k, k);
@@ -805,7 +1027,6 @@ impl FastIcaModel {
                 w[(i, j)] = unif.sample(&mut rng);
             }
         }
-        // Symmetric decorrelation: W <- (W W^T)^(-1/2) W
         w = symmetric_decorrelation(&w)?;
 
         let mut converged = false;
@@ -816,12 +1037,9 @@ impl FastIcaModel {
             n_iter = iter + 1;
             let w_old = w.clone();
 
-            // Fixed point update for each row of W:
-            // w_i^+ = (1/n) Xw^T g(Xw w_i) - (1/n sum g'(Xw w_i)) w_i
-            // with g(u) = tanh(u), g'(u) = 1 - tanh^2(u)
             for i in 0..k {
-                let w_row = w_old.row(i).transpose(); // k x 1
-                let u = &xw * &w_row;                 // n x 1
+                let w_row = w_old.row(i).transpose();
+                let u = &xw * &w_row;
                 let mut g_u = DVector::zeros(n);
                 let mut sum_g_prime = 0.0;
                 for row_idx in 0..n {
@@ -830,7 +1048,7 @@ impl FastIcaModel {
                     sum_g_prime += 1.0 - val * val;
                 }
                 let avg_g_prime = sum_g_prime / n_f64;
-                let xw_t_g = &xw.transpose() * &g_u; // k x 1
+                let xw_t_g = &xw.transpose() * &g_u;
                 let term1 = xw_t_g / n_f64;
                 let term2 = &w_row * avg_g_prime;
                 let w_new = term1 - term2;
@@ -839,10 +1057,8 @@ impl FastIcaModel {
                 }
             }
 
-            // Symmetrically decorrelate W
             w = symmetric_decorrelation(&w)?;
 
-            // Check convergence: max_i |1 - |<w_i, w_old_i>|| < tol
             let mut max_diff: f64 = 0.0;
             for i in 0..k {
                 let dot: f64 = (0..k).map(|j| w[(i, j)] * w_old[(i, j)]).sum();
@@ -857,10 +1073,7 @@ impl FastIcaModel {
             }
         }
 
-        // Full unmixing matrix: W_total = W * K (k x p)
         let w_total = &w * &k_mat;
-
-        // Mixing matrix A = W_total^+ (pseudoinverse), shape: p x k
         let a_mat = match w_total.clone().pseudo_inverse(1e-12) {
             Ok(inv) => inv,
             Err(_) => w_total.transpose(),
@@ -881,7 +1094,6 @@ impl FastIcaModel {
         })
     }
 
-    /// Extract independent components: S = (X - mean) * W_total^T
     pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let x = rows_to_matrix(data)?;
         let (n, p) = (x.nrows(), x.ncols());
@@ -904,14 +1116,13 @@ impl FastIcaModel {
         Ok(s)
     }
 
-    /// Map source signals back to observation space: X_hat = S * A^T + mean
     pub fn inverse_transform(&self, sources: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let s = rows_to_matrix(sources)?;
         let (n, k) = (s.nrows(), s.ncols());
         if k != self.n_components {
             return Err(format!("source dimension mismatch: expected {}, got {}", self.n_components, k));
         }
-        let a = rows_to_matrix(&self.mixing_matrix)?; // p x k
+        let a = rows_to_matrix(&self.mixing_matrix)?;
         let p = self.n_features;
         let mut x_hat = vec![vec![0.0; p]; n];
         for i in 0..n {
@@ -1000,7 +1211,6 @@ impl FastIcaModel {
     }
 }
 
-/// Symmetrically decorrelate matrix: W <- (W W^T)^(-1/2) W
 fn symmetric_decorrelation(w: &DMatrix<f64>) -> Result<DMatrix<f64>, String> {
     let k = w.nrows();
     let wwt = w * w.transpose();
@@ -1018,13 +1228,36 @@ fn symmetric_decorrelation(w: &DMatrix<f64>) -> Result<DMatrix<f64>, String> {
 // NMF (Nonnegative Matrix Factorization)
 // ---------------------------------------------------------------------------
 
+/// NMF Solver Algorithm.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NmfSolver {
+    Mu,   // Multiplicative Updates (Lee & Seung 2001)
+    Als,  // Projected Alternating Least Squares (Paatero 1999)
+    Hals, // Hierarchical Alternating Least Squares (Cichocki et al. 2007, 2009)
+}
+
+impl NmfSolver {
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().trim() {
+            "mu" | "multiplicative" => Ok(Self::Mu),
+            "als" | "pals" | "alternating_least_squares" => Ok(Self::Als),
+            "hals" | "fast_hals" | "coordinate_descent" | "cd" => Ok(Self::Hals),
+            other => Err(format!("unknown NMF solver: {}", other)),
+        }
+    }
+}
+
 /// Non-negative Matrix Factorization Model.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NmfModel {
     pub n_components: usize,
+    pub solver: NmfSolver,
     pub max_iter: usize,
     pub tol: f64,
     pub seed: u64,
+    pub l1_reg: f64,
+    pub l2_reg: f64,
     pub n_samples: usize,
     pub n_features: usize,
     pub components: Vec<Vec<f64>>, // H matrix: (n_components, n_features)
@@ -1037,9 +1270,12 @@ impl NmfModel {
     pub fn fit(
         data: &[Vec<f64>],
         n_components: Option<usize>,
+        solver: Option<NmfSolver>,
         max_iter: Option<usize>,
         tol: Option<f64>,
         seed: Option<u64>,
+        l1_reg: Option<f64>,
+        l2_reg: Option<f64>,
     ) -> Result<Self, String> {
         let x = rows_to_matrix(data)?;
         let n = x.nrows();
@@ -1056,11 +1292,13 @@ impl NmfModel {
         }
 
         let k = n_components.unwrap_or_else(|| n.min(p)).min(n).min(p);
+        let nmf_solver = solver.unwrap_or(NmfSolver::Hals);
         let max_iterations = max_iter.unwrap_or(200);
         let tolerance = tol.unwrap_or(1e-4);
         let random_seed = seed.unwrap_or(42);
+        let lambda1 = l1_reg.unwrap_or(0.0).max(0.0);
+        let lambda2 = l2_reg.unwrap_or(0.0).max(0.0);
 
-        // Initialize W (n x k) and H (k x p) with positive random values
         let mut rng = ChaCha8Rng::seed_from_u64(random_seed);
         let unif = Uniform::new(0.1, 1.0);
 
@@ -1087,27 +1325,125 @@ impl NmfModel {
         for iter in 0..max_iterations {
             n_iter = iter + 1;
 
-            // Update H: H <- H * (W^T X) / (W^T W H + eps)
-            let wt = w.transpose();
-            let wt_x = &wt * &x;
-            let wt_w_h = &(&wt * &w) * &h;
-            for i in 0..k {
-                for j in 0..p {
-                    h[(i, j)] = (h[(i, j)] * wt_x[(i, j)] / (wt_w_h[(i, j)] + eps)).max(0.0);
+            match nmf_solver {
+                NmfSolver::Mu => {
+                    let wt = w.transpose();
+                    let wt_x = &wt * &x;
+                    let wt_w_h = &(&wt * &w) * &h;
+                    for i in 0..k {
+                        for j in 0..p {
+                            h[(i, j)] = (h[(i, j)] * wt_x[(i, j)] / (wt_w_h[(i, j)] + lambda1 + lambda2 * h[(i, j)] + eps)).max(0.0);
+                        }
+                    }
+
+                    let ht = h.transpose();
+                    let x_ht = &x * &ht;
+                    let w_h_ht = &w * &(&h * &ht);
+                    for i in 0..n {
+                        for j in 0..k {
+                            w[(i, j)] = (w[(i, j)] * x_ht[(i, j)] / (w_h_ht[(i, j)] + lambda1 + lambda2 * w[(i, j)] + eps)).max(0.0);
+                        }
+                    }
+                }
+                NmfSolver::Als => {
+                    let wt = w.transpose();
+                    let mut wt_w = &wt * &w;
+                    for i in 0..k {
+                        wt_w[(i, i)] += lambda2 + eps;
+                    }
+                    let wt_x = &wt * &x;
+                    let h_solve = wt_w.clone().cholesky()
+                        .map(|chol| chol.solve(&wt_x))
+                        .unwrap_or_else(|| wt_w.pseudo_inverse(1e-12).unwrap() * &wt_x);
+                    for i in 0..k {
+                        for j in 0..p {
+                            let mut val = h_solve[(i, j)];
+                            if lambda1 > 0.0 {
+                                val -= lambda1;
+                            }
+                            h[(i, j)] = val.max(0.0);
+                        }
+                    }
+
+                    let ht = h.transpose();
+                    let mut h_ht = &h * &ht;
+                    for i in 0..k {
+                        h_ht[(i, i)] += lambda2 + eps;
+                    }
+                    let x_ht = &x * &ht;
+                    let wt_solve = h_ht.clone().cholesky()
+                        .map(|chol| chol.solve(&x_ht.transpose()))
+                        .unwrap_or_else(|| h_ht.pseudo_inverse(1e-12).unwrap() * &x_ht.transpose());
+                    let w_solve = wt_solve.transpose();
+                    for i in 0..n {
+                        for j in 0..k {
+                            let mut val = w_solve[(i, j)];
+                            if lambda1 > 0.0 {
+                                val -= lambda1;
+                            }
+                            w[(i, j)] = val.max(0.0);
+                        }
+                    }
+
+                    for j in 0..k {
+                        let norm = (0..n).map(|i| w[(i, j)].powi(2)).sum::<f64>().sqrt();
+                        if norm > 1e-12 {
+                            for i in 0..n {
+                                w[(i, j)] /= norm;
+                            }
+                            for col in 0..p {
+                                h[(j, col)] *= norm;
+                            }
+                        }
+                    }
+                }
+                NmfSolver::Hals => {
+                    let wt = w.transpose();
+                    let a = &wt * &w;
+                    let b = &wt * &x;
+
+                    for j in 0..k {
+                        let denom = a[(j, j)] + lambda2 + eps;
+                        for l in 0..p {
+                            let mut pred_j = 0.0;
+                            for m in 0..k {
+                                pred_j += a[(j, m)] * h[(m, l)];
+                            }
+                            let diff = b[(j, l)] - pred_j - lambda1;
+                            let new_val = h[(j, l)] + diff / denom;
+                            h[(j, l)] = new_val.max(0.0);
+                        }
+                    }
+
+                    let ht = h.transpose();
+                    let c = &h * &ht;
+                    let d = &x * &ht;
+
+                    for j in 0..k {
+                        let denom = c[(j, j)] + lambda2 + eps;
+                        for i in 0..n {
+                            let mut pred_j = 0.0;
+                            for m in 0..k {
+                                pred_j += w[(i, m)] * c[(m, j)];
+                            }
+                            let diff = d[(i, j)] - pred_j - lambda1;
+                            let new_val = w[(i, j)] + diff / denom;
+                            w[(i, j)] = new_val.max(0.0);
+                        }
+
+                        let norm = (0..n).map(|i| w[(i, j)].powi(2)).sum::<f64>().sqrt();
+                        if norm > 1e-12 {
+                            for i in 0..n {
+                                w[(i, j)] /= norm;
+                            }
+                            for col in 0..p {
+                                h[(j, col)] *= norm;
+                            }
+                        }
+                    }
                 }
             }
 
-            // Update W: W <- W * (X H^T) / (W H H^T + eps)
-            let ht = h.transpose();
-            let x_ht = &x * &ht;
-            let w_h_ht = &w * &(&h * &ht);
-            for i in 0..n {
-                for j in 0..k {
-                    w[(i, j)] = (w[(i, j)] * x_ht[(i, j)] / (w_h_ht[(i, j)] + eps)).max(0.0);
-                }
-            }
-
-            // Frobenius error: ||X - W H||_F
             let x_approx = &w * &h;
             let diff = &x - &x_approx;
             let err = diff.norm();
@@ -1122,9 +1458,12 @@ impl NmfModel {
 
         Ok(Self {
             n_components: k,
+            solver: nmf_solver,
             max_iter: max_iterations,
             tol: tolerance,
             seed: random_seed,
+            l1_reg: lambda1,
+            l2_reg: lambda2,
             n_samples: n,
             n_features: p,
             components: matrix_to_rows(&h),
@@ -1134,7 +1473,6 @@ impl NmfModel {
         })
     }
 
-    /// Transform new samples by estimating W for fixed H via multiplicative updates.
     pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let x = rows_to_matrix(data)?;
         let n = x.nrows();
@@ -1155,12 +1493,11 @@ impl NmfModel {
         let ht = h.transpose();
         let h_ht = &h * &ht;
 
-        // Initialize W with uniform 0.5
         let mut w = DMatrix::from_element(n, k, 0.5);
         let x_ht = &x * &ht;
         let eps = 1e-12;
 
-        for _ in 0..30 {
+        for _ in 0..40 {
             let w_h_ht = &w * &h_ht;
             for i in 0..n {
                 for j in 0..k {
@@ -1172,7 +1509,6 @@ impl NmfModel {
         Ok(matrix_to_rows(&w))
     }
 
-    /// Reconstruct matrix X_hat = W * H.
     pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
         let w_rows = self.transform(data)?;
         let w = rows_to_matrix(&w_rows)?;
@@ -1181,7 +1517,6 @@ impl NmfModel {
         Ok(matrix_to_rows(&x_hat))
     }
 
-    /// Row-wise reconstruction squared error ||x - x_hat||^2.
     pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
         let x_hat = self.reconstruct(data)?;
         let mut errors = Vec::with_capacity(data.len());
@@ -1201,6 +1536,11 @@ impl NmfModel {
         struct_map.insert("n_components".into(), self.n_components.to_string());
         struct_map.insert("n_features".into(), self.n_features.to_string());
         struct_map.insert("iterations".into(), self.n_iter.to_string());
+        struct_map.insert("solver".into(), match self.solver {
+            NmfSolver::Mu => "Multiplicative Updates (MU)".into(),
+            NmfSolver::Als => "Projected Alternating Least Squares (ALS)".into(),
+            NmfSolver::Hals => "Hierarchical Alternating Least Squares (HALS)".into(),
+        });
 
         let mut metrics = BTreeMap::new();
         metrics.insert("frobenius_reconstruction_error".into(), self.reconstruction_error);
@@ -1209,7 +1549,7 @@ impl NmfModel {
             "Non-negative Matrix Factorization",
             ObjectiveSection {
                 name: "Additive Non-negative Factorization (Frobenius Loss)".into(),
-                math_form: Some("min_{W,H >= 0} ||X - WH||_F^2".into()),
+                math_form: Some("min_{W,H >= 0} ||X - WH||_F^2 + lambda1(|W|_1+|H|_1) + lambda2/2(|W|_F^2+|H|_F^2)".into()),
                 direction: OptimizationDirection::Reconstruct,
                 final_value: Some(self.reconstruction_error),
                 components: vec![("frobenius_error".into(), self.reconstruction_error)],
@@ -1242,7 +1582,7 @@ impl NmfModel {
                 warnings: if self.converged {
                     Vec::new()
                 } else {
-                    vec!["NMF multiplicative updates did not converge within max_iter".into()]
+                    vec!["NMF did not converge within max_iter".into()]
                 },
             },
             None,
@@ -1254,7 +1594,6 @@ impl NmfModel {
 // Unified ComponentModel Facade
 // ---------------------------------------------------------------------------
 
-/// Unified Component Model enum wrapping PCA, Truncated SVD, Whitening, FastICA, and NMF.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "model")]
 pub enum ComponentModelCore {
