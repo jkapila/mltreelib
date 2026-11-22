@@ -62,3 +62,11 @@ to_text(self) -> 'str'
 ```
 
 Render report as R/statsmodels-style aligned console text.
+
+### ModelReport.title
+
+```python
+@title
+```
+
+Report title.

@@ -105,6 +105,14 @@ from_json(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a versioned JSON string.
 
+### AnomalyModel.from_snapshot
+
+```python
+from_snapshot(data: str) -> ~_SnapshotT
+```
+
+Restore a fitted model from a JSON snapshot string.
+
 ### AnomalyModel.load
 
 ```python
@@ -150,6 +158,14 @@ Compute continuous anomaly scores for data points.
 
 Higher scores indicate greater degree of anomalousness.
 
+### AnomalyModel.snapshot
+
+```python
+snapshot(self) -> str
+```
+
+Return the fitted model as a JSON snapshot string.
+
 ### AnomalyModel.surprise_score
 
 ```python
@@ -181,6 +197,22 @@ update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).
+
+### AnomalyModel.report
+
+```python
+@report
+```
+
+Return structured ModelReport.
+
+### AnomalyModel.threshold
+
+```python
+@threshold
+```
+
+Contamination threshold score separating normal points from anomalies.
 
 ## AnomalyResult
 
@@ -249,6 +281,14 @@ from_json(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a versioned JSON string.
 
+### AnomalyTree.from_snapshot
+
+```python
+from_snapshot(data: str) -> ~_SnapshotT
+```
+
+Restore a fitted model from a JSON snapshot string.
+
 ### AnomalyTree.load
 
 ```python
@@ -294,6 +334,14 @@ Compute continuous anomaly scores for data points.
 
 Higher scores indicate greater degree of anomalousness.
 
+### AnomalyTree.snapshot
+
+```python
+snapshot(self) -> str
+```
+
+Return the fitted model as a JSON snapshot string.
+
 ### AnomalyTree.surprise_score
 
 ```python
@@ -325,6 +373,22 @@ update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).
+
+### AnomalyTree.report
+
+```python
+@report
+```
+
+Return structured ModelReport.
+
+### AnomalyTree.threshold
+
+```python
+@threshold
+```
+
+Contamination threshold score separating normal points from anomalies.
 
 ## GritBot
 

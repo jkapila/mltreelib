@@ -1,5 +1,15 @@
 # Spec 14: Cubist Committees, LinearForest & Model-Tree Forests
 
+> **Status: Superseded by Spec 28 (`ModelForest` — the bagging family).**
+>
+> This specification is retained as a historical design record. Do not build from it. Its scope lives in `specs/28-model-forest-bagging-family.md`, with three corrections:
+>
+> 1. **The `m0` smoothing constant does not exist.** A grep across the Cubist GPL source returns zero hits for `m0` or `M0`. There are two distinct smoothing algorithms: Quinlan's M5 backup smoothing $p' = (n p + k q)/(n+k)$ with $k = 15$, and Cubist's variance-minimising coefficient shrink against the parent model. Spec 28 names them separately.
+> 2. **A Cubist committee is not boosting.** Member $m \ge 2$ trains on the relabelled target $y' = 2y - \hat y_{m-1}$ and the final prediction is an **unweighted average** over members. There is no learning rate, no stage weights, and no row resampling. The effective correction rate is $1/2$ with no decay across members.
+> 3. **The extrapolation default differs between distributions.** The RuleQuest CLI default is 5 percent; the CRAN `Cubist` default is 100 percent. Both are documented in Spec 28.
+>
+> Verified reference: `references/research/2026-11-22-forest-methods-landscape.md` and `references/research/2026-11-22-ensemble-families-and-api-architecture.md`.
+
 ## Problem Statement
 
 While single model trees (such as M5' and `mltreelib`'s `ModelTree`) fit piecewise-linear surfaces that drastically outperform constant-leaf CART on smooth functional data, individual model trees suffer from three major vulnerabilities:

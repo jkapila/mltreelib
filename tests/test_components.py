@@ -231,3 +231,83 @@ def test_nmf_solvers_and_regularization():
     assert model_hals.reconstruction_error_ is not None
     assert model_hals.config()["solver"] == "hals"
     assert sum(model_hals.score_samples(data)) / 50.0 < 1.5
+
+
+def test_factor_analysis_model_lifecycle(tmp_path):
+    data = [
+        [
+            0.8 * float(i % 10) + 0.1 * (i % 3),
+            0.7 * float(i % 10) + 0.15 * (i % 4),
+            0.9 * float(i % 7) + 0.05 * (i % 2),
+            0.75 * float(i % 7) + 0.2 * (i % 5),
+        ]
+        for i in range(80)
+    ]
+
+    # Orthogonal Varimax FA
+    fa = ComponentModel(kind="fa", n_components=2, rotation="varimax")
+    fa.fit(data)
+
+    assert fa.config()["kind"] == "fa"
+    assert fa.n_components == 2
+    assert fa.loadings_ is not None
+    assert len(fa.loadings_) == 4
+    assert len(fa.loadings_[0]) == 2
+
+    # Communalities and Uniquenesses sum to 1.0 on correlation scale
+    comms = fa.communalities_
+    uniqs = fa.uniquenesses_
+    assert comms is not None and len(comms) == 4
+    assert uniqs is not None and len(uniqs) == 4
+    for c, u in zip(comms, uniqs):
+        assert abs((c + u) - 1.0) < 1e-3
+
+    # Transform and Reconstruct
+    scores = fa.transform(data)
+    assert len(scores) == 80
+    assert len(scores[0]) == 2
+
+    recon = fa.reconstruct(data)
+    assert len(recon) == 80
+    assert len(recon[0]) == 4
+
+    # Report
+    rep = fa.report
+    assert rep.title == "Exploratory Factor Analysis"
+    assert "mean_communality" in rep.to_markdown()
+
+    # Serialization roundtrip
+    fa_path = tmp_path / "fa_model.json"
+    fa.save(fa_path)
+    loaded_fa = ComponentModel.load(fa_path)
+    loaded_scores = loaded_fa.transform(data)
+    for s1, s2 in zip(scores, loaded_scores):
+        for v1, v2 in zip(s1, s2):
+            assert abs(v1 - v2) < 1e-6
+
+
+def test_factor_analysis_schmid_leiman():
+    data = [
+        [
+            0.8 * float(i % 10) + 0.1 * (i % 3),
+            0.7 * float(i % 10) + 0.15 * (i % 4),
+            0.9 * float(i % 7) + 0.05 * (i % 2),
+            0.75 * float(i % 7) + 0.2 * (i % 5),
+        ]
+        for i in range(80)
+    ]
+
+    # Oblique Promax FA
+    fa_promax = ComponentModel(kind="factor_analysis", n_components=2, rotation="promax", promax_m=4.0)
+    fa_promax.fit(data)
+
+    assert fa_promax.factor_correlations_ is not None
+    assert len(fa_promax.factor_correlations_) == 2
+
+    # Schmid-Leiman hierarchical bifactor decomposition
+    bifactor, second_order = fa_promax.schmid_leiman()
+    assert len(bifactor) == 4
+    # 1 general factor (col 0) + 2 group factors (cols 1, 2) = 3 columns
+    assert len(bifactor[0]) == 3
+    assert len(second_order) == 2
+

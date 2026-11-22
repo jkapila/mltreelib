@@ -69,6 +69,30 @@ One facade, `ModelForest`, with a `kind` switch over the bagging family, one mod
 | `committee` | Quinlan's Cubist committee. Sequential members on relabelled targets | `ModelTree` with linear leaves | **Unweighted** member average |
 | `linear_forest` | Random forest whose members carry linear model leaves | `ModelTree` with linear leaves | Uniform mean |
 
+### 1.1 The wider bagging family, and where each variant lands
+
+The five kinds above are the first wave. The research surfaced a wider bagging family, and every member of it is accounted for here. The table states **which kind or mechanism** each variant becomes, because most are not separate kinds.
+
+| Variant | Lands as | Why not a separate kind |
+|---|---|---|
+| **Subagging** (sampling without replacement) | `kind="bagging"` with `bootstrap=False` | A sampler option, not a method. scikit-learn calls this *pasting* |
+| **Bagging with feature subsetting** | `kind="rf"` with `max_features < 1.0` | A member-level feature mask. sklearn calls this random patches when both row and feature subsets are drawn |
+| **Bayesian bootstrap** | `bootstrap="bayesian"` sampler option | Dirichlet weights replace the multinomial counts. It changes the sampler, not the aggregation |
+| **Random subspace ensemble** | A member-level feature mask, distinct from `max_features` | Ho's method partitions the feature space per split rather than per member. It reuses the mask machinery |
+| **Rotation forest** | `kind="rotation_forest"` | Per-member PCA rotation with a sparse rotation matrix. The member transform is substantial enough to deserve its own kind |
+| **Double bagging** | `kind="double_bagging"` | Hothorn–Lausen: an out-of-bag auxiliary model whose predictions become extra tree features. A distinct member pipeline |
+| **Iterated bagging** | `kind="iterated_bagging"` | Breiman: out-of-bag pseudo-targets update the responses between stages. Sequential in training, like the committee, but with a different correction mechanism |
+| **Ordered bagging with pruning** | An aggregation option on the family | Members are ordered by complementarity, not by individual accuracy, and a prefix is retained. It needs member prediction storage and a separate selection set |
+| **Stability selection** | A wrapper above model fitting | Not a forest method. It belongs with the selection work |
+| **Mondrian forest** | Experimental namespace | Response-independent random partitions with a hierarchical Bayesian label model. New partition machinery and a streaming lifecycle |
+| **Oblivious and equi-depth trees** | Experimental namespace | Changes the tree structure itself. A split-structure option, not an ensemble method |
+| **Random projection forest, Forest-RC** | Experimental namespace | Breiman's linear random-feature extension. A feature transform, not a sampling scheme |
+| **Probability forest** | A leaf aggregation mode | ranger's `probability=TRUE` returns a class distribution per leaf. It is a leaf output, not a new ensemble |
+
+**The line.** A variant becomes its own `kind` when it changes *how members are trained or what the member is*. It becomes an *option* when it changes only sampling, masking, or aggregation. It becomes *experimental* when it needs new tree machinery.
+
+This table is the answer to "have we included the other bagging types". Every variant found in the research is here, with its landing place named.
+
 ### 2. The three-way distinction that must not blur
 
 This is the conceptual core of the specification.
@@ -150,6 +174,7 @@ The user's framing was right: if the member is not `ModelTree`, the forest loses
 ```text
 ModelForest
   kind: ForestKind    # bagging | rf | extra_trees | committee | linear_forest
+                      # rotation_forest | double_bagging | iterated_bagging
   mode: ModelMode     # regression | classification
 ```
 
@@ -182,6 +207,7 @@ from mltreelib.forest import ModelForest
 
 forest = ModelForest(
     kind="rf",                 # bagging | rf | extra_trees | committee | linear_forest
+                              # rotation_forest | double_bagging | iterated_bagging
     mode="regression",         # regression | classification
     n_estimators=200,
     max_depth=None,
@@ -318,12 +344,24 @@ The Rust core owns numerical behaviour and persisted state. Python stays a thin 
 58. As a user, I want per-member seeds stored in the fitted model, so that a reloaded forest reproduces exactly.
 59. As a user, I want bootstrap indices stored in the fitted model, so that the aggregate can be audited.
 
+### Wider Bagging Family
+
+60. As a data scientist, I want subagging reachable through `bootstrap=False`, so that sampling without replacement is a documented option rather than a separate method.
+61. As a data scientist, I want the Bayesian bootstrap available as a sampler option, so that fractional Dirichlet weights replace multinomial counts when I want them.
+62. As a data scientist, I want a rotation forest kind, so that per-member PCA rotation with a sparse rotation matrix is available.
+63. As a data scientist, I want a double bagging kind, so that an out-of-bag auxiliary model's predictions can become extra tree features.
+64. As a data scientist, I want an iterated bagging kind, so that out-of-bag pseudo-targets update the responses between stages.
+65. As a data scientist, I want random subspace partitioning as a member feature mask, so that Ho's per-split feature partitioning is reachable.
+66. As a user, I want ordered member aggregation with pruning, so that members can be ordered by complementarity and a prefix retained.
+67. As a user, I want a probability forest mode, so that each leaf returns a class distribution rather than a single label.
+68. As a user, I want every bagging variant's landing place documented, so that I know whether something is a kind, an option, or experimental.
+
 ### Later Coverage
 
-60. As a data scientist, I want a survival forest, so that I can ensemble survival leaves with Nelson-Aalen estimation.
-61. As a data scientist, I want a causal forest, so that I can ensemble uplift leaves for heterogeneous treatment effects.
-62. As a data scientist, I want a forecasting forest, so that I can ensemble multi-horizon leaves.
-63. As a user, I want these later kinds to reuse the same member and aggregation machinery, so that no second forest implementation appears.
+69. As a data scientist, I want a survival forest, so that I can ensemble survival leaves with Nelson-Aalen estimation.
+70. As a data scientist, I want a causal forest, so that I can ensemble uplift leaves for heterogeneous treatment effects.
+71. As a data scientist, I want a forecasting forest, so that I can ensemble multi-horizon leaves.
+72. As a user, I want these later kinds to reuse the same member and aggregation machinery, so that no second forest implementation appears.
 
 ## Implementation Decisions
 
@@ -414,15 +452,27 @@ The GRF kind is not in this specification. Its splitting rule requires a per-nod
 
 GRF gets its own specification with its own splitting design.
 
-### Decision 15: Later Forest Kinds Reuse This Machinery
+### Decision 15: The Wider Bagging Family Is Accounted For, Not Just Listed
+
+Every bagging variant found in the research has a named landing place in §1.1: a kind, an option, the experimental namespace, or a different specification.
+
+**Why this matters.** A family spec that lists only the variants it happens to implement looks complete and invites the assumption that the rest were forgotten. §1.1 makes the full inventory visible and states the rule that decides each landing place.
+
+**The rule.** A variant becomes its own `kind` when it changes *how members are trained or what the member is*. It becomes an *option* when it changes only sampling, masking, or aggregation. It becomes *experimental* when it needs new tree machinery. It moves to another specification when it needs a different growth mechanism.
+
+Applied to the family this yields eight kinds, four options, four experimental entries, and one cross-specification deferral. Only the first five kinds ship in the first wave; the other three kinds and the options land in Phase 5.
+
+**Why the three new kinds need their own `kind` and not an option.** Rotation forest transforms the feature space per member with a PCA rotation and a sparse rotation matrix. Double bagging adds an out-of-bag auxiliary model whose predictions become extra tree features, so the member's prediction pipeline differs from every other kind. Iterated bagging updates the response targets between stages using out-of-bag pseudo-targets, so it is sequential in training with its own correction mechanism, distinct from the committee's relabelling. None is expressible as a flag on the existing pipeline.
+
+### Decision 16: Later Forest Kinds Reuse This Machinery
 
 Survival forest, causal forest, and forecasting forest are named in the user stories as later coverage. They reuse the member type, the sampler, the aggregation layer, the OOB machinery, and the report. No second forest implementation appears.
 
-### Decision 16: No New Runtime Dependencies
+### Decision 17: No New Runtime Dependencies
 
 The forest layer uses `rand`, `rand_chacha`, `rayon`, `faer`, `nalgebra`, and `statrs`, all already present. Reference implementations — `ranger`, the Cubist C source, `caret`, `baguette`, `scikit-learn` — are benchmark-only oracles, never runtime dependencies.
 
-### Decision 17: Binned Split Evaluation Is a Dependency, Not This Spec's Work
+### Decision 18: Binned Split Evaluation Is a Dependency, Not This Spec's Work
 
 The forest needs binned split evaluation. It does not build it.
 
@@ -434,7 +484,7 @@ The forest needs binned split evaluation. It does not build it.
 
 **Consequence for this specification's phase order.** The binned path is a **prerequisite**, not a parallel workstream. Spec 27 Phase 1 lands before this specification's Phase 0, or this specification's Phase 0 cannot meet its fit-time expectations. The forest's Phase 0 consumes the existing scan path and adds the `split_eval` control; it does not change the scan path itself.
 
-### Decision 18: The Forest Is the Measured Fix for the Library's Largest Gap
+### Decision 19: The Forest Is the Measured Fix for the Library's Largest Gap
 
 `ModelTree(all)` scores 1290.1 overall Elo on the local 56-dataset arena, ninth of 47 entrants. Its split is stark:
 
@@ -447,7 +497,7 @@ Bagging is the direct remedy. The target is a `ModelForest(kind="rf")` over toda
 
 **The testable prediction.** Phase 1 must report the forest's regression Elo against the single tree's 715.9. If a forest over the same tree does not close a large part of that gap, the cause is not variance and the tree needs different work, not ensembling. The benchmark distinguishes those two cases, so the claim stays honest.
 
-### Decision 19: One Multi-Core Job at a Time
+### Decision 20: One Multi-Core Job at a Time
 
 Forest training parallelises across members. It must not run concurrently with another multi-core fit. The driver scripts serialise fits.
 
@@ -518,22 +568,39 @@ Gate: `cargo test` and Python tests pass. The linear-leaf split criterion select
 
 Gate: `cargo test` and Python tests pass. All four report sections are present for every kind and the aggregation rule is named in the objective.
 
-### Phase 5 — Later Coverage
+### Phase 5 — Wider Bagging Family
+
+The variants from §1.1 that need their own machinery land here. The ones that are sampler, mask, or aggregation options land in this phase too, because they reuse the Phase 0 machinery rather than needing new tree code.
+
+1. Add the `bootstrap="bayesian"` sampler option: Dirichlet weights instead of multinomial counts, fitted through the existing `fit_weighted` path.
+2. Add the member-level feature mask for random subspace partitioning, distinct from `max_features`, with the mask persisted per member.
+3. Add the `rotation_forest` kind: per-member feature partitions, per-subset PCA, sparse rotation matrix, and the member transform applied at prediction time.
+4. Add the `double_bagging` kind: the out-of-bag auxiliary model, its predictions as extra tree features, and the member-specific prediction pipeline.
+5. Add the `iterated_bagging` kind: out-of-bag pseudo-targets, stage accumulation, and Breiman's stopping rule.
+6. Add the probability-forest leaf mode: each leaf returns a class distribution, aggregated as a mean of distributions.
+7. Add ordered member aggregation with pruning, storing member predictions and selecting a prefix by complementarity.
+8. Add Rust tests for each: the Bayesian bootstrap's weight sum and positivity, the rotation matrix's orthogonality and the member's prediction path, the double-bagging auxiliary model's out-of-bag training set, the iterated-bagging pseudo-target update, the probability leaf's distribution summing to one, and the ordered prefix's complementarity ordering.
+9. Add Python tests for the new kinds and options.
+
+Gate: `cargo test` and Python tests pass. Each variant matches its published definition on a deterministic fixture.
+
+### Phase 6 — Later Coverage
 
 1. Survival forest: Nelson-Aalen leaf estimation, aggregate over members.
 2. Causal forest: uplift leaves, aggregate treatment effects.
 3. Forecasting forest: multi-horizon leaves.
 4. Quantile forest through the GRF-style forest weights, in its own later specification alongside GRF.
 
-Each lands as its own phase with its own gate, reusing the Phase 0 to Phase 4 machinery.
+Each lands as its own phase with its own gate, reusing the Phase 0 to Phase 5 machinery.
 
-### Phase 6 — Elo Benchmark
+### Phase 7 — Elo Benchmark
 
 1. Run the `rf` kind over the local 56-dataset Elo arena with the same protocol as the current board.
 2. Report the regression Elo, the classification Elo, the overall Elo, and the mean fit time.
 3. Compare against the single tree's 715.9 regression Elo, 1204.7 classification Elo, and 1290.1 overall Elo.
 4. Compare the mean fit time against ranger's 17.78 s and LightGBM(200)'s 0.34 s on the regression board.
 5. Record the inter-member correlation and the member count needed to reach ranger's regression Elo.
+6. Run each Phase 5 variant on the same protocol and report whether any beats the plain random forest.
 
 Gate: the benchmark exists, its numbers are in the board, and the report states whether the forest closed the regression gap.
 
@@ -569,13 +636,10 @@ Gate: the benchmark exists, its numbers are in the board, and the report states 
 
 - The boosting family. Spec 29.
 - The meta-estimator family. Spec 30.
-- The Generalized Random Forest and its splitting rule. Its own later specification.
 - Bayesian additive regression trees and their GPU variants. Not a bagging method and not a boosting method; they are posterior samplers with a different inferential contract. They belong with the probabilistic tree work, not in the bagging family.
-- Random subspace and rotation forests. Separate methods with their own member transforms.
-- Double bagging and iterated bagging. Distinct staged methods with their own OOB reuse semantics.
-- Bayesian bootstrap. A weighted-fit alternative to count-based sampling.
 - Stability selection as a forest kind. It is a wrapper above model fitting, and it belongs with the selection work.
-- Ordered bagging with member pruning. Needs member storage plus a separate selection set.
+- Mondrian forest, oblivious and equi-depth trees, and the random-projection forest. Each needs new tree machinery or a streaming lifecycle, and each lands under the experimental namespace.
+- The Generalized Random Forest's forest weights, local linear forest, variance decomposition, and infinitesimal jackknife. These need GRF's node-level relabeling strategy, which today's `GainFn::Custom` cannot express, so they get their own specification.
 - Voting, averaging, and stacking. Spec 30.
 - Survival, causal, and forecasting forests in the first wave. Later coverage phases.
 - Conformal intervals. They need the OOB machinery, and they land in a later phase rather than as a stub.

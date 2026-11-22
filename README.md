@@ -36,11 +36,11 @@ See the [changelog](CHANGELOG.md) for release history and the [release guide](RE
 
 ### R ModelTree
 
-From a v0.4.12 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
+From a v0.4.13 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
 
 ```sh
 r/build-r-package.sh dist
-R CMD INSTALL dist/mltreelib_0.4.12.tar.gz
+R CMD INSTALL dist/mltreelib_0.4.13.tar.gz
 Rscript --vanilla r/airquality_model_tree.R
 ```
 

@@ -102,6 +102,14 @@ from_json(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a versioned JSON string.
 
+### ClusterModel.from_snapshot
+
+```python
+from_snapshot(data: str) -> ~_SnapshotT
+```
+
+Restore a fitted model from a JSON snapshot string.
+
 ### ClusterModel.load
 
 ```python
@@ -134,6 +142,14 @@ save(self, path: str | pathlib.Path) -> None
 
 Write the JSON snapshot, replacing the file after a complete write.
 
+### ClusterModel.snapshot
+
+```python
+snapshot(self) -> str
+```
+
+Return the fitted model as a JSON snapshot string.
+
 ### ClusterModel.to_bytes
 
 ```python
@@ -149,6 +165,30 @@ to_json(self) -> str
 ```
 
 Return the fitted model as a versioned JSON string.
+
+### ClusterModel.labels_
+
+```python
+@labels_
+```
+
+Cluster labels for each training sample (-1 / None = noise).
+
+### ClusterModel.n_clusters_
+
+```python
+@n_clusters_
+```
+
+Discovered or configured number of clusters.
+
+### ClusterModel.report
+
+```python
+@report
+```
+
+Return the structured ModelReport.
 
 ## ClusterResult
 
@@ -210,6 +250,14 @@ from_json(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a versioned JSON string.
 
+### ClusterTree.from_snapshot
+
+```python
+from_snapshot(data: str) -> ~_SnapshotT
+```
+
+Restore a fitted model from a JSON snapshot string.
+
 ### ClusterTree.load
 
 ```python
@@ -242,6 +290,14 @@ save(self, path: str | pathlib.Path) -> None
 
 Write the JSON snapshot, replacing the file after a complete write.
 
+### ClusterTree.snapshot
+
+```python
+snapshot(self) -> str
+```
+
+Return the fitted model as a JSON snapshot string.
+
 ### ClusterTree.to_bytes
 
 ```python
@@ -257,6 +313,30 @@ to_json(self) -> str
 ```
 
 Return the fitted model as a versioned JSON string.
+
+### ClusterTree.labels_
+
+```python
+@labels_
+```
+
+Cluster labels for each training sample (-1 / None = noise).
+
+### ClusterTree.n_clusters_
+
+```python
+@n_clusters_
+```
+
+Discovered or configured number of clusters.
+
+### ClusterTree.report
+
+```python
+@report
+```
+
+Return the structured ModelReport.
 
 ## TrieKNN
 

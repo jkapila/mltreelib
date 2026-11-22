@@ -245,6 +245,11 @@ When no hard constraint applies and the data regime is unremarkable, the documen
 | `extra_trees` | Training time matters more than last-decimal accuracy, or the target is very high-dimensional |
 | `committee` | The target is smooth and locally linear, and you want better extrapolation than a constant-leaf forest. Members carry linear leaves and are trained sequentially on relabelled targets |
 | `linear_forest` | The target is smooth and locally linear and you want parallel training rather than the committee's sequential dependence |
+| `rotation_forest` | You want per-member PCA rotation for decorrelation that feature subsetting does not give |
+| `double_bagging` | You want an out-of-bag auxiliary model whose predictions become extra tree features |
+| `iterated_bagging` | You want out-of-bag pseudo-targets to update the responses between stages |
+
+Options on the family: `bootstrap=False` for subagging, `bootstrap="bayesian"` for the Bayesian bootstrap, `max_features < 1.0` for feature-subset bagging, and a member feature mask for random subspace partitioning. Spec 28 §1.1 gives the full inventory.
 
 **The committee versus the linear-leaf forest.** Both use linear leaves. The difference is training: the committee is sequential with relabelled targets and an unweighted member average, and the linear-leaf forest is parallel with bootstrap resampling and a uniform average. The committee fits a smooth target better in some regimes. The linear-leaf forest trains faster and parallelises. Neither dominates, and the honest statement is that this needs a benchmark inside the library.
 

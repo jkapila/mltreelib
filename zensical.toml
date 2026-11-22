@@ -1,5 +1,5 @@
 [project]
-site_name = "mltreelib v0.4.12"
+site_name = "mltreelib v0.4.13"
 site_url = "https://jkapila.github.io/mltreelib/"
 site_description = "Tree-based machine learning with a Rust core"
 repo_url = "https://github.com/jkapila/mltreelib"

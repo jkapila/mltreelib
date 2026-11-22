@@ -92,6 +92,38 @@ to_json(self) -> 'str'
 
 Return fitted model snapshot as JSON string.
 
+### RuleModel.default_confidence_
+
+```python
+@default_confidence_
+```
+
+Confidence of the default fallback rule.
+
+### RuleModel.default_prediction_
+
+```python
+@default_prediction_
+```
+
+Fallback prediction when no rule fires.
+
+### RuleModel.report
+
+```python
+@report
+```
+
+Return the structured ModelReport.
+
+### RuleModel.rules_
+
+```python
+@rules_
+```
+
+Extracted IF-THEN rules.
+
 ## RuleResult
 
 ```python

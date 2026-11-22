@@ -212,6 +212,15 @@ def emit_class(buf, name, cls):
         if mdoc:
             buf.append(mdoc + "\n\n")
 
+    for pname, prop in inspect.getmembers(cls, lambda o: isinstance(o, property)):
+        if pname.startswith("_"):
+            continue
+        buf.append(f"### {name}.{pname}\n\n")
+        buf.append(f"```python\n@{pname}\n```\n\n")
+        pdoc = inspect.getdoc(prop)
+        if pdoc:
+            buf.append(pdoc + "\n\n")
+
 
 def emit_fn(buf, name, fn):
     buf.append(f"## {name}\n\n")

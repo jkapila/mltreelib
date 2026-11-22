@@ -1,7 +1,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use mltreelib_core::component::{
-    ComponentModelCore, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod,
+    ComponentModelCore, FactorAnalysisModel, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod,
     TruncatedSvdModel, WhiteningKind, WhiteningModel,
 };
 use mltreelib_core::report::ModelReport;
@@ -138,6 +138,20 @@ impl PyComponentModel {
                 .map_err(|e| PyValueError::new_err(e))?;
                 ComponentModelCore::Nmf(m)
             }
+            "fa" | "factor_analysis" => {
+                let rot_method = RotationMethod::parse(rotation.unwrap_or("none"), promax_m)
+                    .map_err(|e| PyValueError::new_err(e))?;
+                let m = FactorAnalysisModel::fit(
+                    &data,
+                    n_components,
+                    max_iter,
+                    tol,
+                    Some(rot_method),
+                    solver.unwrap_or("paf"),
+                )
+                .map_err(|e| PyValueError::new_err(e))?;
+                ComponentModelCore::Fa(m)
+            }
             other => {
                 return Err(PyValueError::new_err(format!(
                     "unsupported component method kind: {}",
@@ -174,6 +188,7 @@ impl PyComponentModel {
             ComponentModelCore::Whitening(m) => Ok(m.whitening_matrix.clone()),
             ComponentModelCore::Ica(m) => Ok(m.components.clone()),
             ComponentModelCore::Nmf(m) => Ok(m.components.clone()),
+            ComponentModelCore::Fa(m) => Ok(m.components.clone()),
         }
     }
 
@@ -199,6 +214,40 @@ impl PyComponentModel {
     fn rotation_matrix(&self) -> PyResult<Option<Vec<Vec<f64>>>> {
         match &self.inner {
             ComponentModelCore::Pca(m) => Ok(m.rotation_matrix.clone()),
+            ComponentModelCore::Fa(m) => Ok(m.rotation_matrix.clone()),
+            _ => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn factor_correlations(&self) -> PyResult<Option<Vec<Vec<f64>>>> {
+        match &self.inner {
+            ComponentModelCore::Fa(m) => Ok(m.factor_correlations.clone()),
+            _ => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn uniquenesses(&self) -> PyResult<Option<Vec<f64>>> {
+        match &self.inner {
+            ComponentModelCore::Fa(m) => Ok(Some(m.uniquenesses.clone())),
+            _ => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn communalities(&self) -> PyResult<Option<Vec<f64>>> {
+        match &self.inner {
+            ComponentModelCore::Fa(m) => Ok(Some(m.communalities.clone())),
+            _ => Ok(None),
+        }
+    }
+
+    fn schmid_leiman(&self) -> PyResult<Option<(Vec<Vec<f64>>, Vec<f64>)>> {
+        match &self.inner {
+            ComponentModelCore::Fa(m) => {
+                m.schmid_leiman().map(Some).map_err(|e| PyValueError::new_err(e))
+            }
             _ => Ok(None),
         }
     }

@@ -1,4 +1,7 @@
-use mltreelib_core::component::{FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod, TruncatedSvdModel, WhiteningKind, WhiteningModel};
+use mltreelib_core::component::{
+    FactorAnalysisModel, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod,
+    TruncatedSvdModel, WhiteningKind, WhiteningModel,
+};
 
 #[test]
 fn test_pca_variance_and_reconstruction() {
@@ -291,4 +294,84 @@ fn test_nmf_als_and_hals_solvers() {
     let hals_errs = nmf_hals.reconstruction_errors(&data).expect("hals errors");
     let mean_hals: f64 = hals_errs.iter().sum::<f64>() / 50.0;
     assert!(mean_hals < 1.0, "HALS error: {}", mean_hals);
+}
+
+#[test]
+fn test_factor_analysis_paf_and_schmid_leiman() {
+    let mut data = Vec::new();
+    // 2 latent factors g1, g2 driving 4 observed indicators with noise
+    for i in 0..100 {
+        let g1 = (i as f64) * 0.1 - 5.0;
+        let g2 = ((i % 11) as f64) * 0.5 - 2.5;
+        let x1 = 0.8 * g1 + 0.1 * ((i % 3) as f64);
+        let x2 = 0.7 * g1 + 0.15 * ((i % 5) as f64);
+        let x3 = 0.9 * g2 + 0.1 * ((i % 4) as f64);
+        let x4 = 0.75 * g2 + 0.2 * ((i % 2) as f64);
+        data.push(vec![x1, x2, x3, x4]);
+    }
+
+    // Fit PAF Factor Analysis with Varimax rotation
+    let fa = FactorAnalysisModel::fit(
+        &data,
+        Some(2),
+        Some(100),
+        Some(1e-4),
+        Some(RotationMethod::Varimax),
+        "paf",
+    )
+    .expect("fit FA PAF");
+
+    assert_eq!(fa.n_components, 2);
+    assert_eq!(fa.components.len(), 2);
+    assert_eq!(fa.components[0].len(), 4);
+    assert_eq!(fa.communalities.len(), 4);
+    assert_eq!(fa.uniquenesses.len(), 4);
+
+    // Communalities + Uniquenesses must sum to approximately 1.0 (on standardized correlation scale)
+    for j in 0..4 {
+        let sum_var = fa.communalities[j] + fa.uniquenesses[j];
+        assert!(
+            (sum_var - 1.0).abs() < 1e-3,
+            "Comm + Uniq sum ({}) at feature {}",
+            sum_var,
+            j
+        );
+    }
+
+    // Transform and reconstruct
+    let scores = fa.transform(&data).expect("transform FA");
+    assert_eq!(scores.len(), 100);
+    assert_eq!(scores[0].len(), 2);
+
+    let recon = fa.reconstruct(&data).expect("reconstruct FA");
+    assert_eq!(recon.len(), 100);
+    assert_eq!(recon[0].len(), 4);
+
+    let errs = fa.reconstruction_errors(&data).expect("reconstruction errors FA");
+    assert_eq!(errs.len(), 100);
+
+    // Test Schmid-Leiman hierarchical bifactor decomposition with Promax rotation
+    let fa_oblique = FactorAnalysisModel::fit(
+        &data,
+        Some(2),
+        Some(100),
+        Some(1e-4),
+        Some(RotationMethod::Promax(4.0)),
+        "paf",
+    )
+    .expect("fit FA Promax");
+
+    assert!(fa_oblique.factor_correlations.is_some());
+    let (bifactor_loadings, second_order_g) = fa_oblique
+        .schmid_leiman()
+        .expect("schmid_leiman bifactor");
+    assert_eq!(bifactor_loadings.len(), 4);
+    // 1 general factor + 2 group factors = 3 columns
+    assert_eq!(bifactor_loadings[0].len(), 3);
+    assert_eq!(second_order_g.len(), 2);
+
+    // Report
+    let report = fa.report();
+    assert_eq!(report.learner.family, "Component Analysis");
+    assert!(report.to_markdown().contains("mean_communality"));
 }

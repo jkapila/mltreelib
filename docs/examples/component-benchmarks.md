@@ -2,7 +2,63 @@
 
 This benchmark guide details `mltreelib`'s unified component analysis and matrix factorization capability (`ComponentModel` and `AnomalyModel`) implemented in high-performance Rust (`mltreelib-core`).
 
-Executable Reference Script: [`examples/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/component_benchmarks.py) (`uv run python examples/suites/component_benchmarks.py`).
+Exec Reference Script: [`examples/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/component_benchmarks.py) (`uv run python examples/suites/component_benchmarks.py`).
+
+### Empirical Suite Benchmark Output
+
+```text
+================================================================================
+mltreelib Suite 10: Component Analysis & Factor Rotations Benchmark
+================================================================================
+Dataset: Wine Quality (1000 rows, 12 numeric features)
+
+--------------------------------------------------------------------------------
+1. PCA & R-ALIGNED FACTOR ROTATIONS BENCHMARK
+   Problem: Orthomax & Promax rotation to achieve Thurstone's simple structure
+--------------------------------------------------------------------------------
+     Method Variance Retained  Rotation Matrix Loading Sparsity Fit Time (ms)
+       NONE            60.68%               No            25.0%          4.47
+    VARIMAX            60.68% Yes (orthogonal)            27.8%          2.39
+  QUARTIMAX            60.68% Yes (orthogonal)            25.0%          1.43
+    EQUAMAX            60.68% Yes (orthogonal)            27.8%          1.79
+   PARSIMAX            60.68% Yes (orthogonal)            25.0%          1.45
+BIQUARTIMAX            60.68% Yes (orthogonal)            27.8%          1.46
+     PROMAX            60.68%    Yes (oblique)            36.1%          1.44
+
+Takeaway: Rotated factor loadings concentrate variance into fewer high-magnitude features,
+achieving interpretable latent factor separation without sacrificing subspace coverage.
+
+--------------------------------------------------------------------------------
+2. COVARIANCE WHITENING: ZCA VS PCA
+   Problem: Decorrelate features into identity covariance matrix Cov(Z) = I
+--------------------------------------------------------------------------------
+ZCA (Zero-Phase Component Analysis): Time=4.31ms | ||Cov(Z) - I||_mean = 0.006972
+PCA Whitening                      : Time=3.14ms | ||Cov(Z) - I||_mean = 0.006704
+Property: ZCA minimizes ||Z - X||_F, keeping whitened coordinates closest to original features.
+
+--------------------------------------------------------------------------------
+3. NON-NEGATIVE MATRIX FACTORIZATION (NMF) SOLVER FACE-OFF
+   Problem: min_{W,H >= 0} ||X - WH||_F^2 on strictly non-negative inputs
+--------------------------------------------------------------------------------
+                  Solver Reconstruction Error H Sparsity Time (ms)
+                      MU             233.0816       0.0%     14.63
+   ALS (L1=0.0, L2=0.01)             172.5155       0.0%     14.14
+                    HALS             142.3001       8.3%     19.04
+HALS (L1=0.01, L2=0.005)             256.4853      36.1%     16.91
+ HALS (L1=0.01, L2=0.05)             256.4980      36.1%     14.50
+
+Insight: HALS coordinate descent achieves superior loss convergence with exact NNLS updates
+and enables true L1 sparsity without numerical instability.
+
+--------------------------------------------------------------------------------
+4. SUBSPACE RECONSTRUCTION ANOMALY DETECTION
+   Problem: Detect out-of-subspace outliers via PCA & NMF reconstruction error
+--------------------------------------------------------------------------------
+Normal Inlier Point   -> Reconstruction Loss: 437.4652 | Label: NORMAL
+Outlier Spike (+50.0) -> Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
+Ratio (Outlier/Inlier Loss): 3510781.2x separation
+================================================================================
+```
 
 ---
 

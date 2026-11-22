@@ -10,33 +10,55 @@ Consolidated component analysis: PCA with R-aligned factor rotations (Varimax, Q
 class ComponentModel(kind: 'str' = 'pca', n_components: 'int | None' = None, *, standardize: 'bool' = True, max_iter: 'int' = 200, tol: 'float' = 0.0001, seed: 'int' = 42, whitening_kind: 'str' = 'zca', eps: 'float' = 1e-05, rotation: 'str' = 'none', promax_m: 'float' = 4.0, solver: 'str' = 'hals', l1_reg: 'float' = 0.0, l2_reg: 'float' = 0.0) -> 'None'
 ```
 
-Consolidated Component Analysis and Dimensionality Reduction Model.
+Consolidated Component Analysis, Factor Analysis, and Dimensionality Reduction Model.
 
 Provides a unified facade across multiple decomposition and factorization methods:
 - ``"pca"``: Classical Principal Component Analysis (centered and standardized).
 - ``"svd"`` or ``"truncated_svd"``: Truncated SVD without centering.
-- ``"whitening"``: ZCA and PCA covariance decorrelation.
-- ``"ica"`` or ``"fastica"``: Independent Component Analysis via FastICA.
-- ``"nmf"``: Non-negative Matrix Factorization via multiplicative updates.
+- ``"whitening"``: ZCA and PCA covariance decorrelation preserving Mahalanobis geometry.
+- ``"ica"`` or ``"fastica"``: Independent Component Analysis via FastICA (negentropy/logcosh).
+- ``"nmf"``: Non-negative Matrix Factorization (MU, projected ALS, HALS coordinate descent with L1/L2 penalties).
+- ``"fa"`` or ``"factor_analysis"``: Exploratory Factor Analysis via Principal Axis Factoring (PAF / Minres),
+  estimating shared communalities h^2 and uniquenesses psi = 1 - h^2 with Bartlett/Thomson scoring
+  and Schmid-Leiman hierarchical bifactor decomposition.
 
 Parameters
 ----------
 kind : str, default="pca"
-    Component method kind: ``"pca"``, ``"svd"``, ``"whitening"``, ``"ica"``, or ``"nmf"``.
+    Decomposition engine: ``"pca"``, ``"svd"``, ``"whitening"``, ``"ica"``, ``"nmf"``, or ``"fa"``.
 n_components : int, optional
     Number of components or factors to extract. Defaults to min(n_samples, n_features).
 standardize : bool, default=True
-    For PCA: standardize columns to unit variance.
+    For PCA and Factor Analysis: center and scale columns to zero mean and unit variance.
 max_iter : int, default=200
-    Maximum iterations for iterative algorithms (ICA, NMF).
+    Maximum iterations for iterative algorithms (ICA, NMF, FA).
 tol : float, default=1e-4
-    Convergence tolerance for iterative algorithms (ICA, NMF).
+    Convergence tolerance for iterative algorithms.
 seed : int, default=42
     Random seed for stochastic initialization.
 whitening_kind : str, default="zca"
-    For whitening: ``"zca"`` (zero-phase) or ``"pca"`` whitening.
+    For whitening: ``"zca"`` (zero-phase, minimal distortion) or ``"pca"`` whitening.
 eps : float, default=1e-5
     Ridge regularization term added to eigenvalues in whitening.
+rotation : str, default="none"
+    Factor/PCA rotation method aligned with R stats:
+    - ``"none"``: Standard unrotated orthogonal eigenvectors.
+    - ``"varimax"``: Orthogonal Varimax (gamma=1.0, R stats::varimax default).
+    - ``"quartimax"``: Orthogonal Quartimax (gamma=0.0).
+    - ``"equamax"``: Orthogonal Equamax (gamma=k/2).
+    - ``"parsimax"``: Orthogonal Parsimax.
+    - ``"biquartimax"``: Orthogonal Biquartimax (gamma=0.5).
+    - ``"promax"``: Oblique Promax Procrustes rotation (R stats::promax).
+promax_m : float, default=4.0
+    Promax target exponent (default 4.0 in R stats::promax).
+solver : str, default="hals"
+    Solver engine for NMF or Factor Analysis:
+    - For NMF: ``"hals"`` (Hierarchical ALS), ``"als"`` (Projected ALS), ``"mu"`` (Multiplicative Updates).
+    - For FA: ``"paf"`` (Principal Axis Factoring / Minres).
+l1_reg : float, default=0.0
+    L1 sparsity penalty for NMF HALS.
+l2_reg : float, default=0.0
+    L2 ridge penalty for NMF HALS/ALS.
 
 ### ComponentModel.config
 
@@ -110,6 +132,24 @@ save(self, path: 'str | Path') -> 'None'
 
 Save fitted model snapshot to disk atomically.
 
+### ComponentModel.schmid_leiman
+
+```python
+schmid_leiman(self) -> 'tuple[list[list[float]], list[float]]'
+```
+
+Compute Schmid-Leiman hierarchical bifactor decomposition.
+
+Transforms oblique factor loadings into an orthogonal general factor g
+and independent group factors.
+
+Returns
+-------
+bifactor_loadings : list of list of float
+    Shape (p, k + 1) where column 0 is General factor g, and columns 1..=k are group factors.
+variance_shares : list of float
+    [general_factor_variance_share, group_factors_variance_share].
+
 ### ComponentModel.score_samples
 
 ```python
@@ -141,6 +181,86 @@ transform(self, x: 'Sequence[Sequence[Any]]') -> 'list[list[float]]'
 ```
 
 Project input rows into component coordinates.
+
+### ComponentModel.communalities_
+
+```python
+@communalities_
+```
+
+Common variance shares h_i^2 = 1 - psi_i per feature (Factor Analysis).
+
+### ComponentModel.components_
+
+```python
+@components_
+```
+
+Fitted component/loading direction vectors (shape: n_components x n_features).
+
+### ComponentModel.explained_variance_
+
+```python
+@explained_variance_
+```
+
+Variance explained by each component (PCA and SVD).
+
+### ComponentModel.explained_variance_ratio_
+
+```python
+@explained_variance_ratio_
+```
+
+Percentage of variance explained by each component (PCA and SVD).
+
+### ComponentModel.factor_correlations_
+
+```python
+@factor_correlations_
+```
+
+Factor correlation matrix Phi (for oblique Promax rotations in PCA and Factor Analysis).
+
+### ComponentModel.loadings_
+
+```python
+@loadings_
+```
+
+Factor loadings matrix Lambda of shape (n_features x n_components).
+
+### ComponentModel.reconstruction_error_
+
+```python
+@reconstruction_error_
+```
+
+Reconstruction error for NMF models.
+
+### ComponentModel.report
+
+```python
+@report
+```
+
+Return the structured ModelReport with diagnostics and complexity metrics.
+
+### ComponentModel.rotation_matrix_
+
+```python
+@rotation_matrix_
+```
+
+Rotation transformation matrix T if rotation was applied, else None.
+
+### ComponentModel.uniquenesses_
+
+```python
+@uniquenesses_
+```
+
+Specific variances psi_i per feature (Factor Analysis).
 
 ## ComponentResult
 

@@ -44,33 +44,55 @@ def _clean_dense_rows(x: Sequence[Sequence[Any]]) -> list[list[f64]]:
 
 
 class ComponentModel:
-    """Consolidated Component Analysis and Dimensionality Reduction Model.
+    """Consolidated Component Analysis, Factor Analysis, and Dimensionality Reduction Model.
 
     Provides a unified facade across multiple decomposition and factorization methods:
     - ``"pca"``: Classical Principal Component Analysis (centered and standardized).
     - ``"svd"`` or ``"truncated_svd"``: Truncated SVD without centering.
-    - ``"whitening"``: ZCA and PCA covariance decorrelation.
-    - ``"ica"`` or ``"fastica"``: Independent Component Analysis via FastICA.
-    - ``"nmf"``: Non-negative Matrix Factorization via multiplicative updates.
+    - ``"whitening"``: ZCA and PCA covariance decorrelation preserving Mahalanobis geometry.
+    - ``"ica"`` or ``"fastica"``: Independent Component Analysis via FastICA (negentropy/logcosh).
+    - ``"nmf"``: Non-negative Matrix Factorization (MU, projected ALS, HALS coordinate descent with L1/L2 penalties).
+    - ``"fa"`` or ``"factor_analysis"``: Exploratory Factor Analysis via Principal Axis Factoring (PAF / Minres),
+      estimating shared communalities h^2 and uniquenesses psi = 1 - h^2 with Bartlett/Thomson scoring
+      and Schmid-Leiman hierarchical bifactor decomposition.
 
     Parameters
     ----------
     kind : str, default="pca"
-        Component method kind: ``"pca"``, ``"svd"``, ``"whitening"``, ``"ica"``, or ``"nmf"``.
+        Decomposition engine: ``"pca"``, ``"svd"``, ``"whitening"``, ``"ica"``, ``"nmf"``, or ``"fa"``.
     n_components : int, optional
         Number of components or factors to extract. Defaults to min(n_samples, n_features).
     standardize : bool, default=True
-        For PCA: standardize columns to unit variance.
+        For PCA and Factor Analysis: center and scale columns to zero mean and unit variance.
     max_iter : int, default=200
-        Maximum iterations for iterative algorithms (ICA, NMF).
+        Maximum iterations for iterative algorithms (ICA, NMF, FA).
     tol : float, default=1e-4
-        Convergence tolerance for iterative algorithms (ICA, NMF).
+        Convergence tolerance for iterative algorithms.
     seed : int, default=42
         Random seed for stochastic initialization.
     whitening_kind : str, default="zca"
-        For whitening: ``"zca"`` (zero-phase) or ``"pca"`` whitening.
+        For whitening: ``"zca"`` (zero-phase, minimal distortion) or ``"pca"`` whitening.
     eps : float, default=1e-5
         Ridge regularization term added to eigenvalues in whitening.
+    rotation : str, default="none"
+        Factor/PCA rotation method aligned with R stats:
+        - ``"none"``: Standard unrotated orthogonal eigenvectors.
+        - ``"varimax"``: Orthogonal Varimax (gamma=1.0, R stats::varimax default).
+        - ``"quartimax"``: Orthogonal Quartimax (gamma=0.0).
+        - ``"equamax"``: Orthogonal Equamax (gamma=k/2).
+        - ``"parsimax"``: Orthogonal Parsimax.
+        - ``"biquartimax"``: Orthogonal Biquartimax (gamma=0.5).
+        - ``"promax"``: Oblique Promax Procrustes rotation (R stats::promax).
+    promax_m : float, default=4.0
+        Promax target exponent (default 4.0 in R stats::promax).
+    solver : str, default="hals"
+        Solver engine for NMF or Factor Analysis:
+        - For NMF: ``"hals"`` (Hierarchical ALS), ``"als"`` (Projected ALS), ``"mu"`` (Multiplicative Updates).
+        - For FA: ``"paf"`` (Principal Axis Factoring / Minres).
+    l1_reg : float, default=0.0
+        L1 sparsity penalty for NMF HALS.
+    l2_reg : float, default=0.0
+        L2 ridge penalty for NMF HALS/ALS.
     """
 
     _snapshot_format = "mltreelib.component_model"
@@ -165,10 +187,20 @@ class ComponentModel:
 
     @property
     def components_(self) -> list[list[float]]:
-        """Fitted component/loading direction vectors."""
+        """Fitted component/loading direction vectors (shape: n_components x n_features)."""
         if not self._fitted or self._inner is None:
             raise ValueError(f"{type(self).__name__} is not fitted yet.")
         return self._inner.components
+
+    @property
+    def loadings_(self) -> list[list[float]]:
+        """Factor loadings matrix Lambda of shape (n_features x n_components)."""
+        comps = self.components_
+        if not comps:
+            return []
+        p = len(comps[0])
+        k = len(comps)
+        return [[comps[i][j] for i in range(k)] for j in range(p)]
 
     @property
     def explained_variance_(self) -> list[float] | None:
@@ -192,6 +224,47 @@ class ComponentModel:
         return self._inner.rotation_matrix
 
     @property
+    def factor_correlations_(self) -> list[list[float]] | None:
+        """Factor correlation matrix Phi (for oblique Promax rotations in PCA and Factor Analysis)."""
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        return self._inner.factor_correlations
+
+    @property
+    def uniquenesses_(self) -> list[float] | None:
+        """Specific variances psi_i per feature (Factor Analysis)."""
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        return self._inner.uniquenesses
+
+    @property
+    def communalities_(self) -> list[float] | None:
+        """Common variance shares h_i^2 = 1 - psi_i per feature (Factor Analysis)."""
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        return self._inner.communalities
+
+    def schmid_leiman(self) -> tuple[list[list[float]], list[float]]:
+        """Compute Schmid-Leiman hierarchical bifactor decomposition.
+
+        Transforms oblique factor loadings into an orthogonal general factor g
+        and independent group factors.
+
+        Returns
+        -------
+        bifactor_loadings : list of list of float
+            Shape (p, k + 1) where column 0 is General factor g, and columns 1..=k are group factors.
+        variance_shares : list of float
+            [general_factor_variance_share, group_factors_variance_share].
+        """
+        if not self._fitted or self._inner is None:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        res = self._inner.schmid_leiman()
+        if res is None:
+            raise ValueError("Schmid-Leiman decomposition is only available for Factor Analysis with oblique rotations.")
+        return res
+
+    @property
     def reconstruction_error_(self) -> float | None:
         """Reconstruction error for NMF models."""
         if not self._fitted or self._inner is None:
@@ -200,7 +273,7 @@ class ComponentModel:
 
     @property
     def report(self) -> ModelReport:
-        """Return the structured ModelReport."""
+        """Return the structured ModelReport with diagnostics and complexity metrics."""
         if not self._fitted or self._inner is None:
             raise ValueError(f"{type(self).__name__} is not fitted yet.")
         return ModelReport(self._inner.report())

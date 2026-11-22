@@ -6,7 +6,7 @@ from mltreelib import ModelTree
 
 def test_package_version():
     """Verify package version is set."""
-    assert mltreelib.__version__ == "0.4.12"
+    assert mltreelib.__version__ == "0.4.13"
 
 
 def test_break_down_and_shapley_accept_string_categories_and_nas():

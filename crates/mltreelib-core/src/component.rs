@@ -1591,6 +1591,425 @@ impl NmfModel {
 }
 
 // ---------------------------------------------------------------------------
+// Factor Analysis (PAF & Minres)
+// ---------------------------------------------------------------------------
+
+/// Exploratory Factor Analysis Model (Principal Axis Factoring / Minres).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FactorAnalysisModel {
+    pub n_components: usize,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub rotation: RotationMethod,
+    pub method: String,
+    pub n_samples: usize,
+    pub n_features: usize,
+    pub mean: Vec<f64>,
+    pub scale: Vec<f64>,
+    pub components: Vec<Vec<f64>>, // shape: (n_components, n_features) - factor loadings L^T
+    pub uniquenesses: Vec<f64>,     // specific variances psi_i (shape: n_features)
+    pub communalities: Vec<f64>,    // h_i^2 = 1 - psi_i (shape: n_features)
+    pub rotation_matrix: Option<Vec<Vec<f64>>>,
+    pub factor_correlations: Option<Vec<Vec<f64>>>,
+    pub n_iter: usize,
+    pub converged: bool,
+}
+
+impl FactorAnalysisModel {
+    pub fn fit(
+        data: &[Vec<f64>],
+        n_components: Option<usize>,
+        max_iter: Option<usize>,
+        tol: Option<f64>,
+        rotation: Option<RotationMethod>,
+        method: &str,
+    ) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 2 {
+            return Err("FactorAnalysis requires at least 2 samples".into());
+        }
+        let k = n_components.unwrap_or(2).min(p).max(1);
+        let max_iterations = max_iter.unwrap_or(100);
+        let tolerance = tol.unwrap_or(1e-4);
+        let rot_method = rotation.unwrap_or(RotationMethod::None);
+
+        // 1. Center and standardize columns
+        let mut mean = vec![0.0; p];
+        for j in 0..p {
+            let s: f64 = (0..n).map(|i| x[(i, j)]).sum();
+            mean[j] = s / (n as f64);
+        }
+        let mut scale = vec![1.0; p];
+        for j in 0..p {
+            let var: f64 = (0..n).map(|i| (x[(i, j)] - mean[j]).powi(2)).sum::<f64>() / ((n - 1) as f64);
+            let std = var.sqrt();
+            scale[j] = if std > 1e-12 { std } else { 1.0 };
+        }
+
+        let mut xc = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                xc[(i, j)] = (x[(i, j)] - mean[j]) / scale[j];
+            }
+        }
+
+        // 2. Sample correlation matrix R = (1 / (n - 1)) Xc^T Xc
+        let r_mat = (xc.transpose() * &xc) / ((n - 1) as f64);
+
+        // 3. Initial communality estimates h_i^2:
+        let mut h2 = vec![0.5; p];
+        if let Some(r_inv) = r_mat.clone().try_inverse() {
+            for j in 0..p {
+                let smc = 1.0 - 1.0 / r_inv[(j, j)].max(1e-6);
+                h2[j] = smc.clamp(0.01, 0.99);
+            }
+        } else {
+            for j in 0..p {
+                let max_r = (0..p)
+                    .filter(|&l| l != j)
+                    .map(|l| r_mat[(j, l)].abs())
+                    .fold(0.0, f64::max);
+                h2[j] = max_r.clamp(0.01, 0.99);
+            }
+        }
+
+        // 4. Principal Axis Factoring (iterative communality update)
+        let mut n_iter = 0;
+        let mut converged = false;
+        let mut unrotated_loadings = DMatrix::zeros(p, k);
+
+        for it in 0..max_iterations {
+            n_iter = it + 1;
+            let mut r_star = r_mat.clone();
+            for j in 0..p {
+                r_star[(j, j)] = h2[j];
+            }
+
+            let eigen = r_star.symmetric_eigen();
+            let mut pairs: Vec<(usize, f64)> = eigen.eigenvalues
+                .iter()
+                .enumerate()
+                .map(|(idx, &val)| (idx, val))
+                .collect();
+            pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+            let mut new_loadings = DMatrix::zeros(p, k);
+            for (comp_idx, &(orig_idx, val)) in pairs.iter().take(k).enumerate() {
+                let pos_val = val.max(0.0);
+                let sqrt_val = pos_val.sqrt();
+                for j in 0..p {
+                    new_loadings[(j, comp_idx)] = eigen.eigenvectors[(j, orig_idx)] * sqrt_val;
+                }
+            }
+
+            for comp_idx in 0..k {
+                let mut max_abs = 0.0;
+                let mut sign = 1.0;
+                for j in 0..p {
+                    let v = new_loadings[(j, comp_idx)];
+                    if v.abs() > max_abs {
+                        max_abs = v.abs();
+                        sign = if v >= 0.0 { 1.0 } else { -1.0 };
+                    }
+                }
+                if sign < 0.0 {
+                    for j in 0..p {
+                        new_loadings[(j, comp_idx)] = -new_loadings[(j, comp_idx)];
+                    }
+                }
+            }
+
+            let mut max_diff: f64 = 0.0;
+            let mut new_h2 = vec![0.0; p];
+            for j in 0..p {
+                let sum_sq: f64 = (0..k).map(|c| new_loadings[(j, c)].powi(2)).sum();
+                let clamped = sum_sq.clamp(0.001, 0.999);
+                let diff = (clamped - h2[j]).abs();
+                if diff > max_diff {
+                    max_diff = diff;
+                }
+                new_h2[j] = clamped;
+            }
+
+            h2 = new_h2;
+            unrotated_loadings = new_loadings;
+
+            if max_diff < tolerance {
+                converged = true;
+                break;
+            }
+        }
+
+        let uniquenesses: Vec<f64> = h2.iter().map(|&h| (1.0 - h).max(1e-4)).collect();
+        let communalities = h2.clone();
+
+        // 5. Factor Rotation
+        let (final_loadings, rot_mat_opt, factor_corrs_opt) = if rot_method != RotationMethod::None && k >= 2 {
+            let (rot_loadings, t_mat) = rotate_loadings(&unrotated_loadings, rot_method, true, 1000, 1e-5)?;
+            let rot_mat_rows = matrix_to_rows(&t_mat);
+            let factor_corrs = if rot_method.is_oblique() {
+                let tt = t_mat.transpose() * &t_mat;
+                let phi = tt.try_inverse().unwrap_or_else(|| DMatrix::identity(k, k));
+                Some(matrix_to_rows(&phi))
+            } else {
+                Some(matrix_to_rows(&DMatrix::identity(k, k)))
+            };
+            (rot_loadings, Some(rot_mat_rows), factor_corrs)
+        } else {
+            (unrotated_loadings, None, None)
+        };
+
+        let mut components = Vec::with_capacity(k);
+        for comp_idx in 0..k {
+            let mut comp = vec![0.0; p];
+            for j in 0..p {
+                comp[j] = final_loadings[(j, comp_idx)];
+            }
+            components.push(comp);
+        }
+
+        Ok(Self {
+            n_components: k,
+            max_iter: max_iterations,
+            tol: tolerance,
+            rotation: rot_method,
+            method: method.to_string(),
+            n_samples: n,
+            n_features: p,
+            mean,
+            scale,
+            components,
+            uniquenesses,
+            communalities,
+            rotation_matrix: rot_mat_opt,
+            factor_correlations: factor_corrs_opt,
+            n_iter,
+            converged,
+        })
+    }
+
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+
+        let mut xc = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                xc[(i, j)] = (x[(i, j)] - self.mean[j]) / self.scale[j];
+            }
+        }
+
+        let k = self.n_components;
+        let mut l = DMatrix::zeros(p, k);
+        for comp_idx in 0..k {
+            for j in 0..p {
+                l[(j, comp_idx)] = self.components[comp_idx][j];
+            }
+        }
+
+        let mut psi_inv_l = DMatrix::zeros(p, k);
+        for j in 0..p {
+            let w = 1.0 / self.uniquenesses[j].max(1e-4);
+            for c in 0..k {
+                psi_inv_l[(j, c)] = l[(j, c)] * w;
+            }
+        }
+        let lt_psi_inv_l = l.transpose() * &psi_inv_l;
+        let inv_term = lt_psi_inv_l.clone().try_inverse()
+            .unwrap_or_else(|| lt_psi_inv_l.pseudo_inverse(1e-12).unwrap());
+        let score_weights = psi_inv_l * inv_term;
+
+        let scores = &xc * &score_weights;
+        Ok(matrix_to_rows(&scores))
+    }
+
+    pub fn inverse_transform(&self, scores: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let f = rows_to_matrix(scores)?;
+        let n = f.nrows();
+        let k = f.ncols();
+        if k != self.n_components {
+            return Err(format!("score dimension mismatch: expected {}, got {}", self.n_components, k));
+        }
+        let p = self.n_features;
+        let mut l = DMatrix::zeros(p, k);
+        for comp_idx in 0..k {
+            for j in 0..p {
+                l[(j, comp_idx)] = self.components[comp_idx][j];
+            }
+        }
+        let xc_hat = &f * l.transpose();
+        let mut x_hat = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                x_hat[(i, j)] = xc_hat[(i, j)] * self.scale[j] + self.mean[j];
+            }
+        }
+        Ok(matrix_to_rows(&x_hat))
+    }
+
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let scores = self.transform(data)?;
+        self.inverse_transform(&scores)
+    }
+
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        let x_hat = self.reconstruct(data)?;
+        let mut errors = Vec::with_capacity(data.len());
+        for (i, row) in data.iter().enumerate() {
+            let mut sum_sq = 0.0;
+            for j in 0..self.n_features {
+                let diff = row[j] - x_hat[i][j];
+                sum_sq += diff * diff;
+            }
+            errors.push(sum_sq);
+        }
+        Ok(errors)
+    }
+
+    pub fn schmid_leiman(&self) -> Result<(Vec<Vec<f64>>, Vec<f64>), String> {
+        let k = self.n_components;
+        let p = self.n_features;
+        let phi_mat = match &self.factor_correlations {
+            Some(phi) => rows_to_matrix(phi)?,
+            None => DMatrix::identity(k, k),
+        };
+
+        let eigen = phi_mat.symmetric_eigen();
+        let mut pairs: Vec<(usize, f64)> = eigen.eigenvalues
+            .iter()
+            .enumerate()
+            .map(|(idx, &val)| (idx, val))
+            .collect();
+        pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        let g_idx = pairs[0].0;
+        let g_val = pairs[0].1.max(0.0);
+        let sqrt_g = g_val.sqrt();
+
+        let mut gamma = vec![0.0; k];
+        for c in 0..k {
+            gamma[c] = eigen.eigenvectors[(c, g_idx)] * sqrt_g;
+        }
+
+        let mut l = DMatrix::zeros(p, k);
+        for comp_idx in 0..k {
+            for j in 0..p {
+                l[(j, comp_idx)] = self.components[comp_idx][j];
+            }
+        }
+
+        let mut l_g = vec![0.0; p];
+        for j in 0..p {
+            l_g[j] = (0..k).map(|c| l[(j, c)] * gamma[c]).sum();
+        }
+
+        let mut u_group = vec![0.0; k];
+        for c in 0..k {
+            u_group[c] = (1.0 - gamma[c].powi(2)).max(0.0).sqrt();
+        }
+
+        let mut bifactor = Vec::with_capacity(p);
+        for j in 0..p {
+            let mut row = Vec::with_capacity(k + 1);
+            row.push(l_g[j]);
+            for c in 0..k {
+                row.push(l[(j, c)] * u_group[c]);
+            }
+            bifactor.push(row);
+        }
+
+        let total_g_var: f64 = l_g.iter().map(|&v| v.powi(2)).sum();
+        let total_group_var: f64 = (0..p).map(|j| {
+            (0..k).map(|c| (l[(j, c)] * u_group[c]).powi(2)).sum::<f64>()
+        }).sum();
+        let total_communal = total_g_var + total_group_var;
+        let g_share = if total_communal > 1e-12 { total_g_var / total_communal } else { 0.0 };
+
+        Ok((bifactor, vec![g_share, 1.0 - g_share]))
+    }
+
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_components".into(), self.n_components.to_string());
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("method".into(), match self.method.as_str() {
+            "paf" => "Principal Axis Factoring (PAF)".into(),
+            other => other.to_string(),
+        });
+        struct_map.insert("rotation".into(), match self.rotation {
+            RotationMethod::None => "None".into(),
+            RotationMethod::Varimax => "Varimax (stats::varimax)".into(),
+            RotationMethod::Quartimax => "Quartimax".into(),
+            RotationMethod::Equamax => "Equamax".into(),
+            RotationMethod::Parsimax => "Parsimax".into(),
+            RotationMethod::Biquartimax => "Biquartimax".into(),
+            RotationMethod::Orthomax(g) => format!("Orthomax(gamma={:.2})", g),
+            RotationMethod::Promax(m) => format!("Promax(power={:.1})", m),
+        });
+
+        let avg_communal: f64 = self.communalities.iter().sum::<f64>() / (self.n_features as f64);
+        let avg_uniqueness: f64 = self.uniquenesses.iter().sum::<f64>() / (self.n_features as f64);
+
+        let mut metrics = BTreeMap::new();
+        metrics.insert("mean_communality".into(), avg_communal);
+        metrics.insert("mean_uniqueness".into(), avg_uniqueness);
+        metrics.insert("iterations".into(), self.n_iter as f64);
+
+        ModelReport::new(
+            "Exploratory Factor Analysis",
+            ObjectiveSection {
+                name: "Common Factor Decomposition (Sigma = Lambda*Lambda^T + Psi)".into(),
+                math_form: Some("R* = R - diag(1 - h^2); R* = V * Lambda * V^T".into()),
+                direction: OptimizationDirection::Reconstruct,
+                final_value: Some(avg_communal),
+                components: vec![
+                    ("mean_communality".into(), avg_communal),
+                    ("mean_uniqueness".into(), avg_uniqueness),
+                ],
+                units: None,
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: "FactorAnalysis".into(),
+                representation: "Common factor loadings Lambda + Uniquenesses Psi".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_components * self.n_features + self.n_features,
+                effective_complexity: Some(self.n_components as f64),
+                capabilities: vec!["transform".into(), "inverse_transform".into(), "schmid_leiman".into()],
+            },
+            ControllerSection {
+                kind: "fa".into(),
+                config: BTreeMap::new(),
+                seed: None,
+                iteration_budget: Some(self.max_iter),
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(self.converged),
+                stop_reason: Some(if self.converged { "Communality convergence achieved".into() } else { "Maximum iterations reached".into() }),
+                fit_time_sec: None,
+                eval_count: Some(self.n_iter),
+                metrics,
+                warnings: if self.converged {
+                    Vec::new()
+                } else {
+                    vec!["Factor analysis communality iteration did not converge within max_iter".into()]
+                },
+            },
+            None,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Unified ComponentModel Facade
 // ---------------------------------------------------------------------------
 
@@ -1602,6 +2021,7 @@ pub enum ComponentModelCore {
     Whitening(WhiteningModel),
     Ica(FastIcaModel),
     Nmf(NmfModel),
+    Fa(FactorAnalysisModel),
 }
 
 impl ComponentModelCore {
@@ -1612,6 +2032,7 @@ impl ComponentModelCore {
             Self::Whitening(m) => m.transform(data),
             Self::Ica(m) => m.transform(data),
             Self::Nmf(m) => m.transform(data),
+            Self::Fa(m) => m.transform(data),
         }
     }
 
@@ -1622,6 +2043,7 @@ impl ComponentModelCore {
             Self::Whitening(m) => m.inverse_transform(scores),
             Self::Ica(m) => m.inverse_transform(scores),
             Self::Nmf(_) => Err("NMF does not support direct inverse_transform from arbitrary coordinates; use reconstruct".into()),
+            Self::Fa(m) => m.inverse_transform(scores),
         }
     }
 
@@ -1635,6 +2057,7 @@ impl ComponentModelCore {
             }
             Self::Ica(m) => m.reconstruct(data),
             Self::Nmf(m) => m.reconstruct(data),
+            Self::Fa(m) => m.reconstruct(data),
         }
     }
 
@@ -1657,6 +2080,7 @@ impl ComponentModelCore {
             }
             Self::Ica(m) => m.reconstruction_errors(data),
             Self::Nmf(m) => m.reconstruction_errors(data),
+            Self::Fa(m) => m.reconstruction_errors(data),
         }
     }
 
@@ -1667,6 +2091,7 @@ impl ComponentModelCore {
             Self::Whitening(m) => m.report(),
             Self::Ica(m) => m.report(),
             Self::Nmf(m) => m.report(),
+            Self::Fa(m) => m.report(),
         }
     }
 
