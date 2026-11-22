@@ -45,6 +45,13 @@ impl PyModelReport {
     fn __str__(&self) -> String {
         self.inner.to_text()
     }
+
+    #[staticmethod]
+    fn from_json(json: &str) -> PyResult<Self> {
+        let rep = ModelReport::from_json(json)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(PyModelReport { inner: rep })
+    }
 }
 
 #[pyclass(name = "ComponentModel")]

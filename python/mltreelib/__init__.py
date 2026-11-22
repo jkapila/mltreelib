@@ -69,8 +69,14 @@ from mltreelib._core import (
 )
 from mltreelib.components import ComponentModel, ComponentResult
 from mltreelib.models import (
+    AnomalyModel,
+    AnomalyResult,
     AnomalyTree,
+    ClusterModel,
+    ClusterResult,
     ClusterTree,
+    RuleModel,
+    RuleResult,
     distributions_to_quantiles,
     histograms_to_quantiles,
 )
@@ -106,12 +112,16 @@ def __dir__() -> list[str]:
 __all__ = [
     "HDBSCAN",
     "ActiveAnomalyTree",
+    "AnomalyModel",
+    "AnomalyResult",
     "AnomalyTree",
     "BaseNEncoder",
     "CLTree",
     "CatBoostEncoder",
     "ComponentModel",
     "ComponentResult",
+    "ClusterModel",
+    "ClusterResult",
     "ClusterTree",
     "ContextAnomalyTree",
     "CountEncoder",
@@ -138,6 +148,8 @@ __all__ = [
     "QuantileEncoder",
     "RandomCutTree",
     "Rule",
+    "RuleModel",
+    "RuleResult",
     "RuleSet",
     "SumEncoder",
     "TargetEncoder",
