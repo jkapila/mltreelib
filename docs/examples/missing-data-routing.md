@@ -51,7 +51,40 @@ flowchart TD
 
 ---
 
-## 2. Benchmark Study: Scania Truck Air Pressure System (APS) Failure
+## 2. Mathematical Mechanics of Native Routing & Surrogates
+
+### A. Optimal Learned Missing Direction
+Let $\mathcal{I}_{\text{obs}} = \{i \mid x_{ij} \neq \text{NA}\}$ and $\mathcal{I}_{\text{miss}} = \{i \mid x_{ij} = \text{NA}\}$.
+For a candidate threshold $\theta$, the partition is evaluated under two competing routing assignments:
+
+$$\Delta \mathcal{D}(\theta, \text{dir}) = \mathcal{D}(P) - [\mathcal{D}(L_{\text{dir}}) + \mathcal{D}(R_{\text{dir}})]$$
+
+- If $\text{dir} = \text{left}$: $L = \{i \in \mathcal{I}_{\text{obs}} \mid x_{ij} \le \theta\} \cup \mathcal{I}_{\text{miss}}$ and $R = \{i \in \mathcal{I}_{\text{obs}} \mid x_{ij} > \theta\}$.
+- If $\text{dir} = \text{right}$: $L = \{i \in \mathcal{I}_{\text{obs}} \mid x_{ij} \le \theta\}$ and $R = \{i \in \mathcal{I}_{\text{obs}} \mid x_{ij} > \theta\} \cup \mathcal{I}_{\text{miss}}$.
+
+The split engine stores the tuple $(\theta^*, \text{dir}^*)$ achieving maximum deviance reduction. Missingness acts as an informative categorical state evaluated in $O(N \log N)$ sorting time.
+
+### B. Surrogate Split Agreement Metric
+When `maxsurrogate = K` is enabled, `mltreelib` computes up to $K$ backup split rules for each internal node. Let primary split rule $s^*$ partition observed samples into $L$ and $R$. For any surrogate candidate $s_k$ on feature $k \neq j$:
+
+$$\lambda(s^*, s_k) = \frac{n_{LL} + n_{RR}}{n_{\text{obs}}}$$
+
+where $n_{LL}$ is the count of samples sent left by both rules, and $n_{RR}$ is the count sent right by both rules. The surrogate quality metric measures improvement over default majority routing:
+
+$$\text{Agreement Ratio} = \frac{\lambda(s^*, s_k) - p_{\text{maj}}}{1 - p_{\text{maj}}}$$
+
+Surrogates with $\text{Agreement Ratio} \le 0$ are discarded. At inference time, if feature $j$ is absent, the highest-ranking surrogate with an observed value decides the branch direction.
+
+### C. NA-Indicator Linear Leaves
+When fitting linear model leaves on partially observed partitions, standard OLS crashes on `NaN`. `mltreelib` augments the local design matrix with binary missingness indicators $m_{ij} = \mathbb{I}(x_{ij} \text{ is missing})$:
+
+$$\hat{y}_i = \beta_0 + \sum_{j=1}^P \beta_j \cdot x_{ij} (1 - m_{ij}) + \sum_{j=1}^P \beta_{\text{NA}, j} \cdot m_{ij}$$
+
+Observed values contribute to continuous slopes $\beta_j$, while missing states contribute discrete level adjustments $\beta_{\text{NA}, j}$ without distorting gradient estimates.
+
+---
+
+## 3. Benchmark Study: Scania Truck Air Pressure System (APS) Failure
 
 We evaluate native routing against standard mean imputation on the **Scania APS Failure** benchmark (76,000 industrial truck diagnostic records, 171 sensor channels).
 
@@ -97,7 +130,7 @@ print(f"Native Routing -> Average Precision: {pr['average_precision']:.4f}, ROC-
 
 ---
 
-## 3. Empirical Results: Native Routing vs Mean Imputation
+## 4. Empirical Results: Native Routing vs Mean Imputation
 
 ```text
 Loaded Scania APS Failure benchmark: 12000 samples, 12 sensor channels.
@@ -117,15 +150,26 @@ Incomplete Records (n=1606): Brier = 0.0153
 Native routing preserves calibrated probabilities even when multiple sensor channels are missing.
 ```
 
-| Evaluation Strategy | Missing Handling | PR Average Precision | ROC-AUC | Brier Score |
-|---|---|:---:|:---:|:---:|
-| **Mean Imputation Baseline** | Global Column Mean | 0.5706 | 0.9846 | 0.0139 |
-| **`mltreelib` Native Routing** | Learned `missing_left` + Surrogates | **0.5924** | **0.9848** | **0.0135** |
+| Evaluation Strategy | Missing Handling | PR Average Precision | ROC-AUC | Brier Score | Preprocessing Latency |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Mean Imputation Baseline** | Global Column Mean | 0.5706 | 0.9846 | 0.0139 | High (Offline Table Sync) |
+| **`mltreelib` Native Routing** | Learned `missing_left` + Surrogates | **0.5924** | **0.9848** | **0.0135** | **Zero Latency (Pure Rust)** |
 
 ![Native Missing Data Routing and Surrogate Performance on Scania APS Telemetry](../assets/missing_routing_aps.png)
 
-### Key Quantitative Findings
+### Key Quantitative Findings:
 
 1. **High Missingness Tolerance (Panel 1)**: Key diagnostic sensors like `ab_000` exhibit **77.4% missingness** in production telemetry. Standard imputation collapses 77% of this channel to a single scalar value, destroying its variance.
 2. **Superior Precision-Recall (Panel 2)**: Native missing routing achieves **0.5924 Average Precision**, outperforming the mean imputation baseline by **+3.8%**.
 3. **Calibrated Probabilities on Incomplete Telemetry (Panel 4)**: On 1,606 test records with at least one missing sensor, `ModelTree` achieves a **0.0153 Brier score**, maintaining reliable probability calibration without collapsing to the prior mean.
+
+---
+
+## 5. Domain Limitations & Failure Modes
+
+1. **Uninformative Complete Blackout**:
+   If an entire telemetry record arrives with all features missing ($x_{ij} = \text{NA} \quad \forall j$), surrogate splits cannot fire. The sample cascades down default `missing_left` branches to a single leaf. Upstream health monitors must flag complete packet loss.
+2. **Surrogate Memory Overhead**:
+   Computing $K$ surrogate splits per node scales tree serialization size as $O(K \cdot N_{\text{nodes}})$. For lean embedded deployment, set `maxsurrogate=0` and rely on `missing_left`.
+3. **Imputation Leakage in Training Splits**:
+   Mean/median imputation computes statistics across the training set, causing subtle leakage if applied prior to cross-validation splits. Native routing avoids all cross-split contamination.

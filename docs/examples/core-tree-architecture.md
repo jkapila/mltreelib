@@ -1,21 +1,40 @@
-# Core Tree Architecture, Two-Control Decoupling & Growth Knobs
+---
+title: "Suite 1: Core Tree Architecture & Growth Knobs"
+description: "Two-control decoupling between tree topology and leaf solvers, 0D distributional profiles, and Chow test structural gating in mltreelib."
+keywords:
+  - model tree architecture
+  - piecewise linear tree
+  - two-control decoupling
+  - chow structural break test
+  - leaf statistics
+  - tree growth knobs
+---
 
-This guide unifies the architectural mechanics of `mltreelib`: the decoupling between greedy tree topology growth and terminal leaf models, 0D distributional profiles across partitioned leaves, and hypothesis-driven structural break gating via the Chow test.
+# Suite 1: Core Tree Architecture, Two-Control Decoupling & Growth Knobs
 
-Script: [`examples/suites/core_tree_architecture.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/core_tree_architecture.py) (`uv run python examples/suites/core_tree_architecture.py`).
+This benchmark unifies the architectural mechanics of `mltreelib`: decoupling between greedy tree topology growth and terminal leaf models, 0D distributional profiles across partitioned leaves, and hypothesis-driven structural break gating via the Chow test.
+
+Companion executable script:
+- [`examples/suites/core_tree_architecture.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/core_tree_architecture.py) (`uv run python examples/suites/core_tree_architecture.py`)
 
 ---
 
-## 1. Domain Context & Architectural Rationale
+## 1. Domain Context & Mathematical Formulation
 
-Classical decision tree libraries (such as `scikit-learn` or `rpart`) couple recursive partitioning directly to scalar leaf statistics (mean, median, or class frequency). This coupling introduces two severe structural limitations:
+Classical decision tree libraries (such as `scikit-learn` or `rpart`) couple recursive partitioning directly to scalar leaf statistics (mean, median, or class frequency). This introduces two severe structural limitations:
 
-1. **Parameter Explosion and Inflexible Solvers**: If you want a linear model or robust estimator at terminal leaves, traditional tree implementations refit multivariate linear regressions at every candidate split threshold across all features. This scales as $O(K \cdot N \cdot P^2)$, creating an unacceptable computational bottleneck.
-2. **The Step-Function Distortion**: Constant-leaf trees partition continuous functional relationships into rigid step functions. On continuous engineering and physical data (such as material compressive strength), they require excessive tree depth to approximate simple linear gradients, causing sample fragmentation and overfitting.
+1. **Parameter Explosion and Inflexible Solvers**: Fitting linear models at every candidate split threshold across all features scales as $O(K \cdot N \cdot P^2)$, creating an unacceptable computational bottleneck.
+2. **The Step-Function Distortion**: Constant-leaf trees partition continuous functional relationships into rigid step functions, requiring excessive depth to approximate simple linear gradients.
 
-`mltreelib` solves this by introducing a **Two-Control Architecture**:
-- **`ModelTree`**: Governs greedy recursive space partitioning, minimum sample splits, cost-complexity pruning, and structural gating.
-- **`LeafControl`**: Governs terminal leaf estimation, regularization ($L_1$/$L_2$), robust loss functions (Huber, Quantile), and local slope constraints.
+`mltreelib` decouples global topology search from local terminal leaf parameter optimization:
+
+$$\min_{\mathcal{T}, \, \{\theta_m\}_{m=1}^M} \sum_{m=1}^M \sum_{i \in R_m} \ell(y_i, f(x_i; \theta_m)) + \alpha \cdot |\mathcal{T}| + \sum_{m=1}^M \mathcal{R}(\theta_m)$$
+
+where:
+- $\mathcal{T} = \{R_1, \dots, R_M\}$ denotes the orthogonal partition of the feature space into $M$ disjoint terminal regions.
+- $\alpha \cdot |\mathcal{T}|$ governs tree complexity regularization (cost-complexity pruning).
+- $\theta_m$ represents the local parameter vector (e.g. Ridge regression slopes $\beta_m$, Huber parameters, or GLM coefficients) fitted inside leaf $m$.
+- $\mathcal{R}(\theta_m) = \lambda_1 \|\theta_m\|_1 + \frac{\lambda_2}{2} \|\theta_m\|_2^2$ enforces local regularization.
 
 ```mermaid
 flowchart TD
@@ -56,10 +75,10 @@ flowchart TD
 
 ## 2. Benchmark Study: Yeh (1998) Concrete Compressive Strength
 
-We evaluate the architecture on the standard civil engineering benchmark: Yeh (1998) Concrete Compressive Strength (1,030 industrial concrete mixtures, 8 continuous ingredients).
+We evaluate the architecture on the standard civil engineering benchmark: Yeh (1998) Concrete Compressive Strength (1,030 industrial concrete mixtures, 8 continuous ingredients; 80% train / 20% test).
 
 ```python
-from mltreelib import LeafControl, Metrics, ModelTree, load_dataset
+from mltreelib import ModelTree, LeafControl, Metrics, load_dataset
 
 # 1. Load benchmark dataset
 data = load_dataset("concrete_compressive_strength")
@@ -113,6 +132,14 @@ Depth 4 -> CART RMSE: 10.16 MPa | ModelTree RMSE: 6.70 MPa (15 leaves)
 Depth 5 -> CART RMSE: 9.53 MPa  | ModelTree RMSE: 6.25 MPa (21 leaves)
 ```
 
+| Tree Depth | CART Holdout RMSE (MPa) | ModelTree Holdout RMSE (MPa) | Error Reduction (%) | Active Leaves |
+| :---: | :---: | :---: | :---: | :---: |
+| **Depth 1** | 15.24 MPa | **7.63 MPa** | **-49.9%** | 2 |
+| **Depth 2** | 12.54 MPa | **7.18 MPa** | **-42.7%** | 4 |
+| **Depth 3** | 11.09 MPa | **7.28 MPa** | **-34.4%** | 8 |
+| **Depth 4** | 10.16 MPa | **6.70 MPa** | **-34.1%** | 15 |
+| **Depth 5** | 9.53 MPa | **6.25 MPa** | **-34.4%** | 21 |
+
 ![Core Tree Architecture & Growth Knobs Sensitivity Grid](../assets/core_growth_knob_grid.png)
 
 ### Key Quantitative Findings
@@ -155,11 +182,20 @@ You can predict these 0D moments row-wise at test time using `predict(X, kind="m
 
 ## 5. Chow Structural Break Test Hypothesis Gating
 
-Standard trees rely purely on empirical gain thresholds (`min_gain`) or post-pruning to prevent overfitting. `ModelTree` implements the econometric **Chow structural break test** (`split_test="chow"`) as a statistical significance gate:
+Standard trees rely purely on empirical gain thresholds (`min_gain`) or post-pruning to prevent overfitting. `ModelTree` implements the econometric **Chow structural break test** (`split_test="chow"`) as a statistical significance gate.
 
-$$\text{Chow } F = \frac{(\text{RSS}_P - (\text{RSS}_L + \text{RSS}_R)) / k}{(\text{RSS}_L + \text{RSS}_R) / (N - 2k)}$$
+### Hypothesis Test Formulation
 
-If the $p$-value exceeds `split_alpha` (e.g. $\alpha = 0.01$), the null hypothesis of structural stability across the candidate split is retained, and subtree branching is automatically terminated:
+- **Null Hypothesis ($H_0$)**: Regression coefficients are invariant across child partitions:
+  $$\beta_L = \beta_R = \beta_P$$
+- **Alternative Hypothesis ($H_1$)**: Significant parameter instability exists across the candidate split:
+  $$\beta_L \ne \beta_R$$
+
+The test statistic follows an exact Snedecor's $F$-distribution under $H_0$:
+$$F_{\text{Chow}} = \frac{(\text{RSS}_P - (\text{RSS}_L + \text{RSS}_R)) / k}{(\text{RSS}_L + \text{RSS}_R) / (N - 2k)} \sim F(k, \, N - 2k)$$
+where $k = P + 1$ is the number of estimated parameters (features plus intercept).
+
+If the $p$-value exceeds `split_alpha` (e.g. $\alpha = 0.01$), the null hypothesis of structural stability is retained, and subtree branching is automatically terminated:
 
 ```python
 tree_chow = ModelTree(
@@ -173,3 +209,23 @@ tree_chow.fit(X_train, y_train, col_names=feature_names)
 ```
 
 This prevents the tree from creating spurious subtrees where local regressions show no statistically significant parameter shift.
+
+---
+
+## 6. Operational Limitations & Failure Modes
+
+1. **High-Dimensional Parameter Degeneracy ($P > N_{\text{leaf}}$)**:
+   Fitting multivariate linear leaves requires sufficient sample support per terminal node. If $N_{\text{leaf}} \le P + 1$, unregularized least-squares matrices become singular. Set `l2 > 0` (e.g. `l2=0.01`) or enforce `min_rows >= 2 * (P + 1)` in `ModelTree`.
+2. **Chow Test Sample Size Floors**:
+   The denominator degrees of freedom in the Chow test is $N - 2k$. If a partition contains fewer than $2k$ samples, the $F$-statistic is undefined. `mltreelib-core` automatically suppresses splits with insufficient degrees of freedom.
+3. **Boundary Discontinuity**:
+   While linear leaves provide continuous predictions within each partitioned hyper-rectangle, predictions across split boundaries are discontinuous step transitions. For smooth global transitions across boundaries, combine with hierarchical retrain or ensemble bagging.
+
+---
+
+## References
+
+- Breiman, L., Friedman, J., Stone, C. J., & Olshen, R. A. (1984). *Classification and Regression Trees*. CRC Press.
+- Quinlan, J. R. (1992). "Learning with continuous classes." *5th Australian Joint Conference on Artificial Intelligence*, 343-348.
+- Chow, G. C. (1960). "Tests of equality between sets of coefficients in two linear regressions." *Econometrica*, 591-605.
+- Yeh, I. C. (1998). "Modeling of strength of high-performance concrete using artificial neural networks." *Cement and Concrete Research*, 28(12), 1797-1808.

@@ -1,158 +1,143 @@
-# Distributional Leaves — GLM, Censored, Survival & Volatility Families
+# Distributional & Censored Leaf Families (Suite 4)
 
-Real-world targets often violate Gaussian error assumptions. `ModelTree` provides native Rust implementations of specialized distributional families:
-`leaf_family="binomial"`, `"probit"`, `"poisson"`, `"gamma"`, `"tweedie"`, `"tobit"`, `"softmax"`, `"survival"`, and `"heteroscedastic"`.
+Standard regression trees assume homoscedastic Gaussian errors: $Y \sim \mathcal{N}(\mu, \sigma^2)$ with identity link. This assumption breaks down on insurance claims (multiplicative skew), defect arrivals (discrete non-negative counts), credit defaults (latent utility thresholds), and corner-solution labor data (censoring at zero).
 
-Run the suite from the repository root. It compares specialized leaves with a Gaussian baseline and prints held-out metrics.
+`mltreelib` implements native Rust-level Generalized Linear Model (GLM) and maximum likelihood leaves: **Probit**, **Gamma**, **Poisson**, **Tweedie**, and **Tobit (Censored Normal)**.
 
-```sh
-uv run python examples/suites/distributional_leaf_benchmarks.py
+Script: [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py) (`uv run python examples/suites/distributional_leaf_benchmarks.py`).
+
+---
+
+## 1. Mathematical Formulation of Distributional Families
+
+```mermaid
+flowchart TD
+    Target["Target Response Variable (Y)"] --> Support{"Support & Distributional Shape"}
+    
+    Support -- "Binary Threshold [0, 1]" --> Probit["Probit Leaf\ng(mu) = Phi^-1(mu)\nLatent Normal Utility"]
+    Support -- "Strictly Positive Multiplicative [Y > 0]" --> Gamma["Gamma Leaf\ng(mu) = log(mu)\nVar(Y) proportional to mu^2"]
+    Support -- "Non-Negative Discrete Counts [0, 1, 2, ...]" --> Poisson["Poisson Leaf\ng(mu) = log(mu)\nNo Negative Predictions"]
+    Support -- "Zero-Inflated Continuous [Y >= 0]" --> Tweedie["Tweedie Compound Poisson\np in (1, 2)\nExact Pure Premium"]
+    Support -- "Corner Solutions & Censored [Y >= c]" --> Tobit["Tobit Censored MLE\ny* = Xb + e, y = max(y*, c)\nCorrects OLS Attenuation"]
+
+    classDef targetBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef glmBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+    classDef mleBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+
+    class Target targetBox;
+    class Support gateBox;
+    class Probit,Gamma,Poisson,Tweedie glmBox;
+    class Tobit mleBox;
 ```
+
+### A. Probit Leaf Family (Binary Latent Utility)
+Models binary outcomes $Y_i \in \{0, 1\}$ through a latent Gaussian utility $Y_i^* = \mathbf{x}_i^T \boldsymbol{\beta} + \epsilon_i$ with $\epsilon_i \sim \mathcal{N}(0, 1)$:
+
+$$P(Y_i = 1 \mid \mathbf{x}_i) = \Phi(\mathbf{x}_i^T \boldsymbol{\beta}) = \int_{-\infty}^{\mathbf{x}_i^T \boldsymbol{\beta}} \frac{1}{\sqrt{2\pi}} e^{-z^2/2} dz$$
+
+The score equations are solved via Iteratively Reweighted Least Squares (IRLS) in pure Rust, generating calibrated probabilities that match classical econometric specifications.
+
+### B. Gamma Leaf Family (Multiplicative Skew)
+For strictly positive continuous outcomes ($Y > 0$) where variance scales quadratically with the mean ($\text{Var}(Y) = \phi \mu^2$):
+
+$$\log(\mu_i) = \mathbf{x}_i^T \boldsymbol{\beta} \implies \mu_i = \exp(\mathbf{x}_i^T \boldsymbol{\beta})$$
+
+Unit deviance minimized by the local leaf solver:
+
+$$d(y_i, \mu_i) = 2 \left[ -\log\left(\frac{y_i}{\mu_i}\right) + \frac{y_i - \mu_i}{\mu_i} \right]$$
+
+Coefficients act as multiplicative percentage shifts: a coefficient $\beta_j$ scales the expected outcome by $\exp(\beta_j)$.
+
+### C. Poisson Leaf Family (Non-Negative Counts)
+For event frequencies $Y_i \in \{0, 1, 2, \dots\}$:
+
+$$\log(\mu_i) = \mathbf{x}_i^T \boldsymbol{\beta}, \quad P(Y_i = y \mid \mathbf{x}_i) = \frac{\mu_i^y e^{-\mu_i}}{y!}$$
+
+Poisson leaves eliminate the primary failure mode of OLS trees: predicting negative event counts in low-intensity regions.
+
+### D. Tobit Leaf Family (Censored Normal Corner Solutions)
+When a continuous response is censored below threshold $c$ (e.g., hours worked or spending censored at zero):
+
+$$y_i^* = \mathbf{x}_i^T \boldsymbol{\beta} + \epsilon_i, \quad \epsilon_i \sim \mathcal{N}(0, \sigma^2), \quad y_i = \max(y_i^*, c)$$
+
+Standard Ordinary Least Squares (OLS) suffers from severe downward **attenuation bias** because it treats corner zeros as uncensored linear observations. The Tobit leaf maximizes the exact censored log-likelihood:
+
+$$\ln L = \sum_{y_i = c} \ln\left[ 1 - \Phi\left(\frac{\mathbf{x}_i^T \boldsymbol{\beta} - c}{\sigma}\right) \right] + \sum_{y_i > c} \left[ -\ln(\sigma) + \ln \phi\left(\frac{y_i - \mathbf{x}_i^T \boldsymbol{\beta}}{\sigma}\right) \right]$$
+
+The solver applies Newton-Raphson with the inverse Mills ratio $\lambda(\alpha) = \frac{\phi(\alpha)}{1 - \Phi(\alpha)}$, recovering unbiased structural parameters.
+
+---
+
+## 2. Empirical Benchmark Suite Results
+
+We evaluate all four families on canonical domain benchmarks using [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py).
+
+### A. Probit on German Credit (1,000 Loan Applicants)
+- **Problem**: Credit default risk modeling $P(\text{Default} = 1)$.
+- **Empirical Results**: Identifies 4 macro risk segments. Leaf 0 ($n=180$, high risk) estimates installment rate sensitivity $\beta = +0.1931$ and duration sensitivity $\beta = +0.0502$. Leaf 3 ($n=112$, low risk) achieves baseline intercept $-2.5390$, mapping to a default risk under 3%.
+
+### B. Gamma on US Healthcare Expenses (1,338 Policyholders)
+- **Problem**: Positive healthcare charges ($Y > 0$, Mean = $13,270.42).
+- **Empirical Results**: Tree partitions into 4 cost regimes. Base expected costs scale from **$1,745.48** (Leaf 0, low-risk young) to **$20,960.24** (Leaf 3, severe risk).
+- **Multiplicative Coefficients**: Age contributes a $+0.0294$ log-slope (**1.03x multiplier per year of age**); additional children contribute $+0.1609$ (**1.17x cost multiplier per child**).
+
+### C. Poisson on Fair's Extramarital Affairs (601 Observations)
+- **Problem**: Annual affair frequency count ($Y \in \{0, 1, \dots, 12\}$).
+- **Empirical Results**: Partitions population into 4 frequency cohorts. In Leaf 0 ($n=449$, baseline cohort), religiousness contributes $\beta = -0.3756$ (**0.69x rate multiplier per unit of religiousness**), and marriage rating contributes $\beta = -0.4704$ (**0.62x rate multiplier per rating level**). No negative event counts are predicted.
+
+### D. Tobit on Mroz Female Labor Force Participation (753 Women)
+- **Problem**: Annual hours worked (325 women report 0 hours; 428 report positive hours up to 4,950 hours).
+- **OLS vs Tobit Attenuation Face-Off**:
+  - **OLS Linear Slope**: $\beta_{\text{educ}} = +28.84$ hours per year of education.
+  - **Tobit Censored Slope**: $\beta_{\text{educ}} = +53.22$ hours per year of education.
+  - **Attenuation Correction**: Standard OLS underestimates the true marginal effect of education by **45.8%** due to corner zeros. The Tobit leaf recovers the full structural response.
+
+| Family | Benchmark Dataset | Sample ($N$) | Response Support | Key Empirical Finding |
+| :--- | :--- | :---: | :--- | :--- |
+| **Probit** | German Credit | 1,000 | Binary $Y \in \{0, 1\}$ | Smooth Gaussian latent utility thresholding; zero probability boundary violations. |
+| **Gamma** | US Healthcare | 1,338 | Continuous $Y > 0$ | Exact multiplicative log-link multipliers; handles quadratic variance growth ($\phi \mu^2$). |
+| **Poisson** | Fair's Affairs | 601 | Discrete $Y \ge 0$ | Guaranteed non-negative count predictions across all terminal leaves. |
+| **Tobit** | Mroz Labor | 753 | Censored $Y \ge 0$ | **+84.5% parameter recovery**: fixes 45.8% OLS attenuation bias on corner solutions. |
 
 ![Leaf Family Comparison](../assets/leaf_family_comparison.png)
 
-Executable Reference Scripts:
-- [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py) — Link function invariant verifications & 6-family gallery.
-- [`examples/stump_distributional_leaves.py`](https://github.com/jkapila/mltreelib/blob/main/examples/stump_distributional_leaves.py) — Softmax, Survival, Heteroscedasticity & Microsecond Retraining on clinical and actuarial datasets.
-- [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py) — Real benchmarks on German Credit, US Healthcare, Fair's Affairs, and Mroz Labor Supply.
-
 ---
 
-## Why Distributional Leaves Were Built
-
-Standard decision trees and linear models assume constant Gaussian error variances:
-$$Y \sim \mathcal{N}(\mu, \sigma^2), \quad \mu = \mathbf{X}\beta$$
-
-This assumption produces severe modeling failures across empirical domains:
-1. **Count & Frequency Data**: Ordinary regression produces negative event counts.
-2. **Right-Censored Durations**: Dropping or treating censored cases as deaths induces severe survival bias.
-3. **Severe Multiplicative Cost Skew**: High-cost medical and insurance payouts exhibit variance scaling quadratically with the mean ($\text{Var}(Y) \propto \mu^2$).
-4. **Zero-Inflated Continuous Costs**: Pure premiums have a point mass at zero with continuous positive claim sizes.
-5. **Left-Censored Corner Solutions**: Censoring at zero induces downward attenuation bias in Ordinary Least Squares.
-
----
-
-## 1. Softmax Multi-Class Probability Vectors ($C \ge 3$)
-
-**Why Built & Use Case**: Multi-tier medical triage, credit rating transition, and multi-option routing. Maps features onto the probability simplex $\sum_{c=1}^C p_c = 1$.  
-**Dataset**: Maternal Health Risk in Rural Areas (Ahmed et al., 2020, UCI Repository, 1,014 patients).
+## 3. Python Usage Example
 
 ```python
 from mltreelib import ModelTree
 
-# Fit Softmax tree partitioning on patient physiology
-tree = ModelTree(max_depth=1, leaf_family="softmax", min_rows=20)
-tree.fit(X, y, col_names=["SystolicBP", "BS", "Age"])
+# 1. Tobit Censored ModelTree on corner-solution data
+tobit_tree = ModelTree(
+    max_depth=2,
+    min_rows=40,
+    leaf="linear",
+    leaf_family="tobit",
+    tobit_threshold=0.0,
+)
+tobit_tree.fit(X_train, y_hours, col_names=feature_names)
+pred_latent = tobit_tree.predict(X_test)
 
-# Predict calibrated probabilities across all classes
-pred_probs = tree.predict(X_test, kind="proba")
-```
-
-### Empirical Results & Output Interpretation
-```text
-Total Cohort Size: 1014 patients across 3 risk categories
-Optimal Partition: Split on 'BS' at threshold 7.90 (Gain=259.34)
-Interpretation: Blood glucose (BS >= 7.90 mmol/L) is the primary risk discriminator.
-
-Terminal Leaf Probability Distributions:
-  Leaf 0 (n=751): P(low, mid, high) = [0.5300, 0.3715, 0.0985] -> Dominant: low_risk
-  Leaf 1 (n=263): P(low, mid, high) = [0.0304, 0.2167, 0.7529] -> Dominant: high_risk
-
-Clinical Patient Inferences:
-  Patient 1 [BP=100, BS=6.8, Age=22] -> Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 67.1%, medium_risk: 31.3%, high_risk: 1.6%]
-  Patient 2 [BP=130, BS=7.8, Age=35] -> Assigned: LOW_RISK    | Calibrated Probs: [low_risk: 51.4%, medium_risk: 27.0%, high_risk: 21.6%]
-  Patient 3 [BP=160, BS=15.0, Age=42] -> Assigned: HIGH_RISK   | Calibrated Probs: [low_risk: 0.0%, medium_risk: 0.4%, high_risk: 99.6%]
-```
-
----
-
-## 2. Survival Analysis (Nelson-Aalen & Kaplan-Meier)
-
-**Why Built & Use Case**: Clinical oncology, hardware MTTF, and customer churn under right-censored follow-up duration.  
-**Dataset**: Veteran's Administration Lung Cancer Study (Prentice 1973, Biometrika; 137 patients).
-
-```python
-# Fit non-parametric survival stump accounting for risk sets
-m_surv = ModelTree(max_depth=0, leaf_family="survival", min_rows=10)
-m_surv.fit(X, times, event=events)
-
-# Predict survival probability S(t) and cumulative hazard H(t) at milestone horizons
-surv_probs = m_surv.predict(X_test, kind="survival", times=[30.0, 90.0, 180.0, 365.0])
-cum_hazards = m_surv.predict(X_test, kind="hazard", times=[30.0, 90.0, 180.0, 365.0])
-```
-
-### Empirical Results & Output Interpretation
-```text
-Cohort Size: 137 patients (Observed Deaths: 128, Censored: 9)
-Median Survival Time: 80.0 days
-Distinct Event Checkpoints: 97 logged event horizons
-
-Milestone Actuarial Projections:
-  Horizon (Days) | Survival Prob S(t) | Cumulative Hazard H(t) | Interpretation
-  ------------------------------------------------------------------------
-  30             | 0.7004             | 0.3527                 | 70.0% surviving past 30d
-  90             | 0.4640             | 0.7603                 | 46.4% surviving past 90d
-  180            | 0.2224             | 1.4837                 | 22.2% surviving past 180d
-  365            | 0.0900             | 2.3592                 | 9.0% surviving past 365d
+# 2. Gamma Multiplicative ModelTree on insurance charges
+gamma_tree = ModelTree(
+    max_depth=3,
+    min_rows=30,
+    leaf="linear",
+    leaf_family="gamma",
+)
+gamma_tree.fit(X_train, y_charges, col_names=feature_names)
+pred_charges = gamma_tree.predict(X_test)
 ```
 
 ---
 
-## 3. Heteroscedastic Location & Scale Modeling ($\mu, \sigma$)
+## 4. Domain Limitations & Operational Boundaries
 
-**Why Built & Use Case**: Actuarial risk pricing, Value-at-Risk (VaR), and quality control tolerance bands where target variance scales with features.  
-**Dataset**: US Healthcare Insurance Expenses (TabArena-v0.1 / Kaggle; 1,338 policyholders).
-
-```python
-m_het = ModelTree(max_depth=1, leaf_family="heteroscedastic", min_rows=20)
-m_het.fit(X, charges, col_names=["age", "bmi", "smoker"])
-
-# Predict joint location and scale (mu, sigma) with Harvey (1976) bias correction
-dists = m_het.predict(X_test, kind="dist")
-```
-
-### Empirical Results & Output Interpretation
-```text
-Partition Identified: Split on 'smoker' at threshold 0.0
-Interpretation: Smoking status bifurcates both expected expenditure and cost volatility.
-
-Actuarial Expected Costs & 95% Volatility Corridors [mu - 1.96*sigma, mu + 1.96*sigma]:
-  Age 25 Non-Smoker (BMI 24) -> E[Cost] = $  4,548.10 | Volatility (sigma) = $2,669.93 | 95% Band: [$       0 - $   9,781]
-  Age 55 Non-Smoker (BMI 28) -> E[Cost] = $ 12,582.68 | Volatility (sigma) = $2,567.34 | 95% Band: [$   7,551 - $  17,615]
-  Age 25 Smoker     (BMI 28) -> E[Cost] = $ 24,556.59 | Volatility (sigma) = $5,731.15 | 95% Band: [$  13,324 - $  35,790]
-  Age 55 Smoker     (BMI 32) -> E[Cost] = $ 38,297.44 | Volatility (sigma) = $5,844.02 | 95% Band: [$  26,843 - $  49,752]
-```
-
-![Stump Distributional Leaves](../assets/stump_distributional_leaves.png)
-
----
-
-## 4. Real Benchmark Tour: Probit, Gamma, Tweedie & Tobit
-
-![Distributional Benchmarks](../assets/distributional_leaf_benchmarks.png)
-
-### A. Probit Latent Utility (German Credit Risk)
-- **Problem**: Binary default scoring $y \in \{0, 1\}$ with latent normal utility $y^* \sim \mathcal{N}(\mathbf{X}\beta, 1)$.
-- **Mathematical Link**: $P(Y=1) = \Phi(\mathbf{X}\beta)$ where $\Phi$ is the standard normal cumulative distribution function.
-- **Interpretation**: A positive coefficient increases the z-score index of default. Unlike logit, probit links directly to economic threshold-crossing models under Central Limit Theorem assumptions.
-
-### B. Gamma Continuous Positive Severity (Healthcare Charges)
-- **Problem**: Strictly positive charges ($y > 0$) with constant coefficient of variation ($\text{Var}(Y) \propto \mu^2$).
-- **Mathematical Link**: $\ln(\mu) = \mathbf{X}\beta \implies \mu = \exp(\mathbf{X}\beta)$.
-- **Interpretation**: Coefficients act multiplicatively. For example, a coefficient of $+0.0294$ for `age` implies an annual cost multiplier of $\exp(0.0294) \approx 1.03\times$ (+3% per year of age).
-
-### C. Tweedie Compound Poisson-Gamma (Fair's Affairs)
-- **Problem**: Target with a large point mass at zero (75.1% exact zeros) alongside right-skewed continuous positive counts.
-- **Mathematical Link**: Quasi-likelihood with variance function $\text{Var}(Y) = \phi \mu^p$ ($1 < p < 2$).
-- **Interpretation**: Unifies zero probability estimation and continuous severity into a single convex likelihood, avoiding ad-hoc two-stage hurdle pipelines.
-
-### D. Tobit Left-Censoring Correction (Mroz Female Labor Supply)
-- **Problem**: 43.2% of women report 0 hours worked. Ordinary Least Squares (OLS) treats observed zeros as unconstrained choices, causing downward attenuation bias.
-- **Algorithm**: Expectation-Maximization within IRLS to estimate the latent unobserved propensity $y^*$.
-- **Interpretation**:
-```text
-Structural Parameter Comparison (Tobit EM-IRLS vs Standard OLS):
-  exper  -> Tobit: +105.71 | OLS: +41.50 | OLS Attenuation: 60.7%
-  kidslt6 -> Tobit: -497.70 | OLS: -611.61
-```
-OLS underestimates the marginal return to labor experience by over 60% due to censoring attenuation; Tobit recovers the true structural elasticity.
+1. **Tobit Normality Sensitivity**:
+   Tobit maximum likelihood assumes normal errors $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$ in the latent space. If latent errors are severely heteroscedastic or non-normal, Tobit estimates can be inconsistent.
+2. **Gamma Support Constraint**:
+   The Gamma deviance objective requires strictly positive outcomes ($y_i > 0$). If zero claims exist in insurance data, a Tweedie leaf ($p \in (1, 2)$) or two-stage hurdle model must be used instead.
+3. **IRLS Convergence in Sparse Leaves**:
+   Non-linear GLM leaves fit via iteratively reweighted least squares require sufficient positive and negative events per leaf. Set `min_rows >= 25` to prevent separation divergence.

@@ -1,8 +1,50 @@
-# Exotic Statistical, Metric & Fair Splitting Criteria (Spec 12 Suite)
+---
+title: "Suite 6: Exotic Statistical, Metric & Fair Splitting Criteria"
+description: "Unified benchmark of 12 exotic splitting criteria in mltreelib: MOB, CTree, Energy Distance, MMD, Wasserstein Optimal Transport, Demographic Parity, Equalized Odds, Hellinger, MaxStat, SPORF, ExtraTrees, and EBM FAST interactions."
+keywords:
+  - decision tree splitting criteria
+  - MOB parameter instability
+  - conditional inference tree
+  - energy distance tree
+  - MMD kernel tree
+  - wasserstein optimal transport tree
+  - fair decision tree
+  - equalized odds tree
+  - oblique randomer forest
+  - fast interaction tree
+---
+
+# Suite 6: Exotic Statistical, Metric & Fair Splitting Criteria (Spec 12 Suite)
 
 This guide demonstrates `mltreelib`'s exotic statistical hypothesis testing, optimal transport, and metric splitting criteria.
 
 To enable direct head-to-head comparison and verifiable properties, **all criteria are evaluated on the exact same dataset for the exact same task** (Credit Portfolio Risk Valuation). As new phases are developed, they are integrated directly into this unified benchmarking framework.
+
+Companion executable script:
+- [`examples/suites/statistical_and_metric_splitting.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/statistical_and_metric_splitting.py) (`uv run python examples/suites/statistical_and_metric_splitting.py`)
+
+---
+
+## Architectural Splitting Taxonomy
+
+```mermaid
+flowchart TD
+    Data["Candidate Partition Data\n[X, Y, S]"] --> SplitType{"Target Modality & Splitting Objective"}
+
+    SplitType -- "Continuous & Skewed" --> F1["Classical & Robust:\n- sse (Variance reduction)\n- hellinger (Skew-invariant tail)\n- maxstat (Monotone rank)"]
+    SplitType -- "Econometric Structural Stability" --> F2["Hypothesis-Driven:\n- mob (M-fluctuation supLM)\n- ctree (Permutation rank test)"]
+    SplitType -- "Embeddings & Distributions" --> F3["Metric & Optimal Transport:\n- energy_distance (Székely dispersion)\n- mmd (Reproducing Kernel Hilbert Space)\n- wasserstein (W2 Fréchet barycenter)"]
+    SplitType -- "Protected Demographic Attributes" --> F4["Algorithmic Fairness Bounds:\n- fair (Total Variation DP penalty)\n- equalized_odds (Disparate TPR/FPR gap)"]
+    SplitType -- "Diagonal & Interacting Topologies" --> F5["Geometric & Interaction Search:\n- sporf_d (Oblique random projections)\n- ebm_fast (2D pairwise screening)\n- extratrees (O(1) randomized cutpoints)"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef fBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+
+    class Data dataBox;
+    class SplitType gateBox;
+    class F1,F2,F3,F4,F5 fBox;
+```
 
 ---
 
@@ -403,3 +445,28 @@ Phase 12H    | ExtraTrees (Randomized Splits)   | Scalar     | tier_flag        
 Phase 12I    | EBM FAST Interaction Tree        | Scalar     | Pair: score&tier_... | Test MSE=0.048 | Score: 0.148  
 ==============================================================================================
 ```
+
+---
+
+## 13. Operational Limitations & Practical Failure Modes
+
+1. **Quadratic Complexity of Metric Criteria ($O(N^2)$)**:
+   Exact sample evaluations of Energy Distance (`gain="energy_distance"`) and MMD (`gain="mmd"`) compute pairwise Euclidean or kernel distances across all partition observations. On partitions with $N > 10,000$, exact pairwise evaluations become computationally prohibitive. In large-scale regimes, subsample candidate partitions or use random Fourier features.
+2. **The Fairness-Accuracy Trade-off**:
+   Constraining demographic parity (`gain="fair"`) or equalized odds (`fairness_metric="equalized_odds"`) penalizes predictive features that correlate with protected demographic attributes. As fairness penalty $\lambda$ increases, the tree shifts splits from predictive proxy features to uncorrelated merit features, which may increase general test MSE while guaranteeing regulatory compliance.
+3. **Rank Invariance vs. Point Calibration**:
+   MaxStat (`gain="maxstat"`) and CTree (`gain="ctree"`) operate on rank transformations of continuous targets, providing strict invariance under monotonic scaling. However, terminal leaf point predictions are uncalibrated step constants. To restore accurate probabilistic calibration, pair with leaf retrain (`tree.retrain(...)`) or isotonic calibration.
+4. **Oblique Projection Feature Dimensionality**:
+   SPORF (`sporf_d=2`) samples random 2D hyperplanes to overcome axis-aligned limitations. If candidate feature spaces contain hundreds of irrelevant variables, random projections may sample uninformative subspace combinations. Pre-screen features using CTree or EBM FAST prior to oblique tree training.
+
+---
+
+## References
+
+- Zeileis, A., Hothorn, T., & Hornik, K. (2008). "Model-based recursive partitioning." *Journal of Computational and Graphical Statistics*, 17(2), 492-514.
+- Hothorn, T., Hornik, K., & Zeileis, A. (2006). "Unbiased recursive partitioning: A conditional inference framework." *Journal of Computational and Graphical Statistics*, 15(3), 651-674.
+- Székely, G. J., & Rizzo, M. L. (2013). "Energy statistics: A class of statistics based on distances." *Journal of Statistical Planning and Inference*, 143(8), 1249-1272.
+- Gretton, A., Borgwardt, K. M., Rasch, M. J., Schölkopf, B., & Smola, A. (2012). "A kernel two-sample test." *Journal of Machine Learning Research*, 13, 723-773.
+- Tomita, T. M., Browne, J., Shen, C., Chung, J., Patsolic, J., Arroyo, J., ... & Vogelstein, J. T. (2020). "Sparse projection oblique randomer forests." *Journal of Machine Learning Research*, 21(104), 1-39.
+- Lou, Y., Caruana, R., & Gehrke, J. (2012). "Intelligible models for classification and regression." *ACM SIGKDD*, 150-158.
+

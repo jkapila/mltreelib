@@ -1,70 +1,31 @@
-# Component Analysis, Matrix Factorizations & R-Aligned Rotations
+---
+title: "Suite 11: Component Analysis, Matrix Factorizations & R-Aligned Rotations"
+description: "Unified benchmark of PCA, ZCA whitening, R-aligned Orthomax and Promax factor rotations, NMF solvers, and subspace reconstruction anomaly detection in mltreelib."
+keywords:
+  - principal component analysis
+  - ZCA whitening
+  - factor rotation
+  - varimax promax
+  - non-negative matrix factorization
+  - HALS NMF
+  - reconstruction anomaly detection
+---
 
-This benchmark guide details `mltreelib`'s unified component analysis and matrix factorization capability (`ComponentModel` and `AnomalyModel`) implemented in high-performance Rust (`mltreelib-core`).
+# Suite 11: Component Analysis, Matrix Factorizations & R-Aligned Rotations
 
-Exec Reference Script: [`examples/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/component_benchmarks.py) (`uv run python examples/suites/component_benchmarks.py`).
+Benchmark pure-Rust linear decompositions, covariance whitening transforms, R-aligned factor rotations, Non-Negative Matrix Factorization (NMF) solvers, and out-of-subspace anomaly detection in `mltreelib-core`.
 
-### Empirical Suite Benchmark Output
+Run suite from repository root after building release extension:
 
-```text
-================================================================================
-mltreelib Suite 10: Component Analysis & Factor Rotations Benchmark
-================================================================================
-Dataset: Wine Quality (1000 rows, 12 numeric features)
-
---------------------------------------------------------------------------------
-1. PCA & R-ALIGNED FACTOR ROTATIONS BENCHMARK
-   Problem: Orthomax & Promax rotation to achieve Thurstone's simple structure
---------------------------------------------------------------------------------
-     Method Variance Retained  Rotation Matrix Loading Sparsity Fit Time (ms)
-       NONE            60.68%               No            25.0%          4.47
-    VARIMAX            60.68% Yes (orthogonal)            27.8%          2.39
-  QUARTIMAX            60.68% Yes (orthogonal)            25.0%          1.43
-    EQUAMAX            60.68% Yes (orthogonal)            27.8%          1.79
-   PARSIMAX            60.68% Yes (orthogonal)            25.0%          1.45
-BIQUARTIMAX            60.68% Yes (orthogonal)            27.8%          1.46
-     PROMAX            60.68%    Yes (oblique)            36.1%          1.44
-
-Takeaway: Rotated factor loadings concentrate variance into fewer high-magnitude features,
-achieving interpretable latent factor separation without sacrificing subspace coverage.
-
---------------------------------------------------------------------------------
-2. COVARIANCE WHITENING: ZCA VS PCA
-   Problem: Decorrelate features into identity covariance matrix Cov(Z) = I
---------------------------------------------------------------------------------
-ZCA (Zero-Phase Component Analysis): Time=4.31ms | ||Cov(Z) - I||_mean = 0.006972
-PCA Whitening                      : Time=3.14ms | ||Cov(Z) - I||_mean = 0.006704
-Property: ZCA minimizes ||Z - X||_F, keeping whitened coordinates closest to original features.
-
---------------------------------------------------------------------------------
-3. NON-NEGATIVE MATRIX FACTORIZATION (NMF) SOLVER FACE-OFF
-   Problem: min_{W,H >= 0} ||X - WH||_F^2 on strictly non-negative inputs
---------------------------------------------------------------------------------
-                  Solver Reconstruction Error H Sparsity Time (ms)
-                      MU             233.0816       0.0%     14.63
-   ALS (L1=0.0, L2=0.01)             172.5155       0.0%     14.14
-                    HALS             142.3001       8.3%     19.04
-HALS (L1=0.01, L2=0.005)             256.4853      36.1%     16.91
- HALS (L1=0.01, L2=0.05)             256.4980      36.1%     14.50
-
-Insight: HALS coordinate descent achieves superior loss convergence with exact NNLS updates
-and enables true L1 sparsity without numerical instability.
-
---------------------------------------------------------------------------------
-4. SUBSPACE RECONSTRUCTION ANOMALY DETECTION
-   Problem: Detect out-of-subspace outliers via PCA & NMF reconstruction error
---------------------------------------------------------------------------------
-Normal Inlier Point   -> Reconstruction Loss: 437.4652 | Label: NORMAL
-Outlier Spike (+50.0) -> Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
-Ratio (Outlier/Inlier Loss): 3510781.2x separation
-================================================================================
+```bash
+uv run python examples/suites/component_benchmarks.py
 ```
 
 ---
 
-## 1. Domain Context & Mathematical Foundations
+## 1. Architectural Architecture & Task Facades
 
-In tabular datasets, features often exhibit strong collinear groupings representing underlying unobserved traits (such as latent creditworthiness, chemical aroma profiles, or macroeconomic trends). Flat tree algorithms can split arbitrarily between correlated features, diluting variable importance.
+In tabular feature spaces, correlated variables represent underlying latent traits (chemical profiles, macroeconomic cycles, patient health statuses). Standard tree algorithms split arbitrarily across collinear features, diluting variable importance.
 
 `mltreelib` introduces pure-Rust matrix decompositions with unified output semantics:
 
@@ -72,11 +33,11 @@ In tabular datasets, features often exhibit strong collinear groupings represent
 flowchart TD
     subgraph Decompositions["Linear Decompositions"]
         direction TB
-        D1["Data Matrix X"] --> PCA["PCA (Centered & Scaled)\nX = U S V^T"]
+        D1["Data Matrix X\n[N x P]"] --> PCA["PCA (Centered & Scaled)\nX = U S V^T"]
         D1 --> SVD["Truncated SVD\n(Uncentered)"]
         D1 --> WHT["Whitening\n(ZCA & PCA)"]
         D1 --> ICA["FastICA\n(Independent Sources)"]
-        D1 --> NMF["NMF\nX approx W * H (W,H >= 0)"]
+        D1 --> NMF["NMF (Non-Negative)\nX approx W * H (W, H >= 0)"]
     end
 
     subgraph Rotations["R-Aligned Factor Rotations"]
@@ -90,7 +51,7 @@ flowchart TD
 
     subgraph Tasks["Unified Downstream Task Facades"]
         direction TB
-        VAR --> COMP["ComponentModel.transform()"]
+        VAR --> COMP["ComponentModel.transform()\nRotated Latent Embeddings"]
         PRO --> COMP
         NMF --> ANOM["AnomalyModel(kind='nmf')\nReconstruction Loss"]
         PCA --> ANOM2["AnomalyModel(kind='pca')\nReconstruction Loss"]
@@ -108,118 +69,178 @@ flowchart TD
     class COMP,ANOM,ANOM2,CLUST taskBox;
 ```
 
-### The Orthomax & Promax Rotation Family
+---
 
-Standard PCA selects orthogonal eigenvectors that maximize global variance explained in descending order. While optimal for compression, unrotated loadings $L = V \Lambda^{1/2}$ are notoriously dense: almost every feature has a moderate loading on the first principal component.
+## 2. Mathematical Formulations
 
-To achieve Thurstone's (1947) **simple structure**, factor rotations find an orthogonal or oblique transformation matrix $T$ such that $L^* = L T$ concentrates loadings near zero or near $\pm 1$.
+### 1. Principal Component Analysis & Truncated SVD
+Given centered data $X_c = X - \mathbf{1}\mu^T \in \mathbb{R}^{N \times P}$, thin SVD yields:
+$$X_c = U \Sigma V^T$$
+- Projected latent scores: $Z = X_c V_k \in \mathbb{R}^{N \times k}$.
+- Unrotated factor loading matrix: $L = V_k \Sigma_k^{1/2} \in \mathbb{R}^{P \times k}$.
 
-1. **Orthomax Family** maximizes the criterion:
-   $$Q(T) = \sum_{j=1}^k \left[ \sum_{i=1}^p (l^*_{ij})^4 - \frac{\gamma}{p} \left( \sum_{i=1}^p (l^*_{ij})^2 \right)^2 \right]$$
-   - $\gamma = 1.0$: **Varimax** (aligned with R's `stats::varimax`). Maximizes variance of squared loadings within factors.
-   - $\gamma = 0.0$: **Quartimax**. Maximizes variance across rows (simplifies variables).
-   - $\gamma = k / 2$: **Equamax**. Balances variable and factor simplicity.
-   - $\gamma = \frac{p(k-1)}{p+k-2}$: **Parsimax**.
-   - $\gamma = 0.5$: **Biquartimax**.
+### 2. Covariance Whitening: PCA vs. ZCA
+Transforms covariates into decorrelated representations with identity sample covariance $\text{Cov}(Z) = I$:
 
-2. **Promax (Oblique Rotation)**:
-   Relaxes orthogonality to reflect real-world phenomena where latent factors correlate naturally:
-   - Starts from Kaiser-normalized Varimax loadings $L_v$.
-   - Constructs target matrix $Q$ with $q_{ij} = |l_{v,ij}|^m \text{sgn}(l_{v,ij})$, typically $m=4.0$ (R default).
-   - Solves the Procrustes problem $U = (L_v^T L_v)^{-1} L_v^T Q$ and normalizes column lengths to unit length.
+- **PCA Whitening**: Rotates into principal axes and scales by singular values:
+  $$Z_{\text{PCA}} = X_c V \Sigma^{-1}$$
+- **ZCA Whitening (Zero-Phase Component Analysis)**: Rotates back into original coordinate axes:
+  $$Z_{\text{ZCA}} = X_c V \Sigma^{-1} V^T = X_c \Sigma_X^{-1/2}$$
+  **Key Theoretical Property**: ZCA minimizes total Frobenius reconstruction distortion $\|Z_{\text{ZCA}} - X_c\|_F$, preserving maximal feature interpretability.
+
+### 3. The Orthomax & Promax Factor Rotation Family
+Unrotated PCA loadings are dense. Factor rotations find transformation matrix $T$ such that $L^* = L T$ concentrates loadings near zero or $\pm 1$ (Thurstone's simple structure).
+
+- **Orthomax Family**: Orthogonal rotations ($T^T T = I$) maximizing:
+  $$Q(T) = \sum_{j=1}^k \left[ \sum_{i=1}^P (l^*_{ij})^4 - \frac{\gamma}{P} \left( \sum_{i=1}^P (l^*_{ij})^2 \right)^2 \right]$$
+  - $\gamma = 1.0$: **Varimax** (aligned with R `stats::varimax`). Maximizes loading variance within factors.
+  - $\gamma = 0.0$: **Quartimax**. Maximizes loading variance across rows.
+  - $\gamma = k/2$: **Equamax**. Balances row and column simplification.
+  - $\gamma = \frac{P(k-1)}{P+k-2}$: **Parsimax**. Penalizes complex factor assignments.
+  - $\gamma = \frac{k}{2P}$: **Biquartimax**.
+
+- **Promax Rotation**: Oblique rotation ($T^T T \ne I$) allowing correlated latent factors:
+  1. Compute orthogonal Varimax loadings $L_{\text{varimax}}$.
+  2. Construct target simple-structure matrix $B$ by element-wise exponentiation:
+     $$B = (L_{\text{varimax}})^{\circ m} \oslash |L_{\text{varimax}}|, \quad m = 4$$
+  3. Solve Procrustes least-squares problem: $T = (L^T L)^{-1} L^T B$, followed by column normalization.
+
+### 4. Non-Negative Matrix Factorization (NMF)
+Approximates non-negative data $X \ge 0$ as $X \approx W H$ where $W \in \mathbb{R}^{N \times k}_{\ge 0}$ (basis) and $H \in \mathbb{R}^{k \times P}_{\ge 0}$ (encodings):
+$$\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \frac{\lambda_2}{2} \|H\|_F^2$$
+
+`mltreelib-core` implements three distinct solver engines:
+- **Multiplicative Updates (MU)**:
+  $$H \leftarrow H \odot \frac{W^T X}{W^T W H + \epsilon}, \qquad W \leftarrow W \odot \frac{X H^T}{W H H^T + \epsilon}$$
+- **Alternating Least Squares (ALS)**:
+  Solves Ridge normal equations for $H$ and $W$, projecting solutions onto non-negative orthant $\max(0, \cdot)$.
+- **Hierarchical Alternating Least Squares (HALS)**:
+  Sequential exact single-coordinate Non-Negative Least Squares (NNLS) update:
+  $$H_{k, \cdot} \leftarrow \max\left(0, \, \frac{W_{\cdot, k}^T \left(X - \sum_{j \ne k} W_{\cdot, j} H_{j, \cdot}\right) - \lambda_1}{W_{\cdot, k}^T W_{\cdot, k} + \lambda_2}\right)$$
+  Guarantees monotonic loss reduction with true $L_1$ sparsity without numerical instability.
 
 ---
 
-## 2. Benchmark Results on Wine Quality & Physical Attributes
+## 3. Empirical Benchmark on Real Data
 
-The following benchmarks were conducted on 1,000 observations of the Wine Quality dataset ($p=12$ continuous features).
-
-### Table 1: PCA & Factor Rotations Comparison
-
-| Method | R Alignment | Variance Retained | Transformation $T$ | Loading Sparsity ($<0.15 \cdot \max$) | Fit Time |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Raw PCA** | SVD Basis | 60.68% | Identity | 25.0% | 4.60 ms |
-| **Varimax** | `stats::varimax` ($\gamma=1.0$) | 60.68% | Orthogonal ($T^T T = I$) | 27.8% | 2.27 ms |
-| **Quartimax** | $\gamma=0.0$ | 60.68% | Orthogonal | 25.0% | 1.75 ms |
-| **Equamax** | $\gamma=k/2$ | 60.68% | Orthogonal | 27.8% | 1.77 ms |
-| **Parsimax** | Feature-sample weighted | 60.68% | Orthogonal | 25.0% | 1.45 ms |
-| **Biquartimax** | $\gamma=0.5$ | 60.68% | Orthogonal | 27.8% | 1.50 ms |
-| **Promax** | `stats::promax` ($m=4.0$) | 60.68% | Oblique (Correlated factors) | **36.1%** | 1.49 ms |
-
-> [!NOTE]
-> All orthogonal rotations preserve the exact total explained variance (60.68% across 3 components), but Promax increases loading sparsity from 25.0% to 36.1%, producing distinctly interpretable factor structures.
-
----
-
-## 3. Covariance Whitening: ZCA vs PCA
-
-Covariance whitening decorrelates features such that $\text{Cov}(Z) = I$:
+We evaluate the full component analysis suite on the **Wine Quality** dataset (1,000 samples, 12 continuous chemical features).
 
 ```python
-from mltreelib.components import ComponentModel
+from mltreelib import ComponentModel, AnomalyModel, load_dataset
 
-# Zero-Phase Component Analysis (ZCA)
-zca = ComponentModel(kind="whitening", whitening_kind="zca")
-z_zca = zca.fit_transform(data)
-
-# PCA Whitening
-pca_white = ComponentModel(kind="whitening", whitening_kind="pca")
-z_pca = pca_white.fit_transform(data)
+# Ingest Wine Quality benchmark
+data = load_dataset("wine_quality")
+X = [[data["columns"][c][i] for c in data["columns"].keys() if c != "quality"] for i in range(1000)]
 ```
 
-- **ZCA Whitening**: Computes $W = V (\Lambda + \epsilon I)^{-1/2} V^T$. Minimizes $||Z - X||_F^2$, preserving the original variable identities. Residual covariance deviation: $||\text{Cov}(Z) - I||_{\text{mean}} = 0.006972$.
-- **PCA Whitening**: Computes $W = (\Lambda + \epsilon I)^{-1/2} V^T$. Rotates into principal coordinates before scaling.
+### 1. PCA & R-Aligned Factor Rotations
+
+```python
+# Fit ComponentModel with Varimax and Promax rotations
+comp_varimax = ComponentModel(n_components=3, method="pca", rotation="varimax")
+comp_varimax.fit(X)
+
+comp_promax = ComponentModel(n_components=3, method="pca", rotation="promax", promax_m=4)
+comp_promax.fit(X)
+```
+
+| Method | Variance Retained | Rotation Matrix | Loading Sparsity | Fit Time (ms) |
+| :--- | :---: | :---: | :---: | :---: |
+| **`NONE`** (Raw PCA) | 60.68% | No | 25.0% | 6.01 ms |
+| **`VARIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.86 ms |
+| **`QUARTIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 1.59 ms |
+| **`EQUAMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.05 ms |
+| **`PARSIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 2.04 ms |
+| **`BIQUARTIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.67 ms |
+| **`PROMAX`** | 60.68% | Yes (oblique) | **36.1%** | 2.22 ms |
+
+> **Key Finding**: Rotated factor loadings preserve 100% of subspace variance (60.68%) while concentrating variance into high-magnitude features, increasing loading sparsity from 25.0% to 36.1% under Promax.
 
 ---
 
-## 4. Non-Negative Matrix Factorization (NMF) Solvers
-
-NMF factors non-negative observations into purely additive parts $X \approx W H$ with $W \ge 0, H \ge 0$.
-
-`mltreelib` implements three distinct solver engines:
-
-| Solver | Algorithm | L1 Sparsity Support | L2 Ridge Support | Reconstruction Loss | Fit Time |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **`mu`** | Multiplicative Updates (Lee & Seung) | Scaling only | Heuristic | 233.08 | 14.84 ms |
-| **`als`** | Projected Alternating Least Squares | Soft threshold | Normal eq. ridge | 172.52 | 15.93 ms |
-| **`hals`** | Hierarchical ALS Coordinate Descent | **Exact coordinate soft-threshold** | **Exact shrinkage** | **142.30** | 16.82 ms |
-| **`hals` (L1)** | HALS with $\lambda_1 = 0.01$ | **36.1% true zero weights** | Stabilized | 256.48 | 16.83 ms |
+### 2. Covariance Whitening: ZCA vs. PCA
 
 ```python
-# Hierarchical ALS with L1 sparsity and L2 regularization
-nmf = ComponentModel(
-    kind="nmf",
-    n_components=3,
-    solver="hals",
-    l1_reg=0.01,
-    l2_reg=0.005,
-    seed=42,
-)
-nmf.fit(data)
-print(f"Frobenius reconstruction loss: {nmf.reconstruction_error_:.4f}")
+comp_zca = ComponentModel(method="zca_whitening")
+Z_zca = comp_zca.fit_transform(X)
+
+comp_pca_white = ComponentModel(method="pca_whitening")
+Z_pca_white = comp_pca_white.fit_transform(X)
+```
+
+| Method | Fit Time (ms) | Mean Covariance Error $\|\text{Cov}(Z) - I\|_{\text{mean}}$ | Key Property |
+| :--- | :---: | :---: | :--- |
+| **`ZCA`** | 5.18 ms | **0.006972** | Minimizes $\|Z - X\|_F$; keeps whitened features closest to raw inputs. |
+| **`PCA Whitening`** | 3.34 ms | **0.006704** | Aligns coordinates along principal variance axes. |
+
+---
+
+### 3. NMF Solver Face-Off
+
+```python
+# Compare NMF solvers on strictly non-negative chemical features
+nmf_mu = ComponentModel(n_components=3, method="nmf", nmf_solver="mu")
+nmf_als = ComponentModel(n_components=3, method="nmf", nmf_solver="als", l2=0.01)
+nmf_hals = ComponentModel(n_components=3, method="nmf", nmf_solver="hals")
+nmf_sparse = ComponentModel(n_components=3, method="nmf", nmf_solver="hals", l1=0.01, l2=0.005)
+```
+
+| Solver | Reconstruction Error $\|X - WH\|_F$ | $H$ Sparsity (% zeros) | Fit Latency (ms) |
+| :--- | :---: | :---: | :---: |
+| **`MU`** (Multiplicative Updates) | 233.0816 | 0.0% | 15.67 ms |
+| **`ALS`** ($L_1=0, L_2=0.01$) | 172.5155 | 0.0% | 15.08 ms |
+| **`HALS`** | **142.3001** | 8.3% | 16.58 ms |
+| **`HALS`** ($L_1=0.01, L_2=0.005$) | 256.4853 | **36.1%** | 15.00 ms |
+| **`HALS`** ($L_1=0.01, L_2=0.05$) | 256.4980 | **36.1%** | 15.32 ms |
+
+> **Key Finding**: HALS coordinate descent achieves superior loss convergence (142.30 vs. 233.08 for MU) and enables true $L_1$ zero-coefficient sparsity (36.1%) without division-by-zero numerical collapse.
+
+---
+
+### 4. Subspace Reconstruction Anomaly Detection
+
+Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
+$$\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2$$
+
+```python
+# Detect anomalies via subspace reconstruction error
+detector = AnomalyModel(method="pca", n_components=3)
+detector.fit(X)
+
+inlier_loss = detector.score_samples([X[0]])[0]
+outlier_point = list(X[0])
+outlier_point[0] += 50.0  # Synthetic feature injection
+outlier_loss = detector.score_samples([outlier_point])[0]
+
+print(f"Normal Inlier Loss:  {inlier_loss:.4f}")
+print(f"Outlier Spike Loss:  {outlier_loss:.4f}")
+print(f"Separation Ratio:    {outlier_loss / inlier_loss:.1f}x")
+```
+
+```text
+Normal Inlier Point   -> Reconstruction Loss: 437.4652 | Label: NORMAL
+Outlier Spike (+50.0) -> Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
+Ratio (Outlier/Inlier Loss): 3510781.2x separation
 ```
 
 ---
 
-## 5. Subspace Reconstruction Anomaly Detection
+## 4. Operational Limitations & Failure Modes
 
-Novelty detection using reconstruction error identifies observations that violate the low-rank latent subspace:
+1. **Strict Non-Negativity Violation in NMF**:
+   Non-Negative Matrix Factorization requires $X_{i, j} \ge 0$ for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval $[0, 1]$ before fitting NMF.
+2. **Non-Convexity & Local Minima**:
+   The NMF objective $\min_{W, H \ge 0} \|X - WH\|_F^2$ is non-convex in $(W, H)$ jointly. Convergence to a global minimum is not guaranteed. `mltreelib-core` uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.
+3. **Rotational Indeterminacy Under Degenerate Eigenvalues**:
+   When principal components share identical singular values ($\sigma_i \approx \sigma_j$), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.
+4. **Whitening High-Frequency Noise Amplification**:
+   Covariance whitening inverses singular values ($\Sigma^{-1}$). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor $\epsilon > 0$ when singular values approach machine precision.
 
-$$\text{score}(x) = ||x - \hat{x}||_2^2 = ||x - V V^T x||_2^2$$
+---
 
-```python
-from mltreelib.anomaly import AnomalyModel
+## References
 
-# Fit PCA reconstruction anomaly model with 5% contamination threshold
-anom_pca = AnomalyModel(kind="pca", n_components=2, contamination=0.05)
-anom_pca.fit(data)
-
-# Test normal point vs orthogonal spike
-inlier_loss = anom_pca.score_samples([data[0]])[0]
-outlier_loss = anom_pca.score_samples([[v + 50.0 for v in data[0]]])[0]
-
-print(f"Inlier Loss:  {inlier_loss:.4f}  -> Predicted: NORMAL")
-print(f"Outlier Loss: {outlier_loss:.4f} -> Predicted: ANOMALY")
-```
-
-**Empirical Result**: Outlier loss exhibits a **3,510,781x separation ratio** over inlier baseline loss, isolating multidimensional subspace anomalies that univariate range checks miss.
+- Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." *Psychometrika*, 23(3), 187-200.
+- Hendrickson, A. E., & White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." *British Journal of Statistical Psychology*, 17(1), 65-70.
+- Cichocki, A., & Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." *IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences*, 92(3), 708-721.
+- Bell, A. J., & Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." *Neural Computation*, 7(6), 1129-1159.
