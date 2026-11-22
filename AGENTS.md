@@ -50,6 +50,8 @@ uv run python <script.py>                  # run scripts/benchmarks via the venv
 uv run python -u examples/elo_score_all.py # run unbuffered Elo arena benchmarks
 uv run zensical build                      # docs site (docs/ -> site/)
 uv run python examples/gen_api_doc.py      # regenerate docs/reference/api/*.md after API changes
+uv run python scripts/bump_version.py <version> # synchronize version across all 10 project files
+uv run python scripts/prepare_release.py refs/tags/v<version> # verify all release files match
 ```
 
 > **Execution Note**: Use `uv run python ...` for repository scripts to load the editable package and its dependencies. Build the extension with `--release` for benchmarks.
@@ -182,6 +184,7 @@ non-native reader will parse.
 - **Commits**: small, imperative subject + short body listing the behavior added
   and the test counts. Binary data (`datasets/*.parquet`, wheels, models) is not
   committed.
+- **Releases**: follow `scripts/release-manifest.yaml` and [RELEASING.md](RELEASING.md). Always use strict `MAJOR.MINOR.PATCH` digits only (e.g. `0.4.15`). Never use letters or suffixes like `0.4.14a` (rejected by R `DESCRIPTION` and Cargo). Always synchronize all 10 version locations with `uv run python scripts/bump_version.py <version>` and verify with `uv run python scripts/prepare_release.py refs/tags/v<version>`.
 - For small commits, check the staged file list once and use the smallest
   relevant verification. Reuse passing checks when their inputs are unchanged.
 - **Research compounds.** Every research finding, survey or external analysis

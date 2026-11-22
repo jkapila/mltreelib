@@ -1,0 +1,54 @@
+# .agents/release.yaml — Machine and Agent specification for mltreelib releases
+
+protocol:
+  name: "mltreelib-release-protocol"
+  version_format: "^\\d+\\.\\d+\\.\\d+$"
+  semver_spec: "MAJOR.MINOR.PATCH"
+  forbidden_formats:
+    - "0.4.14a"
+    - "0.4.14-alpha"
+    - "0.4.14.post1"
+  reasons:
+    - "R DESCRIPTION requires numeric dot-separated integers; letters cause R CMD check failure."
+    - "Cargo.toml requires strict SemVer 2.0."
+    - "PyPI filenames are immutable; once published, a version string can never be re-uploaded."
+
+commands:
+  bump: "uv run python scripts/bump_version.py {version}"
+  check: "uv run python scripts/prepare_release.py refs/tags/v{version}"
+  dry_run: "uv run python scripts/bump_version.py {version} --dry-run"
+
+workflow_steps:
+  1_bump: "uv run python scripts/bump_version.py <version>"
+  2_changelog: "Edit CHANGELOG.md under ## v<version> to document user-visible changes."
+  3_lock: "uv lock && cargo check --workspace"
+  4_verify: "uv run python scripts/prepare_release.py refs/tags/v<version>"
+  5_test: "cargo test --locked && uv run pytest tests/ -q"
+  6_commit_push: "git add -u && git commit -m 'chore: release v<version>' && git push origin main"
+  7_tag_push: "git tag -a v<version> -m 'Release v<version>' && git push origin v<version>"
+
+synchronized_files:
+  - path: "pyproject.toml"
+    pattern: '^version = "{version}"'
+    section: "[project]"
+  - path: "Cargo.toml"
+    pattern: '^version = "{version}"'
+    section: "[workspace.package]"
+  - path: "python/mltreelib/__init__.py"
+    pattern: '^__version__ = "{version}"'
+  - path: "tests/test_audit_gap_fixes.py"
+    pattern: 'assert mltreelib.__version__ == "{version}"'
+  - path: "zensical.toml"
+    pattern: 'site_name = "mltreelib v{version}"'
+  - path: "docs/index.md"
+    pattern: 'releases/tag/v{version}'
+  - path: "README.md"
+    patterns:
+      - 'From a v{version} checkout'
+      - 'mltreelib_{version}.tar.gz'
+  - path: "r/build-r-package.sh"
+    pattern: '^version = "{version}"'
+  - path: "r/mltreelib/DESCRIPTION"
+    pattern: '^Version: {version}'
+  - path: "r/mltreelib/tools/rust/Cargo.toml"
+    pattern: '^version = "{version}"'
