@@ -8,6 +8,7 @@ use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
 
 mod calibration;
+mod component;
 mod solvers;
 
 use mltreelib_core::builder::{DatasetBuilder, NaPolicy};
@@ -5439,6 +5440,11 @@ impl PyModelTree {
         Ok(self.tree()?.n_leaves())
     }
 
+    /// Return all hyperparameter values as a dict.
+    fn config(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
+        self.get_params(py, true)
+    }
+
     /// Return all hyperparameter values as a dict (scikit-learn compatible).
     #[pyo3(signature = (deep = true))]
     fn get_params(&self, py: Python<'_>, deep: bool) -> PyResult<Py<PyDict>> {
@@ -7009,6 +7015,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<calibration::PyIsotonicCalibrator>()?;
     m.add_class::<PyLeafControl>()?;
     m.add_class::<PyModelTree>()?;
+    m.add_class::<component::PyComponentModel>()?;
+    m.add_class::<component::PyModelReport>()?;
     m.add_class::<PyRule>()?;
     m.add_class::<PyRuleSet>()?;
     m.add_class::<PyOneHotEncoder>()?;

@@ -1,0 +1,1341 @@
+//! Consolidated Component Analysis, Matrix Factorization, and Reconstruction Anomaly Scoring.
+//!
+//! Provides native Rust implementations of:
+//! - Classical PCA (centered and standardized)
+//! - Truncated SVD (uncentered dimensionality reduction)
+//! - Whitening (ZCA and PCA whitening transforms)
+//! - FastICA (independent component analysis with symmetric orthogonalization)
+//! - NMF (non-negative matrix factorization via multiplicative updates)
+//! - Reconstruction-based Anomaly Scoring for PCA and NMF
+
+use std::collections::BTreeMap;
+use nalgebra::{DMatrix, DVector};
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+use rand_distr::{Distribution, Uniform};
+use serde::{Deserialize, Serialize};
+
+use crate::report::{
+    ControllerSection, DiagnosticsSection, LearnerSection, ModelReport,
+    ObjectiveSection, OptimizationDirection,
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+fn rows_to_matrix(data: &[Vec<f64>]) -> Result<DMatrix<f64>, String> {
+    let n = data.len();
+    if n == 0 {
+        return Err("data must not be empty".into());
+    }
+    let p = data[0].len();
+    if p == 0 {
+        return Err("feature dimension must be > 0".into());
+    }
+    for row in data {
+        if row.len() != p {
+            return Err(format!("inconsistent row length: expected {}, got {}", p, row.len()));
+        }
+    }
+    let mut mat = DMatrix::zeros(n, p);
+    for i in 0..n {
+        for j in 0..p {
+            let val = data[i][j];
+            if !val.is_finite() {
+                return Err(format!("non-finite value at row {}, column {}", i, j));
+            }
+            mat[(i, j)] = val;
+        }
+    }
+    Ok(mat)
+}
+
+fn matrix_to_rows(mat: &DMatrix<f64>) -> Vec<Vec<f64>> {
+    let (n, p) = (mat.nrows(), mat.ncols());
+    let mut out = Vec::with_capacity(n);
+    for i in 0..n {
+        let mut row = Vec::with_capacity(p);
+        for j in 0..p {
+            row.push(mat[(i, j)]);
+        }
+        out.push(row);
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
+// PCA
+// ---------------------------------------------------------------------------
+
+/// Principal Component Analysis Model.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PcaModel {
+    pub n_components: usize,
+    pub standardize: bool,
+    pub n_samples: usize,
+    pub n_features: usize,
+    pub mean: Vec<f64>,
+    pub scale: Vec<f64>,
+    pub singular_values: Vec<f64>,
+    pub explained_variance: Vec<f64>,
+    pub explained_variance_ratio: Vec<f64>,
+    pub cumulative_explained_variance: Vec<f64>,
+    pub components: Vec<Vec<f64>>, // shape: (n_components, n_features)
+    pub total_variance: f64,
+}
+
+impl PcaModel {
+    pub fn fit(
+        data: &[Vec<f64>],
+        n_components: Option<usize>,
+        standardize: bool,
+    ) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 2 {
+            return Err("PCA requires at least 2 samples".into());
+        }
+
+        let k = n_components.unwrap_or_else(|| n.min(p)).min(n).min(p);
+        if k == 0 {
+            return Err("n_components must be > 0".into());
+        }
+
+        // 1. Column means and stds
+        let mut mean = vec![0.0; p];
+        for j in 0..p {
+            let col_sum: f64 = (0..n).map(|i| x[(i, j)]).sum();
+            mean[j] = col_sum / (n as f64);
+        }
+
+        let mut scale = vec![1.0; p];
+        if standardize {
+            for j in 0..p {
+                let var: f64 = (0..n).map(|i| (x[(i, j)] - mean[j]).powi(2)).sum::<f64>() / ((n - 1) as f64);
+                let std = var.sqrt();
+                scale[j] = if std > 1e-12 { std } else { 1.0 };
+            }
+        }
+
+        // 2. Centered & scaled matrix
+        let mut xc = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                xc[(i, j)] = (x[(i, j)] - mean[j]) / scale[j];
+            }
+        }
+
+        // 3. SVD: Xc = U S V^T
+        let svd = xc.svd(false, true);
+        let s = svd.singular_values;
+        let vt = svd.v_t.ok_or_else(|| "SVD failed to compute V^T".to_string())?;
+
+        let df = (n - 1) as f64;
+        let mut total_var = 0.0;
+        let mut exp_var = Vec::with_capacity(k);
+        let max_sv = s.len();
+        for i in 0..max_sv {
+            let v = s[i].powi(2) / df;
+            total_var += v;
+            if i < k {
+                exp_var.push(v);
+            }
+        }
+        if total_var <= 1e-15 {
+            total_var = 1.0;
+        }
+
+        let mut exp_var_ratio = Vec::with_capacity(k);
+        let mut cum_var = Vec::with_capacity(k);
+        let mut running = 0.0;
+        for &v in &exp_var {
+            let ratio = v / total_var;
+            running += ratio;
+            exp_var_ratio.push(ratio);
+            cum_var.push(running.min(1.0));
+        }
+
+        // 4. Extract components with sign determinism
+        let mut components = Vec::with_capacity(k);
+        for comp_idx in 0..k {
+            let mut comp = vec![0.0; p];
+            let mut max_abs = 0.0;
+            let mut max_val = 0.0;
+            for j in 0..p {
+                let val = vt[(comp_idx, j)];
+                comp[j] = val;
+                if val.abs() > max_abs {
+                    max_abs = val.abs();
+                    max_val = val;
+                }
+            }
+            // Flip sign if max abs value is negative
+            if max_val < 0.0 {
+                for j in 0..p {
+                    comp[j] = -comp[j];
+                }
+            }
+            components.push(comp);
+        }
+
+        let mut s_vals = Vec::with_capacity(k);
+        for i in 0..k {
+            s_vals.push(s[i]);
+        }
+
+        Ok(Self {
+            n_components: k,
+            standardize,
+            n_samples: n,
+            n_features: p,
+            mean,
+            scale,
+            singular_values: s_vals,
+            explained_variance: exp_var,
+            explained_variance_ratio: exp_var_ratio,
+            cumulative_explained_variance: cum_var,
+            components,
+            total_variance: total_var,
+        })
+    }
+
+    /// Project input rows into principal component space: Z = X_c * V
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let (n, p) = (x.nrows(), x.ncols());
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+
+        let k = self.n_components;
+        let mut z = vec![vec![0.0; k]; n];
+        for i in 0..n {
+            for comp_idx in 0..k {
+                let comp = &self.components[comp_idx];
+                let mut sum = 0.0;
+                for j in 0..p {
+                    let centered = (x[(i, j)] - self.mean[j]) / self.scale[j];
+                    sum += centered * comp[j];
+                }
+                z[i][comp_idx] = sum;
+            }
+        }
+        Ok(z)
+    }
+
+    /// Map principal component scores back to the original feature space: X_hat = Z * V^T * scale + mean
+    pub fn inverse_transform(&self, scores: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let n = scores.len();
+        if n == 0 {
+            return Ok(Vec::new());
+        }
+        let k = self.n_components;
+        let p = self.n_features;
+        for row in scores {
+            if row.len() != k {
+                return Err(format!("score dimension mismatch: expected {}, got {}", k, row.len()));
+            }
+        }
+
+        let mut x_hat = vec![vec![0.0; p]; n];
+        for i in 0..n {
+            for j in 0..p {
+                let mut recon_scaled = 0.0;
+                for comp_idx in 0..k {
+                    recon_scaled += scores[i][comp_idx] * self.components[comp_idx][j];
+                }
+                x_hat[i][j] = recon_scaled * self.scale[j] + self.mean[j];
+            }
+        }
+        Ok(x_hat)
+    }
+
+    /// Reconstruct data by transforming to component space and inverse-transforming.
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let scores = self.transform(data)?;
+        self.inverse_transform(&scores)
+    }
+
+    /// Compute row-wise squared Euclidean reconstruction error ||x - x_hat||^2.
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        let x_hat = self.reconstruct(data)?;
+        let mut errors = Vec::with_capacity(data.len());
+        for (i, row) in data.iter().enumerate() {
+            let mut sum_sq = 0.0;
+            for j in 0..self.n_features {
+                let diff = row[j] - x_hat[i][j];
+                sum_sq += diff * diff;
+            }
+            errors.push(sum_sq);
+        }
+        Ok(errors)
+    }
+
+    /// Generate structured ModelReport.
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_components".into(), self.n_components.to_string());
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("n_samples".into(), self.n_samples.to_string());
+        struct_map.insert(
+            "retained_variance_ratio".into(),
+            format!("{:.4}", self.cumulative_explained_variance.last().copied().unwrap_or(0.0)),
+        );
+
+        let mut cfg_map = BTreeMap::new();
+        cfg_map.insert("standardize".into(), self.standardize.to_string());
+        cfg_map.insert("n_components".into(), self.n_components.to_string());
+
+        let mut metrics = BTreeMap::new();
+        metrics.insert("total_variance".into(), self.total_variance);
+        if let Some(&first_ratio) = self.explained_variance_ratio.first() {
+            metrics.insert("first_component_variance_ratio".into(), first_ratio);
+        }
+        if let Some(&cum_ratio) = self.cumulative_explained_variance.last() {
+            metrics.insert("cumulative_variance_ratio".into(), cum_ratio);
+        }
+
+        ModelReport::new(
+            "Principal Component Analysis",
+            ObjectiveSection {
+                name: "Maximum Variance Subspace Projection".into(),
+                math_form: Some("argmax_V Tr(V^T Cov(X) V) s.t. V^T V = I".into()),
+                direction: OptimizationDirection::Reconstruct,
+                final_value: Some(1.0 - self.cumulative_explained_variance.last().copied().unwrap_or(1.0)),
+                components: vec![
+                    ("unexplained_variance_ratio".into(), 1.0 - self.cumulative_explained_variance.last().copied().unwrap_or(1.0)),
+                ],
+                units: Some("variance ratio".into()),
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: if self.standardize { "Standardized PCA" } else { "Centered PCA" }.into(),
+                representation: "Orthogonal linear basis vectors V^T".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_components * self.n_features,
+                effective_complexity: Some(self.n_components as f64),
+                capabilities: vec![
+                    "transform".into(),
+                    "inverse_transform".into(),
+                    "reconstruct".into(),
+                    "anomaly_score".into(),
+                ],
+            },
+            ControllerSection {
+                kind: "pca".into(),
+                config: cfg_map,
+                seed: None,
+                iteration_budget: None,
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(true),
+                stop_reason: Some("Exact SVD decomposition completed".into()),
+                fit_time_sec: None,
+                eval_count: Some(1),
+                metrics,
+                warnings: Vec::new(),
+            },
+            None,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Truncated SVD
+// ---------------------------------------------------------------------------
+
+/// Truncated SVD Model (linear factor decomposition without centering).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TruncatedSvdModel {
+    pub n_components: usize,
+    pub n_samples: usize,
+    pub n_features: usize,
+    pub singular_values: Vec<f64>,
+    pub explained_variance: Vec<f64>,
+    pub explained_variance_ratio: Vec<f64>,
+    pub components: Vec<Vec<f64>>,
+    pub total_variance: f64,
+}
+
+impl TruncatedSvdModel {
+    pub fn fit(data: &[Vec<f64>], n_components: Option<usize>) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 1 {
+            return Err("Truncated SVD requires at least 1 sample".into());
+        }
+
+        let k = n_components.unwrap_or_else(|| n.min(p)).min(n).min(p);
+        if k == 0 {
+            return Err("n_components must be > 0".into());
+        }
+
+        // Direct SVD without centering: X = U S V^T
+        let svd = x.svd(false, true);
+        let s = svd.singular_values;
+        let vt = svd.v_t.ok_or_else(|| "SVD failed to compute V^T".to_string())?;
+
+        let df = (n.max(2) - 1) as f64;
+        let mut total_var = 0.0;
+        let mut exp_var = Vec::with_capacity(k);
+        let max_sv = s.len();
+        for i in 0..max_sv {
+            let v = s[i].powi(2) / df;
+            total_var += v;
+            if i < k {
+                exp_var.push(v);
+            }
+        }
+        if total_var <= 1e-15 {
+            total_var = 1.0;
+        }
+
+        let mut exp_var_ratio = Vec::with_capacity(k);
+        for &v in &exp_var {
+            exp_var_ratio.push(v / total_var);
+        }
+
+        let mut components = Vec::with_capacity(k);
+        for comp_idx in 0..k {
+            let mut comp = vec![0.0; p];
+            for j in 0..p {
+                comp[j] = vt[(comp_idx, j)];
+            }
+            components.push(comp);
+        }
+
+        let mut s_vals = Vec::with_capacity(k);
+        for i in 0..k {
+            s_vals.push(s[i]);
+        }
+
+        Ok(Self {
+            n_components: k,
+            n_samples: n,
+            n_features: p,
+            singular_values: s_vals,
+            explained_variance: exp_var,
+            explained_variance_ratio: exp_var_ratio,
+            components,
+            total_variance: total_var,
+        })
+    }
+
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let (n, p) = (x.nrows(), x.ncols());
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+        let k = self.n_components;
+        let mut z = vec![vec![0.0; k]; n];
+        for i in 0..n {
+            for comp_idx in 0..k {
+                let comp = &self.components[comp_idx];
+                let mut sum = 0.0;
+                for j in 0..p {
+                    sum += x[(i, j)] * comp[j];
+                }
+                z[i][comp_idx] = sum;
+            }
+        }
+        Ok(z)
+    }
+
+    pub fn inverse_transform(&self, scores: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let n = scores.len();
+        if n == 0 {
+            return Ok(Vec::new());
+        }
+        let k = self.n_components;
+        let p = self.n_features;
+        for row in scores {
+            if row.len() != k {
+                return Err(format!("score dimension mismatch: expected {}, got {}", k, row.len()));
+            }
+        }
+        let mut x_hat = vec![vec![0.0; p]; n];
+        for i in 0..n {
+            for j in 0..p {
+                let mut sum = 0.0;
+                for comp_idx in 0..k {
+                    sum += scores[i][comp_idx] * self.components[comp_idx][j];
+                }
+                x_hat[i][j] = sum;
+            }
+        }
+        Ok(x_hat)
+    }
+
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let scores = self.transform(data)?;
+        self.inverse_transform(&scores)
+    }
+
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        let x_hat = self.reconstruct(data)?;
+        let mut errors = Vec::with_capacity(data.len());
+        for (i, row) in data.iter().enumerate() {
+            let mut sum_sq = 0.0;
+            for j in 0..self.n_features {
+                let diff = row[j] - x_hat[i][j];
+                sum_sq += diff * diff;
+            }
+            errors.push(sum_sq);
+        }
+        Ok(errors)
+    }
+
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_components".into(), self.n_components.to_string());
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("n_samples".into(), self.n_samples.to_string());
+
+        let mut cfg_map = BTreeMap::new();
+        cfg_map.insert("n_components".into(), self.n_components.to_string());
+
+        let mut metrics = BTreeMap::new();
+        metrics.insert("total_variance".into(), self.total_variance);
+
+        ModelReport::new(
+            "Truncated SVD",
+            ObjectiveSection {
+                name: "Uncentered Low-Rank Matrix Factorization".into(),
+                math_form: Some("min ||X - U_k Sigma_k V_k^T||_F^2".into()),
+                direction: OptimizationDirection::Reconstruct,
+                final_value: None,
+                components: Vec::new(),
+                units: None,
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: "Truncated SVD".into(),
+                representation: "Uncentered singular vectors V_k^T".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_components * self.n_features,
+                effective_complexity: Some(self.n_components as f64),
+                capabilities: vec![
+                    "transform".into(),
+                    "inverse_transform".into(),
+                    "reconstruct".into(),
+                ],
+            },
+            ControllerSection {
+                kind: "svd".into(),
+                config: cfg_map,
+                seed: None,
+                iteration_budget: None,
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(true),
+                stop_reason: Some("Exact SVD factorization completed".into()),
+                fit_time_sec: None,
+                eval_count: Some(1),
+                metrics,
+                warnings: Vec::new(),
+            },
+            None,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Whitening
+// ---------------------------------------------------------------------------
+
+/// Whitening Algorithm Variant.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WhiteningKind {
+    Zca,
+    Pca,
+}
+
+/// Whitening Transformation Model.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WhiteningModel {
+    pub kind: WhiteningKind,
+    pub n_features: usize,
+    pub n_samples: usize,
+    pub mean: Vec<f64>,
+    pub whitening_matrix: Vec<Vec<f64>>,   // shape: (n_features, n_features)
+    pub dewhitening_matrix: Vec<Vec<f64>>, // shape: (n_features, n_features)
+}
+
+impl WhiteningModel {
+    pub fn fit(data: &[Vec<f64>], kind: WhiteningKind, eps: Option<f64>) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 2 {
+            return Err("Whitening requires at least 2 samples".into());
+        }
+        let epsilon = eps.unwrap_or(1e-5).max(1e-12);
+
+        // Compute mean
+        let mut mean = vec![0.0; p];
+        for j in 0..p {
+            mean[j] = (0..n).map(|i| x[(i, j)]).sum::<f64>() / (n as f64);
+        }
+
+        // Center
+        let mut xc = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                xc[(i, j)] = x[(i, j)] - mean[j];
+            }
+        }
+
+        // Covariance: C = X_c^T X_c / (n - 1)
+        let cov = (&xc.transpose() * &xc) / ((n - 1) as f64);
+
+        // Symmetric eigendecomposition: C = V Lambda V^T
+        let eigen = cov.symmetric_eigen();
+        let ev = eigen.eigenvalues;
+        let v = eigen.eigenvectors;
+
+        // Diagonal scale matrices Lambda^(-1/2) and Lambda^(1/2)
+        let mut inv_sqrt_d = DMatrix::zeros(p, p);
+        let mut sqrt_d = DMatrix::zeros(p, p);
+        for j in 0..p {
+            let lambda = ev[j].max(0.0) + epsilon;
+            inv_sqrt_d[(j, j)] = 1.0 / lambda.sqrt();
+            sqrt_d[(j, j)] = lambda.sqrt();
+        }
+
+        // W_whitening:
+        // PCA: W = Lambda^(-1/2) * V^T
+        // ZCA: W = V * Lambda^(-1/2) * V^T
+        let w_mat = match kind {
+            WhiteningKind::Pca => &inv_sqrt_d * &v.transpose(),
+            WhiteningKind::Zca => &v * &inv_sqrt_d * &v.transpose(),
+        };
+
+        // De-whitening matrix:
+        // PCA: W_inv = V * Lambda^(1/2)
+        // ZCA: W_inv = V * Lambda^(1/2) * V^T
+        let de_mat = match kind {
+            WhiteningKind::Pca => &v * &sqrt_d,
+            WhiteningKind::Zca => &v * &sqrt_d * &v.transpose(),
+        };
+
+        Ok(Self {
+            kind,
+            n_features: p,
+            n_samples: n,
+            mean,
+            whitening_matrix: matrix_to_rows(&w_mat),
+            dewhitening_matrix: matrix_to_rows(&de_mat),
+        })
+    }
+
+    /// Transform input: Z = (X - mean) * W^T
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let (n, p) = (x.nrows(), x.ncols());
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+        let w = rows_to_matrix(&self.whitening_matrix)?;
+        let mut z = vec![vec![0.0; p]; n];
+        for i in 0..n {
+            for j in 0..p {
+                let mut sum = 0.0;
+                for k in 0..p {
+                    let centered = x[(i, k)] - self.mean[k];
+                    sum += centered * w[(j, k)]; // W is p x p
+                }
+                z[i][j] = sum;
+            }
+        }
+        Ok(z)
+    }
+
+    /// Invert whitening: X_hat = Z * W_inv^T + mean
+    pub fn inverse_transform(&self, whitened: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let z = rows_to_matrix(whitened)?;
+        let (n, p) = (z.nrows(), z.ncols());
+        if p != self.n_features {
+            return Err(format!("dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+        let de_w = rows_to_matrix(&self.dewhitening_matrix)?;
+        let mut x_hat = vec![vec![0.0; p]; n];
+        for i in 0..n {
+            for j in 0..p {
+                let mut sum = 0.0;
+                for k in 0..p {
+                    sum += z[(i, k)] * de_w[(k, j)];
+                }
+                x_hat[i][j] = sum + self.mean[j];
+            }
+        }
+        Ok(x_hat)
+    }
+
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("kind".into(), match self.kind { WhiteningKind::Zca => "ZCA", WhiteningKind::Pca => "PCA" }.into());
+
+        ModelReport::new(
+            "Whitening Transform",
+            ObjectiveSection {
+                name: "Covariance Decorrelation and Variance Equalization".into(),
+                math_form: Some("Cov(Z) = I".into()),
+                direction: OptimizationDirection::Reconstruct,
+                final_value: None,
+                components: Vec::new(),
+                units: None,
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: match self.kind { WhiteningKind::Zca => "ZCA Whitening", WhiteningKind::Pca => "PCA Whitening" }.into(),
+                representation: "Linear decorrelation operator W".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_features * self.n_features,
+                effective_complexity: Some(self.n_features as f64),
+                capabilities: vec!["transform".into(), "inverse_transform".into()],
+            },
+            ControllerSection {
+                kind: "whitening".into(),
+                config: BTreeMap::new(),
+                seed: None,
+                iteration_budget: None,
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(true),
+                stop_reason: Some("Exact covariance eigendecomposition completed".into()),
+                fit_time_sec: None,
+                eval_count: Some(1),
+                metrics: BTreeMap::new(),
+                warnings: Vec::new(),
+            },
+            None,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// FastICA
+// ---------------------------------------------------------------------------
+
+/// FastICA Model for Independent Component Analysis.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FastIcaModel {
+    pub n_components: usize,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub seed: u64,
+    pub n_samples: usize,
+    pub n_features: usize,
+    pub mean: Vec<f64>,
+    pub components: Vec<Vec<f64>>,     // unmixing matrix W_total (n_components, n_features)
+    pub mixing_matrix: Vec<Vec<f64>>,  // mixing matrix A (n_features, n_components)
+    pub n_iter: usize,
+    pub converged: bool,
+}
+
+impl FastIcaModel {
+    pub fn fit(
+        data: &[Vec<f64>],
+        n_components: Option<usize>,
+        max_iter: Option<usize>,
+        tol: Option<f64>,
+        seed: Option<u64>,
+    ) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 2 {
+            return Err("FastICA requires at least 2 samples".into());
+        }
+        let k = n_components.unwrap_or(p).min(n).min(p);
+        let max_iterations = max_iter.unwrap_or(200);
+        let tolerance = tol.unwrap_or(1e-4);
+        let random_seed = seed.unwrap_or(42);
+
+        // 1. Center data
+        let mut mean = vec![0.0; p];
+        for j in 0..p {
+            mean[j] = (0..n).map(|i| x[(i, j)]).sum::<f64>() / (n as f64);
+        }
+        let mut xc = DMatrix::zeros(n, p);
+        for i in 0..n {
+            for j in 0..p {
+                xc[(i, j)] = x[(i, j)] - mean[j];
+            }
+        }
+
+        // 2. SVD Whitening to k components: Xc = U S V^T
+        let svd = xc.clone().svd(false, true);
+        let s = svd.singular_values;
+        let vt = svd.v_t.ok_or_else(|| "SVD failed in FastICA".to_string())?;
+
+        let scale = ((n - 1) as f64).sqrt();
+        // Whitening matrix K: k x p
+        let mut k_mat = DMatrix::zeros(k, p);
+        for i in 0..k {
+            let inv_s = scale / s[i].max(1e-12);
+            for j in 0..p {
+                k_mat[(i, j)] = inv_s * vt[(i, j)];
+            }
+        }
+        // Whitened data: Xw = Xc * K^T, shape: n x k
+        let xw = &xc * &k_mat.transpose();
+
+        // 3. FastICA fixed point iteration for W (k x k)
+        let mut rng = ChaCha8Rng::seed_from_u64(random_seed);
+        let unif = Uniform::new(-1.0, 1.0);
+        let mut w = DMatrix::zeros(k, k);
+        for i in 0..k {
+            for j in 0..k {
+                w[(i, j)] = unif.sample(&mut rng);
+            }
+        }
+        // Symmetric decorrelation: W <- (W W^T)^(-1/2) W
+        w = symmetric_decorrelation(&w)?;
+
+        let mut converged = false;
+        let mut n_iter = 0;
+        let n_f64 = n as f64;
+
+        for iter in 0..max_iterations {
+            n_iter = iter + 1;
+            let w_old = w.clone();
+
+            // Fixed point update for each row of W:
+            // w_i^+ = (1/n) Xw^T g(Xw w_i) - (1/n sum g'(Xw w_i)) w_i
+            // with g(u) = tanh(u), g'(u) = 1 - tanh^2(u)
+            for i in 0..k {
+                let w_row = w_old.row(i).transpose(); // k x 1
+                let u = &xw * &w_row;                 // n x 1
+                let mut g_u = DVector::zeros(n);
+                let mut sum_g_prime = 0.0;
+                for row_idx in 0..n {
+                    let val = u[row_idx].tanh();
+                    g_u[row_idx] = val;
+                    sum_g_prime += 1.0 - val * val;
+                }
+                let avg_g_prime = sum_g_prime / n_f64;
+                let xw_t_g = &xw.transpose() * &g_u; // k x 1
+                let term1 = xw_t_g / n_f64;
+                let term2 = &w_row * avg_g_prime;
+                let w_new = term1 - term2;
+                for j in 0..k {
+                    w[(i, j)] = w_new[j];
+                }
+            }
+
+            // Symmetrically decorrelate W
+            w = symmetric_decorrelation(&w)?;
+
+            // Check convergence: max_i |1 - |<w_i, w_old_i>|| < tol
+            let mut max_diff: f64 = 0.0;
+            for i in 0..k {
+                let dot: f64 = (0..k).map(|j| w[(i, j)] * w_old[(i, j)]).sum();
+                let diff = (1.0 - dot.abs()).abs();
+                if diff > max_diff {
+                    max_diff = diff;
+                }
+            }
+            if max_diff < tolerance {
+                converged = true;
+                break;
+            }
+        }
+
+        // Full unmixing matrix: W_total = W * K (k x p)
+        let w_total = &w * &k_mat;
+
+        // Mixing matrix A = W_total^+ (pseudoinverse), shape: p x k
+        let a_mat = match w_total.clone().pseudo_inverse(1e-12) {
+            Ok(inv) => inv,
+            Err(_) => w_total.transpose(),
+        };
+
+        Ok(Self {
+            n_components: k,
+            max_iter: max_iterations,
+            tol: tolerance,
+            seed: random_seed,
+            n_samples: n,
+            n_features: p,
+            mean,
+            components: matrix_to_rows(&w_total),
+            mixing_matrix: matrix_to_rows(&a_mat),
+            n_iter,
+            converged,
+        })
+    }
+
+    /// Extract independent components: S = (X - mean) * W_total^T
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let (n, p) = (x.nrows(), x.ncols());
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+        let w = rows_to_matrix(&self.components)?;
+        let k = self.n_components;
+        let mut s = vec![vec![0.0; k]; n];
+        for i in 0..n {
+            for comp_idx in 0..k {
+                let mut sum = 0.0;
+                for j in 0..p {
+                    let centered = x[(i, j)] - self.mean[j];
+                    sum += centered * w[(comp_idx, j)];
+                }
+                s[i][comp_idx] = sum;
+            }
+        }
+        Ok(s)
+    }
+
+    /// Map source signals back to observation space: X_hat = S * A^T + mean
+    pub fn inverse_transform(&self, sources: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let s = rows_to_matrix(sources)?;
+        let (n, k) = (s.nrows(), s.ncols());
+        if k != self.n_components {
+            return Err(format!("source dimension mismatch: expected {}, got {}", self.n_components, k));
+        }
+        let a = rows_to_matrix(&self.mixing_matrix)?; // p x k
+        let p = self.n_features;
+        let mut x_hat = vec![vec![0.0; p]; n];
+        for i in 0..n {
+            for j in 0..p {
+                let mut sum = 0.0;
+                for comp_idx in 0..k {
+                    sum += s[(i, comp_idx)] * a[(j, comp_idx)];
+                }
+                x_hat[i][j] = sum + self.mean[j];
+            }
+        }
+        Ok(x_hat)
+    }
+
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let sources = self.transform(data)?;
+        self.inverse_transform(&sources)
+    }
+
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        let x_hat = self.reconstruct(data)?;
+        let mut errors = Vec::with_capacity(data.len());
+        for (i, row) in data.iter().enumerate() {
+            let mut sum_sq = 0.0;
+            for j in 0..self.n_features {
+                let diff = row[j] - x_hat[i][j];
+                sum_sq += diff * diff;
+            }
+            errors.push(sum_sq);
+        }
+        Ok(errors)
+    }
+
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_components".into(), self.n_components.to_string());
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("iterations".into(), self.n_iter.to_string());
+
+        let mut cfg = BTreeMap::new();
+        cfg.insert("max_iter".into(), self.max_iter.to_string());
+        cfg.insert("tol".into(), format!("{:e}", self.tol));
+
+        ModelReport::new(
+            "FastICA (Independent Component Analysis)",
+            ObjectiveSection {
+                name: "Non-Gaussianity Maximization (Negentropy Contrast)".into(),
+                math_form: Some("max sum_i E[G(w_i^T X_w)] s.t. W W^T = I".into()),
+                direction: OptimizationDirection::Maximize,
+                final_value: None,
+                components: Vec::new(),
+                units: None,
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: "FastICA".into(),
+                representation: "Unmixing matrix W and mixing matrix A".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_components * self.n_features,
+                effective_complexity: Some(self.n_components as f64),
+                capabilities: vec!["transform".into(), "inverse_transform".into(), "reconstruct".into()],
+            },
+            ControllerSection {
+                kind: "ica".into(),
+                config: cfg,
+                seed: Some(self.seed),
+                iteration_budget: Some(self.max_iter),
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(self.converged),
+                stop_reason: Some(if self.converged { "Convergence tolerance achieved".into() } else { "Maximum iterations reached".into() }),
+                fit_time_sec: None,
+                eval_count: Some(self.n_iter),
+                metrics: BTreeMap::new(),
+                warnings: if self.converged {
+                    Vec::new()
+                } else {
+                    vec!["FastICA failed to converge within max_iter iterations".into()]
+                },
+            },
+            None,
+        )
+    }
+}
+
+/// Symmetrically decorrelate matrix: W <- (W W^T)^(-1/2) W
+fn symmetric_decorrelation(w: &DMatrix<f64>) -> Result<DMatrix<f64>, String> {
+    let k = w.nrows();
+    let wwt = w * w.transpose();
+    let eigen = wwt.symmetric_eigen();
+    let mut inv_sqrt_d = DMatrix::zeros(k, k);
+    for i in 0..k {
+        let val = eigen.eigenvalues[i].max(1e-12);
+        inv_sqrt_d[(i, i)] = 1.0 / val.sqrt();
+    }
+    let factor = &eigen.eigenvectors * &inv_sqrt_d * &eigen.eigenvectors.transpose();
+    Ok(&factor * w)
+}
+
+// ---------------------------------------------------------------------------
+// NMF (Nonnegative Matrix Factorization)
+// ---------------------------------------------------------------------------
+
+/// Non-negative Matrix Factorization Model.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct NmfModel {
+    pub n_components: usize,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub seed: u64,
+    pub n_samples: usize,
+    pub n_features: usize,
+    pub components: Vec<Vec<f64>>, // H matrix: (n_components, n_features)
+    pub reconstruction_error: f64,
+    pub n_iter: usize,
+    pub converged: bool,
+}
+
+impl NmfModel {
+    pub fn fit(
+        data: &[Vec<f64>],
+        n_components: Option<usize>,
+        max_iter: Option<usize>,
+        tol: Option<f64>,
+        seed: Option<u64>,
+    ) -> Result<Self, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if n < 1 {
+            return Err("NMF requires at least 1 sample".into());
+        }
+        for i in 0..n {
+            for j in 0..p {
+                if x[(i, j)] < 0.0 {
+                    return Err(format!("NMF requires non-negative inputs: negative value at ({}, {})", i, j));
+                }
+            }
+        }
+
+        let k = n_components.unwrap_or_else(|| n.min(p)).min(n).min(p);
+        let max_iterations = max_iter.unwrap_or(200);
+        let tolerance = tol.unwrap_or(1e-4);
+        let random_seed = seed.unwrap_or(42);
+
+        // Initialize W (n x k) and H (k x p) with positive random values
+        let mut rng = ChaCha8Rng::seed_from_u64(random_seed);
+        let unif = Uniform::new(0.1, 1.0);
+
+        let mut w = DMatrix::zeros(n, k);
+        for i in 0..n {
+            for j in 0..k {
+                w[(i, j)] = unif.sample(&mut rng);
+            }
+        }
+
+        let mut h = DMatrix::zeros(k, p);
+        for i in 0..k {
+            for j in 0..p {
+                h[(i, j)] = unif.sample(&mut rng);
+            }
+        }
+
+        let eps = 1e-12;
+        let mut prev_error = f64::MAX;
+        let mut converged = false;
+        let mut n_iter = 0;
+        let mut final_error = 0.0;
+
+        for iter in 0..max_iterations {
+            n_iter = iter + 1;
+
+            // Update H: H <- H * (W^T X) / (W^T W H + eps)
+            let wt = w.transpose();
+            let wt_x = &wt * &x;
+            let wt_w_h = &(&wt * &w) * &h;
+            for i in 0..k {
+                for j in 0..p {
+                    h[(i, j)] = (h[(i, j)] * wt_x[(i, j)] / (wt_w_h[(i, j)] + eps)).max(0.0);
+                }
+            }
+
+            // Update W: W <- W * (X H^T) / (W H H^T + eps)
+            let ht = h.transpose();
+            let x_ht = &x * &ht;
+            let w_h_ht = &w * &(&h * &ht);
+            for i in 0..n {
+                for j in 0..k {
+                    w[(i, j)] = (w[(i, j)] * x_ht[(i, j)] / (w_h_ht[(i, j)] + eps)).max(0.0);
+                }
+            }
+
+            // Frobenius error: ||X - W H||_F
+            let x_approx = &w * &h;
+            let diff = &x - &x_approx;
+            let err = diff.norm();
+            final_error = err;
+
+            if (prev_error - err).abs() < tolerance {
+                converged = true;
+                break;
+            }
+            prev_error = err;
+        }
+
+        Ok(Self {
+            n_components: k,
+            max_iter: max_iterations,
+            tol: tolerance,
+            seed: random_seed,
+            n_samples: n,
+            n_features: p,
+            components: matrix_to_rows(&h),
+            reconstruction_error: final_error,
+            n_iter,
+            converged,
+        })
+    }
+
+    /// Transform new samples by estimating W for fixed H via multiplicative updates.
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let x = rows_to_matrix(data)?;
+        let n = x.nrows();
+        let p = x.ncols();
+        if p != self.n_features {
+            return Err(format!("feature dimension mismatch: expected {}, got {}", self.n_features, p));
+        }
+        for i in 0..n {
+            for j in 0..p {
+                if x[(i, j)] < 0.0 {
+                    return Err("NMF requires non-negative inputs".into());
+                }
+            }
+        }
+
+        let k = self.n_components;
+        let h = rows_to_matrix(&self.components)?;
+        let ht = h.transpose();
+        let h_ht = &h * &ht;
+
+        // Initialize W with uniform 0.5
+        let mut w = DMatrix::from_element(n, k, 0.5);
+        let x_ht = &x * &ht;
+        let eps = 1e-12;
+
+        for _ in 0..30 {
+            let w_h_ht = &w * &h_ht;
+            for i in 0..n {
+                for j in 0..k {
+                    w[(i, j)] = (w[(i, j)] * x_ht[(i, j)] / (w_h_ht[(i, j)] + eps)).max(0.0);
+                }
+            }
+        }
+
+        Ok(matrix_to_rows(&w))
+    }
+
+    /// Reconstruct matrix X_hat = W * H.
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        let w_rows = self.transform(data)?;
+        let w = rows_to_matrix(&w_rows)?;
+        let h = rows_to_matrix(&self.components)?;
+        let x_hat = &w * &h;
+        Ok(matrix_to_rows(&x_hat))
+    }
+
+    /// Row-wise reconstruction squared error ||x - x_hat||^2.
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        let x_hat = self.reconstruct(data)?;
+        let mut errors = Vec::with_capacity(data.len());
+        for (i, row) in data.iter().enumerate() {
+            let mut sum_sq = 0.0;
+            for j in 0..self.n_features {
+                let diff = row[j] - x_hat[i][j];
+                sum_sq += diff * diff;
+            }
+            errors.push(sum_sq);
+        }
+        Ok(errors)
+    }
+
+    pub fn report(&self) -> ModelReport {
+        let mut struct_map = BTreeMap::new();
+        struct_map.insert("n_components".into(), self.n_components.to_string());
+        struct_map.insert("n_features".into(), self.n_features.to_string());
+        struct_map.insert("iterations".into(), self.n_iter.to_string());
+
+        let mut metrics = BTreeMap::new();
+        metrics.insert("frobenius_reconstruction_error".into(), self.reconstruction_error);
+
+        ModelReport::new(
+            "Non-negative Matrix Factorization",
+            ObjectiveSection {
+                name: "Additive Non-negative Factorization (Frobenius Loss)".into(),
+                math_form: Some("min_{W,H >= 0} ||X - WH||_F^2".into()),
+                direction: OptimizationDirection::Reconstruct,
+                final_value: Some(self.reconstruction_error),
+                components: vec![("frobenius_error".into(), self.reconstruction_error)],
+                units: None,
+            },
+            LearnerSection {
+                family: "Component Analysis".into(),
+                kind: "NMF".into(),
+                representation: "Non-negative additive basis factors H".into(),
+                structure: struct_map,
+                nominal_complexity: self.n_components * self.n_features,
+                effective_complexity: Some(self.n_components as f64),
+                capabilities: vec!["transform".into(), "reconstruct".into(), "anomaly_score".into()],
+            },
+            ControllerSection {
+                kind: "nmf".into(),
+                config: BTreeMap::new(),
+                seed: Some(self.seed),
+                iteration_budget: Some(self.max_iter),
+                evaluation_budget: None,
+                missing_policy: "error_on_missing".into(),
+                fallback_reason: None,
+            },
+            DiagnosticsSection {
+                converged: Some(self.converged),
+                stop_reason: Some(if self.converged { "Convergence tolerance achieved".into() } else { "Maximum iterations reached".into() }),
+                fit_time_sec: None,
+                eval_count: Some(self.n_iter),
+                metrics,
+                warnings: if self.converged {
+                    Vec::new()
+                } else {
+                    vec!["NMF multiplicative updates did not converge within max_iter".into()]
+                },
+            },
+            None,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Unified ComponentModel Facade
+// ---------------------------------------------------------------------------
+
+/// Unified Component Model enum wrapping PCA, Truncated SVD, Whitening, FastICA, and NMF.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "model")]
+pub enum ComponentModelCore {
+    Pca(PcaModel),
+    Svd(TruncatedSvdModel),
+    Whitening(WhiteningModel),
+    Ica(FastIcaModel),
+    Nmf(NmfModel),
+}
+
+impl ComponentModelCore {
+    pub fn transform(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        match self {
+            Self::Pca(m) => m.transform(data),
+            Self::Svd(m) => m.transform(data),
+            Self::Whitening(m) => m.transform(data),
+            Self::Ica(m) => m.transform(data),
+            Self::Nmf(m) => m.transform(data),
+        }
+    }
+
+    pub fn inverse_transform(&self, scores: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        match self {
+            Self::Pca(m) => m.inverse_transform(scores),
+            Self::Svd(m) => m.inverse_transform(scores),
+            Self::Whitening(m) => m.inverse_transform(scores),
+            Self::Ica(m) => m.inverse_transform(scores),
+            Self::Nmf(_) => Err("NMF does not support direct inverse_transform from arbitrary coordinates; use reconstruct".into()),
+        }
+    }
+
+    pub fn reconstruct(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+        match self {
+            Self::Pca(m) => m.reconstruct(data),
+            Self::Svd(m) => m.reconstruct(data),
+            Self::Whitening(m) => {
+                let z = m.transform(data)?;
+                m.inverse_transform(&z)
+            }
+            Self::Ica(m) => m.reconstruct(data),
+            Self::Nmf(m) => m.reconstruct(data),
+        }
+    }
+
+    pub fn reconstruction_errors(&self, data: &[Vec<f64>]) -> Result<Vec<f64>, String> {
+        match self {
+            Self::Pca(m) => m.reconstruction_errors(data),
+            Self::Svd(m) => m.reconstruction_errors(data),
+            Self::Whitening(_) => {
+                let rec = self.reconstruct(data)?;
+                let mut errs = Vec::with_capacity(data.len());
+                for (i, row) in data.iter().enumerate() {
+                    let mut s = 0.0;
+                    for j in 0..row.len() {
+                        let d = row[j] - rec[i][j];
+                        s += d * d;
+                    }
+                    errs.push(s);
+                }
+                Ok(errs)
+            }
+            Self::Ica(m) => m.reconstruction_errors(data),
+            Self::Nmf(m) => m.reconstruction_errors(data),
+        }
+    }
+
+    pub fn report(&self) -> ModelReport {
+        match self {
+            Self::Pca(m) => m.report(),
+            Self::Svd(m) => m.report(),
+            Self::Whitening(m) => m.report(),
+            Self::Ica(m) => m.report(),
+            Self::Nmf(m) => m.report(),
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
+}
