@@ -5,9 +5,12 @@ Use one release pull request for the version bump and the user-facing notes. Tag
 ## Prepare the release
 
 1. Choose the next version. Use a patch for compatible fixes, a minor for compatible capabilities, and a major for breaking changes after 1.0. Before 1.0, use a minor bump for breaking changes and describe the migration in the notes.
-2. Set the version in `Cargo.toml`, `pyproject.toml`, and `python/mltreelib/__init__.py`. Update the expected version in `tests/test_audit_gap_fixes.py`.
-   Update the version shown in `zensical.toml` and the release link in `docs/index.md`.
-3. Refresh both lockfiles. Move the relevant notes from `Unreleased` to a heading such as `## v0.4.11` in [CHANGELOG.md](CHANGELOG.md). Describe user-visible changes and include upgrade steps when needed.
+2. Synchronize all metadata files automatically with:
+   ```sh
+   uv run python scripts/bump_version.py <version>
+   ```
+   This updates `Cargo.toml`, `pyproject.toml`, `python/mltreelib/__init__.py`, `tests/test_audit_gap_fixes.py`, `zensical.toml`, `docs/index.md`, `README.md`, and R package metadata (`r/build-r-package.sh`, `r/mltreelib/DESCRIPTION`, `r/mltreelib/tools/rust/Cargo.toml`).
+3. Refresh both lockfiles. Move the relevant notes from `Unreleased` to a heading such as `## v0.4.15` in [CHANGELOG.md](CHANGELOG.md). Describe user-visible changes and include upgrade steps when needed.
 4. Run the checks below in order. Open the release pull request after they pass.
 
 ```sh
@@ -16,7 +19,7 @@ uv lock
 cargo test --locked
 uv run maturin develop --release --locked
 uv run pytest tests/ -q
-uv run --python 3.12 python scripts/prepare_release.py refs/tags/v0.4.11
+uv run --python 3.12 python scripts/prepare_release.py refs/tags/v0.4.15
 ```
 
 ## Tag and publish
