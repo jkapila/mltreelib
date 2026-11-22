@@ -160,10 +160,21 @@ def solve_knapsack_pruning_cvx(
     ]
 
     residual = y_arr - P @ w
-    loss = cp.sum_squares(residual) / (2.0 * n)
+    # L1 error yields a Mixed-Integer Linear Program (MILP), solvable by open-source HiGHS / CBC / GLPK
+    loss = cp.norm1(residual) / float(n)
 
     problem = cp.Problem(cp.Minimize(loss), constraints)
-    problem.solve(solver=solver)
+    try:
+        if solver is not None:
+            problem.solve(solver=solver)
+        elif "HIGHS" in cp.installed_solvers():
+            problem.solve(solver="HIGHS")
+        else:
+            problem.solve()
+    except cp.SolverError:
+        # Fallback to native Caruana forward stepwise pruning
+        native_res = prune_ensemble(predictions_matrix, y, max_trees=max_trees)
+        return native_res.selected_indices, native_res.weights
 
     chosen_indices = [j for j in range(m) if z.value[j] > 0.5]
     chosen_weights = [float(w.value[j]) for j in chosen_indices]
