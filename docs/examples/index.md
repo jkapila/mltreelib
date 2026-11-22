@@ -13,7 +13,7 @@ uv run python examples/suites/core_tree_architecture.py
 
 Each guide identifies its datasets and shows the command for its suite. Dataset-backed examples can download data on first use. Plotting examples write figures under `docs/assets/`. Use the release extension for timing comparisons.
 
-## The 9 Consolidated Example Suites
+## The 11 Consolidated Modeling Pathways
 
 <div class="grid cards" markdown>
 
@@ -89,13 +89,21 @@ Each guide identifies its datasets and shows the command for its suite. Dataset-
 
     [:octicons-arrow-right-24: Open Suite 9](survival-trees.md)
 
--   :lucide-gauge: __Leaf Solver Benchmarks: 7 Optimization Algorithms__
+-   :lucide-gauge: __Suite 10: Solvers, Optimizers & Real-Data Tuning__
 
     ---
 
-    Pareto frontier of fit latency vs. accuracy across Analytical (`irls`), Quasi-Newton (`lbfgs`), Coordinate (`ccd`), and Evolutionary (`shade`, `cmaes`, `ga`, `nes`) solvers.
+    Unified numerical and evolutionary leaf solvers, standalone weighted GLM fits, bounded black-box optimization, and real-data hyperparameter tuning on Concrete and TabArena tasks.
 
-    [:octicons-arrow-right-24: Open Solver Benchmarks](solver-benchmarks.md)
+    [:octicons-arrow-right-24: Open Suite 10](solver-benchmarks.md)
+
+-   :lucide-boxes: __Suite 11: Component & Factor Analysis__
+
+    ---
+
+    Pure Rust PCA, SVD, ZCA/PCA Whitening, FastICA, NMF (MU, ALS, HALS), R-aligned factor rotations (Varimax, Quartimax, Promax), and Minres Factor Analysis with Schmid-Leiman bifactor orthogonalization.
+
+    [:octicons-arrow-right-24: Open Suite 11](component-benchmarks.md)
 
 </div>
 
@@ -114,7 +122,8 @@ Each guide identifies its datasets and shows the command for its suite. Dataset-
 | **[Suite 7: Time Series Feature Engineering & Forecasting](timeseries-forecasting.md)** | Temporal Econometrics | Multi-store retail demand panel | Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation. |
 | **[Suite 8: Unsupervised Trees: Clustering & Anomaly Triage](unsupervised-trees.md)** | Discovery & Triage | Wine Quality & 2D Mixture | Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts. |
 | **[Suite 9: Survival & Competing Risks Trees](survival-trees.md)** | Clinical & Churn | Mayo PBC, Veterans, FLCHAIN | Gray's test, Tarone-Ware/Peto/Martingale, Aalen-Johansen CIF simplex invariant ($\sum F_c + S = 1$), Uno IPCW C. |
-| **[Leaf Solver Benchmarks](solver-benchmarks.md)** | Optimization Systems | Yeh Concrete (1,030 rows) | Analytical Cholesky, Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and Evolutionary Solvers (SHADE, CMA-ES, GA, NES). |
+| **[Suite 10: Solvers, Optimizers & Real-Data Tuning](solver-benchmarks.md)** | Optimization Systems | Yeh Concrete, Airfoil, Rosenbrock | Analytical Cholesky, L-BFGS, CCD, Evolutionary Solvers (SHADE, CMA-ES, GA, NES), Bounded Optimizers, and Real-Data Tuning. |
+| **[Suite 11: Component & Factor Analysis](component-benchmarks.md)** | Representation Learning | Multi-domain psychometrics & TabArena | PCA, SVD, Whitening, FastICA, NMF (MU/ALS/HALS), Factor Analysis (PAF/Minres), Schmid-Leiman, and R-aligned rotations. |
 
 ---
 
@@ -133,11 +142,23 @@ flowchart TD
     Q1 -- "Autoregressive Demand & Seasonality" --> A7["Suite 7: Time Series Forecasting\n(Calendar Lags & Additive Decomp)"]
     Q1 -- "Unsupervised Grouping / Outlier Triage" --> A8["Suite 8: Unsupervised Trees\n(PCT Clustering & EIF Anomaly)"]
     Q1 -- "Right-Censored / Competing Multi-Cause" --> A9["Suite 9: Survival & Competing Risks\n(Gray's Test, Aalen-Johansen CIF)"]
+    Q1 -- "Numerical & Derivative-Free Optimization" --> A10["Suite 10: Solvers & Optimizers\n(CMA-ES, SHADE, L-BFGS-B, Real Tuning)"]
+    Q1 -- "Latent Factors / Rotations / Low-Rank" --> A11["Suite 11: Component & Factor Analysis\n(PCA, NMF, Factor Rotations, ICA)"]
 
     classDef startBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
     classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
     classDef suiteBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
     classDef survBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef optBox fill:#854d0e,stroke:#a16207,stroke-width:2px,color:#ffffff;
+    classDef compBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+
+    class Start startBox;
+    class Q1 gateBox;
+    class A1,A2,A3,A5,A6,A7,A8 suiteBox;
+    class A4,A9 survBox;
+    class A10 optBox;
+    class A11 compBox;
+```
 
     class Start startBox;
     class Q1 gateBox;

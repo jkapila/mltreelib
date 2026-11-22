@@ -7,6 +7,7 @@
 //! - Statistical summaries matching R `summary(glm)` and Python statsmodels (`summary`)
 //! - Zero-copy slice views (`design`) for decision tree leaf fits
 
+pub mod ask_tell;
 pub mod ccd;
 pub mod dense;
 pub mod design;
@@ -17,6 +18,7 @@ pub mod lbfgs;
 pub mod normal;
 pub mod summary;
 
+pub use ask_tell::{AskTell, AskTellKind, AskTellOptions, ParetoSolution};
 pub use ccd::{solve_ccd, CcdOptions};
 pub use dense::{fit_dense, FittedGlm};
 pub use design::{ColumnSliceView, DenseView, DesignMatrix};

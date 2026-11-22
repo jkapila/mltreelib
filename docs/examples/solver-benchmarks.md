@@ -1,6 +1,6 @@
 ---
-title: "Leaf Solver Benchmarks: Analytical, Quasi-Newton, and Evolutionary Optimization"
-description: "Benchmark of 7 leaf solvers in mltreelib: IRLS Cholesky, L-BFGS, Cyclic Coordinate Descent, and derivative-free evolutionary solvers (SHADE, CMA-ES, GA, NES) on real tabular data."
+title: "Suite 10: Solvers, Optimizers & Real-Data Tuning"
+description: "Unified benchmark of numerical and evolutionary leaf solvers, standalone weighted GLM fitting, bounded black-box optimization, and real-data tree tuning in mltreelib."
 keywords:
   - decision tree leaf solver
   - L-BFGS model tree
@@ -9,13 +9,15 @@ keywords:
   - SHADE differential evolution
   - CMA-ES tree solver
   - coordinate descent elastic net
+  - generic optimizer
+  - black-box optimization
 ---
 
-# Leaf Solver Benchmarks
+# Suite 10: Solvers, Optimizers & Real-Data Tuning
 
-Benchmark the seven numerical, quasi-Newton, and continuous evolutionary leaf solvers implemented natively in `mltreelib-core`.
+Benchmark the numerical, quasi-Newton, and continuous evolutionary leaf solvers, standalone GLM fits, and bounded black-box optimizers implemented natively in `mltreelib-core`.
 
-Run the benchmark from the repository root after [building the release extension](../installation.md#from-source). It compares fit time and holdout error on Yeh Concrete.
+Run the suite from the repository root after [building the release extension](../installation.md#from-source). It compares fit time, holdout error, and optimization efficiency on Yeh Concrete, Airfoil Self-Noise, and standard test landscapes.
 
 ```bash
 uv run python examples/suites/solver_benchmarks.py
@@ -156,6 +158,39 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
     - **Use `lbfgs`** for GLMs (`leaf_family="binomial"`, `"poisson"`, `"gamma"`, `"tweedie"`, `"tobit"`).
     - **Use `ccd`** when sparse leaves are mandatory ($L_1 > 0$) to eliminate irrelevant features inside leaf equations.
     - **Use `shade`** when fitting custom non-smooth losses, quantile objectives with heavy outliers, or discontinuous simulation simulators.
+
+---
+
+## 6. Generic Bounded Optimization & Real-Data Hyperparameter Tuning
+
+`mltreelib.solvers.optimize` minimizes arbitrary bounded scalar objectives through one unified contract:
+
+```python
+from mltreelib.solvers import optimize
+
+# Black-box bounded minimization
+res = optimize(
+    lambda p: (p[0] - 1.0)**2 + 100.0 * (p[1] - p[0]**2)**2,  # Rosenbrock
+    bounds=[(-2.0, 2.0), (-2.0, 2.0)],
+    method="lbfgs_b",
+    max_evaluations=200,
+)
+print(f"Status: {res.status}, Best objective: {res.best_value:.6f}")
+```
+
+### Real-Data ModelTree Hyperparameter Tuning
+
+Optimizing `ModelTree` hyperparameters (e.g. tree depth, minimum leaf rows, L2 penalty) directly on held-out tabular validation loss:
+
+| Method | Evaluations | Held-out RMSE (Airfoil) | Wall Time |
+| :--- | :---: | :---: | :---: |
+| **`random_search`** | 100 | 3.26 MPa | 0.26 s |
+| **`latin_hypercube`** | 100 | 3.28 MPa | 0.25 s |
+| **`nelder_mead`** | 100 | **2.65 MPa** | 0.44 s |
+| **`powell`** | 100 | 2.77 MPa | 0.39 s |
+| **`simulated_annealing`** | 100 | 2.92 MPa | 0.45 s |
+
+For full reference on all 14 bounded and constrained algorithms (including COBYLA, Basin Hopping, and gradient-based methods), see the [Generic Optimizer Guide](generic-optimizer.md).
 
 ---
 

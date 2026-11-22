@@ -1,4 +1,4 @@
-"""Suite 10: Component Analysis, Matrix Factorizations & R-Aligned Rotations Benchmark.
+"""Suite 11: Component Analysis, Matrix Factorizations & R-Aligned Rotations Benchmark.
 
 Why this was built:
 Standard tabular learners assume flat, orthogonal, or independent input spaces. In real empirical

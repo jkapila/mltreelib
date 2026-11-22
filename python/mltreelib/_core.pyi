@@ -189,6 +189,55 @@ def optimize(
     local_method: str | None = ...,
 ) -> OptimizationResult: ...
 
+class AskTell:
+    def __init__(
+        self,
+        method: str,
+        bounds: Sequence[tuple[float, float]],
+        *,
+        population_size: int | None = ...,
+        seed: int | None = ...,
+        max_iterations: int | None = ...,
+        max_evaluations: int | None = ...,
+        tol: float | None = ...,
+        ipop: bool | None = ...,
+        max_restarts: int | None = ...,
+        de_f: float | None = ...,
+        de_cr: float | None = ...,
+        pso_w: float | None = ...,
+        pso_c1: float | None = ...,
+        pso_c2: float | None = ...,
+    ) -> None: ...
+    def ask(self) -> list[list[float]]: ...
+    def tell(self, feedback: Sequence[float] | Sequence[Sequence[float]]) -> None: ...
+    @property
+    def best_x(self) -> list[float] | None: ...
+    @property
+    def best_value(self) -> float | None: ...
+    @property
+    def pareto_front(self) -> list[tuple[list[float], list[float]]]: ...
+    @property
+    def iterations(self) -> int: ...
+    @property
+    def evaluations(self) -> int: ...
+    @property
+    def status(self) -> str: ...
+    @property
+    def should_stop(self) -> bool: ...
+    @property
+    def restart_count(self) -> int: ...
+
+def minimize_many(
+    objective: Callable[[list[float]], list[float]],
+    bounds: Sequence[tuple[float, float]],
+    *,
+    method: str = "nsga2",
+    population_size: int | None = ...,
+    max_iterations: int | None = ...,
+    max_evaluations: int | None = ...,
+    seed: int | None = ...,
+) -> list[tuple[list[float], list[float]]]: ...
+
 class ModelReport:
     @property
     def title(self) -> str: ...
