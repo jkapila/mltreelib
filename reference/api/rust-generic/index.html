@@ -1,0 +1,5453 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Tree-based machine learning with a Rust core">
+      
+      
+      
+        <link rel="canonical" href="https://jkapila.github.io/mltreelib/reference/api/rust-generic/">
+      
+      
+      
+        <link rel="prev" href="../solvers/">
+      
+      
+        <link rel="next" href="../../data/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/mltreelib-icon.svg">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Rust generic seam - mltreelib v0.4.13</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  <meta name="google-site-verification" content="LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY" />
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+      
+  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mltreelib v0.4.13
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Rust generic seam
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+      
+  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+
+    </a>
+    mltreelib v0.4.13
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/jkapila/mltreelib/releases" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releases
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modeling pathways
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Modeling pathways
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prepare data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/real-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Get the datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly detection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/survival/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Survival
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Uplift
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluate and monitor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Visualize results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/serving-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prediction and schema
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/advanced-modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Extend a model tree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Examples
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Core Suites
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Core Suites
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/core-tree-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 1: Core Architecture & Growth Knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/constraints-and-honesty/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 2: Structural Constraints & Honesty
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/missing-data-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 3: Native Missing Data Routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/distributional-leaves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 4: Distributional & Censored Leaves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/hierarchical-retrain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 5: Dynamic Leaf Retraining
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/statistical-and-metric-splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 6: Statistical & Metric Splitting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/timeseries-forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 7: Time Series Forecasting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/unsupervised-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 8: Unsupervised Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 9: Survival & Competing Risks Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/solver-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 10: Numerical & Evolutionary Leaf Solvers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/component-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suite 11: Component & Factor Analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/generic-optimizer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Generic optimizer and real-data tuning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Specialized Topics
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Specialized Topics
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/pca-rotations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  PCA Rotations & Simple Structure
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/data-processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data processing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/categorical-encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Optional categorical encoders
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/missing-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Missing data and routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/two-controls-and-0d/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Synthetic controls and ground truth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/model-building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model building
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/knob-tour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Growth knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/hpo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hyperparameter search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/distributional-split-criteria/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional split criteria
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/tobit-regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tobit regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/causal-uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal simulation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/honesty-weights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Honesty and weights
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/constraints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monotone and interaction constraints
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics and plots
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/inspection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tree inspection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/clustering-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/anomaly-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly review budgets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model review checklist
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/rules-summary-knn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rules, summaries and neighbors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/stump-explainable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Explainable stumps and retrain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blog
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blog
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modernizing Quinlan in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/beyond-mse-distributional-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Beyond MSE (Distributional)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Breaking Step Functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Benchmarks
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../benchmarks/elo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../benchmarks/elo_overall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../benchmarks/elo_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../benchmarks/elo_cla_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../benchmarks/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Research
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Research
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../field-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Field notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_10">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameters Catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ModelTree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly & density trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Component & factor analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rule-set models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model reports & diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Encoders & scalers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Feature functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solvers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Solvers & optimization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rust generic seam
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rust generic seam
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericannealingrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/annealing.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;annealing.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simulated_annealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        simulated_annealing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbasin_hoppingrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/basin_hopping.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;basin_hopping.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basin_hopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        basin_hopping
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbfgsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/bfgs.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;bfgs.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bfgs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        bfgs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericboundsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/bounds.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;bounds.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boundsnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bounds.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbudgetrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/budget.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;budget.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budgetstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BudgetStatus
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Budget
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgetnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Budget.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericcobylars" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/cobyla.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;cobyla.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cobyla" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        cobyla
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericconjugate_gradientrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/conjugate_gradient.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;conjugate_gradient.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nonlinear_conjugate_gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        nonlinear_conjugate_gradient
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericconstraintrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/constraint.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;constraint.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constraintkind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintKind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintkindas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintKind.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Constraint
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Constraint.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#violation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        violation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_violation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        max_violation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_feasible" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_feasible
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintevaluator" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintEvaluator
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintevaluatorvalues" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintEvaluator.values
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericfinite_differencers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/finite_difference.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;finite_difference.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finitedifferenceobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FiniteDifferenceObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericlbfgs_brs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/lbfgs_b.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;lbfgs_b.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solve_lbfgs_b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solve_lbfgs_b
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericline_searchrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/line_search.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;line_search.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linesearchoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LineSearchOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linesearchresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LineSearchResult
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strong_wolfe" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        strong_wolfe
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericmodrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/mod.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;mod.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finite_difference_step" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FINITE_DIFFERENCE_STEP
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        optimize
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimize_with_budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        optimize_with_budget
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericnelder_meadrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/nelder_mead.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;nelder_mead.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nelder_mead" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        nelder_mead
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericobjectivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/objective.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;objective.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objectiveerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ObjectiveError
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivedim" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.dim
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivebounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivevalue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SmoothObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothobjectivegradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SmoothObjective.gradient
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_finite" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        require_finite
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        require_dimension
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#countedobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CountedObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericpowellrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/powell.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;powell.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#powell" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        powell
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericrandomrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/random.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;random.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#latin_hypercube_samples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        latin_hypercube_samples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        random_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latin_hypercube_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        latin_hypercube_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericrequestrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/request.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;request.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default_seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DEFAULT_SEED
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizerkind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizerKind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizerkindas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizerKind.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharedoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SharedOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#randomsearchoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        RandomSearchOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latinhypercubeoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LatinHypercubeOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lbfgsboptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LbfgsBOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bfgsoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BfgsOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nonlinearcgoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        NonlinearCgOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neldermeadoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        NelderMeadOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#powelloptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PowellOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boundarypolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BoundaryPolicy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annealingoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        AnnealingOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cobylaoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CobylaOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basinhoppingoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BasinHoppingOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methodoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MethodOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methodoptionskind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MethodOptions.kind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationrequest" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationRequest
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericresultrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/result.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;result.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solvestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SolveStatus
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solvestatusas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SolveStatus.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historyentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HistoryEntry
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationResult
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationresultnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationResult.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluation reports
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericannealingrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/annealing.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;annealing.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simulated_annealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        simulated_annealing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbasin_hoppingrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/basin_hopping.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;basin_hopping.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basin_hopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        basin_hopping
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbfgsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/bfgs.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;bfgs.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bfgs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        bfgs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericboundsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/bounds.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;bounds.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boundsnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bounds.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericbudgetrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/budget.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;budget.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budgetstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BudgetStatus
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Budget
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgetnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Budget.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericcobylars" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/cobyla.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;cobyla.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cobyla" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        cobyla
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericconjugate_gradientrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/conjugate_gradient.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;conjugate_gradient.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nonlinear_conjugate_gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        nonlinear_conjugate_gradient
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericconstraintrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/constraint.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;constraint.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constraintkind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintKind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintkindas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintKind.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Constraint
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Constraint.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#violation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        violation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_violation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        max_violation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_feasible" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_feasible
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintevaluator" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintEvaluator
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraintevaluatorvalues" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ConstraintEvaluator.values
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericfinite_differencers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/finite_difference.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;finite_difference.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finitedifferenceobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FiniteDifferenceObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericlbfgs_brs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/lbfgs_b.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;lbfgs_b.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solve_lbfgs_b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solve_lbfgs_b
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericline_searchrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/line_search.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;line_search.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linesearchoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LineSearchOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linesearchresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LineSearchResult
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strong_wolfe" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        strong_wolfe
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericmodrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/mod.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;mod.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finite_difference_step" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FINITE_DIFFERENCE_STEP
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        optimize
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimize_with_budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        optimize_with_budget
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericnelder_meadrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/nelder_mead.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;nelder_mead.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nelder_mead" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        nelder_mead
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericobjectivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/objective.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;objective.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objectiveerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ObjectiveError
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivedim" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.dim
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivebounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectivevalue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Objective.value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SmoothObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothobjectivegradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SmoothObjective.gradient
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_finite" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        require_finite
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        require_dimension
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#countedobjective" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CountedObjective
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericpowellrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/powell.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;powell.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#powell" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        powell
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericrandomrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/random.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;random.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#latin_hypercube_samples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        latin_hypercube_samples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        random_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latin_hypercube_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        latin_hypercube_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericrequestrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/request.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;request.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default_seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DEFAULT_SEED
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizerkind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizerKind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizerkindas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizerKind.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharedoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SharedOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#randomsearchoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        RandomSearchOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latinhypercubeoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LatinHypercubeOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lbfgsboptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LbfgsBOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bfgsoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BfgsOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nonlinearcgoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        NonlinearCgOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neldermeadoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        NelderMeadOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#powelloptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PowellOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boundarypolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BoundaryPolicy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annealingoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        AnnealingOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cobylaoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CobylaOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basinhoppingoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BasinHoppingOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methodoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MethodOptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methodoptionskind" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MethodOptions.kind
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationrequest" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationRequest
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solvergenericresultrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solver/generic/result.rs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="solver&#x2f;generic&#x2f;result.rs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solvestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SolveStatus
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solvestatusas_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SolveStatus.as_str
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historyentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HistoryEntry
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationResult
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizationresultnew" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OptimizationResult.new
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="api-reference-rust-generic-seam">API reference — Rust generic seam<a class="headerlink" href="#api-reference-rust-generic-seam" title="Permanent link">&para;</a></h1>
+<!-- generated by examples/gen_api_doc.py from the built module's docstrings - do not edit -->
+
+<p>The Rust core owns the shared optimization seam. Python callers reach it through <code>mltreelib.solvers.optimize</code>. Guide: <a href="../../../examples/generic-optimizer/">Generic optimizer</a>.</p>
+<p>Reach the module through <code>mltreelib_core::generic</code> or <code>mltreelib_core::solver::generic</code>. The short names <code>Bounds</code>, <code>Budget</code>, <code>Constraint</code>, <code>ConstraintKind</code>, <code>Objective</code>, <code>ObjectiveError</code>, <code>OptimizationRequest</code>, <code>OptimizationResult</code>, <code>OptimizerKind</code>, <code>SmoothObjective</code>, and <code>SolveStatus</code> are re-exported from <code>mltreelib_core::solver</code>.</p>
+<h2 id="solvergenericannealingrs">solver/generic/annealing.rs<a class="headerlink" href="#solvergenericannealingrs" title="Permanent link">&para;</a></h2>
+<h3 id="simulated_annealing">simulated_annealing<a class="headerlink" href="#simulated_annealing" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">simulated_annealing</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">AnnealingOptions</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs bounded simulated annealing.</p>
+<p>The starting point defaults to the middle of the box. The initial temperature comes from the observed objective spread when the caller does not supply one.</p>
+<h2 id="solvergenericbasin_hoppingrs">solver/generic/basin_hopping.rs<a class="headerlink" href="#solvergenericbasin_hoppingrs" title="Permanent link">&para;</a></h2>
+<h3 id="basin_hopping">basin_hopping<a class="headerlink" href="#basin_hopping" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">basin_hopping</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">smooth</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">BasinHoppingOptions</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs basin hopping.</p>
+<p>The inner local solver comes from the shared seam. The perturbation scales with the bound width, so one step size fits heterogeneous parameter scales.</p>
+<h2 id="solvergenericbfgsrs">solver/generic/bfgs.rs<a class="headerlink" href="#solvergenericbfgsrs" title="Permanent link">&para;</a></h2>
+<h3 id="bfgs">bfgs<a class="headerlink" href="#bfgs" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">bfgs</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">smooth</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">BfgsOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs BFGS on an unbounded smooth objective.</p>
+<p>The starting point defaults to the origin. The run stops when the gradient falls under the tolerance, when the iteration limit is reached, or when a budget ends the run.</p>
+<h2 id="solvergenericboundsrs">solver/generic/bounds.rs<a class="headerlink" href="#solvergenericboundsrs" title="Permanent link">&para;</a></h2>
+<h3 id="bounds">Bounds<a class="headerlink" href="#bounds" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Bounds</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Lower and upper limits for each parameter.</p>
+<p>A bound is either finite or infinite. <code>lower[i] &lt;= upper[i]</code> holds for every dimension. A fully unbounded domain uses negative and positive infinity.</p>
+<h3 id="boundsnew">Bounds.new<a class="headerlink" href="#boundsnew" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">lower</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">upper</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="bp">Self</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Builds bounds from per-dimension lower and upper limits.</p>
+<p>Returns an error when the vectors differ in length, when a limit is <code>NaN</code>, when a lower limit is positive infinity, when an upper limit is negative infinity, or when a lower limit exceeds its upper limit.</p>
+<h2 id="solvergenericbudgetrs">solver/generic/budget.rs<a class="headerlink" href="#solvergenericbudgetrs" title="Permanent link">&para;</a></h2>
+<h3 id="budgetstatus">BudgetStatus<a class="headerlink" href="#budgetstatus" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">BudgetStatus</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Which budget ended a run.</p>
+<h3 id="budget">Budget<a class="headerlink" href="#budget" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Budget</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Counts user objective evaluations and solver iterations.</p>
+<p>One counter covers every user objective call, including calls inside local solves, perturbation steps, population initialization, finite-difference gradients, and archive updates. The counters use interior mutability, so the objective wrapper and the solver share one budget without aliasing borrows.</p>
+<h3 id="budgetnew">Budget.new<a class="headerlink" href="#budgetnew" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">max_evaluations</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Self</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Builds a budget with optional limits. <code>None</code> means unlimited.</p>
+<h2 id="solvergenericcobylars">solver/generic/cobyla.rs<a class="headerlink" href="#solvergenericcobylars" title="Permanent link">&para;</a></h2>
+<h3 id="cobyla">cobyla<a class="headerlink" href="#cobyla" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">cobyla</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">CobylaOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">constraints</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="k">dyn</span><span class="w"> </span><span class="n">ConstraintEvaluator</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">kind</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs COBYLA on a bounded problem with inequality constraints.</p>
+<p>The starting point defaults to the middle of the box. The method stops when the trust region collapses, when the model step vanishes, when the iteration limit is reached, or when a budget ends the run.</p>
+<h2 id="solvergenericconjugate_gradientrs">solver/generic/conjugate_gradient.rs<a class="headerlink" href="#solvergenericconjugate_gradientrs" title="Permanent link">&para;</a></h2>
+<h3 id="nonlinear_conjugate_gradient">nonlinear_conjugate_gradient<a class="headerlink" href="#nonlinear_conjugate_gradient" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">nonlinear_conjugate_gradient</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">smooth</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">NonlinearCgOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs nonlinear conjugate gradient on an unbounded smooth objective.</p>
+<p>The starting point defaults to the origin. The run stops when the gradient falls under the tolerance, when the iteration limit is reached, or when a budget ends the run.</p>
+<h2 id="solvergenericconstraintrs">solver/generic/constraint.rs<a class="headerlink" href="#solvergenericconstraintrs" title="Permanent link">&para;</a></h2>
+<h3 id="constraintkind">ConstraintKind<a class="headerlink" href="#constraintkind" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Constraint type.</p>
+<h3 id="constraintkindas_str">ConstraintKind.as_str<a class="headerlink" href="#constraintkindas_str" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">as_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Canonical name.</p>
+<h3 id="constraint">Constraint<a class="headerlink" href="#constraint" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Constraint</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Constraint values evaluated at one point.</p>
+<h3 id="constraintnew">Constraint.new<a class="headerlink" href="#constraintnew" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Self</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Builds evaluated constraint values.</p>
+<h3 id="violation">violation<a class="headerlink" href="#violation" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">violation</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Largest violation of one constraint value.</p>
+<p>An inequality value below zero violates the constraint by its magnitude. An equality value violates the constraint by its absolute distance from zero.</p>
+<h3 id="max_violation">max_violation<a class="headerlink" href="#max_violation" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">max_violation</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Largest violation across all constraint values.</p>
+<h3 id="is_feasible">is_feasible<a class="headerlink" href="#is_feasible" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">is_feasible</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstraintKind</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">],</span><span class="w"> </span><span class="n">tolerance</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Reports whether constraint values satisfy the constraint.</p>
+<p>Inequality values accept a small negative slack. Equality values accept an absolute distance from zero up to the tolerance.</p>
+<h3 id="constraintevaluator">ConstraintEvaluator<a class="headerlink" href="#constraintevaluator" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">ConstraintEvaluator</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Evaluates constraint values at a point.</p>
+<h3 id="constraintevaluatorvalues">ConstraintEvaluator.values<a class="headerlink" href="#constraintevaluatorvalues" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Returns one value per constraint.</p>
+<h2 id="solvergenericfinite_differencers">solver/generic/finite_difference.rs<a class="headerlink" href="#solvergenericfinite_differencers" title="Permanent link">&para;</a></h2>
+<h3 id="finitedifferenceobjective">FiniteDifferenceObjective<a class="headerlink" href="#finitedifferenceobjective" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">FiniteDifferenceObjective</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Objective that supplies a central-difference gradient.</p>
+<p>The perturbation calls the wrapped objective, so the shared budget counts them like every other objective call.</p>
+<h2 id="solvergenericlbfgs_brs">solver/generic/lbfgs_b.rs<a class="headerlink" href="#solvergenericlbfgs_brs" title="Permanent link">&para;</a></h2>
+<h3 id="solve_lbfgs_b">solve_lbfgs_b<a class="headerlink" href="#solve_lbfgs_b" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">solve_lbfgs_b</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">LbfgsBOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">smooth</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs L-BFGS-B on one bounded smooth objective.</p>
+<p>The returned point is always projected into the box.  Evaluation budget exhaustion is reported as <code>EvaluationLimit</code>; iteration budget exhaustion is reported as <code>IterationLimit</code>.</p>
+<h2 id="solvergenericline_searchrs">solver/generic/line_search.rs<a class="headerlink" href="#solvergenericline_searchrs" title="Permanent link">&para;</a></h2>
+<h3 id="linesearchoptions">LineSearchOptions<a class="headerlink" href="#linesearchoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LineSearchOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Line search parameters.</p>
+<h3 id="linesearchresult">LineSearchResult<a class="headerlink" href="#linesearchresult" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LineSearchResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Result of one line search.</p>
+<h3 id="strong_wolfe">strong_wolfe<a class="headerlink" href="#strong_wolfe" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">strong_wolfe</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">smooth</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">,</span><span class="w"> </span><span class="n">point</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">],</span><span class="w"> </span><span class="n">direction</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">],</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">LineSearchOptions</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">LineSearchResult</span><span class="p">,</span><span class="w"> </span><span class="n">ObjectiveError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs a strong Wolfe line search along one direction.</p>
+<p>The search returns the step, the objective value, and the gradient at the accepted point. It falls back to the steepest descent direction when the supplied direction is not a descent direction.</p>
+<h2 id="solvergenericmodrs">solver/generic/mod.rs<a class="headerlink" href="#solvergenericmodrs" title="Permanent link">&para;</a></h2>
+<h3 id="finite_difference_step">FINITE_DIFFERENCE_STEP<a class="headerlink" href="#finite_difference_step" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">FINITE_DIFFERENCE_STEP</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-6</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Step size used by the central-difference gradient fallback.</p>
+<h3 id="optimize">optimize<a class="headerlink" href="#optimize" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="n">request</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">OptimizationRequest</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">OptimizationResult</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs one optimization with the shared contracts.</p>
+<p>The method dispatch resolves the method-specific options, evaluates the objective through one shared budget, and returns the shared result type.</p>
+<h3 id="optimize_with_budget">optimize_with_budget<a class="headerlink" href="#optimize_with_budget" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">optimize_with_budget</span><span class="p">(</span><span class="w"> </span><span class="n">request</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">OptimizationRequest</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">OptimizationResult</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs one optimization against a budget that the caller owns.</p>
+<p>A composition method uses this entry point so the inner local solve spends the outer budget and no objective call escapes the count.</p>
+<h2 id="solvergenericnelder_meadrs">solver/generic/nelder_mead.rs<a class="headerlink" href="#solvergenericnelder_meadrs" title="Permanent link">&para;</a></h2>
+<h3 id="nelder_mead">nelder_mead<a class="headerlink" href="#nelder_mead" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">nelder_mead</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">NelderMeadOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs bounded Nelder-Mead.</p>
+<p>The starting point defaults to the middle of the box. The method stops when the objective spread and the simplex spread fall under the configured tolerances, when the iteration limit is reached, or when a budget ends the run.</p>
+<h2 id="solvergenericobjectivers">solver/generic/objective.rs<a class="headerlink" href="#solvergenericobjectivers" title="Permanent link">&para;</a></h2>
+<h3 id="objectiveerror">ObjectiveError<a class="headerlink" href="#objectiveerror" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">ObjectiveError</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Failure reported by an objective or gradient evaluation.</p>
+<h3 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Objective</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>A bounded scalar objective.</p>
+<p>Implementations return one finite value for one point. Solvers reject non-finite values through [<code>ObjectiveError::NotFinite</code>] and report the [<code>crate::solver::generic::SolveStatus::InvalidObjective</code>] status.</p>
+<h3 id="objectivedim">Objective.dim<a class="headerlink" href="#objectivedim" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">dim</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">usize</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Number of parameters.</p>
+<h3 id="objectivebounds">Objective.bounds<a class="headerlink" href="#objectivebounds" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">bounds</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Bounds</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Parameter domain.</p>
+<h3 id="objectivevalue">Objective.value<a class="headerlink" href="#objectivevalue" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="kt">f64</span><span class="p">,</span><span class="w"> </span><span class="n">ObjectiveError</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Objective value at one point.</p>
+<h3 id="smoothobjective">SmoothObjective<a class="headerlink" href="#smoothobjective" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">SmoothObjective</span><span class="p">:</span><span class="w"> </span><span class="nc">Objective</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>An objective that also provides an exact gradient.</p>
+<h3 id="smoothobjectivegradient">SmoothObjective.gradient<a class="headerlink" href="#smoothobjectivegradient" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">gradient</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">ObjectiveError</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Gradient at one point. The returned vector has one entry per dimension.</p>
+<h3 id="require_finite">require_finite<a class="headerlink" href="#require_finite" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">require_finite</span><span class="p">(</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="kt">f64</span><span class="p">,</span><span class="w"> </span><span class="n">ObjectiveError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Checks that an objective value is finite.</p>
+<h3 id="require_dimension">require_dimension<a class="headerlink" href="#require_dimension" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">require_dimension</span><span class="p">(</span><span class="n">expected</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">ObjectiveError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Checks that a point matches the objective dimension.</p>
+<h3 id="countedobjective">CountedObjective<a class="headerlink" href="#countedobjective" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">CountedObjective</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Objective wrapper that charges the shared budget for every value call.</p>
+<p>Wrapping the user objective keeps one counter for every objective call, including the calls a finite-difference gradient makes.</p>
+<h2 id="solvergenericpowellrs">solver/generic/powell.rs<a class="headerlink" href="#solvergenericpowellrs" title="Permanent link">&para;</a></h2>
+<h3 id="powell">powell<a class="headerlink" href="#powell" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">powell</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">PowellOptions</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="kt">f64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs bounded Powell.</p>
+<p>The starting point defaults to the middle of the box. The method stops when the objective and the point stop moving, when the iteration limit is reached, or when a budget ends the run.</p>
+<h2 id="solvergenericrandomrs">solver/generic/random.rs<a class="headerlink" href="#solvergenericrandomrs" title="Permanent link">&para;</a></h2>
+<h3 id="latin_hypercube_samples">latin_hypercube_samples<a class="headerlink" href="#latin_hypercube_samples" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">latin_hypercube_samples</span><span class="p">(</span><span class="w"> </span><span class="n">bounds</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Bounds</span><span class="p">,</span><span class="w"> </span><span class="n">samples</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Builds Latin hypercube samples inside finite bounds.</p>
+<p>Every dimension is stratified independently into <code>samples</code> strata. One point takes one stratum per dimension. The stratum order is shuffled per dimension with the seeded generator.</p>
+<h3 id="random_search">random_search<a class="headerlink" href="#random_search" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">random_search</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">RandomSearchOptions</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="n">initial_population</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="p">[</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">]</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs uniform random search inside bounds.</p>
+<p>Candidates come from <code>initial_population</code> first when one is supplied. The remaining candidates are uniform draws.</p>
+<h3 id="latin_hypercube_search">latin_hypercube_search<a class="headerlink" href="#latin_hypercube_search" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">latin_hypercube_search</span><span class="p">(</span><span class="w"> </span><span class="n">objective</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">dyn</span><span class="w"> </span><span class="n">Objective</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Budget</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">LatinHypercubeOptions</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Runs Latin hypercube sampling inside bounds.</p>
+<h2 id="solvergenericrequestrs">solver/generic/request.rs<a class="headerlink" href="#solvergenericrequestrs" title="Permanent link">&para;</a></h2>
+<h3 id="default_seed">DEFAULT_SEED<a class="headerlink" href="#default_seed" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DEFAULT_SEED</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Default seed used by every stochastic method when no seed is supplied.</p>
+<p>The fixed seed keeps omitted seeds reproducible across runs.</p>
+<h3 id="optimizerkind">OptimizerKind<a class="headerlink" href="#optimizerkind" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">OptimizerKind</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>One optimizer method.</p>
+<h3 id="optimizerkindas_str">OptimizerKind.as_str<a class="headerlink" href="#optimizerkindas_str" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">as_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Canonical method name.</p>
+<h3 id="sharedoptions">SharedOptions<a class="headerlink" href="#sharedoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">SharedOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options shared by every method.</p>
+<h3 id="randomsearchoptions">RandomSearchOptions<a class="headerlink" href="#randomsearchoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">RandomSearchOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for random search.</p>
+<h3 id="latinhypercubeoptions">LatinHypercubeOptions<a class="headerlink" href="#latinhypercubeoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LatinHypercubeOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for Latin hypercube sampling.</p>
+<h3 id="lbfgsboptions">LbfgsBOptions<a class="headerlink" href="#lbfgsboptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LbfgsBOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for L-BFGS-B.</p>
+<h3 id="bfgsoptions">BfgsOptions<a class="headerlink" href="#bfgsoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">BfgsOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for full-memory BFGS.</p>
+<h3 id="nonlinearcgoptions">NonlinearCgOptions<a class="headerlink" href="#nonlinearcgoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">NonlinearCgOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for nonlinear conjugate gradient.</p>
+<h3 id="neldermeadoptions">NelderMeadOptions<a class="headerlink" href="#neldermeadoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">NelderMeadOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for Nelder-Mead.</p>
+<h3 id="powelloptions">PowellOptions<a class="headerlink" href="#powelloptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">PowellOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for Powell.</p>
+<h3 id="boundarypolicy">BoundaryPolicy<a class="headerlink" href="#boundarypolicy" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">BoundaryPolicy</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Boundary policy for proposals that leave the box.</p>
+<h3 id="annealingoptions">AnnealingOptions<a class="headerlink" href="#annealingoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">AnnealingOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for bounded simulated annealing.</p>
+<h3 id="cobylaoptions">CobylaOptions<a class="headerlink" href="#cobylaoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">CobylaOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for COBYLA.</p>
+<h3 id="basinhoppingoptions">BasinHoppingOptions<a class="headerlink" href="#basinhoppingoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">BasinHoppingOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Options for basin hopping.</p>
+<h3 id="methodoptions">MethodOptions<a class="headerlink" href="#methodoptions" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">MethodOptions</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Method-specific options.</p>
+<h3 id="methodoptionskind">MethodOptions.kind<a class="headerlink" href="#methodoptionskind" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">kind</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">OptimizerKind</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Method that owns these options.</p>
+<h3 id="optimizationrequest">OptimizationRequest<a class="headerlink" href="#optimizationrequest" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">OptimizationRequest</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>One optimization request.</p>
+<h2 id="solvergenericresultrs">solver/generic/result.rs<a class="headerlink" href="#solvergenericresultrs" title="Permanent link">&para;</a></h2>
+<h3 id="solvestatus">SolveStatus<a class="headerlink" href="#solvestatus" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">SolveStatus</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Termination status of one optimization run.</p>
+<p>Budget exhaustion never reports success. Only [<code>SolveStatus::Converged</code>] and [<code>SolveStatus::Tolerance</code>] report success.</p>
+<h3 id="solvestatusas_str">SolveStatus.as_str<a class="headerlink" href="#solvestatusas_str" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">as_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Canonical name used by the Python surface and result files.</p>
+<h3 id="historyentry">HistoryEntry<a class="headerlink" href="#historyentry" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">HistoryEntry</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>One convergence history sample.</p>
+<h3 id="optimizationresult">OptimizationResult<a class="headerlink" href="#optimizationresult" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">OptimizationResult</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Result of one optimization run.</p>
+<h3 id="optimizationresultnew">OptimizationResult.new<a class="headerlink" href="#optimizationresultnew" title="Permanent link">&para;</a></h3>
+<div class="language-rust highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">best_x</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">f64</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">best_value</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Self</span><span class="w"> </span><span class="p">{</span>
+</span></code></pre></div>
+<p>Builds a result with the given point and value.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../solvers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Solvers &amp; optimization">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Solvers & optimization
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../data/" class="md-footer__link md-footer__link--next" aria-label="Next: Data guide">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Data guide
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../..","features":["navigation.instant","navigation.tracking","navigation.top","navigation.footer","content.code.copy","search.suggest","search.highlight","content.tabs.link","content.footnote.tooltips","content.tooltips"],"redirect":null,"search":"../../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="../../../assets/medium-zoom.min.js"></script>
+      
+        <script src="../../../assets/zoom-init.js"></script>
+      
+        <script src="../../../assets/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

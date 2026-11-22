@@ -58,6 +58,9 @@
         <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/component-benchmarks/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/constraints-and-honesty/</loc>
       </url>
       <url>
@@ -74,6 +77,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/distributional-split-criteria/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/generic-optimizer/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/hierarchical-retrain/</loc>
@@ -101,6 +107,9 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/pca-rotations/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
@@ -190,6 +199,9 @@
         <loc>https://jkapila.github.io/mltreelib/reference/api/cluster/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/components/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/data/</loc>
       </url>
       <url>
@@ -203,6 +215,18 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/api/model-tree/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/report/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/rules/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/rust-generic/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/reference/api/solvers/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/data/</loc>
