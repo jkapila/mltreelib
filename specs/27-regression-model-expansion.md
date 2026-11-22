@@ -1,4 +1,4 @@
-# Spec 27: Regression Model Expansion, Group Behavior, and Panel Foundation
+# Spec 27: Regression Model Expansion, Group Behavior, Panel Foundation, and Binned Split Evaluation
 
 Status: proposed
 
@@ -42,11 +42,25 @@ The package needs the group substrate first. Panel regression is the first consu
 
 No regression estimator routes through that seam. Every GLM fit goes through `solver/dense.rs` and `solver/mod.rs` with hard-wired family and penalty semantics.
 
+### 5. The regression split gains cannot be scanned at scale
+
+Every regression family this specification adds needs a **split criterion** that a tree can evaluate, and every one of those criteria currently falls outside the library's binned scan path.
+
+`crates/mltreelib-core/src/split.rs` defines `SplitEval` with three modes: `Fast` (scalar variance or deviance reduction, the default), `Histogram` (classification scan on at most 256 bins per numeric feature), and `Exhaustive` (candidate-level linear Gram regression, the historical research mode). The histogram path is gated by `uses_class_histogram`, which admits only gini, entropy, gain ratio, and twoing.
+
+So `Sse`, `FriedmanMse`, `Sdr`, `AbsoluteError`, `Huber`, and `Deviance` all scan raw values at every node. The families this specification adds need more than that: quantile regression needs a pinball criterion, expectile regression needs an asymmetric-squared criterion, group lasso needs a group-aware criterion, and negative binomial and beta regression need their own deviance criteria. None of them can ride the binned path.
+
+**The cost is not marginal.** On the local 56-dataset Elo board, `LightGBM(200)` fits in 0.34 s mean fit time while `ranger` takes 17.78 s and `sklearn RF` takes 18.56 s, on comparable regression Elo of 1542.4, 1700.6, and 1686.2. The difference is not the algorithm. LightGBM bins each numeric feature once into at most 255 bins and scans the binned histogram at every node. The other two rescan raw values at every node. A 50× fit-time gap comes almost entirely from binning.
+
+**This specification owns the fix**, because the criteria that need it are the regression criteria. Lifting the gate and adding the new criteria to the binned path is one piece of work. Splitting it across specifications would leave the same change made twice, or leave the regression families unusable inside a tree at scale.
+
+**The shared consequence.** Every ensemble family needs this: a forest pays it 200 times over, a booster pays it per stage, and a stack pays it per member per fold. Spec 28 (`ModelForest`), Spec 29 (`ModelBoost`), and Spec 30 (`ModelMeta`) all assume it lands here.
+
 ## Solution
 
 Build one **group-aware regression layer** and add six regression families on top of it.
 
-The layer has three parts.
+The layer has four parts.
 
 **Group metadata.** One group declaration on the design view, covering three group kinds:
 
@@ -60,23 +74,26 @@ The layer has three parts.
 
 **Panel foundation.** Entity identity and within-transformation become first-class regression inputs, so panel fixed-effects leaves can land on top of the same group substrate that group lasso uses.
 
+**Binned split evaluation for the regression criteria.** Every regression family needs a split criterion, and the binned scan path is the only one fast enough to use at scale. This part lifts the `uses_class_histogram` gate to the regression gains and adds the new criteria this specification introduces to the binned path.
+
 Build order:
 
 | Phase | Content |
 |---:|---|
 | 0 | Group metadata on the design view |
-| 1 | Quantile regression |
-| 2 | Huber regression with robust scale |
-| 3 | Expectile regression |
-| 4 | Non-negative least squares |
-| 5 | Group lasso and sparse-group lasso |
-| 6 | Negative binomial and beta GLM |
-| 7 | Panel entity grouping and within-transformation |
-| 8 | Panel fixed-effects leaf |
-| 9 | Hierarchical partial pooling foundation |
-| 10 | Conditional GAM work |
+| 1 | Binned split evaluation for the regression criteria |
+| 2 | Quantile regression |
+| 3 | Huber regression with robust scale |
+| 4 | Expectile regression |
+| 5 | Non-negative least squares |
+| 6 | Group lasso and sparse-group lasso |
+| 7 | Negative binomial and beta GLM |
+| 8 | Panel entity grouping and within-transformation |
+| 9 | Panel fixed-effects leaf |
+| 10 | Hierarchical partial pooling foundation |
+| 11 | Conditional GAM work |
 
-Phase 0 lands first. Every later phase depends on it.
+Phase 0 lands first. Every later phase depends on it. Phase 1 lands next because the regression criteria added in phases 2 through 7 are unusable inside a tree at scale without it, and because every ensemble family depends on the same change.
 
 ## User Stories
 
@@ -93,97 +110,112 @@ Phase 0 lands first. Every later phase depends on it.
 9. As a model user, I want single-column groups allowed but documented as equivalent to scalar penalties, so that no special case is hidden.
 10. As a library maintainer, I want group definitions to serialize with the model snapshot, so that a reloaded model applies the same penalties.
 
+### Binned Split Evaluation for the Regression Criteria
+
+11. As a library maintainer, I want the binned scan path to cover the regression gains, so that a regression tree is as fast to split as a classification tree.
+12. As a library maintainer, I want `Sse`, `FriedmanMse`, `Sdr`, `AbsoluteError`, `Huber`, and `Deviance` usable with `SplitEval::Histogram`, so that the existing gains are not locked out of the fast path.
+13. As a library maintainer, I want the pinball criterion for quantile regression usable with the binned path, so that a quantile tree scales.
+14. As a library maintainer, I want the asymmetric-squared criterion for expectile regression usable with the binned path, so that an expectile tree scales.
+15. As a library maintainer, I want a group-aware criterion usable with the binned path, so that a group-lasso tree scales.
+16. As a library maintainer, I want the negative binomial and beta deviance criteria usable with the binned path, so that count and bounded-response trees scale.
+17. As a model user, I want the bin count configurable, so that I can trade resolution against memory and speed.
+18. As a model user, I want missing values to get their own bin, so that the binned path keeps the library's missing-value routing.
+19. As a model user, I want categorical columns to keep their partition search on the binned path, so that high-cardinality categoricals do not fall back to a slow scan.
+20. As a library maintainer, I want the binned and raw scans to select the same split on data that falls on bin boundaries, so that the fast path is provably equivalent.
+21. As a library maintainer, I want the binned path to report the binning it used, so that a fit is reproducible and a resolution change is visible.
+22. As a library maintainer, I want the raw scan kept as a fallback, so that a criterion without a binned form still works.
+
 ### Panel Entity Grouping
 
-11. As a data scientist, I want to pass an entity identifier with a panel design, so that the estimator can remove entity-level heterogeneity.
-12. As a data scientist, I want the within-transformation computed analytically, so that millions of entities need no dummy columns.
-13. As a data scientist, I want unbalanced panels supported, so that entities with different observation counts fit correctly.
-14. As a data scientist, I want the within-transformation cached per fit, so that repeated leaf fits do not recompute entity means.
-15. As a data scientist, I want entity means available for out-of-sample prediction, so that the entity fixed effect can be added back.
-16. As a data scientist, I want prediction for an unseen entity documented, so that I know the fallback is the group mean rather than a silent failure.
-17. As a data scientist, I want hierarchical entity levels supported, so that a store nested in a department can pool correctly.
-18. As a data scientist, I want pooling level configurable, so that I can choose department, store, or neither.
+23. As a data scientist, I want to pass an entity identifier with a panel design, so that the estimator can remove entity-level heterogeneity.
+24. As a data scientist, I want the within-transformation computed analytically, so that millions of entities need no dummy columns.
+25. As a data scientist, I want unbalanced panels supported, so that entities with different observation counts fit correctly.
+26. As a data scientist, I want the within-transformation cached per fit, so that repeated leaf fits do not recompute entity means.
+27. As a data scientist, I want entity means available for out-of-sample prediction, so that the entity fixed effect can be added back.
+28. As a data scientist, I want prediction for an unseen entity documented, so that I know the fallback is the group mean rather than a silent failure.
+29. As a data scientist, I want hierarchical entity levels supported, so that a store nested in a department can pool correctly.
+30. As a data scientist, I want pooling level configurable, so that I can choose department, store, or neither.
 
 ### Quantile Regression
 
-19. As a model user, I want multivariate quantile regression, so that I can model conditional quantiles rather than a constant.
-20. As a model user, I want the pinball loss reported, so that I can judge fit quality in the loss the estimator minimized.
-21. As a model user, I want several taus fitted jointly, so that I can see the whole conditional distribution.
-22. As a model user, I want quantile crossing detected and reported, so that I know when fitted curves are incoherent.
-23. As a model user, I want monotone quantile curves enforced or reported, so that tau ordering is respected.
-24. As a library maintainer, I want the pinball loss as an explicit regression problem, so that any compatible solver can fit it.
-25. As a library maintainer, I want the asymmetric weight function shared between quantile and expectile problems, so that one implementation serves both.
-26. As a benchmark author, I want quantile fits compared against a reference implementation, so that a hand-written solver can be checked.
-27. As a model user, I want a minimum-support rule for quantile leaves, so that tiny leaves fail visibly instead of returning unstable fits.
-28. As a model user, I want quantile fits to carry no OLS standard errors, so that invalid inference is never presented.
+31. As a model user, I want multivariate quantile regression, so that I can model conditional quantiles rather than a constant.
+32. As a model user, I want the pinball loss reported, so that I can judge fit quality in the loss the estimator minimized.
+33. As a model user, I want several taus fitted jointly, so that I can see the whole conditional distribution.
+34. As a model user, I want quantile crossing detected and reported, so that I know when fitted curves are incoherent.
+35. As a model user, I want monotone quantile curves enforced or reported, so that tau ordering is respected.
+36. As a library maintainer, I want the pinball loss as an explicit regression problem, so that any compatible solver can fit it.
+37. As a library maintainer, I want the asymmetric weight function shared between quantile and expectile problems, so that one implementation serves both.
+38. As a benchmark author, I want quantile fits compared against a reference implementation, so that a hand-written solver can be checked.
+39. As a model user, I want a minimum-support rule for quantile leaves, so that tiny leaves fail visibly instead of returning unstable fits.
+40. As a model user, I want quantile fits to carry no OLS standard errors, so that invalid inference is never presented.
 
 ### Huber Regression
 
-29. As a model user, I want multivariate Huber regression, so that outliers in a leaf do not distort the fit.
-30. As a model user, I want the robust scale reported, so that I can see how heavy the tail was.
-31. As a model user, I want the tuning constant explicit, so that I know how close the estimator is to least squares or least absolute deviation.
-32. As a model user, I want the scale and location iterations to converge or fail visibly, so that a divergent robust fit never passes silently.
-33. As a model user, I want the 0D Huber location leaf to keep working unchanged, so that existing models stay stable.
-34. As a benchmark author, I want RANSAC and Theil-Sen available as oracles, so that robust-fit improvements are verifiable.
-35. As a library maintainer, I want the Huber loss as a regression problem with a gradient, so that L-BFGS fits it directly.
+41. As a model user, I want multivariate Huber regression, so that outliers in a leaf do not distort the fit.
+42. As a model user, I want the robust scale reported, so that I can see how heavy the tail was.
+43. As a model user, I want the tuning constant explicit, so that I know how close the estimator is to least squares or least absolute deviation.
+44. As a model user, I want the scale and location iterations to converge or fail visibly, so that a divergent robust fit never passes silently.
+45. As a model user, I want the 0D Huber location leaf to keep working unchanged, so that existing models stay stable.
+46. As a benchmark author, I want RANSAC and Theil-Sen available as oracles, so that robust-fit improvements are verifiable.
+47. As a library maintainer, I want the Huber loss as a regression problem with a gradient, so that L-BFGS fits it directly.
 
 ### Expectile Regression
 
-36. As a model user, I want expectile regression, so that I have a smooth asymmetric loss alternative to quantiles.
-37. As a model user, I want mean recovery at the central expectile, so that I can verify the estimator.
-38. As a model user, I want the expectile level configurable, so that one leaf fits many asymmetric targets.
-39. As a library maintainer, I want expectiles and quantiles to share one asymmetric-weight implementation, so that the two losses stay consistent.
+48. As a model user, I want expectile regression, so that I have a smooth asymmetric loss alternative to quantiles.
+49. As a model user, I want mean recovery at the central expectile, so that I can verify the estimator.
+50. As a model user, I want the expectile level configurable, so that one leaf fits many asymmetric targets.
+51. As a library maintainer, I want expectiles and quantiles to share one asymmetric-weight implementation, so that the two losses stay consistent.
 
 ### Non-Negative Least Squares
 
-40. As a model user, I want non-negative least squares, so that count rates, exposures, and prices fit with nonnegative coefficients.
-41. As a library maintainer, I want non-negativity to be a solver capability, so that it composes with other constraints.
-42. As a library maintainer, I want the intercept treatment documented, so that a nonnegative intercept is not a surprise.
-43. As a library maintainer, I want NNLS to reuse the existing Cholesky path, so that no second linear-algebra stack lands.
-44. As a library maintainer, I want NNLS as the simplest bounded-solver test case, so that bounds work gets exercised early.
-45. As a model user, I want an active-set solution reported with its selected variables, so that the sparsity pattern is visible.
+52. As a model user, I want non-negative least squares, so that count rates, exposures, and prices fit with nonnegative coefficients.
+53. As a library maintainer, I want non-negativity to be a solver capability, so that it composes with other constraints.
+54. As a library maintainer, I want the intercept treatment documented, so that a nonnegative intercept is not a surprise.
+55. As a library maintainer, I want NNLS to reuse the existing Cholesky path, so that no second linear-algebra stack lands.
+56. As a library maintainer, I want NNLS as the simplest bounded-solver test case, so that bounds work gets exercised early.
+57. As a model user, I want an active-set solution reported with its selected variables, so that the sparsity pattern is visible.
 
 ### Group and Sparse-Group Lasso
 
-46. As a model user, I want group lasso, so that whole feature groups are selected or rejected together.
-47. As a model user, I want sparse-group lasso, so that I can select groups and individual members within them.
-48. As a model user, I want grouped monotone constraints, so that a whole group shares one sign restriction.
-49. As a model user, I want group selection reported per group, so that I know which groups survived.
-50. As a library maintainer, I want group soft thresholding inside the existing coordinate descent, so that scalar lasso behavior stays unchanged.
-51. As a library maintainer, I want deterministic group ordering, so that repeated runs give identical results.
-52. As a model user, I want the penalty to scale with group size in a documented way, so that a large group is not unfairly shrunk.
-53. As a benchmark author, I want group lasso compared against an independent implementation, so that group thresholding is verified.
-54. As a model user, I want group lasso usable with panel entities, so that entity-level selection is possible.
+58. As a model user, I want group lasso, so that whole feature groups are selected or rejected together.
+59. As a model user, I want sparse-group lasso, so that I can select groups and individual members within them.
+60. As a model user, I want grouped monotone constraints, so that a whole group shares one sign restriction.
+61. As a model user, I want group selection reported per group, so that I know which groups survived.
+62. As a library maintainer, I want group soft thresholding inside the existing coordinate descent, so that scalar lasso behavior stays unchanged.
+63. As a library maintainer, I want deterministic group ordering, so that repeated runs give identical results.
+64. As a model user, I want the penalty to scale with group size in a documented way, so that a large group is not unfairly shrunk.
+65. As a benchmark author, I want group lasso compared against an independent implementation, so that group thresholding is verified.
+66. As a model user, I want group lasso usable with panel entities, so that entity-level selection is possible.
 
 ### Negative Binomial and Beta Regression
 
-55. As a model user, I want negative binomial regression, so that overdispersed counts are modeled correctly.
-56. As a model user, I want the dispersion parameter reported, so that I can see how far the data sit from Poisson.
-57. As a model user, I want a dispersion test against Poisson, so that I can justify the extra parameter.
-58. As a model user, I want the NB1 and NB2 parameterizations documented and not mixed, so that results are comparable.
-59. As a model user, I want the zero-dispersion boundary handled explicitly, so that the estimator does not divide by zero.
-60. As a model user, I want beta regression for outcomes bounded in zero and one, so that I do not force a Gaussian or binomial model.
-61. As a library maintainer, I want both families to reuse the existing family machinery, so that no second likelihood framework appears.
-62. As a model user, I want small-leaf dispersion and precision estimates to fail visibly, so that unstable parameters never ship.
+67. As a model user, I want negative binomial regression, so that overdispersed counts are modeled correctly.
+68. As a model user, I want the dispersion parameter reported, so that I can see how far the data sit from Poisson.
+69. As a model user, I want a dispersion test against Poisson, so that I can justify the extra parameter.
+70. As a model user, I want the NB1 and NB2 parameterizations documented and not mixed, so that results are comparable.
+71. As a model user, I want the zero-dispersion boundary handled explicitly, so that the estimator does not divide by zero.
+72. As a model user, I want beta regression for outcomes bounded in zero and one, so that I do not force a Gaussian or binomial model.
+73. As a library maintainer, I want both families to reuse the existing family machinery, so that no second likelihood framework appears.
+74. As a model user, I want small-leaf dispersion and precision estimates to fail visibly, so that unstable parameters never ship.
 
 ### Panel Foundation
 
-63. As a data scientist, I want a panel fixed-effects leaf, so that entity heterogeneity is removed without dummy columns.
-64. As a data scientist, I want within-estimator slopes comparable to pooled slopes, so that I can test whether fixed effects matter.
-65. As a data scientist, I want the entity fixed effect recoverable from the fit, so that I can inspect heterogeneity.
-66. As a data scientist, I want entity means cached across leaf fits, so that panel fitting stays linear in rows.
-67. As a data scientist, I want hierarchical pooling across nested entity levels, so that sparse subgroups borrow strength.
-68. As a data scientist, I want pooling level configurable per fit, so that I can compare pooled, partially pooled, and fixed-effects results.
-69. As a data scientist, I want the pooled estimator to remain available, so that I can compare against the within estimator.
-70. As a library maintainer, I want the panel foundation to reuse the group metadata substrate, so that group lasso and panel fitting share one mechanism.
-71. As a library maintainer, I want Spec 17's TVAR and TVECM leaves to remain out of this specification, so that scope stays bounded.
-72. As a data scientist, I want panel rows to keep the same missing-data policy as other leaves, so that no separate imputation path appears.
+75. As a data scientist, I want a panel fixed-effects leaf, so that entity heterogeneity is removed without dummy columns.
+76. As a data scientist, I want within-estimator slopes comparable to pooled slopes, so that I can test whether fixed effects matter.
+77. As a data scientist, I want the entity fixed effect recoverable from the fit, so that I can inspect heterogeneity.
+78. As a data scientist, I want entity means cached across leaf fits, so that panel fitting stays linear in rows.
+79. As a data scientist, I want hierarchical pooling across nested entity levels, so that sparse subgroups borrow strength.
+80. As a data scientist, I want pooling level configurable per fit, so that I can compare pooled, partially pooled, and fixed-effects results.
+81. As a data scientist, I want the pooled estimator to remain available, so that I can compare against the within estimator.
+82. As a library maintainer, I want the panel foundation to reuse the group metadata substrate, so that group lasso and panel fitting share one mechanism.
+83. As a library maintainer, I want Spec 17's TVAR and TVECM leaves to remain out of this specification, so that scope stays bounded.
+84. As a data scientist, I want panel rows to keep the same missing-data policy as other leaves, so that no separate imputation path appears.
 
 ### Conditional GAM Work
 
-73. As a model user, I want MARS knot placement and regularization improved first, so that the existing spline leaf gets stronger before a new one arrives.
-74. As a model user, I want a penalized-spline GAM only if it beats MARS, so that I do not pay for a duplicate family.
-75. As a benchmark author, I want a MARS-versus-GAM comparison in the benchmark suite, so that the decision is evidence-driven.
+85. As a model user, I want MARS knot placement and regularization improved first, so that the existing spline leaf gets stronger before a new one arrives.
+86. As a model user, I want a penalized-spline GAM only if it beats MARS, so that I do not pay for a duplicate family.
+87. As a benchmark author, I want a MARS-versus-GAM comparison in the benchmark suite, so that the decision is evidence-driven.
 
 ## Implementation Decisions
 
@@ -387,6 +419,8 @@ solver/
 
 The leaf module consumes problems and panel declarations. It does not implement loss functions.
 
+The binned scan path lives outside the solver module, in `crates/mltreelib-core/src/split.rs` and `crates/mltreelib-core/src/criteria.rs`, because it is shared by the tree engine, the regression criteria, and every ensemble family. Decision 15 owns it from this specification, and the ensemble specifications consume it.
+
 ### Decision 13: Python Surface
 
 The Python surface exposes:
@@ -401,6 +435,30 @@ Existing `mltreelib.solvers.fit` keeps working unchanged.
 ### Decision 14: Build Order Rationale
 
 Group metadata lands first because every later phase touches it. Quantile regression lands before Huber and expectile because it is the family users request by name. Group lasso lands after the asymmetric losses because it needs the group substrate and the shared problem framework. Panel work lands after the regression problems because panel leaves are regression problems with a transformed design.
+
+### Decision 15: The Binned Scan Path Owns the Regression Criteria
+
+The binned split-evaluation path becomes the home of every regression criterion, and the raw scan becomes the fallback.
+
+**Why this specification owns it.** The criteria that need the binned path are the regression criteria: the six existing regression gains plus the pinball, asymmetric-squared, group-aware, negative binomial, and beta criteria that this specification introduces. Splitting the change across specifications would either make the same edit twice or leave the new regression families unusable inside a tree at scale. Since the regression families are this specification's subject, so is the scan path they depend on.
+
+**The change.**
+
+1. **Lift the gate.** `uses_class_histogram` in `crates/mltreelib-core/src/split.rs` currently admits only gini, entropy, gain ratio, and twoing. It must admit `Sse`, `FriedmanMse`, `Sdr`, `AbsoluteError`, `Huber`, and `Deviance`.
+
+2. **Add the new criteria to the binned path.** The pinball criterion for quantile regression, the asymmetric-squared criterion for expectile regression, the group-aware criterion for group lasso, and the negative binomial and beta deviance criteria all need a binned form. Each is a histogram accumulation, not a per-threshold recomputation, because a binned criterion must be expressible as a sum over bin statistics.
+
+3. **Give missing values their own bin.** The library's missing-value routing sends missing rows to a side chosen at fit time. On the binned path, a missing value becomes a distinct bin whose statistics are accumulated separately, so the routing decision stays per node.
+
+4. **Keep categorical columns on the partition search.** A categorical column has no numeric bins. It keeps the existing partition search, and the binned path must not force it back onto a raw scan.
+
+5. **Make the bin count configurable.** The library's classification path uses 256 bins. LightGBM uses 255. The bin count is a control, and the report records the value used, so that a fit is reproducible and a resolution change is visible.
+
+6. **Keep the raw scan as a fallback.** A criterion without a binned form still works, on the raw path, with the fit-time cost that implies. The report states which path a fit used.
+
+**The equivalence requirement.** On data whose values already fall on bin boundaries, the binned path must select the same split as the raw path. This is the test that makes the fast path defensible rather than merely fast. Where the two disagree on general data, the difference is the binning resolution and nothing else, and the report says so.
+
+**The shared consequence.** Every ensemble family depends on this landing first. A forest pays it once per member, a booster once per stage, and a stack once per member per fold. Specs 28, 29, and 30 assume it exists and do not re-specify it.
 
 ## Exact Build Sequence
 
@@ -417,7 +475,19 @@ Each phase lands as its own commit with focused tests. A phase does not start be
 
 Gate: `cargo test` passes. Existing fits produce identical results with an empty declaration.
 
-### Phase 1 — Quantile Regression
+### Phase 1 — Binned Split Evaluation for the Regression Criteria
+
+1. Lift the `uses_class_histogram` gate in `crates/mltreelib-core/src/split.rs` to admit `Sse`, `FriedmanMse`, `Sdr`, `AbsoluteError`, `Huber`, and `Deviance`.
+2. Add the missing-value bin, accumulated separately from the numeric bins, so per-node missing routing is preserved on the binned path.
+3. Keep categorical columns on the existing partition search rather than forcing them onto a numeric scan.
+4. Add a `bin_count` control, defaulting to the library's existing 256, and record it in the fit's diagnostics.
+5. Keep the raw scan as the fallback for any criterion without a binned form, and record which path each fit used.
+6. Add Rust tests asserting that the binned and raw paths select the same split on data falling on bin boundaries, that missing routing is unchanged, that categorical columns still use the partition search, and that the fit reports its bin count and scan path.
+7. Add Python tests for the `bin_count` control and the reported scan path.
+
+Gate: `cargo test` and Python tests pass. The binned and raw paths agree on boundary-aligned data.
+
+### Phase 2 — Quantile Regression
 
 1. Add `solver/problems/quantile.rs` with the pinball loss, gradient, and asymmetric weight.
 2. Add the quantile problem over the generic seam, with a proximal path and a smoothed-IRLS fallback.
@@ -430,7 +500,7 @@ Gate: `cargo test` passes. Existing fits produce identical results with an empty
 
 Gate: `cargo test` and Python tests pass. Known conditional quantiles are recovered within tolerance.
 
-### Phase 2 — Huber Regression with Scale
+### Phase 3 — Huber Regression with Scale
 
 1. Add `solver/problems/huber.rs` with the Huber loss, gradient, and robust scale iteration.
 2. Add a weighted median absolute deviation scale estimator with the consistency correction.
@@ -443,7 +513,7 @@ Gate: `cargo test` and Python tests pass. Known conditional quantiles are recove
 
 Gate: `cargo test` and Python tests pass. A contaminated fit stays close to the uncontaminated estimate.
 
-### Phase 3 — Expectile Regression
+### Phase 4 — Expectile Regression
 
 1. Add `solver/problems/expectile.rs` with the asymmetric squared loss and gradient.
 2. Share the asymmetric-weight implementation with the quantile problem.
@@ -453,7 +523,7 @@ Gate: `cargo test` and Python tests pass. A contaminated fit stays close to the 
 
 Gate: `cargo test` and Python tests pass. Mean recovery holds within tolerance.
 
-### Phase 4 — Non-Negative Least Squares
+### Phase 5 — Non-Negative Least Squares
 
 1. Add `solver/problems/nnls.rs` with the Lawson-Hanson active-set algorithm over the existing Cholesky path.
 2. Register non-negativity as a solver capability in the generic capability table.
@@ -463,7 +533,7 @@ Gate: `cargo test` and Python tests pass. Mean recovery holds within tolerance.
 
 Gate: `cargo test` and Python tests pass. Every returned coefficient is nonnegative.
 
-### Phase 5 — Group Lasso and Sparse-Group Lasso
+### Phase 6 — Group Lasso and Sparse-Group Lasso
 
 1. Add group soft thresholding to the coordinate descent update in `solver/ccd.rs`, preserving scalar behavior when no groups exist.
 2. Add the group-size normalization convention and document it.
@@ -476,7 +546,7 @@ Gate: `cargo test` and Python tests pass. Every returned coefficient is nonnegat
 
 Gate: `cargo test` and Python tests pass. Scalar lasso results are unchanged when no groups exist.
 
-### Phase 6 — Negative Binomial and Beta Regression
+### Phase 7 — Negative Binomial and Beta Regression
 
 1. Add `NegativeBinomial` and `Beta` variants to the family set in `solver/family.rs`, with variance, deviance, gradient, and initial intercept.
 2. Add the dispersion and precision estimation loops in `solver/problems/glm_extra.rs`.
@@ -488,7 +558,7 @@ Gate: `cargo test` and Python tests pass. Scalar lasso results are unchanged whe
 
 Gate: `cargo test` and Python tests pass. Overdispersed data recovers a positive dispersion estimate.
 
-### Phase 7 — Panel Entity Grouping and Within-Transformation
+### Phase 8 — Panel Entity Grouping and Within-Transformation
 
 1. Add panel entity keys and optional nested levels to the design declaration in `solver/groups.rs`.
 2. Add `solver/panel/demean.rs` with within-transformation, entity mean caching, and unbalanced-panel handling.
@@ -498,7 +568,7 @@ Gate: `cargo test` and Python tests pass. Overdispersed data recovers a positive
 
 Gate: `cargo test` passes. Within-estimator slopes match the simulated truth within tolerance.
 
-### Phase 8 — Panel Fixed-Effects Leaf
+### Phase 9 — Panel Fixed-Effects Leaf
 
 1. Add `solver/panel/fixed_effects.rs` with the within-estimator and entity effect recovery.
 2. Add the panel fixed-effects leaf to the leaf module, consuming the panel declaration.
@@ -509,7 +579,7 @@ Gate: `cargo test` passes. Within-estimator slopes match the simulated truth wit
 
 Gate: `cargo test` and Python tests pass. Entity heterogeneity is removed.
 
-### Phase 9 — Hierarchical Partial Pooling Foundation
+### Phase 10 — Hierarchical Partial Pooling Foundation
 
 1. Add `solver/panel/pooling.rs` with the pooling level selector and shrinkage weight.
 2. Add a documented observation-count-based weight rule.
@@ -519,7 +589,7 @@ Gate: `cargo test` and Python tests pass. Entity heterogeneity is removed.
 
 Gate: `cargo test` and Python tests pass. Sparse subgroups improve over unpooled fits.
 
-### Phase 10 — Conditional GAM Work
+### Phase 11 — Conditional GAM Work
 
 1. Improve MARS knot placement and regularization strength.
 2. Build a penalized-spline GAM prototype over the generic seam.
@@ -535,6 +605,7 @@ Gate: benchmark evidence exists. A GAM leaf ships only with a documented win.
 - **Primary Python seam.** Call each public regression entry point. Assert result types, result fields, exception behavior, and deterministic repeatability.
 - **Model-fitting seam.** Compare standalone regression fitting and single-leaf fitting on the same weighted design, family, penalty, and method. Assert coefficients, predictions, and objective agree within solver tolerance.
 - **Group seam.** Assert validation for out-of-range members, overlaps, and intercept inclusion. Assert indicator inheritance. Assert scalar lasso equivalence with no groups. Assert group selection reporting.
+- **Binned-scan seam.** Assert that the binned path and the raw path select the same split on data whose values fall on bin boundaries, for each regression gain. Assert that per-node missing routing is unchanged on the binned path. Assert that a categorical column still uses the partition search rather than a numeric scan. Assert that the fit reports its bin count and which scan path it used.
 - **Quantile seam.** Assert recovery of known conditional quantiles. Assert crossing detection. Assert monotone enforcement. Assert the minimum-support rule. Assert that no OLS inference appears in quantile results.
 - **Huber seam.** Assert outlier resistance against a clean fit. Assert scale recovery on simulated contaminated data. Assert explicit failure on divergence. Assert the 0D leaf is unchanged.
 - **Expectile seam.** Assert mean recovery at the central expectile, asymmetry of the fitted curve, and monotonicity across levels.
@@ -555,7 +626,7 @@ Gate: benchmark evidence exists. A GAM leaf ships only with a documented win.
 - Deep neural regressors and foundation-model regressors.
 - Explainable Boosting Machine as a leaf family. It is an ensemble strategy.
 - Zero-inflated and hurdle models.
-- Mixed-effects models with a random-effects design and sparse Cholesky. Phase 9 is a deterministic partial-pooling foundation.
+- Mixed-effects models with a random-effects design and sparse Cholesky. Phase 10 is a deterministic partial-pooling foundation.
 - Dynamic panel GMM, TVAR, and TVECM. Spec 17 owns them.
 - Partial least squares and supervised projection. The component-analysis note owns them.
 - Overlapping coefficient groups.
@@ -568,6 +639,7 @@ Gate: benchmark evidence exists. A GAM leaf ships only with a documented win.
 - This specification depends on Spec 26 Phase 0 for the generic seam and Phase 1 for the leaf-to-solver entry point. It also depends on Spec 17 for the panel vision, but implements only the fixed-effects foundation.
 - Spec 23 covers the expanded classical leaf catalog. Where it lists ordinal regression, GAM, or mixture leaves, this spec owns the regression problems those leaves need. Spec 23 owns leaf promotion and capability gating.
 - Spec 25 owns the common report contract. This spec adds loss values, group selection, robust scale, dispersion, and entity effects to the report through that contract.
+- Spec 28 (`ModelForest`), Spec 29 (`ModelBoost`), and Spec 30 (`ModelMeta`) all depend on the binned scan path this specification delivers in Phase 1. They assume it exists and do not re-specify it. The evidence for the change is in `references/research/2026-11-22-forest-methods-landscape.md` and `references/research/2026-11-22-boosting-methods-landscape.md`.
 - The generic solver seam in `crates/mltreelib-core/src/solver/generic/` already carries the objective, bounds, constraint, budget, request, and result types. This specification consumes them rather than redefining them.
 - Current source wins where older notes disagree. `solver/lbfgs.rs` implements L-BFGS, `solver/ccd.rs` implements coordinate descent, `solver/family.rs` holds the GLM families, and `solver/evolutionary.rs` holds four population methods.
 - One multi-core job at a time. Rayon-backed solvers and benchmark suites must not run concurrently with other multi-core fits.

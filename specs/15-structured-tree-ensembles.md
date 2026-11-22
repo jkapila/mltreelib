@@ -1,5 +1,23 @@
 # Spec 15: Structured Tree Ensemble Methods
 
+> **Status: Superseded by Specs 28, 29, 30, and 31.**
+>
+> This specification is retained as a historical design record. Do not build from it. Its scope is split:
+>
+> - **Bagging, honest forests, and the Cubist committee** → `specs/28-model-forest-bagging-family.md`
+> - **Boosting and conformal intervals** → `specs/29-model-boost-boosting-family.md`
+> - **Stacking and the combination-rule layer** → `specs/30-model-meta-estimators.md`
+> - **The family-selection framework** → `specs/31-ensemble-family-selection-guide.md`
+>
+> Four corrections to the content below:
+>
+> 1. **The family is not one class.** A single `kind` switch over forests, committees, boosters, and stacks would either accept invalid parameter combinations or hide the family dispatch. The families are separate public classes over one shared Rust module.
+> 2. **The Generalized Random Forest still needs its own specification.** Its splitting rule needs a node-level relabeling strategy, which `GainFn::Custom` cannot express. Spec 28 defers it explicitly rather than half-building it.
+> 3. **Conformal intervals are finite-sample valid, but the guarantee is narrow.** They are distribution-free and assume exchangeability. They are not a substitute for a posterior interval, which is exact under its model.
+> 4. **Honesty and double robustness fix different biases.** Honesty removes adaptive bias from selecting splits on the same outcomes averaged into leaves. Orthogonalisation removes confounding bias. Neither substitutes for the other.
+>
+> Verified reference: `references/research/2026-11-22-forest-methods-landscape.md`.
+
 ## Problem Statement
 
 Single decision trees have high sampling variance and non-smooth piecewise-constant predictions. While standard Random Forests and GBDTs (such as `scikit-learn`, `xgboost`, or `lightgbm`) address variance and bias, they are severely limited for advanced structured learning:
