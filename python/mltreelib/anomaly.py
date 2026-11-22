@@ -181,7 +181,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         x: Sequence[Sequence[Any]],
         col_names: Sequence[str] | None = None,
         dtypes: Sequence[str] | None = None,
-    ) -> "AnomalyTree":
+    ) -> AnomalyTree:
         """Fit the anomaly model on training data.
 
         Accepts native Python lists. None and NaN cells stay missing. In context
@@ -352,7 +352,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         return self._inner.predict_density(x)
 
     def surprise_score(
-        self, context: Sequence[int | float | None], symbol: int | float | None
+        self, context: Sequence[int | float | None], symbol: float | None
     ) -> float | None:
         """Compute surprise in bits after the last gap. A missing symbol has no score."""
         if not hasattr(self._inner, "surprise_score"):
@@ -366,7 +366,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         return self._inner.surprise_score(_observed_suffix(context), symbol)
 
     def conditional_prob(
-        self, context: Sequence[int | float | None], symbol: int | float | None
+        self, context: Sequence[int | float | None], symbol: float | None
     ) -> float | None:
         """Estimate a symbol's probability from the context after the last gap."""
         if not hasattr(self._inner, "conditional_prob"):
@@ -381,7 +381,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
 
     def update_feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> "AnomalyTree":
+    ) -> AnomalyTree:
         """Update model weights based on expert feedback (for Active anomaly tree)."""
         if not hasattr(self._inner, "update_feedback"):
             raise ValueError(
@@ -395,7 +395,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
 
     def feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> "AnomalyTree":
+    ) -> AnomalyTree:
         """Alias for update_feedback."""
         return self.update_feedback(point, is_anomaly, eta)
 

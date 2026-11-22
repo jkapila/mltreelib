@@ -21,7 +21,7 @@ def test_controls_accept_typed_dict_and_flat_options():
     predictions = []
     for model in models:
         model.fit(x, y)
-        assert model.get_params()["leaf_solver"] == "lbfgs"
+        assert model.config()["leaf_solver"] == "lbfgs"
         predictions.append(model.predict(x))
     assert predictions[0] == predictions[1] == predictions[2]
     assert predictions[0] == pytest.approx(y, abs=0.04)
@@ -53,7 +53,7 @@ def test_class_count_is_a_growth_control():
         leaf_control={"family": "softmax"},
     )
     model.fit([[i / 10] for i in range(30)], [i % 3 for i in range(30)])
-    assert model.get_params()["n_classes"] == 3
+    assert model.config()["n_classes"] == 3
     probabilities = model.predict([[0.5]], kind="proba")
     assert sum(probabilities[0]) == pytest.approx(1.0)
     assert len(probabilities[0]) == 3

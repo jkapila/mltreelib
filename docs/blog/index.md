@@ -21,65 +21,15 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 
 <div class="grid cards" markdown>
 
--   :lucide-shield-alert: __Decision Trees for Credit Scoring__
+-   :lucide-package-check: __Prescriptive Analytics: Predict-then-Optimize Inventory Replenishment__
 
     ---
 
-    Regulatory compliance, path-level auditing, and probability calibration under fair lending constraints.
+    Supply chain optimization: predict-then-optimize replenishment with ModelTree per-leaf quantile curves and dual search under warehouse capacity and working capital caps.
 
-    **Dataset**: Give Me Some Credit (150,000 borrowers)
+    **Application**: 50-SKU Retail Supply Chain under Joint Capacity Constraints
 
-    [:octicons-arrow-right-24: Read Case Study](why-credit-scoring-needs-glass-box-trees.md)
-
--   :lucide-truck: __Zero-Imputation Predictive Maintenance__
-
-    ---
-
-    Industrial sensor feeds: native missing-data routing and surrogate splits under severe asymmetric misclassification costs.
-
-    **Dataset**: Scania Truck APS Failure (76,000 vehicles)
-
-    [:octicons-arrow-right-24: Read Case Study](zero-imputation-predictive-maintenance.md)
-
--   :lucide-heart-handshake: __Uplift Modeling with Causal Trees__
-
-    ---
-
-    Commercial decision optimization: honest sample-splitting ($S^{\text{tr}}$ vs $S^{\text{est}}$) to identify persuadable customers without sleeping-dog harm.
-
-    **Dataset**: Hillstrom Randomized Trial (64,000 customers)
-
-    [:octicons-arrow-right-24: Read Case Study](uplift-modeling-with-causal-trees.md)
-
--   :lucide-cpu: __Modernizing Quinlan Classics in Rust__
-
-    ---
-
-    Re-architecting M5, Cubist, and C5.0 into high-throughput systems ML: linear leaves, dynamic rule extraction, and exact parity.
-
-    **Dataset**: Concrete Compressive Strength (1,030 mixtures)
-
-    [:octicons-arrow-right-24: Read Case Study](modernizing-quinlan-classics-in-rust.md)
-
--   :lucide-chart-scatter: __Beyond Mean Squared Error: Distributional Trees__
-
-    ---
-
-    Actuarial & risk modeling: Tweedie compound Poisson-Gamma claims, Tobit censored MLE, and heteroscedastic regimes.
-
-    **Dataset**: Miami Housing & German Credit (TabArena)
-
-    [:octicons-arrow-right-24: Read Case Study](beyond-mse-distributional-trees.md)
-
--   :lucide-trending-up: __Breaking Step Functions: Model Trees vs. GBDT__
-
-    ---
-
-    Systems ML & continuous tabular regression: why piecewise linear leaves eliminate staircase artifacts with far shallower trees than GBDT.
-
-    **Dataset**: Diamonds (53,940 stones)
-
-    [:octicons-arrow-right-24: Read Case Study](breaking-step-functions-model-trees-vs-gbdt.md)
+    [:octicons-arrow-right-24: Read Case Study](prescriptive-inventory-replenishment.md)
 
 -   :lucide-users: __Segregate First, Model Later: Two-Stage Survival Trees__
 
@@ -91,6 +41,36 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 
     [:octicons-arrow-right-24: Read Case Study](segregate-first-two-stage-survival-trees.md)
 
+-   :lucide-shield-alert: __Decision Trees for Credit Scoring__
+
+    ---
+
+    Regulatory compliance, path-level auditing, and probability calibration under fair lending constraints.
+
+    **Dataset**: Give Me Some Credit (150,000 borrowers)
+
+    [:octicons-arrow-right-24: Read Case Study](why-credit-scoring-needs-glass-box-trees.md)
+
+-   :lucide-heart-handshake: __Uplift Modeling with Causal Trees__
+
+    ---
+
+    Commercial decision optimization: honest sample-splitting ($S^{\text{tr}}$ vs $S^{\text{est}}$) to identify persuadable customers without sleeping-dog harm.
+
+    **Dataset**: Hillstrom Randomized Trial (64,000 customers)
+
+    [:octicons-arrow-right-24: Read Case Study](uplift-modeling-with-causal-trees.md)
+
+-   :lucide-truck: __Zero-Imputation Predictive Maintenance__
+
+    ---
+
+    Industrial sensor feeds: native missing-data routing and surrogate splits under severe asymmetric misclassification costs.
+
+    **Dataset**: Scania Truck APS Failure (76,000 vehicles)
+
+    [:octicons-arrow-right-24: Read Case Study](zero-imputation-predictive-maintenance.md)
+
 </div>
 
 ---
@@ -99,13 +79,14 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 
 | Business & Modeling Question | Case Study | Benchmark Dataset |
 | :--- | :--- | :--- |
-| How do I audit a classifier and choose an operating threshold? | [Decision trees for credit scoring](why-credit-scoring-needs-glass-box-trees.md) | Give Me Some Credit |
-| Can a tree score industrial telemetry with missing sensor values without imputation? | [Decision trees and missing sensor data](zero-imputation-predictive-maintenance.md) | Scania APS Failure |
-| Does an uplift model improve targeting without waking sleeping dogs? | [Causal trees for uplift modeling](uplift-modeling-with-causal-trees.md) | Hillstrom randomized trial |
-| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](modernizing-quinlan-classics-in-rust.md) | UCI concrete strength |
-| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](beyond-mse-distributional-trees.md) | Miami home sales |
-| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](breaking-step-functions-model-trees-vs-gbdt.md) | Diamonds |
+| How do I prescribe inventory replenishment under warehouse and budget limits? | [Prescriptive inventory replenishment](prescriptive-inventory-replenishment.md) | 50-SKU Retail Replenishment |
 | How do I model longitudinal customer churn without right-censoring bias? | [Two-stage hierarchical survival trees](segregate-first-two-stage-survival-trees.md) | Bank Customer Churn |
+| How do I audit a classifier and choose an operating threshold? | [Decision trees for credit scoring](why-credit-scoring-needs-glass-box-trees.md) | Give Me Some Credit |
+| Does an uplift model improve targeting without waking sleeping dogs? | [Causal trees for uplift modeling](uplift-modeling-with-causal-trees.md) | Hillstrom randomized trial |
+| Can a tree score industrial telemetry with missing sensor values without imputation? | [Decision trees and missing sensor data](zero-imputation-predictive-maintenance.md) | Scania APS Failure |
+| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](../examples/quinlan-m5-cubist-rust.md) | UCI concrete strength |
+| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](../examples/distributional-trees-tweedie-tobit.md) | Miami home sales |
+| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](../examples/piecewise-linear-model-trees-vs-gbdt.md) | Diamonds |
 
 ---
 

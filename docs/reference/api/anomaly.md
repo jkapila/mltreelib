@@ -57,7 +57,7 @@ smoothing_discount : float, default=0.5
 ### AnomalyModel.conditional_prob
 
 ```python
-conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'int | float | None') -> 'float | None'
+conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
 ```
 
 Estimate a symbol's probability from the context after the last gap.
@@ -73,7 +73,7 @@ Return effective configuration dictionary.
 ### AnomalyModel.feedback
 
 ```python
-feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> "'AnomalyTree'"
+feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
 ```
 
 Alias for update_feedback.
@@ -81,7 +81,7 @@ Alias for update_feedback.
 ### AnomalyModel.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> "'AnomalyTree'"
+fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyTree'
 ```
 
 Fit the anomaly model on training data.
@@ -169,7 +169,7 @@ Return the fitted model as a JSON snapshot string.
 ### AnomalyModel.surprise_score
 
 ```python
-surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'int | float | None') -> 'float | None'
+surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
 ```
 
 Compute surprise in bits after the last gap. A missing symbol has no score.
@@ -193,7 +193,7 @@ Return the fitted model as a versioned JSON string.
 ### AnomalyModel.update_feedback
 
 ```python
-update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> "'AnomalyTree'"
+update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).
@@ -233,7 +233,7 @@ Backward-compatible alias for AnomalyModel.
 ### AnomalyTree.conditional_prob
 
 ```python
-conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'int | float | None') -> 'float | None'
+conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
 ```
 
 Estimate a symbol's probability from the context after the last gap.
@@ -249,7 +249,7 @@ Return effective configuration dictionary.
 ### AnomalyTree.feedback
 
 ```python
-feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> "'AnomalyTree'"
+feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
 ```
 
 Alias for update_feedback.
@@ -257,7 +257,7 @@ Alias for update_feedback.
 ### AnomalyTree.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> "'AnomalyTree'"
+fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyTree'
 ```
 
 Fit the anomaly model on training data.
@@ -345,7 +345,7 @@ Return the fitted model as a JSON snapshot string.
 ### AnomalyTree.surprise_score
 
 ```python
-surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'int | float | None') -> 'float | None'
+surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
 ```
 
 Compute surprise in bits after the last gap. A missing symbol has no score.
@@ -369,7 +369,7 @@ Return the fitted model as a versioned JSON string.
 ### AnomalyTree.update_feedback
 
 ```python
-update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> "'AnomalyTree'"
+update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).

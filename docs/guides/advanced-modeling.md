@@ -6,9 +6,9 @@ Start with a [regression or classification pathway](index.md). Then choose the c
 |---|---|---|
 | Outcome is censored at a known bound | Tobit leaves | [Tobit example](../examples/tobit-regression.md) |
 | Domain limits on direction or combinations | Monotone or interaction constraints | [Constraint example](../examples/constraints.md) |
-| Preserve segments while updating leaf models | Leaf retraining | [Retraining examples](../examples/hierarchical-retrain.md) |
+| Preserve segments while updating leaf models | Leaf retraining | [Retraining examples](../suites/hierarchical-retrain.md) |
 | Control fit complexity and flexibility | Growth and leaf settings | [Growth knob tour](../examples/knob-tour.md) |
-| Different outcome distributions | Distributional families | [Distributional leaves](../examples/distributional-leaves.md) |
+| Different outcome distributions | Distributional families | [Distributional leaves](../suites/distributional-leaves.md) |
 | Predict only from approved input columns | Feature and interaction controls | [Parameters](../reference/parameters.md) |
 
 ## Censored outcomes: Tobit
@@ -59,7 +59,7 @@ print("Splits preserved:", before == model.splits())
 print("Updated prediction:", model.predict([[5.0]]))
 ```
 
-This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](../examples/hierarchical-retrain.md) for alternative feature sets and routing.
+This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](../suites/hierarchical-retrain.md) for alternative feature sets and routing.
 
 ## Tune deliberately
 

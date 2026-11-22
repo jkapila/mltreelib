@@ -18,7 +18,7 @@ In competing risks, an observation can experience one of $J$ distinct, mutually 
 ### High-Level Workflow Architecture
 
 ```mermaid
-flowchart TD
+flowchart LR
     Data["Cohort Ingestion: (X, (T, E))"] --> TargetType{"Target Setting"}
     
     TargetType -- "Single Event (E in {0, 1})" --> SingleEvent["Right-Censored Survival"]

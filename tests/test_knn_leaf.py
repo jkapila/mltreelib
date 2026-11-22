@@ -52,8 +52,8 @@ def test_knn_leaf_all_variants_regression(sample_regression_data):
         assert len(preds) == 10
         assert all(np.isfinite(p) for p in preds)
 
-        # Check get_params reflects knob values
-        params = tree.get_params()
+        # Check config reflects knob values
+        params = tree.config()
         assert params["leaf"] == "knn"
         assert params["knn_variant"] == var
         assert params["knn_k"] == 5

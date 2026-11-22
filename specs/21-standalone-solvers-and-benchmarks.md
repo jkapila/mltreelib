@@ -1,6 +1,6 @@
 # Spec 21: General bounded optimizer, production CMA-ES, standalone model fitting, and realistic benchmarking
 
-Status: ready-for-agent
+Status: completed
 
 ## Problem Statement
 

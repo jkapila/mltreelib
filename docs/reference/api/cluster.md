@@ -69,7 +69,7 @@ Return effective configuration dictionary.
 ### ClusterModel.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', y: 'Sequence[Sequence[float]] | None' = None, col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None, target_names: 'Sequence[str] | None' = None) -> "'ClusterTree'"
+fit(self, x: 'Sequence[Sequence[Any]]', y: 'Sequence[Sequence[float]] | None' = None, col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None, target_names: 'Sequence[str] | None' = None) -> 'ClusterTree'
 ```
 
 Fit on x, with optional PCT targets y.
@@ -217,7 +217,7 @@ Return effective configuration dictionary.
 ### ClusterTree.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', y: 'Sequence[Sequence[float]] | None' = None, col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None, target_names: 'Sequence[str] | None' = None) -> "'ClusterTree'"
+fit(self, x: 'Sequence[Sequence[Any]]', y: 'Sequence[Sequence[float]] | None' = None, col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None, target_names: 'Sequence[str] | None' = None) -> 'ClusterTree'
 ```
 
 Fit on x, with optional PCT targets y.

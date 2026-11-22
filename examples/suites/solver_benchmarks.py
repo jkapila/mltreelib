@@ -1,4 +1,4 @@
-"""Benchmark and comparison of all 7 numerical and evolutionary leaf solvers in mltreelib.
+"""Suite 10: Numerical & Evolutionary Solvers, Optimizers & Real-Data Tuning Benchmark.
 
 Compares:
 1. Analytical / Exact: 'irls' (Cholesky/faer normal equations)
@@ -9,6 +9,9 @@ Compares:
    - 'shade' (Success-History based Adaptive Differential Evolution)
    - 'nes'   (Separable Natural Evolution Strategies)
    - 'ga'    (Real-Coded Genetic Algorithm with SBX crossover)
+5. Generic Bounded Optimizers:
+   - 'random_search', 'latin_hypercube', 'lbfgs_b', 'nelder_mead', 'powell', 'simulated_annealing'
+   - Real-data hyperparameter tuning on ModelTree
 
 Evaluates on Yeh (1998) Concrete Compressive Strength benchmark (1,030 rows).
 Produces: docs/assets/solver_benchmark_pareto.png
@@ -21,6 +24,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from mltreelib import ModelTree, Metrics, load_dataset
+from mltreelib.solvers import optimize
 
 
 def run_solver_benchmarks():
@@ -183,5 +187,24 @@ def run_solver_benchmarks():
     print("=" * 70)
 
 
+def run_optimizer_tuning():
+    print("\n" + "=" * 70)
+    print("mltreelib Suite 10: Generic Bounded Optimizer on Test Problems & Tuning")
+    print("=" * 70)
+    problems = [
+        ("Sphere (dim=5, global min=0.0)", lambda p: sum(x*x for x in p), [(-5.0, 5.0)] * 5),
+        ("Rosenbrock (dim=2, global min=0.0)", lambda p: (p[0] - 1.0)**2 + 100.0 * (p[1] - p[0]**2)**2, [(-2.0, 2.0), (-2.0, 2.0)]),
+    ]
+    methods = ["lbfgs_b", "nelder_mead", "cmaes", "shade", "random_search"]
+    for prob_name, fn, bounds in problems:
+        print(f"\nProblem: {prob_name}")
+        for m in methods:
+            t0 = time.perf_counter()
+            res = optimize(fn, bounds=bounds, method=m, max_evaluations=150, seed=42)
+            lat = (time.perf_counter() - t0) * 1000.0
+            print(f"  {m:<15} | evals={res.evaluations:<3} | best={res.best_value:<12.6f} | time={lat:<6.2f}ms | status={res.status}")
+
+
 if __name__ == "__main__":
     run_solver_benchmarks()
+    run_optimizer_tuning()

@@ -130,14 +130,6 @@ from_json(data)
 
 Restore a fitted model from versioned JSON.
 
-### ModelTree.get_params
-
-```python
-get_params(self, /, deep=True)
-```
-
-Return all hyperparameter values as a dict (scikit-learn compatible).
-
 ### ModelTree.leaf_samples
 
 ```python
@@ -470,14 +462,6 @@ config(self)
 ```
 
 Return the explicitly configured growth options.
-
-### GrowthControl.get_params
-
-```python
-get_params(self)
-```
-
-Return the explicitly configured growth options (deprecated: use config()).
 
 ## LeafControl
 

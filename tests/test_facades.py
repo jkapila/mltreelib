@@ -131,3 +131,17 @@ def test_rule_model_facade(tmp_path):
     loaded_mod = RuleModel.load(save_path)
     loaded_preds = loaded_mod.predict([[10.0], [40.0]])
     assert loaded_preds == preds
+
+
+def test_modeltree_and_growth_control_have_no_get_params():
+    from mltreelib import GrowthControl, ModelTree
+
+    tree = ModelTree(max_depth=2)
+    assert hasattr(tree, "config")
+    assert not hasattr(tree, "get_params")
+    assert not hasattr(tree, "set_params")
+
+    ctrl = GrowthControl(max_depth=2)
+    assert hasattr(ctrl, "config")
+    assert not hasattr(ctrl, "get_params")
+    assert not hasattr(ctrl, "set_params")

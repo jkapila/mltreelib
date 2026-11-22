@@ -354,23 +354,22 @@ fn cmaes<E>(
     let mut best_solution = m.clone();
     let mut best_fitness = evaluate(&mut best_solution)?;
 
-    let mut candidates: Vec<(Vec<f64>, Vec<f64>, f64)> = (0..lambda)
-        .map(|_| (vec![0.0; n], vec![0.0; n], 0.0))
+    let mut candidates: Vec<(Vec<f64>, Vec<f64>, Vec<f64>, f64)> = (0..lambda)
+        .map(|_| (vec![0.0; n], vec![0.0; n], vec![0.0; n], 0.0))
         .collect();
 
     for gen in 0..options.max_generations {
         next_generation()?;
         let l_mat = cholesky_factor(&cov, n);
 
-        for (x_k, y_k, fit_k) in candidates.iter_mut() {
-            let mut z = vec![0.0; n];
+        for (x_k, y_k, z_k, fit_k) in candidates.iter_mut() {
             for j in 0..n {
-                z[j] = rng.next_gaussian();
+                z_k[j] = rng.next_gaussian();
             }
             for i in 0..n {
                 let mut sum = 0.0;
                 for j in 0..=i {
-                    sum += l_mat[(i, j)] * z[j];
+                    sum += l_mat[(i, j)] * z_k[j];
                 }
                 y_k[i] = sum;
                 x_k[i] = m[i] + sigma * sum;
@@ -378,25 +377,27 @@ fn cmaes<E>(
             *fit_k = evaluate(x_k)?;
         }
 
-        candidates.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
+        candidates.sort_by(|a, b| a.3.partial_cmp(&b.3).unwrap_or(std::cmp::Ordering::Equal));
 
-        if candidates[0].2 < best_fitness {
-            best_fitness = candidates[0].2;
+        if candidates[0].3 < best_fitness {
+            best_fitness = candidates[0].3;
             best_solution = candidates[0].0.clone();
         }
 
         let mut m_new = vec![0.0; n];
         let mut y_w = vec![0.0; n];
+        let mut z_w = vec![0.0; n];
         for (i, &w_i) in weights.iter().enumerate() {
             for j in 0..n {
                 m_new[j] += w_i * candidates[i].0[j];
                 y_w[j] += w_i * candidates[i].1[j];
+                z_w[j] += w_i * candidates[i].2[j];
             }
         }
 
         let ps_factor = (cs * (2.0 - cs) * mueff).sqrt();
         for j in 0..n {
-            ps[j] = (1.0 - cs) * ps[j] + ps_factor * y_w[j];
+            ps[j] = (1.0 - cs) * ps[j] + ps_factor * z_w[j];
         }
         let ps_norm = ps.iter().map(|v| v * v).sum::<f64>().sqrt();
 
@@ -437,7 +438,7 @@ fn cmaes<E>(
         }
 
         if sigma < options.tol
-            || (candidates.last().unwrap().2 - candidates[0].2).abs() < options.tol
+            || (candidates.last().unwrap().3 - candidates[0].3).abs() < options.tol
         {
             return Ok((best_solution, super::Convergence::tolerance(gen + 1)));
         }

@@ -10,7 +10,7 @@ def test_leaf_control_and_model_tree_integration():
 
     # Initialize ModelTree with control
     m = ModelTree(control=ctrl, max_depth=2, min_rows=5)
-    params = m.get_params()
+    params = m.config()
     assert params["leaf"] == "prob"
     assert params["leaf_monotone"] == [1, -1]
 
@@ -92,7 +92,7 @@ def test_dual_monotone_constraints():
         max_depth=2,
         min_rows=5,
     )
-    p = m.get_params()
+    p = m.config()
     assert p["tree_monotone"] == [1, 0]
     assert p["leaf_monotone"] == [0, -1]
 
@@ -107,12 +107,12 @@ def test_weights_row_and_column():
     m = ModelTree(col_weights=col_w, max_depth=2, min_rows=5)
     m.fit(x, y, sample_weight=row_w)
     assert m.n_leaves() >= 1
-    assert m.get_params()["col_weights"] == col_w
+    assert m.config()["col_weights"] == col_w
 
     # Col weights passed in fit
     m2 = ModelTree(max_depth=2, min_rows=5)
     m2.fit(x, y, row_weights=row_w, col_weights=[1.0, 3.0])
-    assert m2.get_params()["col_weights"] == [1.0, 3.0]
+    assert m2.config()["col_weights"] == [1.0, 3.0]
 
 
 def test_interaction_groups_with_column_names():
@@ -126,4 +126,4 @@ def test_interaction_groups_with_column_names():
     m.fit(x, y, col_names=["featA", "featB", "featC"])
     assert m.n_leaves() >= 1
     # Check resolved indices in params
-    assert m.get_params()["interaction_groups"] == [[0, 1], [2]]
+    assert m.config()["interaction_groups"] == [[0, 1], [2]]

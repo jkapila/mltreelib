@@ -5,7 +5,11 @@ use mltreelib_core::solver::generic::{
     LatinHypercubeOptions, MethodOptions, Objective, ObjectiveError, OptimizationRequest,
     OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions, SmoothObjective,
 };
-use mltreelib_core::solver::{fit_dense, FittedGlm, GlmFamily, SolverOptions};
+use mltreelib_core::solver::{
+    fit_dense, fit_optimal_tree, fit_sparse_rule_selection, predict_sparse_rules,
+    prune_ensemble_stepwise, AskTell, AskTellKind, AskTellOptions, FittedGlm, GlmFamily,
+    OptimalTreeResult, PruningResult, SolverOptions, SparseRuleResult,
+};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyDictMethods, PyList};
@@ -180,8 +184,348 @@ fn fit_glm(
 pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFitResult>()?;
     m.add_class::<PyOptimizationResult>()?;
+    m.add_class::<PyAskTell>()?;
+    m.add_class::<PyPruningResult>()?;
+    m.add_class::<PySparseRuleResult>()?;
+    m.add_class::<PyOptimalTreeResult>()?;
     m.add_function(wrap_pyfunction!(fit_glm, m)?)?;
-    m.add_function(wrap_pyfunction!(optimize, m)?)
+    m.add_function(wrap_pyfunction!(optimize, m)?)?;
+    m.add_function(wrap_pyfunction!(minimize_many, m)?)?;
+    m.add_function(wrap_pyfunction!(prune_ensemble, m)?)?;
+    m.add_function(wrap_pyfunction!(select_sparse_rules, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_optimal_tree, m)?)
+}
+
+/// Result of sparse ensemble pruning.
+#[pyclass(name = "PruningResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PyPruningResult(PruningResult);
+
+#[pymethods]
+impl PyPruningResult {
+    #[getter]
+    fn selected_indices(&self) -> Vec<usize> {
+        self.0.selected_indices.clone()
+    }
+
+    #[getter]
+    fn weights(&self) -> Vec<f64> {
+        self.0.weights.clone()
+    }
+
+    #[getter]
+    fn loss_history(&self) -> Vec<f64> {
+        self.0.loss_history.clone()
+    }
+
+    #[getter]
+    fn final_loss(&self) -> f64 {
+        self.0.final_loss
+    }
+}
+
+/// Prunes an ensemble of tree predictions down to a sparse sub-ensemble.
+#[pyfunction]
+#[pyo3(signature = (preds, y, *, max_trees=20, tol=1e-5))]
+pub fn prune_ensemble(
+    preds: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    max_trees: usize,
+    tol: f64,
+) -> PyResult<PyPruningResult> {
+    prune_ensemble_stepwise(&preds, &y, max_trees, tol)
+        .map(PyPruningResult)
+        .map_err(PyValueError::new_err)
+}
+
+/// Result of L1/ElasticNet sparse rule selection.
+#[pyclass(name = "SparseRuleResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PySparseRuleResult(SparseRuleResult);
+
+#[pymethods]
+impl PySparseRuleResult {
+    #[getter]
+    fn selected_indices(&self) -> Vec<usize> {
+        self.0.selected_indices.clone()
+    }
+
+    #[getter]
+    fn coefficients(&self) -> Vec<f64> {
+        self.0.coefficients.clone()
+    }
+
+    #[getter]
+    fn intercept(&self) -> f64 {
+        self.0.intercept
+    }
+
+    #[getter]
+    fn importances(&self) -> Vec<f64> {
+        self.0.importances.clone()
+    }
+
+    #[getter]
+    fn supports(&self) -> Vec<f64> {
+        self.0.supports.clone()
+    }
+
+    #[pyo3(signature = (rule_matrix))]
+    fn predict(&self, rule_matrix: Vec<Vec<f64>>) -> Vec<f64> {
+        predict_sparse_rules(
+            &rule_matrix,
+            self.0.intercept,
+            &self.0.selected_indices,
+            &self.0.coefficients,
+        )
+    }
+}
+
+/// Selects a sparse sub-ensemble of rules using ElasticNet coordinate descent.
+#[pyfunction]
+#[pyo3(signature = (rule_matrix, y, *, alpha=1.0, lambda_reg=0.01, max_iter=500, tol=1e-4))]
+pub fn select_sparse_rules(
+    rule_matrix: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    alpha: f64,
+    lambda_reg: f64,
+    max_iter: usize,
+    tol: f64,
+) -> PyResult<PySparseRuleResult> {
+    fit_sparse_rule_selection(&rule_matrix, &y, alpha, lambda_reg, max_iter, tol)
+        .map(PySparseRuleResult)
+        .map_err(PyValueError::new_err)
+}
+
+/// Result of shallow optimal decision tree optimization.
+#[pyclass(name = "OptimalTreeResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PyOptimalTreeResult(OptimalTreeResult);
+
+#[pymethods]
+impl PyOptimalTreeResult {
+    #[getter]
+    fn task(&self) -> &str {
+        &self.0.task
+    }
+
+    #[getter]
+    fn max_depth(&self) -> usize {
+        self.0.max_depth
+    }
+
+    #[getter]
+    fn n_splits(&self) -> usize {
+        self.0.n_splits
+    }
+
+    #[getter]
+    fn total_loss(&self) -> f64 {
+        self.0.total_loss
+    }
+
+    #[pyo3(signature = (data))]
+    fn predict(&self, data: Vec<Vec<f64>>) -> Vec<f64> {
+        self.0.predict(&data)
+    }
+
+    fn to_json(&self) -> PyResult<String> {
+        self.0.to_json().map_err(PyRuntimeError::new_err)
+    }
+}
+
+/// Solves for the globally optimal decision tree of depth <= 2.
+#[pyfunction]
+#[pyo3(signature = (x, y, *, task="classification", max_depth=2, min_samples_leaf=1, alpha=0.0))]
+pub fn solve_optimal_tree(
+    x: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    task: &str,
+    max_depth: usize,
+    min_samples_leaf: usize,
+    alpha: f64,
+) -> PyResult<PyOptimalTreeResult> {
+    fit_optimal_tree(&x, &y, task, max_depth, min_samples_leaf, alpha)
+        .map(PyOptimalTreeResult)
+        .map_err(PyValueError::new_err)
+}
+
+/// First-class batch population Ask/Tell optimizer.
+#[pyclass(name = "AskTell", module = "mltreelib._core")]
+pub struct PyAskTell(Arc<Mutex<AskTell>>);
+
+#[pymethods]
+impl PyAskTell {
+    #[new]
+    #[pyo3(signature = (method, bounds, *, population_size=None, seed=None, max_iterations=None, max_evaluations=None, tol=None, ipop=None, max_restarts=None, de_f=None, de_cr=None, pso_w=None, pso_c1=None, pso_c2=None, moead_t=None, nsga3_partitions=None, island_count=None, migration_interval=None, migration_rate=None))]
+    fn new(
+        method: &str,
+        bounds: Vec<(f64, f64)>,
+        population_size: Option<usize>,
+        seed: Option<u64>,
+        max_iterations: Option<usize>,
+        max_evaluations: Option<usize>,
+        tol: Option<f64>,
+        ipop: Option<bool>,
+        max_restarts: Option<usize>,
+        de_f: Option<f64>,
+        de_cr: Option<f64>,
+        pso_w: Option<f64>,
+        pso_c1: Option<f64>,
+        pso_c2: Option<f64>,
+        moead_t: Option<usize>,
+        nsga3_partitions: Option<usize>,
+        island_count: Option<usize>,
+        migration_interval: Option<usize>,
+        migration_rate: Option<usize>,
+    ) -> PyResult<Self> {
+        let kind = AskTellKind::from_str(method)
+            .ok_or_else(|| PyValueError::new_err(format!("unknown AskTell optimizer method {method:?}")))?;
+        let options = AskTellOptions {
+            population_size,
+            seed,
+            max_iterations,
+            max_evaluations,
+            tol,
+            ipop: ipop.unwrap_or(false),
+            max_restarts: max_restarts.unwrap_or(4),
+            de_f,
+            de_cr,
+            pso_w,
+            pso_c1,
+            pso_c2,
+            moead_t,
+            nsga3_partitions,
+            island_count,
+            migration_interval,
+            migration_rate,
+        };
+        let opt = AskTell::new(kind, bounds, options).map_err(PyValueError::new_err)?;
+        Ok(Self(Arc::new(Mutex::new(opt))))
+    }
+
+    /// Ask for the next batch of candidate parameter vectors.
+    fn ask(&self) -> PyResult<Vec<Vec<f64>>> {
+        let mut opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        opt.ask().map_err(PyValueError::new_err)
+    }
+
+    /// Provide objective scores for the candidates returned by the last ask().
+    /// Accepts a 1D list of floats (for scalar objectives) or a 2D list of floats (for multi-objective).
+    fn tell(&self, feedback: &Bound<'_, PyAny>) -> PyResult<()> {
+        let mut opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        if let Ok(scalars) = feedback.extract::<Vec<f64>>() {
+            opt.tell_scalar(&scalars).map_err(PyValueError::new_err)?;
+            return Ok(());
+        }
+        if let Ok(multi) = feedback.extract::<Vec<Vec<f64>>>() {
+            opt.tell_multi(&multi).map_err(PyValueError::new_err)?;
+            return Ok(());
+        }
+        Err(PyValueError::new_err("feedback must be a list of floats or a list of float lists"))
+    }
+
+    /// Best evaluated candidate point found so far.
+    #[getter]
+    fn best_x(&self) -> PyResult<Option<Vec<f64>>> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.best_solution().map(|(x, _)| x))
+    }
+
+    /// Best evaluated scalar objective value found so far.
+    #[getter]
+    fn best_value(&self) -> PyResult<Option<f64>> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.best_solution().map(|(_, v)| v))
+    }
+
+    /// Non-dominated Pareto front solutions (for multi-objective runs).
+    #[getter]
+    fn pareto_front(&self) -> PyResult<Vec<(Vec<f64>, Vec<f64>)>> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.pareto_front().into_iter().map(|s| (s.point, s.objectives)).collect())
+    }
+
+    #[getter]
+    fn iterations(&self) -> PyResult<usize> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.iterations())
+    }
+
+    #[getter]
+    fn evaluations(&self) -> PyResult<usize> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.evaluations())
+    }
+
+    #[getter]
+    fn status(&self) -> PyResult<&'static str> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.status().as_str())
+    }
+
+    #[getter]
+    fn should_stop(&self) -> PyResult<bool> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.should_stop())
+    }
+
+    #[getter]
+    fn restart_count(&self) -> PyResult<usize> {
+        let opt = self.0.lock().map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        Ok(opt.restart_count())
+    }
+}
+
+/// Minimizes a vector callable objective returning a Pareto front.
+#[pyfunction]
+#[pyo3(signature = (objective, bounds, *, method="nsga2", population_size=None, max_iterations=None, max_evaluations=None, seed=None))]
+fn minimize_many<'py>(
+    py: Python<'py>,
+    objective: Py<PyAny>,
+    bounds: Vec<(f64, f64)>,
+    method: Option<&str>,
+    population_size: Option<usize>,
+    max_iterations: Option<usize>,
+    max_evaluations: Option<usize>,
+    seed: Option<u64>,
+) -> PyResult<Vec<(Vec<f64>, Vec<f64>)>> {
+    let opt_obj = PyAskTell::new(
+        method.unwrap_or("nsga2"),
+        bounds,
+        population_size,
+        seed,
+        max_iterations,
+        max_evaluations,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )?;
+    while !opt_obj.should_stop()? {
+        let cands = opt_obj.ask()?;
+        if cands.is_empty() {
+            break;
+        }
+        let mut scores = Vec::with_capacity(cands.len());
+        for cand in &cands {
+            let res = objective.call1(py, (cand.clone(),))?;
+            let vec_score = res.extract::<Vec<f64>>(py)?;
+            scores.push(vec_score);
+        }
+        let scores_py = PyList::new(py, scores.iter().map(|s| PyList::new(py, s).unwrap()))?;
+        opt_obj.tell(&scores_py.as_any())?;
+    }
+    opt_obj.pareto_front()
 }
 
 /// Python objective callable wrapped for the generic seam.

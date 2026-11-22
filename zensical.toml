@@ -1,5 +1,5 @@
 [project]
-site_name = "mltreelib v0.4.13"
+site_name = "mltreelib v0.4.14"
 site_url = "https://jkapila.github.io/mltreelib/"
 site_description = "Tree-based machine learning with a Rust core"
 repo_url = "https://github.com/jkapila/mltreelib"
@@ -9,6 +9,10 @@ agents/*
 examples/visualization.md
 reference/plots.md
 """
+
+extra_css = [
+  "assets/custom.css",
+]
 
 extra_javascript = [
   "assets/medium-zoom.min.js",
@@ -22,38 +26,24 @@ nav = [
   { "Installation" = "installation.md" },
   { "Quickstart" = "quickstart.md" },
   { "Releases" = "https://github.com/jkapila/mltreelib/releases" },
-  { "Modeling pathways" = [
-    { "Overview" = "guides/index.md" },
-    { "Prepare data" = "guides/data.md" },
-    { "Get the datasets" = "guides/real-data.md" },
-    { "Regression" = "guides/regression.md" },
-    { "Classification" = "guides/classification.md" },
-    { "Clustering" = "guides/clustering.md" },
-    { "Anomaly detection" = "guides/anomaly.md" },
-    { "Survival" = "guides/survival.md" },
-    { "Uplift" = "guides/uplift.md" },
-    { "Evaluate and monitor" = "guides/evaluation.md" },
-    { "Visualize results" = "guides/visualization.md" },
-    { "Prediction and schema" = "guides/serving-contract.md" },
-    { "Extend a model tree" = "guides/advanced-modeling.md" },
+  { "Suites" = [
+    { "Overview" = "suites/index.md" },
+    { "Suite 1: Core Architecture & Growth Knobs" = "suites/core-tree-architecture.md" },
+    { "Suite 2: Structural Constraints & Honesty" = "suites/constraints-and-honesty.md" },
+    { "Suite 3: Native Missing Data Routing" = "suites/missing-data-routing.md" },
+    { "Suite 4: Distributional & Censored Leaves" = "suites/distributional-leaves.md" },
+    { "Suite 5: Dynamic Leaf Retraining" = "suites/hierarchical-retrain.md" },
+    { "Suite 6: Statistical & Metric Splitting" = "suites/statistical-and-metric-splitting.md" },
+    { "Suite 7: Time Series Forecasting" = "suites/timeseries-forecasting.md" },
+    { "Suite 8: Unsupervised Trees" = "suites/unsupervised-trees.md" },
+    { "Suite 9: Survival & Competing Risks Trees" = "suites/survival-trees.md" },
+    { "Suite 10: Solvers, Optimizers & Real-Data Tuning" = "suites/solver-benchmarks.md" },
+    { "Suite 11: Component & Factor Analysis" = "suites/component-benchmarks.md" },
   ] },
   { "Examples" = [
     { "Overview" = "examples/index.md" },
-    { "Core Suites" = [
-      { "Suite 1: Core Architecture & Growth Knobs" = "examples/core-tree-architecture.md" },
-      { "Suite 2: Structural Constraints & Honesty" = "examples/constraints-and-honesty.md" },
-      { "Suite 3: Native Missing Data Routing" = "examples/missing-data-routing.md" },
-      { "Suite 4: Distributional & Censored Leaves" = "examples/distributional-leaves.md" },
-      { "Suite 5: Dynamic Leaf Retraining" = "examples/hierarchical-retrain.md" },
-      { "Suite 6: Statistical & Metric Splitting" = "examples/statistical-and-metric-splitting.md" },
-      { "Suite 7: Time Series Forecasting" = "examples/timeseries-forecasting.md" },
-      { "Suite 8: Unsupervised Trees" = "examples/unsupervised-trees.md" },
-      { "Suite 9: Survival & Competing Risks Trees" = "examples/survival-trees.md" },
-      { "Suite 10: Numerical & Evolutionary Leaf Solvers" = "examples/solver-benchmarks.md" },
-      { "Suite 11: Component & Factor Analysis" = "examples/component-benchmarks.md" },
-      { "Generic optimizer and real-data tuning" = "examples/generic-optimizer.md" },
-    ] },
     { "Specialized Topics" = [
+      { "Generic optimizer and real-data tuning" = "examples/generic-optimizer.md" },
       { "PCA Rotations & Simple Structure" = "examples/pca-rotations.md" },
       { "Data processing" = "examples/data-processing.md" },
       { "Optional categorical encoders" = "examples/categorical-encoders.md" },
@@ -74,17 +64,18 @@ nav = [
       { "Model review checklist" = "examples/walkthrough.md" },
       { "Rules, summaries and neighbors" = "examples/rules-summary-knn.md" },
       { "Explainable stumps and retrain" = "examples/stump-explainable.md" },
+      { "Quinlan M5 & Cubist in Rust" = "examples/quinlan-m5-cubist-rust.md" },
+      { "Distributional Trees (Tweedie & Tobit)" = "examples/distributional-trees-tweedie-tobit.md" },
+      { "Model Trees vs GBDT" = "examples/piecewise-linear-model-trees-vs-gbdt.md" },
     ] },
   ] },
   { "Blog" = [
     { "Overview" = "blog/index.md" },
-    { "Credit Scoring and Trees" = "blog/why-credit-scoring-needs-glass-box-trees.md" },
-    { "Zero-Imputation Maintenance" = "blog/zero-imputation-predictive-maintenance.md" },
-    { "Causal Uplift Modeling" = "blog/uplift-modeling-with-causal-trees.md" },
-    { "Modernizing Quinlan in Rust" = "blog/modernizing-quinlan-classics-in-rust.md" },
-    { "Beyond MSE (Distributional)" = "blog/beyond-mse-distributional-trees.md" },
-    { "Breaking Step Functions" = "blog/breaking-step-functions-model-trees-vs-gbdt.md" },
+    { "Prescriptive Replenishment" = "blog/prescriptive-inventory-replenishment.md" },
     { "Two-Stage Survival Trees" = "blog/segregate-first-two-stage-survival-trees.md" },
+    { "Credit Scoring and Trees" = "blog/why-credit-scoring-needs-glass-box-trees.md" },
+    { "Causal Uplift Modeling" = "blog/uplift-modeling-with-causal-trees.md" },
+    { "Zero-Imputation Maintenance" = "blog/zero-imputation-predictive-maintenance.md" },
   ] },
   { "Benchmarks" = [
     { "Overview" = "benchmarks/elo.md" },

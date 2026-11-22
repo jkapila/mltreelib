@@ -5442,13 +5442,6 @@ impl PyModelTree {
 
     /// Return all hyperparameter values as a dict.
     fn config(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
-        self.get_params(py, true)
-    }
-
-    /// Return all hyperparameter values as a dict (scikit-learn compatible).
-    #[pyo3(signature = (deep = true))]
-    fn get_params(&self, py: Python<'_>, deep: bool) -> PyResult<Py<PyDict>> {
-        let _ = deep;
         let d = PyDict::new(py);
         d.set_item("max_depth", self.params.max_depth)?;
         d.set_item("min_rows", self.params.min_rows)?;
@@ -5579,10 +5572,10 @@ impl PyModelTree {
 
     fn __getattr__(&self, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
         if name == "params" {
-            let p = self.get_params(py, true)?;
+            let p = self.config(py)?;
             return Ok(p.into_any());
         }
-        let params = self.get_params(py, true)?;
+        let params = self.config(py)?;
         let dict = params.bind(py);
         if let Some(val) = dict.get_item(name)? {
             return Ok(val.into_any().unbind());

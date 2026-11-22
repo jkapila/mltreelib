@@ -62,8 +62,9 @@ uv run python examples/real_tree_studies.py wine  # after downloading Wine Quali
 | I want to… | go to |
 |---|---|
 | install it | [Installation](installation.md) |
-| check the current release | [v0.4.13 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.13) |
+| check the current release | [v0.4.14 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.14) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
+| run 11 benchmark suites | [Benchmark Suites](suites/index.md) |
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |
 | solve a real problem | [Real datasets and worked studies](guides/real-data.md) |
 | change one part of a model | [Example library](examples/index.md) |
@@ -81,20 +82,16 @@ uv run python examples/real_tree_studies.py wine  # after downloading Wine Quali
 
 Explore our in-depth architectural and commercial case studies:
 
-1. **[Decision Trees for Credit Scoring](blog/why-credit-scoring-needs-glass-box-trees.md)**
-   *Regulatory Compliance & Fintech*: How tree paths, constraints and calibration support model review.
-2. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](blog/zero-imputation-predictive-maintenance.md)**
-   *Industrie 4.0 & Sensor Telemetry*: A synthetic example of missing sensor values and tree routing.
-3. **[Uplift Modeling with Causal Trees](blog/uplift-modeling-with-causal-trees.md)**
-   *Commercial Decision Optimization*: How an honest causal tree compares targeting policies on a randomized held-out trial.
-4. **[Cubist Models and C5.0 Rules](blog/modernizing-quinlan-classics-in-rust.md)**
-   *Core Systems ML*: Linear leaves, extracted rules and the contracts still to check.
-5. **[Beyond Mean Squared Error: Distributional Decision Trees for Heavy Tails, Insurance, and Censored Data](blog/beyond-mse-distributional-trees.md)**
-   *Actuarial & Risk Modeling*: Tweedie compound Poisson-Gamma claims, Tobit censored log-likelihood, and heteroscedastic volatility regimes.
-6. **[Breaking the Step Function: Model Trees and Step Functions for Continuous Regression](blog/breaking-step-functions-model-trees-vs-gbdt.md)**
-   *Systems ML & Physics-Informed ML*: How linear leaves represent local trends and why fair comparisons need held-out data.
-7. **[Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts](blog/segregate-first-two-stage-survival-trees.md)**
+1. **[Prescriptive Analytics: Predict-then-Optimize Inventory Replenishment](blog/prescriptive-inventory-replenishment.md)**
+   *Supply Chain Optimization*: Predict-then-optimize multi-item replenishment using ModelTree per-leaf quantile curves and dual search optimization under warehouse capacity and working capital caps.
+2. **[Segregate First, Model Later: Two-Stage Hierarchical Survival Trees](blog/segregate-first-two-stage-survival-trees.md)**
    *Actuarial & Retention Analytics*: How decoupling ID-level cohort discovery from leaf-level Kaplan-Meier curves eliminates right-censoring bias and non-proportional hazard violations.
+3. **[Decision Trees for Credit Scoring](blog/why-credit-scoring-needs-glass-box-trees.md)**
+   *Regulatory Compliance & Fintech*: Path-level auditing, monotone constraints, and probability calibration under fair lending rules.
+4. **[Uplift Modeling with Causal Trees](blog/uplift-modeling-with-causal-trees.md)**
+   *Commercial Decision Optimization*: Honest sample-splitting ($S^{\text{tr}}$ vs $S^{\text{est}}$) to identify persuadable customers without sleeping-dog harm.
+5. **[Zero-Imputation Predictive Maintenance for Industrial Sensor Feeds](blog/zero-imputation-predictive-maintenance.md)**
+   *Industrie 4.0 & Sensor Telemetry*: Native missing-data routing and surrogate splitting under severe asymmetric misclassification costs ($10 vs $500).
 
 !!! tip "Try it right now"
     `uv run python examples/quickstart.py` fits a tree, prints it in rpart

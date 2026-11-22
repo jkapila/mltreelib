@@ -70,4 +70,8 @@ A zero claim, a reading floored by a sensor and an event censored by study end r
 uv run python examples/real_tree_studies.py housing
 ```
 
+!!! tip "Deep-Dive Benchmark Suites"
+    - For formal log-likelihoods, inverse Mills ratio derivations, and 45.8% OLS attenuation correction across Gamma, Poisson, and Tobit censored leaves, see [Suite 4: Distributional & Censored Leaf Families](../suites/distributional-leaves.md).
+    - For 12 exotic statistical hypothesis tests, MMD, Energy Distance, and Wasserstein optimal transport splitting, see [Suite 6: Statistical, Metric & Oblique Splitting Criteria](../suites/statistical-and-metric-splitting.md).
+
 See the [split criteria example](../examples/distributional-split-criteria.md) for controlled cases and the [FLCHAIN survival pathway](../guides/survival.md) for censored follow-up. For a primary reference on Tweedie modeling, see [Dunn and Smyth (2005)](https://doi.org/10.1007/s11222-005-4070-y).

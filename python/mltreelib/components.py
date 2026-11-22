@@ -30,7 +30,7 @@ class ComponentResult:
     report: ModelReport
 
 
-def _clean_dense_rows(x: Sequence[Sequence[Any]]) -> list[list[f64]]:
+def _clean_dense_rows(x: Sequence[Sequence[Any]]) -> list[list[float]]:
     rows = _numeric_rows(x)
     dense: list[list[float]] = []
     for i, row in enumerate(rows):

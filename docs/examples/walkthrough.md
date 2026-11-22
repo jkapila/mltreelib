@@ -40,4 +40,4 @@ Use the diagram to read the structure. [Check boundary routing](../guides/servin
 3. **Structure.** Export the DOT diagram and keep the structured splits and leaves. Check the support behind the smallest leaves.
 4. **Deployment.** Compare scores on a fixed set of reference rows after moving the model into the serving environment. Include rows near a split and ones with absent fields.
 
-The [concrete strength article](../blog/modernizing-quinlan-classics-in-rust.md) compares the tree with constant leaves. The [serving contract](../guides/serving-contract.md) lists the checks needed when you move from an example to a service. For the original churn exercise, see the [secondary case on the dataset page](../guides/real-data.md#secondary-example-bank-churn).
+The [concrete strength reference](quinlan-m5-cubist-rust.md) compares the tree with constant leaves. The [serving contract](../guides/serving-contract.md) lists the checks needed when you move from an example to a service. For the original churn exercise, see the [secondary case on the dataset page](../guides/real-data.md#secondary-example-bank-churn).
