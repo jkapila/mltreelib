@@ -7,6 +7,8 @@
 
 **Implementation spec:** `specs/27-regression-model-expansion.md` holds the exact build sequence, module layout, contracts, and phase gates for this note. It adds the group metadata substrate that group lasso, panel entity grouping, and hierarchical pooling depend on.
 
+**Addendum (2026-11-22):** the build sequence below is the one this note recommended. The shipped spec has twelve phases, because two were added after the ensemble research. Phase 0 is the group metadata substrate. **Phase 1 is binned split evaluation for the regression criteria**, which this note did not consider: the regression gains and every new criterion below need a split criterion, and the library's `SplitEval::Histogram` path was gated to classification gains only. The evidence is the local Elo board's fit times, where LightGBM fits in 0.34 s and ranger takes 17.78 s on comparable regression Elo, a gap that comes almost entirely from binning. The full reasoning is in `references/research/2026-11-22-forest-methods-landscape.md` and `references/research/2026-11-22-boosting-methods-landscape.md`, and the decision is Spec 27 Decision 15.
+
 ---
 
 ## 1. Executive Summary
