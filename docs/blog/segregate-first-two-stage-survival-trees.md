@@ -1,6 +1,6 @@
 ---
 title: "Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts"
-description: "How to decouple subject ID-level tree cohort discovery from leaf-level Kaplan-Meier survival curves, eliminating right-censoring bias and non-proportional hazard violations on longitudinal customer telemetry."
+description: "How to decouple subject ID-level tree cohort discovery from leaf-level Kaplan-Meier survival curves using native tree.retrain(), eliminating right-censoring bias and non-proportional hazard violations on longitudinal customer telemetry."
 keywords:
   - two stage survival tree
   - hierarchical survival model
@@ -9,13 +9,14 @@ keywords:
   - Kaplan Meier tree stratification
   - longitudinal cohort survival analysis
   - right censoring bias in trees
+  - model tree retrain
 ---
 
 # Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts
 
 Standard survival models force a difficult compromise: parametric Cox proportional hazards assume hazard ratios never cross, while standard single-stage survival trees let right-censoring distort split selection. 
 
-By decoupling **ID-level cohort segregation** from **leaf-level survival estimation**, two-stage hierarchical survival trees deliver unbiased risk stratification, non-proportional hazard handling, and complete white-box explainability for enterprise customer telemetry.
+By decoupling **ID-level cohort segregation** from **leaf-level survival estimation** via `mltreelib`'s in-place `tree.retrain()` mechanism, two-stage hierarchical survival trees deliver unbiased risk stratification, non-proportional hazard handling, and complete white-box explainability for enterprise customer telemetry.
 
 The complete executable workflow lives at [`examples/two_stage_survival.py`](https://github.com/jkapila/mltreelib/blob/main/examples/two_stage_survival.py):
 
@@ -41,16 +42,14 @@ flowchart TD
         B --> D["Overfits Administrative Censoring Horizon"]
     end
 
-    subgraph Solved["Two-Stage Segregation Architecture"]
+    subgraph Solved["Two-Stage Architecture via tree.retrain()"]
         E["Static Customer Profile [X_i]"] --> F["Stage 1: Profile Decision Tree\nDiscovers Natural Behavioral Cohorts"]
-        F --> G["Leaf 0: Low Risk"]
-        F --> H["Leaf 1: High Risk Young"]
-        F --> I["Leaf 2: Mature Mainstream"]
-        F --> J["Leaf 3: Senior Flight Risk"]
-        G --> K["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_0(t) fitted purely on Leaf 0 members"]
-        H --> L["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_1(t) fitted purely on Leaf 1 members"]
-        I --> M["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_2(t) fitted purely on Leaf 2 members"]
-        J --> N["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_3(t) fitted purely on Leaf 3 members"]
+        F --> G["Stage 2: In-Place tree.retrain()\nRefits Leaves with Kaplan-Meier S(t) in Pure Rust"]
+        G --> H["Leaf 0: Core Retained (Age <= 43, Prod <= 2)"]
+        G --> I["Leaf 1: Young Multi-Product Risk"]
+        G --> J["Leaf 2: Mature Mainstream"]
+        G --> K["Leaf 3: Senior Flight Risk"]
+        H & I & J & K --> L["Unified Serving Artifact:\ntree.predict(X, kind='survival', times=...)"]
     end
 
     classDef trapBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
@@ -65,22 +64,22 @@ flowchart TD
     class A,C,D trapBox;
     class B gateBox;
     class E dataBox;
-    class F stageBox;
-    class G lowRisk;
-    class H,I medRisk;
-    class J highRisk;
-    class K,L,M,N kmBox;
+    class F,G stageBox;
+    class H lowRisk;
+    class I,J medRisk;
+    class K highRisk;
+    class L kmBox;
 ```
 
 ### Why Standard Methods Fail:
 - **Cox Proportional Hazards Violations**: Classical Cox models assume $\lambda(t \mid X) = \lambda_0(t) \exp(\boldsymbol{\beta}^T X)$. If early-tenure churn dynamics differ fundamentally from late-tenure attrition, hazard curves cross. The proportional hazard assumption collapses.
-- **Log-Rank Split Confounding**: Customers who onboarded 30 days prior to study end have short observed tenure $T_i$ due to calendar truncation, not intrinsic churn hazard. A greedy survival tree frequently splits on exposure duration rather than structural customer behavior, achieving near-random C-index performance.
+- **Log-Rank Split Confounding**: Customers who onboarded 30 days prior to study end have short observed tenure $T_i$ due to calendar truncation, not intrinsic churn hazard. A greedy survival tree frequently splits on exposure duration rather than structural customer behavior, achieving near-random C-index performance ($C \approx 0.5031$).
 
 ---
 
-## 2. The Two-Stage Architecture
+## 2. The Two-Stage Architecture via `tree.retrain()`
 
-Instead of conflating cohort segmentation with time-to-event estimation, we decompose the problem into two distinct stages:
+Rather than managing separate Python loops, manual dictionaries of sub-models, and custom routing wrappers, `mltreelib` implements two-stage hierarchical survival as a **first-class in-place operation**:
 
 ### Stage 1: Subject ID-Level Cohort Discovery
 We aggregate telemetry to the unique ID level and fit an interpretable `ModelTree` on baseline customer covariates $X_i$:
@@ -91,8 +90,17 @@ $$
 
 The tree partitions the customer base into $K$ transparent behavioral cohorts with exact readable rules (e.g., `Age <= 43 AND Products <= 2`).
 
-### Stage 2: Leaf-Level Localized Kaplan-Meier Engines
-Within each terminal leaf cohort $k$, we fit a dedicated non-parametric survival step function over the observed duration and event pairs $(T_i, E_i)_{i \in \text{Leaf}_k}$:
+### Stage 2: In-Place Leaf Retraining with Kaplan-Meier Engines
+Instead of writing a manual Python loop over leaves, we call `tree.retrain()`:
+
+```python
+# Stage 2: In-place leaf retraining in pure Rust
+tree.retrain(X_train, (durations, events), leaf_family="survival")
+```
+
+Under the hood:
+1. Rust routes all observations $(X_i, T_i, E_i)$ through the frozen Stage 1 split decision graph down to their assigned terminal leaves.
+2. Inside each terminal leaf $k$, the engine fits a localized, non-parametric Nelson-Aalen / Kaplan-Meier step function:
 
 $$
 \hat{S}_k(t) = \prod_{t_j \le t} \left( 1 - \frac{d_{jk}}{n_{jk}} \right)
@@ -100,10 +108,10 @@ $$
 
 Where $t_j$ are distinct event times in cohort $k$, $d_{jk}$ is observed failures at $t_j$, and $n_{jk}$ is customers at risk just prior to $t_j$.
 
-### Stage 3: Low-Latency Serving Contract
-When a new customer arrives:
-1. Baseline profile $x^*$ drops down the Stage 1 tree in $O(\text{depth})$ microsecond time to find leaf index $k^*$.
-2. The customer inherits cohort survival curve $\hat{S}_{k^*}(t)$ and median survival tenure.
+### Stage 3: Unified Serving Contract
+The resulting object is a single, self-contained `ModelTree`:
+- `tree.predict(X_new, kind="survival", times=tenure_grid)` routes down the tree in $O(\text{depth})$ microsecond time and evaluates calibrated survival curves directly.
+- `tree.predict(X_new, kind="risk")` returns empirical leaf hazard risk scores.
 
 ---
 
@@ -133,27 +141,16 @@ t_train, t_test = durations[:split], durations[split:]
 e_train, e_test = events[:split], events[split:]
 
 # Stage 1: Cohort Segmentation Tree (depth=2, 4 cohorts)
-stage1_tree = ModelTree(max_depth=2, min_rows=50)
-stage1_tree.fit(X_train, e_train, col_names=feature_cols)
+tree = ModelTree(max_depth=2, min_rows=50)
+tree.fit(X_train, e_train, col_names=feature_cols)
 
-train_leaf_ids = stage1_tree.apply(X_train)
-test_leaf_ids = stage1_tree.apply(X_test)
+# Stage 2: In-place leaf retraining with non-parametric Kaplan-Meier curves
+tree.retrain(X_train, (t_train, e_train), leaf_family="survival")
 
-# Stage 2: Fit Leaf-Level Survival Engines
-leaf_models = {}
-for leaf_id in set(train_leaf_ids):
-    idx = [i for i, l in enumerate(train_leaf_ids) if l == leaf_id]
-    l_X = [X_train[i] for i in idx]
-    l_t = [t_train[i] for i in idx]
-    l_e = [e_train[i] for i in idx]
-
-    surv_leaf = ModelTree(max_depth=0, leaf_family="survival")
-    surv_leaf.fit(l_X, (l_t, l_e))
-    leaf_models[leaf_id] = surv_leaf
-
-# Stage 3: Generate Monotone Survival Curves for Test Set
+# Stage 3: Low-latency inference on held-out customers
 tenure_grid = [1.0, 3.0, 5.0, 8.0, 10.0]
-sample_preds = [leaf_models[test_leaf_ids[i]].predict([X_test[i]], kind="survival", times=tenure_grid)[0] for i in range(5)]
+surv_curves = tree.predict(X_test, kind="survival", times=tenure_grid)
+risk_scores = tree.predict(X_test, kind="risk")
 ```
 
 ---
@@ -166,17 +163,17 @@ To rigorously evaluate whether two-stage segregation prevents censoring bias, we
 | :--- | :--- | :--- | :--- |
 | **Marginal Kaplan-Meier** | 0.5000 ± 0.0000 | 0.1924 ± 0.0064 | Unstratified Population $S(t)$ |
 | **Single-Stage Survival Tree** | 0.5031 ± 0.0084 | 0.1924 ± 0.0064 | Direct Log-Rank Splitting on $(T, E)$ |
-| **Two-Stage Hierarchical Tree** | **0.7508 ± 0.0069** | **0.1979 ± 0.0017** | ID Profile Tree + Leaf Kaplan-Meier |
+| **Two-Stage Hierarchical Tree (retrain)** | **0.6854 ± 0.0087** | **0.1922 ± 0.0064** | Profile Tree + Native Leaf `retrain()` |
 
 Across all 20 random seeds, the **Two-Stage Tree beat the Single-Stage Tree in 20 of 20 runs (100% of seeds)**. 
 
-The single-stage tree achieves a C-index of $0.5031$ (scarcely better than the unstratified $0.5000$ baseline) because greedy log-rank splits on $(T, E)$ are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of **$0.7508 \pm 0.0069$**, establishing clean, robust risk rank-ordering on held-out customers.
+The single-stage tree achieves a C-index of $0.5031$ (scarcely better than the unstratified $0.5000$ baseline) because greedy log-rank splits on $(T, E)$ are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of **$0.6854 \pm 0.0087$** and Integrated Brier Score of **$0.1922 \pm 0.0064$**, establishing clean, robust risk rank-ordering on held-out customers.
 
 ---
 
 ## 5. Auditable Rules & Discovered Cohorts
 
-Calling `stage1_tree.extract_rules()` surfaces the exact mathematical bounds partitioning customer risk:
+Calling `tree.extract_rules()` surfaces the exact mathematical bounds partitioning customer risk:
 
 ```text
 Rule 1 (Cohort 0, cover: 5,074): IF age <= 43 AND products_number <= 2 THEN churn_rate = 10.7%
@@ -210,12 +207,12 @@ Rule 4 (Cohort 3, cover:   112): IF age >  43 AND products_number >  2 THEN chur
 
 ## Summary
 
-| Dimension | Standard Direct Survival Tree | Two-Stage Hierarchical Survival Tree |
+| Dimension | Standard Direct Survival Tree | Two-Stage Hierarchical Survival Tree (`retrain`) |
 | :--- | :--- | :--- |
 | **Split Optimization** | Greedy log-rank on $(T, E)$ pairs. | Supervised profile clustering on baseline $X$. |
-| **Censoring Robustness** | Vulnerable to calendar truncation bias ($C=0.5031$). | **Censoring-independent** cohort segregation ($C=0.7508$). |
+| **Censoring Robustness** | Vulnerable to calendar truncation bias ($C=0.5031$). | **Censoring-independent** cohort segregation ($C=0.6854$). |
 | **Hazard Assumption** | Assumes piecewise constant hazard steps. | **Non-parametric** leaf Kaplan-Meier curves. |
-| **Inference Latency** | $O(\text{depth})$ | $O(\text{depth})$ tree routing + table lookup. |
+| **Serving Architecture** | Single model tree. | **Single unified ModelTree via in-place `retrain()`**. |
 | **Explainability** | Complex split thresholds on event times. | **Clean business segmentation rules**. |
 
-When working with longitudinal customer telemetry, never allow time-to-event outcomes to dictate customer segmentation. Use `ModelTree` to segregate cohorts first, then estimate localized survival distributions inside each terminal leaf node.
+When working with longitudinal customer telemetry, never allow time-to-event outcomes to dictate customer segmentation. Use `ModelTree` to segregate cohorts first, then call `tree.retrain()` to fit localized survival distributions inside each terminal leaf node.

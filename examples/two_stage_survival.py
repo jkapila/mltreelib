@@ -1,8 +1,8 @@
 """Two-Stage Hierarchical Survival Trees: Segregate First, Model Later.
 
-Demonstrates the two-stage survival architecture:
+Demonstrates the two-stage survival architecture using native ModelTree.retrain():
 1. Stage 1: Subject ID-level cohort discovery via transparent tree partitioning (ModelTree).
-2. Stage 2: Leaf-level non-parametric Kaplan-Meier survival step function estimation.
+2. Stage 2: In-place leaf retraining with non-parametric Kaplan-Meier survival step functions via tree.retrain().
 3. Serving: O(depth) routing of new subjects to localized, calibrated survival curves.
 4. Benchmark: 20-seed comparison against unstratified Kaplan-Meier and single-stage survival trees.
 
@@ -23,7 +23,7 @@ from mltreelib import ModelTree, Metrics
 def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     os.makedirs(output_dir, exist_ok=True)
     print("=" * 80)
-    print("mltreelib: Two-Stage Hierarchical Grouped Survival Modeling")
+    print("mltreelib: Two-Stage Hierarchical Grouped Survival Modeling via retrain()")
     print("=" * 80)
 
     # 1. Load real bank churn benchmark
@@ -56,26 +56,27 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     e_train0, e_test0 = events[tr_idx0], events[te_idx0]
 
     print("[Stage 1] Fitting Profile Segmentation Tree on Baseline Covariates (Seed 0)...")
-    stage1_tree = ModelTree(max_depth=2, min_rows=50)
-    stage1_tree.fit(X_train0.tolist(), e_train0.tolist(), col_names=feature_cols)
+    tree0 = ModelTree(max_depth=2, min_rows=50)
+    tree0.fit(X_train0.tolist(), e_train0.tolist(), col_names=feature_cols)
 
-    train_leaf_ids0 = stage1_tree.apply(X_train0.tolist())
-    test_leaf_ids0 = stage1_tree.apply(X_test0.tolist())
-
-    rules = stage1_tree.extract_rules()
-    print("\nDiscovered Segmentation Rules:")
+    rules = tree0.extract_rules()
+    print("\nDiscovered Segmentation Rules (Stage 1):")
     print(rules)
 
-    # 3. Stage 2: Fit Leaf-Level Survival Models
+    # 3. Stage 2: In-place Leaf Retraining with Survival Families
+    print("\n[Stage 2] In-place Retraining Leaves with Kaplan-Meier Survival Engines via tree.retrain()...")
+    # Native pure Rust refitting: routes rows and refits leaf survival distributions in place!
+    tree0.retrain(X_train0.tolist(), (t_train0.tolist(), e_train0.tolist()), leaf_family="survival")
+
+    train_leaf_ids0 = tree0.apply(X_train0.tolist())
+    test_leaf_ids0 = tree0.apply(X_test0.tolist())
     distinct_leaves0 = sorted(list(set(train_leaf_ids0)))
-    leaf_models0 = {}
-    leaf_stats0 = {}
 
     cohort_names = {
-        0: "Cohort 0: Core Retained (Age <= 42, Prod <= 2)",
-        1: "Cohort 1: Young High-Product Churners (Age <= 42, Prod > 2)",
-        2: "Cohort 2: Mature Mainstream (Age > 42, Prod <= 2)",
-        3: "Cohort 3: Senior Flight Risk (Age > 42, Prod > 2)",
+        0: "Cohort 0: Core Retained (Age <= 43, Prod <= 2)",
+        1: "Cohort 1: Young High-Product Churners (Age <= 43, Prod > 2)",
+        2: "Cohort 2: Mature Mainstream (Age > 43, Prod <= 2)",
+        3: "Cohort 3: Senior Flight Risk (Age > 43, Prod > 2)",
     }
 
     colors = {
@@ -85,17 +86,10 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         3: "#d81b60",  # Rose Red (Severe Hazard)
     }
 
-    print("\n[Stage 2] Fitting Leaf-Level Localized Survival Engines...")
+    leaf_stats0 = {}
     for leaf_id in distinct_leaves0:
         idx = [i for i, l in enumerate(train_leaf_ids0) if l == leaf_id]
-        l_X = [X_train0[i].tolist() for i in idx]
-        l_t = [t_train0[i] for i in idx]
         l_e = [e_train0[i] for i in idx]
-
-        surv_engine = ModelTree(max_depth=0, leaf_family="survival")
-        surv_engine.fit(l_X, (l_t, l_e))
-        leaf_models0[leaf_id] = surv_engine
-
         churn_rate = sum(l_e) / len(idx) * 100.0
         leaf_stats0[leaf_id] = {
             "n": len(idx),
@@ -105,14 +99,14 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         }
         print(f"  -> Leaf {leaf_id} ({cohort_names.get(leaf_id, 'Cohort')}): {len(idx):4d} customers | Churn Rate: {churn_rate:5.1f}%")
 
-    # Generate survival curves for plot
+    # Generate held-out cohort survival curves directly via tree0.predict()
     tenure_grid = np.linspace(0.0, 10.0, 50).tolist()
     cohort_curves0 = {}
     for leaf_id in distinct_leaves0:
         test_sub_idx = [i for i, l in enumerate(test_leaf_ids0) if l == leaf_id]
         if test_sub_idx:
             sub_X = [X_test0[i].tolist() for i in test_sub_idx]
-            preds = leaf_models0[leaf_id].predict(sub_X, kind="survival", times=tenure_grid)
+            preds = tree0.predict(sub_X, kind="survival", times=tenure_grid)
             cohort_curves0[leaf_id] = np.mean(preds, axis=0)
 
     # 4. Multi-Seed Rigorous Benchmark (20 Seeds)
@@ -148,10 +142,12 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         metrics_single["c_index"].append(res_s["harrell_c"])
         metrics_single["ibs"].append(res_s["ibs"])
 
-        # Policy C: Two-Stage Hierarchical Survival Tree
-        stage1 = ModelTree(max_depth=2, min_rows=50)
-        stage1.fit(X_tr, e_tr)
-        risk_ts = stage1.predict(X_te)
+        # Policy C: Two-Stage Hierarchical Survival Tree via retrain()
+        ts_tree = ModelTree(max_depth=2, min_rows=50)
+        ts_tree.fit(X_tr, e_tr)
+        ts_tree.retrain(X_tr, (t_tr, e_tr), leaf_family="survival")
+
+        risk_ts = ts_tree.predict(X_te, kind="risk")
         res_ts = m.survival(t_te, e_te, risk_ts)
         metrics_two_stage["c_index"].append(res_ts["harrell_c"])
         metrics_two_stage["ibs"].append(res_ts["ibs"])
@@ -170,7 +166,7 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     for name, met, arch in [
         ("Marginal Kaplan-Meier", metrics_marginal, "Unstratified Population S(t)"),
         ("Single-Stage Survival Tree", metrics_single, "Log-Rank Splitting on (T, E)"),
-        ("Two-Stage Hierarchical Tree", metrics_two_stage, "ID Profile Tree + Leaf Kaplan-Meier"),
+        ("Two-Stage Hierarchical Tree (retrain)", metrics_two_stage, "Profile Tree + Native Leaf retrain()"),
     ]:
         c_m, c_s = np.mean(met["c_index"]), np.std(met["c_index"])
         ibs_m, ibs_s = np.mean(met["ibs"]), np.std(met["ibs"])
@@ -183,7 +179,6 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5), dpi=300)
 
-    # Panel A: Cohort Churn Rates & Sample Distribution
     cohort_ids = sorted(list(leaf_stats0.keys()))
     names_short = [f"Leaf {cid}\n(n={leaf_stats0[cid]['n']:,})" for cid in cohort_ids]
     rates = [leaf_stats0[cid]["churn_rate"] for cid in cohort_ids]
@@ -199,12 +194,11 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         h = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2, h + 2.0, f"{h:.1f}%", ha="center", va="bottom", fontsize=9.5, fontweight="bold")
 
-    ax1.text(0, 15, "Low Risk\nAge <= 42\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(1, 80, "High Risk\nAge <= 42\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(2, 45, "Moderate\nAge > 42\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(3, 101, "Severe\nAge > 42\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(0, 15, "Low Risk\nAge <= 43\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(1, 80, "High Risk\nAge <= 43\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(2, 45, "Moderate\nAge > 43\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(3, 101, "Severe\nAge > 43\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
 
-    # Panel B: Leaf-Level Kaplan-Meier Survival Curves over 10 Years
     for cid in cohort_ids:
         curve = cohort_curves0[cid]
         ax2.step(
@@ -217,7 +211,7 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
             alpha=0.9,
         )
 
-    ax2.set_title("B: Stage 2 Leaf Kaplan-Meier Curves (10-Year Tenure)", fontsize=11, fontweight="bold", pad=12)
+    ax2.set_title("B: Stage 2 Leaf Kaplan-Meier Curves via retrain()", fontsize=11, fontweight="bold", pad=12)
     ax2.set_xlabel("Customer Tenure (Years)", fontsize=10, fontweight="bold")
     ax2.set_ylabel("Survival Probability S(t)", fontsize=10, fontweight="bold")
     ax2.set_ylim(0.0, 1.05)
