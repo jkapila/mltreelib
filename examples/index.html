@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Tree-based machine learning with a Rust core">
+        <meta name="description" content="Worked examples, tutorials, and specialized studies for mltreelib: concrete strength, diamond pricing, miami housing, categorical encoders, and tree inspection.">
       
       
       
@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../guides/advanced-modeling/">
+        <link rel="prev" href="../suites/component-benchmarks/">
       
       
-        <link rel="next" href="./core-tree-architecture/">
+        <link rel="next" href="./generic-optimizer/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Overview - mltreelib v0.4.13</title>
+        <title>Examples Library Overview - mltreelib v0.4.14</title>
       
     
     
@@ -58,6 +58,8 @@
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../assets/custom.css">
     
     <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
@@ -99,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,13 +115,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.13
+            mltreelib v0.4.14
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Examples Library Overview
             
           </span>
         </div>
@@ -209,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
-    mltreelib v0.4.13
+    mltreelib v0.4.14
   </label>
   
     <div class="md-nav__source">
@@ -360,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-  Modeling pathways
+  Suites
 
     
   </span>
@@ -376,7 +378,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Modeling pathways
+  Suites
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/" class="md-nav__link">
+      <a href="../suites/" class="md-nav__link">
         
   
   
@@ -415,14 +417,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/data/" class="md-nav__link">
+      <a href="../suites/core-tree-architecture/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prepare data
+  Suite 1: Core Architecture & Growth Knobs
 
     
   </span>
@@ -442,14 +444,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/real-data/" class="md-nav__link">
+      <a href="../suites/constraints-and-honesty/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Get the datasets
+  Suite 2: Structural Constraints & Honesty
 
     
   </span>
@@ -469,14 +471,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/regression/" class="md-nav__link">
+      <a href="../suites/missing-data-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Regression
+  Suite 3: Native Missing Data Routing
 
     
   </span>
@@ -496,14 +498,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/classification/" class="md-nav__link">
+      <a href="../suites/distributional-leaves/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Classification
+  Suite 4: Distributional & Censored Leaves
 
     
   </span>
@@ -523,14 +525,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/clustering/" class="md-nav__link">
+      <a href="../suites/hierarchical-retrain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering
+  Suite 5: Dynamic Leaf Retraining
 
     
   </span>
@@ -550,14 +552,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/anomaly/" class="md-nav__link">
+      <a href="../suites/statistical-and-metric-splitting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly detection
+  Suite 6: Statistical & Metric Splitting
 
     
   </span>
@@ -577,14 +579,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/survival/" class="md-nav__link">
+      <a href="../suites/timeseries-forecasting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Survival
+  Suite 7: Time Series Forecasting
 
     
   </span>
@@ -604,14 +606,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/uplift/" class="md-nav__link">
+      <a href="../suites/unsupervised-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Uplift
+  Suite 8: Unsupervised Trees
 
     
   </span>
@@ -631,14 +633,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/evaluation/" class="md-nav__link">
+      <a href="../suites/survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Evaluate and monitor
+  Suite 9: Survival & Competing Risks Trees
 
     
   </span>
@@ -658,14 +660,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/visualization/" class="md-nav__link">
+      <a href="../suites/solver-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Visualize results
+  Suite 10: Solvers, Optimizers & Real-Data Tuning
 
     
   </span>
@@ -685,41 +687,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/serving-contract/" class="md-nav__link">
+      <a href="../suites/component-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prediction and schema
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guides/advanced-modeling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Extend a model tree
+  Suite 11: Component & Factor Analysis
 
     
   </span>
@@ -854,10 +829,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-an-example" class="md-nav__link">
+  <a href="#featured-worked-tutorials" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Run an example
+        Featured Worked Tutorials
       </span>
     </span>
   </a>
@@ -865,49 +840,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-9-consolidated-example-suites" class="md-nav__link">
+  <a href="#specialized-topic-catalog" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The 9 Consolidated Example Suites
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The 9 Consolidated Example Suites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#detailed-mechanics-reference-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Detailed Mechanics Reference Table
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architectural-workflow-navigator" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Architectural Workflow Navigator
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reference-guides-end-to-end-studies" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Reference Guides &amp; End-to-End Studies
+        Specialized Topic Catalog
       </span>
     </span>
   </a>
@@ -948,7 +884,7 @@
   <span class="md-ellipsis">
     
   
-  Core Suites
+  Specialized Topics
 
     
   </span>
@@ -964,307 +900,10 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Core Suites
+  Specialized Topics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./core-tree-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 1: Core Architecture & Growth Knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./constraints-and-honesty/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 2: Structural Constraints & Honesty
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./missing-data-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 3: Native Missing Data Routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./distributional-leaves/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 4: Distributional & Censored Leaves
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./hierarchical-retrain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 5: Dynamic Leaf Retraining
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./statistical-and-metric-splitting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 6: Statistical & Metric Splitting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./timeseries-forecasting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 7: Time Series Forecasting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./unsupervised-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 8: Unsupervised Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 9: Survival & Competing Risks Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./solver-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 10: Numerical & Evolutionary Leaf Solvers
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./component-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 11: Component & Factor Analysis
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
               
                 
                   
@@ -1292,61 +931,6 @@
   
 
                 
-              
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Specialized Topics
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_6_3">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Specialized Topics
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1888,6 +1472,87 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./quinlan-m5-cubist-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quinlan M5 & Cubist in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./distributional-trees-tweedie-tobit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional Trees (Tweedie & Tobit)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Trees vs GBDT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -1985,14 +1650,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+      <a href="../blog/prescriptive-inventory-replenishment/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Credit Scoring and Trees
+  Prescriptive Replenishment
 
     
   </span>
@@ -2012,14 +1677,41 @@
   
   
     <li class="md-nav__item">
-      <a href="../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+      <a href="../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Zero-Imputation Maintenance
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
 
     
   </span>
@@ -2066,95 +1758,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../blog/modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+      <a href="../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Modernizing Quinlan in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../blog/beyond-mse-distributional-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Beyond MSE (Distributional)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../blog/breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Breaking Step Functions
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Two-Stage Survival Trees
+  Zero-Imputation Maintenance
 
     
   </span>
@@ -3026,10 +2637,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-an-example" class="md-nav__link">
+  <a href="#featured-worked-tutorials" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Run an example
+        Featured Worked Tutorials
       </span>
     </span>
   </a>
@@ -3037,49 +2648,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-9-consolidated-example-suites" class="md-nav__link">
+  <a href="#specialized-topic-catalog" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The 9 Consolidated Example Suites
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The 9 Consolidated Example Suites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#detailed-mechanics-reference-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Detailed Mechanics Reference Table
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architectural-workflow-navigator" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Architectural Workflow Navigator
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reference-guides-end-to-end-studies" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Reference Guides &amp; End-to-End Studies
+        Specialized Topic Catalog
       </span>
     </span>
   </a>
@@ -3106,183 +2678,100 @@
   
 
 
-<h1 id="example-library">Example Library<a class="headerlink" href="#example-library" title="Permanent link">&para;</a></h1>
-<p>Start with the <a href="../quickstart/">quickstart</a>, then choose a suite for the modeling problem you want to solve. The guides explain the inputs, the model settings, and how to interpret the outputs.</p>
-<h2 id="run-an-example">Run an example<a class="headerlink" href="#run-an-example" title="Permanent link">&para;</a></h2>
-<p>Follow the <a href="../installation/#from-source">source installation instructions</a>, then run the script from the repository root.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/quickstart.py
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/suites/core_tree_architecture.py
-</span></code></pre></div>
-<p>Each guide identifies its datasets and shows the command for its suite. Dataset-backed examples can download data on first use. Plotting examples write figures under <code>docs/assets/</code>. Use the release extension for timing comparisons.</p>
-<h2 id="the-9-consolidated-example-suites">The 9 Consolidated Example Suites<a class="headerlink" href="#the-9-consolidated-example-suites" title="Permanent link">&para;</a></h2>
+<h1 id="examples-specialized-studies">Examples &amp; Specialized Studies<a class="headerlink" href="#examples-specialized-studies" title="Permanent link">&para;</a></h1>
+<p>Worked tutorials, case studies, and focused topic guides demonstrating <code>mltreelib</code> on real-world datasets.</p>
+<div class="admonition tip">
+<p class="admonition-title">Looking for the 11 Core Benchmark Suites?</p>
+<p>The formal mathematical formulations, empirical benchmark tables, and solver evaluations live in the dedicated <a href="../suites/"><strong>Benchmark Suites</strong></a> section.</p>
+</div>
+<hr />
+<h2 id="featured-worked-tutorials">Featured Worked Tutorials<a class="headerlink" href="#featured-worked-tutorials" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-cpu" viewBox="0 0 24 24"><path d="M12 20v2M12 2v2M17 20v2M17 2v2M2 12h2M2 17h2M2 7h2M20 12h2M20 17h2M20 7h2M7 20v2M7 2v2"/><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="8" height="8" x="8" y="8" rx="1"/></svg></span> <strong>Suite 1: Core Tree Architecture &amp; Growth Knobs</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-gem" viewBox="0 0 24 24"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3zM2 9h20"/></svg></span> <strong>Diamond Price Prediction (Linear Leaves vs Step Functions)</strong></p>
 <hr />
-<p>Two-Control decoupling (<code>ModelTree</code> <span class="arithmatex">\(\leftrightarrow\)</span> <code>LeafControl</code>), 0D leaf stats, and Chow structural break stopping on Yeh Concrete.</p>
-<p><a href="core-tree-architecture/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 1</a></p>
+<p>Worked comparison of constant mean leaves vs piecewise linear regression tree leaves on 6,000 diamond sales.</p>
+<p><a href="piecewise-linear-model-trees-vs-gbdt/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span> <strong>Suite 2: Structural Constraints &amp; Honest Inference</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-hammer" viewBox="0 0 24 24"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9M18 15l4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg></span> <strong>Concrete Compressive Strength (Cubist &amp; M5-Style Trees)</strong></p>
 <hr />
-<p>Dual monotone split and slope constraints, interaction isolation, and sample-split honesty (<span class="arithmatex">\(S^{\text{tr}}\)</span> vs <span class="arithmatex">\(S^{\text{est}}\)</span>) on Healthcare data.</p>
-<p><a href="constraints-and-honesty/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 2</a></p>
+<p>Inspect local linear equations, split conditions, and Quinlan rule handoffs on 1,030 industrial concrete mixtures.</p>
+<p><a href="quinlan-m5-cubist-rust/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-git-branch" viewBox="0 0 24 24"><path d="M15 6a9 9 0 0 0-9 9V3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/></svg></span> <strong>Suite 3: Native Missing Data Routing</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span> <strong>Miami Housing Valuation (Tweedie vs Squared Error)</strong></p>
 <hr />
-<p>Learned <code>missing_left</code> direction and surrogate splits (<code>maxsurrogate=N</code>) for zero-imputation telemetry triage on Scania APS.</p>
-<p><a href="missing-data-routing/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 3</a></p>
+<p>Choosing the right split loss for positive, skewed, and zero-inflated targets on 8,000 Miami home sales.</p>
+<p><a href="distributional-trees-tweedie-tobit/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-chart-scatter" viewBox="0 0 24 24"><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="18.5" cy="5.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="11.5" r=".5" fill="currentColor"/><circle cx="7.5" cy="16.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="14.5" r=".5" fill="currentColor"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/></svg></span> <strong>Suite 4: Distributional &amp; Censored Leaf Families</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sliders" viewBox="0 0 24 24"><path d="M10 8h4M12 21v-9M12 8V3M17 16h4M19 12V3M19 21v-5M3 14h4M5 10V3M5 21v-7"/></svg></span> <strong>Generic Bounded Optimizer &amp; HPO Tuning</strong></p>
 <hr />
-<p>Gamma, Poisson, Tweedie, and Tobit censored MLE leaves with 60%+ OLS attenuation correction across actuarial risk datasets.</p>
-<p><a href="distributional-leaves/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 4</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-zap" viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 0 0-2.474-1.561l-9 9A1.5 1.5 0 0 0 5.5 14h4.002a.5.5 0 0 1 .471.666L8.086 20a1.5 1.5 0 0 0 2.475 1.56l9-9A1.5 1.5 0 0 0 18.5 10h-3.997a.5.5 0 0 1-.472-.667z"/></svg></span> <strong>Suite 5: Dynamic Leaf Retraining &amp; Adaptation</strong></p>
-<hr />
-<p>Microsecond warm-start leaf retraining, Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.</p>
-<p><a href="hierarchical-retrain/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 5</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sliders" viewBox="0 0 24 24"><path d="M10 8h4M12 21v-9M12 8V3M17 16h4M19 12V3M19 21v-5M3 14h4M5 10V3M5 21v-7"/></svg></span> <strong>Suite 6: Statistical, Metric &amp; Oblique Splitting</strong></p>
-<hr />
-<p>Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Quinlan rule extraction on Housing and Wine.</p>
-<p><a href="statistical-and-metric-splitting/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 6</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3M16 2v3"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span> <strong>Suite 7: Time Series Feature Engineering &amp; Forecasting</strong></p>
-<hr />
-<p>Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation.</p>
-<p><a href="timeseries-forecasting/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 7</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-network" viewBox="0 0 24 24"><rect width="6" height="6" x="16" y="16" rx="1"/><rect width="6" height="6" x="2" y="16" rx="1"/><rect width="6" height="6" x="9" y="2" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3M12 12V8"/></svg></span> <strong>Suite 8: Unsupervised Trees: Clustering &amp; Anomaly Triage</strong></p>
-<hr />
-<p>Predictive Clustering Trees (PCT) with rule extraction and Extended Isolation Forest (EIF) with oblique cuts for multi-target grouping.</p>
-<p><a href="unsupervised-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 8</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-heart-pulse" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg></span> <strong>Suite 9: Survival &amp; Competing Risks Trees</strong></p>
-<hr />
-<p>Gray's subdistribution test, weighted log-rank criteria, <span class="arithmatex">\(O(N)\)</span> streaming martingale scans, and Aalen-Johansen CIF simplex invariant.</p>
-<p><a href="survival-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 9</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4M3.34 19a10 10 0 1 1 17.32 0"/></svg></span> <strong>Leaf Solver Benchmarks: 7 Optimization Algorithms</strong></p>
-<hr />
-<p>Pareto frontier of fit latency vs. accuracy across Analytical (<code>irls</code>), Quasi-Newton (<code>lbfgs</code>), Coordinate (<code>ccd</code>), and Evolutionary (<code>shade</code>, <code>cmaes</code>, <code>ga</code>, <code>nes</code>) solvers.</p>
-<p><a href="solver-benchmarks/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Solver Benchmarks</a></p>
+<p>Optimizing ModelTree hyperparameters directly on tabular validation loss using Nelder-Mead, L-BFGS-B, and Powell.</p>
+<p><a href="generic-optimizer/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Guide</a></p>
 </li>
 </ul>
 </div>
 <hr />
-<h3 id="detailed-mechanics-reference-table">Detailed Mechanics Reference Table<a class="headerlink" href="#detailed-mechanics-reference-table" title="Permanent link">&para;</a></h3>
+<h2 id="specialized-topic-catalog">Specialized Topic Catalog<a class="headerlink" href="#specialized-topic-catalog" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Suite</th>
-<th style="text-align: left;">Focus Area</th>
-<th style="text-align: left;">Benchmark Dataset</th>
-<th style="text-align: left;">Key Mechanics Covered</th>
+<th style="text-align: left;">Guide</th>
+<th style="text-align: left;">Primary Focus</th>
+<th style="text-align: left;">Target Problem</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong><a href="core-tree-architecture/">Suite 1: Core Tree Architecture &amp; Growth Knobs</a></strong></td>
-<td style="text-align: left;">Core Systems</td>
-<td style="text-align: left;">Yeh Concrete (1,030 rows)</td>
-<td style="text-align: left;">Two-Control decoupling (<code>ModelTree</code> &lt;-&gt; <code>LeafControl</code>), 0D leaf stats, Chow hypothesis stopping.</td>
+<td style="text-align: left;"><strong><a href="generic-optimizer/">Generic Optimizer Guide</a></strong></td>
+<td style="text-align: left;">Bounded Scalar Minimization</td>
+<td style="text-align: left;">14 algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) on black-box functions.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="constraints-and-honesty/">Suite 2: Structural Constraints &amp; Honest Inference</a></strong></td>
-<td style="text-align: left;">Physics &amp; Governance</td>
-<td style="text-align: left;">Healthcare Expenses (1,338 rows)</td>
-<td style="text-align: left;">Dual monotone split and slope constraints, interaction isolation, sample-split honesty (<span class="arithmatex">\(S^{\text{tr}}\)</span> vs <span class="arithmatex">\(S^{\text{est}}\)</span>).</td>
+<td style="text-align: left;"><strong><a href="pca-rotations/">PCA Rotations &amp; Simple Structure</a></strong></td>
+<td style="text-align: left;">Factor Rotations</td>
+<td style="text-align: left;">Varimax, Quartimax, and Promax orthogonal/oblique simple structure.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="missing-data-routing/">Suite 3: Native Missing Data Routing</a></strong></td>
-<td style="text-align: left;">Industrial IoT</td>
-<td style="text-align: left;">Scania APS Failure (76,000 rows)</td>
-<td style="text-align: left;">Learned <code>missing_left</code> direction, surrogate splits (<code>maxsurrogate=N</code>), zero-imputation telemetry triage.</td>
+<td style="text-align: left;"><strong><a href="data-processing/">Data Processing</a></strong></td>
+<td style="text-align: left;">Frame &amp; Ingest Engine</td>
+<td style="text-align: left;">Typed column frames, NA policies, and zero-copy Rust transforms.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="distributional-leaves/">Suite 4: Distributional &amp; Censored Leaf Families</a></strong></td>
-<td style="text-align: left;">Actuarial &amp; Risk</td>
-<td style="text-align: left;">Credit-G, Healthcare, Affairs, Mroz</td>
-<td style="text-align: left;">Gamma, Poisson, Tweedie, and Tobit censored MLE leaves with 60%+ OLS attenuation correction.</td>
+<td style="text-align: left;"><strong><a href="categorical-encoders/">Optional Categorical Encoders</a></strong></td>
+<td style="text-align: left;">Categorical Ingestion</td>
+<td style="text-align: left;">Native integer indexing, target encoding, and frequency scaling.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="hierarchical-retrain/">Suite 5: Dynamic Leaf Retraining &amp; Adaptation</a></strong></td>
-<td style="text-align: left;">Streaming &amp; Systems</td>
-<td style="text-align: left;">Yeh Concrete (1,030 rows)</td>
-<td style="text-align: left;">Microsecond warm-start leaf retraining, Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors.</td>
+<td style="text-align: left;"><strong><a href="missing-routing/">Missing Data &amp; Routing</a></strong></td>
+<td style="text-align: left;">Native NA Handling</td>
+<td style="text-align: left;">Surrogate split mechanics and learned missing-left branching.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="statistical-and-metric-splitting/">Suite 6: Statistical, Metric &amp; Oblique Splitting</a></strong></td>
-<td style="text-align: left;">Split Optimization</td>
-<td style="text-align: left;">Boston/Miami Housing, Wine Quality</td>
-<td style="text-align: left;">Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Rule extraction.</td>
+<td style="text-align: left;"><strong><a href="model-building/">Model Building &amp; Growth Knobs</a></strong></td>
+<td style="text-align: left;">Tree Hyperparameters</td>
+<td style="text-align: left;"><code>max_depth</code>, <code>min_rows</code>, <code>min_gain</code>, and cost-complexity pruning.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="timeseries-forecasting/">Suite 7: Time Series Feature Engineering &amp; Forecasting</a></strong></td>
-<td style="text-align: left;">Temporal Econometrics</td>
-<td style="text-align: left;">Multi-store retail demand panel</td>
-<td style="text-align: left;">Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation.</td>
+<td style="text-align: left;"><strong><a href="hpo/">Hyperparameter Search (HPO)</a></strong></td>
+<td style="text-align: left;">Automated Tuning</td>
+<td style="text-align: left;">Grid search, random search, and Latin hypercube validation sweeps.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="unsupervised-trees/">Suite 8: Unsupervised Trees: Clustering &amp; Anomaly Triage</a></strong></td>
-<td style="text-align: left;">Discovery &amp; Triage</td>
-<td style="text-align: left;">Wine Quality &amp; 2D Mixture</td>
-<td style="text-align: left;">Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts.</td>
+<td style="text-align: left;"><strong><a href="inspection/">Tree Inspection &amp; Export</a></strong></td>
+<td style="text-align: left;">White-Box Auditing</td>
+<td style="text-align: left;">DOT Graphviz exports, Quinlan rulesets, and leaf equations.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="survival-trees/">Suite 9: Survival &amp; Competing Risks Trees</a></strong></td>
-<td style="text-align: left;">Clinical &amp; Churn</td>
-<td style="text-align: left;">Mayo PBC, Veterans, FLCHAIN</td>
-<td style="text-align: left;">Gray's test, Tarone-Ware/Peto/Martingale, Aalen-Johansen CIF simplex invariant (<span class="arithmatex">\(\sum F_c + S = 1\)</span>), Uno IPCW C.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><a href="solver-benchmarks/">Leaf Solver Benchmarks</a></strong></td>
-<td style="text-align: left;">Optimization Systems</td>
-<td style="text-align: left;">Yeh Concrete (1,030 rows)</td>
-<td style="text-align: left;">Analytical Cholesky, Quasi-Newton L-BFGS, Cyclic Coordinate Descent, and Evolutionary Solvers (SHADE, CMA-ES, GA, NES).</td>
+<td style="text-align: left;"><strong><a href="rules-summary-knn/">Rules, Summaries &amp; Neighbors</a></strong></td>
+<td style="text-align: left;">Instance Explanations</td>
+<td style="text-align: left;">Leaf k-nearest neighbor adjustments and local rule filtering.</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="architectural-workflow-navigator">Architectural Workflow Navigator<a class="headerlink" href="#architectural-workflow-navigator" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>flowchart TD
-    Start["What modeling challenge do you need to solve?"] --&gt; Q1{"What is the target / learning setting?"}
-
-    Q1 -- "Continuous Tabular Response" --&gt; A1["Suite 1: Core Tree Architecture\n(Linear Leaves &amp; Growth Knobs)"]
-    Q1 -- "Preserve Domain Laws / Fairness" --&gt; A2["Suite 2: Structural Constraints\n(Monotone &amp; Honest Inference)"]
-    Q1 -- "Intermittent Telemetry / Missing Inputs" --&gt; A3["Suite 3: Native Missing Data\n(Learned Routes &amp; Surrogates)"]
-    Q1 -- "Heavy Tails / Zero Inflation / Censoring" --&gt; A4["Suite 4: Distributional Leaves\n(Tweedie, Gamma, Tobit)"]
-    Q1 -- "Sub-Millisecond Adaptation &amp; Online Streams" --&gt; A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy &amp; Huber)"]
-    Q1 -- "Structural Parameter Breaks &amp; Oblique Cuts" --&gt; A6["Suite 6: Statistical &amp; Metric Splitting\n(Chow Test &amp; Oblique Scans)"]
-    Q1 -- "Autoregressive Demand &amp; Seasonality" --&gt; A7["Suite 7: Time Series Forecasting\n(Calendar Lags &amp; Additive Decomp)"]
-    Q1 -- "Unsupervised Grouping / Outlier Triage" --&gt; A8["Suite 8: Unsupervised Trees\n(PCT Clustering &amp; EIF Anomaly)"]
-    Q1 -- "Right-Censored / Competing Multi-Cause" --&gt; A9["Suite 9: Survival &amp; Competing Risks\n(Gray's Test, Aalen-Johansen CIF)"]
-
-    classDef startBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
-    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
-    classDef suiteBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
-    classDef survBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
-
-    class Start startBox;
-    class Q1 gateBox;
-    class A1,A2,A3,A4,A5,A6,A7,A8 suiteBox;
-    class A9 survBox;</code></pre>
-<hr />
-<h2 id="reference-guides-end-to-end-studies">Reference Guides &amp; End-to-End Studies<a class="headerlink" href="#reference-guides-end-to-end-studies" title="Permanent link">&para;</a></h2>
-<ul>
-<li>For complete industry case studies on regulatory credit scoring, sensor maintenance, and causal marketing, visit the <strong><a href="../guides/">Practical Modeling Pathways</a></strong>.</li>
-<li>For complete function signatures and parameter specifications, visit the <strong><a href="../reference/model/">API Reference</a></strong>.</li>
-</ul>
 
 
 
@@ -3291,6 +2780,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -3322,7 +2814,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../guides/advanced-modeling/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Extend a model tree">
+          <a href="../suites/component-benchmarks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Suite 11: Component &amp; Factor Analysis">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -3332,20 +2824,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Extend a model tree
+                Suite 11: Component & Factor Analysis
               </div>
             </div>
           </a>
         
         
           
-          <a href="./core-tree-architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Suite 1: Core Architecture &amp; Growth Knobs">
+          <a href="./generic-optimizer/" class="md-footer__link md-footer__link--next" aria-label="Next: Generic optimizer and real-data tuning">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Suite 1: Core Architecture & Growth Knobs
+                Generic optimizer and real-data tuning
               </div>
             </div>
             <div class="md-footer__button md-icon">

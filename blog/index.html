@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../examples/stump-explainable/">
+        <link rel="prev" href="../examples/piecewise-linear-model-trees-vs-gbdt/">
       
       
-        <link rel="next" href="./why-credit-scoring-needs-glass-box-trees/">
+        <link rel="next" href="./prescriptive-inventory-replenishment/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Technical Articles & Case Studies - mltreelib v0.4.13</title>
+        <title>Technical Articles & Case Studies - mltreelib v0.4.14</title>
       
     
     
@@ -58,6 +58,8 @@
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../assets/custom.css">
     
     <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
@@ -99,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +115,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.13
+            mltreelib v0.4.14
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -209,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
-    mltreelib v0.4.13
+    mltreelib v0.4.14
   </label>
   
     <div class="md-nav__source">
@@ -360,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-  Modeling pathways
+  Suites
 
     
   </span>
@@ -376,7 +378,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Modeling pathways
+  Suites
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/" class="md-nav__link">
+      <a href="../suites/" class="md-nav__link">
         
   
   
@@ -415,14 +417,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/data/" class="md-nav__link">
+      <a href="../suites/core-tree-architecture/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prepare data
+  Suite 1: Core Architecture & Growth Knobs
 
     
   </span>
@@ -442,14 +444,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/real-data/" class="md-nav__link">
+      <a href="../suites/constraints-and-honesty/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Get the datasets
+  Suite 2: Structural Constraints & Honesty
 
     
   </span>
@@ -469,14 +471,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/regression/" class="md-nav__link">
+      <a href="../suites/missing-data-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Regression
+  Suite 3: Native Missing Data Routing
 
     
   </span>
@@ -496,14 +498,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/classification/" class="md-nav__link">
+      <a href="../suites/distributional-leaves/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Classification
+  Suite 4: Distributional & Censored Leaves
 
     
   </span>
@@ -523,14 +525,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/clustering/" class="md-nav__link">
+      <a href="../suites/hierarchical-retrain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering
+  Suite 5: Dynamic Leaf Retraining
 
     
   </span>
@@ -550,14 +552,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/anomaly/" class="md-nav__link">
+      <a href="../suites/statistical-and-metric-splitting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly detection
+  Suite 6: Statistical & Metric Splitting
 
     
   </span>
@@ -577,14 +579,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/survival/" class="md-nav__link">
+      <a href="../suites/timeseries-forecasting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Survival
+  Suite 7: Time Series Forecasting
 
     
   </span>
@@ -604,14 +606,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/uplift/" class="md-nav__link">
+      <a href="../suites/unsupervised-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Uplift
+  Suite 8: Unsupervised Trees
 
     
   </span>
@@ -631,14 +633,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/evaluation/" class="md-nav__link">
+      <a href="../suites/survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Evaluate and monitor
+  Suite 9: Survival & Competing Risks Trees
 
     
   </span>
@@ -658,14 +660,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/visualization/" class="md-nav__link">
+      <a href="../suites/solver-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Visualize results
+  Suite 10: Solvers, Optimizers & Real-Data Tuning
 
     
   </span>
@@ -685,41 +687,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/serving-contract/" class="md-nav__link">
+      <a href="../suites/component-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prediction and schema
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guides/advanced-modeling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Extend a model tree
+  Suite 11: Component & Factor Analysis
 
     
   </span>
@@ -838,7 +813,7 @@
   <span class="md-ellipsis">
     
   
-  Core Suites
+  Specialized Topics
 
     
   </span>
@@ -854,307 +829,10 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Core Suites
+  Specialized Topics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/core-tree-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 1: Core Architecture & Growth Knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/constraints-and-honesty/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 2: Structural Constraints & Honesty
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/missing-data-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 3: Native Missing Data Routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/distributional-leaves/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 4: Distributional & Censored Leaves
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/hierarchical-retrain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 5: Dynamic Leaf Retraining
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/statistical-and-metric-splitting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 6: Statistical & Metric Splitting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/timeseries-forecasting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 7: Time Series Forecasting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/unsupervised-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 8: Unsupervised Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 9: Survival & Competing Risks Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/solver-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 10: Numerical & Evolutionary Leaf Solvers
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/component-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 11: Component & Factor Analysis
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
               
                 
                   
@@ -1182,61 +860,6 @@
   
 
                 
-              
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Specialized Topics
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_6_3">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Specialized Topics
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1778,6 +1401,87 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/quinlan-m5-cubist-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quinlan M5 & Cubist in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/distributional-trees-tweedie-tobit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional Trees (Tweedie & Tobit)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Trees vs GBDT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -1957,14 +1661,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+      <a href="./prescriptive-inventory-replenishment/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Credit Scoring and Trees
+  Prescriptive Replenishment
 
     
   </span>
@@ -1984,14 +1688,41 @@
   
   
     <li class="md-nav__item">
-      <a href="./zero-imputation-predictive-maintenance/" class="md-nav__link">
+      <a href="./segregate-first-two-stage-survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Zero-Imputation Maintenance
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
 
     
   </span>
@@ -2038,95 +1769,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+      <a href="./zero-imputation-predictive-maintenance/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Modernizing Quinlan in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./beyond-mse-distributional-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Beyond MSE (Distributional)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Breaking Step Functions
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./segregate-first-two-stage-survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Two-Stage Survival Trees
+  Zero-Imputation Maintenance
 
     
   </span>
@@ -3057,18 +2707,25 @@
 <div class="grid cards">
 <ul>
 <li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-package-check" viewBox="0 0 24 24"><path d="M12 22V12M16 17l2 2 4-4"/><path d="M21 11.127V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l1.32-.753"/><path d="M3.29 7 12 12l8.71-5M7.5 4.27l8.997 5.148"/></svg></span> <strong>Prescriptive Analytics: Predict-then-Optimize Inventory Replenishment</strong></p>
+<hr />
+<p>Supply chain optimization: predict-then-optimize replenishment with ModelTree per-leaf quantile curves and dual search under warehouse capacity and working capital caps.</p>
+<p><strong>Application</strong>: 50-SKU Retail Supply Chain under Joint Capacity Constraints</p>
+<p><a href="prescriptive-inventory-replenishment/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
+</li>
+<li>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg></span> <strong>Segregate First, Model Later: Two-Stage Survival Trees</strong></p>
+<hr />
+<p>Actuarial &amp; retention analytics: decoupling ID-level tree cohort discovery from leaf-level Kaplan-Meier curves to eliminate right-censoring bias and non-proportional hazard violations.</p>
+<p><strong>Dataset</strong>: Bank Customer Churn (10,000 customers)</p>
+<p><a href="segregate-first-two-stage-survival-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
+</li>
+<li>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-alert" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1zM12 8v4M12 16h.01"/></svg></span> <strong>Decision Trees for Credit Scoring</strong></p>
 <hr />
 <p>Regulatory compliance, path-level auditing, and probability calibration under fair lending constraints.</p>
 <p><strong>Dataset</strong>: Give Me Some Credit (150,000 borrowers)</p>
 <p><a href="why-credit-scoring-needs-glass-box-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></span> <strong>Zero-Imputation Predictive Maintenance</strong></p>
-<hr />
-<p>Industrial sensor feeds: native missing-data routing and surrogate splits under severe asymmetric misclassification costs.</p>
-<p><strong>Dataset</strong>: Scania Truck APS Failure (76,000 vehicles)</p>
-<p><a href="zero-imputation-predictive-maintenance/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
 </li>
 <li>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-heart-handshake" viewBox="0 0 24 24"><path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762"/></svg></span> <strong>Uplift Modeling with Causal Trees</strong></p>
@@ -3078,32 +2735,11 @@
 <p><a href="uplift-modeling-with-causal-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-cpu" viewBox="0 0 24 24"><path d="M12 20v2M12 2v2M17 20v2M17 2v2M2 12h2M2 17h2M2 7h2M20 12h2M20 17h2M20 7h2M7 20v2M7 2v2"/><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="8" height="8" x="8" y="8" rx="1"/></svg></span> <strong>Modernizing Quinlan Classics in Rust</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></span> <strong>Zero-Imputation Predictive Maintenance</strong></p>
 <hr />
-<p>Re-architecting M5, Cubist, and C5.0 into high-throughput systems ML: linear leaves, dynamic rule extraction, and exact parity.</p>
-<p><strong>Dataset</strong>: Concrete Compressive Strength (1,030 mixtures)</p>
-<p><a href="modernizing-quinlan-classics-in-rust/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-chart-scatter" viewBox="0 0 24 24"><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="18.5" cy="5.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="11.5" r=".5" fill="currentColor"/><circle cx="7.5" cy="16.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="14.5" r=".5" fill="currentColor"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/></svg></span> <strong>Beyond Mean Squared Error: Distributional Trees</strong></p>
-<hr />
-<p>Actuarial &amp; risk modeling: Tweedie compound Poisson-Gamma claims, Tobit censored MLE, and heteroscedastic regimes.</p>
-<p><strong>Dataset</strong>: Miami Housing &amp; German Credit (TabArena)</p>
-<p><a href="beyond-mse-distributional-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg></span> <strong>Breaking Step Functions: Model Trees vs. GBDT</strong></p>
-<hr />
-<p>Systems ML &amp; continuous tabular regression: why piecewise linear leaves eliminate staircase artifacts with far shallower trees than GBDT.</p>
-<p><strong>Dataset</strong>: Diamonds (53,940 stones)</p>
-<p><a href="breaking-step-functions-model-trees-vs-gbdt/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
-</li>
-<li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg></span> <strong>Segregate First, Model Later: Two-Stage Survival Trees</strong></p>
-<hr />
-<p>Actuarial &amp; retention analytics: decoupling ID-level tree cohort discovery from leaf-level Kaplan-Meier curves to eliminate right-censoring bias and non-proportional hazard violations.</p>
-<p><strong>Dataset</strong>: Bank Customer Churn (10,000 customers)</p>
-<p><a href="segregate-first-two-stage-survival-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
+<p>Industrial sensor feeds: native missing-data routing and surrogate splits under severe asymmetric misclassification costs.</p>
+<p><strong>Dataset</strong>: Scania Truck APS Failure (76,000 vehicles)</p>
+<p><a href="zero-imputation-predictive-maintenance/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Read Case Study</a></p>
 </li>
 </ul>
 </div>
@@ -3119,14 +2755,19 @@
 </thead>
 <tbody>
 <tr>
+<td style="text-align: left;">How do I prescribe inventory replenishment under warehouse and budget limits?</td>
+<td style="text-align: left;"><a href="prescriptive-inventory-replenishment/">Prescriptive inventory replenishment</a></td>
+<td style="text-align: left;">50-SKU Retail Replenishment</td>
+</tr>
+<tr>
+<td style="text-align: left;">How do I model longitudinal customer churn without right-censoring bias?</td>
+<td style="text-align: left;"><a href="segregate-first-two-stage-survival-trees/">Two-stage hierarchical survival trees</a></td>
+<td style="text-align: left;">Bank Customer Churn</td>
+</tr>
+<tr>
 <td style="text-align: left;">How do I audit a classifier and choose an operating threshold?</td>
 <td style="text-align: left;"><a href="why-credit-scoring-needs-glass-box-trees/">Decision trees for credit scoring</a></td>
 <td style="text-align: left;">Give Me Some Credit</td>
-</tr>
-<tr>
-<td style="text-align: left;">Can a tree score industrial telemetry with missing sensor values without imputation?</td>
-<td style="text-align: left;"><a href="zero-imputation-predictive-maintenance/">Decision trees and missing sensor data</a></td>
-<td style="text-align: left;">Scania APS Failure</td>
 </tr>
 <tr>
 <td style="text-align: left;">Does an uplift model improve targeting without waking sleeping dogs?</td>
@@ -3134,24 +2775,24 @@
 <td style="text-align: left;">Hillstrom randomized trial</td>
 </tr>
 <tr>
+<td style="text-align: left;">Can a tree score industrial telemetry with missing sensor values without imputation?</td>
+<td style="text-align: left;"><a href="zero-imputation-predictive-maintenance/">Decision trees and missing sensor data</a></td>
+<td style="text-align: left;">Scania APS Failure</td>
+</tr>
+<tr>
 <td style="text-align: left;">How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust?</td>
-<td style="text-align: left;"><a href="modernizing-quinlan-classics-in-rust/">Cubist-style model trees</a></td>
+<td style="text-align: left;"><a href="../examples/quinlan-m5-cubist-rust/">Cubist-style model trees</a></td>
 <td style="text-align: left;">UCI concrete strength</td>
 </tr>
 <tr>
 <td style="text-align: left;">What changes when I use Tweedie and Tobit distributional split criteria?</td>
-<td style="text-align: left;"><a href="beyond-mse-distributional-trees/">Distributional tree splits</a></td>
+<td style="text-align: left;"><a href="../examples/distributional-trees-tweedie-tobit/">Distributional tree splits</a></td>
 <td style="text-align: left;">Miami home sales</td>
 </tr>
 <tr>
 <td style="text-align: left;">When do piecewise linear leaves outperform gradient boosted trees?</td>
-<td style="text-align: left;"><a href="breaking-step-functions-model-trees-vs-gbdt/">Regression trees with linear leaves</a></td>
+<td style="text-align: left;"><a href="../examples/piecewise-linear-model-trees-vs-gbdt/">Regression trees with linear leaves</a></td>
 <td style="text-align: left;">Diamonds</td>
-</tr>
-<tr>
-<td style="text-align: left;">How do I model longitudinal customer churn without right-censoring bias?</td>
-<td style="text-align: left;"><a href="segregate-first-two-stage-survival-trees/">Two-stage hierarchical survival trees</a></td>
-<td style="text-align: left;">Bank Customer Churn</td>
 </tr>
 </tbody>
 </table>
@@ -3204,7 +2845,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../examples/stump-explainable/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Explainable stumps and retrain">
+          <a href="../examples/piecewise-linear-model-trees-vs-gbdt/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Model Trees vs GBDT">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -3214,20 +2855,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Explainable stumps and retrain
+                Model Trees vs GBDT
               </div>
             </div>
           </a>
         
         
           
-          <a href="./why-credit-scoring-needs-glass-box-trees/" class="md-footer__link md-footer__link--next" aria-label="Next: Credit Scoring and Trees">
+          <a href="./prescriptive-inventory-replenishment/" class="md-footer__link md-footer__link--next" aria-label="Next: Prescriptive Replenishment">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Credit Scoring and Trees
+                Prescriptive Replenishment
               </div>
             </div>
             <div class="md-footer__button md-icon">

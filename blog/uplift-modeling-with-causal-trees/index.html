@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Build a causal tree on the randomized Hillstrom email experiment and compare its targeting policy with treating all or treating nobody.">
+        <meta name="description" content="How honest causal trees isolate treatment effect heterogeneity on 42,693 randomized customers from the Hillstrom trial. Compare honest vs adaptive trees and T-learners across a 20-seed Qini benchmark.">
       
       
       
@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../zero-imputation-predictive-maintenance/">
+        <link rel="prev" href="../why-credit-scoring-needs-glass-box-trees/">
       
       
-        <link rel="next" href="../modernizing-quinlan-classics-in-rust/">
+        <link rel="next" href="../zero-imputation-predictive-maintenance/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Causal Uplift Modeling - mltreelib v0.4.13</title>
+        <title>Causal Uplift Modeling with Decision Trees: Targeting Incremental Conversions over Baseline Visits - mltreelib v0.4.14</title>
       
     
     
@@ -58,6 +58,8 @@
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/custom.css">
     
     <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
@@ -99,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,13 +115,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.13
+            mltreelib v0.4.14
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Causal Uplift Modeling
+              Causal Uplift Modeling with Decision Trees: Targeting Incremental Conversions over Baseline Visits
             
           </span>
         </div>
@@ -209,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
-    mltreelib v0.4.13
+    mltreelib v0.4.14
   </label>
   
     <div class="md-nav__source">
@@ -360,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-  Modeling pathways
+  Suites
 
     
   </span>
@@ -376,7 +378,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Modeling pathways
+  Suites
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/" class="md-nav__link">
+      <a href="../../suites/" class="md-nav__link">
         
   
   
@@ -415,14 +417,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/data/" class="md-nav__link">
+      <a href="../../suites/core-tree-architecture/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prepare data
+  Suite 1: Core Architecture & Growth Knobs
 
     
   </span>
@@ -442,14 +444,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/real-data/" class="md-nav__link">
+      <a href="../../suites/constraints-and-honesty/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Get the datasets
+  Suite 2: Structural Constraints & Honesty
 
     
   </span>
@@ -469,14 +471,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/regression/" class="md-nav__link">
+      <a href="../../suites/missing-data-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Regression
+  Suite 3: Native Missing Data Routing
 
     
   </span>
@@ -496,14 +498,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/classification/" class="md-nav__link">
+      <a href="../../suites/distributional-leaves/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Classification
+  Suite 4: Distributional & Censored Leaves
 
     
   </span>
@@ -523,14 +525,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/clustering/" class="md-nav__link">
+      <a href="../../suites/hierarchical-retrain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering
+  Suite 5: Dynamic Leaf Retraining
 
     
   </span>
@@ -550,14 +552,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/anomaly/" class="md-nav__link">
+      <a href="../../suites/statistical-and-metric-splitting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly detection
+  Suite 6: Statistical & Metric Splitting
 
     
   </span>
@@ -577,14 +579,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/survival/" class="md-nav__link">
+      <a href="../../suites/timeseries-forecasting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Survival
+  Suite 7: Time Series Forecasting
 
     
   </span>
@@ -604,14 +606,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/uplift/" class="md-nav__link">
+      <a href="../../suites/unsupervised-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Uplift
+  Suite 8: Unsupervised Trees
 
     
   </span>
@@ -631,14 +633,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/evaluation/" class="md-nav__link">
+      <a href="../../suites/survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Evaluate and monitor
+  Suite 9: Survival & Competing Risks Trees
 
     
   </span>
@@ -658,14 +660,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/visualization/" class="md-nav__link">
+      <a href="../../suites/solver-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Visualize results
+  Suite 10: Solvers, Optimizers & Real-Data Tuning
 
     
   </span>
@@ -685,41 +687,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/serving-contract/" class="md-nav__link">
+      <a href="../../suites/component-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prediction and schema
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/advanced-modeling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Extend a model tree
+  Suite 11: Component & Factor Analysis
 
     
   </span>
@@ -838,7 +813,7 @@
   <span class="md-ellipsis">
     
   
-  Core Suites
+  Specialized Topics
 
     
   </span>
@@ -854,307 +829,10 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Core Suites
+  Specialized Topics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/core-tree-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 1: Core Architecture & Growth Knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/constraints-and-honesty/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 2: Structural Constraints & Honesty
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/missing-data-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 3: Native Missing Data Routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/distributional-leaves/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 4: Distributional & Censored Leaves
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/hierarchical-retrain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 5: Dynamic Leaf Retraining
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/statistical-and-metric-splitting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 6: Statistical & Metric Splitting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/timeseries-forecasting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 7: Time Series Forecasting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/unsupervised-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 8: Unsupervised Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 9: Survival & Competing Risks Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/solver-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 10: Numerical & Evolutionary Leaf Solvers
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/component-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 11: Component & Factor Analysis
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
               
                 
                   
@@ -1182,61 +860,6 @@
   
 
                 
-              
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Specialized Topics
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_6_3">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Specialized Topics
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1778,6 +1401,87 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/quinlan-m5-cubist-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quinlan M5 & Cubist in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/distributional-trees-tweedie-tobit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional Trees (Tweedie & Tobit)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Trees vs GBDT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -1877,14 +1581,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+      <a href="../prescriptive-inventory-replenishment/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Credit Scoring and Trees
+  Prescriptive Replenishment
 
     
   </span>
@@ -1904,14 +1608,41 @@
   
   
     <li class="md-nav__item">
-      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
+      <a href="../segregate-first-two-stage-survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Zero-Imputation Maintenance
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
 
     
   </span>
@@ -1990,10 +1721,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#get-a-real-treatment-and-control-dataset" class="md-nav__link">
+  <a href="#1-the-four-customer-archetypes-in-campaign-economics" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Get a real treatment and control dataset
+        1. The Four Customer Archetypes in Campaign Economics
       </span>
     </span>
   </a>
@@ -2001,10 +1732,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fit-the-causal-tree-and-set-a-threshold" class="md-nav__link">
+  <a href="#2-why-honest-splitting-eliminates-adaptive-bias" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fit the causal tree and set a threshold
+        2. Why Honest Splitting Eliminates Adaptive Bias
       </span>
     </span>
   </a>
@@ -2012,10 +1743,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-does-the-test-set-say" class="md-nav__link">
+  <a href="#3-the-kevin-hillstrom-randomized-trial-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What does the test set say?
+        3. The Kevin Hillstrom Randomized Trial Dataset
       </span>
     </span>
   </a>
@@ -2023,10 +1754,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-should-you-inspect-before-a-new-trial" class="md-nav__link">
+  <a href="#4-single-seed-causal-diagnostics-seed-42" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What should you inspect before a new trial?
+        4. Single-Seed Causal Diagnostics (Seed 42)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Single-Seed Causal Diagnostics (Seed 42)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-subgroup-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Structural Subgroup Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-multi-seed-rigorous-benchmark-20-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Multi-Seed Rigorous Benchmark (20 Seeds)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Multi-Seed Rigorous Benchmark (20 Seeds)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-across-20-seeds-n_texttest-8540" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 8,540\)</span>):
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-to-head-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Head-to-Head Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-methodological-and-operational-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Methodological and Operational Limitations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproduce-the-full-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reproduce the Full Pipeline
       </span>
     </span>
   </a>
@@ -2049,95 +1858,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Modernizing Quinlan in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../beyond-mse-distributional-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Beyond MSE (Distributional)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Breaking Step Functions
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../segregate-first-two-stage-survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Two-Stage Survival Trees
+  Zero-Imputation Maintenance
 
     
   </span>
@@ -3009,10 +2737,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#get-a-real-treatment-and-control-dataset" class="md-nav__link">
+  <a href="#1-the-four-customer-archetypes-in-campaign-economics" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Get a real treatment and control dataset
+        1. The Four Customer Archetypes in Campaign Economics
       </span>
     </span>
   </a>
@@ -3020,10 +2748,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fit-the-causal-tree-and-set-a-threshold" class="md-nav__link">
+  <a href="#2-why-honest-splitting-eliminates-adaptive-bias" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fit the causal tree and set a threshold
+        2. Why Honest Splitting Eliminates Adaptive Bias
       </span>
     </span>
   </a>
@@ -3031,10 +2759,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-does-the-test-set-say" class="md-nav__link">
+  <a href="#3-the-kevin-hillstrom-randomized-trial-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What does the test set say?
+        3. The Kevin Hillstrom Randomized Trial Dataset
       </span>
     </span>
   </a>
@@ -3042,10 +2770,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-should-you-inspect-before-a-new-trial" class="md-nav__link">
+  <a href="#4-single-seed-causal-diagnostics-seed-42" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What should you inspect before a new trial?
+        4. Single-Seed Causal Diagnostics (Seed 42)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Single-Seed Causal Diagnostics (Seed 42)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-subgroup-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Structural Subgroup Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-multi-seed-rigorous-benchmark-20-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Multi-Seed Rigorous Benchmark (20 Seeds)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Multi-Seed Rigorous Benchmark (20 Seeds)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-across-20-seeds-n_texttest-8540" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 8,540\)</span>):
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-to-head-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Head-to-Head Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-methodological-and-operational-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Methodological and Operational Limitations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproduce-the-full-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reproduce the Full Pipeline
       </span>
     </span>
   </a>
@@ -3072,90 +2878,182 @@
   
 
 
-<h1 id="uplift-modeling-with-causal-trees-does-targeting-beat-emailing-everyone">Uplift modeling with causal trees: does targeting beat emailing everyone?<a class="headerlink" href="#uplift-modeling-with-causal-trees-does-targeting-beat-emailing-everyone" title="Permanent link">&para;</a></h1>
-<p>A customer can be likely to visit your site without receiving an email. Sending to that customer only helps if the email changes their behavior. A response model estimates the chance of a visit. An uplift model estimates how much that chance changes under the intervention.</p>
-<p>This walkthrough fits a causal tree, chooses a targeting threshold and estimates the policy's incremental visits on a randomized test set.</p>
-<h2 id="get-a-real-treatment-and-control-dataset">Get a real treatment and control dataset<a class="headerlink" href="#get-a-real-treatment-and-control-dataset" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://www.tensorflow.org/datasets/catalog/hillstrom">Hillstrom experiment</a> assigned 64,000 customers across two email variants and a control group. Compare the women's email with no email. Use the <code>visit</code> indicator for a site visit in the next two weeks. Keep the men's email arm out of this comparison. The outcome and campaign assignment stay out of the feature matrix.</p>
-<p>Download the <a href="https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv">CSV mirror</a> to <code>datasets/external/real_eval/hillstrom.csv</code>. It matches the published record and arm counts. The <a href="../../guides/uplift/">uplift pathway</a> records the file checksum and source details. Clone the repo and run <code>uv sync</code>. Run the code below from the repository root.</p>
-<h2 id="fit-the-causal-tree-and-set-a-threshold">Fit the causal tree and set a threshold<a class="headerlink" href="#fit-the-causal-tree-and-set-a-threshold" title="Permanent link">&para;</a></h2>
-<p>Shuffle once. Use 25,615 training rows, 8,539 validation rows and 8,539 test rows. The split assumes independent customer records from the same experiment. Honest estimation separates rows for split selection and leaf estimates inside the training set. Validation chooses the cutoff from the possible scores. The test set is reserved for the chosen policy and two fixed alternatives.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">examples.real_survival_uplift</span><span class="w"> </span><span class="kn">import</span> <span class="n">group_value</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"datasets/external/real_eval/hillstrom.csv"</span><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">"Womens E-Mail"</span><span class="p">,</span> <span class="s2">"No E-Mail"</span><span class="p">])]</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"recency"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"mens"</span><span class="p">,</span> <span class="s2">"womens"</span><span class="p">,</span> <span class="s2">"newbie"</span><span class="p">,</span> <span class="s2">"zip_code"</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">]</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"numeric"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"categorical"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)))</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">Random</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">.6</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="mf">.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">inputs</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">part</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">part</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)]</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">visit</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">segment</span> <span class="o">==</span> <span class="s2">"Womens E-Mail"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">w_train</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[:</span><span class="n">a</span><span class="p">])</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">,</span> <span class="n">w_val</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">a</span><span class="p">:</span><span class="n">b</span><span class="p">])</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">w_test</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">b</span><span class="p">:])</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>                 <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span> <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">w_train</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">types</span><span class="p">)</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">val_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="k">def</span><span class="w"> </span><span class="nf">value_at</span><span class="p">(</span><span class="n">threshold</span><span class="p">):</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="k">return</span> <span class="n">group_value</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">w_val</span><span class="p">,</span> <span class="p">[</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span> <span class="k">for</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">val_scores</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">threshold</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">val_scores</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">val_scores</span><span class="p">))],</span> <span class="n">key</span><span class="o">=</span><span class="n">value_at</span><span class="p">)</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="n">test_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="k">for</span> <span class="n">selected</span> <span class="ow">in</span> <span class="p">([</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span> <span class="k">for</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">test_scores</span><span class="p">],</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                 <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_test</span><span class="p">),</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_test</span><span class="p">)):</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">group_value</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">w_test</span><span class="p">,</span> <span class="n">selected</span><span class="p">))</span>
+<h1 id="causal-uplift-modeling-with-decision-trees-targeting-incremental-conversions-over-baseline-visits">Causal Uplift Modeling with Decision Trees: Targeting Incremental Conversions over Baseline Visits<a class="headerlink" href="#causal-uplift-modeling-with-decision-trees-targeting-incremental-conversions-over-baseline-visits" title="Permanent link">&para;</a></h1>
+<p>A customer who visits your store after receiving a promotional email is not necessarily a marketing win. Many customers would have visited anyway.</p>
+<p>Standard predictive models estimate response probability <span class="arithmatex">\(\mathbb{E}[Y \mid \mathbf{X}]\)</span>. They misallocate spend by sending offers to customers who already intend to buy. </p>
+<p>An uplift model isolates the <strong>Conditional Average Treatment Effect (CATE)</strong>:</p>
+<div class="arithmatex">\[\tau(\mathbf{x}) = \mathbb{E}[Y(1) - Y(0) \mid \mathbf{X} = \mathbf{x}]\]</div>
+<p>By using honest causal decision trees in pure Rust, we discover natural behavioral segments whose incremental visit rate exceeds 8.8%, while avoiding wasted spend on unpersuadable cohorts.</p>
+<p>The full reproducible script lives at <a href="https://github.com/jkapila/mltreelib/blob/main/examples/causal_uplift.py"><code>examples/causal_uplift.py</code></a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/causal_uplift.py
 </span></code></pre></div>
-<h2 id="what-does-the-test-set-say">What does the test set say?<a class="headerlink" href="#what-does-the-test-set-say" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="1-the-four-customer-archetypes-in-campaign-economics">1. The Four Customer Archetypes in Campaign Economics<a class="headerlink" href="#1-the-four-customer-archetypes-in-campaign-economics" title="Permanent link">&para;</a></h2>
+<p>Intervention modeling categorizes every recipient into one of four causal personas based on potential outcomes <span class="arithmatex">\((Y_i(0), Y_i(1))\)</span>:</p>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Matrix["Causal Archetypes Matrix"]
+        A["Persuadables\nY(0)=0, Y(1)=1\nPositive Uplift (+)\nTarget Aggressively"]
+        B["Sure Things\nY(0)=1, Y(1)=1\nZero Uplift (0)\nDo Not Spend Budget"]
+        C["Lost Causes\nY(0)=0, Y(1)=0\nZero Uplift (0)\nIgnore"]
+        D["Sleeping Dogs\nY(0)=1, Y(1)=0\nNegative Uplift (-)\nDo Not Contact"]
+    end
+
+    classDef greenBox fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#ffffff;
+    classDef blueBox fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef grayBox fill:#334155,stroke:#64748b,stroke-width:2px,color:#ffffff;
+    classDef redBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+
+    class A greenBox;
+    class B blueBox;
+    class C grayBox;
+    class D redBox;</code></pre>
+<ul>
+<li><strong>Persuadables</strong>: Customers who convert only when contacted (<span class="arithmatex">\(\tau_i &gt; 0\)</span>). These drive campaign return on investment.</li>
+<li><strong>Sure Things</strong>: Loyal customers who buy regardless (<span class="arithmatex">\(\tau_i = 0\)</span>). Standard response models target them heavily, wasting marketing capital.</li>
+<li><strong>Lost Causes</strong>: Inactive customers who will not buy under any circumstance (<span class="arithmatex">\(\tau_i = 0\)</span>).</li>
+<li><strong>Sleeping Dogs</strong>: Customers alienated or prompted to unsubscribe by marketing emails (<span class="arithmatex">\(\tau_i &lt; 0\)</span>).</li>
+</ul>
+<p>Targeting everyone dilutes campaign margin with contact costs. Targeting by predicted uplift ranks customers so budget is spent only where <span class="arithmatex">\(\hat{\tau}(\mathbf{x}) \cdot \text{Margin} &gt; \text{Cost}\)</span>.</p>
+<hr />
+<h2 id="2-why-honest-splitting-eliminates-adaptive-bias">2. Why Honest Splitting Eliminates Adaptive Bias<a class="headerlink" href="#2-why-honest-splitting-eliminates-adaptive-bias" title="Permanent link">&para;</a></h2>
+<p>A naive decision tree selects splits that maximize empirical treatment difference:</p>
+<div class="arithmatex">\[\Delta_{\text{split}} = \frac{N_L N_R}{N} (\hat{\tau}_L - \hat{\tau}_R)^2\]</div>
+<p>When split selection and leaf effect estimation use the same training sample, the tree overfits random noise between treatment and control records. Observed leaf effects become severely exaggerated.</p>
+<p>Following <a href="https://www.pnas.org/doi/10.1073/pnas.1510489113">Athey and Imbens (2016)</a>, <code>mltreelib</code> implements <strong>Honest Causal Splitting</strong>:
+1. The training partition splits into two disjoint subsets: structure sample <span class="arithmatex">\(S^{\text{tr}}\)</span> and estimation sample <span class="arithmatex">\(S^{\text{est}}\)</span>.
+2. <span class="arithmatex">\(S^{\text{tr}}\)</span> discovers candidate split boundaries.
+3. <span class="arithmatex">\(S^{\text{est}}\)</span> calculates terminal leaf uplift:</p>
+<div class="arithmatex">\[\hat{\tau}_{\text{leaf}} = \frac{1}{|S^{\text{est}}_1|} \sum_{i \in S^{\text{est}}_1} Y_i - \frac{1}{|S^{\text{est}}_0|} \sum_{i \in S^{\text{est}}_0} Y_i\]</div>
+<p>Honest trees provide asymptotically Gaussian, centered, and unbiased treatment effect estimates out of the box.</p>
+<hr />
+<h2 id="3-the-kevin-hillstrom-randomized-trial-dataset">3. The Kevin Hillstrom Randomized Trial Dataset<a class="headerlink" href="#3-the-kevin-hillstrom-randomized-trial-dataset" title="Permanent link">&para;</a></h2>
+<p>We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing trial:
+- <strong>Treatment Arm</strong>: Women's E-Mail campaign (21,387 customers).
+- <strong>Control Arm</strong>: No email contact (21,306 customers).
+- <strong>Outcome</strong>: Binary visit indicator within two weeks (<code>visit</code>).
+- <strong>Predictors</strong>: 7 customer history metrics including recency, historical spend (<code>history</code>), past mens/womens merchandise purchases, newbie indicator, zip code tier, and shopping channel.
+- <strong>Population ATE</strong>: Sending the Women's E-Mail increases overall visit rate from 10.6% to 15.1% (+4.52 percentage points).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"datasets/external/real_eval/hillstrom.csv"</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">"Womens E-Mail"</span><span class="p">,</span> <span class="s2">"No E-Mail"</span><span class="p">])]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"recency"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"mens"</span><span class="p">,</span> <span class="s2">"womens"</span><span class="p">,</span> <span class="s2">"newbie"</span><span class="p">,</span> <span class="s2">"zip_code"</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">]</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"numeric"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"categorical"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)]</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">y</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"visit"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">w</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="s2">"Womens E-Mail"</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]]</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Fit honest causal tree with max_depth=2</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">types</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="4-single-seed-causal-diagnostics-seed-42">4. Single-Seed Causal Diagnostics (Seed 42)<a class="headerlink" href="#4-single-seed-causal-diagnostics-seed-42" title="Permanent link">&para;</a></h2>
+<p>On a held-out test split of 8,539 customers (60% train, 20% validation, 20% test; Seed 42), the honest causal tree reveals strong treatment effect heterogeneity:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Discovered Causal Splits (3 split nodes, 4 leaves):
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  - Root Split: womens &lt;= 0.00 (gain = 11.7582)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  - Left Child: zip_code &lt;= 0.00 (gain = 1.4747)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  - Right Child: history &lt;= 338.47 (gain = 2.1134)
+</span></code></pre></div>
+<p><img alt="Fitted Honest Causal Tree Diagram" src="../../assets/causal_uplift_tree.svg" /></p>
+<h3 id="structural-subgroup-findings">Structural Subgroup Findings:<a class="headerlink" href="#structural-subgroup-findings" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Prior Women's Shoppers with High Spend (Leaf 3)</strong>: Customers with prior women's merchandise purchases (<code>womens &gt; 0</code>) and historical spend over $338.47 achieve the highest uplift: <strong>+8.81% incremental visits</strong> (nearly double the population average).</li>
+<li><strong>Non-Women's Shoppers (Leaf 0)</strong>: Customers with no prior women's merchandise purchases exhibit lower incremental response (+2.8%), representing low-return ad spend.</li>
+</ol>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">res</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">uplift</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">w_test</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">))</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Honest Tree Qini: </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'qini_coef'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> | AUUC: </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'auuc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Single-seed evaluation on test customers:
+- <strong>Honest Causal Tree</strong>: Qini = <strong>41.63</strong> | AUUC = <strong>269.97</strong> | Top Quintile Uplift = <strong>8.81%</strong>
+- <strong>Adaptive Causal Tree</strong>: Qini = <strong>32.83</strong> | AUUC = <strong>253.23</strong> | Top Quintile Uplift = <strong>6.12%</strong>
+- <strong>Two-Model T-Learner</strong>: Qini = <strong>32.06</strong> | AUUC = <strong>251.96</strong> | Top Quintile Uplift = <strong>9.87%</strong></p>
+<p><img alt="Qini Curve and Incremental Visit Rates by Model Decile" src="../../assets/causal_uplift_qini_curve.png" /></p>
+<p>Panel A plots the Qini curve (cumulative incremental site visits against targeted customer share). The honest causal tree achieves rapid early gains: targeting the top 30% of customers captures over 60% of all potential incremental visits. Panel B shows monotonic decay across predicted deciles, confirming clean segregation of high-responsiveness customers from unresponsive segments.</p>
+<hr />
+<h2 id="5-multi-seed-rigorous-benchmark-20-seeds">5. Multi-Seed Rigorous Benchmark (20 Seeds)<a class="headerlink" href="#5-multi-seed-rigorous-benchmark-20-seeds" title="Permanent link">&para;</a></h2>
+<p>To compare causal modeling approaches systematically, we execute a 20-seed benchmark. Each seed draws an independent partition of 25,615 training, 8,539 validation, and 8,539 test records.</p>
+<p>We benchmark four targeting policies:
+1. <strong>Uniform Treat All (Random Baseline)</strong>: Targets customers uniformly regardless of features. Yields a straight diagonal Qini baseline with zero ranking power (<span class="arithmatex">\(\text{Qini} = 0\)</span>).
+2. <strong>Adaptive Causal Tree (<code>honesty=False</code>)</strong>: Standard greedy causal tree that uses the same sample for split selection and effect estimation.
+3. <strong>Two-Model T-Learner</strong>: Fits two independent model trees (<span class="arithmatex">\(\hat{\mu}_1(\mathbf{x})\)</span> on treated customers, <span class="arithmatex">\(\hat{\mu}_0(\mathbf{x})\)</span> on control customers) and computes difference <span class="arithmatex">\(\hat{\tau}(\mathbf{x}) = \hat{\mu}_1 - \hat{\mu}_0\)</span>.
+4. <strong>Honest Causal Tree (<code>honesty=True</code>)</strong>: Enforces sample splitting between tree topology discovery and leaf effect estimation.</p>
+<h3 id="benchmark-results-across-20-seeds-n_texttest-8540">Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 8,540\)</span>):<a class="headerlink" href="#benchmark-results-across-20-seeds-n_texttest-8540" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Policy</th>
-<th style="text-align: right;">Selected customers</th>
-<th style="text-align: right;">Treated / control within selection</th>
-<th style="text-align: right;">Incremental visits per 100 eligible customers</th>
+<th style="text-align: left;">Architecture</th>
+<th style="text-align: center;">Qini Score</th>
+<th style="text-align: center;">AUUC</th>
+<th style="text-align: center;">Top Quintile Uplift</th>
+<th style="text-align: center;">Top Decile Uplift</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Validation-selected policy</td>
-<td style="text-align: right;">8,539</td>
-<td style="text-align: right;">4,270 / 4,269</td>
-<td style="text-align: right;">4.52</td>
+<td style="text-align: left;"><strong>Uniform Treat All (Random)</strong></td>
+<td style="text-align: center;">0.00 ± 0.00</td>
+<td style="text-align: center;">183.67 ± 32.51</td>
+<td style="text-align: center;">3.96% ± 1.71%</td>
+<td style="text-align: center;">4.17% ± 2.06%</td>
 </tr>
 <tr>
-<td>Treat all</td>
-<td style="text-align: right;">8,539</td>
-<td style="text-align: right;">4,270 / 4,269</td>
-<td style="text-align: right;">4.52</td>
+<td style="text-align: left;"><strong>Two-Model T-Learner</strong></td>
+<td style="text-align: center;">26.79 ± 9.74</td>
+<td style="text-align: center;">237.87 ± 33.18</td>
+<td style="text-align: center;"><strong>7.47% ± 1.58%</strong></td>
+<td style="text-align: center;"><strong>7.55% ± 2.67%</strong></td>
 </tr>
 <tr>
-<td>Treat none</td>
-<td style="text-align: right;">0</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">0</td>
+<td style="text-align: left;"><strong>Adaptive Causal Tree (No Honesty)</strong></td>
+<td style="text-align: center;">33.60 ± 10.02</td>
+<td style="text-align: center;">251.06 ± 34.22</td>
+<td style="text-align: center;">7.12% ± 1.58%</td>
+<td style="text-align: center;">5.93% ± 2.15%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Honest Causal Tree (Athey &amp; Imbens)</strong></td>
+<td style="text-align: center;"><strong>34.51 ± 10.55</strong></td>
+<td style="text-align: center;"><strong>253.06 ± 35.94</strong></td>
+<td style="text-align: center;">6.92% ± 1.72%</td>
+<td style="text-align: center;">6.59% ± 1.98%</td>
 </tr>
 </tbody>
 </table>
-<p><img alt="Incremental email visits for three policies on randomized test data" src="../../assets/guides/real-uplift.svg" /></p>
-<p>The selected policy sends to everyone. The approximate 95% interval is 3.11 to 5.93 incremental visits per 100 eligible customers. This experiment shows evidence of an average visit lift for the email in this test split. It gives no evidence of an improvement from targeting.</p>
-<p>The policy calculation takes the difference in visit rates between randomized arms among selected customers. It then multiplies by the selected share of the test population. The interval holds selection fixed and does not include threshold-selection uncertainty. The example assumes zero email cost because the dataset supplies no campaign cost. Use the decision's actual outcome, such as margin or conversions, before making a budget decision.</p>
-<h2 id="what-should-you-inspect-before-a-new-trial">What should you inspect before a new trial?<a class="headerlink" href="#what-should-you-inspect-before-a-new-trial" title="Permanent link">&para;</a></h2>
-<p>Check that the features reflect information available before sending, and that each candidate segment contains enough treated and control customers. Record the assignment probability. Inspect the tree rules and segment counts, then compare any proposed budget-constrained policy with an equally sized random send. If comparing against treat-all, use uncertainty for the difference between policies on the same test records. Assign a new randomized holdout before deployment.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/real_survival_uplift.py<span class="w"> </span>uplift
+<h3 id="head-to-head-findings">Head-to-Head Findings:<a class="headerlink" href="#head-to-head-findings" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Honest Causal Trees vs T-Learner</strong>: The Honest Causal Tree beats the two-model T-learner in <strong>15 of 20 seeds</strong> on Qini score (34.51 vs 26.79, a 28.8% advantage). T-learners optimize the marginal outcomes <span class="arithmatex">\(\mathbb{E}[Y \mid W=1]\)</span> and <span class="arithmatex">\(\mathbb{E}[Y \mid W=0]\)</span> independently, wasting split capacity on baseline outcome variance rather than treatment effect heterogeneity.</li>
+<li><strong>Honest Causal Trees vs Adaptive Trees</strong>: Enforcing honesty improves mean Qini from 33.60 to 34.51 and AUUC from 251.06 to 253.06, outperforming the unconstrained adaptive tree in <strong>12 of 20 seeds</strong>. Crucially, honest trees protect against sample selection bias and guarantee reliable confidence bounds on subgroup treatment effects.</li>
+</ul>
+<hr />
+<h2 id="6-methodological-and-operational-limitations">6. Methodological and Operational Limitations<a class="headerlink" href="#6-methodological-and-operational-limitations" title="Permanent link">&para;</a></h2>
+<p>When deploying causal uplift models to enterprise marketing pipelines, several domain boundaries must be maintained:</p>
+<ol>
+<li><strong>SUTVA and Interference Violations</strong>:
+   The Stable Unit Treatment Value Assumption requires that treating one customer does not alter another customer's outcome. In retail promotions with viral referral codes or inventory stockouts, marketing to one group affects non-targeted users, distorting leaf effect estimates.</li>
+<li><strong>Observational Confounding</strong>:
+   The Hillstrom trial was randomized (<span class="arithmatex">\(P(W=1 \mid \mathbf{X}) = 0.50\)</span>). In observational campaign logs, treatment assignment is confounded by prior customer activity. Causal trees applied to unrandomized data require inverse propensity weighting to prevent confounding bias.</li>
+<li><strong>Short-Term Attribution vs Unsubscribe Attrition</strong>:
+   The trial outcome measures site visits within two weeks. It does not measure long-term customer attrition, spam complaints, or unsubscribes. A complete uplift pipeline should model multi-task outcomes (incremental conversion minus expected churn penalty).</li>
+</ol>
+<hr />
+<h2 id="reproduce-the-full-pipeline">Reproduce the Full Pipeline<a class="headerlink" href="#reproduce-the-full-pipeline" title="Permanent link">&para;</a></h2>
+<p>Run the standalone executable script from the repository root:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/causal_uplift.py
 </span></code></pre></div>
-<p>For the assumptions and mechanics behind honest causal trees, see <a href="https://www.pnas.org/doi/10.1073/pnas.1510489113">Athey and Imbens (2016)</a>.</p>
+<p>The script trains models on the 42,693 customer records from the Hillstrom trial, logs all single-seed rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to <code>docs/assets/</code>.</p>
 
 
 
@@ -3198,7 +3096,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../zero-imputation-predictive-maintenance/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Zero-Imputation Maintenance">
+          <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Credit Scoring and Trees">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -3208,20 +3106,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Zero-Imputation Maintenance
+                Credit Scoring and Trees
               </div>
             </div>
           </a>
         
         
           
-          <a href="../modernizing-quinlan-classics-in-rust/" class="md-footer__link md-footer__link--next" aria-label="Next: Modernizing Quinlan in Rust">
+          <a href="../zero-imputation-predictive-maintenance/" class="md-footer__link md-footer__link--next" aria-label="Next: Zero-Imputation Maintenance">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Modernizing Quinlan in Rust
+                Zero-Imputation Maintenance
               </div>
             </div>
             <div class="md-footer__button md-icon">

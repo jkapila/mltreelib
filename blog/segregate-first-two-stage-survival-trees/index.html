@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How to decouple subject ID-level tree cohort discovery from leaf-level Kaplan-Meier survival curves, eliminating right-censoring bias and non-proportional hazard violations.">
+        <meta name="description" content="How to decouple subject ID-level tree cohort discovery from leaf-level Kaplan-Meier survival curves using native tree.retrain(), eliminating right-censoring bias and non-proportional hazard violations on longitudinal customer telemetry.">
       
       
       
@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../breaking-step-functions-model-trees-vs-gbdt/">
+        <link rel="prev" href="../prescriptive-inventory-replenishment/">
       
       
-        <link rel="next" href="../../benchmarks/elo/">
+        <link rel="next" href="../why-credit-scoring-needs-glass-box-trees/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts - mltreelib v0.4.13</title>
+        <title>Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts - mltreelib v0.4.14</title>
       
     
     
@@ -58,6 +58,8 @@
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/custom.css">
     
     <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
@@ -99,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +115,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.13
+            mltreelib v0.4.14
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -209,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
-    mltreelib v0.4.13
+    mltreelib v0.4.14
   </label>
   
     <div class="md-nav__source">
@@ -360,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-  Modeling pathways
+  Suites
 
     
   </span>
@@ -376,7 +378,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Modeling pathways
+  Suites
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/" class="md-nav__link">
+      <a href="../../suites/" class="md-nav__link">
         
   
   
@@ -415,14 +417,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/data/" class="md-nav__link">
+      <a href="../../suites/core-tree-architecture/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prepare data
+  Suite 1: Core Architecture & Growth Knobs
 
     
   </span>
@@ -442,14 +444,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/real-data/" class="md-nav__link">
+      <a href="../../suites/constraints-and-honesty/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Get the datasets
+  Suite 2: Structural Constraints & Honesty
 
     
   </span>
@@ -469,14 +471,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/regression/" class="md-nav__link">
+      <a href="../../suites/missing-data-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Regression
+  Suite 3: Native Missing Data Routing
 
     
   </span>
@@ -496,14 +498,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/classification/" class="md-nav__link">
+      <a href="../../suites/distributional-leaves/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Classification
+  Suite 4: Distributional & Censored Leaves
 
     
   </span>
@@ -523,14 +525,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/clustering/" class="md-nav__link">
+      <a href="../../suites/hierarchical-retrain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering
+  Suite 5: Dynamic Leaf Retraining
 
     
   </span>
@@ -550,14 +552,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/anomaly/" class="md-nav__link">
+      <a href="../../suites/statistical-and-metric-splitting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly detection
+  Suite 6: Statistical & Metric Splitting
 
     
   </span>
@@ -577,14 +579,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/survival/" class="md-nav__link">
+      <a href="../../suites/timeseries-forecasting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Survival
+  Suite 7: Time Series Forecasting
 
     
   </span>
@@ -604,14 +606,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/uplift/" class="md-nav__link">
+      <a href="../../suites/unsupervised-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Uplift
+  Suite 8: Unsupervised Trees
 
     
   </span>
@@ -631,14 +633,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/evaluation/" class="md-nav__link">
+      <a href="../../suites/survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Evaluate and monitor
+  Suite 9: Survival & Competing Risks Trees
 
     
   </span>
@@ -658,14 +660,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/visualization/" class="md-nav__link">
+      <a href="../../suites/solver-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Visualize results
+  Suite 10: Solvers, Optimizers & Real-Data Tuning
 
     
   </span>
@@ -685,41 +687,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/serving-contract/" class="md-nav__link">
+      <a href="../../suites/component-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prediction and schema
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/advanced-modeling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Extend a model tree
+  Suite 11: Component & Factor Analysis
 
     
   </span>
@@ -838,7 +813,7 @@
   <span class="md-ellipsis">
     
   
-  Core Suites
+  Specialized Topics
 
     
   </span>
@@ -854,307 +829,10 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Core Suites
+  Specialized Topics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/core-tree-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 1: Core Architecture & Growth Knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/constraints-and-honesty/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 2: Structural Constraints & Honesty
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/missing-data-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 3: Native Missing Data Routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/distributional-leaves/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 4: Distributional & Censored Leaves
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/hierarchical-retrain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 5: Dynamic Leaf Retraining
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/statistical-and-metric-splitting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 6: Statistical & Metric Splitting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/timeseries-forecasting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 7: Time Series Forecasting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/unsupervised-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 8: Unsupervised Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 9: Survival & Competing Risks Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/solver-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 10: Numerical & Evolutionary Leaf Solvers
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/component-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 11: Component & Factor Analysis
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
               
                 
                   
@@ -1182,61 +860,6 @@
   
 
                 
-              
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Specialized Topics
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_6_3">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Specialized Topics
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1778,6 +1401,87 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/quinlan-m5-cubist-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quinlan M5 & Cubist in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/distributional-trees-tweedie-tobit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional Trees (Tweedie & Tobit)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Trees vs GBDT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -1877,149 +1581,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+      <a href="../prescriptive-inventory-replenishment/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Credit Scoring and Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Zero-Imputation Maintenance
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../uplift-modeling-with-causal-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Causal Uplift Modeling
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../modernizing-quinlan-classics-in-rust/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Modernizing Quinlan in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../beyond-mse-distributional-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Beyond MSE (Distributional)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Breaking Step Functions
+  Prescriptive Replenishment
 
     
   </span>
@@ -2126,15 +1695,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-two-stage-architecture" class="md-nav__link">
+  <a href="#2-the-two-stage-architecture-via-treeretrain" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. The Two-Stage Architecture
+        2. The Two-Stage Architecture via <code>tree.retrain()</code>
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. The Two-Stage Architecture">
+    <nav class="md-nav" aria-label="2. The Two-Stage Architecture via tree.retrain()">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2149,10 +1718,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stage-2-leaf-level-localized-kaplan-meier-engines" class="md-nav__link">
+  <a href="#stage-2-in-place-leaf-retraining-with-kaplan-meier-engines" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Stage 2: Leaf-Level Localized Kaplan-Meier Engines
+        Stage 2: In-Place Leaf Retraining with Kaplan-Meier Engines
       </span>
     </span>
   </a>
@@ -2160,10 +1729,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stage-3-low-latency-serving-contract" class="md-nav__link">
+  <a href="#stage-3-unified-serving-contract" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Stage 3: Low-Latency Serving Contract
+        Stage 3: Unified Serving Contract
       </span>
     </span>
   </a>
@@ -2187,22 +1756,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-empirical-findings" class="md-nav__link">
+  <a href="#4-benchmark-results-20-seeds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        4. Empirical Findings
+        4. Benchmark Results (20 Seeds)
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Empirical Findings">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-auditable-rules-discovered-cohorts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Auditable Rules &amp; Discovered Cohorts
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Auditable Rules &amp; Discovered Cohorts">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#key-insights-from-the-survival-curves" class="md-nav__link">
+  <a href="#key-insights-from-the-discovered-curves" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Key Insights from the Survival Curves:
+        Key Insights from the Discovered Curves:
       </span>
     </span>
   </a>
@@ -2215,10 +1795,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-summary-best-practices" class="md-nav__link">
+  <a href="#6-limitations-assumptions" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Summary &amp; Best Practices
+        6. Limitations &amp; Assumptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Summary
       </span>
     </span>
   </a>
@@ -2229,6 +1820,87 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3121,15 +2793,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-two-stage-architecture" class="md-nav__link">
+  <a href="#2-the-two-stage-architecture-via-treeretrain" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. The Two-Stage Architecture
+        2. The Two-Stage Architecture via <code>tree.retrain()</code>
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. The Two-Stage Architecture">
+    <nav class="md-nav" aria-label="2. The Two-Stage Architecture via tree.retrain()">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3144,10 +2816,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stage-2-leaf-level-localized-kaplan-meier-engines" class="md-nav__link">
+  <a href="#stage-2-in-place-leaf-retraining-with-kaplan-meier-engines" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Stage 2: Leaf-Level Localized Kaplan-Meier Engines
+        Stage 2: In-Place Leaf Retraining with Kaplan-Meier Engines
       </span>
     </span>
   </a>
@@ -3155,10 +2827,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stage-3-low-latency-serving-contract" class="md-nav__link">
+  <a href="#stage-3-unified-serving-contract" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Stage 3: Low-Latency Serving Contract
+        Stage 3: Unified Serving Contract
       </span>
     </span>
   </a>
@@ -3182,22 +2854,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-empirical-findings" class="md-nav__link">
+  <a href="#4-benchmark-results-20-seeds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        4. Empirical Findings
+        4. Benchmark Results (20 Seeds)
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Empirical Findings">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-auditable-rules-discovered-cohorts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Auditable Rules &amp; Discovered Cohorts
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Auditable Rules &amp; Discovered Cohorts">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#key-insights-from-the-survival-curves" class="md-nav__link">
+  <a href="#key-insights-from-the-discovered-curves" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Key Insights from the Survival Curves:
+        Key Insights from the Discovered Curves:
       </span>
     </span>
   </a>
@@ -3210,10 +2893,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-summary-best-practices" class="md-nav__link">
+  <a href="#6-limitations-assumptions" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Summary &amp; Best Practices
+        6. Limitations &amp; Assumptions
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Summary
       </span>
     </span>
   </a>
@@ -3241,8 +2935,8 @@
 
 
 <h1 id="segregate-first-model-later-two-stage-hierarchical-survival-trees-for-longitudinal-cohorts">Segregate First, Model Later: Two-Stage Hierarchical Survival Trees for Longitudinal Cohorts<a class="headerlink" href="#segregate-first-model-later-two-stage-hierarchical-survival-trees-for-longitudinal-cohorts" title="Permanent link">&para;</a></h1>
-<p>Standard survival models force a difficult compromise: parametric Cox proportional hazards assume hazard curves never cross, while standard survival trees let right-censoring distort split selection. </p>
-<p>By decoupling <strong>ID-level cohort segregation</strong> from <strong>leaf-level survival estimation</strong>, two-stage hierarchical survival trees deliver unbiased risk stratification, non-proportional hazard handling, and complete white-box explainability for enterprise customer telemetry.</p>
+<p>Standard survival models force a difficult compromise: parametric Cox proportional hazards assume hazard ratios never cross, while standard single-stage survival trees let right-censoring distort split selection. </p>
+<p>By decoupling <strong>ID-level cohort segregation</strong> from <strong>leaf-level survival estimation</strong> via <code>mltreelib</code>'s in-place <code>tree.retrain()</code> mechanism, two-stage hierarchical survival trees deliver unbiased risk stratification, non-proportional hazard handling, and complete white-box explainability for enterprise customer telemetry.</p>
 <p>The complete executable workflow lives at <a href="https://github.com/jkapila/mltreelib/blob/main/examples/two_stage_survival.py"><code>examples/two_stage_survival.py</code></a>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/two_stage_survival.py
 </span></code></pre></div>
@@ -3252,21 +2946,21 @@
 1. <strong>Static / Aggregated Profile Covariates (<span class="arithmatex">\(X_i\)</span>)</strong>: Age, credit score, product count, baseline balance, acquisition channel.
 2. <strong>Longitudinal Duration Outcomes (<span class="arithmatex">\(T_i, E_i\)</span>)</strong>: Observed tenure duration <span class="arithmatex">\(T_i\)</span> and event indicator <span class="arithmatex">\(E_i \in \{0, 1\}\)</span> (<span class="arithmatex">\(1 = \text{churn/event}, 0 = \text{censored/active}\)</span>).</p>
 <p>When standard survival trees split directly on duration outcomes using log-rank statistics, they fall into the <strong>censoring trap</strong>:</p>
-<pre class="mermaid"><code>flowchart TD
+<pre class="mermaid"><code>flowchart LR
     subgraph Trap["Standard Survival Tree Pitfall"]
         A["All Longitudinal Records [X, T, E]"] --&gt; B{"Log-Rank Split Criterion\nMaximizes Event Separation"}
         B --&gt; C["Trivial Censoring Splits:\nIsolates recent sign-ups from mature accounts"]
         B --&gt; D["Overfits Administrative Censoring Horizon"]
     end
 
-    subgraph Solved["Two-Stage Segregation Architecture"]
+    subgraph Solved["Two-Stage Architecture via tree.retrain()"]
         E["Static Customer Profile [X_i]"] --&gt; F["Stage 1: Profile Decision Tree\nDiscovers Natural Behavioral Cohorts"]
-        F --&gt; G["Leaf 0: Low Risk"]
-        F --&gt; H["Leaf 2: Moderate"]
-        F --&gt; I["Leaf 3: Severe Risk"]
-        G --&gt; J["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_0(t) fitted purely on Leaf 0 members"]
-        H --&gt; K["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_2(t) fitted purely on Leaf 2 members"]
-        I --&gt; L["Stage 2: Leaf-Level Kaplan-Meier Engine\nS_3(t) fitted purely on Leaf 3 members"]
+        F --&gt; G["Stage 2: In-Place tree.retrain()\nRefits Leaves with Kaplan-Meier S(t) in Pure Rust"]
+        G --&gt; H["Leaf 0: Core Retained (Age &lt;= 43, Prod &lt;= 2)"]
+        G --&gt; I["Leaf 1: Young Multi-Product Risk"]
+        G --&gt; J["Leaf 2: Mature Mainstream"]
+        G --&gt; K["Leaf 3: Senior Flight Risk"]
+        H &amp; I &amp; J &amp; K --&gt; L["Unified Serving Artifact:\ntree.predict(X, kind='survival', times=...)"]
     end
 
     classDef trapBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
@@ -3281,115 +2975,146 @@
     class A,C,D trapBox;
     class B gateBox;
     class E dataBox;
-    class F stageBox;
-    class G lowRisk;
-    class H medRisk;
-    class I highRisk;
-    class J,K,L kmBox;</code></pre>
+    class F,G stageBox;
+    class H lowRisk;
+    class I,J medRisk;
+    class K highRisk;
+    class L kmBox;</code></pre>
 <h3 id="why-standard-methods-fail">Why Standard Methods Fail:<a class="headerlink" href="#why-standard-methods-fail" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Cox Proportional Hazards Violations</strong>: Classical Cox models assume <span class="arithmatex">\(\lambda(t \mid X) = \lambda_0(t) \exp(\beta^T X)\)</span>. If early-tenure churn dynamics differ fundamentally from late-tenure attrition, hazard ratios cross. The proportional hazard assumption collapses.</li>
-<li><strong>Log-Rank Split Confounding</strong>: Customers who onboarded 30 days prior to study end have short observed tenure <span class="arithmatex">\(T_i\)</span> due to calendar truncation, not intrinsic churn hazard. A greedy survival tree frequently splits on exposure duration rather than structural customer behavior.</li>
+<li><strong>Cox Proportional Hazards Violations</strong>: Classical Cox models assume <span class="arithmatex">\(\lambda(t \mid X) = \lambda_0(t) \exp(\boldsymbol{\beta}^T X)\)</span>. If early-tenure churn dynamics differ fundamentally from late-tenure attrition, hazard curves cross. The proportional hazard assumption collapses.</li>
+<li><strong>Log-Rank Split Confounding</strong>: Customers who onboarded 30 days prior to study end have short observed tenure <span class="arithmatex">\(T_i\)</span> due to calendar truncation, not intrinsic churn hazard. A greedy survival tree frequently splits on exposure duration rather than structural customer behavior, achieving near-random C-index performance (<span class="arithmatex">\(C \approx 0.5031\)</span>).</li>
 </ul>
 <hr />
-<h2 id="2-the-two-stage-architecture">2. The Two-Stage Architecture<a class="headerlink" href="#2-the-two-stage-architecture" title="Permanent link">&para;</a></h2>
-<p>Instead of conflating cohort segmentation with time-to-event estimation, we decompose the problem into two distinct stages:</p>
+<h2 id="2-the-two-stage-architecture-via-treeretrain">2. The Two-Stage Architecture via <code>tree.retrain()</code><a class="headerlink" href="#2-the-two-stage-architecture-via-treeretrain" title="Permanent link">&para;</a></h2>
+<p>Rather than managing separate Python loops, manual dictionaries of sub-models, and custom routing wrappers, <code>mltreelib</code> implements two-stage hierarchical survival as a <strong>first-class in-place operation</strong>:</p>
 <h3 id="stage-1-subject-id-level-cohort-discovery">Stage 1: Subject ID-Level Cohort Discovery<a class="headerlink" href="#stage-1-subject-id-level-cohort-discovery" title="Permanent link">&para;</a></h3>
 <p>We aggregate telemetry to the unique ID level and fit an interpretable <code>ModelTree</code> on baseline customer covariates <span class="arithmatex">\(X_i\)</span>:</p>
 <div class="arithmatex">\[
 k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 \]</div>
-<p>The tree partitions the customer base into <span class="arithmatex">\(K\)</span> transparent behavioral cohorts with exact readable rules (e.g., <code>Age &lt;= 42 AND Products &lt;= 2</code>).</p>
-<h3 id="stage-2-leaf-level-localized-kaplan-meier-engines">Stage 2: Leaf-Level Localized Kaplan-Meier Engines<a class="headerlink" href="#stage-2-leaf-level-localized-kaplan-meier-engines" title="Permanent link">&para;</a></h3>
-<p>Within each terminal leaf cohort <span class="arithmatex">\(k\)</span>, we fit a dedicated non-parametric survival step function over the observed duration and event pairs <span class="arithmatex">\((T_i, E_i)_{i \in \text{Leaf}_k}\)</span>:</p>
+<p>The tree partitions the customer base into <span class="arithmatex">\(K\)</span> transparent behavioral cohorts with exact readable rules (e.g., <code>Age &lt;= 43 AND Products &lt;= 2</code>).</p>
+<h3 id="stage-2-in-place-leaf-retraining-with-kaplan-meier-engines">Stage 2: In-Place Leaf Retraining with Kaplan-Meier Engines<a class="headerlink" href="#stage-2-in-place-leaf-retraining-with-kaplan-meier-engines" title="Permanent link">&para;</a></h3>
+<p>Instead of writing a manual Python loop over leaves, we call <code>tree.retrain()</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Stage 2: In-place leaf retraining in pure Rust</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">tree</span><span class="o">.</span><span class="n">retrain</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="n">events</span><span class="p">),</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Under the hood:
+1. Rust routes all observations <span class="arithmatex">\((X_i, T_i, E_i)\)</span> through the frozen Stage 1 split decision graph down to their assigned terminal leaves.
+2. Inside each terminal leaf <span class="arithmatex">\(k\)</span>, the engine fits a localized, non-parametric Nelson-Aalen / Kaplan-Meier step function:</p>
 <div class="arithmatex">\[
 \hat{S}_k(t) = \prod_{t_j \le t} \left( 1 - \frac{d_{jk}}{n_{jk}} \right)
 \]</div>
 <p>Where <span class="arithmatex">\(t_j\)</span> are distinct event times in cohort <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(d_{jk}\)</span> is observed failures at <span class="arithmatex">\(t_j\)</span>, and <span class="arithmatex">\(n_{jk}\)</span> is customers at risk just prior to <span class="arithmatex">\(t_j\)</span>.</p>
-<h3 id="stage-3-low-latency-serving-contract">Stage 3: Low-Latency Serving Contract<a class="headerlink" href="#stage-3-low-latency-serving-contract" title="Permanent link">&para;</a></h3>
-<p>When a new customer arrives:
-1. Baseline profile <span class="arithmatex">\(x^*\)</span> drops down the Stage 1 tree in <span class="arithmatex">\(O(\text{depth})\)</span> microsecond time to find leaf index <span class="arithmatex">\(k^*\)</span>.
-2. The customer inherits cohort survival curve <span class="arithmatex">\(\hat{S}_{k^*}(t)\)</span> and median survival tenure.</p>
+<h3 id="stage-3-unified-serving-contract">Stage 3: Unified Serving Contract<a class="headerlink" href="#stage-3-unified-serving-contract" title="Permanent link">&para;</a></h3>
+<p>The resulting object is a single, self-contained <code>ModelTree</code>:
+- <code>tree.predict(X_new, kind="survival", times=tenure_grid)</code> routes down the tree in <span class="arithmatex">\(O(\text{depth})\)</span> microsecond time and evaluates calibrated survival curves directly.
+- <code>tree.predict(X_new, kind="risk")</code> returns empirical leaf hazard risk scores.</p>
 <hr />
 <h2 id="3-case-study-10000-commercial-bank-customers">3. Case Study: 10,000 Commercial Bank Customers<a class="headerlink" href="#3-case-study-10000-commercial-bank-customers" title="Permanent link">&para;</a></h2>
 <p>We test this architecture on the real <strong>Bank Customer Churn</strong> benchmark (10,000 customers, 10-year tenure follow-up; 70% train / 30% test).</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Complete Two-Stage Implementation</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># 1. Load benchmark dataset</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">table</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">"datasets/Bank_Customer_Churn.parquet"</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">df</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">to_pydict</span><span class="p">()</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"churn"</span><span class="p">])</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">feature_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"credit_score"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"balance"</span><span class="p">,</span> <span class="s2">"products_number"</span><span class="p">,</span> <span class="s2">"estimated_salary"</span><span class="p">]</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">feature_cols</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">durations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"tenure"</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"churn"</span><span class="p">][</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># 70/30 Train/Test split</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">split</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">)</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">t_train</span><span class="p">,</span> <span class="n">t_test</span> <span class="o">=</span> <span class="n">durations</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">durations</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">e_train</span><span class="p">,</span> <span class="n">e_test</span> <span class="o">=</span> <span class="n">events</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">events</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># Stage 1: Cohort Segmentation Tree (depth=2, 4 cohorts)</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">stage1_tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">stage1_tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">e_train</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">train_leaf_ids</span> <span class="o">=</span> <span class="n">stage1_tree</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">test_leaf_ids</span> <span class="o">=</span> <span class="n">stage1_tree</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="c1"># Stage 2: Fit Leaf-Level Survival Engines</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">leaf_models</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="k">for</span> <span class="n">leaf_id</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">train_leaf_ids</span><span class="p">):</span>
-</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_leaf_ids</span><span class="p">)</span> <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="n">leaf_id</span><span class="p">]</span>
-</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="n">l_X</span> <span class="o">=</span> <span class="p">[</span><span class="n">X_train</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
-</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="n">l_t</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_train</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>    <span class="n">l_e</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_train</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">surv_leaf</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">)</span>
-</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="n">surv_leaf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">l_X</span><span class="p">,</span> <span class="p">(</span><span class="n">l_t</span><span class="p">,</span> <span class="n">l_e</span><span class="p">))</span>
-</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>    <span class="n">leaf_models</span><span class="p">[</span><span class="n">leaf_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">surv_leaf</span>
-</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>
-</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="c1"># Stage 3: Generate Monotone Survival Curves for Test Set</span>
-</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="n">tenure_grid</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span>
-</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="n">sample_preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">leaf_models</span><span class="p">[</span><span class="n">test_leaf_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">X_test</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">tenure_grid</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># 1. Load benchmark dataset</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">table</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">"datasets/Bank_Customer_Churn.parquet"</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">df</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">to_pydict</span><span class="p">()</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"churn"</span><span class="p">])</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">feature_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"credit_score"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"balance"</span><span class="p">,</span> <span class="s2">"products_number"</span><span class="p">,</span> <span class="s2">"estimated_salary"</span><span class="p">]</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">feature_cols</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">durations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"tenure"</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"churn"</span><span class="p">][</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># 70/30 Train/Test split</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">split</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">)</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">t_train</span><span class="p">,</span> <span class="n">t_test</span> <span class="o">=</span> <span class="n">durations</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">durations</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">e_train</span><span class="p">,</span> <span class="n">e_test</span> <span class="o">=</span> <span class="n">events</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">events</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="c1"># Stage 1: Cohort Segmentation Tree (depth=2, 4 cohorts)</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">e_train</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="c1"># Stage 2: In-place leaf retraining with non-parametric Kaplan-Meier curves</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="n">tree</span><span class="o">.</span><span class="n">retrain</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="p">(</span><span class="n">t_train</span><span class="p">,</span> <span class="n">e_train</span><span class="p">),</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">)</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="c1"># Stage 3: Low-latency inference on held-out customers</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="n">tenure_grid</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="n">surv_curves</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">tenure_grid</span><span class="p">)</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="n">risk_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"risk"</span><span class="p">)</span>
 </span></code></pre></div>
-</div>
-</div>
-</div>
 <hr />
-<h2 id="4-empirical-findings">4. Empirical Findings<a class="headerlink" href="#4-empirical-findings" title="Permanent link">&para;</a></h2>
-<p>Stage 1 discovered four distinct customer cohorts based on <code>age</code> and <code>products_number</code>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Rule 1 (Cohort 0, cover: 4,867): IF age &lt;= 42 AND products_number &lt;= 2 THEN churn_rate =  9.9%
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Rule 2 (Cohort 2, cover: 1,904): IF age &gt;  42 AND products_number &lt;= 2 THEN churn_rate = 38.3%
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Rule 3 (Cohort 1, cover:   106): IF age &lt;= 42 AND products_number &gt;  2 THEN churn_rate = 73.6%
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Rule 4 (Cohort 3, cover:   123): IF age &gt;  42 AND products_number &gt;  2 THEN churn_rate = 96.7%
+<h2 id="4-benchmark-results-20-seeds">4. Benchmark Results (20 Seeds)<a class="headerlink" href="#4-benchmark-results-20-seeds" title="Permanent link">&para;</a></h2>
+<p>To rigorously evaluate whether two-stage segregation prevents censoring bias, we evaluated three architectures across 20 independent random train/test splits (70/30) on the full 10,000 customers:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: left;">Harrell's C-Index</th>
+<th style="text-align: left;">Integrated Brier Score (IBS)</th>
+<th style="text-align: left;">Architecture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Marginal Kaplan-Meier</strong></td>
+<td style="text-align: left;">0.5000 ± 0.0000</td>
+<td style="text-align: left;">0.1924 ± 0.0064</td>
+<td style="text-align: left;">Unstratified Population <span class="arithmatex">\(S(t)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Single-Stage Survival Tree</strong></td>
+<td style="text-align: left;">0.5031 ± 0.0084</td>
+<td style="text-align: left;">0.1924 ± 0.0064</td>
+<td style="text-align: left;">Direct Log-Rank Splitting on <span class="arithmatex">\((T, E)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Two-Stage Hierarchical Tree (retrain)</strong></td>
+<td style="text-align: left;"><strong>0.6854 ± 0.0087</strong></td>
+<td style="text-align: left;"><strong>0.1922 ± 0.0064</strong></td>
+<td style="text-align: left;">Profile Tree + Native Leaf <code>retrain()</code></td>
+</tr>
+</tbody>
+</table>
+<p>Across all 20 random seeds, the <strong>Two-Stage Tree beat the Single-Stage Tree in 20 of 20 runs (100% of seeds)</strong>. </p>
+<p>The single-stage tree achieves a C-index of <span class="arithmatex">\(0.5031\)</span> (scarcely better than the unstratified <span class="arithmatex">\(0.5000\)</span> baseline) because greedy log-rank splits on <span class="arithmatex">\((T, E)\)</span> are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of <strong><span class="arithmatex">\(0.6854 \pm 0.0087\)</span></strong> and Integrated Brier Score of <strong><span class="arithmatex">\(0.1922 \pm 0.0064\)</span></strong>, establishing clean, robust risk rank-ordering on held-out customers.</p>
+<hr />
+<h2 id="5-auditable-rules-discovered-cohorts">5. Auditable Rules &amp; Discovered Cohorts<a class="headerlink" href="#5-auditable-rules-discovered-cohorts" title="Permanent link">&para;</a></h2>
+<p>Calling <code>tree.extract_rules()</code> surfaces the exact mathematical bounds partitioning customer risk:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Rule 1 (Cohort 0, cover: 5,074): IF age &lt;= 43 AND products_number &lt;= 2 THEN churn_rate = 10.7%
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Rule 2 (Cohort 2, cover: 1,685): IF age &gt;  43 AND products_number &lt;= 2 THEN churn_rate = 39.5%
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Rule 3 (Cohort 1, cover:   129): IF age &lt;= 43 AND products_number &gt;  2 THEN churn_rate = 76.7%
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Rule 4 (Cohort 3, cover:   112): IF age &gt;  43 AND products_number &gt;  2 THEN churn_rate = 95.5%
 </span></code></pre></div>
-<p><img alt="Two-Stage Hierarchical Survival Cohorts" src="../../assets/two_stage_survival_cohorts.png" /></p>
-<h3 id="key-insights-from-the-survival-curves">Key Insights from the Survival Curves:<a class="headerlink" href="#key-insights-from-the-survival-curves" title="Permanent link">&para;</a></h3>
+<p><img alt="Two-Stage Hierarchical Survival Cohorts" src="../../assets/two_stage_survival_cohorts.svg" /></p>
+<h3 id="key-insights-from-the-discovered-curves">Key Insights from the Discovered Curves:<a class="headerlink" href="#key-insights-from-the-discovered-curves" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Non-Crossing, Distinct Trajectories</strong>:</li>
-<li><strong>Cohort 0 (Core Retained, Teal)</strong>: 4,867 customers (69.5% of sample). Even after 10 years of tenure, survival probability remains high at <strong>70.9%</strong>.</li>
-<li><strong>Cohort 2 (Mature Mainstream, Blue)</strong>: 1,904 customers. Survival decays steadily to <strong>25.7%</strong> by year 10.</li>
+<li><strong>Cohort 0 (Core Retained, Teal)</strong>: 5,074 customers (72.5% of sample). Even after 10 years of tenure, survival probability remains high at <strong>70.9%</strong>.</li>
+<li><strong>Cohort 2 (Mature Mainstream, Blue)</strong>: 1,685 customers. Survival decays steadily to <strong>25.7%</strong> by year 10.</li>
 <li><strong>Cohorts 1 &amp; 3 (Product Clutter Flight Risk, Orange/Red)</strong>: Customers with <span class="arithmatex">\(&gt;2\)</span> products experience severe early-tenure hazard, with survival dropping below 15% within 3 years.</li>
 <li><strong>Guaranteed Monotonicity</strong>:
-   Because each leaf model fits an exact product-limit Kaplan-Meier step function, predictions are guaranteed non-increasing (<span class="arithmatex">\(\hat{S}(t_2) \le \hat{S}(t_1)\)</span> for <span class="arithmatex">\(t_2 &gt; t_1\)</span>) with no negative hazard artifacts.</li>
+   Because each leaf model fits an exact product-limit Kaplan-Meier step function, predictions are guaranteed non-increasing (<span class="arithmatex">\(\hat{S}(t_2) \le \hat{S}(t_1)\)</span> for <span class="arithmatex">\(t_2 &gt; t_1\)</span>) with zero negative hazard artifacts.</li>
 <li><strong>Auditability for Regulated Finance</strong>:
-   When regulators or credit committee auditors question why customer #429 received a high risk provision, the compliance team presents the exact deterministic rule: <code>Age &gt; 42 AND Products &gt; 2</code>, accompanied by the empirical Kaplan-Meier curve.</li>
+   When regulators or credit committee auditors question why customer #429 received a high risk provision, compliance presents the exact deterministic rule: <code>Age &gt; 43 AND Products &gt; 2</code>, accompanied by the empirical Kaplan-Meier curve.</li>
 </ol>
 <hr />
-<h2 id="5-summary-best-practices">5. Summary &amp; Best Practices<a class="headerlink" href="#5-summary-best-practices" title="Permanent link">&para;</a></h2>
+<h2 id="6-limitations-assumptions">6. Limitations &amp; Assumptions<a class="headerlink" href="#6-limitations-assumptions" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Non-Informative Administrative Censoring</strong>: The product-limit Kaplan-Meier estimator assumes censoring is uninformative (<span class="arithmatex">\(C \perp T \mid X\)</span>). If customers leave the study due to unobserved operational changes (e.g. branch closures in specific territories), censoring bias can reappear.</li>
+<li><strong>Tenure Granularity</strong>: In the Bank Churn benchmark, tenure is measured in discrete integer years (0 to 10), causing ties at event intervals. While <code>mltreelib</code>'s Breslow/Efron tie handling resolves ties efficiently, higher temporal resolution (daily or weekly timestamps) yields smoother step functions.</li>
+<li><strong>Competing Risks</strong>: This baseline treats churn as a single terminal event. In multi-product retail banking, customer attrition may compete with involuntary credit defaults or product migrations, requiring Cause-Specific Hazard trees or Fine-Gray subdistribution modeling via <code>Metrics.competing_risks()</code>.</li>
+</ol>
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Dimension</th>
 <th style="text-align: left;">Standard Direct Survival Tree</th>
-<th style="text-align: left;">Two-Stage Hierarchical Survival Tree</th>
+<th style="text-align: left;">Two-Stage Hierarchical Survival Tree (<code>retrain</code>)</th>
 </tr>
 </thead>
 <tbody>
@@ -3400,8 +3125,8 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Censoring Robustness</strong></td>
-<td style="text-align: left;">Vulnerable to calendar truncation bias.</td>
-<td style="text-align: left;"><strong>Censoring-independent</strong> cohort segregation.</td>
+<td style="text-align: left;">Vulnerable to calendar truncation bias (<span class="arithmatex">\(C=0.5031\)</span>).</td>
+<td style="text-align: left;"><strong>Censoring-independent</strong> cohort segregation (<span class="arithmatex">\(C=0.6854\)</span>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Hazard Assumption</strong></td>
@@ -3409,9 +3134,9 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 <td style="text-align: left;"><strong>Non-parametric</strong> leaf Kaplan-Meier curves.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Inference Latency</strong></td>
-<td style="text-align: left;"><span class="arithmatex">\(O(\text{depth})\)</span></td>
-<td style="text-align: left;"><span class="arithmatex">\(O(\text{depth})\)</span> tree routing + table lookup.</td>
+<td style="text-align: left;"><strong>Serving Architecture</strong></td>
+<td style="text-align: left;">Single model tree.</td>
+<td style="text-align: left;"><strong>Single unified ModelTree via in-place <code>retrain()</code></strong>.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Explainability</strong></td>
@@ -3420,10 +3145,7 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 </tr>
 </tbody>
 </table>
-<div class="admonition tip">
-<p class="admonition-title">Implementation Recommendation</p>
-<p>When working with longitudinal customer telemetry, never allow time-to-event outcomes to dictate customer segmentation. Use <code>ModelTree</code> to segregate cohorts first, then estimate localized survival distributions inside each terminal leaf node.</p>
-</div>
+<p>When working with longitudinal customer telemetry, never allow time-to-event outcomes to dictate customer segmentation. Use <code>ModelTree</code> to segregate cohorts first, then call <code>tree.retrain()</code> to fit localized survival distributions inside each terminal leaf node.</p>
 
 
 
@@ -3466,7 +3188,7 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../breaking-step-functions-model-trees-vs-gbdt/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Breaking Step Functions">
+          <a href="../prescriptive-inventory-replenishment/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Prescriptive Replenishment">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -3476,20 +3198,20 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
                 Previous
               </span>
               <div class="md-ellipsis">
-                Breaking Step Functions
+                Prescriptive Replenishment
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../benchmarks/elo/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
+          <a href="../why-credit-scoring-needs-glass-box-trees/" class="md-footer__link md-footer__link--next" aria-label="Next: Credit Scoring and Trees">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Overview
+                Credit Scoring and Trees
               </div>
             </div>
             <div class="md-footer__button md-icon">

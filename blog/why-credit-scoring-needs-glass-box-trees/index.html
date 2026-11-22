@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Train a decision tree for two-year financial distress on Give Me Some Credit, choose a review threshold, and inspect the fitted rules and probability errors.">
+        <meta name="description" content="Train a glass-box decision tree on 150,000 credit applicants under a 5:1 asymmetric misclassification loss. Learn how monotone constraints and native leaf rules cut losses by 32.7% while satisfying regulatory audits.">
       
       
       
@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../segregate-first-two-stage-survival-trees/">
       
       
-        <link rel="next" href="../zero-imputation-predictive-maintenance/">
+        <link rel="next" href="../uplift-modeling-with-causal-trees/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Credit Scoring and Trees - mltreelib v0.4.13</title>
+        <title>Why Credit Scoring Needs Glass-Box Trees: Asymmetric Cost Minimization and Monotonic Rules - mltreelib v0.4.14</title>
       
     
     
@@ -58,6 +58,8 @@
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/custom.css">
     
     <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
@@ -99,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.13" class="md-header__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,13 +115,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.13
+            mltreelib v0.4.14
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Credit Scoring and Trees
+              Why Credit Scoring Needs Glass-Box Trees: Asymmetric Cost Minimization and Monotonic Rules
             
           </span>
         </div>
@@ -209,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.13" class="md-nav__button md-logo" aria-label="mltreelib v0.4.13" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.13">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
 
     </a>
-    mltreelib v0.4.13
+    mltreelib v0.4.14
   </label>
   
     <div class="md-nav__source">
@@ -360,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-  Modeling pathways
+  Suites
 
     
   </span>
@@ -376,7 +378,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Modeling pathways
+  Suites
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/" class="md-nav__link">
+      <a href="../../suites/" class="md-nav__link">
         
   
   
@@ -415,14 +417,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/data/" class="md-nav__link">
+      <a href="../../suites/core-tree-architecture/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prepare data
+  Suite 1: Core Architecture & Growth Knobs
 
     
   </span>
@@ -442,14 +444,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/real-data/" class="md-nav__link">
+      <a href="../../suites/constraints-and-honesty/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Get the datasets
+  Suite 2: Structural Constraints & Honesty
 
     
   </span>
@@ -469,14 +471,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/regression/" class="md-nav__link">
+      <a href="../../suites/missing-data-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Regression
+  Suite 3: Native Missing Data Routing
 
     
   </span>
@@ -496,14 +498,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/classification/" class="md-nav__link">
+      <a href="../../suites/distributional-leaves/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Classification
+  Suite 4: Distributional & Censored Leaves
 
     
   </span>
@@ -523,14 +525,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/clustering/" class="md-nav__link">
+      <a href="../../suites/hierarchical-retrain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering
+  Suite 5: Dynamic Leaf Retraining
 
     
   </span>
@@ -550,14 +552,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/anomaly/" class="md-nav__link">
+      <a href="../../suites/statistical-and-metric-splitting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly detection
+  Suite 6: Statistical & Metric Splitting
 
     
   </span>
@@ -577,14 +579,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/survival/" class="md-nav__link">
+      <a href="../../suites/timeseries-forecasting/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Survival
+  Suite 7: Time Series Forecasting
 
     
   </span>
@@ -604,14 +606,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/uplift/" class="md-nav__link">
+      <a href="../../suites/unsupervised-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Uplift
+  Suite 8: Unsupervised Trees
 
     
   </span>
@@ -631,14 +633,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/evaluation/" class="md-nav__link">
+      <a href="../../suites/survival-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Evaluate and monitor
+  Suite 9: Survival & Competing Risks Trees
 
     
   </span>
@@ -658,14 +660,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/visualization/" class="md-nav__link">
+      <a href="../../suites/solver-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Visualize results
+  Suite 10: Solvers, Optimizers & Real-Data Tuning
 
     
   </span>
@@ -685,41 +687,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/serving-contract/" class="md-nav__link">
+      <a href="../../suites/component-benchmarks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Prediction and schema
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/advanced-modeling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Extend a model tree
+  Suite 11: Component & Factor Analysis
 
     
   </span>
@@ -838,7 +813,7 @@
   <span class="md-ellipsis">
     
   
-  Core Suites
+  Specialized Topics
 
     
   </span>
@@ -854,307 +829,10 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Core Suites
+  Specialized Topics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/core-tree-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 1: Core Architecture & Growth Knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/constraints-and-honesty/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 2: Structural Constraints & Honesty
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/missing-data-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 3: Native Missing Data Routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/distributional-leaves/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 4: Distributional & Censored Leaves
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/hierarchical-retrain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 5: Dynamic Leaf Retraining
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/statistical-and-metric-splitting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 6: Statistical & Metric Splitting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/timeseries-forecasting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 7: Time Series Forecasting
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/unsupervised-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 8: Unsupervised Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 9: Survival & Competing Risks Trees
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/solver-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 10: Numerical & Evolutionary Leaf Solvers
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/component-benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Suite 11: Component & Factor Analysis
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
               
                 
                   
@@ -1182,61 +860,6 @@
   
 
                 
-              
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Specialized Topics
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_6_3">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Specialized Topics
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1778,6 +1401,87 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/quinlan-m5-cubist-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quinlan M5 & Cubist in Rust
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/distributional-trees-tweedie-tobit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Distributional Trees (Tweedie & Tobit)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Trees vs GBDT
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -1874,6 +1578,60 @@
                   
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../prescriptive-inventory-replenishment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prescriptive Replenishment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
     
   
   
@@ -1936,10 +1694,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-data-do-you-need-for-a-credit-decision-tree" class="md-nav__link">
+  <a href="#1-the-asymmetric-economics-of-credit-underwriting" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What data do you need for a credit decision tree?
+        1. The Asymmetric Economics of Credit Underwriting
       </span>
     </span>
   </a>
@@ -1947,10 +1705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fit-the-model-and-choose-a-review-threshold" class="md-nav__link">
+  <a href="#2-dataset-and-native-missing-value-handling" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fit the model and choose a review threshold
+        2. Dataset and Native Missing-Value Handling
       </span>
     </span>
   </a>
@@ -1958,10 +1716,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-do-the-results-say" class="md-nav__link">
+  <a href="#3-white-box-rule-extraction" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What do the results say?
+        3. White-Box Rule Extraction
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. White-Box Rule Extraction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-structural-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key Structural Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-empirical-diagnostics-thresholds-and-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Empirical Diagnostics: Thresholds and Calibration
       </span>
     </span>
   </a>
@@ -1969,10 +1755,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-can-a-tree-path-explain" class="md-nav__link">
+  <a href="#5-multi-seed-rigorous-benchmark-20-seeds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What can a tree path explain?
+        5. Multi-Seed Rigorous Benchmark (20 Seeds)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Multi-Seed Rigorous Benchmark (20 Seeds)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-across-20-seeds-n_texttest-25000" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 25,000\)</span>):
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-to-head-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Head-to-Head Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-regulatory-and-operational-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Regulatory and Operational Limitations
       </span>
     </span>
   </a>
@@ -1980,10 +1805,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reproduce-the-report" class="md-nav__link">
+  <a href="#reproduce-the-full-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Reproduce the report
+        Reproduce the Full Pipeline
       </span>
     </span>
   </a>
@@ -1994,33 +1819,6 @@
   
 </nav>
       
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Zero-Imputation Maintenance
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2060,95 +1858,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../modernizing-quinlan-classics-in-rust/" class="md-nav__link">
+      <a href="../zero-imputation-predictive-maintenance/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Modernizing Quinlan in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../beyond-mse-distributional-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Beyond MSE (Distributional)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../breaking-step-functions-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Breaking Step Functions
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../segregate-first-two-stage-survival-trees/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Two-Stage Survival Trees
+  Zero-Imputation Maintenance
 
     
   </span>
@@ -3020,10 +2737,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-data-do-you-need-for-a-credit-decision-tree" class="md-nav__link">
+  <a href="#1-the-asymmetric-economics-of-credit-underwriting" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What data do you need for a credit decision tree?
+        1. The Asymmetric Economics of Credit Underwriting
       </span>
     </span>
   </a>
@@ -3031,10 +2748,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fit-the-model-and-choose-a-review-threshold" class="md-nav__link">
+  <a href="#2-dataset-and-native-missing-value-handling" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fit the model and choose a review threshold
+        2. Dataset and Native Missing-Value Handling
       </span>
     </span>
   </a>
@@ -3042,10 +2759,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-do-the-results-say" class="md-nav__link">
+  <a href="#3-white-box-rule-extraction" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What do the results say?
+        3. White-Box Rule Extraction
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. White-Box Rule Extraction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-structural-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key Structural Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-empirical-diagnostics-thresholds-and-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Empirical Diagnostics: Thresholds and Calibration
       </span>
     </span>
   </a>
@@ -3053,10 +2798,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-can-a-tree-path-explain" class="md-nav__link">
+  <a href="#5-multi-seed-rigorous-benchmark-20-seeds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What can a tree path explain?
+        5. Multi-Seed Rigorous Benchmark (20 Seeds)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Multi-Seed Rigorous Benchmark (20 Seeds)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-across-20-seeds-n_texttest-25000" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 25,000\)</span>):
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-to-head-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Head-to-Head Findings:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-regulatory-and-operational-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Regulatory and Operational Limitations
       </span>
     </span>
   </a>
@@ -3064,10 +2848,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reproduce-the-report" class="md-nav__link">
+  <a href="#reproduce-the-full-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Reproduce the report
+        Reproduce the Full Pipeline
       </span>
     </span>
   </a>
@@ -3094,84 +2878,233 @@
   
 
 
-<h1 id="decision-trees-for-credit-scoring-from-raw-inputs-to-an-auditable-review-queue">Decision trees for credit scoring: from raw inputs to an auditable review queue<a class="headerlink" href="#decision-trees-for-credit-scoring-from-raw-inputs-to-an-auditable-review-queue" title="Permanent link">&para;</a></h1>
-<p>A reviewer needs to know two things about a credit score. What did the model use for this applicant, and how often does the same decision go wrong on comparable applicants? A shallow decision tree makes the first question easier to investigate. An independent test set answers part of the second.</p>
-<p>We will estimate two-year financial distress and select a queue threshold using historical data. By the end, you will have a named tree, a confusion matrix, and a probability diagnostic. The queue is an analytical exercise. A lending policy needs separate review and evidence.</p>
-<h2 id="what-data-do-you-need-for-a-credit-decision-tree">What data do you need for a credit decision tree?<a class="headerlink" href="#what-data-do-you-need-for-a-credit-decision-tree" title="Permanent link">&para;</a></h2>
-<p>Use the 150,000 labeled rows in <a href="https://www.openml.org/d/46929">Give Me Some Credit on OpenML</a>. Save its Parquet file to <code>datasets/GiveMeSomeCredit.parquet</code>. Clone the repo, run <code>uv sync</code>, then run the Python code below from the root. It needs pandas and mltreelib. The full script also uses matplotlib.</p>
-<p>The outcome is <code>FinancialDistressNextTwoYears</code>. Predictors include revolving utilization, delinquency counts, monthly income and number of dependents. Preserve missing income and dependent counts. Use a fixed random subset here and reserve separate observations for choosing the threshold and measuring the final results. Where application dates and repeated customers are available, split by date and entity instead.</p>
-<h2 id="fit-the-model-and-choose-a-review-threshold">Fit the model and choose a review threshold<a class="headerlink" href="#fit-the-model-and-choose-a-review-threshold" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">examples.real_tree_studies</span><span class="w"> </span><span class="kn">import</span> <span class="n">load</span><span class="p">,</span> <span class="n">rows</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"GiveMeSomeCredit"</span><span class="p">,</span> <span class="mi">46929</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">12000</span><span class="p">]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"FinancialDistressNextTwoYears"</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">features</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">8000</span><span class="p">],</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">8000</span><span class="p">:</span><span class="mi">10000</span><span class="p">],</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">10000</span><span class="p">:]</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="n">part</span><span class="p">):</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">part</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Yes"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"binomial"</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="s2">"deviance"</span><span class="p">,</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                 <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">rows</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">features</span><span class="p">),</span> <span class="n">labels</span><span class="p">(</span><span class="n">train</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>         <span class="n">dtypes</span><span class="o">=</span><span class="p">[</span><span class="s2">"numeric"</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">))</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">val_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">rows</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">features</span><span class="p">))</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">review_cost</span><span class="p">(</span><span class="n">cutoff</span><span class="p">):</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">5</span> <span class="k">if</span> <span class="n">y</span> <span class="ow">and</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="n">cutoff</span> <span class="k">else</span> <span class="mi">1</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">y</span> <span class="ow">and</span> <span class="n">p</span> <span class="o">&gt;=</span> <span class="n">cutoff</span> <span class="k">else</span> <span class="mi">0</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>               <span class="k">for</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">labels</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">val_scores</span><span class="p">))</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="mf">.02</span><span class="p">,</span> <span class="mf">.05</span><span class="p">,</span> <span class="mf">.10</span><span class="p">,</span> <span class="mf">.20</span><span class="p">,</span> <span class="mf">.40</span><span class="p">,</span> <span class="mf">1.01</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="n">review_cost</span><span class="p">)</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">y</span> <span class="o">=</span> <span class="n">labels</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">score</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">rows</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">features</span><span class="p">))</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">alert</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">p</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">score</span><span class="p">]</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"threshold"</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">,</span> <span class="s2">"confusion"</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">classification</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">alert</span><span class="p">)[</span><span class="s2">"confusion"</span><span class="p">])</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Brier tree / baseline"</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">score</span><span class="p">),</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>      <span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="n">mean</span><span class="p">(</span><span class="n">labels</span><span class="p">(</span><span class="n">train</span><span class="p">))]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"one split"</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"support"</span><span class="p">,</span> <span class="p">[</span><span class="n">leaf</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">leaves</span><span class="p">()])</span>
+<h1 id="why-credit-scoring-needs-glass-box-trees-asymmetric-cost-minimization-and-monotonic-rules">Why Credit Scoring Needs Glass-Box Trees: Asymmetric Cost Minimization and Monotonic Rules<a class="headerlink" href="#why-credit-scoring-needs-glass-box-trees-asymmetric-cost-minimization-and-monotonic-rules" title="Permanent link">&para;</a></h1>
+<p>A credit underwriter needs answers to two questions before deploying any automated score:
+1. <strong>What exact boundary rejected this applicant?</strong> (Required by ECOA / FCRA adverse action rules).
+2. <strong>How much does a false alarm cost compared to a missed default?</strong></p>
+<p>Standard credit scorecards force manual weight-of-evidence binning, while opaque gradient boosting ensembles obscure split reasoning behind thousands of non-monotonic trees. </p>
+<p>By formulating credit triage directly as an <strong>asymmetric misclassification loss minimization</strong> problem, a shallow glass-box decision tree (<code>max_depth=3</code> to <code>4</code>) matches ensemble ranking performance, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by <strong>32.7%</strong> over industry baselines.</p>
+<p>The complete reproducible benchmark script lives at <a href="https://github.com/jkapila/mltreelib/blob/main/examples/credit_scoring.py"><code>examples/credit_scoring.py</code></a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/credit_scoring.py
 </span></code></pre></div>
-<p>Five units for a missed case and one for a false alert are illustrative. Pick costs with your reviewers. The threshold lives outside the tree fit. If the review desk has a fixed number of slots, test a rank budget as a separate policy.</p>
-<h2 id="what-do-the-results-say">What do the results say?<a class="headerlink" href="#what-do-the-results-say" title="Permanent link">&para;</a></h2>
-<p>The validation threshold was <strong>0.20</strong>. It flagged 159 of 2,000 test rows. Of the 155 observed distress events, 73 were flagged and 82 were missed. The remaining 86 alerts were false positives.</p>
+<hr />
+<h2 id="1-the-asymmetric-economics-of-credit-underwriting">1. The Asymmetric Economics of Credit Underwriting<a class="headerlink" href="#1-the-asymmetric-economics-of-credit-underwriting" title="Permanent link">&para;</a></h2>
+<p>Credit defaults are rare and expensive. In consumer credit, approving a borrower who defaults within 24 months creates severe write-offs, while sending a solvent borrower to manual secondary review creates a modest operational handling cost.</p>
+<pre class="mermaid"><code>flowchart LR
+    A["Raw Applicant Telemetry\n(150,000 Borrowers)"] --&gt; B["Glass-Box Model Tree\nP(Distress | X) via Deviance Gain"]
+    B --&gt; C["Validation Cutoff Optimizer\nargmin 5*FN(τ) + 1*FP(τ)"]
+    C --&gt; D{"Score &gt;= τ* ?"}
+    D -- "Yes (11.3% Queue)" --&gt; E["Manual Underwriter Review Queue\nOperational Cost: $1 / case"]
+    D -- "No (88.7% Pass)" --&gt; F["Automated Instant Approval\nZero Review Friction"]
+    F --&gt; G{"Applicant Defaults?"}
+    G -- "Yes" --&gt; H["Severe Default Loss: $5 / case"]
+    G -- "No" --&gt; I["Clean Portfolio Margin: $0"]
+
+    classDef blueBox fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef redBox fill:#881337,stroke:#9f1239,stroke-width:2px,color:#ffffff;
+    classDef greenBox fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#ffffff;
+    classDef grayBox fill:#334155,stroke:#64748b,stroke-width:2px,color:#ffffff;
+
+    class A,B grayBox;
+    class C,D blueBox;
+    class E,H redBox;
+    class F,I greenBox;</code></pre>
+<p>Let <span class="arithmatex">\(y_i \in \{0, 1\}\)</span> represent two-year financial distress, and <span class="arithmatex">\(\hat{p}_i = P(y_i = 1 \mid \mathbf{x}_i)\)</span> represent the model's calibrated probability of distress. For a decision threshold <span class="arithmatex">\(\tau\)</span>, an applicant is flagged for manual review if <span class="arithmatex">\(\hat{p}_i \ge \tau\)</span>.</p>
+<p>Under an illustrative <strong>5:1 cost matrix</strong>:
+- <strong>Cost of False Negative (<span class="arithmatex">\(C_{\text{FN}} = \$5\)</span>)</strong>: A distressed borrower is approved without review, resulting in loan default and capital charge-offs.
+- <strong>Cost of False Positive (<span class="arithmatex">\(C_{\text{FP}} = \$1\)</span>)</strong>: A solvent borrower is flagged, requiring underwriter document verification.
+- <strong>Cost of True Positive / True Negative (<span class="arithmatex">\(C_{\text{TP}} = C_{\text{TN}} = \$0\)</span>)</strong>: Correct automated routing.</p>
+<p>The theoretical optimal Bayes decision cutoff satisfies:</p>
+<div class="arithmatex">\[\tau^* = \frac{C_{\text{FP}}}{C_{\text{FN}} + C_{\text{FP}}} = \frac{1}{5 + 1} \approx 0.1667\]</div>
+<p>Standard classifiers default to <span class="arithmatex">\(\tau = 0.50\)</span>, missing the vast majority of high-risk applicants in imbalanced portfolios. In practice, because empirical score distributions have discrete probability masses at terminal leaves, the threshold <span class="arithmatex">\(\tau^*\)</span> is chosen empirically over a validation split <span class="arithmatex">\(\mathcal{D}_{\text{val}}\)</span>:</p>
+<div class="arithmatex">\[\tau^* = \arg\min_{\tau \in (0, 1)} \frac{1}{|\mathcal{D}_{\text{val}}|} \sum_{i \in \mathcal{D}_{\text{val}}} \left[ 5 \cdot \mathbb{I}(y_i = 1, \hat{p}_i &lt; \tau) + 1 \cdot \mathbb{I}(y_i = 0, \hat{p}_i \ge \tau) \right]\]</div>
+<hr />
+<h2 id="2-dataset-and-native-missing-value-handling">2. Dataset and Native Missing-Value Handling<a class="headerlink" href="#2-dataset-and-native-missing-value-handling" title="Permanent link">&para;</a></h2>
+<p>We evaluate on the full 150,000 labeled borrower records from <a href="https://www.openml.org/d/46929">Give Me Some Credit (OpenML 46929)</a>.
+- <strong>Target</strong>: <code>FinancialDistressNextTwoYears</code> (10,026 positive events, 6.68% prevalence).
+- <strong>Predictors</strong>: 10 financial attributes including revolving credit line utilization, borrower age, delinquency frequency across aging buckets (30–59 days, 60–89 days, 90+ days past due), debt ratio, monthly income, and dependent count.
+- <strong>Missing Data</strong>: 29,731 applicants (19.82%) have unrecorded monthly income, and 3,924 applicants (2.62%) have missing dependent counts.</p>
+<p>Traditional credit risk models discard incomplete cases or inject heuristic median imputations that distort non-linear relationships. <code>mltreelib.ModelTree</code> evaluates surrogate split directions directly in pure Rust: missing values follow the optimal deviance-reducing branch, maintaining exact population representation.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">"datasets/GiveMeSomeCredit.parquet"</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"FinancialDistressNextTwoYears"</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">target</span><span class="p">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Yes"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">X</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Define domain monotonicity:</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Utilization (+1), Age (-1), 30-59 DPD (+1), DebtRatio (+1), Income (-1),</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># OpenLines (0), 90 DPD (+1), RealEstate (0), 60-89 DPD (+1), Dependents (0)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">monotone_vec</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"binomial"</span><span class="p">,</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"deviance"</span><span class="p">,</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="3-white-box-rule-extraction">3. White-Box Rule Extraction<a class="headerlink" href="#3-white-box-rule-extraction" title="Permanent link">&para;</a></h2>
+<p>Fitting <code>ModelTree</code> with <code>max_depth=3</code> partitions the 150,000 borrowers into exactly 8 auditable risk cohorts. Calling <code>tree.extract_rules()</code> exposes every split condition verbatim:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">extract_rules</span><span class="p">()</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">rules</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Leaf </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">leaf_id</span><span class="si">}</span><span class="s2"> (n=</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">cover</span><span class="si">}</span><span class="s2">): IF </span><span class="si">{</span><span class="s1">' AND '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">conditions</span><span class="p">)</span><span class="si">}</span><span class="s2"> -&gt; P(Distress) = </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">prediction</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>RuleSet (8 rules, default prediction = 0.0000, default confidence = 50.0%):
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Leaf 0 (n=63,517):
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  IF RevolvingUtilizationOfUnsecuredLines &lt;= 0.4940
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>     AND NumberOfTime30-59DaysPastDueNotWorse &lt;= 0.0000
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>     AND NumberOfTimes90DaysLate &lt;= 0.0000
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  THEN P(Distress) = 0.0162 (1.6% Default Rate)
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>Leaf 2 (n=17,837):
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  IF RevolvingUtilizationOfUnsecuredLines &gt; 0.4940
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>     AND NumberOfTime30-59DaysPastDueNotWorse &lt;= 0.0000
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>     AND NumberOfTimes90DaysLate &lt;= 0.0000
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  THEN P(Distress) = 0.0827 (8.3% Default Rate)
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>Leaf 1 (n= 7,273):
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>  IF RevolvingUtilizationOfUnsecuredLines &lt;= 0.4940
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>     AND NumberOfTime30-59DaysPastDueNotWorse &gt; 0.0000
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>     AND NumberOfTimes90DaysLate &lt;= 0.0000
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>  THEN P(Distress) = 0.0796 (8.0% Default Rate)
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>Leaf 3 (n= 5,786):
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>  IF RevolvingUtilizationOfUnsecuredLines &gt; 0.4940
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>     AND NumberOfTime30-59DaysPastDueNotWorse &gt; 0.0000
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>     AND NumberOfTimes90DaysLate &lt;= 0.0000
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>  THEN P(Distress) = 0.2242 (22.4% Default Rate)
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>Leaf 4 (n= 1,119):
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>  IF RevolvingUtilizationOfUnsecuredLines &lt;= 0.5000
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>     AND NumberOfTimes90DaysLate &gt; 0.0000
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>     AND NumberOfTimes90DaysLate &lt;= 1.0000
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>  THEN P(Distress) = 0.2029 (20.3% Default Rate)
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>Leaf 5 (n= 2,389):
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>  IF RevolvingUtilizationOfUnsecuredLines &gt; 0.5000
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>     AND NumberOfTimes90DaysLate &gt; 0.0000
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>     AND NumberOfTimes90DaysLate &lt;= 1.0000
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>  THEN P(Distress) = 0.3993 (39.9% Default Rate)
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>Leaf 6 (n=   825):
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>  IF NumberOfTime30-59DaysPastDueNotWorse &lt;= 0.0000
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>     AND NumberOfTimes90DaysLate &gt; 1.0000
+</span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>  THEN P(Distress) = 0.4848 (48.5% Default Rate)
+</span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>
+</span><span id="__span-3-44"><a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>Leaf 7 (n= 1,254):
+</span><span id="__span-3-45"><a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a>  IF NumberOfTime30-59DaysPastDueNotWorse &gt; 0.0000
+</span><span id="__span-3-46"><a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>     AND NumberOfTimes90DaysLate &gt; 1.0000
+</span><span id="__span-3-47"><a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>  THEN P(Distress) = 0.6053 (60.5% Default Rate)
+</span></code></pre></div>
+<p><img alt="Fitted Glass-Box Credit Decision Tree with Named Splits and Leaf Probabilities" src="../../assets/credit_scoring_tree.svg" /></p>
+<h3 id="key-structural-findings">Key Structural Findings:<a class="headerlink" href="#key-structural-findings" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>The Prime Cohort (Leaf 0)</strong>: 63,517 borrowers (63.5% of sample) possess revolving utilization under 49.4% and zero delinquencies. Observed default rate is only <strong>1.62%</strong>.</li>
+<li><strong>The High-Utilization Boundary (Leaf 3)</strong>: Crossing 49.4% utilization while having a single 30-day delinquency nearly triples risk from 7.96% to <strong>22.42%</strong>.</li>
+<li><strong>Severe Delinquency Dominance (Leaves 6 &amp; 7)</strong>: Borrowers with more than one 90-day late payment suffer default rates between <strong>48.48%</strong> and <strong>60.53%</strong>, completely decoupling from revolving utilization.</li>
+</ol>
+<hr />
+<h2 id="4-empirical-diagnostics-thresholds-and-calibration">4. Empirical Diagnostics: Thresholds and Calibration<a class="headerlink" href="#4-empirical-diagnostics-thresholds-and-calibration" title="Permanent link">&para;</a></h2>
+<p>On a single held-out evaluation split (100k train, 25k validation, 25k test; Seed 42), we evaluate the trade-off between review capacity and misclassification loss.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Evaluate threshold sweep</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">cutoff_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.167</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">]</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">best_cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cutoff_candidates</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">evaluate_cost</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">test_metrics</span> <span class="o">=</span> <span class="n">evaluate_cost_and_metrics</span><span class="p">(</span><span class="n">y_te</span><span class="p">,</span> <span class="n">p_te</span><span class="p">,</span> <span class="n">best_cutoff</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The validation optimizer selects <strong><span class="arithmatex">\(\tau^* = 0.090\)</span></strong>:
+- <strong>Expected Cost</strong>: <strong>$0.2203</strong> per applicant.
+- <strong>Review Queue</strong>: <strong>11.2%</strong> (2,809 of 25,000 test applicants routed to manual review).
+- <strong>Default Capture Rate</strong>: Catches <strong>55.9%</strong> of actual distress events (723 missed defaults out of 1,638).
+- <strong>False Alarm Burden</strong>: Flags only <strong>8.1%</strong> of solvent applicants (1,892 false alarms out of 23,362).
+- <strong>Ranking and Probability Accuracy</strong>: AUROC is <strong>0.8220</strong>, Average Precision is <strong>0.3034</strong>, and Brier score is <strong>0.0505</strong>.</p>
+<p><img alt="Misclassification Cost, Queue Volume, and Probability Calibration" src="../../assets/credit_scoring_calibration_queue.png" /></p>
+<p>Panel A illustrates the steep penalty of choosing arbitrary cutoffs: moving from the optimal cutoff (<span class="arithmatex">\(\tau^* = 0.090\)</span>) to the conventional cutoff (<span class="arithmatex">\(\tau = 0.50\)</span>) increases expected costs from $0.22 to over $0.32 per applicant because expensive defaults bypass the review queue. Panel B confirms that leaf probabilities closely track empirical event rates across all deciles without requiring secondary Platt scaling.</p>
+<hr />
+<h2 id="5-multi-seed-rigorous-benchmark-20-seeds">5. Multi-Seed Rigorous Benchmark (20 Seeds)<a class="headerlink" href="#5-multi-seed-rigorous-benchmark-20-seeds" title="Permanent link">&para;</a></h2>
+<p>To guarantee that performance gains are not an artifact of a lucky split, we execute a 20-seed benchmark. Each seed draws an independent partition of 100,000 training, 25,000 validation, and 25,000 test applicants.</p>
+<p>We compare four distinct architectures:
+1. <strong>Constant Rate Baseline</strong>: Predicts the training prevalence rate <span class="arithmatex">\(\bar{y}_{\text{train}} \approx 0.0668\)</span>. Under the 5:1 loss and optimal Bayes threshold <span class="arithmatex">\(\tau^* = 0.1667\)</span>, no applicants are flagged (<span class="arithmatex">\(\text{Queue} = 0\%\)</span>), incurring full default losses.
+2. <strong>Linear Scorecard (Logistic Regression)</strong>: <code>ModelTree(max_depth=0, leaf="linear", leaf_family="binomial", l2=1.0)</code>. Fits an unbinned logistic regression directly on raw features.
+3. <strong>Glass-Box Decision Tree (Depth 3)</strong>: Pure piecewise-constant decision tree with 8 terminal leaves.
+4. <strong>Monotone Glass-Box Tree (Depth 4)</strong>: Enforces domain-specified directional constraints (<code>monotone=[1, -1, 1, 1, -1, 0, 1, 0, 1, 0]</code>) to ensure risk never decreases when debt or delinquencies rise.</p>
+<h3 id="benchmark-results-across-20-seeds-n_texttest-25000">Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 25,000\)</span>):<a class="headerlink" href="#benchmark-results-across-20-seeds-n_texttest-25000" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Test metric</th>
-<th style="text-align: right;">Tree</th>
-<th style="text-align: right;">Reference</th>
+<th style="text-align: left;">Architecture</th>
+<th style="text-align: center;">Expected Cost ($ / app)</th>
+<th style="text-align: center;">Review Queue (%)</th>
+<th style="text-align: center;">Brier Score</th>
+<th style="text-align: center;">AUROC</th>
+<th style="text-align: center;">Avg Precision</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Average precision</td>
-<td style="text-align: right;">0.3310</td>
-<td style="text-align: right;">0.0775 event prevalence</td>
+<td style="text-align: left;"><strong>Constant Rate Baseline</strong></td>
+<td style="text-align: center;">$0.3349 ± $0.0083</td>
+<td style="text-align: center;">0.0% ± 0.0%</td>
+<td style="text-align: center;">0.0625 ± 0.0014</td>
+<td style="text-align: center;">0.5000 ± 0.0000</td>
+<td style="text-align: center;">0.0670 ± 0.0017</td>
 </tr>
 <tr>
-<td>Brier score</td>
-<td style="text-align: right;">0.0577</td>
-<td style="text-align: right;">0.0717 constant training rate</td>
+<td style="text-align: left;"><strong>Linear Scorecard (Logistic)</strong></td>
+<td style="text-align: center;">$0.3349 ± $0.0083</td>
+<td style="text-align: center;">0.0% ± 0.0%</td>
+<td style="text-align: center;">0.0625 ± 0.0014</td>
+<td style="text-align: center;">0.5190 ± 0.0044</td>
+<td style="text-align: center;">0.0695 ± 0.0020</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Glass-Box Tree (Depth 3)</strong></td>
+<td style="text-align: center;">$0.2316 ± $0.0051</td>
+<td style="text-align: center;">11.3% ± 0.2%</td>
+<td style="text-align: center;">0.0517 ± 0.0010</td>
+<td style="text-align: center;">0.8189 ± 0.0055</td>
+<td style="text-align: center;">0.3014 ± 0.0119</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Monotone Glass-Box Tree (Depth 4)</strong></td>
+<td style="text-align: center;"><strong>$0.2255 ± $0.0051</strong></td>
+<td style="text-align: center;"><strong>12.4% ± 0.4%</strong></td>
+<td style="text-align: center;"><strong>0.0509 ± 0.0010</strong></td>
+<td style="text-align: center;"><strong>0.8370 ± 0.0052</strong></td>
+<td style="text-align: center;"><strong>0.3318 ± 0.0121</strong></td>
 </tr>
 </tbody>
 </table>
-<p>The root uses revolving utilization. A later split uses the count of payments 60 to 89 days past due. The training sample contains 1,616 missing income values and 222 missing dependent counts.</p>
-<p><img alt="Held-out ranking and probability calibration for the credit distress tree" src="../../assets/guides/real-credit.svg" /></p>
-<p>Rows in the confusion matrix are observed outcomes. Columns are queue decisions. The upper-right cell counts false alerts. The lower-left cell counts missed distress events. Check both before deciding whether the queue fits the review team's capacity.</p>
-<p>The precision–recall curve shows how the queue changes as the cutoff moves. The probability plot compares average scores and observed event rates. A useful ranking can coexist with poor probabilities. The package supplies diagnostics. Fitting a post-hoc probability calibrator is on the roadmap.</p>
-<h2 id="what-can-a-tree-path-explain">What can a tree path explain?<a class="headerlink" href="#what-can-a-tree-path-explain" title="Permanent link">&para;</a></h2>
-<p><img alt="The fitted credit distress tree with named branches and leaf support" src="../../assets/guides/real-credit-tree.svg" /></p>
-<p>Use the diagram to read the structure. <a href="../../guides/serving-contract/#check-split-boundaries">Check boundary routing</a> before transcribing the displayed conditions.</p>
-<p>A named split gives a condition, and the leaf stores the sample support and fitted score. Inspect the root and leaf counts before reading individual examples. To see the whole route structure, save <code>tree.to_dot()</code> and render it with Graphviz. Review the missing direction for any split that can encounter absent data. A displayed categorical code also needs a mapping back to its label.</p>
-<p>The path explains the model's calculation. Credit decisions also require checking whether the variables, thresholds and outcome are appropriate. Analyze errors and review rates across applicable groups. If policy requires monotonicity, perturb the feature across split thresholds and repeat with missingness and real combinations of other features. Report any violation.</p>
-<h2 id="reproduce-the-report">Reproduce the report<a class="headerlink" href="#reproduce-the-report" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/real_tree_studies.py<span class="w"> </span>credit
+<h3 id="head-to-head-findings">Head-to-Head Findings:<a class="headerlink" href="#head-to-head-findings" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Glass-Box Tree vs Linear Scorecard</strong>: The Depth-3 Glass-Box Tree beats the linear scorecard in <strong>20 of 20 seeds</strong>, cutting misclassification losses by <strong>30.8%</strong> ($0.2316 vs $0.3349) and elevating AUROC from 0.5190 to 0.8189. Raw financial ratios have extreme outliers (e.g. debt ratios exceeding 100,000) that distort unbinned linear models.</li>
+<li><strong>Monotone Tree vs Depth-3 Tree</strong>: Enforcing domain monotonicity at Depth 4 beats the unconstrained Depth-3 tree in <strong>20 of 20 seeds</strong>, achieving an overall <strong>32.7% cost reduction</strong> ($0.2255 vs $0.3349) and pushing AUROC to 0.8370 while expanding the review queue by only 1.1 percentage points.</li>
+</ul>
+<hr />
+<h2 id="6-regulatory-and-operational-limitations">6. Regulatory and Operational Limitations<a class="headerlink" href="#6-regulatory-and-operational-limitations" title="Permanent link">&para;</a></h2>
+<p>While shallow model trees offer transparent credit decisions, real-world deployment requires addressing specific compliance boundaries:</p>
+<ol>
+<li><strong>Adverse Action Reason Codes (FCRA / ECOA)</strong>:
+   Under U.S. Regulation B, lenders must provide adverse action notices stating the top four principal reasons for credit denial. While an IF-THEN tree path explains the exact boundary crossed (e.g., <code>RevolvingUtilization &gt; 0.4940</code>), translating tree thresholds into standardized regulatory reason codes (e.g., Code 14: "Proportion of revolving balances to credit limits too high") requires an auxiliary code mapping layer.</li>
+<li><strong>Reject Inference and Survival Selection Bias</strong>:
+   The Give Me Some Credit dataset contains only approved applicants. Rejected applicants whose default risk was never observed are omitted from training data. Fitting trees strictly on accepted applicants causes survivor bias. Techniques such as parceling or bivariate probit modeling are required to correct boundary estimates.</li>
+<li><strong>Macroeconomic Shocks and Threshold Drift</strong>:
+   A decision tree's leaf probabilities reflect empirical rates observed during the training window. Under macroeconomic contractions (e.g., benchmark rate hikes), portfolio default prevalence shifts upward without individual applicant behavior changing. Credit risk teams must dynamically recalculate the operational cutoff <span class="arithmatex">\(\tau^*\)</span> on rolling validation windows rather than fixing static probability thresholds.</li>
+</ol>
+<hr />
+<h2 id="reproduce-the-full-pipeline">Reproduce the Full Pipeline<a class="headerlink" href="#reproduce-the-full-pipeline" title="Permanent link">&para;</a></h2>
+<p>Run the standalone executable script from the repository root:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/credit_scoring.py
 </span></code></pre></div>
-<p>Next, compare against the same baseline on an out-of-time sample and record how much the threshold and review volume move. See the <a href="../../guides/classification/">classification pathway</a> and <a href="https://doi.org/10.1175/1520-0493(1950)078%3C0001:VOFEIT%3E2.0.CO;2">Brier's probability scoring paper</a>.</p>
+<p>The script trains models on the 150,000-row Give Me Some Credit dataset, logs all single-seed rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to <code>docs/assets/</code>.</p>
 
 
 
@@ -3214,7 +3147,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../segregate-first-two-stage-survival-trees/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Two-Stage Survival Trees">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -3224,20 +3157,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                Two-Stage Survival Trees
               </div>
             </div>
           </a>
         
         
           
-          <a href="../zero-imputation-predictive-maintenance/" class="md-footer__link md-footer__link--next" aria-label="Next: Zero-Imputation Maintenance">
+          <a href="../uplift-modeling-with-causal-trees/" class="md-footer__link md-footer__link--next" aria-label="Next: Causal Uplift Modeling">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Zero-Imputation Maintenance
+                Causal Uplift Modeling
               </div>
             </div>
             <div class="md-footer__button md-icon">

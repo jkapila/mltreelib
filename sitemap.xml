@@ -22,13 +22,7 @@
         <loc>https://jkapila.github.io/mltreelib/blog/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/blog/beyond-mse-distributional-trees/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/blog/breaking-step-functions-model-trees-vs-gbdt/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/blog/modernizing-quinlan-classics-in-rust/</loc>
+        <loc>https://jkapila.github.io/mltreelib/blog/prescriptive-inventory-replenishment/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/blog/segregate-first-two-stage-survival-trees/</loc>
@@ -58,31 +52,19 @@
         <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/component-benchmarks/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/constraints-and-honesty/</loc>
-      </url>
-      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/core-tree-architecture/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/distributional-leaves/</loc>
-      </url>
-      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/distributional-split-criteria/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/generic-optimizer/</loc>
+        <loc>https://jkapila.github.io/mltreelib/examples/distributional-trees-tweedie-tobit/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/hierarchical-retrain/</loc>
+        <loc>https://jkapila.github.io/mltreelib/examples/generic-optimizer/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/honesty-weights/</loc>
@@ -100,9 +82,6 @@
         <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/missing-data-routing/</loc>
-      </url>
-      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/missing-routing/</loc>
       </url>
       <url>
@@ -112,31 +91,22 @@
         <loc>https://jkapila.github.io/mltreelib/examples/pca-rotations/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/piecewise-linear-model-trees-vs-gbdt/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/quinlan-m5-cubist-rust/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
       </url>
       <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/solver-benchmarks/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/statistical-and-metric-splitting/</loc>
-      </url>
-      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/stump-explainable/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/survival-trees/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/timeseries-forecasting/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/tobit-regression/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
-      </url>
-      <url>
-        <loc>https://jkapila.github.io/mltreelib/examples/unsupervised-trees/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/walkthrough/</loc>
@@ -242,5 +212,41 @@
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/reference/reports/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/component-benchmarks/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/constraints-and-honesty/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/core-tree-architecture/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/distributional-leaves/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/hierarchical-retrain/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/missing-data-routing/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/solver-benchmarks/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/statistical-and-metric-splitting/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/survival-trees/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/timeseries-forecasting/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/suites/unsupervised-trees/</loc>
       </url>
 </urlset>
