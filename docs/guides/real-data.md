@@ -18,8 +18,8 @@ For an OpenML source below, open its dataset page and download the Parquet file.
 | FLCHAIN | [Rdatasets CSV](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) | `datasets/external/real_eval/flchain.csv` | [Survival](survival.md) |
 | Hillstrom | [CSV mirror](https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv) | `datasets/external/real_eval/hillstrom.csv` | [Uplift and source checks](uplift.md) |
 | APS Failure | [OpenML 46908](https://www.openml.org/d/46908) | `datasets/APSFailure.parquet` | [Missing sensor data](../blog/zero-imputation-predictive-maintenance.md) |
-| Concrete strength | [OpenML 46917](https://www.openml.org/d/46917) | `datasets/concrete_compressive_strength.parquet` | [Local models and rules](../blog/modernizing-quinlan-classics-in-rust.md) |
-| Miami housing | [OpenML 46942](https://www.openml.org/d/46942) | `datasets/miami_housing.parquet` | [Distributional splits](../blog/beyond-mse-distributional-trees.md) |
+| Concrete strength | [OpenML 46917](https://www.openml.org/d/46917) | `datasets/concrete_compressive_strength.parquet` | [Local models and rules](../examples/quinlan-m5-cubist-rust.md) |
+| Miami housing | [OpenML 46942](https://www.openml.org/d/46942) | `datasets/miami_housing.parquet` | [Distributional splits](../examples/distributional-trees-tweedie-tobit.md) |
 
 For the full TabArena collection, see the [dataset manifest](https://github.com/jkapila/mltreelib/blob/main/datasets/MANIFEST.md).
 
