@@ -37,6 +37,14 @@ pub fn solve_ccd<D: DesignMatrix>(
     options: &CcdOptions,
     warm_start: Option<&[f64]>,
 ) -> Result<Vec<f64>, String> {
+    solve_ccd_report(design, options, warm_start).map(|(beta, _)| beta)
+}
+
+pub(super) fn solve_ccd_report<D: DesignMatrix>(
+    design: &D,
+    options: &CcdOptions,
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, super::Convergence), String> {
     let n = design.n_rows();
     let p = design.n_features();
     if n == 0 || p == 0 {
@@ -87,7 +95,7 @@ pub fn solve_ccd<D: DesignMatrix>(
     let mut row_buf = vec![0.0; p];
 
     // 4. Main Active-Set Coordinate Descent Loop
-    for _outer_iter in 0..options.max_iter {
+    for iter in 0..options.max_iter {
         let mut max_active_delta = 0.0f64;
 
         // Inner loop: cycle over currently active set until convergence
@@ -113,7 +121,11 @@ pub fn solve_ccd<D: DesignMatrix>(
                     let raw = rho.signum() * (rho.abs() - l1_pen).max(0.0) / denom;
 
                     // Monotone constraint
-                    let mono = options.monotone.get(j.saturating_sub(1)).copied().unwrap_or(0);
+                    let mono = options
+                        .monotone
+                        .get(j.saturating_sub(1))
+                        .copied()
+                        .unwrap_or(0);
                     match mono {
                         1 => raw.max(0.0),
                         -1 => raw.min(0.0),
@@ -140,7 +152,6 @@ pub fn solve_ccd<D: DesignMatrix>(
 
         // Outer sweep: check all features to see if new features enter the active set
         let mut new_active_added = false;
-        let mut full_delta = 0.0f64;
         for j in 0..p {
             if active.contains(&j) {
                 continue;
@@ -156,7 +167,11 @@ pub fn solve_ccd<D: DesignMatrix>(
                 let l2_pen = options.l2 * scale * scale;
                 let denom = diag + l2_pen;
                 let raw = rho.signum() * (rho.abs() - l1_pen) / denom;
-                let mono = options.monotone.get(j.saturating_sub(1)).copied().unwrap_or(0);
+                let mono = options
+                    .monotone
+                    .get(j.saturating_sub(1))
+                    .copied()
+                    .unwrap_or(0);
                 let next_b = match mono {
                     1 => raw.max(0.0),
                     -1 => raw.min(0.0),
@@ -171,15 +186,14 @@ pub fn solve_ccd<D: DesignMatrix>(
                     }
                     active.push(j);
                     new_active_added = true;
-                    full_delta = full_delta.max(next_b.abs());
                 }
             }
         }
 
         if !new_active_added && max_active_delta < options.tol {
-            break;
+            return Ok((beta, super::Convergence::tolerance(iter + 1)));
         }
     }
 
-    Ok(beta)
+    Ok((beta, super::Convergence::limit(options.max_iter)))
 }

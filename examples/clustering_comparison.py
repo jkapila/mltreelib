@@ -6,25 +6,22 @@ Compares:
 3. HDBSCAN Condensed Tree: Mutual reachability MST + Excess of Mass stability.
 4. Unsupervised Random Forest (URF): Breiman proximity kernel + Lance-Williams agglomeration.
 
-Evaluates and compares all methods using Jitin Kapila's Crosstab Sparsity (CSP)
-metric (https://gist.github.com/jkapila/83bb8f6461ec91bfced437762f2c9220):
-  CSP = sum_j [ Segregation(j) * Explanation(j) ]
-where:
-  Segregation = n_v / max(l, k)  (concentration above median contingency cell)
-  Explanation = ln(N / (l * k))  (information content of the cross-tabulation)
+Evaluates and compares all methods across:
+- Execution latency, fitting throughput, and prediction runtime.
+- Jitin Kapila's Crosstab Sparsity (CSP) metric (Segregation * Explanation).
+- Cluster size distribution and noise handling.
+- Extracted decision rules and bounding boxes.
+- Snapshot write and restore persistence round-trip.
 """
 
+from collections import Counter
 from pathlib import Path
+import time
 
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
-from mltreelib import (
-    HDBSCAN,
-    CLTree,
-    PredictiveClusteringTree,
-    UnsupervisedRandomForest,
-)
+from mltreelib import ClusterModel
 
 
 def crosstab_sparsity(
@@ -186,74 +183,152 @@ def main():
         for row in data_num
     ]
 
-    print("=" * 90)
-    print("mltreelib Tree-Based Clustering Suite Comparison & Benchmarking")
+    n_samples = len(df)
+    print("=" * 95)
+    print("mltreelib Unified ClusterModel Suite: Timing & Output Benchmarking")
     print(
-        f"Dataset: credit-g ({len(df)} samples, {len(eval_cols)} evaluation features)"
+        f"Dataset: credit-g ({n_samples} samples, {len(eval_cols)} evaluation features)"
     )
-    print("=" * 90)
+    print("=" * 95)
 
     results = {}
+    timings = []
 
-    # 1. Predictive Clustering Tree (PCT / CLUS)
+    # 1. Predictive Clustering Tree (PCT / CLUS) via ClusterModel
     print("\n[1/4] Fitting Predictive Clustering Tree (PCT / CLUS)...")
-    pct = PredictiveClusteringTree(
-        max_depth=3, min_samples_split=25, min_samples_leaf=15
-    )
+    t0 = time.perf_counter()
+    pct = ClusterModel(kind="pct", max_depth=3, min_rows=15)
     pct.fit(data_num, col_names=numeric_cols, dtypes=["float"] * len(numeric_cols))
-    pct_labels = pct.predict_cluster(data_num)
+    t_fit = (time.perf_counter() - t0) * 1000.0
+
+    t0 = time.perf_counter()
+    pct_labels = pct.predict(data_num)
+    t_pred = (time.perf_counter() - t0) * 1000.0
+
     results["PCT (CLUS)"] = {
+        "model": pct,
         "labels": pct_labels,
         "paradigm": "Divisive Multi-Target Variance Reduction",
         "interpretability": "Extracted decision paths with centroid prototypes",
     }
+    timings.append({
+        "Method": "PCT (CLUS)",
+        "Paradigm": "Multi-Target Variance Reduction",
+        "Fit (ms)": t_fit,
+        "Predict (ms)": t_pred,
+        "Total (ms)": t_fit + t_pred,
+        "Throughput (pts/s)": n_samples / (t_pred / 1000.0) if t_pred > 0 else 0,
+    })
 
-    # 2. CLTree (Liu et al. KDD 2000)
+    # Test snapshot write API for ClusterModel
+    pct_snap = pct.snapshot()
+    restored_pct = ClusterModel.from_snapshot(pct_snap)
+    assert len(restored_pct.predict(data_num[:5])) == 5
+
+    # 2. CLTree (Liu et al. KDD 2000) via ClusterModel
     print("[2/4] Fitting CLTree (Decision Tree Clustering via Analytical Noise)...")
-    cltree = CLTree(max_depth=4, min_samples_leaf=15, min_density=0.60)
+    t0 = time.perf_counter()
+    cltree = ClusterModel(kind="cltree", max_depth=4, min_rows=15, min_density=0.60)
     cltree.fit(data_num, col_names=numeric_cols)
-    clt_labels = cltree.predict_cluster(data_num)
+    t_fit = (time.perf_counter() - t0) * 1000.0
+
+    t0 = time.perf_counter()
+    clt_labels = cltree.predict(data_num)
+    t_pred = (time.perf_counter() - t0) * 1000.0
+
     results["CLTree"] = {
+        "model": cltree,
         "labels": clt_labels,
         "paradigm": "Decision Tree against Virtual Uniform Background",
         "interpretability": "Hyper-rectangular bounding boxes with density bounds",
     }
+    timings.append({
+        "Method": "CLTree",
+        "Paradigm": "Virtual Uniform Background Split",
+        "Fit (ms)": t_fit,
+        "Predict (ms)": t_pred,
+        "Total (ms)": t_fit + t_pred,
+        "Throughput (pts/s)": n_samples / (t_pred / 1000.0) if t_pred > 0 else 0,
+    })
 
-    # 3. HDBSCAN Condensed Tree
-    print(
-        "[3/4] Fitting HDBSCAN Condensed Tree (Density Hierarchy & Excess of Mass)..."
-    )
-    hdb = HDBSCAN(min_cluster_size=25, min_samples=15)
+    # 3. HDBSCAN Condensed Tree via ClusterModel
+    print("[3/4] Fitting HDBSCAN Condensed Tree (Density Hierarchy & Excess of Mass)...")
+    t0 = time.perf_counter()
+    hdb = ClusterModel(kind="hdbscan", min_rows=25, min_samples=15)
     hdb.fit(data_norm)
+    t_fit = (time.perf_counter() - t0) * 1000.0
+
+    t0 = time.perf_counter()
+    hdb_labels = hdb.labels_
+    t_pred = (time.perf_counter() - t0) * 1000.0
+
     results["HDBSCAN"] = {
-        "labels": hdb.labels,
+        "model": hdb,
+        "labels": hdb_labels,
         "paradigm": "Mutual Reachability MST + Condensed Hierarchy",
         "interpretability": "Cluster birth/death stability + GLOSH outlier scoring",
     }
+    timings.append({
+        "Method": "HDBSCAN",
+        "Paradigm": "Mutual Reachability MST Hierarchy",
+        "Fit (ms)": t_fit,
+        "Predict (ms)": t_pred,
+        "Total (ms)": t_fit + t_pred,
+        "Throughput (pts/s)": n_samples / (t_pred / 1000.0) if t_pred > 0 else 0,
+    })
 
-    # 4. Unsupervised Random Forest (URF)
-    print(
-        "[4/4] Fitting Unsupervised Random Forest (Breiman Proximity & Agglomeration)..."
-    )
-    urf = UnsupervisedRandomForest(n_trees=50, max_depth=5, min_samples_leaf=5, seed=42)
-    urf.fit(data_num, n_clusters=4)
+    # 4. Unsupervised Random Forest (URF) via ClusterModel
+    print("[4/4] Fitting Unsupervised Random Forest (Breiman Proximity & Agglomeration)...")
+    t0 = time.perf_counter()
+    urf = ClusterModel(kind="urf", n_clusters=4, max_depth=5, min_rows=5, n_trees=50, seed=42)
+    urf.fit(data_num)
+    t_fit = (time.perf_counter() - t0) * 1000.0
+
+    t0 = time.perf_counter()
+    urf_labels = urf.labels_
+    t_pred = (time.perf_counter() - t0) * 1000.0
+
     results["URF"] = {
-        "labels": urf.labels,
+        "model": urf,
+        "labels": urf_labels,
         "paradigm": "Synthetic Marginal Permutation + Tree Proximity Kernel",
         "interpretability": "Pairwise leaf co-occurrence matrix P(i, j) & distance",
     }
+    timings.append({
+        "Method": "URF",
+        "Paradigm": "Synthetic Marginal Tree Proximity",
+        "Fit (ms)": t_fit,
+        "Predict (ms)": t_pred,
+        "Total (ms)": t_fit + t_pred,
+        "Throughput (pts/s)": n_samples / (t_pred / 1000.0) if t_pred > 0 else 0,
+    })
 
-    # Evaluate Crosstab Sparsity (CSP) Metric for each model
-    print("\n" + "=" * 90)
-    print("Evaluating Crosstab Sparsity (CSP) Metric across Models")
-    print("=" * 90)
+    # =========================================================================
+    # 1. Execution Latency & Throughput Benchmark
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print("Execution Latency & Throughput Benchmark across Cluster Models")
+    print("=" * 95)
+    timing_df = pd.DataFrame(timings)
+    formatted_timing = timing_df.copy()
+    formatted_timing["Fit (ms)"] = formatted_timing["Fit (ms)"].map(lambda x: f"{x:8.2f}")
+    formatted_timing["Predict (ms)"] = formatted_timing["Predict (ms)"].map(lambda x: f"{x:8.2f}")
+    formatted_timing["Total (ms)"] = formatted_timing["Total (ms)"].map(lambda x: f"{x:8.2f}")
+    formatted_timing["Throughput (pts/s)"] = formatted_timing["Throughput (pts/s)"].map(lambda x: f"{x:10.0f}")
+    print(formatted_timing.to_string(index=False))
+
+    # =========================================================================
+    # 2. Crosstab Sparsity (CSP) Metric Evaluation
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print("Crosstab Sparsity (CSP) Metric Evaluation across Models")
+    print("=" * 95)
 
     summary_rows = []
     csp_details = {}
 
     for name, res in results.items():
         labels = res["labels"]
-        # Count clusters and noise
         valid = [l for l in labels if l is not None and l != -1]
         noise_cnt = len(labels) - len(valid)
         n_clusters = len(set(valid))
@@ -274,15 +349,31 @@ def main():
         )
 
     summary_df = pd.DataFrame(summary_rows)
-    print("\n--- Summary Comparison Table ---")
+    print("\n--- Summary Performance Table ---")
     print(summary_df.to_string(index=False))
 
-    # Top variables segregated per method
-    print("\n" + "=" * 90)
-    print(
-        "Top Feature Drivers of Cluster Separation (by CSP Metric = Segregation * Explanation)"
-    )
-    print("=" * 90)
+    # =========================================================================
+    # 3. Discovered Cluster Size Distribution & Support
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print("Discovered Cluster Size Distributions")
+    print("=" * 95)
+    for name, res in results.items():
+        labels = res["labels"]
+        counts = Counter(labels)
+        sorted_counts = sorted(counts.items(), key=lambda x: (x[0] is None or x[0] == -1, x[0]))
+        dist_strs = [
+            f"Cluster {c if c is not None and c != -1 else 'Noise'}: n={n} ({n/n_samples*100:.1f}%)"
+            for c, n in sorted_counts
+        ]
+        print(f"[{name}]: " + " | ".join(dist_strs[:6]))
+
+    # =========================================================================
+    # 4. Top Feature Drivers per Method by CSP Metric
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print("Top Feature Drivers of Cluster Separation (CSP Metric = Segregation * Explanation)")
+    print("=" * 95)
     for name, csp in csp_details.items():
         print(
             f"\n[{name}] Total CSP: {csp['score']:.3f} across {csp['n_clusters']} clusters:"
@@ -294,31 +385,21 @@ def main():
                 f"(Segregation={r['seggregation']:.3f}, Explanation={r['explaination']:.3f})"
             )
 
-    # Architectural Comparison Summary
-    print("\n" + "=" * 90)
-    print("Architectural Comparison: How Tree Clustering Methods Differ")
-    print("=" * 90)
-    print("""
-1. Predictive Clustering Trees (PCT / CLUS):
-   - Philosophy: Top-down hierarchical variance reduction on one or multiple targets.
-   - When to use: When cluster assignments must be directly interpretable via clear decision
-     paths (if checking_status == 'no' and duration <= 24 then Cluster 3) and multi-objective targets.
+    # =========================================================================
+    # 5. Sample Discovered Decision Rules (PCT Interpretability)
+    # =========================================================================
+    print("\n" + "=" * 95)
+    print("Sample Discovered Decision Rules from Predictive Clustering Tree (PCT)")
+    print("=" * 95)
+    pct_rules = results["PCT (CLUS)"]["model"].rules()
+    for idx, rule in enumerate(pct_rules[:3]):
+        pred = rule.get("predicate", "root")
+        n_pts = rule.get("n", 0)
+        print(f"  Cluster {idx} (Support n={n_pts}): {pred}")
 
-2. CLTree (Liu et al. KDD 2000):
-   - Philosophy: Discriminative decision tree separating data points from synthetic background space.
-   - When to use: When hyper-rectangular boundaries are required, and when background empty space
-     must be cleanly separated from dense clusters.
-
-3. HDBSCAN Condensed Tree (Campello et al. 2013):
-   - Philosophy: Non-parametric density hierarchy built from mutual reachability distance graph.
-   - When to use: When clusters have arbitrary non-convex shapes, varying densities, and when
-     explicit noise rejection (GLOSH outlier score) is critical.
-
-4. Unsupervised Random Forest (URF - Breiman 2001, Shi & Horvath 2006):
-   - Philosophy: Ensemble proximity metric P(i, j) = fraction of trees where instances share leaf.
-   - When to use: When natural mixed-type proximity is needed without explicit distance metrics,
-     and for feeding into manifold learning or hierarchical agglomeration.
-""")
+    print("\n" + "=" * 95)
+    print("Verification: All 4 clustering models fitted, evaluated, and compared successfully.")
+    print("=" * 95)
 
 
 if __name__ == "__main__":

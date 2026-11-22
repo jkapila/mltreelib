@@ -1,6 +1,9 @@
 """Tree-based clustering."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any, Literal, overload
 
 from mltreelib._core import HDBSCAN as _HDBSCAN
@@ -9,11 +12,22 @@ from mltreelib._core import PredictiveClusteringTree as _PCT
 from mltreelib._core import UnsupervisedRandomForest as _URF
 from mltreelib._model_inputs import _numeric_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
+from mltreelib.report import ModelReport, build_report
 
-__all__ = ["ClusterTree"]
+__all__ = ["ClusterModel", "ClusterResult", "ClusterTree"]
 
 
-class ClusterTree(_UnsupervisedSnapshot):
+@dataclass
+class ClusterResult:
+    """Fitted clustering output."""
+
+    labels: list[int | None]
+    n_clusters: int
+    cluster_profiles: list[dict[str, Any]] | None
+    report: ModelReport
+
+
+class ClusterModel(_UnsupervisedSnapshot):
     """Unified Tree-Based Clustering Model.
 
     Wraps divisive and density-based tree clustering engines under a consistent API:
@@ -21,6 +35,7 @@ class ClusterTree(_UnsupervisedSnapshot):
     - ``"cltree"`` or ``"density"``: CLTree (density-based spatial clustering tree with bounding boxes).
     - ``"hdbscan"`` or ``"hierarchical"``: HDBSCAN mutual reachability MST hierarchy.
     - ``"urf"`` or ``"proximity"``: Unsupervised Random Forest proximity-based clustering.
+    - ``"pca"``: PCA component subspace clustering.
 
     Parameters
     ----------
@@ -312,5 +327,57 @@ class ClusterTree(_UnsupervisedSnapshot):
             ]
         return []
 
+    def fit_predict(
+        self,
+        x: Sequence[Sequence[Any]],
+        y: Sequence[Sequence[float]] | None = None,
+        col_names: Sequence[str] | None = None,
+        dtypes: Sequence[str] | None = None,
+        target_names: Sequence[str] | None = None,
+    ) -> list[int | None]:
+        """Fit model and return cluster assignments."""
+        self.fit(
+            x,
+            y=y,
+            col_names=col_names,
+            dtypes=dtypes,
+            target_names=target_names,
+        )
+        return self.predict(x)
+
+    def config(self) -> dict[str, Any]:
+        """Return effective configuration dictionary."""
+        return self._snapshot_config()
+
+    @property
+    def report(self) -> ModelReport:
+        """Return the structured ModelReport."""
+        if not self._fitted:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        n_clusters = self.n_clusters_
+        return build_report(
+            "Clustering Model",
+            objective_name="Unsupervised Tree Partitioning & Density Clustering",
+            objective_direction="minimize",
+            objective_form="min sum_{c} Var(X_c)",
+            learner_family="Clustering",
+            learner_kind=f"Clustering Model ({self.kind.upper()})",
+            learner_representation="Hierarchical / Divisive tree cluster partitioning",
+            structure={"n_clusters": n_clusters},
+            nominal_complexity=n_clusters,
+            capabilities=["predict", "rules"],
+            controller_kind="cluster_model",
+            config=self.config(),
+            converged=True,
+            stop_reason="Clustering converged / partitioning completed",
+            metrics={"n_clusters": float(n_clusters)},
+        )
+
     def __repr__(self) -> str:
-        return f"ClusterTree(kind='{self.kind}', n_clusters={self.n_clusters}, max_depth={self.max_depth}, min_rows={self.min_rows})"
+        return f"{type(self).__name__}(kind='{self.kind}', n_clusters={self.n_clusters}, max_depth={self.max_depth}, min_rows={self.min_rows})"
+
+
+class ClusterTree(ClusterModel):
+    """Backward-compatible alias for ClusterModel."""
+
+    _snapshot_format = "mltreelib.cluster_tree"

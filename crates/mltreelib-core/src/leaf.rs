@@ -4,11 +4,11 @@
 use crate::family::LeafFamily;
 use crate::model_tree::Grower;
 use crate::node_stats::{
-    design_row, design_row_imputed, fit_glm_imputed, fit_linear, Gram, HeteroscedasticModel, LeafModel, LeafStats,
+    design_row, fit_glm_imputed, fit_linear, Gram, HeteroscedasticModel, LeafModel, LeafStats,
     LinearModel, SoftmaxModel, SurvivalStats,
 };
-use crate::solver::design::DesignMatrix;
-use crate::stats::{huber_location, w_median, w_quantile};
+use crate::solver::generic::{Bounds, Objective, ObjectiveError, SmoothObjective};
+use crate::stats::{huber_location, w_median, w_quantile, w_sd};
 
 /// Which columns a leaf's linear model may use.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -77,6 +77,324 @@ pub enum LeafSolver {
     NaturalGradient,
     /// Real-Coded Genetic Algorithm with SBX crossover and polynomial mutation.
     GeneticAlgorithm,
+}
+
+/// Optimization problem declared by a leaf kind and response family.
+///
+/// Closed-form and internally fitted leaves still declare their path. This
+/// keeps leaf construction independent from solver identity while making the
+/// fitted objective visible in persisted models.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum LeafProblemType {
+    /// Missing diagnostic from snapshots written before problem diagnostics.
+    #[default]
+    Unknown,
+    /// Penalized GLM deviance over an intercept and feature coefficients.
+    PenalizedGlm(LeafFamily),
+    /// Weighted absolute-deviation location objective.
+    WeightedMedian(LeafFamily),
+    /// Weighted quantile check-loss objective.
+    WeightedQuantile {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        tau: f64,
+    },
+    /// Weighted Huber M-location objective.
+    HuberLocation(LeafFamily),
+    /// Weighted mean computed without optimization.
+    ClosedFormMean(LeafFamily),
+    /// Probability, odds, or log-odds transform of the fitted mean.
+    ClosedFormMeanTransform(LeafFamily),
+    /// MARS basis expansion with internal fitting.
+    InternalMars(LeafFamily),
+    /// Neighbor index with distance-weighted response.
+    Knn(LeafFamily),
+    /// Multiclass GLM with internally fitted class models.
+    MulticlassGlm(LeafFamily),
+    /// Survival model with internal fitting.
+    Survival(LeafFamily),
+    /// Heteroscedastic location-scale model with internal fitting.
+    Heteroscedastic(LeafFamily),
+    /// Accelerated failure-time model with internal fitting.
+    Aft(LeafFamily),
+    /// Mixture cure-rate model with internal fitting.
+    Cure(LeafFamily),
+    /// Restricted cubic spline model with internal fitting.
+    Spline(LeafFamily),
+}
+
+impl LeafProblemType {
+    /// Resolves the declared problem for one leaf kind and response family.
+    pub fn for_leaf(leaf: LeafKind, family: LeafFamily) -> Self {
+        match leaf {
+            LeafKind::Linear => match family {
+                LeafFamily::Softmax => Self::MulticlassGlm(family),
+                LeafFamily::Survival => Self::Survival(family),
+                LeafFamily::Heteroscedastic => Self::Heteroscedastic(family),
+                LeafFamily::Aft => Self::Aft(family),
+                LeafFamily::Cure => Self::Cure(family),
+                LeafFamily::Spline => Self::Spline(family),
+                _ => Self::PenalizedGlm(family),
+            },
+            LeafKind::Median => Self::WeightedMedian(family),
+            LeafKind::Quantile(tau) => Self::WeightedQuantile { family, tau },
+            LeafKind::Huber => Self::HuberLocation(family),
+            LeafKind::Mean => Self::ClosedFormMean(family),
+            LeafKind::Prob | LeafKind::Odds | LeafKind::LogOdds => {
+                Self::ClosedFormMeanTransform(family)
+            }
+            LeafKind::Mars => Self::InternalMars(family),
+            LeafKind::Knn => Self::Knn(family),
+        }
+    }
+}
+
+/// Diagnostic naming what happened to the requested leaf solver.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum LeafSolverDiagnostic {
+    /// Missing diagnostic from snapshots written before solver diagnostics.
+    #[default]
+    Unknown,
+    /// Requested solver fitted the optimization problem.
+    Applied(LeafSolver),
+    /// Solver selection does not apply to this closed-form or internal path.
+    NotApplicable(LeafSolver),
+    /// Compatibility lookup rejected the solver before fitting.
+    Rejected { solver: LeafSolver, reason: String },
+    /// Compatible solver failed during fitting.
+    Failed { solver: LeafSolver, reason: String },
+}
+
+/// Smooth Huber location objective exposed through the generic solver seam.
+#[derive(Clone, Debug)]
+pub struct LeafHuberObjective {
+    values: Vec<f64>,
+    weights: Vec<f64>,
+    delta: f64,
+    bounds: Bounds,
+}
+
+impl LeafHuberObjective {
+    /// Builds a weighted Huber objective.
+    pub fn new(values: Vec<f64>, weights: Vec<f64>, delta: f64) -> Result<Self, String> {
+        if values.len() != weights.len() {
+            return Err("Huber objective values and weights must have equal length".into());
+        }
+        if !delta.is_finite() || delta <= 0.0 {
+            return Err("Huber delta must be finite and positive".into());
+        }
+        if values.iter().any(|v| !v.is_finite()) || weights.iter().any(|w| !w.is_finite()) {
+            return Err("Huber objective values and weights must be finite".into());
+        }
+        let bounds = location_bounds(&values)?;
+        Ok(Self {
+            values,
+            weights,
+            delta,
+            bounds,
+        })
+    }
+
+    /// Huber transition point in response units.
+    pub fn delta(&self) -> f64 {
+        self.delta
+    }
+
+    pub(crate) fn values(&self) -> &[f64] {
+        &self.values
+    }
+
+    pub(crate) fn weights(&self) -> &[f64] {
+        &self.weights
+    }
+
+    pub(crate) fn curvature(&self, x: f64) -> f64 {
+        self.values
+            .iter()
+            .zip(&self.weights)
+            .map(|(&value, &weight)| {
+                if (value - x).abs() <= self.delta {
+                    weight
+                } else {
+                    0.0
+                }
+            })
+            .sum()
+    }
+}
+
+impl Objective for LeafHuberObjective {
+    fn dim(&self) -> usize {
+        1
+    }
+
+    fn bounds(&self) -> &Bounds {
+        &self.bounds
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        crate::solver::generic::require_dimension(1, x)?;
+        let mut total = 0.0;
+        for (&value, &weight) in self.values.iter().zip(&self.weights) {
+            let residual = (value - x[0]).abs();
+            let loss = if residual <= self.delta {
+                0.5 * residual * residual
+            } else {
+                self.delta * (residual - 0.5 * self.delta)
+            };
+            total += weight * loss;
+        }
+        crate::solver::generic::require_finite(total)
+    }
+}
+
+impl SmoothObjective for LeafHuberObjective {
+    fn gradient(&self, x: &[f64]) -> Result<Vec<f64>, ObjectiveError> {
+        crate::solver::generic::require_dimension(1, x)?;
+        let mut gradient = 0.0;
+        for (&value, &weight) in self.values.iter().zip(&self.weights) {
+            let residual = value - x[0];
+            gradient += weight * residual.clamp(-self.delta, self.delta);
+        }
+        Ok(vec![gradient])
+    }
+}
+
+/// Robust location objective exposed through the generic solver seam.
+#[derive(Clone, Debug)]
+pub enum LeafObjective {
+    /// Weighted absolute deviation.
+    WeightedMedian {
+        values: Vec<f64>,
+        weights: Vec<f64>,
+        bounds: Bounds,
+    },
+    /// Weighted quantile check loss.
+    WeightedQuantile {
+        values: Vec<f64>,
+        weights: Vec<f64>,
+        tau: f64,
+        bounds: Bounds,
+    },
+    /// Smooth Huber M-location loss.
+    Huber(LeafHuberObjective),
+}
+
+impl LeafObjective {
+    /// Builds a weighted absolute-deviation objective.
+    pub fn median(values: Vec<f64>, weights: Vec<f64>) -> Result<Self, String> {
+        validate_location_data(&values, &weights)?;
+        let bounds = location_bounds(&values)?;
+        Ok(Self::WeightedMedian {
+            values,
+            weights,
+            bounds,
+        })
+    }
+
+    /// Builds a weighted quantile objective.
+    pub fn quantile(values: Vec<f64>, weights: Vec<f64>, tau: f64) -> Result<Self, String> {
+        validate_location_data(&values, &weights)?;
+        if !tau.is_finite() || !(0.0..=1.0).contains(&tau) {
+            return Err("Quantile tau must be finite and in [0, 1]".into());
+        }
+        let bounds = location_bounds(&values)?;
+        Ok(Self::WeightedQuantile {
+            values,
+            weights,
+            tau,
+            bounds,
+        })
+    }
+
+    /// Builds a Huber objective using the library's 1.345-scaled weighted
+    /// standard-deviation transition point.
+    pub fn huber(values: Vec<f64>, weights: Vec<f64>) -> Result<Self, String> {
+        validate_location_data(&values, &weights)?;
+        let delta = (1.345
+            * w_sd(
+                &values
+                    .iter()
+                    .copied()
+                    .zip(weights.iter().copied())
+                    .collect::<Vec<_>>(),
+            ))
+        .max(1.0);
+        Ok(Self::Huber(LeafHuberObjective::new(
+            values, weights, delta,
+        )?))
+    }
+}
+
+impl Objective for LeafObjective {
+    fn dim(&self) -> usize {
+        1
+    }
+
+    fn bounds(&self) -> &Bounds {
+        match self {
+            Self::WeightedMedian { bounds, .. } | Self::WeightedQuantile { bounds, .. } => bounds,
+            Self::Huber(objective) => objective.bounds(),
+        }
+    }
+
+    fn value(&self, x: &[f64]) -> Result<f64, ObjectiveError> {
+        match self {
+            Self::WeightedMedian {
+                values, weights, ..
+            } => {
+                crate::solver::generic::require_dimension(1, x)?;
+                let total = values
+                    .iter()
+                    .zip(weights)
+                    .map(|(&value, &weight)| weight * (value - x[0]).abs())
+                    .sum::<f64>();
+                crate::solver::generic::require_finite(total)
+            }
+            Self::WeightedQuantile {
+                values,
+                weights,
+                tau,
+                ..
+            } => {
+                crate::solver::generic::require_dimension(1, x)?;
+                let total = values
+                    .iter()
+                    .zip(weights)
+                    .map(|(&value, &weight)| {
+                        let residual = value - x[0];
+                        let loss = if residual >= 0.0 {
+                            tau * residual
+                        } else {
+                            (1.0 - tau) * (-residual)
+                        };
+                        weight * loss
+                    })
+                    .sum::<f64>();
+                crate::solver::generic::require_finite(total)
+            }
+            Self::Huber(objective) => objective.value(x),
+        }
+    }
+}
+
+fn validate_location_data(values: &[f64], weights: &[f64]) -> Result<(), String> {
+    if values.is_empty() {
+        return Err("Location objective requires at least one observation".into());
+    }
+    if values.len() != weights.len() {
+        return Err("Location objective values and weights must have equal length".into());
+    }
+    if values.iter().any(|v| !v.is_finite()) || weights.iter().any(|w| !w.is_finite()) {
+        return Err("Location objective values and weights must be finite".into());
+    }
+    Ok(())
+}
+
+fn location_bounds(values: &[f64]) -> Result<Bounds, String> {
+    let lower = values.iter().copied().fold(f64::INFINITY, f64::min);
+    let upper = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    Bounds::new(vec![lower], vec![upper])
 }
 
 /// Parameter controls for fitting leaf models independently of tree topology.
@@ -279,26 +597,16 @@ impl crate::model_tree::ModelTreeParams {
 impl LeafControl {
     /// Check that an explicitly selected optimizer applies to this leaf.
     pub fn validate_solver(&self) -> Result<(), String> {
-        let family_supported = match self.family {
-            LeafFamily::Gaussian => true,
-            LeafFamily::Binomial | LeafFamily::Probit | LeafFamily::Poisson
-            | LeafFamily::Gamma | LeafFamily::Tweedie | LeafFamily::Tobit => {
-                matches!(self.solver, LeafSolver::Irls | LeafSolver::Lbfgs)
-            }
-            _ => false,
-        };
-        if self.leaf != LeafKind::Linear || !family_supported {
-            return Err(format!(
-                "Solver {:?} does not support {:?} leaves with the {:?} family",
-                self.solver, self.leaf, self.family
-            ));
-        }
-        if self.solver == LeafSolver::Lbfgs
-            && (self.l1 != 0.0 || self.effective_leaf_monotone().iter().any(|&sign| sign != 0))
-        {
-            return Err("L-BFGS requires zero L1 penalty and no monotone leaf constraints".into());
-        }
-        Ok(())
+        crate::solver::check_leaf_solver_compatibility(
+            self.leaf,
+            self.family,
+            self.solver,
+            crate::solver::LeafSolverRequirements {
+                l1: self.l1 != 0.0,
+                monotone: self.effective_leaf_monotone().iter().any(|&sign| sign != 0),
+            },
+        )
+        .map(|_| ())
     }
 
     pub fn new() -> Self {
@@ -415,7 +723,6 @@ pub(crate) struct LeafDesignContext {
     pub rows: Vec<usize>,
     pub impute_means: Option<Vec<f64>>,
     pub with_indicators: bool,
-    pub dim: usize,
     pub valid: bool,
 }
 
@@ -427,14 +734,18 @@ pub(crate) fn prepare_leaf_design(
     active: &[usize],
     control: &LeafControl,
 ) -> LeafDesignContext {
-    let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+    let chosen = chosen_cols_policy(
+        control.leaf_cols,
+        control.leaf_features.as_deref(),
+        active,
+        path,
+    );
     if chosen.is_empty() {
         return LeafDesignContext {
             chosen,
             rows: rows.to_vec(),
             impute_means: None,
             with_indicators: false,
-            dim: 1,
             valid: false,
         };
     }
@@ -445,14 +756,12 @@ pub(crate) fn prepare_leaf_design(
                 .copied()
                 .filter(|&r| chosen.iter().all(|&c| cols[c][r].is_some()))
                 .collect();
-            let dim = 1 + chosen.len();
             if complete_rows.is_empty() || complete_rows.len() < chosen.len() + 1 {
                 LeafDesignContext {
                     chosen,
                     rows: rows.to_vec(),
                     impute_means: None,
                     with_indicators: false,
-                    dim,
                     valid: false,
                 }
             } else {
@@ -461,7 +770,6 @@ pub(crate) fn prepare_leaf_design(
                     rows: complete_rows,
                     impute_means: None,
                     with_indicators: false,
-                    dim,
                     valid: true,
                 }
             }
@@ -485,7 +793,10 @@ pub(crate) fn prepare_leaf_design(
                     valid_chosen.push(c);
                     means.push(sum / count);
                 } else if control.verbose >= 1 {
-                    eprintln!("Leaf: column {} is 100% NA in this node; dropped from leaf linear model", c);
+                    eprintln!(
+                        "Leaf: column {} is 100% NA in this node; dropped from leaf linear model",
+                        c
+                    );
                 }
             }
             if valid_chosen.is_empty() {
@@ -494,29 +805,25 @@ pub(crate) fn prepare_leaf_design(
                     rows: rows.to_vec(),
                     impute_means: None,
                     with_indicators: false,
-                    dim: 1,
                     valid: false,
                 }
             } else {
-                let dim = 1 + valid_chosen.len();
                 LeafDesignContext {
                     chosen: valid_chosen,
                     rows: rows.to_vec(),
                     impute_means: Some(means),
                     with_indicators: false,
-                    dim,
                     valid: true,
                 }
             }
         }
         LeafNaPolicy::Indicator => {
-            let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
+            let (any_missing, _) = compute_leaf_design(cols, rows, &chosen);
             LeafDesignContext {
                 chosen,
                 rows: rows.to_vec(),
                 impute_means: None,
                 with_indicators: any_missing,
-                dim,
                 valid: true,
             }
         }
@@ -564,8 +871,16 @@ pub fn fit_leaf_model(
                 swy_control += wt * y_val;
             }
         }
-        let mean_treated = if w_treated > 0.0 { swy_treated / w_treated } else { 0.0 };
-        let mean_control = if w_control > 0.0 { swy_control / w_control } else { 0.0 };
+        let mean_treated = if w_treated > 0.0 {
+            swy_treated / w_treated
+        } else {
+            0.0
+        };
+        let mean_control = if w_control > 0.0 {
+            swy_control / w_control
+        } else {
+            0.0
+        };
         let tau = mean_treated - mean_control;
         Some(crate::node_stats::CausalStats {
             tau,
@@ -580,6 +895,19 @@ pub fn fit_leaf_model(
         None
     };
     let family = control.family;
+    let leaf_problem_type = LeafProblemType::for_leaf(control.leaf, family);
+    let mut solver_used = crate::solver::leaf_solver_diagnostic(
+        control.leaf,
+        family,
+        control.solver,
+        crate::solver::LeafSolverRequirements {
+            l1: control.l1 != 0.0,
+            monotone: control
+                .effective_leaf_monotone()
+                .iter()
+                .any(|&sign| sign != 0),
+        },
+    );
     if family == LeafFamily::Softmax {
         let n_classes = control.n_classes.unwrap_or_else(|| {
             rows.iter()
@@ -640,13 +968,18 @@ pub fn fit_leaf_model(
                         Some(&control.extra),
                         control.verbose,
                     );
-                    let f_means = design_ctx.impute_means
+                    let f_means = design_ctx
+                        .impute_means
                         .as_ref()
                         .map(|m| m.iter().map(|&v| Some(v)).collect())
                         .unwrap_or_default();
                     let lm = fitted.unwrap_or_else(|| LinearModel {
                         coef: vec![0.0; design_ctx.chosen.len()],
-                        na_coef: if design_ctx.with_indicators { vec![0.0; design_ctx.chosen.len()] } else { Vec::new() },
+                        na_coef: if design_ctx.with_indicators {
+                            vec![0.0; design_ctx.chosen.len()]
+                        } else {
+                            Vec::new()
+                        },
                         feature_means: f_means,
                         cols: design_ctx.chosen.clone(),
                         intercept: mean_c.ln() - (1.0 - mean_c).ln(),
@@ -683,10 +1016,16 @@ pub fn fit_leaf_model(
             knn: None,
             knn_cols: None,
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
 
-    if family == LeafFamily::Survival || family == LeafFamily::Aft || family == LeafFamily::Cure || family == LeafFamily::Spline {
+    if family == LeafFamily::Survival
+        || family == LeafFamily::Aft
+        || family == LeafFamily::Cure
+        || family == LeafFamily::Spline
+    {
         let events = control.events.as_ref();
         let mut records: Vec<(f64, f64, f64)> = rows
             .iter()
@@ -701,8 +1040,7 @@ pub fn fit_leaf_model(
         let mut distinct_event_times: Vec<f64> = Vec::new();
         for &(t, e, _) in &records {
             if e > 0.0
-                && (distinct_event_times.is_empty()
-                    || *distinct_event_times.last().unwrap() < t)
+                && (distinct_event_times.is_empty() || *distinct_event_times.last().unwrap() < t)
             {
                 distinct_event_times.push(t);
             }
@@ -719,7 +1057,8 @@ pub fn fit_leaf_model(
 
         let mut cum_hazard = Vec::with_capacity(distinct_event_times.len());
         let mut survival = Vec::with_capacity(distinct_event_times.len());
-        let mut cif: Vec<Vec<f64>> = vec![Vec::with_capacity(distinct_event_times.len()); causes.len()];
+        let mut cif: Vec<Vec<f64>> =
+            vec![Vec::with_capacity(distinct_event_times.len()); causes.len()];
         let mut cur_cif: Vec<f64> = vec![0.0; causes.len()];
         let mut current_h = 0.0;
         let mut current_s = 1.0;
@@ -767,7 +1106,10 @@ pub fn fit_leaf_model(
 
         let mut event_counts = vec![0usize; causes.len()];
         for (c_idx, &c) in causes.iter().enumerate() {
-            event_counts[c_idx] = records.iter().filter(|&&(_, e, _)| (e.round() as usize) == c).count();
+            event_counts[c_idx] = records
+                .iter()
+                .filter(|&&(_, e, _)| (e.round() as usize) == c)
+                .count();
         }
 
         let surv_stats = SurvivalStats {
@@ -784,7 +1126,12 @@ pub fn fit_leaf_model(
         let mut aft = None;
         if family == LeafFamily::Aft {
             let dist = control.aft_dist;
-            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let chosen = chosen_cols_policy(
+                control.leaf_cols,
+                control.leaf_features.as_deref(),
+                active,
+                path,
+            );
             let p = chosen.len();
             let log_times: Vec<f64> = records.iter().map(|r| r.0.max(1e-6).ln()).collect();
             let mut alpha = 0.0;
@@ -828,7 +1175,11 @@ pub fn fit_leaf_model(
                 let diff = log_times[rec_idx.min(log_times.len() - 1)] - pred;
                 res_sq += w[r] * diff * diff;
             }
-            let scale = if sum_w > 0.0 { (res_sq / sum_w).sqrt().max(0.05) } else { 1.0 };
+            let scale = if sum_w > 0.0 {
+                (res_sq / sum_w).sqrt().max(0.05)
+            } else {
+                1.0
+            };
             aft = Some(crate::node_stats::AftModel {
                 dist,
                 intercept: alpha,
@@ -841,9 +1192,9 @@ pub fn fit_leaf_model(
         // 2. Mixture Cure Rate model fitting
         let mut cure = None;
         if family == LeafFamily::Cure {
-            let cure_rate = control.cure_fraction.unwrap_or_else(|| {
-                current_s.clamp(0.0, 0.99)
-            });
+            let cure_rate = control
+                .cure_fraction
+                .unwrap_or_else(|| current_s.clamp(0.0, 0.99));
             cure = Some(crate::node_stats::CureModel {
                 cure_rate,
                 aft: None,
@@ -854,7 +1205,12 @@ pub fn fit_leaf_model(
         // 3. Royston-Parmar Restricted Cubic Spline fitting
         let mut spline = None;
         if family == LeafFamily::Spline {
-            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let chosen = chosen_cols_policy(
+                control.leaf_cols,
+                control.leaf_features.as_deref(),
+                active,
+                path,
+            );
             let mut knots = Vec::new();
             if !distinct_event_times.is_empty() {
                 let n_knots = control.spline_knots.max(3);
@@ -895,12 +1251,19 @@ pub fn fit_leaf_model(
             knn: None,
             knn_cols: None,
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
 
     if family == LeafFamily::Heteroscedastic {
         let (linear, scale_linear, scale) = if control.leaf == LeafKind::Linear {
-            let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+            let chosen = chosen_cols_policy(
+                control.leaf_cols,
+                control.leaf_features.as_deref(),
+                active,
+                path,
+            );
             let (any_missing, dim) = compute_leaf_design(cols, rows, &chosen);
             let mut g = Gram::new(dim);
             let mut row = vec![0.0; dim];
@@ -944,7 +1307,11 @@ pub fn fit_leaf_model(
             // E[ln(e_i^2)] = ln(sigma_i^2) + E[ln(chi_1^2)] where E[ln(chi_1^2)] = -1.2703628.
             // Adding 1.2703628 to the intercept makes exp(0.5 * z'gamma) unbiased for sigma.
             s_model.intercept += 1.2703628;
-            let raw_scale = if sw > 0.0 { (s_res2 / sw).sqrt().max(1e-6) } else { 1.0 };
+            let raw_scale = if sw > 0.0 {
+                (s_res2 / sw).sqrt().max(1e-6)
+            } else {
+                1.0
+            };
             (Some(loc_model), Some(s_model), raw_scale)
         } else {
             let mut sw = 0.0;
@@ -955,7 +1322,11 @@ pub fn fit_leaf_model(
                     s_res2 += w[r] * (y[r] - stats.mean).powi(2);
                 }
             }
-            let raw_scale = if sw > 0.0 { (s_res2 / sw).sqrt().max(1e-6) } else { stats.std.max(1e-6) };
+            let raw_scale = if sw > 0.0 {
+                (s_res2 / sw).sqrt().max(1e-6)
+            } else {
+                stats.std.max(1e-6)
+            };
             (None, None, raw_scale)
         };
 
@@ -980,11 +1351,18 @@ pub fn fit_leaf_model(
             knn: None,
             knn_cols: None,
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
 
     if control.leaf == LeafKind::Mars {
-        let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+        let chosen = chosen_cols_policy(
+            control.leaf_cols,
+            control.leaf_features.as_deref(),
+            active,
+            path,
+        );
         let mut x_mat: Vec<Vec<f64>> = Vec::with_capacity(rows.len());
         let mut y_vec: Vec<f64> = Vec::with_capacity(rows.len());
         let mut w_vec: Vec<f64> = Vec::with_capacity(rows.len());
@@ -997,9 +1375,21 @@ pub fn fit_leaf_model(
             y_vec.push(y[r]);
             w_vec.push(w[r]);
         }
-        let mars_degree = control.extra.get("mars_degree").map(|&d| d as usize).unwrap_or(control.mars_degree);
-        let mars_terms = control.extra.get("mars_terms").map(|&t| t as usize).unwrap_or(control.mars_terms);
-        let mars_penalty = control.extra.get("mars_penalty").copied().unwrap_or(control.mars_penalty);
+        let mars_degree = control
+            .extra
+            .get("mars_degree")
+            .map(|&d| d as usize)
+            .unwrap_or(control.mars_degree);
+        let mars_terms = control
+            .extra
+            .get("mars_terms")
+            .map(|&t| t as usize)
+            .unwrap_or(control.mars_terms);
+        let mars_penalty = control
+            .extra
+            .get("mars_penalty")
+            .copied()
+            .unwrap_or(control.mars_penalty);
         let mut reg = crate::mars::MarsRegressor::new(mars_degree, mars_terms, mars_penalty);
         if family == LeafFamily::Binomial {
             reg.params.glm = crate::mars::MarsGlmFamily::Binomial;
@@ -1024,11 +1414,18 @@ pub fn fit_leaf_model(
             knn: None,
             knn_cols: None,
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
 
     if control.leaf == LeafKind::Knn {
-        let chosen = chosen_cols_policy(control.leaf_cols, control.leaf_features.as_deref(), active, path);
+        let chosen = chosen_cols_policy(
+            control.leaf_cols,
+            control.leaf_features.as_deref(),
+            active,
+            path,
+        );
         let n_classes = control.n_classes.unwrap_or(2);
         let knn_model = crate::knn::LeafKnnModel::fit(
             cols,
@@ -1062,13 +1459,17 @@ pub fn fit_leaf_model(
             knn: Some(knn_model),
             knn_cols: Some(chosen),
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
 
     if family != LeafFamily::Gaussian
         && (control.leaf == LeafKind::Mean
-            || ((family == LeafFamily::Binomial || family == LeafFamily::Probit) && (stats.mean == 0.0 || stats.mean == 1.0))
-            || ((family == LeafFamily::Poisson || family == LeafFamily::Tweedie) && stats.mean == 0.0)
+            || ((family == LeafFamily::Binomial || family == LeafFamily::Probit)
+                && (stats.mean == 0.0 || stats.mean == 1.0))
+            || ((family == LeafFamily::Poisson || family == LeafFamily::Tweedie)
+                && stats.mean == 0.0)
             || (family == LeafFamily::Tobit && stats.mean <= 0.0))
     {
         return LeafModel {
@@ -1088,6 +1489,8 @@ pub fn fit_leaf_model(
             knn: None,
             knn_cols: None,
             vector_mean: None,
+            solver_used: solver_used.clone(),
+            leaf_problem_type: leaf_problem_type.clone(),
         };
     }
     let linear = if control.leaf == LeafKind::Linear {
@@ -1098,232 +1501,67 @@ pub fn fit_leaf_model(
             let chosen = design_ctx.chosen;
             let actual_rows = design_ctx.rows;
             let any_missing = design_ctx.with_indicators;
-            let dim = design_ctx.dim;
             let impute_means = design_ctx.impute_means;
             let f_means: Vec<Option<f64>> = impute_means
                 .as_ref()
                 .map(|m| m.iter().map(|&v| Some(v)).collect())
                 .unwrap_or_default();
-            let use_lbfgs = control.solver == LeafSolver::Lbfgs
-                    && control.l1 == 0.0
-                    && !control.effective_leaf_monotone().iter().any(|&sign| sign != 0);
-            let lm = if family != LeafFamily::Gaussian || use_lbfgs {
-                let fitted = if use_lbfgs {
-                    let glm_fam = match family {
-                        LeafFamily::Gaussian => Some(crate::solver::GlmFamily::Gaussian),
-                        LeafFamily::Binomial => Some(crate::solver::GlmFamily::Binomial),
-                        LeafFamily::Probit => Some(crate::solver::GlmFamily::Probit),
-                        LeafFamily::Poisson => Some(crate::solver::GlmFamily::Poisson),
-                        LeafFamily::Gamma => Some(crate::solver::GlmFamily::Gamma),
-                        LeafFamily::Tweedie => {
-                            let p = control.extra.get("tweedie_p").copied().unwrap_or(control.tweedie_p);
-                            Some(crate::solver::GlmFamily::Tweedie { p })
-                        }
-                        LeafFamily::Tobit => {
-                            let threshold = control.extra.get("tobit_threshold").copied().unwrap_or(control.tobit_threshold);
-                            Some(crate::solver::GlmFamily::Tobit { threshold })
-                        }
-                        _ => None,
-                    };
-                    if let Some(g_fam) = glm_fam {
-                        let view = crate::solver::design::ColumnSliceView::new_with_imputation(
-                            cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
-                        );
-                        let opts = crate::solver::lbfgs::LbfgsOptions {
-                            family: g_fam,
-                            l2: control.l2,
-                            max_iter: 250,
-                            m: 6,
-                            tol: 1e-9,
-                            verbose: control.verbose,
-                        };
-                        match crate::solver::lbfgs::solve_lbfgs(&view, &opts, None) {
-                            Ok(sol) => {
-                                if sol.iter().all(|b| b.is_finite()) {
-                                    let mut finite_fit = true;
-                                    for i in 0..view.n_rows() {
-                                        if !view.eval_row(i, &sol).is_finite() {
-                                            finite_fit = false;
-                                            break;
-                                        }
-                                    }
-                                    if finite_fit {
-                                        let nc = chosen.len();
-                                        Some(LinearModel {
-                                            cols: chosen.clone(),
-                                            coef: sol[1..1 + nc].to_vec(),
-                                            na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
-                                            feature_means: f_means.clone(),
-                                            intercept: sol[0],
-                                            summary: None,
-                                        })
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                }
-                            }
-                            Err(_) => None,
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    fit_glm_imputed(
-                        cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
-                        control.effective_leaf_monotone(), control.l1, control.l2,
-                        family, stats.mean,
-                        Some(&control.extra),
-                        control.verbose,
-                    )
-                };
-                // The tree fit rejects nonfinite final models; scans reject
-                // their loss. A failed GLM must never masquerade as a mean fit.
-                let linear = fitted.unwrap_or_else(|| LinearModel {
-                    coef: vec![0.0; chosen.len()],
-                    na_coef: if any_missing { vec![0.0; chosen.len()] } else { Vec::new() },
-                    feature_means: f_means.clone(),
-                    cols: chosen,
-                    intercept: f64::NAN,
-                    summary: None,
-                });
-                return LeafModel {
-                    center: Some(stats.mean),
-                    stats,
-                    linear: Some(linear),
+            let lm = match crate::solver::solve_leaf_problem(
+                &crate::solver::LeafFitProblem::Linear(crate::solver::LeafLinearProblem {
+                    cols,
+                    y,
+                    w,
+                    rows: &actual_rows,
+                    chosen: &chosen,
+                    with_indicators: any_missing,
+                    impute_means: impute_means.as_deref(),
                     family,
-                    softmax: None,
-                    survival: None,
-                    heteroscedastic: None,
-                    causal,
-                    aft: None,
-                    cure: None,
-                    spline: None,
-                    mars: None,
-                    mars_cols: None,
-                    knn: None,
-                    knn_cols: None,
-                    vector_mean: None,
-                };
-            } else if control.solver == LeafSolver::Ccd {
-                let view = crate::solver::design::ColumnSliceView::new_with_imputation(
-                    cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
-                );
-                let opts = crate::solver::ccd::CcdOptions {
+                    solver: control.solver,
                     l1: control.l1,
                     l2: control.l2,
-                    max_iter: 1000,
-                    tol: 1e-7,
-                    monotone: control.effective_leaf_monotone().to_vec(),
-                };
-                match crate::solver::ccd::solve_ccd(&view, &opts, None) {
-                    Ok(sol) => {
-                        let nc = chosen.len();
-                        LinearModel {
-                            cols: chosen.clone(),
-                            coef: sol[1..1 + nc].to_vec(),
-                            na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
-                            feature_means: f_means.clone(),
-                            intercept: sol[0],
-                            summary: None,
-                        }
-                    }
-                    Err(_) => {
-                        LinearModel {
-                            cols: chosen.clone(),
-                            coef: vec![0.0; dim.saturating_sub(1)],
-                            na_coef: Vec::new(),
-                            feature_means: f_means.clone(),
-                            intercept: stats.mean,
-                            summary: None,
-                        }
-                    }
-                }
-            } else if matches!(
-                control.solver,
-                LeafSolver::CmaEs | LeafSolver::Shade | LeafSolver::NaturalGradient | LeafSolver::GeneticAlgorithm
-            ) {
-                let evo_kind = match control.solver {
-                    LeafSolver::CmaEs => crate::solver::EvolutionaryKind::CmaEs,
-                    LeafSolver::Shade => crate::solver::EvolutionaryKind::Shade,
-                    LeafSolver::NaturalGradient => crate::solver::EvolutionaryKind::NaturalGradient,
-                    LeafSolver::GeneticAlgorithm => crate::solver::EvolutionaryKind::GeneticAlgorithm,
-                    _ => unreachable!(),
-                };
-                let glm_fam = match family {
-                    LeafFamily::Gaussian => crate::solver::GlmFamily::Gaussian,
-                    LeafFamily::Binomial => crate::solver::GlmFamily::Binomial,
-                    LeafFamily::Poisson => crate::solver::GlmFamily::Poisson,
-                    LeafFamily::Probit => crate::solver::GlmFamily::Probit,
-                    LeafFamily::Gamma => crate::solver::GlmFamily::Gamma,
-                    LeafFamily::Tweedie => {
-                        let p = control.extra.get("tweedie_p").copied().unwrap_or(control.tweedie_p);
-                        crate::solver::GlmFamily::Tweedie { p }
-                    }
-                    LeafFamily::Tobit => {
-                        let threshold = control.extra.get("tobit_threshold").copied().unwrap_or(control.tobit_threshold);
-                        crate::solver::GlmFamily::Tobit { threshold }
-                    }
-                    _ => crate::solver::GlmFamily::Gaussian,
-                };
-                let view = crate::solver::design::ColumnSliceView::new_with_imputation(
-                    cols, y, w, &actual_rows, &chosen, any_missing, impute_means.as_deref(),
-                );
-                let opts = crate::solver::EvolutionaryOptions {
-                    kind: evo_kind,
-                    family: glm_fam,
-                    l1: control.l1,
-                    l2: control.l2,
-                    monotone: control.effective_leaf_monotone().to_vec(),
-                    population_size: None,
-                    max_generations: 100,
-                    tol: 1e-6,
-                    seed: 42,
+                    monotone: control.effective_leaf_monotone(),
+                    mean: stats.mean,
+                    extra: Some(&control.extra),
+                    tweedie_p: control.tweedie_p,
+                    tobit_threshold: control.tobit_threshold,
                     verbose: control.verbose,
-                };
-                match crate::solver::solve_evolutionary(&view, &opts, None) {
-                    Ok(sol) => {
-                        let nc = chosen.len();
-                        LinearModel {
-                            cols: chosen.clone(),
-                            coef: sol[1..1 + nc].to_vec(),
-                            na_coef: if any_missing { sol[1 + nc..].to_vec() } else { Vec::new() },
-                            feature_means: f_means.clone(),
-                            intercept: sol[0],
-                            summary: None,
-                        }
+                }),
+            ) {
+                Ok(output) => {
+                    solver_used = output.diagnostic;
+                    output.linear.unwrap_or(LinearModel {
+                        coef: vec![0.0; chosen.len()],
+                        na_coef: if any_missing {
+                            vec![0.0; chosen.len()]
+                        } else {
+                            Vec::new()
+                        },
+                        feature_means: f_means.clone(),
+                        cols: chosen.clone(),
+                        intercept: f64::NAN,
+                        summary: None,
+                    })
+                }
+                Err(reason) => {
+                    if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) {
+                        solver_used = LeafSolverDiagnostic::Failed {
+                            solver: control.solver,
+                            reason: reason.clone(),
+                        };
                     }
-                    Err(_) => {
-                        LinearModel {
-                            cols: chosen.clone(),
-                            coef: vec![0.0; dim.saturating_sub(1)],
-                            na_coef: Vec::new(),
-                            feature_means: f_means.clone(),
-                            intercept: stats.mean,
-                            summary: None,
-                        }
+                    LinearModel {
+                        coef: vec![0.0; chosen.len()],
+                        na_coef: if any_missing {
+                            vec![0.0; chosen.len()]
+                        } else {
+                            Vec::new()
+                        },
+                        feature_means: f_means.clone(),
+                        cols: chosen.clone(),
+                        intercept: f64::NAN,
+                        summary: None,
                     }
                 }
-            } else {
-                let mut g = Gram::new(dim);
-                let mut row = vec![0.0; dim];
-                for &r in &actual_rows {
-                    design_row_imputed(&mut row, cols, r, &chosen, any_missing, impute_means.as_deref());
-                    g.add_row(&row, y[r], w[r]);
-                }
-                let mut model = fit_linear(
-                    &g,
-                    &chosen,
-                    any_missing,
-                    control.effective_leaf_monotone(),
-                    control.l1,
-                    control.l2,
-                );
-                if let Some(means) = &impute_means {
-                    model.feature_means = means.iter().map(|&m| Some(m)).collect();
-                }
-                model
             };
             if control.verbose >= 3 {
                 println!(
@@ -1343,17 +1581,65 @@ pub fn fit_leaf_model(
     // Non-mean constant leaves: fit the center on the positive-weight
     // targets only (same population as the stats).
     let yws: Vec<(f64, f64)> = if matches!(
-        control.leaf, LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
+        control.leaf,
+        LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
     ) {
-        rows.iter().filter(|&&r| w[r] > 0.0)
-            .map(|&r| (y[r], w[r])).collect()
+        rows.iter()
+            .filter(|&&r| w[r] > 0.0)
+            .map(|&r| (y[r], w[r]))
+            .collect()
     } else {
         Vec::new()
     };
     let center = match control.leaf {
-        LeafKind::Median => Some(w_median(&yws)),
-        LeafKind::Quantile(t) => Some(w_quantile(&yws, t)),
-        LeafKind::Huber => Some(huber_location(&yws)),
+        LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber => {
+            let values = yws.iter().map(|&(value, _)| value).collect::<Vec<_>>();
+            let weights = yws.iter().map(|&(_, weight)| weight).collect::<Vec<_>>();
+            let objective = match control.leaf {
+                LeafKind::Median => LeafObjective::median(values, weights),
+                LeafKind::Quantile(tau) => LeafObjective::quantile(values, weights, tau),
+                LeafKind::Huber => LeafObjective::huber(values, weights),
+                _ => unreachable!(),
+            };
+            let analytic = match control.leaf {
+                LeafKind::Median => w_median(&yws),
+                LeafKind::Quantile(tau) => w_quantile(&yws, tau),
+                LeafKind::Huber => huber_location(&yws),
+                _ => unreachable!(),
+            };
+            match objective {
+                Ok(objective) if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) => {
+                    match crate::solver::solve_leaf_problem(
+                        &crate::solver::LeafFitProblem::Location {
+                            solver: control.solver,
+                            objective,
+                            max_iter: 1000,
+                            tol: 1e-9,
+                        },
+                    ) {
+                        Ok(output) => {
+                            solver_used = output.diagnostic;
+                            output.center
+                        }
+                        Err(reason) => {
+                            solver_used = LeafSolverDiagnostic::Failed {
+                                solver: control.solver,
+                                reason,
+                            };
+                            Some(analytic)
+                        }
+                    }
+                }
+                Ok(_) => Some(analytic),
+                Err(reason) => {
+                    solver_used = LeafSolverDiagnostic::Failed {
+                        solver: control.solver,
+                        reason,
+                    };
+                    Some(analytic)
+                }
+            }
+        }
         LeafKind::Prob => Some(stats.prob()),
         LeafKind::Odds => Some(stats.odds()),
         LeafKind::LogOdds => Some(stats.log_odds()),
@@ -1376,6 +1662,8 @@ pub fn fit_leaf_model(
         knn: None,
         knn_cols: None,
         vector_mean: None,
+        solver_used: solver_used.clone(),
+        leaf_problem_type: leaf_problem_type.clone(),
     }
 }
 
@@ -1470,7 +1758,9 @@ impl<'a> Grower<'a> {
             if self.w[r] <= 0.0 {
                 continue;
             }
-            let loss = leaf.family.deviance(self.y[r], leaf.predict_columns(self.cols, r));
+            let loss = leaf
+                .family
+                .deviance(self.y[r], leaf.predict_columns(self.cols, r));
             if !loss.is_finite() {
                 return loss;
             }

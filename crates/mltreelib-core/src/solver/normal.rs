@@ -1,4 +1,4 @@
-//! Direct Cholesky and QR Normal Equations Solver.
+//! Direct Cholesky and rank-revealing Normal Equations Solver.
 //!
 //! High-speed exact solver for OLS and Ridge regression ($D \le 100$).
 //! Produces exact parameter covariance $(X^T W X)^{-1}$ and hypothesis testing metrics.
@@ -7,7 +7,7 @@ use crate::solver::design::DesignMatrix;
 use crate::solver::summary::{CoeffStats, GlmSummary};
 use faer::prelude::Solve;
 
-/// Fits OLS or Ridge linear regression using exact Cholesky decomposition with QR fallback.
+/// Fits OLS or Ridge linear regression using exact Cholesky decomposition with rank-revealing fallback.
 pub fn solve_normal<D: DesignMatrix>(
     design: &D,
     l2: f64,
@@ -49,17 +49,22 @@ pub fn solve_normal<D: DesignMatrix>(
             (sol_vec, Some(inv))
         }
         Err(_) => {
-            // Rank-deficient or near-singular: fall back to complete orthogonal decomposition / QR
-            use faer::linalg::solvers::DenseSolveCore;
-            let lu = m.as_ref().partial_piv_lu();
-            let x = lu.solve(rhs.as_ref());
-            let sol_vec: Vec<f64> = (0..p).map(|i| x[(i, 0)]).collect();
-            let inv = lu.inverse();
-            (sol_vec, Some(inv))
+            let mut scratch = crate::node_stats::SolveScratch::new(p);
+            crate::node_stats::solve_normal(
+                &gram.xtx,
+                &gram.xty,
+                gram.yty,
+                p,
+                0.0,
+                l2,
+                &mut scratch,
+            );
+            (scratch.coefficients().to_vec(), None)
         }
     };
 
     // Hypothesis testing & Goodness-of-fit summary
+    let n = gram.n;
     let summary = if n > p {
         if let Some(inv) = inv_opt {
             let df_residuals = n - p;
@@ -78,10 +83,11 @@ pub fn solve_normal<D: DesignMatrix>(
             let rss = (gram.yty - 2.0 * beta_xty + beta_xtx_beta).max(0.0);
             let sigma2 = (rss / (df_residuals as f64)).max(1e-12);
 
-            let y_mean = gram.wy / gram.ws.max(1.0);
+            let y_mean = gram.wy / gram.ws;
             let tss = (gram.yty - gram.ws * y_mean * y_mean).max(1e-12);
             let r_squared = (1.0 - rss / tss).clamp(0.0, 1.0);
-            let adj_r_squared = (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
+            let adj_r_squared =
+                (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
 
             let p_pred = p.saturating_sub(1);
             let f_statistic = if p_pred > 0 && rss > 1e-12 {
@@ -100,7 +106,13 @@ pub fn solve_normal<D: DesignMatrix>(
                 let p_val = GlmSummary::p_value_t(t_val, df_residuals);
                 let name = match feature_names.and_then(|names| names.get(i)) {
                     Some(s) => s.clone(),
-                    None => if i == 0 { "(Intercept)".to_string() } else { format!("x{}", i) },
+                    None => {
+                        if i == 0 {
+                            "(Intercept)".to_string()
+                        } else {
+                            format!("x{}", i)
+                        }
+                    }
                 };
                 coefficients.push(CoeffStats {
                     name,
@@ -118,9 +130,12 @@ pub fn solve_normal<D: DesignMatrix>(
                 df_residual: df_residuals,
                 null_deviance: tss,
                 residual_deviance: rss,
-                log_likelihood: -0.5 * (n as f64) * (2.0 * std::f64::consts::PI * sigma2).ln() - 0.5 * rss / sigma2,
-                aic: 2.0 * (p as f64) + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
-                bic: (p as f64) * (n as f64).ln() + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
+                log_likelihood: -0.5 * (n as f64) * (2.0 * std::f64::consts::PI * sigma2).ln()
+                    - 0.5 * rss / sigma2,
+                aic: 2.0 * (p as f64)
+                    + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
+                bic: (p as f64) * (n as f64).ln()
+                    + (n as f64) * ((2.0 * std::f64::consts::PI * rss / (n as f64)).ln() + 1.0),
                 dispersion: sigma2,
                 r_squared: Some(r_squared),
                 adj_r_squared: Some(adj_r_squared),

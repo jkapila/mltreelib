@@ -36,11 +36,11 @@ See the [changelog](CHANGELOG.md) for release history and the [release guide](RE
 
 ### R ModelTree
 
-From a v0.4.12 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
+From a v0.4.13 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
 
 ```sh
 r/build-r-package.sh dist
-R CMD INSTALL dist/mltreelib_0.4.12.tar.gz
+R CMD INSTALL dist/mltreelib_0.4.13.tar.gz
 Rscript --vanilla r/airquality_model_tree.R
 ```
 
@@ -254,6 +254,18 @@ case 51: [0.0000] x1 = 999.00 (51 cases, mean 100.00, 98.0% <= 100.00)
 - **Quasi-Newton L-BFGS (`leaf_solver="lbfgs"`)**: Two-loop recursion L-BFGS for GLM deviance minimization (Binomial logit, Poisson rate, Tweedie, Tobit).
 - **Evolutionary Solvers (`leaf_solver="cmaes" | "shade" | "nes" | "ga"`)**: Derivative-free and natural-gradient global search for non-convex or discontinuous loss surfaces.
 
+For a standalone weighted fit, use `mltreelib.solvers.fit`. It accepts
+`sample_weight` and returns a fitted `FitResult` with coefficients, predictions,
+convergence status, and the solver stop reason.
+
+For a bounded scalar objective of any shape, use `mltreelib.solvers.optimize`.
+It takes a callable, one `(lower, upper)` pair per parameter, and a method
+name, and returns the best point, the best objective, the evaluation count,
+and the termination status. Methods include `random_search`, `latin_hypercube`,
+`lbfgs_b`, `bfgs`, `nonlinear_cg`, `nelder_mead`, `powell`, `simulated_annealing`,
+`cobyla`, `basin_hopping`, `cmaes`, `shade`, `nes`, and `ga`.
+See the [generic optimizer guide](docs/examples/generic-optimizer.md).
+
 ```python
 # Fit global OLS regression with full R-style statistical tables
 ols = ModelTree(max_depth=0, leaf="linear", leaf_solver="irls", l2=0.0)
@@ -372,6 +384,7 @@ Every entry tracks native categorical handling and execution resources under str
 - [x] **Clustering missing values**. Pass missing numeric observations to the native engines.
 - [x] **Survival and competing risks**: Gray's subdistribution test, weighted log-rank (Tarone-Ware, Peto-Prentice), Aalen-Johansen CIF with simplex invariant, and checked IPCW metrics (Harrell/Uno C-index, time-dependent Brier score matrix, IBS).
 - [x] **Binary isotonic calibration**. Fit the mapping on held-out or out-of-fold probabilities. Evaluate the mapping on independent data.
+- [x] **Generic optimizer**: Minimize a scalar objective through `mltreelib.solvers.optimize` with 14 methods, one shared budget, and one status contract. [Spec 26](specs/26-generic-global-and-constrained-optimizers.md)
 - [ ] **Ensembles & Committees**: Cubist-style iterative boosting committees with leaf model smoothing.
 - [x] **R source package**. Build the Linux-checked ModelTree frontend from the repository. [R example and checks](references/research/2026-11-21-r-airquality-results.md)
 - [ ] **R package distribution**. Prepare a CRAN submission.

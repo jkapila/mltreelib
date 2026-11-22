@@ -31,7 +31,8 @@ pub trait DesignMatrix {
     fn compute_gram(&self, custom_weights: Option<&[f64]>) -> Gram;
 
     /// Inner product of column $j$ with a residual vector: $\sum_i w_i X_{ij} r_i$.
-    fn col_dot_residuals(&self, j: usize, residuals: &[f64], custom_weights: Option<&[f64]>) -> f64;
+    fn col_dot_residuals(&self, j: usize, residuals: &[f64], custom_weights: Option<&[f64]>)
+        -> f64;
 
     /// Weighted squared norm of column $j$: $\sum_i w_i X_{ij}^2$.
     fn col_norm_sq(&self, j: usize, custom_weights: Option<&[f64]>) -> f64;
@@ -98,7 +99,12 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
 
     #[inline]
     fn n_features(&self) -> usize {
-        1 + self.chosen.len() + if self.with_indicators { self.chosen.len() } else { 0 }
+        1 + self.chosen.len()
+            + if self.with_indicators {
+                self.chosen.len()
+            } else {
+                0
+            }
     }
 
     #[inline]
@@ -148,7 +154,10 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                     }
                 }
                 None => {
-                    let imp = self.impute_means.and_then(|m| m.get(k).copied()).unwrap_or(0.0);
+                    let imp = self
+                        .impute_means
+                        .and_then(|m| m.get(k).copied())
+                        .unwrap_or(0.0);
                     out[1 + k] = imp;
                     if self.with_indicators {
                         out[1 + nc + k] = 1.0;
@@ -176,7 +185,12 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
         gram
     }
 
-    fn col_dot_residuals(&self, j: usize, residuals: &[f64], custom_weights: Option<&[f64]>) -> f64 {
+    fn col_dot_residuals(
+        &self,
+        j: usize,
+        residuals: &[f64],
+        custom_weights: Option<&[f64]>,
+    ) -> f64 {
         let nc = self.chosen.len();
         let mut dot = 0.0;
         for (i, &r) in self.rows.iter().enumerate() {
@@ -193,11 +207,18 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                 let col = self.chosen[j - 1];
                 match self.cols[col][r] {
                     Some(v) => v,
-                    None => self.impute_means.and_then(|m| m.get(j - 1).copied()).unwrap_or(0.0),
+                    None => self
+                        .impute_means
+                        .and_then(|m| m.get(j - 1).copied())
+                        .unwrap_or(0.0),
                 }
             } else {
                 let col = self.chosen[j - 1 - nc];
-                if self.cols[col][r].is_none() { 1.0 } else { 0.0 }
+                if self.cols[col][r].is_none() {
+                    1.0
+                } else {
+                    0.0
+                }
             };
             dot += wi * xj * residuals[i];
         }
@@ -221,11 +242,18 @@ impl<'a> DesignMatrix for ColumnSliceView<'a> {
                 let col = self.chosen[j - 1];
                 match self.cols[col][r] {
                     Some(v) => v,
-                    None => self.impute_means.and_then(|m| m.get(j - 1).copied()).unwrap_or(0.0),
+                    None => self
+                        .impute_means
+                        .and_then(|m| m.get(j - 1).copied())
+                        .unwrap_or(0.0),
                 }
             } else {
                 let col = self.chosen[j - 1 - nc];
-                if self.cols[col][r].is_none() { 1.0 } else { 0.0 }
+                if self.cols[col][r].is_none() {
+                    1.0
+                } else {
+                    0.0
+                }
             };
             sum_sq += wi * xj * xj;
         }
@@ -243,7 +271,12 @@ pub struct DenseView<'a> {
 }
 
 impl<'a> DenseView<'a> {
-    pub fn new(x: &'a [Vec<f64>], y: &'a [f64], w: Option<&'a [f64]>, with_intercept: bool) -> Self {
+    pub fn new(
+        x: &'a [Vec<f64>],
+        y: &'a [f64],
+        w: Option<&'a [f64]>,
+        with_intercept: bool,
+    ) -> Self {
         Self {
             x,
             y,
@@ -262,7 +295,11 @@ impl<'a> DesignMatrix for DenseView<'a> {
     #[inline]
     fn n_features(&self) -> usize {
         let p = self.x.first().map(|r| r.len()).unwrap_or(0);
-        if self.with_intercept { p + 1 } else { p }
+        if self.with_intercept {
+            p + 1
+        } else {
+            p
+        }
     }
 
     #[inline]
@@ -321,7 +358,12 @@ impl<'a> DesignMatrix for DenseView<'a> {
         gram
     }
 
-    fn col_dot_residuals(&self, j: usize, residuals: &[f64], custom_weights: Option<&[f64]>) -> f64 {
+    fn col_dot_residuals(
+        &self,
+        j: usize,
+        residuals: &[f64],
+        custom_weights: Option<&[f64]>,
+    ) -> f64 {
         let mut dot = 0.0;
         for i in 0..self.x.len() {
             let wi = match custom_weights {
@@ -332,7 +374,11 @@ impl<'a> DesignMatrix for DenseView<'a> {
                 continue;
             }
             let val = if self.with_intercept {
-                if j == 0 { 1.0 } else { self.x[i][j - 1] }
+                if j == 0 {
+                    1.0
+                } else {
+                    self.x[i][j - 1]
+                }
             } else {
                 self.x[i][j]
             };
@@ -352,7 +398,11 @@ impl<'a> DesignMatrix for DenseView<'a> {
                 continue;
             }
             let val = if self.with_intercept {
-                if j == 0 { 1.0 } else { self.x[i][j - 1] }
+                if j == 0 {
+                    1.0
+                } else {
+                    self.x[i][j - 1]
+                }
             } else {
                 self.x[i][j]
             };

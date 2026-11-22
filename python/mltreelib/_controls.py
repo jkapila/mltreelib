@@ -110,9 +110,13 @@ class GrowthControl:
         _check_fields(options, _GROWTH_FIELDS, "growth control")
         self._options = options
 
-    def get_params(self):
+    def config(self):
         """Return the explicitly configured growth options."""
         return self._options.copy()
+
+    def get_params(self):
+        """Return the explicitly configured growth options (deprecated: use config())."""
+        return self.config()
 
     def __getattr__(self, name):
         try:

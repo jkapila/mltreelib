@@ -37,9 +37,14 @@ pub mod rules;
 pub mod knn;
 pub mod solver;
 pub mod fast_interaction;
+pub mod report;
+pub mod component;
 mod persistence;
 
+pub use solver::generic;
 pub use fast_interaction::{fast_interaction_screen, FastInteraction};
 pub use knn::{DistanceMetric, KnnVariant, LeafKnnModel};
 pub use rules::{ConditionOp, Rule, RuleCondition, RuleSet};
+pub use report::ModelReport;
+pub use component::{ComponentModelCore, FactorAnalysisModel, FastIcaModel, NmfModel, NmfSolver, PcaModel, RotationMethod, TruncatedSvdModel, WhiteningKind, WhiteningModel};
 pub use persistence::PersistenceError;

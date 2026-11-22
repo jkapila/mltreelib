@@ -4,6 +4,46 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.13
+
+### Unified component analysis, factor analysis, and rotations
+
+- Decompose continuous features using pure Rust core `ComponentModel`: PCA, SVD, Whitening (ZCA and PCA variants preserving Mahalanobis geometry), FastICA, Non-Negative Matrix Factorization (NMF), and Exploratory Factor Analysis (Principal Axis Factoring / Minres). [Spec 25](specs/25-unified-model-surface-components-and-diagnostics.md)
+- Support iterative communality estimation ($h_i^2 = 1 - \psi_i$), squared multiple correlation (SMC) initializations, Thomson-Bartlett factor scores, and Schmid-Leiman hierarchical bifactor orthogonalization for oblique multi-factor solutions.
+- Resolve rotational indeterminacy via R-aligned factor rotations: orthogonal Varimax, Quartimax, Equamax, Parsimax, Biquartimax, the generalized Orthomax family ($\gamma \in [0, 1]$), and oblique Promax ($m = 4.0$) with inter-factor correlation matrix output.
+- Support multiple NMF solver kernels: Lee-Seung Multiplicative Updates (MU), Alternating Least Squares (ALS with projected Cholesky), and Hierarchical Alternating Least Squares (HALS coordinate descent with exact NNLS updates and L1/L2 soft thresholding penalties).
+- Inspect decomposition diagnostics with unified `ModelReport` exposing condition number, singular value decay ratio, Frobenius reconstruction error, and Thurstone simple structure loading sparsity.
+
+### Unified task facades and model modernization
+
+- Unify anomaly detection under `AnomalyModel` facade supporting tree engines (EIF, DET, HST, RCT, Active, Context) alongside low-rank PCA and additive NMF reconstruction errors.
+- Unify clustering under `ClusterModel` facade supporting predictive clustering trees (PCT), density bounding trees (CLTree), mutual reachability hierarchies (HDBSCAN), and unsupervised proximity forests (URF) with decision rule extraction (`rules()`).
+- Extract transparent Quinlan propositional rule sets from fitted `ModelTree` with pessimistic error pruning using `RuleModel`.
+- Deprecate scikit-learn-specific `get_params` / `set_params` conventions in favor of native `.config()` and snapshot serialization.
+
+### Standalone solver surface
+
+- Fit a weighted Gaussian or generalized linear model without growing a tree. Use `mltreelib.solvers.fit` with `sample_weight`. The result exposes coefficients, predictions, convergence, and the solver stop reason.
+- Share one solver dispatch across standalone fits and leaf fitting. CCD, L-BFGS, and the evolutionary solvers now run through the same options, status, and convergence contract.
+
+### Generic optimization seam
+
+- Add the shared generic optimization seam in the Rust core. One objective, bounds, constraint, budget, request, and result contract now backs every optimizer method. [Spec 26](specs/26-generic-global-and-constrained-optimizers.md)
+- Minimize a callable scalar objective with `mltreelib.solvers.optimize`. Pass one `(lower, upper)` pair per parameter. The optional `gradient` callable supplies exact derivatives, and smooth methods fall back to central differences.
+- Pass nonlinear inequality constraints to `cobyla` with the `constraints` callable. Other methods reject nonlinear constraints instead of ignoring them.
+- Run local, global, and constrained methods through one entry point. CMA-ES, SHADE, sNES, and GA share population kernels with standalone and leaf fits.
+- Report the best point, best objective, iterations, evaluations, termination status, and optional history from every optimization run. Budget exhaustion never reports success.
+- Count every objective call in one shared budget, including the calls a finite-difference gradient makes.
+- Choose basin hopping's inner solver with `local_method`. Keep the best evaluated point when an L-BFGS-B gradient exceeds the remaining budget.
+
+### Benchmarks and educational guides
+
+- Add Suite 10 ([`examples/suites/component_benchmarks.py`](examples/suites/component_benchmarks.py)): Benchmarks PCA rotations, whitening geometry, NMF solvers, and subspace reconstruction outlier triage.
+- Add educational guide on PCA rotations ([`docs/examples/pca-rotations.md`](docs/examples/pca-rotations.md) & [`examples/pca_rotations_educational.py`](examples/pca_rotations_educational.py)): Cognitive aptitude battery case study illustrating Thurstone's simple structure.
+- Upgrade comparative anomaly and clustering suites with execution latency, throughput, score distributions, and Crosstab Sparsity (CSP) benchmarking.
+
+[Changes](https://github.com/jkapila/mltreelib/compare/v0.4.12...v0.4.13)
+
 ## v0.4.12
 
 ### Python model behavior

@@ -67,12 +67,20 @@ from mltreelib._core import (
     windowed_transform,
     winnow,
 )
+from mltreelib.components import ComponentModel, ComponentResult
 from mltreelib.models import (
+    AnomalyModel,
+    AnomalyResult,
     AnomalyTree,
+    ClusterModel,
+    ClusterResult,
     ClusterTree,
+    RuleModel,
+    RuleResult,
     distributions_to_quantiles,
     histograms_to_quantiles,
 )
+from mltreelib.report import ModelReport
 
 if TYPE_CHECKING:
     from mltreelib import plots
@@ -104,10 +112,16 @@ def __dir__() -> list[str]:
 __all__ = [
     "HDBSCAN",
     "ActiveAnomalyTree",
+    "AnomalyModel",
+    "AnomalyResult",
     "AnomalyTree",
     "BaseNEncoder",
     "CLTree",
     "CatBoostEncoder",
+    "ComponentModel",
+    "ComponentResult",
+    "ClusterModel",
+    "ClusterResult",
     "ClusterTree",
     "ContextAnomalyTree",
     "CountEncoder",
@@ -127,12 +141,15 @@ __all__ = [
     "MEstimatorEncoder",
     "MarsRegressor",
     "Metrics",
+    "ModelReport",
     "ModelTree",
     "OneHotEncoder",
     "PredictiveClusteringTree",
     "QuantileEncoder",
     "RandomCutTree",
     "Rule",
+    "RuleModel",
+    "RuleResult",
     "RuleSet",
     "SumEncoder",
     "TargetEncoder",
@@ -164,4 +181,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.4.12"
+__version__ = "0.4.13"

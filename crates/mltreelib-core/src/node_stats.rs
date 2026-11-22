@@ -7,8 +7,8 @@
 //! statistics, the leaf moments, and the gains, so boosting/forest
 //! reweighting and case weights work without touching the tree.
 
-use tdigest::TDigest;
 use crate::family::{std_norm_cdf, std_norm_inv_cdf, std_norm_pdf, LeafFamily};
+use tdigest::TDigest;
 
 /// Target summary stored at every leaf — mean nodes and model nodes alike.
 /// Weighted by sample weights (`w`); `std` is the weighted sample standard
@@ -83,10 +83,22 @@ impl LeafStats {
         }
         let var = m2 / wsum;
         let std = var.sqrt();
-        let skew = if std > 1e-9 { (m3 / wsum) / (var * std) } else { 0.0 };
-        let kurtosis = if std > 1e-9 { (m4 / wsum) / (var * var) - 3.0 } else { 0.0 };
+        let skew = if std > 1e-9 {
+            (m3 / wsum) / (var * std)
+        } else {
+            0.0
+        };
+        let kurtosis = if std > 1e-9 {
+            (m4 / wsum) / (var * var) - 3.0
+        } else {
+            0.0
+        };
         let zero_fraction = w_zero / wsum;
-        let dispersion = if mean.abs() > 1e-9 { var / mean.abs() } else { 0.0 };
+        let dispersion = if mean.abs() > 1e-9 {
+            var / mean.abs()
+        } else {
+            0.0
+        };
 
         idx.sort_by(|&a, &b| y[a].partial_cmp(&y[b]).expect("NaN in target"));
         let mut digest = TDigest::new_with_size(100);
@@ -99,7 +111,8 @@ impl LeafStats {
         let median = q50;
         let iqr = q75 - q25;
 
-        let mut abs_devs: Vec<(f64, f64)> = idx.iter().map(|&i| ((y[i] - median).abs(), w[i])).collect();
+        let mut abs_devs: Vec<(f64, f64)> =
+            idx.iter().map(|&i| ((y[i] - median).abs(), w[i])).collect();
         abs_devs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
         let mut cum_w = 0.0;
         let half_w = wsum * 0.5;
@@ -186,7 +199,11 @@ impl LeafStats {
                 max = max.max(y[r]);
             }
         }
-        let var = if frame.wsum > 0.0 { frame.sse / frame.wsum } else { 0.0 };
+        let var = if frame.wsum > 0.0 {
+            frame.sse / frame.wsum
+        } else {
+            0.0
+        };
         let p_clamped = frame.mean.clamp(0.0, 1.0);
         let p_smooth = frame.mean.clamp(1e-6, 1.0 - 1e-6);
         let odds = p_smooth / (1.0 - p_smooth);
@@ -210,7 +227,11 @@ impl LeafStats {
             entropy: 0.0,
             gini: 2.0 * p_clamped * (1.0 - p_clamped),
             zero_fraction: 0.0,
-            dispersion: if frame.mean.abs() > 1e-9 { var / frame.mean.abs() } else { 0.0 },
+            dispersion: if frame.mean.abs() > 1e-9 {
+                var / frame.mean.abs()
+            } else {
+                0.0
+            },
             digest: TDigest::new_with_size(1),
         }
     }
@@ -282,7 +303,10 @@ impl RegressionSummary {
         for c in &self.coefficients {
             let name = match c.col_idx {
                 None => "(Intercept)".to_string(),
-                Some(idx) => col_names.get(idx).cloned().unwrap_or_else(|| format!("x{}", idx)),
+                Some(idx) => col_names
+                    .get(idx)
+                    .cloned()
+                    .unwrap_or_else(|| format!("x{}", idx)),
             };
             let p_str = if c.p_value < 2e-16 {
                 "< 2e-16".to_string()
@@ -476,15 +500,9 @@ impl AftModel {
         let sigma = self.scale.max(1e-4);
         let z = (t.ln() - eta) / sigma;
         match self.dist {
-            AftDist::Weibull => {
-                (-z.exp()).exp().clamp(0.0, 1.0)
-            }
-            AftDist::LogNormal => {
-                (1.0 - std_norm_cdf(z)).clamp(0.0, 1.0)
-            }
-            AftDist::LogLogistic => {
-                (1.0 / (1.0 + z.exp())).clamp(0.0, 1.0)
-            }
+            AftDist::Weibull => (-z.exp()).exp().clamp(0.0, 1.0),
+            AftDist::LogNormal => (1.0 - std_norm_cdf(z)).clamp(0.0, 1.0),
+            AftDist::LogLogistic => (1.0 / (1.0 + z.exp())).clamp(0.0, 1.0),
         }
     }
 
@@ -501,12 +519,8 @@ impl AftModel {
                 let z = (2.0f64.ln()).ln();
                 (eta + sigma * z).exp()
             }
-            AftDist::LogNormal => {
-                eta.exp()
-            }
-            AftDist::LogLogistic => {
-                eta.exp()
-            }
+            AftDist::LogNormal => eta.exp(),
+            AftDist::LogLogistic => eta.exp(),
         }
     }
 }
@@ -627,6 +641,12 @@ pub struct LeafModel {
     pub knn_cols: Option<Vec<usize>>,
     #[serde(with = "crate::persistence::float")]
     pub vector_mean: Option<Vec<f64>>,
+    /// Solver actually used, or why requested solver did not apply.
+    #[serde(default)]
+    pub solver_used: crate::leaf::LeafSolverDiagnostic,
+    /// Optimization problem declared by this leaf.
+    #[serde(default)]
+    pub leaf_problem_type: crate::leaf::LeafProblemType,
 }
 
 impl LeafModel {
@@ -643,10 +663,21 @@ impl LeafModel {
             if let Some(plm) = &parent.linear {
                 lm.intercept = plm.intercept + gamma * (lm.intercept - plm.intercept);
                 for (k, &col) in lm.cols.iter().enumerate() {
-                    let p_coef = plm.cols.iter().position(|&pc| pc == col).map(|idx| plm.coef[idx]).unwrap_or(0.0);
+                    let p_coef = plm
+                        .cols
+                        .iter()
+                        .position(|&pc| pc == col)
+                        .map(|idx| plm.coef[idx])
+                        .unwrap_or(0.0);
                     lm.coef[k] = p_coef + gamma * (lm.coef[k] - p_coef);
                     if k < lm.na_coef.len() {
-                        let p_na = plm.cols.iter().position(|&pc| pc == col).and_then(|idx| plm.na_coef.get(idx)).copied().unwrap_or(0.0);
+                        let p_na = plm
+                            .cols
+                            .iter()
+                            .position(|&pc| pc == col)
+                            .and_then(|idx| plm.na_coef.get(idx))
+                            .copied()
+                            .unwrap_or(0.0);
                         lm.na_coef[k] = p_na + gamma * (lm.na_coef[k] - p_na);
                     }
                 }
@@ -688,7 +719,12 @@ impl LeafModel {
                     let plm = &plms[c];
                     lm.intercept = plm.intercept + gamma * (lm.intercept - plm.intercept);
                     for (k, &col) in lm.cols.iter().enumerate() {
-                        let p_coef = plm.cols.iter().position(|&pc| pc == col).map(|idx| plm.coef[idx]).unwrap_or(0.0);
+                        let p_coef = plm
+                            .cols
+                            .iter()
+                            .position(|&pc| pc == col)
+                            .map(|idx| plm.coef[idx])
+                            .unwrap_or(0.0);
                         lm.coef[k] = p_coef + gamma * (lm.coef[k] - p_coef);
                     }
                 }
@@ -703,7 +739,10 @@ impl LeafModel {
             return knn.predict(x, self.family);
         }
         if let (Some(mars), Some(chosen)) = (&self.mars, &self.mars_cols) {
-            let row_f64: Vec<f64> = chosen.iter().map(|&c| x.get(c).and_then(|&v| v).unwrap_or(0.0)).collect();
+            let row_f64: Vec<f64> = chosen
+                .iter()
+                .map(|&c| x.get(c).and_then(|&v| v).unwrap_or(0.0))
+                .collect();
             return mars.predict_row(&row_f64);
         }
         match self.family {
@@ -724,7 +763,9 @@ impl LeafModel {
                         sm.probs
                             .iter()
                             .enumerate()
-                            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .max_by(|a, b| {
+                                a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal)
+                            })
                             .map(|(c, _)| c as f64)
                             .unwrap_or(0.0)
                     }
@@ -739,19 +780,20 @@ impl LeafModel {
                     self.center.unwrap_or(self.stats.mean)
                 }
             }
-            _ => {
-                match &self.linear {
-                    Some(model) => {
-                        let has_na = model.cols.iter().any(|&j| x.get(j).copied().flatten().is_none());
-                        if has_na && model.na_coef.is_empty() && model.feature_means.is_empty() {
-                            self.center.unwrap_or(self.stats.mean)
-                        } else {
-                            self.family.inverse_link(model.predict(x))
-                        }
+            _ => match &self.linear {
+                Some(model) => {
+                    let has_na = model
+                        .cols
+                        .iter()
+                        .any(|&j| x.get(j).copied().flatten().is_none());
+                    if has_na && model.na_coef.is_empty() && model.feature_means.is_empty() {
+                        self.center.unwrap_or(self.stats.mean)
+                    } else {
+                        self.family.inverse_link(model.predict(x))
                     }
-                    None => self.center.unwrap_or(self.stats.mean),
                 }
-            }
+                None => self.center.unwrap_or(self.stats.mean),
+            },
         }
     }
 
@@ -799,13 +841,26 @@ impl LeafModel {
             LeafFamily::Softmax => {
                 if let Some(sm) = &self.softmax {
                     if let Some(models) = &sm.linear_models {
-                        let has_na = models.first().map(|m| m.cols.iter().any(|&j| x.get(j).copied().flatten().is_none())).unwrap_or(false);
-                        if has_na && models.first().map(|m| m.na_coef.is_empty() && m.feature_means.is_empty()).unwrap_or(false) {
+                        let has_na = models
+                            .first()
+                            .map(|m| {
+                                m.cols
+                                    .iter()
+                                    .any(|&j| x.get(j).copied().flatten().is_none())
+                            })
+                            .unwrap_or(false);
+                        if has_na
+                            && models
+                                .first()
+                                .map(|m| m.na_coef.is_empty() && m.feature_means.is_empty())
+                                .unwrap_or(false)
+                        {
                             sm.probs.clone()
                         } else {
                             let etas: Vec<f64> = models.iter().map(|m| m.predict(x)).collect();
                             let max_eta = etas.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-                            let exps: Vec<f64> = etas.iter().map(|&eta| (eta - max_eta).exp()).collect();
+                            let exps: Vec<f64> =
+                                etas.iter().map(|&eta| (eta - max_eta).exp()).collect();
                             let sum_exp: f64 = exps.iter().sum();
                             if sum_exp > 0.0 {
                                 exps.iter().map(|&e| e / sum_exp).collect()
@@ -838,13 +893,22 @@ impl LeafModel {
 
     pub fn predict_survival_row_with_x(&self, times: &[f64], x: Option<&[f64]>) -> Vec<f64> {
         if let (Some(aft), Some(x_row)) = (&self.aft, x) {
-            return times.iter().map(|&t| aft.predict_survival(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| aft.predict_survival(x_row, t))
+                .collect();
         }
         if let (Some(cure), Some(x_row)) = (&self.cure, x) {
-            return times.iter().map(|&t| cure.predict_survival(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| cure.predict_survival(x_row, t))
+                .collect();
         }
         if let (Some(spline), Some(x_row)) = (&self.spline, x) {
-            return times.iter().map(|&t| spline.predict_survival(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| spline.predict_survival(x_row, t))
+                .collect();
         }
         let Some(surv) = &self.survival else {
             return vec![1.0; times.len()];
@@ -855,7 +919,9 @@ impl LeafModel {
                 if surv.times.is_empty() || t < surv.times[0] {
                     1.0
                 } else {
-                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                    let idx = match surv.times.binary_search_by(|st| {
+                        st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)
+                    }) {
                         Ok(exact) => exact,
                         Err(ins) => ins.saturating_sub(1),
                     };
@@ -872,13 +938,22 @@ impl LeafModel {
 
     pub fn predict_hazard_row_with_x(&self, times: &[f64], x: Option<&[f64]>) -> Vec<f64> {
         if let (Some(aft), Some(x_row)) = (&self.aft, x) {
-            return times.iter().map(|&t| aft.predict_cumulative_hazard(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| aft.predict_cumulative_hazard(x_row, t))
+                .collect();
         }
         if let (Some(cure), Some(x_row)) = (&self.cure, x) {
-            return times.iter().map(|&t| cure.predict_cumulative_hazard(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| cure.predict_cumulative_hazard(x_row, t))
+                .collect();
         }
         if let (Some(spline), Some(x_row)) = (&self.spline, x) {
-            return times.iter().map(|&t| spline.predict_cumulative_hazard(x_row, t)).collect();
+            return times
+                .iter()
+                .map(|&t| spline.predict_cumulative_hazard(x_row, t))
+                .collect();
         }
         let Some(surv) = &self.survival else {
             return vec![0.0; times.len()];
@@ -889,7 +964,9 @@ impl LeafModel {
                 if surv.times.is_empty() || t < surv.times[0] {
                     0.0
                 } else {
-                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                    let idx = match surv.times.binary_search_by(|st| {
+                        st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)
+                    }) {
                         Ok(exact) => exact,
                         Err(ins) => ins.saturating_sub(1),
                     };
@@ -912,14 +989,18 @@ impl LeafModel {
                 if surv.times.is_empty() || t < surv.times[0] {
                     0.0
                 } else if let Some(curve) = cif_curve {
-                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                    let idx = match surv.times.binary_search_by(|st| {
+                        st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)
+                    }) {
                         Ok(exact) => exact,
                         Err(ins) => ins.saturating_sub(1),
                     };
                     curve.get(idx).copied().unwrap_or(0.0)
                 } else {
                     // Fallback to 1 - S(t) if single-event
-                    let idx = match surv.times.binary_search_by(|st| st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)) {
+                    let idx = match surv.times.binary_search_by(|st| {
+                        st.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal)
+                    }) {
                         Ok(exact) => exact,
                         Err(ins) => ins.saturating_sub(1),
                     };
@@ -933,12 +1014,10 @@ impl LeafModel {
     pub fn predict_dist_row(&self, x: &[Option<f64>]) -> (f64, f64) {
         let mu = self.predict(x);
         let sigma = match &self.heteroscedastic {
-            Some(het) => {
-                match &het.scale_linear {
-                    Some(sm) => (0.5 * sm.predict(x)).exp().clamp(1e-6, 1e8),
-                    None => het.scale.max(1e-6),
-                }
-            }
+            Some(het) => match &het.scale_linear {
+                Some(sm) => (0.5 * sm.predict(x)).exp().clamp(1e-6, 1e8),
+                None => het.scale.max(1e-6),
+            },
             None => self.stats.std.max(1e-6),
         };
         (mu, sigma)
@@ -1047,6 +1126,10 @@ pub struct SolveScratch {
 }
 
 impl SolveScratch {
+    pub(crate) fn coefficients(&self) -> &[f64] {
+        &self.b
+    }
+
     pub fn new(dim: usize) -> Self {
         Self {
             a: vec![0.0; dim * dim],
@@ -1619,7 +1702,8 @@ pub fn compute_regression_summary(
     let y_mean = xty[0] / (n as f64);
     let tss = (yty - (n as f64) * y_mean * y_mean).max(1e-12);
     let r_squared = (1.0 - rss / tss).max(0.0).min(1.0);
-    let adj_r_squared = (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
+    let adj_r_squared =
+        (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
 
     let p_pred = p.saturating_sub(1);
     let f_statistic = if p_pred > 0 && rss > 1e-12 {
@@ -1643,7 +1727,11 @@ pub fn compute_regression_summary(
 
     let mut coefficients = Vec::new();
     for i in 0..p {
-        let col_idx = if i == 0 { None } else { chosen.get(i - 1).copied() };
+        let col_idx = if i == 0 {
+            None
+        } else {
+            chosen.get(i - 1).copied()
+        };
         let var_beta = (inv[(i, i)] * sigma2).max(1e-12);
         let std_err = var_beta.sqrt();
         let est = sol[i];
@@ -1715,7 +1803,20 @@ pub(crate) fn fit_glm(
     verbose: u8,
 ) -> Option<LinearModel> {
     fit_glm_imputed(
-        cols, y, w, rows, chosen, with_indicators, None, mono, l1, l2, family, mean, extra, verbose,
+        cols,
+        y,
+        w,
+        rows,
+        chosen,
+        with_indicators,
+        None,
+        mono,
+        l1,
+        l2,
+        family,
+        mean,
+        extra,
+        verbose,
     )
 }
 
@@ -1735,18 +1836,75 @@ pub(crate) fn fit_glm_imputed(
     extra: Option<&std::collections::HashMap<String, f64>>,
     verbose: u8,
 ) -> Option<LinearModel> {
+    let design = crate::solver::ColumnSliceView::new_with_imputation(
+        cols,
+        y,
+        w,
+        rows,
+        chosen,
+        with_indicators,
+        impute_means,
+    );
+    let options = crate::solver::SolverOptions {
+        l1,
+        l2,
+        max_iter: 100,
+        tol: 1e-11,
+        verbose,
+        ..Default::default()
+    };
+    let (mut model, convergence) =
+        fit_glm_design(&design, chosen, mono, family, mean, extra, &options).ok()?;
+    if convergence.reason != crate::solver::StopReason::Tolerance {
+        return None;
+    }
+    model.feature_means = impute_means
+        .map(|means| means.iter().copied().map(Some).collect())
+        .unwrap_or_default();
+    Some(model)
+}
+
+pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
+    design: &D,
+    chosen: &[usize],
+    mono: &[i8],
+    family: LeafFamily,
+    mean: f64,
+    extra: Option<&std::collections::HashMap<String, f64>>,
+    options: &crate::solver::SolverOptions,
+) -> Result<(LinearModel, crate::solver::Convergence), String> {
     let nc = chosen.len();
-    let dim = 1 + nc + if with_indicators { nc } else { 0 };
+    let dim = design.n_features();
+    let with_indicators = dim > nc + 1;
+    let crate::solver::SolverOptions {
+        l1,
+        l2,
+        max_iter,
+        tol,
+        verbose,
+        ..
+    } = *options;
     let mut current = LinearModel {
         cols: chosen.to_vec(),
         coef: vec![0.0; nc],
-        na_coef: if with_indicators { vec![0.0; nc] } else { Vec::new() },
-        feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
+        na_coef: if with_indicators {
+            vec![0.0; nc]
+        } else {
+            Vec::new()
+        },
+        feature_means: Vec::new(),
         intercept: match family {
             LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
             LeafFamily::Probit => std_norm_inv_cdf(mean),
             LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
-            LeafFamily::Gaussian | LeafFamily::Tobit | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => mean,
+            LeafFamily::Gaussian
+            | LeafFamily::Tobit
+            | LeafFamily::Softmax
+            | LeafFamily::Survival
+            | LeafFamily::Heteroscedastic
+            | LeafFamily::Aft
+            | LeafFamily::Cure
+            | LeafFamily::Spline => mean,
         },
         summary: None,
     };
@@ -1754,119 +1912,144 @@ pub(crate) fn fit_glm_imputed(
     let mut row = vec![0.0; dim];
     let mut scales = vec![1.0; dim];
     if l1 > 0.0 {
-        for &r in rows {
-            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
-            gram.add_row(&row, 0.0, w[r]);
-        }
+        gram = design.compute_gram(None);
         for j in 1..dim {
-            let variance = gram.xtx[j * dim + j]
-                - gram.xtx[j] * gram.xtx[j] / gram.ws;
+            let variance = gram.xtx[j * dim + j] - gram.xtx[j] * gram.xtx[j] / gram.ws;
             if variance > 1e-12 {
                 scales[j] = variance.sqrt();
             }
         }
     }
     let penalty = |model: &LinearModel| -> f64 {
-        model.coef.iter().chain(&model.na_coef).enumerate().map(|(j, &b)| {
-            let standardized = b * scales[j + 1];
-            l1 * standardized.abs() + 0.5 * l2 * standardized * standardized
-        }).sum()
+        model
+            .coef
+            .iter()
+            .chain(&model.na_coef)
+            .enumerate()
+            .map(|(j, &b)| {
+                let standardized = b * scales[j + 1];
+                l1 * standardized.abs() + 0.5 * l2 * standardized * standardized
+            })
+            .sum()
     };
+    let tweedie_p = extra
+        .and_then(|m| m.get("tweedie_p"))
+        .copied()
+        .unwrap_or(1.5);
+    let tobit_threshold = extra
+        .and_then(|m| m.get("tobit_threshold"))
+        .copied()
+        .unwrap_or(0.0);
     let objective = |model: &LinearModel, row: &mut [f64]| -> f64 {
         let mut loss = 0.0;
-        for &r in rows {
-            if w[r] <= 0.0 {
+        for r in 0..design.n_rows() {
+            let w = design.get_weight(r);
+            let y = design.get_y(r);
+            if w <= 0.0 {
                 continue;
             }
-            design_row_imputed(row, cols, r, chosen, with_indicators, impute_means);
+            design.copy_design_row(r, row);
             let mean = family.inverse_link(model.eval_design(row));
-            loss += 0.5 * w[r] * family.deviance(y[r], mean);
+            loss += 0.5 * w * family.deviance_with_params(y, mean, tweedie_p, tobit_threshold);
         }
         loss + penalty(model)
     };
-    let constrained = chosen.iter().any(|&c| mono.get(c).copied().unwrap_or(0) != 0);
+    let constrained = chosen
+        .iter()
+        .any(|&c| mono.get(c).copied().unwrap_or(0) != 0);
     let mut old_objective = objective(&current, &mut row);
     if !old_objective.is_finite() {
-        return None;
+        return Err("IRLS produced a non-finite objective or weighted design".into());
     }
     if verbose >= 3 {
         println!(
             "      [glm start] family={:?} rows={} dim={} initial_obj={:.6}",
             family,
-            rows.len(),
+            design.n_rows(),
             dim,
             old_objective
         );
     }
     let mut beta = vec![0.0; dim];
-    for iter in 0..100 {
+    for iter in 0..max_iter {
         gram.xtx.fill(0.0);
         gram.xty.fill(0.0);
         gram.yty = 0.0;
         gram.wy = 0.0;
         gram.ws = 0.0;
         gram.n = 0;
-        for &r in rows {
-            if w[r] <= 0.0 {
+        for r in 0..design.n_rows() {
+            let w = design.get_weight(r);
+            let y = design.get_y(r);
+            if w <= 0.0 {
                 continue;
             }
-            design_row_imputed(&mut row, cols, r, chosen, with_indicators, impute_means);
+            design.copy_design_row(r, &mut row);
             let eta = current.eval_design(&row);
             let mean = family.inverse_link(eta);
             match family {
                 LeafFamily::Binomial => {
                     let variance = (mean * (1.0 - mean)).max(1e-12);
-                    let working = eta + (y[r] - mean) / variance;
-                    gram.add_row(&row, working, w[r] * variance);
+                    let working = eta + (y - mean) / variance;
+                    gram.add_row(&row, working, w * variance);
                 }
                 LeafFamily::Probit => {
                     let phi = std_norm_pdf(eta).max(1e-12);
                     let variance = (mean * (1.0 - mean)).max(1e-12);
-                    let weight = w[r] * (phi * phi) / variance;
-                    let working = eta + (y[r] - mean) / phi;
+                    let weight = w * (phi * phi) / variance;
+                    let working = eta + (y - mean) / phi;
                     gram.add_row(&row, working, weight.max(1e-12));
                 }
                 LeafFamily::Poisson => {
                     let variance = mean.max(1e-12);
-                    let working = eta + (y[r] - mean) / variance;
-                    gram.add_row(&row, working, w[r] * variance);
+                    let working = eta + (y - mean) / variance;
+                    gram.add_row(&row, working, w * variance);
                 }
                 LeafFamily::Gamma => {
-                    let working = eta + (y[r] - mean) / mean.max(1e-12);
-                    gram.add_row(&row, working, w[r]);
+                    let working = eta + (y - mean) / mean.max(1e-12);
+                    gram.add_row(&row, working, w);
                 }
                 LeafFamily::Tweedie => {
-                    let p = extra.and_then(|m| m.get("tweedie_p")).copied().unwrap_or(1.5);
-                    let weight = w[r] * mean.max(1e-12).powf(2.0 - p);
-                    let working = eta + (y[r] - mean) / mean.max(1e-12);
+                    let weight = w * mean.max(1e-12).powf(2.0 - tweedie_p);
+                    let working = eta + (y - mean) / mean.max(1e-12);
                     gram.add_row(&row, working, weight.max(1e-12));
                 }
                 LeafFamily::Tobit => {
-                    let tobit_thresh = extra.and_then(|m| m.get("tobit_threshold")).copied().unwrap_or(0.0);
-                    let y_latent = if y[r] <= tobit_thresh {
-                        let delta = tobit_thresh - eta;
+                    let y_latent = if y <= tobit_threshold {
+                        let delta = tobit_threshold - eta;
                         let cdf = std_norm_cdf(delta).max(1e-12);
                         let pdf = std_norm_pdf(delta);
                         eta - pdf / cdf
                     } else {
-                        y[r]
+                        y
                     };
-                    gram.add_row(&row, y_latent, w[r]);
+                    gram.add_row(&row, y_latent, w);
                 }
-                LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
-                    gram.add_row(&row, y[r], w[r]);
+                LeafFamily::Gaussian
+                | LeafFamily::Softmax
+                | LeafFamily::Survival
+                | LeafFamily::Heteroscedastic
+                | LeafFamily::Aft
+                | LeafFamily::Cure
+                | LeafFamily::Spline => {
+                    gram.add_row(&row, y, w);
                 }
             }
         }
-        if gram.xtx.iter().chain(&gram.xty).any(|value| !value.is_finite()) {
-            return None;
+        if gram
+            .xtx
+            .iter()
+            .chain(&gram.xty)
+            .any(|value| !value.is_finite())
+        {
+            return Err("IRLS produced a non-finite objective or weighted design".into());
         }
         let mut candidate = if l1 == 0.0 && !constrained {
             // Normalize working mass so the shared solver's rank threshold
             // stays relative even when separation makes Fisher weights tiny.
             let mass = gram.ws;
             if !(mass > 0.0 && mass.is_finite()) {
-                return None;
+                return Err("IRLS produced a non-finite objective or weighted design".into());
             }
             for value in gram.xtx.iter_mut().chain(&mut gram.xty) {
                 *value /= mass;
@@ -1884,7 +2067,11 @@ pub(crate) fn fit_glm_imputed(
                 let mut delta = 0.0_f64;
                 let mut magnitude = 1.0_f64;
                 for j in 0..dim {
-                    let ridge = if j == 0 { 0.0 } else { l2 * scales[j] * scales[j] };
+                    let ridge = if j == 0 {
+                        0.0
+                    } else {
+                        l2 * scales[j] * scales[j]
+                    };
                     let diagonal = gram.xtx[j * dim + j] + ridge;
                     if diagonal <= 0.0 {
                         beta[j] = 0.0;
@@ -1897,7 +2084,8 @@ pub(crate) fn fit_glm_imputed(
                         }
                     }
                     let threshold = if j == 0 { 0.0 } else { l1 * scales[j] };
-                    let mut next = partial.signum() * (partial.abs() - threshold).max(0.0) / diagonal;
+                    let mut next =
+                        partial.signum() * (partial.abs() - threshold).max(0.0) / diagonal;
                     if j > 0 && j <= nc {
                         match mono.get(chosen[j - 1]).copied().unwrap_or(0) {
                             1 => next = next.max(0.0),
@@ -1915,21 +2103,29 @@ pub(crate) fn fit_glm_imputed(
                 }
             }
             if !converged {
-                return None;
+                return Err("IRLS penalized least-squares step did not converge".into());
             }
             LinearModel {
                 cols: chosen.to_vec(),
                 coef: beta[1..1 + nc].to_vec(),
-                na_coef: if with_indicators { beta[1 + nc..].to_vec() } else { Vec::new() },
-                feature_means: impute_means.map(|m| m.iter().map(|&v| Some(v)).collect()).unwrap_or_default(),
+                na_coef: if with_indicators {
+                    beta[1 + nc..].to_vec()
+                } else {
+                    Vec::new()
+                },
+                feature_means: Vec::new(),
                 intercept: beta[0],
                 summary: None,
             }
         };
         if !candidate.intercept.is_finite()
-            || candidate.coef.iter().chain(&candidate.na_coef).any(|b| !b.is_finite())
+            || candidate
+                .coef
+                .iter()
+                .chain(&candidate.na_coef)
+                .any(|b| !b.is_finite())
         {
-            return None;
+            return Err("IRLS produced non-finite coefficients".into());
         }
         let mut next_objective = objective(&candidate, &mut row);
         for _ in 0..20 {
@@ -1946,7 +2142,13 @@ pub(crate) fn fit_glm_imputed(
             next_objective = objective(&candidate, &mut row);
         }
         if !next_objective.is_finite() || next_objective > old_objective {
-            return None;
+            return Ok((
+                current,
+                crate::solver::Convergence {
+                    iterations: iter,
+                    reason: crate::solver::StopReason::LineSearchFailed,
+                },
+            ));
         }
         let improvement = old_objective - next_objective;
         current = candidate;
@@ -1956,7 +2158,7 @@ pub(crate) fn fit_glm_imputed(
                 iter, next_objective, improvement
             );
         }
-        if improvement <= 1e-11 * (1.0 + old_objective) {
+        if improvement <= tol * (1.0 + old_objective) {
             if verbose >= 3 {
                 println!(
                     "      [glm converged] iters={} final_obj={:.6}",
@@ -1964,14 +2166,14 @@ pub(crate) fn fit_glm_imputed(
                     next_objective
                 );
             }
-            return Some(current);
+            return Ok((current, crate::solver::Convergence::tolerance(iter + 1)));
         }
         old_objective = next_objective;
     }
     if verbose >= 3 {
-        println!("      [glm did not converge after 100 iters]");
+        println!("      [glm did not converge after {max_iter} iters]");
     }
-    None
+    Ok((current, crate::solver::Convergence::limit(max_iter)))
 }
 
 /// Per-node frame statistics for printing (rpart's `frame`): count, weighted

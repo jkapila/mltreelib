@@ -2,12 +2,19 @@
 
 from collections.abc import Sequence
 
-from mltreelib.anomaly import AnomalyTree
-from mltreelib.cluster import ClusterTree
+from mltreelib.anomaly import AnomalyModel, AnomalyResult, AnomalyTree
+from mltreelib.cluster import ClusterModel, ClusterResult, ClusterTree
+from mltreelib.rules import RuleModel, RuleResult
 
 __all__ = [
+    "AnomalyModel",
+    "AnomalyResult",
     "AnomalyTree",
+    "ClusterModel",
+    "ClusterResult",
     "ClusterTree",
+    "RuleModel",
+    "RuleResult",
     "distributions_to_quantiles",
     "histograms_to_quantiles",
 ]

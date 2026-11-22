@@ -1,7 +1,10 @@
-"""Tree-based anomaly detection."""
+"""Tree-based and component-based anomaly detection."""
+
+from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any, Literal, overload
 
 from mltreelib._core import ActiveAnomalyTree, ContextAnomalyTree
@@ -11,20 +14,34 @@ from mltreelib._core import HalfSpaceTree as _HST
 from mltreelib._core import RandomCutTree as _RCT
 from mltreelib._model_inputs import _numeric_cell, _numeric_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
+from mltreelib.components import ComponentModel
+from mltreelib.report import ModelReport, build_report
 
-__all__ = ["AnomalyTree"]
+__all__ = ["AnomalyModel", "AnomalyResult", "AnomalyTree"]
 
 
-class AnomalyTree(_UnsupervisedSnapshot):
-    """Unified Tree-Based Anomaly Detector.
+@dataclass
+class AnomalyResult:
+    """Fitted anomaly detection output."""
 
-    Wraps multiple tree-based anomaly engines under a consistent API:
+    scores: list[float]
+    predictions: list[int]
+    threshold: float | None
+    report: ModelReport
+
+
+class AnomalyModel(_UnsupervisedSnapshot):
+    """Unified Tree and Component-Based Anomaly Detector.
+
+    Wraps multiple tree-based and component reconstruction anomaly engines:
     - ``"eif"`` or ``"isolation"``: Extended Isolation Tree (oblique hyperplanes, mixed types).
     - ``"det"`` or ``"density"``: Density Estimation Tree (piecewise constant density, mixed types).
     - ``"hst"`` or ``"half_space"``: Streaming Half-Space Tree (mass-based scoring).
     - ``"rct"`` or ``"random_cut"``: Random Cut Tree (co-displacement scoring).
     - ``"active"``: Active Anomaly Tree with expert feedback adaptation.
     - ``"context"``: Variable-Order Context Anomaly Tree for discrete sequences.
+    - ``"pca"``: Principal Component Analysis subspace reconstruction error.
+    - ``"nmf"``: Non-negative Matrix Factorization additive reconstruction error.
 
     Parameters
     ----------
@@ -150,10 +167,13 @@ class AnomalyTree(_UnsupervisedSnapshot):
                 alphabet_size=alphabet_size,
                 smoothing_discount=smoothing_discount,
             )
+        elif k in ("pca", "nmf"):
+            n_comp = self.params.get("n_components")
+            self._component_model = ComponentModel(kind=k, n_components=n_comp, seed=self.seed)
         else:
-            valid = ["eif", "det", "hst", "rct", "active", "context"]
+            valid = ["eif", "det", "hst", "rct", "active", "context", "pca", "nmf"]
             raise ValueError(
-                f"Unknown anomaly tree kind '{self.kind}', expected one of {valid}"
+                f"Unknown anomaly kind '{self.kind}', expected one of {valid}"
             )
 
     def fit(
@@ -183,6 +203,8 @@ class AnomalyTree(_UnsupervisedSnapshot):
             self._inner.fit(x, col_names=cnames, dtypes=dts)
         elif k in ("context", "sequence"):
             self._inner.fit([[None if value != value else value for value in row] for row in x])
+        elif k in ("pca", "nmf"):
+            self._component_model.fit(x)
         else:
             # Float matrix algorithms (HST, RCT, Active)
             float_mat = _numeric_rows(x)
@@ -267,6 +289,8 @@ class AnomalyTree(_UnsupervisedSnapshot):
             raise ValueError(
                 "Use surprise_score(context, symbol) for ContextAnomalyTree"
             )
+        elif k in ("pca", "nmf"):
+            return self._component_model.score_samples(x)
         return []
 
     @overload
@@ -380,8 +404,43 @@ class AnomalyTree(_UnsupervisedSnapshot):
         """Contamination threshold score separating normal points from anomalies."""
         return self._threshold
 
+    def config(self) -> dict[str, Any]:
+        """Return effective configuration dictionary."""
+        return self._snapshot_config()
+
+    @property
+    def report(self) -> ModelReport:
+        """Return structured ModelReport."""
+        if not self._fitted:
+            raise ValueError(f"{type(self).__name__} is not fitted yet.")
+        if self.kind in ("pca", "nmf") and hasattr(self, "_component_model"):
+            return self._component_model.report
+        return build_report(
+            "Anomaly Detection Model",
+            objective_name="Unsupervised Anomaly & Novelty Scoring",
+            objective_direction="minimize",
+            objective_form="score(x) > threshold(contamination)",
+            learner_family="Anomaly Detection",
+            learner_kind=f"Anomaly Model ({self.kind.upper()})",
+            learner_representation="Hierarchical isolation / density estimation anomaly scoring",
+            structure={"contamination": f"{self.contamination:.4f}"},
+            nominal_complexity=self.min_rows,
+            capabilities=["score_samples", "predict"],
+            controller_kind="anomaly_model",
+            config=self.config(),
+            converged=True,
+            stop_reason="Tree construction & threshold calibration completed",
+            metrics={"threshold": float(self._threshold or 0.0)},
+        )
+
     def __repr__(self) -> str:
-        return f"AnomalyTree(kind='{self.kind}', max_depth={self.max_depth}, min_rows={self.min_rows}, contamination={self.contamination})"
+        return f"{type(self).__name__}(kind='{self.kind}', max_depth={self.max_depth}, min_rows={self.min_rows}, contamination={self.contamination})"
+
+
+class AnomalyTree(AnomalyModel):
+    """Backward-compatible alias for AnomalyModel."""
+
+    _snapshot_format = "mltreelib.anomaly_tree"
 
 
 def _observed_suffix(context: Sequence[int | float | None]) -> list[int | float]:
