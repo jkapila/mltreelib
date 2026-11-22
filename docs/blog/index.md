@@ -91,11 +91,11 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 
     [:octicons-arrow-right-24: Read Case Study](segregate-first-two-stage-survival-trees.md)
 
--   :lucide-package-check: __Beyond Predictive ML: Prescriptive Inventory Replenishment__
+-   :lucide-package-check: __Prescriptive Analytics: Predict-then-Optimize Inventory Replenishment__
 
     ---
 
-    Supply chain optimization: coupling ModelTree empirical prediction intervals with native Rust continuous solvers to optimize multi-item orders under warehouse and budget constraints.
+    Supply chain optimization: predict-then-optimize replenishment with ModelTree per-leaf quantile curves and dual search under warehouse capacity and working capital caps.
 
     **Application**: 50-SKU Retail Supply Chain under Joint Capacity Constraints
 
