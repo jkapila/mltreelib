@@ -52,7 +52,7 @@ $$
 For specialty and high-margin retail goods, $s_k \gg h_k$, yielding critical fractiles of $\tau_k \in [0.85, 0.98]$. Ordering the conditional mean $\mathbb{E}[Y_k]$ guarantees systematic stockouts on exactly the products that drive profitability.
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Trap["The Point Forecast Heuristic"]
         A["Standard Regression / GBDT"] --> B["Point Forecast: Mean E[Y_k]"]
         B --> C{"Shared Capacity Exceeded?"}

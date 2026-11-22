@@ -37,7 +37,7 @@ uv run python examples/causal_uplift.py
 Intervention modeling categorizes every recipient into one of four causal personas based on potential outcomes $(Y_i(0), Y_i(1))$:
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Matrix["Causal Archetypes Matrix"]
         A["Persuadables\nY(0)=0, Y(1)=1\nPositive Uplift (+)\nTarget Aggressively"]
         B["Sure Things\nY(0)=1, Y(1)=1\nZero Uplift (0)\nDo Not Spend Budget"]

@@ -35,7 +35,7 @@ In standard model trees, evaluating complex optimization problems at every candi
 All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear GLMs use IRLS or L-BFGS.
 
 ```mermaid
-flowchart TD
+flowchart LR
     Data["Candidate Data in Leaf Node\n[X, y]"] --> Fam{"Is the loss smooth\nand convex?"}
 
     Fam -- "Yes: Gaussian / Ridge" --> S1["irls (Cholesky / faer)\nExact closed-form solution\nLatency: ~1.28 ms"]

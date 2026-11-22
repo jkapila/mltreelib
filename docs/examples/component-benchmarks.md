@@ -30,7 +30,7 @@ In tabular feature spaces, correlated variables represent underlying latent trai
 `mltreelib` introduces pure-Rust matrix decompositions with unified output semantics:
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Decompositions["Linear Decompositions"]
         direction TB
         D1["Data Matrix X\n[N x P]"] --> PCA["PCA (Centered & Scaled)\nX = U S V^T"]

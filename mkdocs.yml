@@ -72,6 +72,8 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+extra_css:
+  - assets/custom.css
 extra_javascript:
   - assets/medium-zoom.min.js
   - assets/zoom-init.js

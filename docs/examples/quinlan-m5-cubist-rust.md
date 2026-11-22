@@ -57,4 +57,8 @@ Record the feature name, input unit, threshold, missing direction, leaf support 
 uv run python examples/real_tree_studies.py concrete
 ```
 
+!!! tip "Deep-Dive Benchmark Suites"
+    - For exact mathematical formulation of the two-control decoupling architecture and Chow structural break gating, see [Suite 1: Core Tree Architecture & Growth Knobs](core-tree-architecture.md).
+    - For sub-millisecond warm-start leaf retraining and micro-model routing down frozen tree topologies, see [Suite 5: Dynamic Leaf Retraining & Adaptation](hierarchical-retrain.md).
+
 See [Quinlan's M5 paper](https://www.cs.tufts.edu/~nr/cs257/archive/ross-quinlan/continuous.pdf), [Kuhn's Cubist vignette](https://cran.r-project.org/web/packages/Cubist/vignettes/cubist.html) and the [rules and neighbor adjustment example](../examples/rules-summary-knn.md).

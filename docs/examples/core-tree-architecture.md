@@ -37,7 +37,7 @@ where:
 - $\mathcal{R}(\theta_m) = \lambda_1 \|\theta_m\|_1 + \frac{\lambda_2}{2} \|\theta_m\|_2^2$ enforces local regularization.
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph MT["ModelTree (Topology & Partitioning)"]
         direction TB
         A["Input Data (X, y)"] --> B{"Recursive Split Search\n(Scalar Variance Reduction)"}

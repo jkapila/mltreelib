@@ -20,7 +20,7 @@ Unconstrained tree algorithms greedily optimize in-sample loss functions. This f
 - **Honest Sample Splitting**: Partitions the training data into two disjoint subsamples: a **structure sample** ($S^{\text{tr}}$) used exclusively to evaluate split criteria, and an **estimation sample** ($S^{\text{est}}$) used exclusively to fit terminal leaf models.
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph DataPartition["Sample-Split Honesty (Athey & Imbens / GRF)"]
         direction TB
         Raw["Training Sample (X, y)"] --> Split{"Bernoulli Subsample\n(honesty_fraction=0.5)"}

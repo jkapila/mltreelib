@@ -11,7 +11,7 @@ Script: [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com
 ## 1. Mathematical Formulation of Distributional Families
 
 ```mermaid
-flowchart TD
+flowchart LR
     Target["Target Response Variable (Y)"] --> Support{"Support & Distributional Shape"}
     
     Support -- "Binary Threshold [0, 1]" --> Probit["Probit Leaf\ng(mu) = Phi^-1(mu)\nLatent Normal Utility"]

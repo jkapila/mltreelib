@@ -35,7 +35,7 @@ In enterprise retention, credit facilities, and medical trials, entities (custom
 When standard survival trees split directly on duration outcomes using log-rank statistics, they fall into the **censoring trap**:
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Trap["Standard Survival Tree Pitfall"]
         A["All Longitudinal Records [X, T, E]"] --> B{"Log-Rank Split Criterion\nMaximizes Event Separation"}
         B --> C["Trivial Censoring Splits:\nIsolates recent sign-ups from mature accounts"]

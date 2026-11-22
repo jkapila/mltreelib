@@ -34,7 +34,7 @@ uv run python examples/predictive_maintenance.py
 In commercial fleet management, missing an air pressure system failure on the highway causes catastrophic delays, towing fees, and potential engine destruction. Conversely, sending a healthy truck to the depot for a quick pressure test incurs a minor mechanic inspection charge.
 
 ```mermaid
-flowchart TD
+flowchart LR
     A["Raw Fleet Telemetry (76,000 Trucks)\n170 Sensor Channels with 8.35% Missing Cells"] --> B["Native Missing-Routing ModelTree\nDirect NaN / None Ingestion in Pure Rust"]
     B --> C["Triage Threshold Optimizer\nargmin 10*FP(τ) + 500*FN(τ)"]
     C --> D{"Predicted Risk >= τ* ?"}

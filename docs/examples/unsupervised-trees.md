@@ -13,7 +13,7 @@ Script: [`examples/suites/unsupervised_trees.py`](https://github.com/jkapila/mlt
 ## 1. Mathematical Mechanics: Clustering and Anomaly Isolation
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph PCT["Predictive Clustering Trees (PCT)"]
         direction TB
         MultiX["Multi-Target Features\n[x1, x2, ..., xM]"] --> NormVar{"Normalized Variance Reduction\nmax Delta Var(s)"}

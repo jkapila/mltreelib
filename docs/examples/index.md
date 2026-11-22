@@ -130,7 +130,7 @@ Each guide identifies its datasets and shows the command for its suite. Dataset-
 ## Architectural Workflow Navigator
 
 ```mermaid
-flowchart TD
+flowchart LR
     Start["What modeling challenge do you need to solve?"] --> Q1{"What is the target / learning setting?"}
     
     Q1 -- "Continuous Tabular Response" --> A1["Suite 1: Core Tree Architecture\n(Linear Leaves & Growth Knobs)"]

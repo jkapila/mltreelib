@@ -13,7 +13,7 @@ Script: [`examples/suites/timeseries_additive_forecasting.py`](https://github.co
 ## 1. Domain Context & The Extrapolation Barrier
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph DataEngine["mltreelib-core Pure Rust Transforms"]
         direction LR
         Raw["Raw Multi-Store Panel\n(store_id, date, sales)"] --> Cal["calendar_features\n(weekday, weekend, month, day_of_year)"]

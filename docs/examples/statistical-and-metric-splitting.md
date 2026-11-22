@@ -28,7 +28,7 @@ Companion executable script:
 ## Architectural Splitting Taxonomy
 
 ```mermaid
-flowchart TD
+flowchart LR
     Data["Candidate Partition Data\n[X, Y, S]"] --> SplitType{"Target Modality & Splitting Objective"}
 
     SplitType -- "Continuous & Skewed" --> F1["Classical & Robust:\n- sse (Variance reduction)\n- hellinger (Skew-invariant tail)\n- maxstat (Monotone rank)"]

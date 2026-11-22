@@ -13,7 +13,7 @@ Script: [`examples/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mlt
 ## 1. Architectural Mechanics: Frozen Partitions vs In-Place Solvers
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Phase1["Phase 1: Macro-Topology Discovery (Expensive)"]
         direction TB
         HistoricalData["Historical Macro Dataset\n(Cohorts, Demographics, Seasons)"] --> GreedySearch["Greedy Partition Search\nO(K * N log N)"]

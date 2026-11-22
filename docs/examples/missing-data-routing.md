@@ -21,7 +21,7 @@ Standard tabular workflows apply global mean, median, or MICE imputation before 
 - **NA-Indicator Linear Leaves**: Linear leaves fit dedicated indicator coefficients $\beta_{\text{NA}, j}$ for absent features, preserving local linear slopes for observed predictors.
 
 ```mermaid
-flowchart TD
+flowchart LR
     A["Incoming Feature Vector\n[x1, x2, ..., xk]"] --> B{"Is Primary Split Feature\nx_j Observed?"}
     
     B -- "Observed" --> C{"Predicate Test:\nx_j <= Threshold?"}
