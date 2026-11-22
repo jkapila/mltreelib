@@ -4,7 +4,10 @@ import re
 import sys
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 
 def verify_release(root: Path, version: str) -> str:
