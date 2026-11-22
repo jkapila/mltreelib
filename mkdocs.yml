@@ -138,6 +138,7 @@ nav:
       - Beyond MSE (Distributional): blog/beyond-mse-distributional-trees.md
       - Breaking Step Functions: blog/breaking-step-functions-model-trees-vs-gbdt.md
       - Two-Stage Survival Trees: blog/segregate-first-two-stage-survival-trees.md
+      - Prescriptive Replenishment: blog/prescriptive-inventory-replenishment.md
   - Benchmarks:
       - Overview: benchmarks/elo.md
       - Overall Arena: benchmarks/elo_overall.md

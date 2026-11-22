@@ -91,6 +91,16 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 
     [:octicons-arrow-right-24: Read Case Study](segregate-first-two-stage-survival-trees.md)
 
+-   :lucide-package-check: __Beyond Predictive ML: Prescriptive Inventory Replenishment__
+
+    ---
+
+    Supply chain optimization: coupling ModelTree empirical prediction intervals with native Rust continuous solvers to optimize multi-item orders under warehouse and budget constraints.
+
+    **Application**: 50-SKU Retail Supply Chain under Joint Capacity Constraints
+
+    [:octicons-arrow-right-24: Read Case Study](prescriptive-inventory-replenishment.md)
+
 </div>
 
 ---
@@ -106,6 +116,7 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 | What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](beyond-mse-distributional-trees.md) | Miami home sales |
 | When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](breaking-step-functions-model-trees-vs-gbdt.md) | Diamonds |
 | How do I model longitudinal customer churn without right-censoring bias? | [Two-stage hierarchical survival trees](segregate-first-two-stage-survival-trees.md) | Bank Customer Churn |
+| How do I prescribe inventory replenishment under warehouse and budget limits? | [Prescriptive inventory replenishment](prescriptive-inventory-replenishment.md) | 50-SKU Retail Replenishment |
 
 ---
 
