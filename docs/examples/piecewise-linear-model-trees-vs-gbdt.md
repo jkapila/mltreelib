@@ -67,8 +67,8 @@ uv run python examples/real_tree_studies.py diamonds
 ```
 
 !!! tip "Deep-Dive Benchmark Suites"
-    - For detailed depth-vs-error benchmarks on Yeh Concrete demonstrating 49.9% error reduction over CART step functions at depth 1, see [Suite 1: Core Tree Architecture & Growth Knobs](core-tree-architecture.md).
-    - For dual monotone split and slope enforcement without gradient boosting step-staircasing, see [Suite 2: Structural Constraints & Honest Inference](constraints-and-honesty.md).
-    - For numerical solver benchmarks (Cholesky vs L-BFGS vs Evolutionary leaf optimizers), see [Suite 10: Solvers, Optimizers & Real-Data Tuning](solver-benchmarks.md).
+    - For detailed depth-vs-error benchmarks on Yeh Concrete demonstrating 49.9% error reduction over CART step functions at depth 1, see [Suite 1: Core Tree Architecture & Growth Knobs](../suites/core-tree-architecture.md).
+    - For dual monotone split and slope enforcement without gradient boosting step-staircasing, see [Suite 2: Structural Constraints & Honest Inference](../suites/constraints-and-honesty.md).
+    - For numerical solver benchmarks (Cholesky vs L-BFGS vs Evolutionary leaf optimizers), see [Suite 10: Solvers, Optimizers & Real-Data Tuning](../suites/solver-benchmarks.md).
 
 For the origin of model trees, see [Quinlan, Learning with Continuous Classes (1992)](https://www.cs.tufts.edu/~nr/cs257/archive/ross-quinlan/continuous.pdf). For a controlled missing-data check and a separate real explanation, see the [regression pathway](../guides/regression.md).

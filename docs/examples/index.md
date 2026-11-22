@@ -1,174 +1,71 @@
-# Example Library
+---
+title: "Examples Library Overview"
+description: "Worked examples, tutorials, and specialized studies for mltreelib: concrete strength, diamond pricing, miami housing, categorical encoders, and tree inspection."
+keywords:
+  - decision tree examples
+  - model tree tutorials
+  - mltreelib examples
+---
 
-Start with the [quickstart](../quickstart.md), then choose a suite for the modeling problem you want to solve. The guides explain the inputs, the model settings, and how to interpret the outputs.
+# Examples & Specialized Studies
 
-## Run an example
+Worked tutorials, case studies, and focused topic guides demonstrating `mltreelib` on real-world datasets.
 
-Follow the [source installation instructions](../installation.md#from-source), then run the script from the repository root.
+!!! tip "Looking for the 11 Core Benchmark Suites?"
+    The formal mathematical formulations, empirical benchmark tables, and solver evaluations live in the dedicated [**Benchmark Suites**](../suites/index.md) section.
 
-```bash
-uv run python examples/quickstart.py
-uv run python examples/suites/core_tree_architecture.py
-```
+---
 
-Each guide identifies its datasets and shows the command for its suite. Dataset-backed examples can download data on first use. Plotting examples write figures under `docs/assets/`. Use the release extension for timing comparisons.
-
-## The 11 Consolidated Modeling Pathways
+## Featured Worked Tutorials
 
 <div class="grid cards" markdown>
 
--   :lucide-cpu: __Suite 1: Core Tree Architecture & Growth Knobs__
+-   :lucide-gem: __Diamond Price Prediction (Linear Leaves vs Step Functions)__
 
     ---
 
-    Two-Control decoupling (`ModelTree` $\leftrightarrow$ `LeafControl`), 0D leaf stats, and Chow structural break stopping on Yeh Concrete.
+    Worked comparison of constant mean leaves vs piecewise linear regression tree leaves on 6,000 diamond sales.
 
-    [:octicons-arrow-right-24: Open Suite 1](core-tree-architecture.md)
+    [:octicons-arrow-right-24: Open Tutorial](piecewise-linear-model-trees-vs-gbdt.md)
 
--   :lucide-shield-check: __Suite 2: Structural Constraints & Honest Inference__
-
-    ---
-
-    Dual monotone split and slope constraints, interaction isolation, and sample-split honesty ($S^{\text{tr}}$ vs $S^{\text{est}}$) on Healthcare data.
-
-    [:octicons-arrow-right-24: Open Suite 2](constraints-and-honesty.md)
-
--   :lucide-git-branch: __Suite 3: Native Missing Data Routing__
+-   :lucide-hammer: __Concrete Compressive Strength (Cubist & M5-Style Trees)__
 
     ---
 
-    Learned `missing_left` direction and surrogate splits (`maxsurrogate=N`) for zero-imputation telemetry triage on Scania APS.
+    Inspect local linear equations, split conditions, and Quinlan rule handoffs on 1,030 industrial concrete mixtures.
 
-    [:octicons-arrow-right-24: Open Suite 3](missing-data-routing.md)
+    [:octicons-arrow-right-24: Open Tutorial](quinlan-m5-cubist-rust.md)
 
--   :lucide-chart-scatter: __Suite 4: Distributional & Censored Leaf Families__
-
-    ---
-
-    Gamma, Poisson, Tweedie, and Tobit censored MLE leaves with 60%+ OLS attenuation correction across actuarial risk datasets.
-
-    [:octicons-arrow-right-24: Open Suite 4](distributional-leaves.md)
-
--   :lucide-zap: __Suite 5: Dynamic Leaf Retraining & Adaptation__
+-   :lucide-home: __Miami Housing Valuation (Tweedie vs Squared Error)__
 
     ---
 
-    Microsecond warm-start leaf retraining, Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.
+    Choosing the right split loss for positive, skewed, and zero-inflated targets on 8,000 Miami home sales.
 
-    [:octicons-arrow-right-24: Open Suite 5](hierarchical-retrain.md)
+    [:octicons-arrow-right-24: Open Tutorial](distributional-trees-tweedie-tobit.md)
 
--   :lucide-sliders: __Suite 6: Statistical, Metric & Oblique Splitting__
-
-    ---
-
-    Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Quinlan rule extraction on Housing and Wine.
-
-    [:octicons-arrow-right-24: Open Suite 6](statistical-and-metric-splitting.md)
-
--   :lucide-calendar-days: __Suite 7: Time Series Feature Engineering & Forecasting__
+-   :lucide-sliders: __Generic Bounded Optimizer & HPO Tuning__
 
     ---
 
-    Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation.
+    Optimizing ModelTree hyperparameters directly on tabular validation loss using Nelder-Mead, L-BFGS-B, and Powell.
 
-    [:octicons-arrow-right-24: Open Suite 7](timeseries-forecasting.md)
-
--   :lucide-network: __Suite 8: Unsupervised Trees: Clustering & Anomaly Triage__
-
-    ---
-
-    Predictive Clustering Trees (PCT) with rule extraction and Extended Isolation Forest (EIF) with oblique cuts for multi-target grouping.
-
-    [:octicons-arrow-right-24: Open Suite 8](unsupervised-trees.md)
-
--   :lucide-heart-pulse: __Suite 9: Survival & Competing Risks Trees__
-
-    ---
-
-    Gray's subdistribution test, weighted log-rank criteria, $O(N)$ streaming martingale scans, and Aalen-Johansen CIF simplex invariant.
-
-    [:octicons-arrow-right-24: Open Suite 9](survival-trees.md)
-
--   :lucide-gauge: __Suite 10: Solvers, Optimizers & Real-Data Tuning__
-
-    ---
-
-    Unified numerical and evolutionary leaf solvers, standalone weighted GLM fits, bounded black-box optimization, and real-data hyperparameter tuning on Concrete and TabArena tasks.
-
-    [:octicons-arrow-right-24: Open Suite 10](solver-benchmarks.md)
-
--   :lucide-boxes: __Suite 11: Component & Factor Analysis__
-
-    ---
-
-    Pure Rust PCA, SVD, ZCA/PCA Whitening, FastICA, NMF (MU, ALS, HALS), R-aligned factor rotations (Varimax, Quartimax, Promax), and Minres Factor Analysis with Schmid-Leiman bifactor orthogonalization.
-
-    [:octicons-arrow-right-24: Open Suite 11](component-benchmarks.md)
+    [:octicons-arrow-right-24: Open Guide](generic-optimizer.md)
 
 </div>
 
 ---
 
-### Detailed Mechanics Reference Table
+## Specialized Topic Catalog
 
-| Suite | Focus Area | Benchmark Dataset | Key Mechanics Covered |
-| :--- | :--- | :--- | :--- |
-| **[Suite 1: Core Tree Architecture & Growth Knobs](core-tree-architecture.md)** | Core Systems | Yeh Concrete (1,030 rows) | Two-Control decoupling (`ModelTree` <-> `LeafControl`), 0D leaf stats, Chow hypothesis stopping. |
-| **[Suite 2: Structural Constraints & Honest Inference](constraints-and-honesty.md)** | Physics & Governance | Healthcare Expenses (1,338 rows) | Dual monotone split and slope constraints, interaction isolation, sample-split honesty ($S^{\text{tr}}$ vs $S^{\text{est}}$). |
-| **[Suite 3: Native Missing Data Routing](missing-data-routing.md)** | Industrial IoT | Scania APS Failure (76,000 rows) | Learned `missing_left` direction, surrogate splits (`maxsurrogate=N`), zero-imputation telemetry triage. |
-| **[Suite 4: Distributional & Censored Leaf Families](distributional-leaves.md)** | Actuarial & Risk | Credit-G, Healthcare, Affairs, Mroz | Gamma, Poisson, Tweedie, and Tobit censored MLE leaves with 60%+ OLS attenuation correction. |
-| **[Suite 5: Dynamic Leaf Retraining & Adaptation](hierarchical-retrain.md)** | Streaming & Systems | Yeh Concrete (1,030 rows) | Microsecond warm-start leaf retraining, Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors. |
-| **[Suite 6: Statistical, Metric & Oblique Splitting](statistical-and-metric-splitting.md)** | Split Optimization | Boston/Miami Housing, Wine Quality | Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Rule extraction. |
-| **[Suite 7: Time Series Feature Engineering & Forecasting](timeseries-forecasting.md)** | Temporal Econometrics | Multi-store retail demand panel | Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation. |
-| **[Suite 8: Unsupervised Trees: Clustering & Anomaly Triage](unsupervised-trees.md)** | Discovery & Triage | Wine Quality & 2D Mixture | Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts. |
-| **[Suite 9: Survival & Competing Risks Trees](survival-trees.md)** | Clinical & Churn | Mayo PBC, Veterans, FLCHAIN | Gray's test, Tarone-Ware/Peto/Martingale, Aalen-Johansen CIF simplex invariant ($\sum F_c + S = 1$), Uno IPCW C. |
-| **[Suite 10: Solvers, Optimizers & Real-Data Tuning](solver-benchmarks.md)** | Optimization Systems | Yeh Concrete, Airfoil, Rosenbrock | Analytical Cholesky, L-BFGS, CCD, Evolutionary Solvers (SHADE, CMA-ES, GA, NES), Bounded Optimizers, and Real-Data Tuning. |
-| **[Suite 11: Component & Factor Analysis](component-benchmarks.md)** | Representation Learning | Multi-domain psychometrics & TabArena | PCA, SVD, Whitening, FastICA, NMF (MU/ALS/HALS), Factor Analysis (PAF/Minres), Schmid-Leiman, and R-aligned rotations. |
-
----
-
-## Architectural Workflow Navigator
-
-```mermaid
-flowchart LR
-    Start["What modeling challenge do you need to solve?"] --> Q1{"What is the target / learning setting?"}
-    
-    Q1 -- "Continuous Tabular Response" --> A1["Suite 1: Core Tree Architecture\n(Linear Leaves & Growth Knobs)"]
-    Q1 -- "Preserve Domain Laws / Fairness" --> A2["Suite 2: Structural Constraints\n(Monotone & Honest Inference)"]
-    Q1 -- "Intermittent Telemetry / Missing Inputs" --> A3["Suite 3: Native Missing Data\n(Learned Routes & Surrogates)"]
-    Q1 -- "Heavy Tails / Zero Inflation / Censoring" --> A4["Suite 4: Distributional Leaves\n(Tweedie, Gamma, Tobit)"]
-    Q1 -- "Sub-Millisecond Adaptation & Online Streams" --> A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy & Huber)"]
-    Q1 -- "Structural Parameter Breaks & Oblique Cuts" --> A6["Suite 6: Statistical & Metric Splitting\n(Chow Test & Oblique Scans)"]
-    Q1 -- "Autoregressive Demand & Seasonality" --> A7["Suite 7: Time Series Forecasting\n(Calendar Lags & Additive Decomp)"]
-    Q1 -- "Unsupervised Grouping / Outlier Triage" --> A8["Suite 8: Unsupervised Trees\n(PCT Clustering & EIF Anomaly)"]
-    Q1 -- "Right-Censored / Competing Multi-Cause" --> A9["Suite 9: Survival & Competing Risks\n(Gray's Test, Aalen-Johansen CIF)"]
-    Q1 -- "Numerical & Derivative-Free Optimization" --> A10["Suite 10: Solvers & Optimizers\n(CMA-ES, SHADE, L-BFGS-B, Real Tuning)"]
-    Q1 -- "Latent Factors / Rotations / Low-Rank" --> A11["Suite 11: Component & Factor Analysis\n(PCA, NMF, Factor Rotations, ICA)"]
-
-    classDef startBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
-    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
-    classDef suiteBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
-    classDef survBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
-    classDef optBox fill:#854d0e,stroke:#a16207,stroke-width:2px,color:#ffffff;
-    classDef compBox fill:#4c1d95,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
-
-    class Start startBox;
-    class Q1 gateBox;
-    class A1,A2,A3,A5,A6,A7,A8 suiteBox;
-    class A4,A9 survBox;
-    class A10 optBox;
-    class A11 compBox;
-```
-
-    class Start startBox;
-    class Q1 gateBox;
-    class A1,A2,A3,A4,A5,A6,A7,A8 suiteBox;
-    class A9 survBox;
-```
-
----
-
-## Reference Guides & End-to-End Studies
-
-- For complete industry case studies on regulatory credit scoring, sensor maintenance, and causal marketing, visit the **[Practical Modeling Pathways](../guides/index.md)**.
-- For complete function signatures and parameter specifications, visit the **[API Reference](../reference/model.md)**.
+| Guide | Primary Focus | Target Problem |
+| :--- | :--- | :--- |
+| **[Generic Optimizer Guide](generic-optimizer.md)** | Bounded Scalar Minimization | 14 algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) on black-box functions. |
+| **[PCA Rotations & Simple Structure](pca-rotations.md)** | Factor Rotations | Varimax, Quartimax, and Promax orthogonal/oblique simple structure. |
+| **[Data Processing](data-processing.md)** | Frame & Ingest Engine | Typed column frames, NA policies, and zero-copy Rust transforms. |
+| **[Optional Categorical Encoders](categorical-encoders.md)** | Categorical Ingestion | Native integer indexing, target encoding, and frequency scaling. |
+| **[Missing Data & Routing](missing-routing.md)** | Native NA Handling | Surrogate split mechanics and learned missing-left branching. |
+| **[Model Building & Growth Knobs](model-building.md)** | Tree Hyperparameters | `max_depth`, `min_rows`, `min_gain`, and cost-complexity pruning. |
+| **[Hyperparameter Search (HPO)](hpo.md)** | Automated Tuning | Grid search, random search, and Latin hypercube validation sweeps. |
+| **[Tree Inspection & Export](inspection.md)** | White-Box Auditing | DOT Graphviz exports, Quinlan rulesets, and leaf equations. |
+| **[Rules, Summaries & Neighbors](rules-summary-knn.md)** | Instance Explanations | Leaf k-nearest neighbor adjustments and local rule filtering. |

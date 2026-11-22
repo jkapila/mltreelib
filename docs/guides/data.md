@@ -69,7 +69,7 @@ Use native categorical inputs for `ModelTree`. Use an encoder when the downstrea
 - [Missing routing](../examples/missing-routing.md) explains `ModelTree` routing.
 - [Categorical encoders](../examples/categorical-encoders.md) explains training leakage.
 - [Data processing](../examples/data-processing.md) shows typed ingestion, summaries and time features.
-- [Time series forecasting](../examples/timeseries-forecasting.md) shows prior-day features and a time split.
+- [Time series forecasting](../suites/timeseries-forecasting.md) shows prior-day features and a time split.
 - [Data API](../reference/data.md) catalogs builders, encoders and transforms.
 
 ## What remains
