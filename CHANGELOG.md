@@ -4,6 +4,32 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.14
+
+### Standalone optimization solvers and multi-objective algorithms
+
+- Implement exact shallow optimal decision tree (OCT) solver for depth-1 and depth-2 trees using pure-Rust branch-and-bound integer formulations.
+- Formulate sparse ensemble pruning and rule selection solvers using Mixed-Integer Linear Programming (MILP) with HiGHS and native branch-and-cut fallback.
+- Extend `mltreelib.solvers.AskTell` multi-objective optimizer with MOEA/D decomposition, NSGA-III reference points, and Island migration topology.
+- Add batch evaluations and matrix whitening fixes in black-box optimizers and CMA-ES.
+- Remove legacy `get_params` in favor of native `.config()` across `ModelTree` and `GrowthControl`.
+
+### Benchmark suites restructuring and empirical rigor
+
+- Move all 11 core modeling suites to a dedicated `/suites/` directory (`docs/suites/`) with clean routing and navigation decoupled from `/examples/`.
+- Enrich all 11 benchmark suites with formal mathematical loss formulations, link functions, first-order conditions, and operational failure mode analysis.
+- Add top-level suite orchestrator `examples/suites/run_all.py` validating all 11 suites end-to-end.
+- Constrain Mermaid diagram heights with horizontal pipelines (`flowchart LR`) and viewport-preserving CSS rules.
+
+### Production blog case studies
+
+- Curate blog to 5 core business case studies with 20-seed empirical benchmarks, reproducible standalone scripts, and publication SVGs/PNGs:
+  - Prescriptive inventory replenishment with Lagrangian dual search.
+  - Two-stage hierarchical survival trees using native `tree.retrain()`.
+  - Glass-box credit scoring with monotone constraints and reject inference.
+  - Causal uplift modeling with honest causal trees and Qini curves.
+  - Zero-imputation predictive maintenance on Scania APS telemetry.
+
 ## v0.4.13
 
 ### Unified component analysis, factor analysis, and rotations
