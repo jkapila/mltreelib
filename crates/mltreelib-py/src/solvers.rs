@@ -6,9 +6,9 @@ use mltreelib_core::solver::generic::{
     OptimizationResult, OptimizerKind, RandomSearchOptions, SharedOptions, SmoothObjective,
 };
 use mltreelib_core::solver::{
-    fit_dense, fit_sparse_rule_selection, predict_sparse_rules, prune_ensemble_stepwise,
-    AskTell, AskTellKind, AskTellOptions, FittedGlm, GlmFamily, PruningResult, SolverOptions,
-    SparseRuleResult,
+    fit_dense, fit_optimal_tree, fit_sparse_rule_selection, predict_sparse_rules,
+    prune_ensemble_stepwise, AskTell, AskTellKind, AskTellOptions, FittedGlm, GlmFamily,
+    OptimalTreeResult, PruningResult, SolverOptions, SparseRuleResult,
 };
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
@@ -187,11 +187,13 @@ pub(super) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyAskTell>()?;
     m.add_class::<PyPruningResult>()?;
     m.add_class::<PySparseRuleResult>()?;
+    m.add_class::<PyOptimalTreeResult>()?;
     m.add_function(wrap_pyfunction!(fit_glm, m)?)?;
     m.add_function(wrap_pyfunction!(optimize, m)?)?;
     m.add_function(wrap_pyfunction!(minimize_many, m)?)?;
     m.add_function(wrap_pyfunction!(prune_ensemble, m)?)?;
-    m.add_function(wrap_pyfunction!(select_sparse_rules, m)?)
+    m.add_function(wrap_pyfunction!(select_sparse_rules, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_optimal_tree, m)?)
 }
 
 /// Result of sparse ensemble pruning.
@@ -292,6 +294,59 @@ pub fn select_sparse_rules(
 ) -> PyResult<PySparseRuleResult> {
     fit_sparse_rule_selection(&rule_matrix, &y, alpha, lambda_reg, max_iter, tol)
         .map(PySparseRuleResult)
+        .map_err(PyValueError::new_err)
+}
+
+/// Result of shallow optimal decision tree optimization.
+#[pyclass(name = "OptimalTreeResult", module = "mltreelib._core")]
+#[derive(Clone)]
+pub struct PyOptimalTreeResult(OptimalTreeResult);
+
+#[pymethods]
+impl PyOptimalTreeResult {
+    #[getter]
+    fn task(&self) -> &str {
+        &self.0.task
+    }
+
+    #[getter]
+    fn max_depth(&self) -> usize {
+        self.0.max_depth
+    }
+
+    #[getter]
+    fn n_splits(&self) -> usize {
+        self.0.n_splits
+    }
+
+    #[getter]
+    fn total_loss(&self) -> f64 {
+        self.0.total_loss
+    }
+
+    #[pyo3(signature = (data))]
+    fn predict(&self, data: Vec<Vec<f64>>) -> Vec<f64> {
+        self.0.predict(&data)
+    }
+
+    fn to_json(&self) -> PyResult<String> {
+        self.0.to_json().map_err(PyRuntimeError::new_err)
+    }
+}
+
+/// Solves for the globally optimal decision tree of depth <= 2.
+#[pyfunction]
+#[pyo3(signature = (x, y, *, task="classification", max_depth=2, min_samples_leaf=1, alpha=0.0))]
+pub fn solve_optimal_tree(
+    x: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    task: &str,
+    max_depth: usize,
+    min_samples_leaf: usize,
+    alpha: f64,
+) -> PyResult<PyOptimalTreeResult> {
+    fit_optimal_tree(&x, &y, task, max_depth, min_samples_leaf, alpha)
+        .map(PyOptimalTreeResult)
         .map_err(PyValueError::new_err)
 }
 

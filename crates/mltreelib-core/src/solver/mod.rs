@@ -17,6 +17,7 @@ pub mod family;
 pub mod generic;
 pub mod lbfgs;
 pub mod normal;
+pub mod oct;
 pub mod sparse_rule;
 pub mod summary;
 
@@ -36,6 +37,7 @@ pub use generic::{
 };
 pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
+pub use oct::{fit_optimal_tree, OptimalTreeNode, OptimalTreeResult};
 pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
 

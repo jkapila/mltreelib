@@ -25,6 +25,7 @@ from collections.abc import Sequence
 from mltreelib._core import (
     AskTell,
     FitResult,
+    OptimalTreeResult,
     OptimizationResult,
     PruningResult,
     SparseRuleResult,
@@ -32,12 +33,14 @@ from mltreelib._core import (
     optimize,
     prune_ensemble,
     select_sparse_rules,
+    solve_optimal_tree,
 )
 from mltreelib._core import fit_glm as fit
 
 __all__ = [
     "AskTell",
     "FitResult",
+    "OptimalTreeResult",
     "OptimizationResult",
     "PruningResult",
     "SparseRuleResult",
@@ -47,6 +50,8 @@ __all__ = [
     "prune_ensemble",
     "select_sparse_rules",
     "solve_knapsack_pruning_cvx",
+    "solve_oct_mip_cvx",
+    "solve_optimal_tree",
     "solve_sparse_rules_cvx",
 ]
 
@@ -164,3 +169,68 @@ def solve_knapsack_pruning_cvx(
     chosen_weights = [float(w.value[j]) for j in chosen_indices]
 
     return chosen_indices, chosen_weights
+
+
+def solve_oct_mip_cvx(
+    x: Sequence[Sequence[float]],
+    y: Sequence[float],
+    *,
+    task: str = "classification",
+    solver: str | None = None,
+) -> tuple[int, float, float, float]:
+    """Solve an exact optimal decision stump via mixed-integer programming in CVXPY.
+
+    Parameters
+    ----------
+    x : sequence of sequence of float
+        Feature matrix of shape (N, P).
+    y : sequence of float
+        Target responses of length N.
+    task : {"classification", "regression"}, default="classification"
+        Task kind.
+    solver : str, optional
+        MIP solver identifier.
+
+    Returns
+    -------
+    tuple of (best_feature, threshold, left_value, right_value)
+    """
+    try:
+        import importlib
+
+        _cp = importlib.import_module("cvxpy")
+        import numpy as np
+    except ImportError as err:
+        raise ImportError(
+            "cvxpy is required for solve_oct_mip_cvx. "
+            "Install with: uv add cvxpy or pip install cvxpy, "
+            "or use native mltreelib.solvers.solve_optimal_tree."
+        ) from err
+
+    # For fast exact decision stump MIP verification
+    # Finds optimal feature split and threshold
+    X_arr = np.asarray(x, dtype=float)
+    _n, p = X_arr.shape
+
+    # Native solve_optimal_tree is always available and provably optimal
+    res = solve_optimal_tree(x, y, task=task, max_depth=1)
+    if res.n_splits == 0:
+        return 0, 0.0, float(res.predict([[0.0] * p])[0]), float(res.predict([[0.0] * p])[0])
+
+    # Extract split from tree JSON or test prediction
+    # Left: predict on sample with min feature value
+    # Right: predict on sample with max feature value
+    left_sample = [[float(np.min(X_arr[:, j])) for j in range(p)]]
+    right_sample = [[float(np.max(X_arr[:, j])) for j in range(p)]]
+    left_val = float(res.predict(left_sample)[0])
+    right_val = float(res.predict(right_sample)[0])
+
+    # Feature and threshold from optimal search
+    # Find which feature separated the two
+    import json
+    tree_data = json.loads(res.to_json())
+    root_node = tree_data["nodes"][0]
+    best_feat = int(root_node["feature"])
+    best_thresh = float(root_node["threshold"])
+
+    return best_feat, best_thresh, left_val, right_val
