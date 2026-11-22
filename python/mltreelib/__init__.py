@@ -67,12 +67,14 @@ from mltreelib._core import (
     windowed_transform,
     winnow,
 )
+from mltreelib.components import ComponentModel, ComponentResult
 from mltreelib.models import (
     AnomalyTree,
     ClusterTree,
     distributions_to_quantiles,
     histograms_to_quantiles,
 )
+from mltreelib.report import ModelReport
 
 if TYPE_CHECKING:
     from mltreelib import plots
@@ -108,6 +110,8 @@ __all__ = [
     "BaseNEncoder",
     "CLTree",
     "CatBoostEncoder",
+    "ComponentModel",
+    "ComponentResult",
     "ClusterTree",
     "ContextAnomalyTree",
     "CountEncoder",
@@ -127,6 +131,7 @@ __all__ = [
     "MEstimatorEncoder",
     "MarsRegressor",
     "Metrics",
+    "ModelReport",
     "ModelTree",
     "OneHotEncoder",
     "PredictiveClusteringTree",
