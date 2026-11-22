@@ -94,6 +94,8 @@ PAGES = [
         "cluster.md",
         "Clustering trees",
         [
+            "ClusterModel",
+            "ClusterResult",
             "ClusterTree",
             "TrieKNN",
             "PredictiveClusteringTree",
@@ -103,14 +105,16 @@ PAGES = [
         ],
         [],
         (
-            "Tree-based clustering and mixed-type search: TrieKNN, PCT (CLUS), "
-            "CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF)."
+            "Unified clustering models and mixed-type search: ClusterModel, ClusterTree, "
+            "TrieKNN, PCT (CLUS), CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF)."
         ),
     ),
     (
         "anomaly.md",
         "Anomaly & density trees",
         [
+            "AnomalyModel",
+            "AnomalyResult",
             "AnomalyTree",
             "GritBot",
             "DensityEstimationTree",
@@ -122,8 +126,46 @@ PAGES = [
         ],
         [],
         (
-            "Tree-based anomaly detection, density estimation, streaming mass scoring, "
-            "collusive displacement (CoDisp), active human feedback, and contextual surprise."
+            "Unified anomaly detection: AnomalyModel (tree-based and PCA/NMF reconstruction errors), "
+            "density estimation, streaming mass scoring, CoDisp, and contextual surprise."
+        ),
+    ),
+    (
+        "components.md",
+        "Component & Factor Analysis",
+        [
+            "ComponentModel",
+            "ComponentResult",
+        ],
+        [],
+        (
+            "Consolidated component analysis: PCA with R-aligned factor rotations (Varimax, Quartimax, Promax), "
+            "Truncated SVD, Whitening (ZCA/PCA), FastICA, and Non-negative Matrix Factorization (MU, ALS, HALS with L1/L2 penalties)."
+        ),
+    ),
+    (
+        "rules.md",
+        "Rule-Set Models",
+        [
+            "RuleModel",
+            "RuleResult",
+            "RuleSet",
+            "Rule",
+        ],
+        [],
+        (
+            "Quinlan C4.5 / C5.0 rule extraction, condition interval simplification, and pessimistic error rate pruning."
+        ),
+    ),
+    (
+        "report.md",
+        "Model Reports & Diagnostics",
+        [
+            "ModelReport",
+        ],
+        [],
+        (
+            "Unified 4-section ModelReport representation: Objective, Learner, Controller, Diagnostics, and optional Inference."
         ),
     ),
 ]

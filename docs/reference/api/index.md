@@ -15,7 +15,10 @@ code. Narrative guides with verified examples:
 | [Metrics](metrics/) | Metrics | — |
 | [Encoders & scalers](encoders/) | IndexMapper, VariableScaler, GroupedScaler, BaseNEncoder, CatBoostEncoder, CountEncoder, EmbeddingEncoder, HashingEncoder, JamesSteinEncoder, LeaveOneOutEncoder, MEstimatorEncoder, OneHotEncoder, QuantileEncoder, SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder | — |
 | [Feature functions](features/) | — | grouped_scale, grouped_transform, trended_transform, windowed_transform, lag_by_days, decomposed_transform, calendar_features |
-| [Clustering trees](cluster/) | ClusterTree, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
-| [Anomaly & density trees](anomaly/) | AnomalyTree, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |
+| [Clustering trees](cluster/) | ClusterModel, ClusterResult, ClusterTree, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest | — |
+| [Anomaly & density trees](anomaly/) | AnomalyModel, AnomalyResult, AnomalyTree, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree | — |
+| [Component & Factor Analysis](components/) | ComponentModel, ComponentResult | — |
+| [Rule-Set Models](rules/) | RuleModel, RuleResult, RuleSet, Rule | — |
+| [Model Reports & Diagnostics](report/) | ModelReport | — |
 | [Solvers & optimization](solvers/) | FitResult, OptimizationResult | fit, optimize |
 | [Rust generic seam](rust-generic/) | Rust core seam | — |

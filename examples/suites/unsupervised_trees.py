@@ -11,8 +11,9 @@ Usage:
 
 import math
 import random
+import time
 
-from mltreelib import AnomalyTree, ClusterTree, load_dataset
+from mltreelib import AnomalyModel, ClusterModel, load_dataset
 
 
 def main():
@@ -27,10 +28,12 @@ def main():
     X_wine = [[float(data["columns"][c][i]) for c in features] for i in range(n_sample)]
     print(f"Loaded Wine Quality dataset: {n_sample} samples, features: {features}")
 
-    pct = ClusterTree(kind="pct", max_depth=3, min_rows=30)
+    t0 = time.perf_counter()
+    pct = ClusterModel(kind="pct", max_depth=3, min_rows=30)
     pct.fit(X_wine, col_names=features)
+    t_pct = (time.perf_counter() - t0) * 1000.0
 
-    print(f"Discovered clusters: {pct.n_clusters_}")
+    print(f"Discovered clusters: {pct.n_clusters_} (Fit latency: {t_pct:.2f} ms)")
     rules = pct.rules()
     print("Sample discovered cluster rules:")
     for idx, rule in enumerate(rules[:3]):
@@ -62,18 +65,28 @@ def main():
     print(f"Generated 2D mixture: {n_inliers} inliers (2 clusters), {n_outliers} peripheral anomalies.")
 
     # 1. Standard Isolation Forest (axis-aligned splits)
-    iforest = AnomalyTree(kind="isolation", max_depth=8, seed=42)
+    t0 = time.perf_counter()
+    iforest = AnomalyModel(kind="isolation", max_depth=8, seed=42)
     iforest.fit(X_2d, col_names=["x1", "x2"])
+    t_if_fit = (time.perf_counter() - t0) * 1000.0
 
     # 2. Extended Isolation Forest (oblique random hyperplanes)
-    eif = AnomalyTree(kind="eif", max_depth=8, extension_level=1, seed=42)
+    t0 = time.perf_counter()
+    eif = AnomalyModel(kind="eif", max_depth=8, extension_level=1, seed=42)
     eif.fit(X_2d, col_names=["x1", "x2"])
+    t_eif_fit = (time.perf_counter() - t0) * 1000.0
 
+    t0 = time.perf_counter()
     scores_if = iforest.score_samples(X_2d[-5:])
+    t_if_score = (time.perf_counter() - t0) * 1000.0
+
+    t0 = time.perf_counter()
     scores_eif = eif.score_samples(X_2d[-5:])
-    print(f"Outlier sample anomaly scores:")
-    print(f"  Axis-Aligned IF : {[round(s, 3) for s in scores_if]}")
-    print(f"  Extended IF     : {[round(s, 3) for s in scores_eif]}\n")
+    t_eif_score = (time.perf_counter() - t0) * 1000.0
+
+    print("Timing & Score Comparison on Outliers:")
+    print(f"  Axis-Aligned IF : Fit={t_if_fit:.2f}ms, Score={t_if_score:.2f}ms | Scores: {[round(s, 3) for s in scores_if]}")
+    print(f"  Extended IF     : Fit={t_eif_fit:.2f}ms, Score={t_eif_score:.2f}ms | Scores: {[round(s, 3) for s in scores_eif]}\n")
 
     # =========================================================================
     # Part 3: Generate Publication Multi-Panel Figure

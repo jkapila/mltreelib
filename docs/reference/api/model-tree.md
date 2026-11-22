@@ -58,6 +58,14 @@ this uses the fitted family, not the empirical target t-digest.
 
 Raises: ValueError for Gaussian leaves or an invalid threshold.
 
+### ModelTree.config
+
+```python
+config(self, /)
+```
+
+Return all hyperparameter values as a dict.
+
 ### ModelTree.extract_rules
 
 ```python
@@ -455,13 +463,21 @@ Options for splitting, stopping, pruning, and routing a model tree.
 
 Omitted options inherit the ModelTree defaults.
 
+### GrowthControl.config
+
+```python
+config(self)
+```
+
+Return the explicitly configured growth options.
+
 ### GrowthControl.get_params
 
 ```python
 get_params(self)
 ```
 
-Return the explicitly configured growth options.
+Return the explicitly configured growth options (deprecated: use config()).
 
 ## LeafControl
 

@@ -56,6 +56,15 @@ class _UnsupervisedSnapshot(ABC):
             sort_keys=True,
         )
 
+    def snapshot(self) -> str:
+        """Return the fitted model as a JSON snapshot string."""
+        return self.to_json()
+
+    @classmethod
+    def from_snapshot(cls: type[_SnapshotT], data: str) -> _SnapshotT:
+        """Restore a fitted model from a JSON snapshot string."""
+        return cls.from_json(data)
+
     @classmethod
     def from_json(cls: type[_SnapshotT], data: str) -> _SnapshotT:
         """Restore a fitted model from a versioned JSON string."""
