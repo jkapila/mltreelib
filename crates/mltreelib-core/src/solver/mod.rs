@@ -15,9 +15,11 @@ pub mod evolutionary;
 pub mod ensemble_prune;
 pub mod family;
 pub mod generic;
+pub mod groups;
 pub mod lbfgs;
 pub mod normal;
 pub mod oct;
+pub mod problems;
 pub mod sparse_rule;
 pub mod summary;
 
@@ -35,9 +37,17 @@ pub use generic::{
     Bounds, Budget, Constraint, ConstraintKind, Objective, ObjectiveError, OptimizationRequest,
     OptimizationResult, OptimizerKind, SmoothObjective, SolveStatus,
 };
+pub use groups::{
+    canonicalize_groups, expand_missing_indicators, validate_groups, GroupKind, GroupSpec,
+    GroupValidationError,
+};
 pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
 pub use oct::{fit_optimal_tree, OptimalTreeNode, OptimalTreeResult};
+pub use problems::{
+    group_l2_norm, group_lasso_penalty, group_soft_threshold, sparse_group_lasso_penalty,
+    RegressionProblemKind,
+};
 pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
 

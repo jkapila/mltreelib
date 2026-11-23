@@ -51,6 +51,8 @@ _GROWTH_FIELDS = frozenset(
         "ebm_fast",
         "target_cause",
         "n_classes",
+        "max_bins",
+        "min_bin_rows",
     ]
 )
 _LEAF_FIELDS = frozenset(

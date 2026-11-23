@@ -6,6 +6,9 @@
 //! - `DenseView`: 2D slice view for full-table regression and MARS basis functions.
 
 use crate::node_stats::Gram;
+use crate::solver::groups::{
+    expand_missing_indicators, validate_groups, GroupSpec, GroupValidationError,
+};
 
 /// Trait for design matrix access across standalone and tree-leaf regressions.
 pub trait DesignMatrix {
@@ -36,6 +39,11 @@ pub trait DesignMatrix {
 
     /// Weighted squared norm of column $j$: $\sum_i w_i X_{ij}^2$.
     fn col_norm_sq(&self, j: usize, custom_weights: Option<&[f64]>) -> f64;
+
+    /// Optional group metadata attached to this design matrix.
+    fn groups(&self) -> Option<&[GroupSpec]> {
+        None
+    }
 }
 
 /// Zero-copy design matrix view over columnar tree-node data.
@@ -48,6 +56,7 @@ pub struct ColumnSliceView<'a> {
     pub chosen: &'a [usize],
     pub with_indicators: bool,
     pub impute_means: Option<&'a [f64]>,
+    pub groups: Option<Vec<GroupSpec>>,
 }
 
 impl<'a> ColumnSliceView<'a> {
@@ -67,6 +76,7 @@ impl<'a> ColumnSliceView<'a> {
             chosen,
             with_indicators,
             impute_means: None,
+            groups: None,
         }
     }
 
@@ -87,11 +97,31 @@ impl<'a> ColumnSliceView<'a> {
             chosen,
             with_indicators,
             impute_means,
+            groups: None,
         }
+    }
+
+    /// Attaches and validates group metadata for this slice view.
+    ///
+    /// If `with_indicators` is enabled, coefficient groups automatically inherit
+    /// the corresponding missing indicator columns.
+    pub fn with_groups(mut self, raw_groups: Vec<GroupSpec>) -> Result<Self, GroupValidationError> {
+        let groups = if self.with_indicators {
+            expand_missing_indicators(&raw_groups, self.chosen.len())
+        } else {
+            raw_groups
+        };
+        validate_groups(&groups, self.n_features(), true, Some(self.n_rows()))?;
+        self.groups = Some(groups);
+        Ok(self)
     }
 }
 
 impl<'a> DesignMatrix for ColumnSliceView<'a> {
+    #[inline]
+    fn groups(&self) -> Option<&[GroupSpec]> {
+        self.groups.as_deref()
+    }
     #[inline]
     fn n_rows(&self) -> usize {
         self.rows.len()
@@ -268,6 +298,7 @@ pub struct DenseView<'a> {
     pub y: &'a [f64],
     pub w: Option<&'a [f64]>,
     pub with_intercept: bool,
+    pub groups: Option<Vec<GroupSpec>>,
 }
 
 impl<'a> DenseView<'a> {
@@ -282,11 +313,28 @@ impl<'a> DenseView<'a> {
             y,
             w,
             with_intercept,
+            groups: None,
         }
+    }
+
+    /// Attaches and validates group metadata for this dense view.
+    pub fn with_groups(mut self, groups: Vec<GroupSpec>) -> Result<Self, GroupValidationError> {
+        validate_groups(
+            &groups,
+            self.n_features(),
+            self.with_intercept,
+            Some(self.n_rows()),
+        )?;
+        self.groups = Some(groups);
+        Ok(self)
     }
 }
 
 impl<'a> DesignMatrix for DenseView<'a> {
+    #[inline]
+    fn groups(&self) -> Option<&[GroupSpec]> {
+        self.groups.as_deref()
+    }
     #[inline]
     fn n_rows(&self) -> usize {
         self.x.len()

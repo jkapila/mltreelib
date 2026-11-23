@@ -42,6 +42,14 @@ use crate::split::{CatOrder, CatSearch, ColType};
 pub use crate::node_stats::{LeafModel as NodeModel, LeafStats as NodeStats, LinearModel};
 pub use crate::split::SplitEval;
 
+fn default_max_bins() -> usize {
+    256
+}
+
+fn default_min_bin_rows() -> usize {
+    1
+}
+
 /// Growth and leaf parameters.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
@@ -222,6 +230,12 @@ pub struct ModelTreeParams {
     pub n_classes: Option<usize>,
     /// Maximum number of distinct integer classes supported by fast histogram binning (default 256).
     pub max_classes: usize,
+    /// Maximum number of histogram bins per numeric feature for binned split evaluation (default 256).
+    #[serde(default = "default_max_bins")]
+    pub max_bins: usize,
+    /// Minimum observations per quantile bin for continuous features (default 1).
+    #[serde(default = "default_min_bin_rows")]
+    pub min_bin_rows: usize,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -361,6 +375,8 @@ impl Default for ModelTreeParams {
             train_ids: false,
             n_classes: None,
             max_classes: 256,
+            max_bins: 256,
+            min_bin_rows: 1,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -597,9 +613,9 @@ impl ModelTree {
             params.gain = *base_gain.clone();
         }
         if params.split_eval == SplitEval::Histogram
-            && (!crate::split::uses_class_histogram(&params.gain) || params.extratrees)
+            && (!crate::split::uses_histogram_split(&params.gain) || params.extratrees)
         {
-            return Err("histogram split evaluation requires gini, entropy, gain_ratio or twoing without extratrees".into());
+            return Err("histogram split evaluation requires a supported classification or regression gain without extratrees".into());
         }
         if params.tree_monotone.is_empty() && !params.monotone.is_empty() {
             params.tree_monotone = params.monotone.clone();

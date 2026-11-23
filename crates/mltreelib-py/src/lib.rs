@@ -3436,8 +3436,10 @@ impl PyModelTree {
     ///        all). Splits only — leaves see all columns.
     ///     col_sample: per-node random column subset fraction (None = all).
     ///     seed: seed for the per-node column subset.
-    ///     split_eval: "fast" (default), "histogram" (up to 256 bins for
-    ///         classification gains), or "exhaustive".
+    ///     split_eval: "fast" (default), "histogram" (cardinality-adaptive binned
+    ///         evaluation up to max_bins), or "exhaustive".
+    ///     max_bins: maximum histogram bins per numeric feature (default 256).
+    ///     min_bin_rows: minimum rows per quantile bin for continuous features (default 1).
     ///     presort: upfront numeric column sorting (default false).
     ///   LEAF
     ///     leaf: "linear", "mean", "median", "quantile" (with tau), "huber", or "mars".
@@ -3536,7 +3538,7 @@ impl PyModelTree {
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
         knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
         knn_gamma = None, knn_p = 2.0,
-        shrinkage = 0.0, max_classes = 256, leaf_na_policy = "drop_fallback", preset = None,
+        shrinkage = 0.0, max_classes = 256, max_bins = 256, min_bin_rows = 1, leaf_na_policy = "drop_fallback", preset = None,
         control = None, leaf_control = None,
         mmd_kernel = None, mmd_bandwidth = None,
         fairness_penalty = None, protected_col = None, fairness_metric = None,
@@ -3610,6 +3612,8 @@ impl PyModelTree {
         knn_p: f64,
         shrinkage: f64,
         max_classes: usize,
+        max_bins: usize,
+        min_bin_rows: usize,
         leaf_na_policy: &str,
         preset: Option<&str>,
         control: Option<Bound<'_, PyAny>>,
@@ -3985,6 +3989,8 @@ impl PyModelTree {
             knn_p,
             shrinkage,
             max_classes,
+            max_bins,
+            min_bin_rows,
             leaf_na_policy: leaf_na_policy_enum,
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
@@ -5551,6 +5557,8 @@ impl PyModelTree {
                 SplitEval::Exhaustive => "exhaustive",
             },
         )?;
+        d.set_item("max_bins", self.params.max_bins)?;
+        d.set_item("min_bin_rows", self.params.min_bin_rows)?;
         d.set_item("presort", self.params.presort)?;
         d.set_item("events", self.params.events.clone())?;
         d.set_item("n_classes", self.params.n_classes)?;
