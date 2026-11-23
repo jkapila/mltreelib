@@ -79,7 +79,7 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
     ```
 
-=== "Standard CART (Constant Mean)"
+=== "ModelTree(leaf='mean') Baseline"
 
     ```python
     from mltreelib import Metrics, ModelTree, load_dataset
@@ -96,14 +96,14 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     X_train, y_train = X[:split_idx], y[:split_idx]
     X_test, y_test = X[split_idx:], y[split_idx:]
 
-    # Fit standard CART decision tree (constant mean leaves, depth=3)
+    # Fit piecewise-constant CART decision tree (leaf="mean", depth=3)
     cart = ModelTree(leaf="mean", max_depth=3, min_rows=20)
     cart.fit(X_train, y_train, col_names=feature_names)
     pred_cart = cart.predict(X_test)
 
     metrics = Metrics()
     m_cart = metrics.regression(y_test, pred_cart)
-    print(f"CART (Mean)       : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
+    print(f"ModelTree (Mean)  : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
     ```
 
 ---
@@ -115,22 +115,24 @@ Loaded Concrete Compressive Strength: 1030 rows, 8 features.
 Train rows: 824, Test rows: 206
 
 === Model Performance on Test Set ===
-Standard Decision Tree (CART)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-mltreelib ModelTree (Linear)   : RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
+ModelTree (leaf="mean", d=3)    : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+sklearn DecisionTreeRegressor   : RMSE = 10.92 MPa, R2 = 0.579, MAE = 8.36 MPa
+mltreelib ModelTree (Linear)    : RMSE =  7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
 --> Error reduction with linear leaves: 34.3%
 ```
 
 | Model | Leaf Formulation | Depth | Test RMSE (MPa) | Test $R^2$ | Test MAE (MPa) |
 |---|---|:---:|:---:|:---:|:---:|
-| **Standard CART** | Constant Mean | 3 | 11.09 | 0.566 | 8.47 |
-| **`mltreelib` ModelTree** | Regularized Linear Ridge | 3 | **7.28** | **0.813** | **5.07** |
+| **`ModelTree(leaf="mean")`** | Constant Mean | 3 | 11.09 | 0.566 | 8.47 |
+| **`sklearn.tree.DecisionTreeRegressor`** | Constant Mean | 3 | 10.92 | 0.579 | 8.36 |
+| **`mltreelib` ModelTree (Linear)** | Regularized Linear Ridge | 3 | **7.28** | **0.813** | **5.07** |
 
-With identical tree topology (depth 3, 8 leaves), `ModelTree` achieves a **34.3% error reduction** and increases explained variance from 56.6% to 81.3%.
+With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves achieves a **34.3% error reduction** over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.
 
 ![Quickstart ModelTree vs CART Step Function](assets/quickstart_tree_vs_flat.png)
 
-- **Left Panel (Parity Plot)**: Predictions from `ModelTree(leaf="linear")` cluster tightly along the 1:1 diagonal, whereas CART's predictions are constrained to horizontal bands corresponding to leaf means.
-- **Right Panel (Response Profile)**: Along the gradient of Cement content, CART produces wide step discontinuities, while `ModelTree` preserves the physical continuous response curve.
+- **Left Panel (Parity Plot)**: Predictions from `ModelTree(leaf="linear")` cluster tightly along the 1:1 diagonal, whereas constant-mean trees are constrained to horizontal bands corresponding to leaf averages.
+- **Right Panel (Response Profile)**: Along the gradient of Cement content, constant-mean CART trees produce wide step discontinuities, while `ModelTree` preserves the physical continuous response curve.
 
 ---
 
@@ -174,7 +176,7 @@ dot_code = model_tree.to_dot()
 ## Next Steps
 
 - Explore the **[Practical Modeling Pathways](guides/index.md)** for end-to-end classification, survival, and uplift workflows.
-- Study **[Dynamic Leaf Retraining](suites/hierarchical-retrain.md)** for microsecond warm-start leaf adaptation.
+- Study **[Dynamic Leaf Retraining](suites/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
 - Review **[Distributional Leaves](suites/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
 - Inspect the **[API Reference](reference/model.md)** for all parameters and methods.
 

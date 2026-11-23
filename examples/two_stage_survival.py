@@ -3,10 +3,10 @@
 Demonstrates the two-stage survival architecture using native ModelTree.retrain():
 1. Stage 1: Subject ID-level cohort discovery via transparent tree partitioning (ModelTree).
 2. Stage 2: In-place leaf retraining with non-parametric Kaplan-Meier survival step functions via tree.retrain().
-3. Serving: O(depth) routing of new subjects to localized, calibrated survival curves.
+3. Serving: O(depth) routing of new subjects to localized Kaplan-Meier survival curves.
 4. Benchmark: 20-seed comparison against unstratified Kaplan-Meier and single-stage survival trees.
 
-Evaluates on the real benchmark Bank_Customer_Churn (10,000 customers).
+Evaluates on the real benchmark Bank_Customer_Churn (10,000 customers, OpenML ID 46911).
 Produces: docs/assets/two_stage_survival_cohorts.png and .svg
 """
 
@@ -130,7 +130,8 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         marginal = ModelTree(max_depth=0, leaf_family="survival")
         marginal.fit(X_tr, (t_tr, e_tr))
         risk_m = marginal.predict(X_te, kind="risk")
-        res_m = m.survival(t_te, e_te, risk_m)
+        surv_m = marginal.predict(X_te, kind="survival", times=tenure_grid)
+        res_m = m.survival(t_te, e_te, risk_m, surv_curves=surv_m, times=tenure_grid)
         metrics_marginal["c_index"].append(res_m["harrell_c"])
         metrics_marginal["ibs"].append(res_m["ibs"])
 
@@ -138,7 +139,8 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         single = ModelTree(max_depth=3, leaf_family="survival")
         single.fit(X_tr, (t_tr, e_tr))
         risk_s = single.predict(X_te, kind="risk")
-        res_s = m.survival(t_te, e_te, risk_s)
+        surv_s = single.predict(X_te, kind="survival", times=tenure_grid)
+        res_s = m.survival(t_te, e_te, risk_s, surv_curves=surv_s, times=tenure_grid)
         metrics_single["c_index"].append(res_s["harrell_c"])
         metrics_single["ibs"].append(res_s["ibs"])
 
@@ -148,7 +150,8 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         ts_tree.retrain(X_tr, (t_tr, e_tr), leaf_family="survival")
 
         risk_ts = ts_tree.predict(X_te, kind="risk")
-        res_ts = m.survival(t_te, e_te, risk_ts)
+        surv_ts = ts_tree.predict(X_te, kind="survival", times=tenure_grid)
+        res_ts = m.survival(t_te, e_te, risk_ts, surv_curves=surv_ts, times=tenure_grid)
         metrics_two_stage["c_index"].append(res_ts["harrell_c"])
         metrics_two_stage["ibs"].append(res_ts["ibs"])
 

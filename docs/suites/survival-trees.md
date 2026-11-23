@@ -252,27 +252,27 @@ print("5. Prognostic Risk Scores (Cause 1):", [round(r, 4) for r in risk_scores]
 Console Output:
 
 ```text
-1. Predicted Median Survival Times: [1.99, 5.68, 0.76]
+1. Predicted Median Survival Times: [1.62, 1.99, 2.97]
 
 2. Survival Probabilities S(t) at horizons [1.0, 2.0, 5.0]:
-   Patient 1: [0.8124, 0.4962, 0.1835]
-   Patient 2: [0.9542, 0.8810, 0.5841]
-   Patient 3: [0.3821, 0.1245, 0.0102]
+   Patient 1: [0.6423, 0.4409, 0.1268]
+   Patient 2: [0.7029, 0.4937, 0.1883]
+   Patient 3: [0.7610, 0.6077, 0.2578]
 
 3. Cumulative Hazard Lambda(t) at horizons [1.0, 2.0, 5.0]:
-   Patient 1: [0.2078, 0.7008, 1.6955]
-   Patient 2: [0.0469, 0.1267, 0.5376]
-   Patient 3: [0.9621, 2.0834, 4.5854]
+   Patient 1: [0.4402, 0.8138, 2.0368]
+   Patient 2: [0.3494, 0.7007, 1.6524]
+   Patient 3: [0.2716, 0.4953, 1.3438]
 
 4. Cumulative Incidence F_c(t) for Cause 1 & Cause 2:
-   Patient 1 Cause 1 (Relapse): [0.1241, 0.3230, 0.3230]
-   Patient 1 Cause 2 (Death):   [0.0635, 0.1808, 0.4935]
-   Patient 2 Cause 1 (Relapse): [0.0360, 0.0811, 0.0991]
-   Patient 2 Cause 2 (Death):   [0.0098, 0.0379, 0.3168]
-   Patient 3 Cause 1 (Relapse): [0.6098, 0.8293, 0.8537]
-   Patient 3 Cause 2 (Death):   [0.0081, 0.0462, 0.1361]
+   Patient 1 Cause 1 (Relapse): [0.1149, 0.2015, 0.3364]
+   Patient 1 Cause 2 (Death):   [0.2428, 0.3576, 0.5368]
+   Patient 2 Cause 1 (Relapse): [0.0442, 0.0779, 0.1361]
+   Patient 2 Cause 2 (Death):   [0.2529, 0.4284, 0.6755]
+   Patient 3 Cause 1 (Relapse): [0.1942, 0.3092, 0.5393]
+   Patient 3 Cause 2 (Death):   [0.0448, 0.0831, 0.2029]
 
-5. Prognostic Risk Scores (Cause 1): [0.3230, 0.0991, 0.8537]
+5. Prognostic Risk Scores (Cause 1): [-1.6175, -1.9882, -2.9680]
 ```
 
 ---
@@ -402,7 +402,7 @@ Default Rule:
 1. **Conditionally Independent Censoring**:
    $T_i^* \perp C_i \mid X_i$. If unobserved health deterioration causes patients to drop out, Kaplan-Meier leaf estimates will overestimate survival.
 2. **Competing Risks vs. Censoring**:
-   Do not treat competing events (e.g., organ transplant, accidental death) as right-censoring. Doing so overestimates the cumulative incidence of the primary event by 15–30%. Use `gain="gray"` and `kind="cif"`.
+   Do not treat competing events (e.g., organ transplant, accidental death) as right-censoring. Doing so overestimates the cumulative incidence of the primary event. Use `gain="gray"` and `kind="cif"`.
 3. **Cumulative Hazard vs. Instantaneous Hazard Rate**:
    `predict(kind="hazard")` computes $\hat{\Lambda}(t) = \int_0^t \lambda(u) du$ (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate $\lambda(t) = \frac{d\Lambda(t)}{dt}$.
 4. **Tail Extrapolation**:
@@ -417,7 +417,7 @@ The implementation reproduces eleven key findings from classical (1988–2014) a
 | Reference & Paper Link | Topic & Method | Benchmark Dataset | Original Paper Finding | mltreelib Reproduction Result |
 | :--- | :--- | :--- | :--- | :--- |
 | [**LeBlanc & Crowley (1992)**](https://doi.org/10.1080/01621459.1992.10475189), [**(1993)**](https://doi.org/10.2307/2532253) | Martingale residual splitting ($O(N)$ streaming scan) | Veterans' Lung Cancer ($N=137$, 128 deaths) | Primary prognostic split occurs on Karnofsky score $\le 40$, yielding 3.1x mortality hazard jump. | `ModelTree(gain="martingale", max_depth=2)` isolates primary cut at `karno <= 40`. Yields median survival of 30 days vs 111 days. |
-| [**Gray (1988)**](https://doi.org/10.1214/aos/1176350951) | K-sample subdistribution log-rank test for competing risks | Mayo Clinic PBC ($N=312$: 125 deaths, 29 liver transplants, 158 censored) | Naive Kaplan-Meier overestimates 10-year death probability at 52.4% because it treats transplants as independent censoring. | `gain="gray", target_cause=1` correctly estimates 10-year death CIF at 38.6%, eliminating the 13.8% risk overestimation. |
+| [**Gray (1988)**](https://doi.org/10.1214/aos/1176350951) | K-sample subdistribution log-rank test for competing risks | Competing risks cohort ($N=800$, Cause 1: 333, Cause 2: 366, Censored: 101) | Naive Kaplan-Meier overestimates primary event incidence because it treats competing failures as independent censoring. | `gain="gray", target_cause=1` correctly estimates cause-specific CIF $F_1(t)$, eliminating competing-event risk overestimation. |
 | [**Fine & Gray (1999)**](https://doi.org/10.1080/01621459.1999.10474144) | Subdistribution hazards model | Mayo Clinic PBC cohort | Serum bilirubin and albumin are dominant predictors of primary liver failure mortality. | Tree rules isolate `bili > 3.2` and `albumin <= 3.1` with high subdistribution hazard and rapid CIF accumulation. |
 | [**Ishwaran et al. (2014)**](https://doi.org/10.1080/01621459.2014.899757) | Aalen-Johansen leaf CIF estimator & simplex property | Multi-cause oncology simulation ($N=800$) | Competing risk probabilities and overall survival must satisfy the simplex identity $\sum_{c=1}^J F_c(t) + S(t) = 1.0$. | Verified across 1,000 grid points: maximum absolute error is $1.33 \times 10^{-15}$ (machine epsilon). |
 | [**Uno et al. (2011)**](https://doi.org/10.1002/sim.4154) | IPCW Concordance Index ($C^{\text{Uno}}$) | Mayo Clinic FLCHAIN ($N=7,874$, 2,172 deaths) | Harrell's C is sensitive to study follow-up duration; Uno's IPCW C removes censoring bias via inverse Kaplan-Meier weights. | Native `Metrics().survival(...)` computes Harrell's C (0.784) and Uno's IPCW C (0.781) on raw FLCHAIN data with 1,350 missing creatinine values. |

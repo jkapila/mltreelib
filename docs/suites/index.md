@@ -67,7 +67,7 @@ uv run python examples/suites/core_tree_architecture.py
 
     ---
 
-    Microsecond warm-start leaf retraining, Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.
+    Fast warm-start leaf retraining (~2.2 ms on 1,030 rows), Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.
 
     [:octicons-arrow-right-24: Open Suite 5](hierarchical-retrain.md)
 
@@ -131,7 +131,7 @@ uv run python examples/suites/core_tree_architecture.py
 | **[Suite 2: Structural Constraints & Honest Inference](constraints-and-honesty.md)** | Physics & Governance | Healthcare Expenses (1,338 rows) | Dual monotone split and slope constraints, interaction isolation, sample-split honesty ($S^{\text{tr}}$ vs $S^{\text{est}}$). |
 | **[Suite 3: Native Missing Data Routing](missing-data-routing.md)** | Industrial IoT | Scania APS Failure (76,000 rows) | Learned `missing_left` direction, surrogate splits (`maxsurrogate=N`), zero-imputation telemetry triage. |
 | **[Suite 4: Distributional & Censored Leaf Families](distributional-leaves.md)** | Actuarial & Risk | Credit-G, Healthcare, Affairs, Mroz | Gamma, Poisson, Tweedie, and Tobit censored MLE leaves with 60%+ OLS attenuation correction. |
-| **[Suite 5: Dynamic Leaf Retraining & Adaptation](hierarchical-retrain.md)** | Streaming & Systems | Yeh Concrete (1,030 rows) | Microsecond warm-start leaf retraining, Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors. |
+| **[Suite 5: Dynamic Leaf Retraining & Adaptation](hierarchical-retrain.md)** | Streaming & Systems | Yeh Concrete (1,030 rows) | Fast warm-start leaf retraining (~2.2 ms), Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors. |
 | **[Suite 6: Statistical, Metric & Oblique Splitting](statistical-and-metric-splitting.md)** | Split Optimization | Boston/Miami Housing, Wine Quality | Chow structural break gate, oblique ridge splits, Gain Ratio, Twoing, SDR, and Rule extraction. |
 | **[Suite 7: Time Series Feature Engineering & Forecasting](timeseries-forecasting.md)** | Temporal Econometrics | Multi-store retail demand panel | Pure Rust calendar extraction, entity-grouped calendar day lags, additive decomposition, and out-of-time trend extrapolation. |
 | **[Suite 8: Unsupervised Trees: Clustering & Anomaly Triage](unsupervised-trees.md)** | Discovery & Triage | Wine Quality & 2D Mixture | Predictive Clustering Trees (PCT) with rule extraction, Extended Isolation Forest (EIF) with oblique cuts. |
@@ -151,7 +151,7 @@ flowchart LR
     Q1 -- "Preserve Domain Laws / Fairness" --> A2["Suite 2: Structural Constraints\n(Monotone & Honest Inference)"]
     Q1 -- "Intermittent Telemetry / Missing Inputs" --> A3["Suite 3: Native Missing Data\n(Learned Routes & Surrogates)"]
     Q1 -- "Heavy Tails / Zero Inflation / Censoring" --> A4["Suite 4: Distributional Leaves\n(Tweedie, Gamma, Tobit)"]
-    Q1 -- "Sub-Millisecond Adaptation & Online Streams" --> A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy & Huber)"]
+    Q1 -- "Fast Adaptation & Online Streams" --> A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy & Huber)"]
     Q1 -- "Structural Parameter Breaks & Oblique Cuts" --> A6["Suite 6: Statistical & Metric Splitting\n(Chow Test & Oblique Scans)"]
     Q1 -- "Autoregressive Demand & Seasonality" --> A7["Suite 7: Time Series Forecasting\n(Calendar Lags & Additive Decomp)"]
     Q1 -- "Unsupervised Grouping / Outlier Triage" --> A8["Suite 8: Unsupervised Trees\n(PCT Clustering & EIF Anomaly)"]

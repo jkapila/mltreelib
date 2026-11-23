@@ -86,7 +86,7 @@ Honest trees provide asymptotically Gaussian, centered, and unbiased treatment e
 
 ## 3. The Kevin Hillstrom Randomized Trial Dataset
 
-We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing trial:
+We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing trial (filtered from the original 64,000-customer trial to compare Women's E-Mail recipients against the No E-Mail control arm; Mens E-Mail recipients are excluded):
 - **Treatment Arm**: Women's E-Mail campaign (21,387 customers).
 - **Control Arm**: No email contact (21,306 customers).
 - **Outcome**: Binary visit indicator within two weeks (`visit`).
@@ -94,18 +94,34 @@ We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing 
 - **Population ATE**: Sending the Women's E-Mail increases overall visit rate from 10.6% to 15.1% (+4.52 percentage points).
 
 ```python
+import numpy as np
 import pandas as pd
 from mltreelib import Metrics, ModelTree
 
+# Load Hillstrom dataset and filter for Women's E-Mail vs Control
 df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
 df = df[df["segment"].isin(["Womens E-Mail", "No E-Mail"])].reset_index(drop=True)
 
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
 types = ["numeric"] * 5 + ["categorical"] * 2
 
-x = [[None if pd.isna(v) else v for v in row] for row in df[features].itertuples(index=False, name=None)]
-y = df["visit"].astype(float).tolist()
-w = [float(s == "Womens E-Mail") for s in df["segment"]]
+X_all = [[None if pd.isna(v) else v for v in row] for row in df[features].itertuples(index=False, name=None)]
+y_all = df["visit"].astype(float).tolist()
+w_all = [float(s == "Womens E-Mail") for s in df["segment"]]
+
+# 60% train, 20% validation, 20% test split (Seed 42)
+rng = np.random.default_rng(42)
+perm = rng.permutation(len(df))
+n_train, n_val = int(0.60 * len(df)), int(0.20 * len(df))
+tr_idx, te_idx = perm[:n_train], perm[n_train + n_val:]
+
+x_train = [X_all[i] for i in tr_idx]
+y_train = [y_all[i] for i in tr_idx]
+w_train = [w_all[i] for i in tr_idx]
+
+x_test = [X_all[i] for i in te_idx]
+y_test = [y_all[i] for i in te_idx]
+w_test = [w_all[i] for i in te_idx]
 
 # Fit honest causal tree with max_depth=2
 tree = ModelTree(
@@ -117,7 +133,7 @@ tree = ModelTree(
     honesty=True,
     seed=42,
 )
-tree.fit(x, (y, w), col_names=features, dtypes=types)
+tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
 ```
 
 ---
@@ -137,7 +153,7 @@ Discovered Causal Splits (3 split nodes, 4 leaves):
 
 ### Structural Subgroup Findings:
 1. **Prior Women's Shoppers with High Spend (Leaf 3)**: Customers with prior women's merchandise purchases (`womens > 0`) and historical spend over $338.47 achieve the highest uplift: **+8.81% incremental visits** (nearly double the population average).
-2. **Non-Women's Shoppers (Leaf 0)**: Customers with no prior women's merchandise purchases exhibit lower incremental response (+2.8%), representing low-return ad spend.
+2. **Non-Women's Shoppers (Leaf 0)**: Customers with no prior women's merchandise purchases exhibit lower incremental response (+1.9%), representing low-return ad spend.
 
 ```python
 metrics = Metrics()
@@ -152,7 +168,7 @@ Single-seed evaluation on test customers:
 
 ![Qini Curve and Incremental Visit Rates by Model Decile](../assets/causal_uplift_qini_curve.png)
 
-Panel A plots the Qini curve (cumulative incremental site visits against targeted customer share). The honest causal tree achieves rapid early gains: targeting the top 30% of customers captures over 60% of all potential incremental visits. Panel B shows monotonic decay across predicted deciles, confirming clean segregation of high-responsiveness customers from unresponsive segments.
+Panel A plots the Qini curve (cumulative incremental site visits against targeted customer share). The honest causal tree achieves rapid early gains: targeting the top 30% of customers captures 51.9% of all potential incremental visits (193.8 cumulative visits). Panel B shows monotonic decay across predicted deciles, confirming clean segregation of high-responsiveness customers from unresponsive segments.
 
 ---
 
@@ -175,9 +191,9 @@ We benchmark four targeting policies:
 | **Adaptive Causal Tree (No Honesty)** | 33.60 ± 10.02 | 251.06 ± 34.22 | 7.12% ± 1.58% | 5.93% ± 2.15% |
 | **Honest Causal Tree (Athey & Imbens)** | **34.51 ± 10.55** | **253.06 ± 35.94** | 6.92% ± 1.72% | 6.59% ± 1.98% |
 
-### Head-to-Head Findings:
-- **Honest Causal Trees vs T-Learner**: The Honest Causal Tree beats the two-model T-learner in **15 of 20 seeds** on Qini score (34.51 vs 26.79, a 28.8% advantage). T-learners optimize the marginal outcomes $\mathbb{E}[Y \mid W=1]$ and $\mathbb{E}[Y \mid W=0]$ independently, wasting split capacity on baseline outcome variance rather than treatment effect heterogeneity.
-- **Honest Causal Trees vs Adaptive Trees**: Enforcing honesty improves mean Qini from 33.60 to 34.51 and AUUC from 251.06 to 253.06, outperforming the unconstrained adaptive tree in **12 of 20 seeds**. Crucially, honest trees protect against sample selection bias and guarantee reliable confidence bounds on subgroup treatment effects.
+### Head-to-Head & Significance Findings:
+- **Honest Causal Trees vs T-Learner**: The Honest Causal Tree outperforms the two-model T-learner in **15 of 20 seeds** on Qini score (34.51 vs 26.79, a 28.8% advantage). T-learners optimize marginal outcomes $\mathbb{E}[Y \mid W=1]$ and $\mathbb{E}[Y \mid W=0]$ independently, wasting split capacity on baseline outcome variance rather than treatment effect heterogeneity.
+- **Honest Causal Trees vs Adaptive Trees**: Enforcing honesty yields a directional gain in mean Qini from 33.60 to 34.51 (paired difference $+0.91 ± 3.82$, $t=1.07$, $p=0.30$) and AUUC from 251.06 to 253.06, achieving higher Qini in **12 of 20 seeds**. Because this difference is not statistically significant ($p = 0.30$), honesty should not be viewed as an automatic empirical metric booster on finite datasets; rather, its primary value is theoretical asymptotic unbiasedness (Athey & Imbens, 2016), eliminating overfitting bias in causal effect estimates.
 
 ---
 

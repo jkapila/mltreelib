@@ -14,14 +14,35 @@ After the pathway's `scores` and `y_test` assignments, use this block to compare
 
 ```python
 from itertools import accumulate
+from pathlib import Path
+from mltreelib import AnomalyTree
 
+# 1. Load Shuttle benchmark data
+base = Path("datasets/external/shuttle")
+def load_shuttle(path):
+    with path.open() as f:
+        rows = [[float(v) for v in line.split()] for line in f if line.strip()]
+    return [r[:-1] for r in rows], [int(r[-1]) for r in rows]
+
+train_x, train_y = load_shuttle(base / "shuttle.trn")
+test_x, y_test = load_shuttle(base / "shuttle.tst")
+
+# Fit on normal operating records (class 1)
+reference = [row for row, label in zip(train_x, train_y) if label == 1][:5000]
+model = AnomalyTree(kind="eif", max_depth=10, extension_level=1, seed=42)
+model.fit(reference, col_names=[f"sensor_{i+1}" for i in range(9)])
+
+# Score test records
+scores = model.score_samples(test_x)
+
+# 2. Compare operational review budgets (1%, 5%, 10%)
 truth = [int(label != 1) for label in y_test]
 order = sorted(range(len(scores)), key=lambda i: (-scores[i], i))
 hits = list(accumulate(truth[i] for i in order))
 for fraction in (.01, .05, .10):
     budget = max(1, round(fraction * len(scores)))
     found = hits[budget - 1]
-    print(budget, round(found / budget, 3), round(found / sum(truth), 3))
+    print(f"Records: {budget:4d} ({int(fraction*100)}%) | Precision: {found / budget:.3f} | Recall: {found / sum(truth):.3f}")
 ```
 
 The budget fixes how many rows enter the queue. The score ranks the records, then source order breaks ties. Keep the same budget and tie rule when comparing a new scorer with a baseline.

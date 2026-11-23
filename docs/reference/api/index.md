@@ -8,6 +8,9 @@ code. Narrative guides with verified examples:
 [Data](../data.md) · [Model](../model.md) · [Metrics](../metrics.md) ·
 [Reports](../reports.md) · [Visualization](../../guides/visualization.md).
 
+!!! note "Scikit-Learn Compatibility"
+    Classes in `mltreelib` (such as `ModelTree`) implement standard `fit`, `predict`, and `predict_proba` method signatures, but do **not** inherit from `sklearn.base.BaseEstimator` and are not fully scikit-learn compatible (`clone` and `check_estimator` are not supported).
+
 | page | classes | functions |
 |---|---|---|
 | [Data](data/) | DatasetBuilder | generate, load_dataset, list_datasets, summarize, winnow |

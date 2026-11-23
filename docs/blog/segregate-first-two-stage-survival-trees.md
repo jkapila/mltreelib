@@ -110,14 +110,14 @@ Where $t_j$ are distinct event times in cohort $k$, $d_{jk}$ is observed failure
 
 ### Stage 3: Unified Serving Contract
 The resulting object is a single, self-contained `ModelTree`:
-- `tree.predict(X_new, kind="survival", times=tenure_grid)` routes down the tree in $O(\text{depth})$ microsecond time and evaluates calibrated survival curves directly.
+- `tree.predict(X_new, kind="survival", times=tenure_grid)` routes down the tree in $O(\text{depth})$ time and evaluates localized Kaplan-Meier survival curves directly.
 - `tree.predict(X_new, kind="risk")` returns empirical leaf hazard risk scores.
 
 ---
 
 ## 3. Case Study: 10,000 Commercial Bank Customers
 
-We test this architecture on the real **Bank Customer Churn** benchmark (10,000 customers, 10-year tenure follow-up; 70% train / 30% test).
+We test this architecture on the real **Bank Customer Churn** benchmark (OpenML ID 46911; 10,000 customers, 10-year tenure follow-up; 70% train / 30% test).
 
 ```python
 import pyarrow.parquet as pq
@@ -161,13 +161,13 @@ To rigorously evaluate whether two-stage segregation prevents censoring bias, we
 
 | Method | Harrell's C-Index | Integrated Brier Score (IBS) | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Marginal Kaplan-Meier** | 0.5000 ± 0.0000 | 0.1924 ± 0.0064 | Unstratified Population $S(t)$ |
-| **Single-Stage Survival Tree** | 0.5031 ± 0.0084 | 0.1924 ± 0.0064 | Direct Log-Rank Splitting on $(T, E)$ |
-| **Two-Stage Hierarchical Tree (retrain)** | **0.6854 ± 0.0087** | **0.1922 ± 0.0064** | Profile Tree + Native Leaf `retrain()` |
+| **Marginal Kaplan-Meier** | 0.5000 ± 0.0000 | 0.1282 ± 0.0034 | Unstratified Population $S(t)$ |
+| **Single-Stage Survival Tree** | 0.5031 ± 0.0084 | 0.1282 ± 0.0033 | Direct Log-Rank Splitting on $(T, E)$ |
+| **Two-Stage Hierarchical Tree (retrain)** | **0.6854 ± 0.0087** | **0.1163 ± 0.0030** | Profile Tree + Native Leaf `retrain()` |
 
 Across all 20 random seeds, the **Two-Stage Tree beat the Single-Stage Tree in 20 of 20 runs (100% of seeds)**. 
 
-The single-stage tree achieves a C-index of $0.5031$ (scarcely better than the unstratified $0.5000$ baseline) because greedy log-rank splits on $(T, E)$ are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of **$0.6854 \pm 0.0087$** and Integrated Brier Score of **$0.1922 \pm 0.0064$**, establishing clean, robust risk rank-ordering on held-out customers.
+The single-stage tree achieves a C-index of $0.5031$ (scarcely better than the unstratified $0.5000$ baseline) because greedy log-rank splits on $(T, E)$ are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of **$0.6854 \pm 0.0087$** and Integrated Brier Score of **$0.1163 \pm 0.0030$** (a 9.3% reduction in Brier forecast error over the 0.1282 baseline), establishing clean, robust risk rank-ordering on held-out customers.
 
 ---
 
@@ -187,8 +187,8 @@ Rule 4 (Cohort 3, cover:   112): IF age >  43 AND products_number >  2 THEN chur
 ### Key Insights from the Discovered Curves:
 
 1. **Non-Crossing, Distinct Trajectories**:
-   - **Cohort 0 (Core Retained, Teal)**: 5,074 customers (72.5% of sample). Even after 10 years of tenure, survival probability remains high at **70.9%**.
-   - **Cohort 2 (Mature Mainstream, Blue)**: 1,685 customers. Survival decays steadily to **25.7%** by year 10.
+   - **Cohort 0 (Core Retained, Teal)**: 5,074 customers (72.5% of sample). Even after 10 years of tenure, survival probability remains high at **68.7%**.
+   - **Cohort 2 (Mature Mainstream, Blue)**: 1,685 customers. Survival decays steadily to **23.0%** by year 10.
    - **Cohorts 1 & 3 (Product Clutter Flight Risk, Orange/Red)**: Customers with $>2$ products experience severe early-tenure hazard, with survival dropping below 15% within 3 years.
 2. **Guaranteed Monotonicity**:
    Because each leaf model fits an exact product-limit Kaplan-Meier step function, predictions are guaranteed non-increasing ($\hat{S}(t_2) \le \hat{S}(t_1)$ for $t_2 > t_1$) with zero negative hazard artifacts.
@@ -210,7 +210,7 @@ Rule 4 (Cohort 3, cover:   112): IF age >  43 AND products_number >  2 THEN chur
 | Dimension | Standard Direct Survival Tree | Two-Stage Hierarchical Survival Tree (`retrain`) |
 | :--- | :--- | :--- |
 | **Split Optimization** | Greedy log-rank on $(T, E)$ pairs. | Supervised profile clustering on baseline $X$. |
-| **Censoring Robustness** | Vulnerable to calendar truncation bias ($C=0.5031$). | **Censoring-independent** cohort segregation ($C=0.6854$). |
+| **Censoring Robustness** | Vulnerable to calendar truncation bias ($C=0.5031$). | **Decoupled profile** cohort segregation ($C=0.6854$). |
 | **Hazard Assumption** | Assumes piecewise constant hazard steps. | **Non-parametric** leaf Kaplan-Meier curves. |
 | **Serving Architecture** | Single model tree. | **Single unified ModelTree via in-place `retrain()`**. |
 | **Explainability** | Complex split thresholds on event times. | **Clean business segmentation rules**. |

@@ -87,7 +87,31 @@ Rather than imposing parametric Gaussian assumptions that fail on intermittent r
 3. **Full Conditional Quantile Curve**: Two prediction interval bounds (such as 5% and 95%) are not enough to evaluate arbitrary critical fractiles $\tau_k \in (0, 1)$. `ModelTree.quantile(X, tau)` exposes the complete inverse CDF curve $F_k^{-1}(\tau)$ at any quantile level $\tau \in [0.001, 0.999]$.
 
 ```python
+import numpy as np
 from mltreelib import ModelTree
+
+# Generate synthetic retail demand features (day-of-week, promo, discount, lead-time)
+np.random.seed(42)
+n_train, n_test = 120, 30
+
+def make_features(n_days):
+    feats = []
+    for t in range(n_days):
+        dow = float(t % 7)
+        is_weekend = 1.0 if dow in [5.0, 6.0] else 0.0
+        promo = 1.0 if np.random.rand() < 0.20 else 0.0
+        discount = np.random.uniform(0.05, 0.25) if promo else 0.0
+        feats.append([dow, is_weekend, promo, discount])
+    return feats
+
+X_train = make_features(n_train)
+X_test = make_features(n_test)
+
+# Base demand with promotional lift and weekend seasonality
+y_train = [
+    max(0.0, float(np.random.normal(100.0 * (1.0 + 0.3 * row[1] + 0.6 * row[2] + 1.2 * row[3]), 20.0)))
+    for row in X_train
+]
 
 # Train ModelTree with linear leaves for SKU demand
 tree = ModelTree(leaf="linear", max_depth=3, min_rows=8)
@@ -102,6 +126,7 @@ q_unconstrained = tree.quantile(X_test, tau)
 
 # 3. Non-parametric prediction interval for visualization
 intervals = tree.predict_interval(X_test, coverage=0.90)  # [(q_05, q_95), ...]
+print(f"Mean forecast: {y_mean[0]:.1f} | Tau=0.88 quantile: {q_unconstrained[0]:.1f} | 90% Interval: [{intervals[0][0]:.1f}, {intervals[0][1]:.1f}]")
 ```
 
 Across 50 simulated retail SKUs (spanning Fast Movers, Medium Movers, and High-Margin Specialty items), `ModelTree` traces distinct demand volatility regimes:
@@ -146,7 +171,7 @@ $$
 \frac{\partial \mathcal{L}}{\partial q_k} = (s_k + h_k) F_k(q_k) - s_k + \lambda v_k + \mu c_k = 0
 $$
 
-Yields the exact **constrained stationary fractile condition**:
+Yields the **constrained stationary fractile condition**:
 
 $$
 F_k(q_k^*(\lambda, \mu)) = \frac{s_k - \lambda v_k - \mu c_k}{s_k + h_k}
@@ -158,7 +183,7 @@ $$
 q_k^*(\lambda, \mu) = \max\left(0, F_k^{-1}\left( \frac{s_k - \lambda v_k - \mu c_k}{s_k + h_k} \right)\right)
 $$
 
-This decouples the 50-variable coupled optimization into a fast 2-variable root search over $(\lambda, \mu) \ge 0$, solved via bisection:
+This decouples the 50-variable coupled optimization into a fast 2-variable root search over $(\lambda, \mu) \ge 0$, solved via nested alternating bisection without a separate feasibility check:
 
 ```python
 def solve_joint_dual(s_vec, h_vec, vol_vec, cost_vec, V_max, B_max, models, x_test_t):
@@ -217,7 +242,11 @@ def solve_joint_dual(s_vec, h_vec, vol_vec, cost_vec, V_max, B_max, models, x_te
     return q_opt, lam, mu
 ```
 
-In benchmarks on 50 SKUs, this dual search averaged **3.74 ms per daily multi-item allocation** across 600 evaluated days.
+In benchmarks on 50 SKUs, this dual search averaged **3.39 ms per daily multi-item allocation** across 600 evaluated days.
+
+### Why Not Linear Programming (`scipy.optimize.linprog`)?
+
+A standard LP formulation requires linear or piecewise-linear objective functions with fixed deterministic parameters. Here, each SKU's demand distribution is conditional on input covariates $\mathbf{x}_t$ and captured via a non-parametric per-leaf $t$-digest. Inverting these non-linear empirical inverse CDFs $F_k^{-1}(\tau)$ inside a linear program requires discretizing the sample distribution across thousands of scenarios per SKU, introducing substantial discretization error and scaling poorly. In contrast, the Lagrangian dual relaxation operates directly on continuous critical fractiles $\tau_k$, evaluating exact leaf digests in 3.39 ms.
 
 ### Limitations & Practical Realities
 
@@ -232,7 +261,7 @@ Handling MOQs requires rounding heuristics with constraint repair, or formulatin
 We benchmarked three competing ordering strategies across 20 independent simulation seeds (50 SKUs, 120 training days, 30 evaluation days) under 92% warehouse capacity and 95% working capital constraints:
 - **Policy A (Mean)**: Orders expected conditional mean $\mathbb{E}[Y_k \mid X]$, scaled down uniformly if capacity or budget binds.
 - **Policy B (Fractile + Scale)**: Orders unconstrained critical fractiles $q_k = F_k^{-1}\left(\frac{s_k}{s_k+h_k}\right)$, scaled down uniformly if constraints bind.
-- **Policy C (Joint Dual)**: Solves the exact joint constrained problem via the $\lambda/\mu$ dual search.
+- **Policy C (Joint Dual)**: Solves the joint constrained problem via the nested $(\lambda, \mu)$ bisection dual search.
 
 | Policy | Penalty Cost ($) | Unit Fill Rate (%) | Dollar Fill Rate (%) | Realized Profit ($) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -240,7 +269,11 @@ We benchmarked three competing ordering strategies across 20 independent simulat
 | **Policy B (Fractile + Scale)** | $1,734,713 ± $212,587 | 71.26% ± 2.34% | 71.19% ± 2.37% | $1,836,141 ± $21,313 |
 | **Policy C (Joint Dual)** | **$1,032,749 ± $136,061** | 52.51% ± 2.72% | **71.69% ± 2.21%** | $1,801,845 ± $35,838 |
 
-Across 20 evaluation seeds, Policy C achieved lower penalty cost than Policy B in **20 of 20 seeds (100% of runs)**, cutting average penalty cost from $1,734,713 to $1,032,749 (a 40.5% reduction), while sacrificing unit fill (52.51% vs 71.26%) to protect dollar fill (71.69% vs 71.19%) and keep warehouse volume within the 92% cap.
+Across 20 evaluation seeds, Policy C achieved lower penalty cost than Policy B in **20 of 20 seeds (100% of runs)**, cutting average penalty cost from $1,734,713 to $1,032,749 (a 40.5% reduction), while sacrificing unit fill (52.51% vs 71.26%) to protect dollar fill (71.69% vs 71.19%). 
+
+Measured resource utilization confirms that Policy C strictly respects physical limits: working capital budget binds tightly at **99.39% ± 1.12% utilization**, while warehouse volume utilization averages **62.88% ± 16.63%** (peak 79.14%), operating comfortably within the 92% ceiling. 
+
+Realized gross sales profit under Policy C is modestly lower ($1,801,845 vs $1,843,188 under Policy A and $1,836,141 under Policy B) because Policy C deliberately cuts procurement of high-volume, low-margin goods to avoid severe stockout penalty multipliers on high-value items, eliminating over $700,000 in unpenalized stockout and goodwill losses.
 
 ### Strategic Allocation Shift
 Under shared volume constraints, the dual solver systematically rebalances inventory away from bulky, low-margin products toward high-margin specialty items:

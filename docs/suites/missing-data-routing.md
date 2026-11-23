@@ -160,7 +160,7 @@ Native routing preserves calibrated probabilities even when multiple sensor chan
 ### Key Quantitative Findings:
 
 1. **High Missingness Tolerance (Panel 1)**: Key diagnostic sensors like `ab_000` exhibit **77.4% missingness** in production telemetry. Standard imputation collapses 77% of this channel to a single scalar value, destroying its variance.
-2. **Superior Precision-Recall (Panel 2)**: Native missing routing achieves **0.5924 Average Precision**, outperforming the mean imputation baseline by **+3.8%**.
+2. **Competitive Precision-Recall without Imputation Pipelines (Panel 2)**: On this single fixed evaluation split, native missing routing achieves **0.5924 Average Precision** (a +3.8% directional difference over mean imputation's 0.5706) with ROC-AUC virtually tied (**0.9848 vs 0.9846**). This confirms that native routing matches or directionally improves upon imputation without requiring online mean table synchronization.
 3. **Calibrated Probabilities on Incomplete Telemetry (Panel 4)**: On 1,606 test records with at least one missing sensor, `ModelTree` achieves a **0.0153 Brier score**, maintaining reliable probability calibration without collapsing to the prior mean.
 
 ---

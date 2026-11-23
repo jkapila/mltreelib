@@ -149,7 +149,7 @@ ModelTree (Linear)   : Test RMSE = 4.26, R2 = 0.977, MAE = 3.56
 
 1. **Massive Out-of-Time Error Drop (66.9%)**: `ModelTree` reduces out-of-sample RMSE from **12.87 to 4.26** and lifts $R^2$ from **0.787 to 0.977**, accurately capturing post-March trend expansion.
 2. **Elimination of the Flat Ceiling (Panel 2)**: Standard CART flattens into horizontal plateaus as test dates exceed training values. `ModelTree` linear leaves maintain positive trend derivatives across all store cohorts.
-3. **Rust Transformation Latency**: Feature engineering on the multi-store panel runs in **sub-millisecond Rust time**, completely eliminating Python date-parsing and pandas groupby bottlenecks.
+3. **Rust Transformation Latency**: Feature engineering on the multi-store panel executes in compiled Rust, completely eliminating Python date-parsing and pandas groupby bottlenecks.
 
 ---
 

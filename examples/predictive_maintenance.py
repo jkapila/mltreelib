@@ -111,7 +111,7 @@ def run_predictive_maintenance_study(n_seeds: int = 20, output_dir: str = "docs/
         leaf="mean",
         leaf_family="binomial",
         gain="deviance",
-        max_depth=3,
+        max_depth=4,
         min_rows=100,
         prune="none",
     )

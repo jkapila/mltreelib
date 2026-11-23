@@ -4,7 +4,7 @@ Tree partitions carve heterogeneous feature spaces into homogeneous sub-populati
 
 1. A **macro-tree** splits on aggregated or cohort-level features (e.g. city, make, model year, fleet tier) to segment cohorts.
 2. A **retrain pass** updates leaf nodes on granular telemetry (e.g. mileage, sensor readings, localized pricing) using specialized estimators (Linear Ridge, Robust Huber, Quantile, or GLM) on the frozen topology.
-3. In production, routing observations down a frozen tree structure and refitting terminal leaves achieves **sub-millisecond latency** (10x–20x faster than re-partitioning from scratch).
+3. In production, routing observations down a frozen tree structure and refitting terminal leaves achieves **millisecond retraining latency** (~2.2 ms on 1,030 rows across 1,000 iterations, 10x–20x faster than re-partitioning from scratch).
 
 Script: [`examples/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/stump_leaf_retrain.py) (`uv run python examples/suites/stump_leaf_retrain.py`).
 
@@ -20,7 +20,7 @@ flowchart LR
         GreedySearch --> FrozenTree["Frozen Decision Topology\n(Fixed Split Gates & Boundaries)"]
     end
 
-    subgraph Phase2["Phase 2: Sub-Millisecond Leaf Retraining (Fast)"]
+    subgraph Phase2["Phase 2: Fast Leaf Retraining (~2.2 ms)"]
         direction TB
         StreamingData["New Telemetry / Stream Data\n(Local Sensors, Glitches, Pricing)"] --> Route["Route Rows Down Frozen Tree\nO(N * Depth)"]
         FrozenTree -.-> Route

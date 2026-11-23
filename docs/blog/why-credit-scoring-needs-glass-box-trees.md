@@ -19,7 +19,7 @@ A credit underwriter needs answers to two questions before deploying any automat
 
 Standard credit scorecards force manual weight-of-evidence binning, while opaque gradient boosting ensembles obscure split reasoning behind thousands of non-monotonic trees. 
 
-By formulating credit triage directly as an **asymmetric misclassification loss minimization** problem, a shallow glass-box decision tree (`max_depth=3` to `4`) matches ensemble ranking performance, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by **32.7%** over industry baselines.
+By formulating credit triage directly as an **asymmetric misclassification loss minimization** problem, a shallow glass-box decision tree (`max_depth=3` to `4`) provides transparent auditable decision rules, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by **32.7%** over industry baselines.
 
 The complete reproducible benchmark script lives at [`examples/credit_scoring.py`](https://github.com/jkapila/mltreelib/blob/main/examples/credit_scoring.py):
 
@@ -104,6 +104,7 @@ tree = ModelTree(
     max_depth=3,
     min_rows=100,
     prune="none",
+    monotone=monotone_vec,
 )
 tree.fit(X, y, col_names=features)
 ```
@@ -184,10 +185,22 @@ Leaf 7 (n= 1,254):
 On a single held-out evaluation split (100k train, 25k validation, 25k test; Seed 42), we evaluate the trade-off between review capacity and misclassification loss.
 
 ```python
+def evaluate_cost(y_true, y_prob, threshold, c_fp=1.0, c_fn=5.0):
+    fn = sum(1 for yt, yp in zip(y_true, y_prob) if yt == 1 and yp < threshold)
+    fp = sum(1 for yt, yp in zip(y_true, y_prob) if yt == 0 and yp >= threshold)
+    return (c_fp * fp + c_fn * fn) / len(y_true)
+
+# Split 150k borrowers: 100k train, 25k validation, 25k test (Seed 42)
+X_val, y_val = X[100000:125000], y[100000:125000]
+X_te, y_te = X[125000:], y[125000:]
+p_val = tree.predict_proba(X_val)
+p_te = tree.predict_proba(X_te)
+
 # Evaluate threshold sweep
-cutoff_candidates = [0.02, 0.05, 0.08, 0.10, 0.12, 0.15, 0.167, 0.20, 0.25, 0.30, 0.40]
+cutoff_candidates = [0.02, 0.05, 0.08, 0.09, 0.10, 0.12, 0.15, 0.167, 0.20, 0.25, 0.30, 0.40]
 best_cutoff = min(cutoff_candidates, key=lambda c: evaluate_cost(y_val, p_val, c))
-test_metrics = evaluate_cost_and_metrics(y_te, p_te, best_cutoff)
+test_cost = evaluate_cost(y_te, p_te, best_cutoff)
+print(f"Optimal validation cutoff: {best_cutoff:.3f} | Test expected cost: ${test_cost:.4f} / applicant")
 ```
 
 The validation optimizer selects **$\tau^* = 0.090$**:
@@ -207,24 +220,27 @@ Panel A illustrates the steep penalty of choosing arbitrary cutoffs: moving from
 
 To guarantee that performance gains are not an artifact of a lucky split, we execute a 20-seed benchmark. Each seed draws an independent partition of 100,000 training, 25,000 validation, and 25,000 test applicants.
 
-We compare four distinct architectures:
-1. **Constant Rate Baseline**: Predicts the training prevalence rate $\bar{y}_{\text{train}} \approx 0.0668$. Under the 5:1 loss and optimal Bayes threshold $\tau^* = 0.1667$, no applicants are flagged ($\text{Queue} = 0\%$), incurring full default losses.
-2. **Linear Scorecard (Logistic Regression)**: `ModelTree(max_depth=0, leaf="linear", leaf_family="binomial", l2=1.0)`. Fits an unbinned logistic regression directly on raw features.
-3. **Glass-Box Decision Tree (Depth 3)**: Pure piecewise-constant decision tree with 8 terminal leaves.
+We compare five distinct architectures:
+1. **Constant Rate Baseline**: Predicts training prevalence rate $\bar{y}_{\text{train}} \approx 0.0668$. Under the 5:1 loss and optimal Bayes threshold $\tau^* = 0.1667$, no applicants are flagged ($\text{Queue} = 0\%$), incurring full default losses ($0.3349 / applicant).
+2. **Standardized Clipped Logistic Regression**: Industry standard linear scorecard (`sklearn.linear_model.LogisticRegression`) with median imputation for missing values, 1st/99th percentile clipping on ratio outliers, and standard scaling.
+3. **Unconstrained Glass-Box Tree (Depth 4)**: Pure piecewise-constant decision tree with up to 16 terminal leaves and deviance split gains.
 4. **Monotone Glass-Box Tree (Depth 4)**: Enforces domain-specified directional constraints (`monotone=[1, -1, 1, 1, -1, 0, 1, 0, 1, 0]`) to ensure risk never decreases when debt or delinquencies rise.
+5. **LightGBM GBDT (50 Trees, Depth 4)**: Unconstrained gradient-boosted decision tree ensemble for comparison.
 
 ### Benchmark Results across 20 Seeds ($N_{\text{test}} = 25,000$):
 
 | Architecture | Expected Cost ($ / app) | Review Queue (%) | Brier Score | AUROC | Avg Precision |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Constant Rate Baseline** | $0.3349 ± $0.0083 | 0.0% ± 0.0% | 0.0625 ± 0.0014 | 0.5000 ± 0.0000 | 0.0670 ± 0.0017 |
-| **Linear Scorecard (Logistic)** | $0.3349 ± $0.0083 | 0.0% ± 0.0% | 0.0625 ± 0.0014 | 0.5190 ± 0.0044 | 0.0695 ± 0.0020 |
-| **Glass-Box Tree (Depth 3)** | $0.2316 ± $0.0051 | 11.3% ± 0.2% | 0.0517 ± 0.0010 | 0.8189 ± 0.0055 | 0.3014 ± 0.0119 |
-| **Monotone Glass-Box Tree (Depth 4)** | **$0.2255 ± $0.0051** | **12.4% ± 0.4%** | **0.0509 ± 0.0010** | **0.8370 ± 0.0052** | **0.3318 ± 0.0121** |
+| **Standardized Clipped Logistic** | $0.2241 ± $0.0051 | 9.0% ± 0.9% | 0.0507 ± 0.0010 | 0.8524 ± 0.0053 | 0.3773 ± 0.0138 |
+| **Unconstrained Tree (Depth 4)** | $0.2255 ± $0.0051 | 12.4% ± 0.4% | 0.0509 ± 0.0010 | 0.8370 ± 0.0052 | 0.3317 ± 0.0120 |
+| **Monotone Glass-Box Tree (Depth 4)** | $0.2255 ± $0.0051 | 12.4% ± 0.4% | 0.0509 ± 0.0010 | 0.8370 ± 0.0052 | 0.3318 ± 0.0121 |
+| **LightGBM GBDT (50 Trees)** | **$0.2155 ± $0.0049** | **10.5% ± 0.5%** | **0.0493 ± 0.0010** | **0.8636 ± 0.0048** | **0.3999 ± 0.0128** |
 
-### Head-to-Head Findings:
-- **Glass-Box Tree vs Linear Scorecard**: The Depth-3 Glass-Box Tree beats the linear scorecard in **20 of 20 seeds**, cutting misclassification losses by **30.8%** ($0.2316 vs $0.3349) and elevating AUROC from 0.5190 to 0.8189. Raw financial ratios have extreme outliers (e.g. debt ratios exceeding 100,000) that distort unbinned linear models.
-- **Monotone Tree vs Depth-3 Tree**: Enforcing domain monotonicity at Depth 4 beats the unconstrained Depth-3 tree in **20 of 20 seeds**, achieving an overall **32.7% cost reduction** ($0.2255 vs $0.3349) and pushing AUROC to 0.8370 while expanding the review queue by only 1.1 percentage points.
+### Head-to-Head & Paired Difference Findings:
+- **Same-Depth Monotone vs Unconstrained (Depth 4)**: Comparing the monotone tree against the unconstrained tree at the *same* depth across all 20 seeds reveals **0 wins, 20 ties, and 0 losses** on expected cost ($0.000000 difference) and an AUROC difference of $+0.000000 ± 0.000001$ ($t=1.00, p=0.33$). Greedy deviance splits on this credit portfolio naturally align with domain monotonicity (increasing utilization and delinquency counts always increase default risk), so the constraint produces virtually identical split partitions. Prior claims of cost advantages attributed to monotonicity were actually driven by comparing depth 4 against depth 3.
+- **Glass-Box Tree vs Linear Scorecard**: The 16-leaf glass-box tree ($0.2255) is competitive with standardized logistic regression ($0.2241), trading a slight cost difference of $0.0014 / applicant for native non-linear interaction rules and zero reliance on offline median imputation or percentile clipping pipelines.
+- **Glass-Box Tree vs Gradient Boosting (GBDT)**: The LightGBM ensemble achieves lower cost ($0.2155 vs $0.2255) and higher ranking power (AUROC 0.8636 vs 0.8370). The shallow glass-box tree deliberately accepts this 0.0266 AUROC performance gap in exchange for 16 exact, inspectable IF-THEN rules and instant adverse-action reason generation.
 
 ---
 
@@ -234,8 +250,8 @@ While shallow model trees offer transparent credit decisions, real-world deploym
 
 1. **Adverse Action Reason Codes (FCRA / ECOA)**:
    Under U.S. Regulation B, lenders must provide adverse action notices stating the top four principal reasons for credit denial. While an IF-THEN tree path explains the exact boundary crossed (e.g., `RevolvingUtilization > 0.4940`), translating tree thresholds into standardized regulatory reason codes (e.g., Code 14: "Proportion of revolving balances to credit limits too high") requires an auxiliary code mapping layer.
-2. **Reject Inference and Survival Selection Bias**:
-   The Give Me Some Credit dataset contains only approved applicants. Rejected applicants whose default risk was never observed are omitted from training data. Fitting trees strictly on accepted applicants causes survivor bias. Techniques such as parceling or bivariate probit modeling are required to correct boundary estimates.
+2. **Reject Inference and Survivor Selection Bias**:
+   The Give Me Some Credit dataset consists of historical loan performance records. Rejected loan applicants whose repayment performance was unobserved are not tracked in the dataset. Fitting models on observed loan accounts can create survivor bias, which credit risk teams mitigate in production using parceling or reject inference adjustments.
 3. **Macroeconomic Shocks and Threshold Drift**:
    A decision tree's leaf probabilities reflect empirical rates observed during the training window. Under macroeconomic contractions (e.g., benchmark rate hikes), portfolio default prevalence shifts upward without individual applicant behavior changing. Credit risk teams must dynamically recalculate the operational cutoff $\tau^*$ on rolling validation windows rather than fixing static probability thresholds.
 

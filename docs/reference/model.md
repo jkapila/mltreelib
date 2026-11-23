@@ -2,6 +2,9 @@
 
 `ModelTree` finds partitions using the selected split criterion and fits a local model in each leaf. It supports raw categorical values and routes missing predictors through the fitted tree.
 
+!!! note "Scikit-Learn Compatibility"
+    `ModelTree` provides familiar `fit`, `predict`, and `predict_proba` methods following standard Python estimator conventions. However, it is **not fully scikit-learn compatible**: it does not inherit from `sklearn.base.BaseEstimator`, does not implement `get_params`, `set_params`, or `score`, and does not pass `sklearn.base.clone` or `sklearn.utils.estimator_checks.check_estimator`.
+
 ## Constructor
 
 See the [generated API reference](api/model-tree.md) for the constructor signature and the [parameter reference](parameters.md) for available settings.

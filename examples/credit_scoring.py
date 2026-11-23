@@ -19,6 +19,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.stats import ttest_rel
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from lightgbm import LGBMClassifier
 
 from mltreelib import Metrics, ModelTree
 
@@ -229,18 +234,23 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     cutoff_candidates = [0.02, 0.05, 0.08, 0.10, 0.12, 0.15, 0.167, 0.20, 0.25, 0.30, 0.40]
 
     metrics_baseline = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
-    metrics_scorecard = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
-    metrics_tree_d3 = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
+    metrics_lr = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
+    metrics_tree_d4 = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
     metrics_tree_mono = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
+    metrics_gbdt = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
 
     for seed in range(n_seeds):
         rng = np.random.default_rng(2000 + seed)
         perm = rng.permutation(n_total)
         tr, val, te = perm[:n_train], perm[n_train:n_train+n_val], perm[n_train+n_val:]
 
-        X_tr, y_tr = X_all[tr].tolist(), y_all[tr].tolist()
-        X_val, y_val = X_all[val].tolist(), y_all[val].tolist()
-        X_te, y_te = X_all[te].tolist(), y_all[te].tolist()
+        X_tr_np, y_tr_np = X_all[tr], y_all[tr]
+        X_val_np, y_val_np = X_all[val], y_all[val]
+        X_te_np, y_te_np = X_all[te], y_all[te]
+
+        X_tr, y_tr = X_tr_np.tolist(), y_tr_np.tolist()
+        X_val, y_val = X_val_np.tolist(), y_val_np.tolist()
+        X_te, y_te = X_te_np.tolist(), y_te_np.tolist()
 
         # Architecture 1: Constant Rate Baseline
         prev_tr = float(np.mean(y_tr))
@@ -251,32 +261,48 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         metrics_baseline["auc"].append(0.5000)
         metrics_baseline["ap"].append(float(np.mean(y_te)))
 
-        # Architecture 2: Linear Scorecard (Logistic Regression)
-        t_sc = ModelTree(max_depth=0, leaf="linear", leaf_family="binomial", l2=1.0)
-        t_sc.fit(X_tr, y_tr, col_names=features)
-        p_val_sc = t_sc.predict_proba(X_val)
-        p_te_sc = t_sc.predict_proba(X_te)
-        # Select cutoff on val
-        best_c_sc = min(cutoff_candidates, key=lambda c: evaluate_cost_and_metrics(y_val, p_val_sc, c)["cost"])
-        m_sc = evaluate_cost_and_metrics(y_te, p_te_sc, best_c_sc)
-        metrics_scorecard["cost"].append(m_sc["cost"])
-        metrics_scorecard["queue"].append(m_sc["queue_rate"])
-        metrics_scorecard["brier"].append(m_sc["brier"])
-        metrics_scorecard["auc"].append(m_sc["auc"])
-        metrics_scorecard["ap"].append(m_sc["ap"])
+        # Architecture 2: Standardized, Clipped Logistic Regression
+        imp = SimpleImputer(strategy="median")
+        X_tr_imp = imp.fit_transform(X_tr_np)
+        q01 = np.nanpercentile(X_tr_imp, 1, axis=0)
+        q99 = np.nanpercentile(X_tr_imp, 99, axis=0)
+        X_tr_clip = np.clip(X_tr_imp, q01, q99)
+        scaler = StandardScaler()
+        X_tr_sc = scaler.fit_transform(X_tr_clip)
 
-        # Architecture 3: Glass-Box Tree (Depth 3)
-        t_d3 = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance", max_depth=3, min_rows=100, prune="none")
-        t_d3.fit(X_tr, y_tr, col_names=features)
-        p_val_d3 = t_d3.predict_proba(X_val)
-        p_te_d3 = t_d3.predict_proba(X_te)
-        best_c_d3 = min(cutoff_candidates, key=lambda c: evaluate_cost_and_metrics(y_val, p_val_d3, c)["cost"])
-        m_d3 = evaluate_cost_and_metrics(y_te, p_te_d3, best_c_d3)
-        metrics_tree_d3["cost"].append(m_d3["cost"])
-        metrics_tree_d3["queue"].append(m_d3["queue_rate"])
-        metrics_tree_d3["brier"].append(m_d3["brier"])
-        metrics_tree_d3["auc"].append(m_d3["auc"])
-        metrics_tree_d3["ap"].append(m_d3["ap"])
+        lr = LogisticRegression(max_iter=1000, random_state=42)
+        lr.fit(X_tr_sc, y_tr_np)
+
+        X_val_imp = imp.transform(X_val_np)
+        X_val_clip = np.clip(X_val_imp, q01, q99)
+        X_val_sc = scaler.transform(X_val_clip)
+        p_val_lr = lr.predict_proba(X_val_sc)[:, 1]
+
+        X_te_imp = imp.transform(X_te_np)
+        X_te_clip = np.clip(X_te_imp, q01, q99)
+        X_te_sc = scaler.transform(X_te_clip)
+        p_te_lr = lr.predict_proba(X_te_sc)[:, 1]
+
+        best_c_lr = min(cutoff_candidates, key=lambda c: evaluate_cost_and_metrics(y_val, p_val_lr, c)["cost"])
+        m_lr = evaluate_cost_and_metrics(y_te, p_te_lr, best_c_lr)
+        metrics_lr["cost"].append(m_lr["cost"])
+        metrics_lr["queue"].append(m_lr["queue_rate"])
+        metrics_lr["brier"].append(m_lr["brier"])
+        metrics_lr["auc"].append(m_lr["auc"])
+        metrics_lr["ap"].append(m_lr["ap"])
+
+        # Architecture 3: Glass-Box Tree (Depth 4, Unconstrained)
+        t_d4 = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance", max_depth=4, min_rows=100, prune="none")
+        t_d4.fit(X_tr, y_tr, col_names=features)
+        p_val_d4 = t_d4.predict_proba(X_val)
+        p_te_d4 = t_d4.predict_proba(X_te)
+        best_c_d4 = min(cutoff_candidates, key=lambda c: evaluate_cost_and_metrics(y_val, p_val_d4, c)["cost"])
+        m_d4 = evaluate_cost_and_metrics(y_te, p_te_d4, best_c_d4)
+        metrics_tree_d4["cost"].append(m_d4["cost"])
+        metrics_tree_d4["queue"].append(m_d4["queue_rate"])
+        metrics_tree_d4["brier"].append(m_d4["brier"])
+        metrics_tree_d4["auc"].append(m_d4["auc"])
+        metrics_tree_d4["ap"].append(m_d4["ap"])
 
         # Architecture 4: Monotone Glass-Box Tree (Depth 4)
         t_mono = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance", max_depth=4, min_rows=100, prune="none", monotone=monotone_vec)
@@ -291,33 +317,56 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         metrics_tree_mono["auc"].append(m_mono["auc"])
         metrics_tree_mono["ap"].append(m_mono["ap"])
 
-        print(f"  Seed {seed+1:2d}/{n_seeds}: Cost d3=${m_d3['cost']:.4f} | Cost mono=${m_mono['cost']:.4f} | AUC d3={m_d3['auc']:.4f} mono={m_mono['auc']:.4f}")
+        # Architecture 5: Gradient Boosted Decision Trees (LightGBM GBDT)
+        lgb = LGBMClassifier(n_estimators=50, max_depth=4, num_leaves=15, n_jobs=1, verbose=-1, random_state=42)
+        lgb.fit(X_tr_np, y_tr_np)
+        p_val_gbdt = lgb.predict_proba(X_val_np)[:, 1]
+        p_te_gbdt = lgb.predict_proba(X_te_np)[:, 1]
+        best_c_gbdt = min(cutoff_candidates, key=lambda c: evaluate_cost_and_metrics(y_val, p_val_gbdt, c)["cost"])
+        m_gbdt = evaluate_cost_and_metrics(y_te, p_te_gbdt, best_c_gbdt)
+        metrics_gbdt["cost"].append(m_gbdt["cost"])
+        metrics_gbdt["queue"].append(m_gbdt["queue_rate"])
+        metrics_gbdt["brier"].append(m_gbdt["brier"])
+        metrics_gbdt["auc"].append(m_gbdt["auc"])
+        metrics_gbdt["ap"].append(m_gbdt["ap"])
+
+        print(f"  Seed {seed+1:2d}/{n_seeds}: Cost d4=${m_d4['cost']:.4f} mono=${m_mono['cost']:.4f} gbdt=${m_gbdt['cost']:.4f} | AUC d4={m_d4['auc']:.4f} mono={m_mono['auc']:.4f} gbdt={m_gbdt['auc']:.4f}")
 
     print("\n" + "=" * 80)
-    print(f"FINAL 20-SEED BENCHMARK SUMMARY (N_TEST = {n_test:,})")
+    print(f"FINAL {n_seeds}-SEED BENCHMARK SUMMARY (N_TEST = {n_test:,})")
     print("=" * 80)
-    print(f"{'Architecture':<32s} | {'Expected Cost ($)':<18s} | {'Review Queue':<14s} | {'Brier Score':<14s} | {'AUROC':<14s} | {'Avg Precision':<14s}")
-    print("-" * 115)
+    print(f"{'Architecture':<36s} | {'Expected Cost ($)':<18s} | {'Review Queue':<14s} | {'Brier Score':<14s} | {'AUROC':<14s} | {'Avg Precision':<14s}")
+    print("-" * 119)
 
     for name, met in [
         ("Constant Rate Baseline", metrics_baseline),
-        ("Linear Scorecard (Logistic)", metrics_scorecard),
-        ("Glass-Box Tree (Depth 3)", metrics_tree_d3),
+        ("Standardized Clipped Logistic", metrics_lr),
+        ("Unconstrained Tree (Depth 4)", metrics_tree_d4),
         ("Monotone Glass-Box Tree (Depth 4)", metrics_tree_mono),
+        ("LightGBM GBDT (50 Trees)", metrics_gbdt),
     ]:
         cost_m, cost_s = np.mean(met["cost"]), np.std(met["cost"])
         q_m, q_s = np.mean(met["queue"]), np.std(met["queue"])
         brier_m, brier_s = np.mean(met["brier"]), np.std(met["brier"])
         auc_m, auc_s = np.mean(met["auc"]), np.std(met["auc"])
         ap_m, ap_s = np.mean(met["ap"]), np.std(met["ap"])
-        print(f"{name:<32s} | ${cost_m:.4f} ± ${cost_s:.4f} | {q_m:5.1f}% ± {q_s:4.1f}% | {brier_m:.4f} ± {brier_s:.4f} | {auc_m:.4f} ± {auc_s:.4f} | {ap_m:.4f} ± {ap_s:.4f}")
+        print(f"{name:<36s} | ${cost_m:.4f} ± ${cost_s:.4f} | {q_m:5.1f}% ± {q_s:4.1f}% | {brier_m:.4f} ± {brier_s:.4f} | {auc_m:.4f} ± {auc_s:.4f} | {ap_m:.4f} ± {ap_s:.4f}")
 
-    # Win-rate comparison
-    wins_mono_vs_d3 = sum(1 for m, d in zip(metrics_tree_mono["cost"], metrics_tree_d3["cost"]) if m < d)
-    wins_d3_vs_sc = sum(1 for d, s in zip(metrics_tree_d3["cost"], metrics_scorecard["cost"]) if d < s)
-    print(f"\nHead-to-head Cost Reductions:")
-    print(f"  - Glass-Box Tree (d=3) beats Linear Scorecard: {wins_d3_vs_sc} / {n_seeds} seeds")
-    print(f"  - Monotone Tree (d=4) beats Glass-Box Tree (d=3): {wins_mono_vs_d3} / {n_seeds} seeds")
+    # Paired per-seed comparisons
+    diff_mono_vs_d4_cost = np.array(metrics_tree_mono["cost"]) - np.array(metrics_tree_d4["cost"])
+    diff_mono_vs_d4_auc = np.array(metrics_tree_mono["auc"]) - np.array(metrics_tree_d4["auc"])
+    t_stat_cost, p_val_cost = ttest_rel(metrics_tree_mono["cost"], metrics_tree_d4["cost"])
+    t_stat_auc, p_val_auc = ttest_rel(metrics_tree_mono["auc"], metrics_tree_d4["auc"])
+
+    wins_mono_cost = sum(1 for d in diff_mono_vs_d4_cost if d < 0)
+    ties_mono_cost = sum(1 for d in diff_mono_vs_d4_cost if d == 0)
+    losses_mono_cost = sum(1 for d in diff_mono_vs_d4_cost if d > 0)
+
+    print(f"\nPaired Same-Depth Comparison (Monotone Depth 4 vs Unconstrained Depth 4 across {n_seeds} seeds):")
+    print(f"  - Cost Difference (Mono - Uncon): ${np.mean(diff_mono_vs_d4_cost):.6f} ± ${np.std(diff_mono_vs_d4_cost):.6f} (t={t_stat_cost:.2f}, p={p_val_cost:.4f})")
+    print(f"  - Cost Win/Tie/Loss: {wins_mono_cost} wins, {ties_mono_cost} ties, {losses_mono_cost} losses")
+    print(f"  - AUROC Difference: {np.mean(diff_mono_vs_d4_auc):.6f} ± ${np.std(diff_mono_vs_d4_auc):.6f} (t={t_stat_auc:.2f}, p={p_val_auc:.4f})")
+    print("  Note: Greedy deviance splits at depth 4 already respect domain monotonicity; constraints produce virtually identical partitions.")
 
 
 if __name__ == "__main__":

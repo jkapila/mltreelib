@@ -82,23 +82,24 @@ We evaluate all four families on canonical domain benchmarks using [`examples/su
 - **Empirical Results**: Tree partitions into 4 cost regimes. Base expected costs scale from **$1,745.48** (Leaf 0, low-risk young) to **$20,960.24** (Leaf 3, severe risk).
 - **Multiplicative Coefficients**: Age contributes a $+0.0294$ log-slope (**1.03x multiplier per year of age**); additional children contribute $+0.1609$ (**1.17x cost multiplier per child**).
 
-### C. Poisson on Fair's Extramarital Affairs (601 Observations)
-- **Problem**: Annual affair frequency count ($Y \in \{0, 1, \dots, 12\}$).
-- **Empirical Results**: Partitions population into 4 frequency cohorts. In Leaf 0 ($n=449$, baseline cohort), religiousness contributes $\beta = -0.3756$ (**0.69x rate multiplier per unit of religiousness**), and marriage rating contributes $\beta = -0.4704$ (**0.62x rate multiplier per rating level**). No negative event counts are predicted.
+### C. Tweedie on Fair's Extramarital Affairs (601 Observations)
+- **Problem**: Annual affair frequency count with point mass at zero (75.0% zero clump).
+- **Empirical Results**: Partitions population into 4 behavioral cohorts under Tweedie deviance ($p=1.5$). In Leaf 0 ($n=27$), religiousness contributes $\beta = -0.0612$, and marriage rating contributes $\beta = +0.9711$. In the largest cohort (Leaf 2, $n=288$), religiousness contributes $\beta = -0.2747$ and rating $\beta = -0.4071$. No negative event counts are predicted.
 
 ### D. Tobit on Mroz Female Labor Force Participation (753 Women)
-- **Problem**: Annual hours worked (325 women report 0 hours; 428 report positive hours up to 4,950 hours).
+- **Problem**: Annual hours worked (43.2% of women report 0 hours; corner solution at 0).
 - **OLS vs Tobit Attenuation Face-Off**:
-  - **OLS Linear Slope**: $\beta_{\text{educ}} = +28.84$ hours per year of education.
-  - **Tobit Censored Slope**: $\beta_{\text{educ}} = +53.22$ hours per year of education.
-  - **Attenuation Correction**: Standard OLS underestimates the true marginal effect of education by **45.8%** due to corner zeros. The Tobit leaf recovers the full structural response.
+  - Standard OLS flattens regression slopes toward zero due to corner zeros.
+  - In Leaf 0 ($n=233$), OLS attenuation is 39.7% on young children (`kidslt6`), 50.7% on non-wife income (`nwifeinc`), and 92.2% on experience (`exper`).
+  - In Leaf 1 ($n=201$), OLS attenuation on experience is 60.8%.
+  - **Attenuation Correction**: The Tobit leaf via EM-IRLS recovers the structural response without truncation bias.
 
 | Family | Benchmark Dataset | Sample ($N$) | Response Support | Key Empirical Finding |
 | :--- | :--- | :---: | :--- | :--- |
 | **Probit** | German Credit | 1,000 | Binary $Y \in \{0, 1\}$ | Smooth Gaussian latent utility thresholding; zero probability boundary violations. |
 | **Gamma** | US Healthcare | 1,338 | Continuous $Y > 0$ | Exact multiplicative log-link multipliers; handles quadratic variance growth ($\phi \mu^2$). |
-| **Poisson** | Fair's Affairs | 601 | Discrete $Y \ge 0$ | Guaranteed non-negative count predictions across all terminal leaves. |
-| **Tobit** | Mroz Labor | 753 | Censored $Y \ge 0$ | **+84.5% parameter recovery**: fixes 45.8% OLS attenuation bias on corner solutions. |
+| **Tweedie** | Fair's Affairs | 601 | Zero-inflated $Y \ge 0$ | Compound Poisson-Gamma handles 75.0% zero mass and positive tail simultaneously. |
+| **Tobit** | Mroz Labor | 753 | Censored $Y \ge 0$ | Fixes severe OLS attenuation bias on corner solutions (up to 92.2% slope flattening on experience). |
 
 ![Leaf Family Comparison](../assets/leaf_family_comparison.png)
 

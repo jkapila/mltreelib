@@ -2,7 +2,7 @@
 
 A single decision stump (`max_depth=1`) splits feature space into two transparent regimes, then fits independent models inside each leaf. This pattern replicates the high-explainability output of **Quinlan's Cubist and C5.0** — models senior executives, actuaries, and clinical leaders understand in seconds.
 
-With `tree.retrain(...)`, leaf models can be refitted across families (`linear`, `huber`, `quantile`, `binomial`, `poisson`) on frozen partitions in **microseconds**, completely decoupling split finding from leaf estimation.
+With `tree.retrain(...)`, leaf models can be refitted across families (`linear`, `huber`, `quantile`, `binomial`, `poisson`) on frozen partitions in milliseconds (~2.2 ms on 1,000 rows across 1,000 runs), completely decoupling split finding from leaf estimation.
 
 Script: [`examples/practical_stump_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/practical_stump_showcase.py).
 
