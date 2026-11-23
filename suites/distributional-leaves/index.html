@@ -654,10 +654,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#c-poisson-on-fairs-extramarital-affairs-601-observations" class="md-nav__link">
+  <a href="#c-tweedie-on-fairs-extramarital-affairs-601-observations" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        C. Poisson on Fair's Extramarital Affairs (601 Observations)
+        C. Tweedie on Fair's Extramarital Affairs (601 Observations)
       </span>
     </span>
   </a>
@@ -2854,10 +2854,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#c-poisson-on-fairs-extramarital-affairs-601-observations" class="md-nav__link">
+  <a href="#c-tweedie-on-fairs-extramarital-affairs-601-observations" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        C. Poisson on Fair's Extramarital Affairs (601 Observations)
+        C. Tweedie on Fair's Extramarital Affairs (601 Observations)
       </span>
     </span>
   </a>
@@ -2980,18 +2980,19 @@
 <li><strong>Empirical Results</strong>: Tree partitions into 4 cost regimes. Base expected costs scale from <strong><span class="arithmatex">\(1,745.48** (Leaf 0, low-risk young) to **\)</span>20,960.24</strong> (Leaf 3, severe risk).</li>
 <li><strong>Multiplicative Coefficients</strong>: Age contributes a <span class="arithmatex">\(+0.0294\)</span> log-slope (<strong>1.03x multiplier per year of age</strong>); additional children contribute <span class="arithmatex">\(+0.1609\)</span> (<strong>1.17x cost multiplier per child</strong>).</li>
 </ul>
-<h3 id="c-poisson-on-fairs-extramarital-affairs-601-observations">C. Poisson on Fair's Extramarital Affairs (601 Observations)<a class="headerlink" href="#c-poisson-on-fairs-extramarital-affairs-601-observations" title="Permanent link">&para;</a></h3>
+<h3 id="c-tweedie-on-fairs-extramarital-affairs-601-observations">C. Tweedie on Fair's Extramarital Affairs (601 Observations)<a class="headerlink" href="#c-tweedie-on-fairs-extramarital-affairs-601-observations" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Problem</strong>: Annual affair frequency count (<span class="arithmatex">\(Y \in \{0, 1, \dots, 12\}\)</span>).</li>
-<li><strong>Empirical Results</strong>: Partitions population into 4 frequency cohorts. In Leaf 0 (<span class="arithmatex">\(n=449\)</span>, baseline cohort), religiousness contributes <span class="arithmatex">\(\beta = -0.3756\)</span> (<strong>0.69x rate multiplier per unit of religiousness</strong>), and marriage rating contributes <span class="arithmatex">\(\beta = -0.4704\)</span> (<strong>0.62x rate multiplier per rating level</strong>). No negative event counts are predicted.</li>
+<li><strong>Problem</strong>: Annual affair frequency count with point mass at zero (75.0% zero clump).</li>
+<li><strong>Empirical Results</strong>: Partitions population into 4 behavioral cohorts under Tweedie deviance (<span class="arithmatex">\(p=1.5\)</span>). In Leaf 0 (<span class="arithmatex">\(n=27\)</span>), religiousness contributes <span class="arithmatex">\(\beta = -0.0612\)</span>, and marriage rating contributes <span class="arithmatex">\(\beta = +0.9711\)</span>. In the largest cohort (Leaf 2, <span class="arithmatex">\(n=288\)</span>), religiousness contributes <span class="arithmatex">\(\beta = -0.2747\)</span> and rating <span class="arithmatex">\(\beta = -0.4071\)</span>. No negative event counts are predicted.</li>
 </ul>
 <h3 id="d-tobit-on-mroz-female-labor-force-participation-753-women">D. Tobit on Mroz Female Labor Force Participation (753 Women)<a class="headerlink" href="#d-tobit-on-mroz-female-labor-force-participation-753-women" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Problem</strong>: Annual hours worked (325 women report 0 hours; 428 report positive hours up to 4,950 hours).</li>
+<li><strong>Problem</strong>: Annual hours worked (43.2% of women report 0 hours; corner solution at 0).</li>
 <li><strong>OLS vs Tobit Attenuation Face-Off</strong>:</li>
-<li><strong>OLS Linear Slope</strong>: <span class="arithmatex">\(\beta_{\text{educ}} = +28.84\)</span> hours per year of education.</li>
-<li><strong>Tobit Censored Slope</strong>: <span class="arithmatex">\(\beta_{\text{educ}} = +53.22\)</span> hours per year of education.</li>
-<li><strong>Attenuation Correction</strong>: Standard OLS underestimates the true marginal effect of education by <strong>45.8%</strong> due to corner zeros. The Tobit leaf recovers the full structural response.</li>
+<li>Standard OLS flattens regression slopes toward zero due to corner zeros.</li>
+<li>In Leaf 0 (<span class="arithmatex">\(n=233\)</span>), OLS attenuation is 39.7% on young children (<code>kidslt6</code>), 50.7% on non-wife income (<code>nwifeinc</code>), and 92.2% on experience (<code>exper</code>).</li>
+<li>In Leaf 1 (<span class="arithmatex">\(n=201\)</span>), OLS attenuation on experience is 60.8%.</li>
+<li><strong>Attenuation Correction</strong>: The Tobit leaf via EM-IRLS recovers the structural response without truncation bias.</li>
 </ul>
 <table>
 <thead>
@@ -3019,18 +3020,18 @@
 <td style="text-align: left;">Exact multiplicative log-link multipliers; handles quadratic variance growth (<span class="arithmatex">\(\phi \mu^2\)</span>).</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Poisson</strong></td>
+<td style="text-align: left;"><strong>Tweedie</strong></td>
 <td style="text-align: left;">Fair's Affairs</td>
 <td style="text-align: center;">601</td>
-<td style="text-align: left;">Discrete <span class="arithmatex">\(Y \ge 0\)</span></td>
-<td style="text-align: left;">Guaranteed non-negative count predictions across all terminal leaves.</td>
+<td style="text-align: left;">Zero-inflated <span class="arithmatex">\(Y \ge 0\)</span></td>
+<td style="text-align: left;">Compound Poisson-Gamma handles 75.0% zero mass and positive tail simultaneously.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Tobit</strong></td>
 <td style="text-align: left;">Mroz Labor</td>
 <td style="text-align: center;">753</td>
 <td style="text-align: left;">Censored <span class="arithmatex">\(Y \ge 0\)</span></td>
-<td style="text-align: left;"><strong>+84.5% parameter recovery</strong>: fixes 45.8% OLS attenuation bias on corner solutions.</td>
+<td style="text-align: left;">Fixes severe OLS attenuation bias on corner solutions (up to 92.2% slope flattening on experience).</td>
 </tr>
 </tbody>
 </table>

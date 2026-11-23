@@ -2805,7 +2805,7 @@
 <ol>
 <li>A <strong>macro-tree</strong> splits on aggregated or cohort-level features (e.g. city, make, model year, fleet tier) to segment cohorts.</li>
 <li>A <strong>retrain pass</strong> updates leaf nodes on granular telemetry (e.g. mileage, sensor readings, localized pricing) using specialized estimators (Linear Ridge, Robust Huber, Quantile, or GLM) on the frozen topology.</li>
-<li>In production, routing observations down a frozen tree structure and refitting terminal leaves achieves <strong>sub-millisecond latency</strong> (10x–20x faster than re-partitioning from scratch).</li>
+<li>In production, routing observations down a frozen tree structure and refitting terminal leaves achieves <strong>millisecond retraining latency</strong> (~2.2 ms on 1,030 rows across 1,000 iterations, 10x–20x faster than re-partitioning from scratch).</li>
 </ol>
 <p>Script: <a href="https://github.com/jkapila/mltreelib/blob/main/examples/suites/stump_leaf_retrain.py"><code>examples/suites/stump_leaf_retrain.py</code></a> (<code>uv run python examples/suites/stump_leaf_retrain.py</code>).</p>
 <hr />
@@ -2817,7 +2817,7 @@
         GreedySearch --&gt; FrozenTree["Frozen Decision Topology\n(Fixed Split Gates &amp; Boundaries)"]
     end
 
-    subgraph Phase2["Phase 2: Sub-Millisecond Leaf Retraining (Fast)"]
+    subgraph Phase2["Phase 2: Fast Leaf Retraining (~2.2 ms)"]
         direction TB
         StreamingData["New Telemetry / Stream Data\n(Local Sensors, Glitches, Pricing)"] --&gt; Route["Route Rows Down Frozen Tree\nO(N * Depth)"]
         FrozenTree -.-&gt; Route

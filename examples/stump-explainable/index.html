@@ -2794,7 +2794,7 @@
 
 <h1 id="explainable-decision-stumps-leaf-retraining">Explainable Decision Stumps &amp; Leaf Retraining<a class="headerlink" href="#explainable-decision-stumps-leaf-retraining" title="Permanent link">&para;</a></h1>
 <p>A single decision stump (<code>max_depth=1</code>) splits feature space into two transparent regimes, then fits independent models inside each leaf. This pattern replicates the high-explainability output of <strong>Quinlan's Cubist and C5.0</strong> — models senior executives, actuaries, and clinical leaders understand in seconds.</p>
-<p>With <code>tree.retrain(...)</code>, leaf models can be refitted across families (<code>linear</code>, <code>huber</code>, <code>quantile</code>, <code>binomial</code>, <code>poisson</code>) on frozen partitions in <strong>microseconds</strong>, completely decoupling split finding from leaf estimation.</p>
+<p>With <code>tree.retrain(...)</code>, leaf models can be refitted across families (<code>linear</code>, <code>huber</code>, <code>quantile</code>, <code>binomial</code>, <code>poisson</code>) on frozen partitions in milliseconds (~2.2 ms on 1,000 rows across 1,000 runs), completely decoupling split finding from leaf estimation.</p>
 <p>Script: <a href="https://github.com/jkapila/mltreelib/blob/main/examples/practical_stump_showcase.py"><code>examples/practical_stump_showcase.py</code></a>.</p>
 <hr />
 <h2 id="real-world-case-healthcare-insurance-expenses">Real-World Case: Healthcare Insurance Expenses<a class="headerlink" href="#real-world-case-healthcare-insurance-expenses" title="Permanent link">&para;</a></h2>

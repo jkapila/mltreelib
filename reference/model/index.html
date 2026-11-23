@@ -2846,6 +2846,10 @@
 
 <h1 id="api-reference-model">API reference — Model<a class="headerlink" href="#api-reference-model" title="Permanent link">&para;</a></h1>
 <p><code>ModelTree</code> finds partitions using the selected split criterion and fits a local model in each leaf. It supports raw categorical values and routes missing predictors through the fitted tree.</p>
+<div class="admonition note">
+<p class="admonition-title">Scikit-Learn Compatibility</p>
+<p><code>ModelTree</code> provides familiar <code>fit</code>, <code>predict</code>, and <code>predict_proba</code> methods following standard Python estimator conventions. However, it is <strong>not fully scikit-learn compatible</strong>: it does not inherit from <code>sklearn.base.BaseEstimator</code>, does not implement <code>get_params</code>, <code>set_params</code>, or <code>score</code>, and does not pass <code>sklearn.base.clone</code> or <code>sklearn.utils.estimator_checks.check_estimator</code>.</p>
+</div>
 <h2 id="constructor">Constructor<a class="headerlink" href="#constructor" title="Permanent link">&para;</a></h2>
 <p>See the <a href="../api/model-tree/">generated API reference</a> for the constructor signature and the <a href="../parameters/">parameter reference</a> for available settings.</p>
 <h3 id="configure-growth-and-leaves">Configure growth and leaves<a class="headerlink" href="#configure-growth-and-leaves" title="Permanent link">&para;</a></h3>

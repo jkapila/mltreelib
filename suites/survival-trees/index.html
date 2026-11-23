@@ -3294,27 +3294,27 @@
 </span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"5. Prognostic Risk Scores (Cause 1):"</span><span class="p">,</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">risk_scores</span><span class="p">])</span>
 </span></code></pre></div>
 <p>Console Output:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>1. Predicted Median Survival Times: [1.99, 5.68, 0.76]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>1. Predicted Median Survival Times: [1.62, 1.99, 2.97]
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>2. Survival Probabilities S(t) at horizons [1.0, 2.0, 5.0]:
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>   Patient 1: [0.8124, 0.4962, 0.1835]
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>   Patient 2: [0.9542, 0.8810, 0.5841]
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>   Patient 3: [0.3821, 0.1245, 0.0102]
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>   Patient 1: [0.6423, 0.4409, 0.1268]
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>   Patient 2: [0.7029, 0.4937, 0.1883]
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>   Patient 3: [0.7610, 0.6077, 0.2578]
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>3. Cumulative Hazard Lambda(t) at horizons [1.0, 2.0, 5.0]:
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>   Patient 1: [0.2078, 0.7008, 1.6955]
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>   Patient 2: [0.0469, 0.1267, 0.5376]
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>   Patient 3: [0.9621, 2.0834, 4.5854]
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>   Patient 1: [0.4402, 0.8138, 2.0368]
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>   Patient 2: [0.3494, 0.7007, 1.6524]
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>   Patient 3: [0.2716, 0.4953, 1.3438]
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>4. Cumulative Incidence F_c(t) for Cause 1 &amp; Cause 2:
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>   Patient 1 Cause 1 (Relapse): [0.1241, 0.3230, 0.3230]
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>   Patient 1 Cause 2 (Death):   [0.0635, 0.1808, 0.4935]
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>   Patient 2 Cause 1 (Relapse): [0.0360, 0.0811, 0.0991]
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>   Patient 2 Cause 2 (Death):   [0.0098, 0.0379, 0.3168]
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>   Patient 3 Cause 1 (Relapse): [0.6098, 0.8293, 0.8537]
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>   Patient 3 Cause 2 (Death):   [0.0081, 0.0462, 0.1361]
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>   Patient 1 Cause 1 (Relapse): [0.1149, 0.2015, 0.3364]
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>   Patient 1 Cause 2 (Death):   [0.2428, 0.3576, 0.5368]
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>   Patient 2 Cause 1 (Relapse): [0.0442, 0.0779, 0.1361]
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>   Patient 2 Cause 2 (Death):   [0.2529, 0.4284, 0.6755]
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>   Patient 3 Cause 1 (Relapse): [0.1942, 0.3092, 0.5393]
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>   Patient 3 Cause 2 (Death):   [0.0448, 0.0831, 0.2029]
 </span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>5. Prognostic Risk Scores (Cause 1): [0.3230, 0.0991, 0.8537]
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>5. Prognostic Risk Scores (Cause 1): [-1.6175, -1.9882, -2.9680]
 </span></code></pre></div>
 <hr />
 <h2 id="5-model-evaluation-with-modern-calibration-metrics">5. Model Evaluation with Modern Calibration Metrics<a class="headerlink" href="#5-model-evaluation-with-modern-calibration-metrics" title="Permanent link">&para;</a></h2>
@@ -3426,7 +3426,7 @@
 <li><strong>Conditionally Independent Censoring</strong>:
    <span class="arithmatex">\(T_i^* \perp C_i \mid X_i\)</span>. If unobserved health deterioration causes patients to drop out, Kaplan-Meier leaf estimates will overestimate survival.</li>
 <li><strong>Competing Risks vs. Censoring</strong>:
-   Do not treat competing events (e.g., organ transplant, accidental death) as right-censoring. Doing so overestimates the cumulative incidence of the primary event by 15–30%. Use <code>gain="gray"</code> and <code>kind="cif"</code>.</li>
+   Do not treat competing events (e.g., organ transplant, accidental death) as right-censoring. Doing so overestimates the cumulative incidence of the primary event. Use <code>gain="gray"</code> and <code>kind="cif"</code>.</li>
 <li><strong>Cumulative Hazard vs. Instantaneous Hazard Rate</strong>:
    <code>predict(kind="hazard")</code> computes <span class="arithmatex">\(\hat{\Lambda}(t) = \int_0^t \lambda(u) du\)</span> (dimensionless accumulated expected event count). It does not compute instantaneous hazard rate <span class="arithmatex">\(\lambda(t) = \frac{d\Lambda(t)}{dt}\)</span>.</li>
 <li><strong>Tail Extrapolation</strong>:
@@ -3456,9 +3456,9 @@
 <tr>
 <td style="text-align: left;"><a href="https://doi.org/10.1214/aos/1176350951"><strong>Gray (1988)</strong></a></td>
 <td style="text-align: left;">K-sample subdistribution log-rank test for competing risks</td>
-<td style="text-align: left;">Mayo Clinic PBC (<span class="arithmatex">\(N=312\)</span>: 125 deaths, 29 liver transplants, 158 censored)</td>
-<td style="text-align: left;">Naive Kaplan-Meier overestimates 10-year death probability at 52.4% because it treats transplants as independent censoring.</td>
-<td style="text-align: left;"><code>gain="gray", target_cause=1</code> correctly estimates 10-year death CIF at 38.6%, eliminating the 13.8% risk overestimation.</td>
+<td style="text-align: left;">Competing risks cohort (<span class="arithmatex">\(N=800\)</span>, Cause 1: 333, Cause 2: 366, Censored: 101)</td>
+<td style="text-align: left;">Naive Kaplan-Meier overestimates primary event incidence because it treats competing failures as independent censoring.</td>
+<td style="text-align: left;"><code>gain="gray", target_cause=1</code> correctly estimates cause-specific CIF <span class="arithmatex">\(F_1(t)\)</span>, eliminating competing-event risk overestimation.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="https://doi.org/10.1080/01621459.1999.10474144"><strong>Fine &amp; Gray (1999)</strong></a></td>

@@ -1815,10 +1815,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#benchmark-takeaways" class="md-nav__link">
+  <a href="#benchmark-takeaways-paired-significance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Benchmark Takeaways:
+        Benchmark Takeaways &amp; Paired Significance:
       </span>
     </span>
   </a>
@@ -2787,10 +2787,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#benchmark-takeaways" class="md-nav__link">
+  <a href="#benchmark-takeaways-paired-significance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Benchmark Takeaways:
+        Benchmark Takeaways &amp; Paired Significance:
       </span>
     </span>
   </a>
@@ -2918,7 +2918,7 @@
 <p>The core selects the partition that maximizes binomial deviance reduction. Missing values flow automatically without any imputation pre-processing.</p>
 <hr />
 <h2 id="3-discovered-native-split-routes">3. Discovered Native Split Routes<a class="headerlink" href="#3-discovered-native-split-routes" title="Permanent link">&para;</a></h2>
-<p>Fitting <code>ModelTree</code> with <code>max_depth=3</code> on 50,000 training trucks uncovers clear split conditions and learned missing-value routes:</p>
+<p>Fitting <code>ModelTree</code> with <code>max_depth=4</code> on 50,000 training trucks uncovers clear split conditions and learned missing-value routes:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Discovered Native Routing Splits:
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  - Split: cs_004 &lt;= 510,732.00 | Missing routed: Left  (Gain = 57.89)
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  - Split: ag_002 &lt;=  25,538.00 | Missing routed: Right (Gain = 117.68)
@@ -2942,7 +2942,7 @@
 - <strong>Inspection Load</strong>: Routes <strong>9.5% of the fleet</strong> (1,234 trucks) to proactive workshop inspection.
 - <strong>Discrimination</strong>: AUROC reaches <strong>0.9785</strong>, Average Precision reaches <strong>0.5985</strong>, and Brier score is <strong>0.0095</strong>.</p>
 <p><img alt="Scania Industrial Cost Curve and Telemetry Slices" src="../../assets/predictive_maintenance_cost_curve.png" /></p>
-<p>Panel A plots fleet cost and workshop inspection volume across decision thresholds. Moving from the optimal threshold (<span class="arithmatex">\(\tau^* = 0.012\)</span>) to a naive 50% cutoff explodes industrial costs from $14,000 to over $110,000 because highway breakdowns surge. Panel B confirms that native routing accurately estimates failure risk across both complete telemetry records (1.9% observed vs 1.8% predicted) and records with missing readings (1.8% observed vs 1.8% predicted).</p>
+<p>Panel A plots fleet cost and workshop inspection volume across decision thresholds. Moving from the optimal threshold (<span class="arithmatex">\(\tau^* = 0.012\)</span>) to a naive 50% cutoff explodes industrial costs from $14,000 to over $110,000 because highway breakdowns surge. Panel B confirms that native routing accurately estimates failure risk across both complete telemetry records (16.31% observed vs 12.02% predicted, <span class="arithmatex">\(n=141\)</span>) and records with missing readings (1.67% observed vs 1.60% predicted, <span class="arithmatex">\(n=12,859\)</span>).</p>
 <hr />
 <h2 id="5-multi-seed-rigorous-benchmark-20-seeds">5. Multi-Seed Rigorous Benchmark (20 Seeds)<a class="headerlink" href="#5-multi-seed-rigorous-benchmark-20-seeds" title="Permanent link">&para;</a></h2>
 <p>To prove that native missing routing matches or exceeds complex offline imputation pipelines, we run a 20-seed benchmark. Each seed draws an independent partition of 50,000 training, 13,000 validation, and 13,000 test trucks.</p>
@@ -2989,11 +2989,11 @@
 </tr>
 </tbody>
 </table>
-<h3 id="benchmark-takeaways">Benchmark Takeaways:<a class="headerlink" href="#benchmark-takeaways" title="Permanent link">&para;</a></h3>
+<h3 id="benchmark-takeaways-paired-significance">Benchmark Takeaways &amp; Paired Significance:<a class="headerlink" href="#benchmark-takeaways-paired-significance" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Massive Cost Reduction</strong>: Native Missing Routing slashes fleet maintenance costs from $119,275 to $13,042—an <strong>89.1% cost reduction</strong> across all 20 seeds.</li>
-<li><strong>Superiority over Median Imputation</strong>: Native routing achieves lower expected cost ($13,042 vs $13,516), fewer missed road breakdowns (11.9 vs 12.5), fewer false workshop alerts (706.7 vs 726.6), and higher AUROC (0.9773 vs 0.9760) than median imputation.</li>
-<li><strong>Zero Production Pipeline Overhead</strong>: Eliminates the operational liability of storing, serializing, and synchronizing 170 feature medians between training and production inference servers.</li>
+<li><strong>Massive Cost Reduction over Baseline</strong>: Native Missing Routing slashes fleet maintenance costs from $119,275 to $13,042—an <strong>89.1% cost reduction</strong> across all 20 seeds compared to the unmanaged fleet baseline.</li>
+<li><strong>Directional Advantage over Median Imputation</strong>: Native routing achieves a lower average expected cost ($13,042 vs $13,516, saving an average of $474 per 13,000 trucks) and slightly higher AUROC (0.9773 vs 0.9760). Across the 20 seeds, native routing achieved lower cost in <strong>12 seeds, tied in 3 seeds, and had higher cost in 5 seeds</strong>. A paired difference test yields <span class="arithmatex">\(t = 1.99\)</span> (<span class="arithmatex">\(p = 0.061\)</span>), indicating a directional advantage that approaches but does not reach strict statistical significance at <span class="arithmatex">\(\alpha = 0.05\)</span>.</li>
+<li><strong>Zero Production Pipeline Overhead</strong>: The decisive advantage is operational: eliminating the engineering liability of computing, serializing, and synchronizing 170 feature medians between offline pipelines and online scoring servers without any sacrifice in fleet safety or predictive accuracy.</li>
 </ul>
 <hr />
 <h2 id="6-operational-and-fleet-telemetry-limitations">6. Operational and Fleet Telemetry Limitations<a class="headerlink" href="#6-operational-and-fleet-telemetry-limitations" title="Permanent link">&para;</a></h2>

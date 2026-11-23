@@ -3010,7 +3010,7 @@ For a candidate threshold <span class="arithmatex">\(\theta\)</span>, the partit
 <h3 id="key-quantitative-findings">Key Quantitative Findings:<a class="headerlink" href="#key-quantitative-findings" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>High Missingness Tolerance (Panel 1)</strong>: Key diagnostic sensors like <code>ab_000</code> exhibit <strong>77.4% missingness</strong> in production telemetry. Standard imputation collapses 77% of this channel to a single scalar value, destroying its variance.</li>
-<li><strong>Superior Precision-Recall (Panel 2)</strong>: Native missing routing achieves <strong>0.5924 Average Precision</strong>, outperforming the mean imputation baseline by <strong>+3.8%</strong>.</li>
+<li><strong>Competitive Precision-Recall without Imputation Pipelines (Panel 2)</strong>: On this single fixed evaluation split, native missing routing achieves <strong>0.5924 Average Precision</strong> (a +3.8% directional difference over mean imputation's 0.5706) with ROC-AUC virtually tied (<strong>0.9848 vs 0.9846</strong>). This confirms that native routing matches or directionally improves upon imputation without requiring online mean table synchronization.</li>
 <li><strong>Calibrated Probabilities on Incomplete Telemetry (Panel 4)</strong>: On 1,606 test records with at least one missing sensor, <code>ModelTree</code> achieves a <strong>0.0153 Brier score</strong>, maintaining reliable probability calibration without collapsing to the prior mean.</li>
 </ol>
 <hr />

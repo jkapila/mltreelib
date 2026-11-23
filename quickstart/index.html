@@ -2802,7 +2802,7 @@
 <summary>Dataset Provenance: Concrete Compressive Strength</summary>
 <p>Collected by Prof. I-Cheng Yeh (1998) at Chung-Hua University<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Features 1,030 lab mixtures quantifying how 7 cementitious ingredient ratios (cement, slag, fly ash, water, superplasticizer, coarse aggregate, fine aggregate) and curing age interact nonlinearly to determine compressive yield stress (MPa).</p>
 </details>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">ModelTree (Linear Ridge)</label><label for="__tabbed_1_2">Standard CART (Constant Mean)</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">ModelTree (Linear Ridge)</label><label for="__tabbed_1_2">ModelTree(leaf='mean') Baseline</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">load_dataset</span>
@@ -2847,14 +2847,14 @@
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">]</span>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:]</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># Fit standard CART decision tree (constant mean leaves, depth=3)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># Fit piecewise-constant CART decision tree (leaf="mean", depth=3)</span>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">cart</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 </span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">cart</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">)</span>
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">pred_cart</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
 </span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
 </span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
 </span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">m_cart</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_cart</span><span class="p">)</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CART (Mean)       : RMSE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ModelTree (Mean)  : RMSE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -2865,9 +2865,10 @@
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Train rows: 824, Test rows: 206
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>=== Model Performance on Test Set ===
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Standard Decision Tree (CART)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>mltreelib ModelTree (Linear)   : RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>--&gt; Error reduction with linear leaves: 34.3%
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>ModelTree (leaf="mean", d=3)    : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>sklearn DecisionTreeRegressor   : RMSE = 10.92 MPa, R2 = 0.579, MAE = 8.36 MPa
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>mltreelib ModelTree (Linear)    : RMSE =  7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>--&gt; Error reduction with linear leaves: 34.3%
 </span></code></pre></div>
 <table>
 <thead>
@@ -2882,7 +2883,7 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Standard CART</strong></td>
+<td><strong><code>ModelTree(leaf="mean")</code></strong></td>
 <td>Constant Mean</td>
 <td style="text-align: center;">3</td>
 <td style="text-align: center;">11.09</td>
@@ -2890,7 +2891,15 @@
 <td style="text-align: center;">8.47</td>
 </tr>
 <tr>
-<td><strong><code>mltreelib</code> ModelTree</strong></td>
+<td><strong><code>sklearn.tree.DecisionTreeRegressor</code></strong></td>
+<td>Constant Mean</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;">10.92</td>
+<td style="text-align: center;">0.579</td>
+<td style="text-align: center;">8.36</td>
+</tr>
+<tr>
+<td><strong><code>mltreelib</code> ModelTree (Linear)</strong></td>
 <td>Regularized Linear Ridge</td>
 <td style="text-align: center;">3</td>
 <td style="text-align: center;"><strong>7.28</strong></td>
@@ -2899,11 +2908,11 @@
 </tr>
 </tbody>
 </table>
-<p>With identical tree topology (depth 3, 8 leaves), <code>ModelTree</code> achieves a <strong>34.3% error reduction</strong> and increases explained variance from 56.6% to 81.3%.</p>
+<p>With identical tree topology (depth 3, 8 leaves), <code>ModelTree</code> with linear leaves achieves a <strong>34.3% error reduction</strong> over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.</p>
 <p><img alt="Quickstart ModelTree vs CART Step Function" src="../assets/quickstart_tree_vs_flat.png" /></p>
 <ul>
-<li><strong>Left Panel (Parity Plot)</strong>: Predictions from <code>ModelTree(leaf="linear")</code> cluster tightly along the 1:1 diagonal, whereas CART's predictions are constrained to horizontal bands corresponding to leaf means.</li>
-<li><strong>Right Panel (Response Profile)</strong>: Along the gradient of Cement content, CART produces wide step discontinuities, while <code>ModelTree</code> preserves the physical continuous response curve.</li>
+<li><strong>Left Panel (Parity Plot)</strong>: Predictions from <code>ModelTree(leaf="linear")</code> cluster tightly along the 1:1 diagonal, whereas constant-mean trees are constrained to horizontal bands corresponding to leaf averages.</li>
+<li><strong>Right Panel (Response Profile)</strong>: Along the gradient of Cement content, constant-mean CART trees produce wide step discontinuities, while <code>ModelTree</code> preserves the physical continuous response curve.</li>
 </ul>
 <hr />
 <h2 id="4-transparent-tree-structure-inspection">4. Transparent Tree Structure &amp; Inspection<a class="headerlink" href="#4-transparent-tree-structure-inspection" title="Permanent link">&para;</a></h2>
@@ -2937,7 +2946,7 @@
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Explore the <strong><a href="../guides/">Practical Modeling Pathways</a></strong> for end-to-end classification, survival, and uplift workflows.</li>
-<li>Study <strong><a href="../suites/hierarchical-retrain/">Dynamic Leaf Retraining</a></strong> for microsecond warm-start leaf adaptation.</li>
+<li>Study <strong><a href="../suites/hierarchical-retrain/">Dynamic Leaf Retraining</a></strong> for fast warm-start leaf adaptation.</li>
 <li>Review <strong><a href="../suites/distributional-leaves/">Distributional Leaves</a></strong> for Tobit, Tweedie, and Gamma modeling.</li>
 <li>Inspect the <strong><a href="../reference/model/">API Reference</a></strong> for all parameters and methods.</li>
 </ul>

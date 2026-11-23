@@ -2592,6 +2592,10 @@ regenerated from the built module, so this never drifts from the
 code. Narrative guides with verified examples:
 <a href="../data/">Data</a> · <a href="../model/">Model</a> · <a href="../metrics/">Metrics</a> ·
 <a href="../reports/">Reports</a> · <a href="../../guides/visualization/">Visualization</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Scikit-Learn Compatibility</p>
+<p>Classes in <code>mltreelib</code> (such as <code>ModelTree</code>) implement standard <code>fit</code>, <code>predict</code>, and <code>predict_proba</code> method signatures, but do <strong>not</strong> inherit from <code>sklearn.base.BaseEstimator</code> and are not fully scikit-learn compatible (<code>clone</code> and <code>check_estimator</code> are not supported).</p>
+</div>
 <table>
 <thead>
 <tr>

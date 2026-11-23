@@ -3008,11 +3008,11 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 <p>Where <span class="arithmatex">\(t_j\)</span> are distinct event times in cohort <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(d_{jk}\)</span> is observed failures at <span class="arithmatex">\(t_j\)</span>, and <span class="arithmatex">\(n_{jk}\)</span> is customers at risk just prior to <span class="arithmatex">\(t_j\)</span>.</p>
 <h3 id="stage-3-unified-serving-contract">Stage 3: Unified Serving Contract<a class="headerlink" href="#stage-3-unified-serving-contract" title="Permanent link">&para;</a></h3>
 <p>The resulting object is a single, self-contained <code>ModelTree</code>:
-- <code>tree.predict(X_new, kind="survival", times=tenure_grid)</code> routes down the tree in <span class="arithmatex">\(O(\text{depth})\)</span> microsecond time and evaluates calibrated survival curves directly.
+- <code>tree.predict(X_new, kind="survival", times=tenure_grid)</code> routes down the tree in <span class="arithmatex">\(O(\text{depth})\)</span> time and evaluates localized Kaplan-Meier survival curves directly.
 - <code>tree.predict(X_new, kind="risk")</code> returns empirical leaf hazard risk scores.</p>
 <hr />
 <h2 id="3-case-study-10000-commercial-bank-customers">3. Case Study: 10,000 Commercial Bank Customers<a class="headerlink" href="#3-case-study-10000-commercial-bank-customers" title="Permanent link">&para;</a></h2>
-<p>We test this architecture on the real <strong>Bank Customer Churn</strong> benchmark (10,000 customers, 10-year tenure follow-up; 70% train / 30% test).</p>
+<p>We test this architecture on the real <strong>Bank Customer Churn</strong> benchmark (OpenML ID 46911; 10,000 customers, 10-year tenure follow-up; 70% train / 30% test).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -3061,25 +3061,25 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 <tr>
 <td style="text-align: left;"><strong>Marginal Kaplan-Meier</strong></td>
 <td style="text-align: left;">0.5000 ± 0.0000</td>
-<td style="text-align: left;">0.1924 ± 0.0064</td>
+<td style="text-align: left;">0.1282 ± 0.0034</td>
 <td style="text-align: left;">Unstratified Population <span class="arithmatex">\(S(t)\)</span></td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Single-Stage Survival Tree</strong></td>
 <td style="text-align: left;">0.5031 ± 0.0084</td>
-<td style="text-align: left;">0.1924 ± 0.0064</td>
+<td style="text-align: left;">0.1282 ± 0.0033</td>
 <td style="text-align: left;">Direct Log-Rank Splitting on <span class="arithmatex">\((T, E)\)</span></td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Two-Stage Hierarchical Tree (retrain)</strong></td>
 <td style="text-align: left;"><strong>0.6854 ± 0.0087</strong></td>
-<td style="text-align: left;"><strong>0.1922 ± 0.0064</strong></td>
+<td style="text-align: left;"><strong>0.1163 ± 0.0030</strong></td>
 <td style="text-align: left;">Profile Tree + Native Leaf <code>retrain()</code></td>
 </tr>
 </tbody>
 </table>
 <p>Across all 20 random seeds, the <strong>Two-Stage Tree beat the Single-Stage Tree in 20 of 20 runs (100% of seeds)</strong>. </p>
-<p>The single-stage tree achieves a C-index of <span class="arithmatex">\(0.5031\)</span> (scarcely better than the unstratified <span class="arithmatex">\(0.5000\)</span> baseline) because greedy log-rank splits on <span class="arithmatex">\((T, E)\)</span> are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of <strong><span class="arithmatex">\(0.6854 \pm 0.0087\)</span></strong> and Integrated Brier Score of <strong><span class="arithmatex">\(0.1922 \pm 0.0064\)</span></strong>, establishing clean, robust risk rank-ordering on held-out customers.</p>
+<p>The single-stage tree achieves a C-index of <span class="arithmatex">\(0.5031\)</span> (scarcely better than the unstratified <span class="arithmatex">\(0.5000\)</span> baseline) because greedy log-rank splits on <span class="arithmatex">\((T, E)\)</span> are dominated by administrative censoring noise. In contrast, the two-stage model reaches a C-index of <strong><span class="arithmatex">\(0.6854 \pm 0.0087\)</span></strong> and Integrated Brier Score of <strong><span class="arithmatex">\(0.1163 \pm 0.0030\)</span></strong> (a 9.3% reduction in Brier forecast error over the 0.1282 baseline), establishing clean, robust risk rank-ordering on held-out customers.</p>
 <hr />
 <h2 id="5-auditable-rules-discovered-cohorts">5. Auditable Rules &amp; Discovered Cohorts<a class="headerlink" href="#5-auditable-rules-discovered-cohorts" title="Permanent link">&para;</a></h2>
 <p>Calling <code>tree.extract_rules()</code> surfaces the exact mathematical bounds partitioning customer risk:</p>
@@ -3092,8 +3092,8 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 <h3 id="key-insights-from-the-discovered-curves">Key Insights from the Discovered Curves:<a class="headerlink" href="#key-insights-from-the-discovered-curves" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Non-Crossing, Distinct Trajectories</strong>:</li>
-<li><strong>Cohort 0 (Core Retained, Teal)</strong>: 5,074 customers (72.5% of sample). Even after 10 years of tenure, survival probability remains high at <strong>70.9%</strong>.</li>
-<li><strong>Cohort 2 (Mature Mainstream, Blue)</strong>: 1,685 customers. Survival decays steadily to <strong>25.7%</strong> by year 10.</li>
+<li><strong>Cohort 0 (Core Retained, Teal)</strong>: 5,074 customers (72.5% of sample). Even after 10 years of tenure, survival probability remains high at <strong>68.7%</strong>.</li>
+<li><strong>Cohort 2 (Mature Mainstream, Blue)</strong>: 1,685 customers. Survival decays steadily to <strong>23.0%</strong> by year 10.</li>
 <li><strong>Cohorts 1 &amp; 3 (Product Clutter Flight Risk, Orange/Red)</strong>: Customers with <span class="arithmatex">\(&gt;2\)</span> products experience severe early-tenure hazard, with survival dropping below 15% within 3 years.</li>
 <li><strong>Guaranteed Monotonicity</strong>:
    Because each leaf model fits an exact product-limit Kaplan-Meier step function, predictions are guaranteed non-increasing (<span class="arithmatex">\(\hat{S}(t_2) \le \hat{S}(t_1)\)</span> for <span class="arithmatex">\(t_2 &gt; t_1\)</span>) with zero negative hazard artifacts.</li>
@@ -3126,7 +3126,7 @@ k = \text{Tree}(X_i), \quad k \in \{0, 1, \dots, K-1\}
 <tr>
 <td style="text-align: left;"><strong>Censoring Robustness</strong></td>
 <td style="text-align: left;">Vulnerable to calendar truncation bias (<span class="arithmatex">\(C=0.5031\)</span>).</td>
-<td style="text-align: left;"><strong>Censoring-independent</strong> cohort segregation (<span class="arithmatex">\(C=0.6854\)</span>).</td>
+<td style="text-align: left;"><strong>Decoupled profile</strong> cohort segregation (<span class="arithmatex">\(C=0.6854\)</span>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Hazard Assumption</strong></td>

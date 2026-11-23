@@ -1685,6 +1685,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#why-not-linear-programming-scipyoptimizelinprog" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why Not Linear Programming (<code>scipy.optimize.linprog</code>)?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#limitations-practical-realities" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2782,6 +2793,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#why-not-linear-programming-scipyoptimizelinprog" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why Not Linear Programming (<code>scipy.optimize.linprog</code>)?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#limitations-practical-realities" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2933,21 +2955,46 @@
 <li><strong>Per-Leaf <span class="arithmatex">\(t\)</span>-Digest Quantiles</strong>: During training, each leaf maintains its own streaming <span class="arithmatex">\(t\)</span>-digest of target values. Because each leaf has an independent digest, the predicted spread varies dynamically by SKU and by input features <span class="arithmatex">\(X\)</span> (heteroscedastic dispersion). A single global residual digest would incorrectly force the same error variance across all market regimes.</li>
 <li><strong>Full Conditional Quantile Curve</strong>: Two prediction interval bounds (such as 5% and 95%) are not enough to evaluate arbitrary critical fractiles <span class="arithmatex">\(\tau_k \in (0, 1)\)</span>. <code>ModelTree.quantile(X, tau)</code> exposes the complete inverse CDF curve <span class="arithmatex">\(F_k^{-1}(\tau)\)</span> at any quantile level <span class="arithmatex">\(\tau \in [0.001, 0.999]\)</span>.</li>
 </ol>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Train ModelTree with linear leaves for SKU demand</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 1. Point prediction (conditional mean)</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">y_mean</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># 2. Complete conditional quantile function at any critical fractile tau</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">tau</span> <span class="o">=</span> <span class="mf">0.88</span>  <span class="c1"># Newsvendor critical fractile s / (s + h)</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">q_unconstrained</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># 3. Non-parametric prediction interval for visualization</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">intervals</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_interval</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="mf">0.90</span><span class="p">)</span>  <span class="c1"># [(q_05, q_95), ...]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Generate synthetic retail demand features (day-of-week, promo, discount, lead-time)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">n_train</span><span class="p">,</span> <span class="n">n_test</span> <span class="o">=</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">30</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_features</span><span class="p">(</span><span class="n">n_days</span><span class="p">):</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_days</span><span class="p">):</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="n">dow</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span> <span class="o">%</span> <span class="mi">7</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="n">is_weekend</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">dow</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">]</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">promo</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.20</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">discount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span> <span class="k">if</span> <span class="n">promo</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">dow</span><span class="p">,</span> <span class="n">is_weekend</span><span class="p">,</span> <span class="n">promo</span><span class="p">,</span> <span class="n">discount</span><span class="p">])</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">return</span> <span class="n">feats</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">X_train</span> <span class="o">=</span> <span class="n">make_features</span><span class="p">(</span><span class="n">n_train</span><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">X_test</span> <span class="o">=</span> <span class="n">make_features</span><span class="p">(</span><span class="n">n_test</span><span class="p">)</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># Base demand with promotional lift and weekend seasonality</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">y_train</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.6</span> <span class="o">*</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1.2</span> <span class="o">*</span> <span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span> <span class="mf">20.0</span><span class="p">)))</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">X_train</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="p">]</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="c1"># Train ModelTree with linear leaves for SKU demand</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1"># 1. Point prediction (conditional mean)</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">y_mean</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="c1"># 2. Complete conditional quantile function at any critical fractile tau</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">tau</span> <span class="o">=</span> <span class="mf">0.88</span>  <span class="c1"># Newsvendor critical fractile s / (s + h)</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="n">q_unconstrained</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="c1"># 3. Non-parametric prediction interval for visualization</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="n">intervals</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_interval</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="mf">0.90</span><span class="p">)</span>  <span class="c1"># [(q_05, q_95), ...]</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean forecast: </span><span class="si">{</span><span class="n">y_mean</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> | Tau=0.88 quantile: </span><span class="si">{</span><span class="n">q_unconstrained</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> | 90% Interval: [</span><span class="si">{</span><span class="n">intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Across 50 simulated retail SKUs (spanning Fast Movers, Medium Movers, and High-Margin Specialty items), <code>ModelTree</code> traces distinct demand volatility regimes:</p>
 <p><img alt="ModelTree Linear Demand Forecasts with Prediction Intervals" src="../../assets/replenishment_prediction_intervals.svg" /></p>
@@ -2977,7 +3024,7 @@
 <div class="arithmatex">\[
 \frac{\partial \mathcal{L}}{\partial q_k} = (s_k + h_k) F_k(q_k) - s_k + \lambda v_k + \mu c_k = 0
 \]</div>
-<p>Yields the exact <strong>constrained stationary fractile condition</strong>:</p>
+<p>Yields the <strong>constrained stationary fractile condition</strong>:</p>
 <div class="arithmatex">\[
 F_k(q_k^*(\lambda, \mu)) = \frac{s_k - \lambda v_k - \mu c_k}{s_k + h_k}
 \]</div>
@@ -2985,7 +3032,7 @@ F_k(q_k^*(\lambda, \mu)) = \frac{s_k - \lambda v_k - \mu c_k}{s_k + h_k}
 <div class="arithmatex">\[
 q_k^*(\lambda, \mu) = \max\left(0, F_k^{-1}\left( \frac{s_k - \lambda v_k - \mu c_k}{s_k + h_k} \right)\right)
 \]</div>
-<p>This decouples the 50-variable coupled optimization into a fast 2-variable root search over <span class="arithmatex">\((\lambda, \mu) \ge 0\)</span>, solved via bisection:</p>
+<p>This decouples the 50-variable coupled optimization into a fast 2-variable root search over <span class="arithmatex">\((\lambda, \mu) \ge 0\)</span>, solved via nested alternating bisection without a separate feasibility check:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">solve_joint_dual</span><span class="p">(</span><span class="n">s_vec</span><span class="p">,</span> <span class="n">h_vec</span><span class="p">,</span> <span class="n">vol_vec</span><span class="p">,</span> <span class="n">cost_vec</span><span class="p">,</span> <span class="n">V_max</span><span class="p">,</span> <span class="n">B_max</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">x_test_t</span><span class="p">):</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">"""</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    Solve joint replenishment problem via Lagrangian multiplier dual search.</span>
@@ -3041,7 +3088,9 @@ q_k^*(\lambda, \mu) = \max\left(0, F_k^{-1}\left( \frac{s_k - \lambda v_k - \mu 
 </span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>    <span class="n">q_opt</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">eval_mult</span><span class="p">(</span><span class="n">lam</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
 </span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>    <span class="k">return</span> <span class="n">q_opt</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">mu</span>
 </span></code></pre></div>
-<p>In benchmarks on 50 SKUs, this dual search averaged <strong>3.74 ms per daily multi-item allocation</strong> across 600 evaluated days.</p>
+<p>In benchmarks on 50 SKUs, this dual search averaged <strong>3.39 ms per daily multi-item allocation</strong> across 600 evaluated days.</p>
+<h3 id="why-not-linear-programming-scipyoptimizelinprog">Why Not Linear Programming (<code>scipy.optimize.linprog</code>)?<a class="headerlink" href="#why-not-linear-programming-scipyoptimizelinprog" title="Permanent link">&para;</a></h3>
+<p>A standard LP formulation requires linear or piecewise-linear objective functions with fixed deterministic parameters. Here, each SKU's demand distribution is conditional on input covariates <span class="arithmatex">\(\mathbf{x}_t\)</span> and captured via a non-parametric per-leaf <span class="arithmatex">\(t\)</span>-digest. Inverting these non-linear empirical inverse CDFs <span class="arithmatex">\(F_k^{-1}(\tau)\)</span> inside a linear program requires discretizing the sample distribution across thousands of scenarios per SKU, introducing substantial discretization error and scaling poorly. In contrast, the Lagrangian dual relaxation operates directly on continuous critical fractiles <span class="arithmatex">\(\tau_k\)</span>, evaluating exact leaf digests in 3.39 ms.</p>
 <h3 id="limitations-practical-realities">Limitations &amp; Practical Realities<a class="headerlink" href="#limitations-practical-realities" title="Permanent link">&para;</a></h3>
 <p>In real supply chain environments, purchase orders face non-convex, integer constraints such as <strong>Supplier Minimum Order Quantities (MOQs)</strong>, where <span class="arithmatex">\(q_k \in \{0\} \cup [\text{MOQ}_k, \infty)\)</span>, and discrete case-pack/pallet requirements. These discontinuous constraints render the continuous Lagrangian dual non-convex. </p>
 <p>Handling MOQs requires rounding heuristics with constraint repair, or formulating the order allocation as a Mixed-Integer Linear Program (MILP) over piecewise linear quantile approximations—capabilities not implemented in this baseline example.</p>
@@ -3050,7 +3099,7 @@ q_k^*(\lambda, \mu) = \max\left(0, F_k^{-1}\left( \frac{s_k - \lambda v_k - \mu 
 <p>We benchmarked three competing ordering strategies across 20 independent simulation seeds (50 SKUs, 120 training days, 30 evaluation days) under 92% warehouse capacity and 95% working capital constraints:
 - <strong>Policy A (Mean)</strong>: Orders expected conditional mean <span class="arithmatex">\(\mathbb{E}[Y_k \mid X]\)</span>, scaled down uniformly if capacity or budget binds.
 - <strong>Policy B (Fractile + Scale)</strong>: Orders unconstrained critical fractiles <span class="arithmatex">\(q_k = F_k^{-1}\left(\frac{s_k}{s_k+h_k}\right)\)</span>, scaled down uniformly if constraints bind.
-- <strong>Policy C (Joint Dual)</strong>: Solves the exact joint constrained problem via the <span class="arithmatex">\(\lambda/\mu\)</span> dual search.</p>
+- <strong>Policy C (Joint Dual)</strong>: Solves the joint constrained problem via the nested <span class="arithmatex">\((\lambda, \mu)\)</span> bisection dual search.</p>
 <table>
 <thead>
 <tr>
@@ -3085,7 +3134,9 @@ q_k^*(\lambda, \mu) = \max\left(0, F_k^{-1}\left( \frac{s_k - \lambda v_k - \mu 
 </tr>
 </tbody>
 </table>
-<p>Across 20 evaluation seeds, Policy C achieved lower penalty cost than Policy B in <strong>20 of 20 seeds (100% of runs)</strong>, cutting average penalty cost from $1,734,713 to $1,032,749 (a 40.5% reduction), while sacrificing unit fill (52.51% vs 71.26%) to protect dollar fill (71.69% vs 71.19%) and keep warehouse volume within the 92% cap.</p>
+<p>Across 20 evaluation seeds, Policy C achieved lower penalty cost than Policy B in <strong>20 of 20 seeds (100% of runs)</strong>, cutting average penalty cost from $1,734,713 to $1,032,749 (a 40.5% reduction), while sacrificing unit fill (52.51% vs 71.26%) to protect dollar fill (71.69% vs 71.19%). </p>
+<p>Measured resource utilization confirms that Policy C strictly respects physical limits: working capital budget binds tightly at <strong>99.39% ± 1.12% utilization</strong>, while warehouse volume utilization averages <strong>62.88% ± 16.63%</strong> (peak 79.14%), operating comfortably within the 92% ceiling. </p>
+<p>Realized gross sales profit under Policy C is modestly lower ($1,801,845 vs $1,843,188 under Policy A and $1,836,141 under Policy B) because Policy C deliberately cuts procurement of high-volume, low-margin goods to avoid severe stockout penalty multipliers on high-value items, eliminating over $700,000 in unpenalized stockout and goodwill losses.</p>
 <h3 id="strategic-allocation-shift">Strategic Allocation Shift<a class="headerlink" href="#strategic-allocation-shift" title="Permanent link">&para;</a></h3>
 <p>Under shared volume constraints, the dual solver systematically rebalances inventory away from bulky, low-margin products toward high-margin specialty items:</p>
 <p><img alt="Prescriptive Allocation Shift" src="../../assets/replenishment_allocation_shift.svg" /></p>

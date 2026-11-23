@@ -3038,7 +3038,7 @@
 <ol>
 <li><strong>Massive Out-of-Time Error Drop (66.9%)</strong>: <code>ModelTree</code> reduces out-of-sample RMSE from <strong>12.87 to 4.26</strong> and lifts <span class="arithmatex">\(R^2\)</span> from <strong>0.787 to 0.977</strong>, accurately capturing post-March trend expansion.</li>
 <li><strong>Elimination of the Flat Ceiling (Panel 2)</strong>: Standard CART flattens into horizontal plateaus as test dates exceed training values. <code>ModelTree</code> linear leaves maintain positive trend derivatives across all store cohorts.</li>
-<li><strong>Rust Transformation Latency</strong>: Feature engineering on the multi-store panel runs in <strong>sub-millisecond Rust time</strong>, completely eliminating Python date-parsing and pandas groupby bottlenecks.</li>
+<li><strong>Rust Transformation Latency</strong>: Feature engineering on the multi-store panel executes in compiled Rust, completely eliminating Python date-parsing and pandas groupby bottlenecks.</li>
 </ol>
 <hr />
 <h2 id="5-domain-limitations-operational-boundaries">5. Domain Limitations &amp; Operational Boundaries<a class="headerlink" href="#5-domain-limitations-operational-boundaries" title="Permanent link">&para;</a></h2>

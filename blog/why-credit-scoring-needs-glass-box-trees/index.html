@@ -1778,10 +1778,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#head-to-head-findings" class="md-nav__link">
+  <a href="#head-to-head-paired-difference-findings" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Head-to-Head Findings:
+        Head-to-Head &amp; Paired Difference Findings:
       </span>
     </span>
   </a>
@@ -2821,10 +2821,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#head-to-head-findings" class="md-nav__link">
+  <a href="#head-to-head-paired-difference-findings" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Head-to-Head Findings:
+        Head-to-Head &amp; Paired Difference Findings:
       </span>
     </span>
   </a>
@@ -2883,7 +2883,7 @@
 1. <strong>What exact boundary rejected this applicant?</strong> (Required by ECOA / FCRA adverse action rules).
 2. <strong>How much does a false alarm cost compared to a missed default?</strong></p>
 <p>Standard credit scorecards force manual weight-of-evidence binning, while opaque gradient boosting ensembles obscure split reasoning behind thousands of non-monotonic trees. </p>
-<p>By formulating credit triage directly as an <strong>asymmetric misclassification loss minimization</strong> problem, a shallow glass-box decision tree (<code>max_depth=3</code> to <code>4</code>) matches ensemble ranking performance, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by <strong>32.7%</strong> over industry baselines.</p>
+<p>By formulating credit triage directly as an <strong>asymmetric misclassification loss minimization</strong> problem, a shallow glass-box decision tree (<code>max_depth=3</code> to <code>4</code>) provides transparent auditable decision rules, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by <strong>32.7%</strong> over industry baselines.</p>
 <p>The complete reproducible benchmark script lives at <a href="https://github.com/jkapila/mltreelib/blob/main/examples/credit_scoring.py"><code>examples/credit_scoring.py</code></a>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/credit_scoring.py
 </span></code></pre></div>
@@ -2947,8 +2947,9 @@
 </span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 </span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
 </span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="n">monotone</span><span class="o">=</span><span class="n">monotone_vec</span><span class="p">,</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="p">)</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="3-white-box-rule-extraction">3. White-Box Rule Extraction<a class="headerlink" href="#3-white-box-rule-extraction" title="Permanent link">&para;</a></h2>
@@ -3015,10 +3016,22 @@
 <hr />
 <h2 id="4-empirical-diagnostics-thresholds-and-calibration">4. Empirical Diagnostics: Thresholds and Calibration<a class="headerlink" href="#4-empirical-diagnostics-thresholds-and-calibration" title="Permanent link">&para;</a></h2>
 <p>On a single held-out evaluation split (100k train, 25k validation, 25k test; Seed 42), we evaluate the trade-off between review capacity and misclassification loss.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Evaluate threshold sweep</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">cutoff_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.167</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">]</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">best_cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cutoff_candidates</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">evaluate_cost</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">test_metrics</span> <span class="o">=</span> <span class="n">evaluate_cost_and_metrics</span><span class="p">(</span><span class="n">y_te</span><span class="p">,</span> <span class="n">p_te</span><span class="p">,</span> <span class="n">best_cutoff</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_cost</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">c_fp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">c_fn</span><span class="o">=</span><span class="mf">5.0</span><span class="p">):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">fn</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">yt</span><span class="p">,</span> <span class="n">yp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob</span><span class="p">)</span> <span class="k">if</span> <span class="n">yt</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">yp</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">fp</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">yt</span><span class="p">,</span> <span class="n">yp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob</span><span class="p">)</span> <span class="k">if</span> <span class="n">yt</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">yp</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">c_fp</span> <span class="o">*</span> <span class="n">fp</span> <span class="o">+</span> <span class="n">c_fn</span> <span class="o">*</span> <span class="n">fn</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Split 150k borrowers: 100k train, 25k validation, 25k test (Seed 42)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">X_val</span><span class="p">,</span> <span class="n">y_val</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">100000</span><span class="p">:</span><span class="mi">125000</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">100000</span><span class="p">:</span><span class="mi">125000</span><span class="p">]</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">X_te</span><span class="p">,</span> <span class="n">y_te</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">125000</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="mi">125000</span><span class="p">:]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">p_val</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_val</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">p_te</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_te</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># Evaluate threshold sweep</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">cutoff_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.167</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">]</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">best_cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cutoff_candidates</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">evaluate_cost</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">test_cost</span> <span class="o">=</span> <span class="n">evaluate_cost</span><span class="p">(</span><span class="n">y_te</span><span class="p">,</span> <span class="n">p_te</span><span class="p">,</span> <span class="n">best_cutoff</span><span class="p">)</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Optimal validation cutoff: </span><span class="si">{</span><span class="n">best_cutoff</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | Test expected cost: $</span><span class="si">{</span><span class="n">test_cost</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> / applicant"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The validation optimizer selects <strong><span class="arithmatex">\(\tau^* = 0.090\)</span></strong>:
 - <strong>Expected Cost</strong>: <strong>$0.2203</strong> per applicant.
@@ -3031,11 +3044,12 @@
 <hr />
 <h2 id="5-multi-seed-rigorous-benchmark-20-seeds">5. Multi-Seed Rigorous Benchmark (20 Seeds)<a class="headerlink" href="#5-multi-seed-rigorous-benchmark-20-seeds" title="Permanent link">&para;</a></h2>
 <p>To guarantee that performance gains are not an artifact of a lucky split, we execute a 20-seed benchmark. Each seed draws an independent partition of 100,000 training, 25,000 validation, and 25,000 test applicants.</p>
-<p>We compare four distinct architectures:
-1. <strong>Constant Rate Baseline</strong>: Predicts the training prevalence rate <span class="arithmatex">\(\bar{y}_{\text{train}} \approx 0.0668\)</span>. Under the 5:1 loss and optimal Bayes threshold <span class="arithmatex">\(\tau^* = 0.1667\)</span>, no applicants are flagged (<span class="arithmatex">\(\text{Queue} = 0\%\)</span>), incurring full default losses.
-2. <strong>Linear Scorecard (Logistic Regression)</strong>: <code>ModelTree(max_depth=0, leaf="linear", leaf_family="binomial", l2=1.0)</code>. Fits an unbinned logistic regression directly on raw features.
-3. <strong>Glass-Box Decision Tree (Depth 3)</strong>: Pure piecewise-constant decision tree with 8 terminal leaves.
-4. <strong>Monotone Glass-Box Tree (Depth 4)</strong>: Enforces domain-specified directional constraints (<code>monotone=[1, -1, 1, 1, -1, 0, 1, 0, 1, 0]</code>) to ensure risk never decreases when debt or delinquencies rise.</p>
+<p>We compare five distinct architectures:
+1. <strong>Constant Rate Baseline</strong>: Predicts training prevalence rate <span class="arithmatex">\(\bar{y}_{\text{train}} \approx 0.0668\)</span>. Under the 5:1 loss and optimal Bayes threshold <span class="arithmatex">\(\tau^* = 0.1667\)</span>, no applicants are flagged (<span class="arithmatex">\(\text{Queue} = 0\%\)</span>), incurring full default losses ($0.3349 / applicant).
+2. <strong>Standardized Clipped Logistic Regression</strong>: Industry standard linear scorecard (<code>sklearn.linear_model.LogisticRegression</code>) with median imputation for missing values, 1<sup>st</sup>/99<sup>th</sup> percentile clipping on ratio outliers, and standard scaling.
+3. <strong>Unconstrained Glass-Box Tree (Depth 4)</strong>: Pure piecewise-constant decision tree with up to 16 terminal leaves and deviance split gains.
+4. <strong>Monotone Glass-Box Tree (Depth 4)</strong>: Enforces domain-specified directional constraints (<code>monotone=[1, -1, 1, 1, -1, 0, 1, 0, 1, 0]</code>) to ensure risk never decreases when debt or delinquencies rise.
+5. <strong>LightGBM GBDT (50 Trees, Depth 4)</strong>: Unconstrained gradient-boosted decision tree ensemble for comparison.</p>
 <h3 id="benchmark-results-across-20-seeds-n_texttest-25000">Benchmark Results across 20 Seeds (<span class="arithmatex">\(N_{\text{test}} = 25,000\)</span>):<a class="headerlink" href="#benchmark-results-across-20-seeds-n_texttest-25000" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -3058,35 +3072,44 @@
 <td style="text-align: center;">0.0670 ± 0.0017</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Linear Scorecard (Logistic)</strong></td>
-<td style="text-align: center;">$0.3349 ± $0.0083</td>
-<td style="text-align: center;">0.0% ± 0.0%</td>
-<td style="text-align: center;">0.0625 ± 0.0014</td>
-<td style="text-align: center;">0.5190 ± 0.0044</td>
-<td style="text-align: center;">0.0695 ± 0.0020</td>
+<td style="text-align: left;"><strong>Standardized Clipped Logistic</strong></td>
+<td style="text-align: center;">$0.2241 ± $0.0051</td>
+<td style="text-align: center;">9.0% ± 0.9%</td>
+<td style="text-align: center;">0.0507 ± 0.0010</td>
+<td style="text-align: center;">0.8524 ± 0.0053</td>
+<td style="text-align: center;">0.3773 ± 0.0138</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Glass-Box Tree (Depth 3)</strong></td>
-<td style="text-align: center;">$0.2316 ± $0.0051</td>
-<td style="text-align: center;">11.3% ± 0.2%</td>
-<td style="text-align: center;">0.0517 ± 0.0010</td>
-<td style="text-align: center;">0.8189 ± 0.0055</td>
-<td style="text-align: center;">0.3014 ± 0.0119</td>
+<td style="text-align: left;"><strong>Unconstrained Tree (Depth 4)</strong></td>
+<td style="text-align: center;">$0.2255 ± $0.0051</td>
+<td style="text-align: center;">12.4% ± 0.4%</td>
+<td style="text-align: center;">0.0509 ± 0.0010</td>
+<td style="text-align: center;">0.8370 ± 0.0052</td>
+<td style="text-align: center;">0.3317 ± 0.0120</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Monotone Glass-Box Tree (Depth 4)</strong></td>
-<td style="text-align: center;"><strong>$0.2255 ± $0.0051</strong></td>
-<td style="text-align: center;"><strong>12.4% ± 0.4%</strong></td>
-<td style="text-align: center;"><strong>0.0509 ± 0.0010</strong></td>
-<td style="text-align: center;"><strong>0.8370 ± 0.0052</strong></td>
-<td style="text-align: center;"><strong>0.3318 ± 0.0121</strong></td>
+<td style="text-align: center;">$0.2255 ± $0.0051</td>
+<td style="text-align: center;">12.4% ± 0.4%</td>
+<td style="text-align: center;">0.0509 ± 0.0010</td>
+<td style="text-align: center;">0.8370 ± 0.0052</td>
+<td style="text-align: center;">0.3318 ± 0.0121</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>LightGBM GBDT (50 Trees)</strong></td>
+<td style="text-align: center;"><strong>$0.2155 ± $0.0049</strong></td>
+<td style="text-align: center;"><strong>10.5% ± 0.5%</strong></td>
+<td style="text-align: center;"><strong>0.0493 ± 0.0010</strong></td>
+<td style="text-align: center;"><strong>0.8636 ± 0.0048</strong></td>
+<td style="text-align: center;"><strong>0.3999 ± 0.0128</strong></td>
 </tr>
 </tbody>
 </table>
-<h3 id="head-to-head-findings">Head-to-Head Findings:<a class="headerlink" href="#head-to-head-findings" title="Permanent link">&para;</a></h3>
+<h3 id="head-to-head-paired-difference-findings">Head-to-Head &amp; Paired Difference Findings:<a class="headerlink" href="#head-to-head-paired-difference-findings" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Glass-Box Tree vs Linear Scorecard</strong>: The Depth-3 Glass-Box Tree beats the linear scorecard in <strong>20 of 20 seeds</strong>, cutting misclassification losses by <strong>30.8%</strong> ($0.2316 vs $0.3349) and elevating AUROC from 0.5190 to 0.8189. Raw financial ratios have extreme outliers (e.g. debt ratios exceeding 100,000) that distort unbinned linear models.</li>
-<li><strong>Monotone Tree vs Depth-3 Tree</strong>: Enforcing domain monotonicity at Depth 4 beats the unconstrained Depth-3 tree in <strong>20 of 20 seeds</strong>, achieving an overall <strong>32.7% cost reduction</strong> ($0.2255 vs $0.3349) and pushing AUROC to 0.8370 while expanding the review queue by only 1.1 percentage points.</li>
+<li><strong>Same-Depth Monotone vs Unconstrained (Depth 4)</strong>: Comparing the monotone tree against the unconstrained tree at the <em>same</em> depth across all 20 seeds reveals <strong>0 wins, 20 ties, and 0 losses</strong> on expected cost ($0.000000 difference) and an AUROC difference of <span class="arithmatex">\(+0.000000 ± 0.000001\)</span> (<span class="arithmatex">\(t=1.00, p=0.33\)</span>). Greedy deviance splits on this credit portfolio naturally align with domain monotonicity (increasing utilization and delinquency counts always increase default risk), so the constraint produces virtually identical split partitions. Prior claims of cost advantages attributed to monotonicity were actually driven by comparing depth 4 against depth 3.</li>
+<li><strong>Glass-Box Tree vs Linear Scorecard</strong>: The 16-leaf glass-box tree (<span class="arithmatex">\(0.2255) is competitive with standardized logistic regression (\)</span>0.2241), trading a slight cost difference of $0.0014 / applicant for native non-linear interaction rules and zero reliance on offline median imputation or percentile clipping pipelines.</li>
+<li><strong>Glass-Box Tree vs Gradient Boosting (GBDT)</strong>: The LightGBM ensemble achieves lower cost ($0.2155 vs $0.2255) and higher ranking power (AUROC 0.8636 vs 0.8370). The shallow glass-box tree deliberately accepts this 0.0266 AUROC performance gap in exchange for 16 exact, inspectable IF-THEN rules and instant adverse-action reason generation.</li>
 </ul>
 <hr />
 <h2 id="6-regulatory-and-operational-limitations">6. Regulatory and Operational Limitations<a class="headerlink" href="#6-regulatory-and-operational-limitations" title="Permanent link">&para;</a></h2>
@@ -3094,8 +3117,8 @@
 <ol>
 <li><strong>Adverse Action Reason Codes (FCRA / ECOA)</strong>:
    Under U.S. Regulation B, lenders must provide adverse action notices stating the top four principal reasons for credit denial. While an IF-THEN tree path explains the exact boundary crossed (e.g., <code>RevolvingUtilization &gt; 0.4940</code>), translating tree thresholds into standardized regulatory reason codes (e.g., Code 14: "Proportion of revolving balances to credit limits too high") requires an auxiliary code mapping layer.</li>
-<li><strong>Reject Inference and Survival Selection Bias</strong>:
-   The Give Me Some Credit dataset contains only approved applicants. Rejected applicants whose default risk was never observed are omitted from training data. Fitting trees strictly on accepted applicants causes survivor bias. Techniques such as parceling or bivariate probit modeling are required to correct boundary estimates.</li>
+<li><strong>Reject Inference and Survivor Selection Bias</strong>:
+   The Give Me Some Credit dataset consists of historical loan performance records. Rejected loan applicants whose repayment performance was unobserved are not tracked in the dataset. Fitting models on observed loan accounts can create survivor bias, which credit risk teams mitigate in production using parceling or reject inference adjustments.</li>
 <li><strong>Macroeconomic Shocks and Threshold Drift</strong>:
    A decision tree's leaf probabilities reflect empirical rates observed during the training window. Under macroeconomic contractions (e.g., benchmark rate hikes), portfolio default prevalence shifts upward without individual applicant behavior changing. Credit risk teams must dynamically recalculate the operational cutoff <span class="arithmatex">\(\tau^*\)</span> on rolling validation windows rather than fixing static probability thresholds.</li>
 </ol>

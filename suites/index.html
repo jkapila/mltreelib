@@ -2774,7 +2774,7 @@
 <li>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-zap" viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 0 0-2.474-1.561l-9 9A1.5 1.5 0 0 0 5.5 14h4.002a.5.5 0 0 1 .471.666L8.086 20a1.5 1.5 0 0 0 2.475 1.56l9-9A1.5 1.5 0 0 0 18.5 10h-3.997a.5.5 0 0 1-.472-.667z"/></svg></span> <strong>Suite 5: Dynamic Leaf Retraining &amp; Adaptation</strong></p>
 <hr />
-<p>Microsecond warm-start leaf retraining, Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.</p>
+<p>Fast warm-start leaf retraining (~2.2 ms on 1,030 rows), Huber loss breakdown resistance (25.8 vs 54.3 MPa under sensor glitch), and quantile corridors.</p>
 <p><a href="hierarchical-retrain/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Suite 5</a></p>
 </li>
 <li>
@@ -2855,7 +2855,7 @@
 <td style="text-align: left;"><strong><a href="hierarchical-retrain/">Suite 5: Dynamic Leaf Retraining &amp; Adaptation</a></strong></td>
 <td style="text-align: left;">Streaming &amp; Systems</td>
 <td style="text-align: left;">Yeh Concrete (1,030 rows)</td>
-<td style="text-align: left;">Microsecond warm-start leaf retraining, Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors.</td>
+<td style="text-align: left;">Fast warm-start leaf retraining (~2.2 ms), Huber breakdown resistance (25.8 MPa vs 54.3 MPa under glitch), quantile corridors.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><a href="statistical-and-metric-splitting/">Suite 6: Statistical, Metric &amp; Oblique Splitting</a></strong></td>
@@ -2904,7 +2904,7 @@
     Q1 -- "Preserve Domain Laws / Fairness" --&gt; A2["Suite 2: Structural Constraints\n(Monotone &amp; Honest Inference)"]
     Q1 -- "Intermittent Telemetry / Missing Inputs" --&gt; A3["Suite 3: Native Missing Data\n(Learned Routes &amp; Surrogates)"]
     Q1 -- "Heavy Tails / Zero Inflation / Censoring" --&gt; A4["Suite 4: Distributional Leaves\n(Tweedie, Gamma, Tobit)"]
-    Q1 -- "Sub-Millisecond Adaptation &amp; Online Streams" --&gt; A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy &amp; Huber)"]
+    Q1 -- "Fast Adaptation &amp; Online Streams" --&gt; A5["Suite 5: Dynamic Leaf Retraining\n(Warm-Start Hierarchy &amp; Huber)"]
     Q1 -- "Structural Parameter Breaks &amp; Oblique Cuts" --&gt; A6["Suite 6: Statistical &amp; Metric Splitting\n(Chow Test &amp; Oblique Scans)"]
     Q1 -- "Autoregressive Demand &amp; Seasonality" --&gt; A7["Suite 7: Time Series Forecasting\n(Calendar Lags &amp; Additive Decomp)"]
     Q1 -- "Unsupervised Grouping / Outlier Triage" --&gt; A8["Suite 8: Unsupervised Trees\n(PCT Clustering &amp; EIF Anomaly)"]
