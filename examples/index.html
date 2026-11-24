@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Worked examples, tutorials, and specialized studies for mltreelib: concrete strength, diamond pricing, miami housing, categorical encoders, and tree inspection.">
+        <meta name="description" content="Comprehensive worked tutorials, case studies, and specialized topic guides for mltreelib: regression trees, cubist rules, distributional splits, causal uplift, and bounded solvers.">
       
       
       
@@ -17,7 +17,7 @@
         <link rel="prev" href="../suites/component-benchmarks/">
       
       
-        <link rel="next" href="./generic-optimizer/">
+        <link rel="next" href="./data-matrix-and-routing/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Examples Library Overview - mltreelib v0.4.14</title>
+        <title>Examples & Case Studies Library - mltreelib v0.4.15</title>
       
     
     
@@ -101,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,13 +115,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.14
+            mltreelib v0.4.15
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Examples Library Overview
+              Examples & Case Studies Library
             
           </span>
         </div>
@@ -211,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
 
     </a>
-    mltreelib v0.4.14
+    mltreelib v0.4.15
   </label>
   
     <div class="md-nav__source">
@@ -829,10 +829,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#featured-worked-tutorials" class="md-nav__link">
+  <a href="#featured-flagship-case-studies" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Featured Worked Tutorials
+        Featured Flagship Case Studies
       </span>
     </span>
   </a>
@@ -840,13 +840,63 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#specialized-topic-catalog" class="md-nav__link">
+  <a href="#topic-catalog-by-domain" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Specialized Topic Catalog
+        Topic Catalog by Domain
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Topic Catalog by Domain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-data-layer-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Data Layer &amp; Metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-regression-continuous-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Regression &amp; Continuous Models
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-causal-unsupervised" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Causal &amp; Unsupervised
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-architecture-inspection-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Architecture, Inspection &amp; Tuning
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -884,7 +934,7 @@
   <span class="md-ellipsis">
     
   
-  Specialized Topics
+  Data & Metrics
 
     
   </span>
@@ -900,7 +950,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Specialized Topics
+  Data & Metrics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -912,14 +962,41 @@
   
   
     <li class="md-nav__item">
-      <a href="./generic-optimizer/" class="md-nav__link">
+      <a href="./data-matrix-and-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Generic optimizer and real-data tuning
+  Data Ingestion & Missing Routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics, Diagnostics & Calibration
 
     
   </span>
@@ -959,6 +1036,61 @@
 
                 
               
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression & Continuous Models
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Regression & Continuous Models
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
                 
                   
   
@@ -966,14 +1098,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./data-processing/" class="md-nav__link">
+      <a href="./regression-methods-showcase/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Data processing
+  Comprehensive Regression Showcase
 
     
   </span>
@@ -993,14 +1125,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./categorical-encoders/" class="md-nav__link">
+      <a href="./piecewise-linear-and-cubist/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Optional categorical encoders
+  Piecewise Linear Trees & Cubist Rules
 
     
   </span>
@@ -1020,14 +1152,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./missing-routing/" class="md-nav__link">
+      <a href="./distributional-and-censored-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Missing data and routing
+  Distributional & Censored Trees
 
     
   </span>
@@ -1040,28 +1172,10 @@
 
                 
               
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./two-controls-and-0d/" class="md-nav__link">
+            </ul>
+          </nav>
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Synthetic controls and ground truth
-
-    
-  </span>
-  
-  
-
-      </a>
+      
     </li>
   
 
@@ -1073,134 +1187,45 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="./model-building/" class="md-nav__link">
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-  Model building
+  Causal & Unsupervised
 
     
   </span>
   
   
 
-      </a>
-    </li>
-  
-
-                
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_4">
+              <span class="md-nav__icon md-icon"></span>
               
-                
-                  
   
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./knob-tour/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Growth knobs
+  Causal & Unsupervised
 
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./hpo/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Hyperparameter search
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./distributional-split-criteria/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Distributional split criteria
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./tobit-regression/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
                   
@@ -1216,7 +1241,7 @@
   <span class="md-ellipsis">
     
   
-  Causal simulation
+  Causal Uplift & Treatment Effects
 
     
   </span>
@@ -1236,14 +1261,96 @@
   
   
     <li class="md-nav__item">
-      <a href="./honesty-weights/" class="md-nav__link">
+      <a href="./unsupervised-clustering-and-anomalies/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Honesty and weights
+  Unsupervised Clustering & Anomalies
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_5" id="__nav_6_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture, Inspection & Tuning
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture, Inspection & Tuning
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./tree-architecture-and-knobs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tree Architecture, Growth Knobs & Constraints
 
     
   </span>
@@ -1263,14 +1370,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./constraints/" class="md-nav__link">
+      <a href="./model-inspection-and-rules/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Monotone and interaction constraints
+  Model Inspection, Rules & Stumps
 
     
   </span>
@@ -1290,257 +1397,14 @@
   
   
     <li class="md-nav__item">
-      <a href="./metrics-plots/" class="md-nav__link">
+      <a href="./optimization-and-tuning/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Metrics and plots
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./inspection/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Tree inspection
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./clustering-comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Clustering diagnostics
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./anomaly-comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Anomaly review budgets
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./walkthrough/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Model review checklist
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./rules-summary-knn/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Rules, summaries and neighbors
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./stump-explainable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Explainable stumps and retrain
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./quinlan-m5-cubist-rust/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Quinlan M5 & Cubist in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./distributional-trees-tweedie-tobit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Distributional Trees (Tweedie & Tobit)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Model Trees vs GBDT
+  Generic Solvers & Hyperparameter Tuning
 
     
   </span>
@@ -1967,60 +1831,6 @@
 
                 
               
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
-        
-          
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Research
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Research
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
-              
                 
                   
   
@@ -2035,7 +1845,7 @@
   <span class="md-ellipsis">
     
   
-  Field notes
+  Field Notes
 
     
   </span>
@@ -2071,10 +1881,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -2092,8 +1902,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_10">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2637,10 +2447,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#featured-worked-tutorials" class="md-nav__link">
+  <a href="#featured-flagship-case-studies" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Featured Worked Tutorials
+        Featured Flagship Case Studies
       </span>
     </span>
   </a>
@@ -2648,13 +2458,63 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#specialized-topic-catalog" class="md-nav__link">
+  <a href="#topic-catalog-by-domain" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Specialized Topic Catalog
+        Topic Catalog by Domain
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Topic Catalog by Domain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-data-layer-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Data Layer &amp; Metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-regression-continuous-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Regression &amp; Continuous Models
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-causal-unsupervised" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Causal &amp; Unsupervised
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-architecture-inspection-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Architecture, Inspection &amp; Tuning
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2678,97 +2538,147 @@
   
 
 
-<h1 id="examples-specialized-studies">Examples &amp; Specialized Studies<a class="headerlink" href="#examples-specialized-studies" title="Permanent link">&para;</a></h1>
-<p>Worked tutorials, case studies, and focused topic guides demonstrating <code>mltreelib</code> on real-world datasets.</p>
+<h1 id="examples-specialized-case-studies">Examples &amp; Specialized Case Studies<a class="headerlink" href="#examples-specialized-case-studies" title="Permanent link">&para;</a></h1>
+<p>Worked tutorials, case studies, and focused topic guides demonstrating <code>mltreelib</code> on real-world datasets across data ingestion, metrics, regression, causal inference, unsupervised density trees, and numerical optimization.</p>
 <div class="admonition tip">
 <p class="admonition-title">Looking for the 11 Core Benchmark Suites?</p>
 <p>The formal mathematical formulations, empirical benchmark tables, and solver evaluations live in the dedicated <a href="../suites/"><strong>Benchmark Suites</strong></a> section.</p>
 </div>
 <hr />
-<h2 id="featured-worked-tutorials">Featured Worked Tutorials<a class="headerlink" href="#featured-worked-tutorials" title="Permanent link">&para;</a></h2>
+<h2 id="featured-flagship-case-studies">Featured Flagship Case Studies<a class="headerlink" href="#featured-flagship-case-studies" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-gem" viewBox="0 0 24 24"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3zM2 9h20"/></svg></span> <strong>Diamond Price Prediction (Linear Leaves vs Step Functions)</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-bar-chart-3" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3"/></svg></span> <strong>Comprehensive Regression Showcase (4-Study Empirical Benchmark)</strong></p>
 <hr />
-<p>Worked comparison of constant mean leaves vs piecewise linear regression tree leaves on 6,000 diamond sales.</p>
-<p><a href="piecewise-linear-model-trees-vs-gbdt/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
+<p>Systematic evaluation of 0D location leaves, 1D linear trees, Huber M-regression, quantile envelopes, MARS, B-spline GAMs, and Group Lasso across 4 datasets.</p>
+<p><a href="regression-methods-showcase/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Showcase</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-hammer" viewBox="0 0 24 24"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9M18 15l4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg></span> <strong>Concrete Compressive Strength (Cubist &amp; M5-Style Trees)</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-gem" viewBox="0 0 24 24"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3zM2 9h20"/></svg></span> <strong>Piecewise Linear Model Trees &amp; Cubist Rules</strong></p>
 <hr />
-<p>Inspect local linear equations, split conditions, and Quinlan rule handoffs on 1,030 industrial concrete mixtures.</p>
-<p><a href="quinlan-m5-cubist-rust/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
+<p>Worked comparison of constant mean leaves vs piecewise linear regression tree leaves and Quinlan M5 rule extractions on Diamond and Concrete benchmarks.</p>
+<p><a href="piecewise-linear-and-cubist/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Case Study</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span> <strong>Miami Housing Valuation (Tweedie vs Squared Error)</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-scale" viewBox="0 0 24 24"><path d="M12 3v18M19 8l3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1M5 8l3 8a5 5 0 0 1-6 0zV7M7 21h10"/></svg></span> <strong>Distributional &amp; Censored Trees (Tweedie &amp; Tobit)</strong></p>
 <hr />
-<p>Choosing the right split loss for positive, skewed, and zero-inflated targets on 8,000 Miami home sales.</p>
-<p><a href="distributional-trees-tweedie-tobit/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Tutorial</a></p>
+<p>Correcting for attenuation bias on censored boundaries (Tobit) and modeling positive zero-inflated claim skewness (Tweedie quasi-deviance).</p>
+<p><a href="distributional-and-censored-trees/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Case Study</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sliders" viewBox="0 0 24 24"><path d="M10 8h4M12 21v-9M12 8V3M17 16h4M19 12V3M19 21v-5M3 14h4M5 10V3M5 21v-7"/></svg></span> <strong>Generic Bounded Optimizer &amp; HPO Tuning</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sliders" viewBox="0 0 24 24"><path d="M10 8h4M12 21v-9M12 8V3M17 16h4M19 12V3M19 21v-5M3 14h4M5 10V3M5 21v-7"/></svg></span> <strong>Generic Bounded Solvers &amp; Hyperparameter Tuning</strong></p>
 <hr />
-<p>Optimizing ModelTree hyperparameters directly on tabular validation loss using Nelder-Mead, L-BFGS-B, and Powell.</p>
-<p><a href="generic-optimizer/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Guide</a></p>
+<p>14 pure-Rust numerical optimization algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) for standalone scalar minimization and automated tree HPO.</p>
+<p><a href="optimization-and-tuning/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open Guide</a></p>
 </li>
 </ul>
 </div>
 <hr />
-<h2 id="specialized-topic-catalog">Specialized Topic Catalog<a class="headerlink" href="#specialized-topic-catalog" title="Permanent link">&para;</a></h2>
+<h2 id="topic-catalog-by-domain">Topic Catalog by Domain<a class="headerlink" href="#topic-catalog-by-domain" title="Permanent link">&para;</a></h2>
+<h3 id="1-data-layer-metrics">1. Data Layer &amp; Metrics<a class="headerlink" href="#1-data-layer-metrics" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Guide</th>
-<th style="text-align: left;">Primary Focus</th>
-<th style="text-align: left;">Target Problem</th>
+<th style="text-align: left;">Focus Area</th>
+<th style="text-align: left;">Primary Benchmark / Target</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong><a href="generic-optimizer/">Generic Optimizer Guide</a></strong></td>
-<td style="text-align: left;">Bounded Scalar Minimization</td>
-<td style="text-align: left;">14 algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) on black-box functions.</td>
+<td style="text-align: left;"><strong><a href="data-matrix-and-routing/">Data Ingestion, Missing Routing &amp; Encoders</a></strong></td>
+<td style="text-align: left;">Data Layer &amp; Ingestion</td>
+<td style="text-align: left;">Typed columnar frames, surrogate split routing, and native categorical indexing.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><a href="metrics-plots/">Metrics, Diagnostics &amp; Probability Calibration</a></strong></td>
+<td style="text-align: left;">Model Diagnostics</td>
+<td style="text-align: left;">ROC, Precision-Recall, Decile Gain, Double Lift, PSI drift, and reliability calibration.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><a href="pca-rotations/">PCA Rotations &amp; Simple Structure</a></strong></td>
-<td style="text-align: left;">Factor Rotations</td>
+<td style="text-align: left;">Factor Analysis</td>
 <td style="text-align: left;">Varimax, Quartimax, and Promax orthogonal/oblique simple structure.</td>
 </tr>
+</tbody>
+</table>
+<hr />
+<h3 id="2-regression-continuous-models">2. Regression &amp; Continuous Models<a class="headerlink" href="#2-regression-continuous-models" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
 <tr>
-<td style="text-align: left;"><strong><a href="data-processing/">Data Processing</a></strong></td>
-<td style="text-align: left;">Frame &amp; Ingest Engine</td>
-<td style="text-align: left;">Typed column frames, NA policies, and zero-copy Rust transforms.</td>
+<th style="text-align: left;">Guide</th>
+<th style="text-align: left;">Focus Area</th>
+<th style="text-align: left;">Primary Benchmark / Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><a href="regression-methods-showcase/">Comprehensive Regression Showcase</a></strong></td>
+<td style="text-align: left;">Full Regression Taxonomy</td>
+<td style="text-align: left;">4-study empirical benchmark across OLS, Huber, Quantile, NNLS, Group Lasso, GAM, and GLMs.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="categorical-encoders/">Optional Categorical Encoders</a></strong></td>
-<td style="text-align: left;">Categorical Ingestion</td>
-<td style="text-align: left;">Native integer indexing, target encoding, and frequency scaling.</td>
+<td style="text-align: left;"><strong><a href="piecewise-linear-and-cubist/">Piecewise Linear Trees &amp; Cubist Rules</a></strong></td>
+<td style="text-align: left;">Local Linear Leaves</td>
+<td style="text-align: left;">Diamond price prediction (<span class="arithmatex">\(N=6,000\)</span>) and Concrete compressive strength (<span class="arithmatex">\(N=1,030\)</span>).</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="missing-routing/">Missing Data &amp; Routing</a></strong></td>
-<td style="text-align: left;">Native NA Handling</td>
-<td style="text-align: left;">Surrogate split mechanics and learned missing-left branching.</td>
+<td style="text-align: left;"><strong><a href="distributional-and-censored-trees/">Distributional &amp; Censored Trees</a></strong></td>
+<td style="text-align: left;">Non-Gaussian Responses</td>
+<td style="text-align: left;">Tweedie quasi-deviance on Miami home sales and Tobit latent models on labor hours.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-causal-unsupervised">3. Causal &amp; Unsupervised<a class="headerlink" href="#3-causal-unsupervised" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Guide</th>
+<th style="text-align: left;">Focus Area</th>
+<th style="text-align: left;">Primary Benchmark / Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><a href="causal-uplift/">Causal Uplift &amp; Treatment Effects</a></strong></td>
+<td style="text-align: left;">Causal Inference</td>
+<td style="text-align: left;">Treatment-effect recovery, honest subsampling, and Qini curves on simulated trials.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="model-building/">Model Building &amp; Growth Knobs</a></strong></td>
-<td style="text-align: left;">Tree Hyperparameters</td>
-<td style="text-align: left;"><code>max_depth</code>, <code>min_rows</code>, <code>min_gain</code>, and cost-complexity pruning.</td>
+<td style="text-align: left;"><strong><a href="unsupervised-clustering-and-anomalies/">Unsupervised Density Trees: Clustering &amp; Anomalies</a></strong></td>
+<td style="text-align: left;">Density Partitioning</td>
+<td style="text-align: left;">CLTree clustering, Extended Isolation Forest (EIF), and GritBot condition mining.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="4-architecture-inspection-tuning">4. Architecture, Inspection &amp; Tuning<a class="headerlink" href="#4-architecture-inspection-tuning" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Guide</th>
+<th style="text-align: left;">Focus Area</th>
+<th style="text-align: left;">Primary Benchmark / Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><a href="tree-architecture-and-knobs/">Tree Architecture, Growth Knobs &amp; Constraints</a></strong></td>
+<td style="text-align: left;">Tree Controls</td>
+<td style="text-align: left;">Two-control decoupling, monotone constraints, interaction groups, and honest splits.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="hpo/">Hyperparameter Search (HPO)</a></strong></td>
-<td style="text-align: left;">Automated Tuning</td>
-<td style="text-align: left;">Grid search, random search, and Latin hypercube validation sweeps.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><a href="inspection/">Tree Inspection &amp; Export</a></strong></td>
+<td style="text-align: left;"><strong><a href="model-inspection-and-rules/">Model Inspection, Quinlan Rules &amp; Stumps</a></strong></td>
 <td style="text-align: left;">White-Box Auditing</td>
-<td style="text-align: left;">DOT Graphviz exports, Quinlan rulesets, and leaf equations.</td>
+<td style="text-align: left;">Graphviz DOT exports, flat IF-THEN rulesets, explainable stumps, and leaf k-NN smoothing.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><a href="rules-summary-knn/">Rules, Summaries &amp; Neighbors</a></strong></td>
-<td style="text-align: left;">Instance Explanations</td>
-<td style="text-align: left;">Leaf k-nearest neighbor adjustments and local rule filtering.</td>
+<td style="text-align: left;"><strong><a href="optimization-and-tuning/">Generic Solvers &amp; Hyperparameter Tuning</a></strong></td>
+<td style="text-align: left;">Numerical Optimization</td>
+<td style="text-align: left;">14 bounded solvers, Rosenbrock minimization, and validation loss sweeps.</td>
 </tr>
 </tbody>
 </table>
@@ -2831,13 +2741,13 @@
         
         
           
-          <a href="./generic-optimizer/" class="md-footer__link md-footer__link--next" aria-label="Next: Generic optimizer and real-data tuning">
+          <a href="./data-matrix-and-routing/" class="md-footer__link md-footer__link--next" aria-label="Next: Data Ingestion &amp; Missing Routing">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Generic optimizer and real-data tuning
+                Data Ingestion & Missing Routing
               </div>
             </div>
             <div class="md-footer__button md-icon">

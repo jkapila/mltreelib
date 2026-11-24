@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Tree-based machine learning with a Rust core">
+        <meta name="description" content="Comprehensive model evaluation guide: ROC, Precision-Recall, Calibration curves, Population Stability Index (PSI), Double-Lift charts, and Residual analysis.">
       
       
       
@@ -14,10 +14,10 @@
       
       
       
-        <link rel="prev" href="../constraints/">
+        <link rel="prev" href="../data-matrix-and-routing/">
       
       
-        <link rel="next" href="../inspection/">
+        <link rel="next" href="../pca-rotations/">
       
       
         
@@ -28,7 +28,7 @@
     
     
       
-        <title>Metrics and plots - mltreelib v0.4.14</title>
+        <title>Metrics, Diagnostics & Probability Calibration - mltreelib v0.4.15</title>
       
     
     
@@ -101,9 +101,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.14" class="md-header__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,13 +115,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.14
+            mltreelib v0.4.15
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Metrics and plots
+              Metrics, Diagnostics & Probability Calibration
             
           </span>
         </div>
@@ -211,12 +211,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.14" class="md-nav__button md-logo" aria-label="mltreelib v0.4.14" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.14">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
 
     </a>
-    mltreelib v0.4.14
+    mltreelib v0.4.15
   </label>
   
     <div class="md-nav__source">
@@ -817,7 +817,7 @@
   <span class="md-ellipsis">
     
   
-  Specialized Topics
+  Data & Metrics
 
     
   </span>
@@ -833,7 +833,7 @@
               <span class="md-nav__icon md-icon"></span>
               
   
-  Specialized Topics
+  Data & Metrics
 
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
@@ -845,365 +845,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../generic-optimizer/" class="md-nav__link">
+      <a href="../data-matrix-and-routing/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Generic optimizer and real-data tuning
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pca-rotations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  PCA Rotations & Simple Structure
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../data-processing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Data processing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../categorical-encoders/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Optional categorical encoders
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../missing-routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Missing data and routing
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../two-controls-and-0d/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Synthetic controls and ground truth
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../model-building/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Model building
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../knob-tour/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Growth knobs
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../hpo/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Hyperparameter search
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../distributional-split-criteria/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Distributional split criteria
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tobit-regression/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Tobit regression
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../causal-uplift/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Causal simulation
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../honesty-weights/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Honesty and weights
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../constraints/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Monotone and interaction constraints
+  Data Ingestion & Missing Routing
 
     
   </span>
@@ -1239,7 +888,7 @@
   <span class="md-ellipsis">
     
   
-  Metrics and plots
+  Metrics, Diagnostics & Calibration
 
     
   </span>
@@ -1256,7 +905,7 @@
   <span class="md-ellipsis">
     
   
-  Metrics and plots
+  Metrics, Diagnostics & Calibration
 
     
   </span>
@@ -1282,10 +931,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-full-surface-in-one-run" class="md-nav__link">
+  <a href="#1-multi-panel-diagnostic-surface" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The full surface, in one run
+        1. Multi-Panel Diagnostic Surface
       </span>
     </span>
   </a>
@@ -1293,10 +942,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-chart-surface" class="md-nav__link">
+  <a href="#2-classification-diagnostics-probability-calibration" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The chart surface
+        2. Classification Diagnostics &amp; Probability Calibration
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Classification Diagnostics &amp; Probability Calibration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#visual-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Visual Examples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-regression-residual-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Regression &amp; Residual Diagnostics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-code-example-computing-the-full-metrics-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Code Example: Computing the Full Metrics Suite
       </span>
     </span>
   </a>
@@ -1319,14 +1007,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../inspection/" class="md-nav__link">
+      <a href="../pca-rotations/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Tree inspection
+  PCA Rotations & Simple Structure
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression & Continuous Models
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Regression & Continuous Models
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../regression-methods-showcase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Comprehensive Regression Showcase
 
     
   </span>
@@ -1346,14 +1116,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clustering-comparison/" class="md-nav__link">
+      <a href="../piecewise-linear-and-cubist/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Clustering diagnostics
+  Piecewise Linear Trees & Cubist Rules
 
     
   </span>
@@ -1373,14 +1143,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../anomaly-comparison/" class="md-nav__link">
+      <a href="../distributional-and-censored-trees/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Anomaly review budgets
+  Distributional & Censored Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal & Unsupervised
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Causal & Unsupervised
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../causal-uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift & Treatment Effects
 
     
   </span>
@@ -1400,14 +1252,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../walkthrough/" class="md-nav__link">
+      <a href="../unsupervised-clustering-and-anomalies/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Model review checklist
+  Unsupervised Clustering & Anomalies
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_5" id="__nav_6_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture, Inspection & Tuning
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture, Inspection & Tuning
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tree-architecture-and-knobs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tree Architecture, Growth Knobs & Constraints
 
     
   </span>
@@ -1427,14 +1361,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../rules-summary-knn/" class="md-nav__link">
+      <a href="../model-inspection-and-rules/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Rules, summaries and neighbors
+  Model Inspection, Rules & Stumps
 
     
   </span>
@@ -1454,95 +1388,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../stump-explainable/" class="md-nav__link">
+      <a href="../optimization-and-tuning/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  Explainable stumps and retrain
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../quinlan-m5-cubist-rust/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Quinlan M5 & Cubist in Rust
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../distributional-trees-tweedie-tobit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Distributional Trees (Tweedie & Tobit)
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../piecewise-linear-model-trees-vs-gbdt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Model Trees vs GBDT
+  Generic Solvers & Hyperparameter Tuning
 
     
   </span>
@@ -1969,60 +1822,6 @@
 
                 
               
-            </ul>
-          </nav>
-        
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
-        
-          
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Research
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9">
-              <span class="md-nav__icon md-icon"></span>
-              
-  
-  Research
-
-            </label>
-            <ul class="md-nav__list" data-md-scrollfix>
-              
                 
                   
   
@@ -2037,7 +1836,7 @@
   <span class="md-ellipsis">
     
   
-  Field notes
+  Field Notes
 
     
   </span>
@@ -2073,10 +1872,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -2094,8 +1893,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_10">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2639,10 +2438,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-full-surface-in-one-run" class="md-nav__link">
+  <a href="#1-multi-panel-diagnostic-surface" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The full surface, in one run
+        1. Multi-Panel Diagnostic Surface
       </span>
     </span>
   </a>
@@ -2650,10 +2449,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-chart-surface" class="md-nav__link">
+  <a href="#2-classification-diagnostics-probability-calibration" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The chart surface
+        2. Classification Diagnostics &amp; Probability Calibration
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Classification Diagnostics &amp; Probability Calibration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#visual-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Visual Examples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-regression-residual-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Regression &amp; Residual Diagnostics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-code-example-computing-the-full-metrics-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Code Example: Computing the Full Metrics Suite
       </span>
     </span>
   </a>
@@ -2680,84 +2518,170 @@
   
 
 
-<h1 id="metrics-plots">Metrics &amp; plots<a class="headerlink" href="#metrics-plots" title="Permanent link">&para;</a></h1>
-<p>Every evaluation surface and every chart, demonstrated on real data (bank
-churn, with the tree's predictions as scores). Script:
-<a href="https://github.com/jkapila/mltreelib/blob/main/examples/metrics_showcase.py"><code>examples/metrics_showcase.py</code></a>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mltreelib<span class="o">[</span>plotting<span class="o">]</span><span class="w">        </span><span class="c1"># matplotlib + pygraphviz + seaborn</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/metrics_showcase.py
+<h1 id="metrics-diagnostics-probability-calibration">Metrics, Diagnostics &amp; Probability Calibration<a class="headerlink" href="#metrics-diagnostics-probability-calibration" title="Permanent link">&para;</a></h1>
+<p>A model score without diagnostic verification is an operational liability. A high AUC can disguise severe probability miscalibration, and an acceptable test RMSE can hide heteroscedastic residual explosions or catastrophic drift.</p>
+<p><code>mltreelib.Metrics</code> and <code>mltreelib.plots</code> provide an evaluation and visualization engine implemented with pure numeric precision, independent of heavy visualization dependencies (matplotlib is an optional extra: <code>pip install mltreelib[plotting]</code>).</p>
+<pre class="mermaid"><code>flowchart LR
+    A["Fitted Model Predictions\nScores y_hat vs Truth y"] --&gt; B{"Task Type"}
+
+    B -- "Classification / Risk" --&gt; C["Discrimination\nROC AUC, PR AUC, KS Statistic"]
+    B -- "Regression / Amounts" --&gt; D["Loss Surface &amp; Residuals\nRMSE, MAE, MedAE, Pinball Loss"]
+
+    C --&gt; E["Reliability Calibration\nDecile Brier Score &amp; Hosmer-Lemeshow"]
+    E --&gt; F["Operational Triage\nCumulative Gain &amp; Lift @ Budget"]
+    F --&gt; G["Stability &amp; Drift\nPopulation Stability Index (PSI)"]
+
+    D --&gt; H["Heteroscedasticity\nResidual Variance vs Fitted"]
+
+    classDef blueBox fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef greenBox fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#ffffff;
+    classDef grayBox fill:#334155,stroke:#64748b,stroke-width:2px,color:#ffffff;
+
+    class A,B grayBox;
+    class C,D blueBox;
+    class E,F,G,H greenBox;</code></pre>
+<hr />
+<h2 id="1-multi-panel-diagnostic-surface">1. Multi-Panel Diagnostic Surface<a class="headerlink" href="#1-multi-panel-diagnostic-surface" title="Permanent link">&para;</a></h2>
+<p>Every chart in <code>mltreelib.plots</code> operates on native Matplotlib <code>Axes</code>, allowing multi-metric dashboards in a single figure:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/metrics_showcase.py
 </span></code></pre></div>
-<h2 id="the-full-surface-in-one-run">The full surface, in one run<a class="headerlink" href="#the-full-surface-in-one-run" title="Permanent link">&para;</a></h2>
-<p>The script fits <code>ModelTree</code> on raw categorical labels and evaluates a held-out slice. It computes its comparison baseline from the training outcomes. The break-down chart uses a separately fitted numeric-only model because <code>break_down</code> rejected raw strings in a tested mixed row. A threshold of 0.5 is illustrative; select operational thresholds on validation data. The <a href="../../guides/evaluation/">evaluation pathway</a> demonstrates that sequence with reproducible synthetic data.</p>
-<p><img alt="Evaluation Metrics Multi-Panel Surface" src="../../assets/metrics_panels.png" /></p>
-<h2 id="the-chart-surface">The chart surface<a class="headerlink" href="#the-chart-surface" title="Permanent link">&para;</a></h2>
-<p>All sixteen charts from <code>mltreelib.plots</code> render as click-to-zoom figures in <a href="../../guides/visualization/">Visualization Guide</a>:</p>
+<p><img alt="Evaluation Metrics Multi-Panel Diagnostic Surface" src="../../assets/metrics_panels.png" /></p>
+<hr />
+<h2 id="2-classification-diagnostics-probability-calibration">2. Classification Diagnostics &amp; Probability Calibration<a class="headerlink" href="#2-classification-diagnostics-probability-calibration" title="Permanent link">&para;</a></h2>
+<p>In credit triage, fraud detection, and medical diagnosis, ranking alone is insufficient. Underwriters make decisions based on expected dollar loss, which demands calibrated probabilities <span class="arithmatex">\(P(y=1 \mid \mathbf{x})\)</span>.</p>
 <table>
 <thead>
 <tr>
-<th>chart</th>
-<th>what it answers</th>
+<th style="text-align: left;">Diagnostic Chart</th>
+<th style="text-align: left;">Core Question Answered</th>
+<th style="text-align: left;">Failure Mode Diagnosed</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>plot_roc</code> / <code>plot_pr</code></td>
-<td>discrimination; PR is the honest view on class imbalance</td>
+<td style="text-align: left;"><strong><code>plot_roc</code></strong> / <strong><code>plot_pr</code></strong></td>
+<td style="text-align: left;">Can the model rank positive instances ahead of negatives?</td>
+<td style="text-align: left;">High ROC with low PR indicates severe false-positive flooding under class imbalance.</td>
 </tr>
 <tr>
-<td><code>plot_cumulative_gain</code> / <code>plot_lift</code></td>
-<td>targeting efficiency: "top decile captures X% at Y× lift"</td>
+<td style="text-align: left;"><strong><code>plot_calibration</code></strong></td>
+<td style="text-align: left;">Does a predicted score of 0.20 correspond to exactly 20% empirical event rate?</td>
+<td style="text-align: left;">S-shaped curve indicates over-confidence; inverted curve indicates mis-specified link function.</td>
 </tr>
 <tr>
-<td><code>plot_ks</code></td>
-<td>maximum separation distance between classes + Score@KS</td>
+<td style="text-align: left;"><strong><code>plot_ks</code></strong></td>
+<td style="text-align: left;">What is the maximum separation distance between default and non-default distributions?</td>
+<td style="text-align: left;">Identifies the optimal cutoff threshold <span class="arithmatex">\(\tau^*\)</span> maximizing operational divergence.</td>
 </tr>
 <tr>
-<td><code>plot_decile</code></td>
-<td>scorecard decile profile: event rate bars + cumulative capture</td>
+<td style="text-align: left;"><strong><code>plot_double_lift</code></strong></td>
+<td style="text-align: left;">When comparing Model A vs Model B, which model captures more true events across deciles?</td>
+<td style="text-align: left;">Reveals regions where a challenger model outperforms a production champion.</td>
 </tr>
 <tr>
-<td><code>plot_calibration</code> / <code>plot_response</code></td>
-<td>probability reliability vs. diagonal and decile response</td>
-</tr>
-<tr>
-<td><code>plot_double_lift</code></td>
-<td>head-to-head model comparison along one ranking (CAS)</td>
-</tr>
-<tr>
-<td><code>plot_psi</code></td>
-<td>score/feature stability and population shift between two periods</td>
-</tr>
-<tr>
-<td><code>plot_confusion_matrix</code></td>
-<td>classification error distribution across class boundaries</td>
-</tr>
-<tr>
-<td><code>plot_residuals</code></td>
-<td>regression fit diagnostics: actual vs. predicted and equality line</td>
-</tr>
-<tr>
-<td><code>plot_importance</code></td>
-<td>variable importance shares of total split gain</td>
-</tr>
-<tr>
-<td><code>plot_breakdown</code></td>
-<td>DALE-style waterfall attribution of one observation</td>
-</tr>
-<tr>
-<td><code>plot_variance_shares</code></td>
-<td>realized variance shares against ground truth</td>
-</tr>
-<tr>
-<td><code>plot_decomposition</code></td>
-<td>4-panel additive time-series decomposition (trend/season/residual)</td>
+<td style="text-align: left;"><strong><code>plot_psi</code></strong></td>
+<td style="text-align: left;">Did the score distribution shift between training (baseline) and inference (current)?</td>
+<td style="text-align: left;">PSI <span class="arithmatex">\(&gt; 0.25\)</span> signals severe population drift requiring immediate model retraining.</td>
 </tr>
 </tbody>
 </table>
-<p>Each chart takes <code>ax=</code> and returns Axes, so any panel composes. The
-library itself never imports matplotlib — this layer is opt-in via the
-<code>[plotting]</code> extra. Every number on this page comes from the script; the
-API shapes are in <a href="../../reference/metrics/">Metrics</a>.</p>
+<h3 id="visual-examples">Visual Examples<a class="headerlink" href="#visual-examples" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Reliability Calibration Curve</th>
+<th style="text-align: center;">Double-Lift Model Comparison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><img alt="Probability Calibration Curve" src="../../assets/plots/calibration.png" /></td>
+<td style="text-align: center;"><img alt="Double Lift Chart Comparison" src="../../assets/plots/double_lift.png" /></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-regression-residual-diagnostics">3. Regression &amp; Residual Diagnostics<a class="headerlink" href="#3-regression-residual-diagnostics" title="Permanent link">&para;</a></h2>
+<p>For continuous pricing, demand forecasting, and risk models:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Diagnostic Chart</th>
+<th style="text-align: left;">Core Question Answered</th>
+<th style="text-align: left;">Failure Mode Diagnosed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>plot_residuals</code></strong></td>
+<td style="text-align: left;">Are residual errors mean-zero and homoscedastic across all response levels?</td>
+<td style="text-align: left;">Funnel-shaped residual spread signals heteroscedasticity, calling for <code>gain="heteroscedastic"</code> or Tweedie.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>plot_importance</code></strong></td>
+<td style="text-align: left;">Which features drove the split deviance reduction across the tree?</td>
+<td style="text-align: left;">Over-reliance on single surrogate features or leakage columns.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>plot_breakdown</code></strong></td>
+<td style="text-align: left;">Why did this individual loan applicant receive this exact predicted rate?</td>
+<td style="text-align: left;">DALE-style waterfall attribution decomposed by tree split paths.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Regression Residual Error Analysis" src="../../assets/plots/residuals.png" /></p>
+<hr />
+<h2 id="4-code-example-computing-the-full-metrics-suite">4. Code Example: Computing the Full Metrics Suite<a class="headerlink" href="#4-code-example-computing-the-full-metrics-suite" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">plots</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># 1. Generate realistic credit default probabilities and observed labels</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">n_cases</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># True baseline event probability</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">true_risk</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_cases</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">y_true</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">true_risk</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Predicted risk probabilities from champion model and noisy challenger</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">y_prob_champ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">true_risk</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="n">n_cases</span><span class="p">),</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">y_prob_chal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">true_risk</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="n">n_cases</span><span class="p">),</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># 2. Compute Discrimination and Calibration Metrics</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">roc</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">roc_curve</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">)</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">pr</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">pr_curve</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">)</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">brier</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">)</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">ks_res</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ks_statistic</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Champion Model Performance:"</span><span class="p">)</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  ROC-AUC: </span><span class="si">{</span><span class="n">roc</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Average Precision (PR-AUC): </span><span class="si">{</span><span class="n">pr</span><span class="p">[</span><span class="s1">'average_precision'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Brier Reliability Score: </span><span class="si">{</span><span class="n">brier</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Kolmogorov-Smirnov (KS): </span><span class="si">{</span><span class="n">ks_res</span><span class="p">[</span><span class="s1">'ks'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (Score @ KS cutoff = </span><span class="si">{</span><span class="n">ks_res</span><span class="p">[</span><span class="s1">'score_at_ks'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1"># 3. Population Stability Index (PSI) Drift Check against subsequent test cohort</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">y_prob_subsequent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">true_risk</span> <span class="o">*</span> <span class="mf">1.15</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="n">n_cases</span><span class="p">),</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="n">psi_res</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">stability_index</span><span class="p">(</span><span class="n">y_prob_champ</span><span class="p">,</span> <span class="n">y_prob_subsequent</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">psi_val</span> <span class="o">=</span> <span class="n">psi_res</span><span class="p">[</span><span class="s2">"psi"</span><span class="p">]</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Population Stability Index (PSI): </span><span class="si">{</span><span class="n">psi_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="s1">'Stable'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">psi_val</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.10</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'Shift Detected'</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="c1"># 4. Render Calibration and Double Lift Curves Side-by-Side</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="n">plots</span><span class="o">.</span><span class="n">plot_calibration</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="n">plots</span><span class="o">.</span><span class="n">plot_double_lift</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_prob_chal</span><span class="p">,</span> <span class="n">y_prob_champ</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">)</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Related Guides</p>
+<ul>
+<li><a href="../../blog/why-credit-scoring-needs-glass-box-trees/">Why Credit Scoring Needs Glass-Box Trees</a> for asymmetric cost optimization using KS cutoffs.</li>
+<li><a href="../model-inspection-and-rules/">Model Inspection &amp; Quinlan Rules</a> for white-box split path audits.</li>
+</ul>
+</div>
 
 
 
@@ -2766,6 +2690,9 @@ API shapes are in <a href="../../reference/metrics/">Metrics</a>.</p>
 
 
 
+
+  
+  
 
 
 
@@ -2797,7 +2724,7 @@ API shapes are in <a href="../../reference/metrics/">Metrics</a>.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../constraints/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Monotone and interaction constraints">
+          <a href="../data-matrix-and-routing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Data Ingestion &amp; Missing Routing">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -2807,20 +2734,20 @@ API shapes are in <a href="../../reference/metrics/">Metrics</a>.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Monotone and interaction constraints
+                Data Ingestion & Missing Routing
               </div>
             </div>
           </a>
         
         
           
-          <a href="../inspection/" class="md-footer__link md-footer__link--next" aria-label="Next: Tree inspection">
+          <a href="../pca-rotations/" class="md-footer__link md-footer__link--next" aria-label="Next: PCA Rotations &amp; Simple Structure">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Tree inspection
+                PCA Rotations & Simple Structure
               </div>
             </div>
             <div class="md-footer__button md-icon">

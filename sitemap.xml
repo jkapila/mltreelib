@@ -55,7 +55,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/data-matrix-and-routing/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/distributional-and-censored-trees/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/distributional-split-criteria/</loc>
@@ -88,13 +94,25 @@
         <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/model-inspection-and-rules/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/optimization-and-tuning/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/pca-rotations/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/piecewise-linear-and-cubist/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/piecewise-linear-model-trees-vs-gbdt/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/quinlan-m5-cubist-rust/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/regression-methods-showcase/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
@@ -106,7 +124,13 @@
         <loc>https://jkapila.github.io/mltreelib/examples/tobit-regression/</loc>
       </url>
       <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/tree-architecture-and-knobs/</loc>
+      </url>
+      <url>
         <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
+      </url>
+      <url>
+        <loc>https://jkapila.github.io/mltreelib/examples/unsupervised-clustering-and-anomalies/</loc>
       </url>
       <url>
         <loc>https://jkapila.github.io/mltreelib/examples/walkthrough/</loc>
