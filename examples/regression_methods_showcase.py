@@ -62,6 +62,8 @@ def run_concrete_benchmark():
         ("Binned Histogram Split (Mean Leaf)", ModelTree(leaf="mean", max_depth=4, min_rows=15, split_eval="histogram", max_bins=64)),
         ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=20, l2=0.1)),
         ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=4, min_rows=20, l2=0.1)),
+        ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=4, min_rows=20, l2=0.1)),
+        ("Expectile Linear (tau=0.75)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.75, max_depth=4, min_rows=20, l2=0.1)),
         ("Median Leaf (L1 Location)", ModelTree(leaf="median", max_depth=4, min_rows=15)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=4, min_rows=20, l2=0.1)),
     ]
@@ -106,6 +108,8 @@ def run_insurance_benchmark():
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=3, min_rows=25)),
         ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5)),
         ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=3, min_rows=30, l2=0.5)),
+        ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=3, min_rows=30, l2=0.5)),
+        ("Expectile Linear (tau=0.50)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.50, max_depth=3, min_rows=30, l2=0.5)),
         ("Median Leaf (0D L1)", ModelTree(leaf="median", max_depth=3, min_rows=25)),
         ("Huber Leaf (0D Location)", ModelTree(leaf="huber", max_depth=3, min_rows=25)),
         ("Quantile Linear (tau=0.10 Lower Risk)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.10, max_depth=3, min_rows=30, l2=0.5)),
@@ -150,10 +154,10 @@ def run_diamonds_benchmark():
     X = [[float(v) for v in row] for row in df_encoded.itertuples(index=False, name=None)]
     y = [float(v) for v in df[target]]
 
-    # Train / Test split 40,000 / 13,940
+    # Train / Test split 10,000 / 5,000
     indices = list(range(len(X)))
     Random(2026).shuffle(indices)
-    train_idx, test_idx = indices[:40000], indices[40000:]
+    train_idx, test_idx = indices[:10000], indices[10000:15000]
 
     X_train, X_test = [X[i] for i in train_idx], [X[i] for i in test_idx]
     y_train, y_test = [y[i] for i in train_idx], [y[i] for i in test_idx]
@@ -162,11 +166,13 @@ def run_diamonds_benchmark():
     print(f"Loaded {len(X)} rows ({len(train_idx)} train, {len(test_idx)} test), {len(df_encoded.columns)} features.")
 
     configs = [
-        ("Fast Exact Scan (Mean Leaf)", ModelTree(leaf="mean", max_depth=5, min_rows=50, split_eval="fast")),
-        ("Adaptive Binned Split (max_bins=64)", ModelTree(leaf="mean", max_depth=5, min_rows=50, split_eval="histogram", max_bins=64)),
-        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=100, l2=1.0)),
-        ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=4, min_rows=100, l2=1.0)),
-        ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=4, min_rows=100, l2=1.0)),
+        ("Fast Exact Scan (Mean Leaf)", ModelTree(leaf="mean", max_depth=3, min_rows=50, split_eval="fast")),
+        ("Adaptive Binned Split (max_bins=64)", ModelTree(leaf="mean", max_depth=3, min_rows=50, split_eval="histogram", max_bins=64)),
+        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=80, l2=1.0)),
+        ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=3, min_rows=80, l2=1.0)),
+        ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=3, min_rows=80, l2=1.0)),
+        ("Expectile Linear (tau=0.50)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.50, max_depth=3, min_rows=80, l2=1.0)),
+        ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=3, min_rows=80, l2=1.0)),
     ]
 
     import time
@@ -181,10 +187,60 @@ def run_diamonds_benchmark():
         print(f"{name:<38} | {fit_time:<9.3f}s | {rep['rmse']:<10.1f} | {rep['mae']:<10.1f}")
 
 
+def run_wine_quality_benchmark():
+    print("\n" + "=" * 70)
+    print("DATASET 4: Wine Quality (Overdispersed Counts & Bounded Score GLMs)")
+    print("=" * 70)
+    path = Path("datasets/wine_quality.parquet")
+    df = pd.read_parquet(path)
+    target = "median_wine_quality"
+    features = [c for c in df.columns if c != target and c != "wine_color"]
+
+    X = [[float(v) for v in row] for row in df[features].itertuples(index=False, name=None)]
+    y = [float(v) for v in df[target]]
+
+    # Train / Test split 80/20
+    indices = list(range(len(X)))
+    Random(777).shuffle(indices)
+    split_idx = int(0.8 * len(indices))
+    train_idx, test_idx = indices[:split_idx], indices[split_idx:]
+
+    X_train, X_test = [X[i] for i in train_idx], [X[i] for i in test_idx]
+    y_train, y_test = [y[i] for i in train_idx], [y[i] for i in test_idx]
+
+    metrics = Metrics()
+    print(f"Loaded {len(X)} rows ({len(train_idx)} train, {len(test_idx)} test), {len(features)} features.")
+
+    configs = [
+        ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=3, min_rows=30)),
+        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5)),
+        ("Poisson GLM Tree", ModelTree(leaf="linear", leaf_family="poisson", max_depth=3, min_rows=30, l2=0.5)),
+        ("Negative Binomial GLM Tree", ModelTree(leaf="linear", leaf_family="negative_binomial", max_depth=3, min_rows=30, l2=0.5)),
+        ("Beta Regression Tree (Rate / 10)", ModelTree(leaf="linear", leaf_family="beta", max_depth=3, min_rows=30, l2=0.5)),
+    ]
+
+    print(f"\n{'Model Configuration':<38} | {'Test RMSE':<10} | {'Test MAE':<10}")
+    print("-" * 65)
+    for name, model in configs:
+        if "Beta" in name:
+            # Rescale count in 0..10 to (0, 1) rate
+            y_train_rate = [val / 10.0 for val in y_train]
+            model.fit(X_train, y_train_rate)
+            preds_rate = model.predict(X_test)
+            preds = [p * 10.0 for p in preds_rate]
+        else:
+            model.fit(X_train, y_train)
+            preds = model.predict(X_test)
+
+        rep = metrics.regression(y_test, preds)
+        print(f"{name:<38} | {rep['rmse']:<10.3f} | {rep['mae']:<10.3f}")
+
+
 if __name__ == "__main__":
     run_concrete_benchmark()
     run_insurance_benchmark()
     run_diamonds_benchmark()
+    run_wine_quality_benchmark()
     print("\n" + "=" * 70)
     print("Regression methods benchmark showcase finished successfully.")
     print("=" * 70)

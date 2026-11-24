@@ -58,6 +58,10 @@ fn default_huber_delta() -> f64 {
     1.345
 }
 
+fn default_expectile_tau() -> f64 {
+    0.5
+}
+
 /// Growth and leaf parameters.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
@@ -250,6 +254,21 @@ pub struct ModelTreeParams {
     /// Huber tuning constant delta > 0 for Huber regression leaves (default 1.345).
     #[serde(default = "default_huber_delta")]
     pub huber_delta: f64,
+    /// Target expectile tau in (0, 1) for expectile regression leaves (default 0.5).
+    #[serde(default = "default_expectile_tau")]
+    pub expectile_tau: f64,
+    /// Enforce non-negative coefficients (slopes >= 0) via Lawson-Hanson NNLS (default false).
+    #[serde(default)]
+    pub non_negative: bool,
+    /// Enforce non-negative intercept in addition to slopes in NNLS (default false).
+    #[serde(default)]
+    pub non_negative_intercept: bool,
+    /// Fixed negative binomial dispersion parameter alpha >= 0 (None = estimate from data).
+    #[serde(default)]
+    pub nb_alpha: Option<f64>,
+    /// Fixed beta regression precision parameter phi > 0 (None = estimate from data).
+    #[serde(default)]
+    pub beta_phi: Option<f64>,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -393,6 +412,11 @@ impl Default for ModelTreeParams {
             min_bin_rows: 1,
             tau: 0.5,
             huber_delta: 1.345,
+            expectile_tau: 0.5,
+            non_negative: false,
+            non_negative_intercept: false,
+            nb_alpha: None,
+            beta_phi: None,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -670,6 +694,19 @@ impl ModelTree {
         if params.huber_delta <= 0.0 || !params.huber_delta.is_finite() {
             return Err("huber_delta must be positive and finite".to_string());
         }
+        if params.expectile_tau <= 0.0 || params.expectile_tau >= 1.0 || !params.expectile_tau.is_finite() {
+            return Err("expectile_tau must be in (0, 1)".to_string());
+        }
+        if let Some(alpha) = params.nb_alpha {
+            if alpha < 0.0 || !alpha.is_finite() {
+                return Err("nb_alpha must be non-negative and finite".to_string());
+            }
+        }
+        if let Some(phi) = params.beta_phi {
+            if phi <= 0.0 || !phi.is_finite() {
+                return Err("beta_phi must be strictly positive and finite".to_string());
+            }
+        }
         if params.leaf_family == LeafFamily::Quantile {
             if !matches!(
                 params.leaf,
@@ -683,6 +720,21 @@ impl ModelTree {
                 LeafKind::Linear | LeafKind::Mean | LeafKind::Huber
             ) {
                 return Err("huber family supports linear, mean, or huber leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Expectile {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Expectile(_)
+            ) {
+                return Err("expectile family supports linear, mean, or expectile leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::NegativeBinomial {
+            if !matches!(params.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("negative binomial family supports linear or mean leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Beta {
+            if !matches!(params.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("beta family supports linear or mean leaves".into());
             }
         } else if params.leaf_family != LeafFamily::Gaussian {
             if !matches!(
@@ -726,11 +778,14 @@ impl ModelTree {
                     LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
                         return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
-                        return Err("poisson and tweedie targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie | LeafFamily::NegativeBinomial if t < 0.0 => {
+                        return Err("poisson, tweedie, and negative binomial targets must be non-negative".into());
                     }
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
+                    }
+                    LeafFamily::Beta if t <= 0.0 || t >= 1.0 => {
+                        return Err("beta targets must be strictly inside (0, 1)".into());
                     }
                     LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
                         return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());
@@ -1165,6 +1220,21 @@ impl ModelTree {
             ) {
                 return Err("huber family supports linear, mean, or huber leaves".into());
             }
+        } else if control.family == LeafFamily::Expectile {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Expectile(_)
+            ) {
+                return Err("expectile family supports linear, mean, or expectile leaves".into());
+            }
+        } else if control.family == LeafFamily::NegativeBinomial {
+            if !matches!(control.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("negative binomial family supports linear or mean leaves".into());
+            }
+        } else if control.family == LeafFamily::Beta {
+            if !matches!(control.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("beta family supports linear or mean leaves".into());
+            }
         } else if control.family != LeafFamily::Gaussian {
             if !matches!(
                 control.leaf,
@@ -1224,11 +1294,14 @@ impl ModelTree {
                     LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
                         return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
-                        return Err("poisson and tweedie targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie | LeafFamily::NegativeBinomial if t < 0.0 => {
+                        return Err("poisson, tweedie, and negative binomial targets must be non-negative".into());
                     }
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
+                    }
+                    LeafFamily::Beta if t <= 0.0 || t >= 1.0 => {
+                        return Err("beta targets must be strictly inside (0, 1)".into());
                     }
                     LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
                         return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());

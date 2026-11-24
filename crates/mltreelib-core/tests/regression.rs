@@ -740,3 +740,334 @@ fn test_huber_model_tree_leaf_and_support_rule() {
     }
 }
 
+// =========================================================================
+// Spec 27 Phase 4: Expectile Regression Tests
+// =========================================================================
+
+#[test]
+fn test_expectile_loss_and_deriv() {
+    use mltreelib_core::solver::problems::expectile::{expectile_deriv, expectile_loss};
+
+    // For tau = 0.5, symmetric squared error: loss = 0.5 * r^2, deriv = r
+    let r_pos = 2.0;
+    let r_neg = -2.0;
+    assert!((expectile_loss(r_pos, 0.5) - 2.0).abs() < 1e-10);
+    assert!((expectile_loss(r_neg, 0.5) - 2.0).abs() < 1e-10);
+    assert!((expectile_deriv(r_pos, 0.5) - 2.0).abs() < 1e-10);
+    assert!((expectile_deriv(r_neg, 0.5) - (-2.0)).abs() < 1e-10);
+
+    // For tau = 0.8:
+    // r > 0 => weight = 0.8, loss = 0.8 * 4.0 = 3.2, deriv = 2 * 0.8 * 2 = 3.2
+    // r < 0 => weight = 0.2, loss = 0.2 * 4.0 = 0.8, deriv = 2 * 0.2 * (-2) = -0.8
+    assert!((expectile_loss(r_pos, 0.8) - 3.2).abs() < 1e-10);
+    assert!((expectile_loss(r_neg, 0.8) - 0.8).abs() < 1e-10);
+    assert!((expectile_deriv(r_pos, 0.8) - 3.2).abs() < 1e-10);
+    assert!((expectile_deriv(r_neg, 0.8) - (-0.8)).abs() < 1e-10);
+}
+
+#[test]
+fn test_expectile_mean_recovery_tau_half() {
+    use mltreelib_core::solver::problems::expectile::solve_expectile_lbfgs;
+    use mltreelib_core::solver::DenseView;
+
+    // Symmetric clean data: y = 3.0 + 2.0 * x1 - 1.0 * x2
+    let n = 100;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+    let mut rng = 424242u64;
+    let mut lcg = || -> f64 {
+        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (rng >> 33) as f64 / (1u64 << 31) as f64
+    };
+
+    for _ in 0..n {
+        let x1 = lcg() * 2.0 - 1.0;
+        let x2 = lcg() * 2.0 - 1.0;
+        let y = 3.0 + 2.0 * x1 - 1.0 * x2;
+        x_mat.push(vec![x1, x2]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let res = solve_expectile_lbfgs(&view, 0.5, 1e-4, 100, 1e-5, None)
+        .expect("Expectile L-BFGS should solve");
+
+    assert!((res[0] - 3.0).abs() < 1e-2, "Intercept should be ~3.0, got {}", res[0]);
+    assert!((res[1] - 2.0).abs() < 1e-2, "Beta1 should be ~2.0, got {}", res[1]);
+    assert!((res[2] - (-1.0)).abs() < 1e-2, "Beta2 should be ~ -1.0, got {}", res[2]);
+}
+
+#[test]
+fn test_expectile_ordering_monotonicity() {
+    use mltreelib_core::solver::problems::expectile::solve_expectile_lbfgs;
+    use mltreelib_core::solver::DenseView;
+
+    let n = 200;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+    let mut rng = 123456789u64;
+    let mut lcg = || -> f64 {
+        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (rng >> 33) as f64 / (1u64 << 31) as f64
+    };
+
+    for _ in 0..n {
+        let x1 = lcg() * 4.0 - 2.0;
+        let noise = (lcg() - 0.5) * 10.0;
+        let y = 5.0 + 1.5 * x1 + noise;
+        x_mat.push(vec![x1]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let res_10 = solve_expectile_lbfgs(&view, 0.1, 1e-4, 100, 1e-5, None).unwrap();
+    let res_50 = solve_expectile_lbfgs(&view, 0.5, 1e-4, 100, 1e-5, None).unwrap();
+    let res_90 = solve_expectile_lbfgs(&view, 0.9, 1e-4, 100, 1e-5, None).unwrap();
+
+    assert!(
+        res_10[0] < res_50[0],
+        "tau=0.1 intercept ({}) must be < tau=0.5 intercept ({})",
+        res_10[0],
+        res_50[0]
+    );
+    assert!(
+        res_50[0] < res_90[0],
+        "tau=0.5 intercept ({}) must be < tau=0.9 intercept ({})",
+        res_50[0],
+        res_90[0]
+    );
+}
+
+#[test]
+fn test_expectile_model_tree_fit() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..60 {
+        let val = (i as f64) * 0.1;
+        x.push(vec![Some(val), Some(val.sin())]);
+        y.push(Some(2.0 + 1.5 * val));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Expectile,
+        expectile_tau: 0.75,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit with expectile leaf should succeed");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 60);
+    for p in preds {
+        assert!(p.is_finite());
+    }
+}
+
+// =========================================================================
+// Spec 27 Phase 5: Non-Negative Least Squares (NNLS) Tests
+// =========================================================================
+
+#[test]
+fn test_solve_nnls_positive_coefficients() {
+    use mltreelib_core::solver::problems::nnls::solve_nnls;
+    use mltreelib_core::solver::DenseView;
+
+    // Negative relationship: y = 10.0 - 3.0 * x1 + 4.0 * x2
+    // Unconstrained OLS would give beta1 < 0.
+    // NNLS with non_negative_intercept = false must clamp beta1 to 0.0 and beta2 > 0.
+    let n = 80;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+    for i in 0..n {
+        let x1 = (i as f64) / 10.0;
+        let x2 = ((n - i) as f64) / 10.0;
+        let y = 10.0 - 3.0 * x1 + 4.0 * x2;
+        x_mat.push(vec![x1, x2]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let res = solve_nnls(&view, 1e-6, false, 100, 1e-8).expect("NNLS should solve");
+
+    // beta1 must be 0 (in active set) or >= 0
+    assert!(res.coefficients[1] >= -1e-10, "beta1 must be non-negative, got {}", res.coefficients[1]);
+    assert!(res.coefficients[2] > 0.0, "beta2 must be strictly positive, got {}", res.coefficients[2]);
+}
+
+#[test]
+fn test_nnls_model_tree_fit() {
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..60 {
+        let x1 = i as f64;
+        let x2 = (60 - i) as f64;
+        x.push(vec![Some(x1), Some(x2)]);
+        y.push(Some(5.0 - 2.0 * x1 + 3.0 * x2));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        leaf: mltreelib_core::leaf::LeafKind::Linear,
+        non_negative: true,
+        non_negative_intercept: false,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit with NNLS should succeed");
+    for (leaf_model, _) in tree.leaves() {
+        if let Some(ref lm) = leaf_model.linear {
+            // Slope coefficients must all be >= 0
+            for (idx, &coef) in lm.coef.iter().enumerate() {
+                assert!(
+                    coef >= -1e-8,
+                    "Leaf slope coefficient {} must be >= 0, got {}",
+                    idx,
+                    coef
+                );
+            }
+        }
+    }
+}
+
+// =========================================================================
+// Spec 27 Phase 7: Negative Binomial & Beta Regression Tests
+// =========================================================================
+
+#[test]
+fn test_negative_binomial_dispersion_and_recovery() {
+    use mltreelib_core::solver::problems::glm_extra::solve_negative_binomial_regression;
+    use mltreelib_core::solver::DenseView;
+
+    let n = 120;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+    for i in 0..n {
+        let x1 = (i as f64) / 30.0;
+        let mu = (1.0 + 0.5 * x1).exp();
+        // Add artificial overdispersion variance
+        let y = (mu + ((i % 5) as f64) * 2.0).round().max(0.0);
+        x_mat.push(vec![x1]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let res = solve_negative_binomial_regression(&view, None, 1e-4, 50, 1e-6)
+        .expect("Negative Binomial GLM should solve");
+
+    assert_eq!(res.coefficients.len(), 2); // [intercept, beta1]
+    assert!(res.alpha >= 0.0, "Dispersion alpha must be non-negative, got {}", res.alpha);
+}
+
+#[test]
+fn test_negative_binomial_poisson_boundary() {
+    use mltreelib_core::solver::problems::glm_extra::nb2_unit_deviance;
+
+    // At alpha -> 0, NB2 unit deviance should match Poisson unit deviance: 2 * (y * ln(y/mu) - (y - mu))
+    let y = 10.0f64;
+    let mu = 8.0f64;
+    let poisson_dev = 2.0 * (y * (y / mu).ln() - (y - mu));
+    let nb_dev = nb2_unit_deviance(y, mu, 1e-8);
+    assert!(
+        (nb_dev - poisson_dev).abs() < 1e-4,
+        "NB deviance at alpha=0 ({nb_dev}) should match Poisson ({poisson_dev})"
+    );
+}
+
+#[test]
+fn test_negative_binomial_model_tree_fit() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..60 {
+        let x1 = (i as f64) * 0.1;
+        x.push(vec![Some(x1)]);
+        y.push(Some(((1.0 + 0.3 * x1).exp()).round()));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::NegativeBinomial,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit with NegativeBinomial should succeed");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 60);
+    for p in preds {
+        assert!(p.is_finite() && p >= 0.0, "Predictions should be non-negative counts");
+    }
+}
+
+#[test]
+fn test_beta_regression_bounded_and_recovery() {
+    use mltreelib_core::solver::problems::glm_extra::solve_beta_regression;
+    use mltreelib_core::solver::DenseView;
+
+    let n = 100;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+    for i in 0..n {
+        let x1 = (i as f64) / 50.0 - 1.0;
+        // logit link: eta = 0.5 * x1
+        let eta = 0.5 * x1;
+        let mu = 1.0 / (1.0 + (-eta).exp());
+        // clip strictly inside (0, 1)
+        let y = mu.clamp(0.01, 0.99);
+        x_mat.push(vec![x1]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let res = solve_beta_regression(&view, None, 1e-4, 50, 1e-6)
+        .expect("Beta regression should solve");
+
+    assert!(res.phi > 0.0, "Precision phi must be positive, got {}", res.phi);
+    assert_eq!(res.coefficients.len(), 2);
+}
+
+#[test]
+fn test_beta_model_tree_fit() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..60 {
+        let x1 = (i as f64) * 0.1 - 3.0;
+        let eta = 0.4 * x1;
+        let mu = 1.0 / (1.0 + (-eta).exp());
+        x.push(vec![Some(x1)]);
+        y.push(Some(mu.clamp(0.02, 0.98)));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Beta,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit with Beta family should succeed");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 60);
+    for p in preds {
+        assert!(p > 0.0 && p < 1.0, "Predictions should be strictly inside (0, 1), got {p}");
+    }
+}
+

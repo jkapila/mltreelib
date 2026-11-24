@@ -50,6 +50,12 @@ pub enum LeafFamily {
     Quantile,
     /// Huber M-regression with robust loss (Spec 27 Phase 3).
     Huber,
+    /// Expectile regression with asymmetric squared loss (Spec 27 Phase 4).
+    Expectile,
+    /// Overdispersed count regression with NB2 variance V(mu) = mu + alpha * mu^2 (Spec 27 Phase 7).
+    NegativeBinomial,
+    /// Beta regression for outcomes strictly inside (0, 1) with logit link (Spec 27 Phase 7).
+    Beta,
 }
 
 impl LeafFamily {
@@ -57,14 +63,14 @@ impl LeafFamily {
     /// prevent exponential overflow/underflow even when extrapolating.
     pub fn inverse_link(self, eta: f64) -> f64 {
         match self {
-            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline | Self::Quantile | Self::Huber => eta,
-            Self::Binomial if eta >= 0.0 => 1.0 / (1.0 + (-eta).exp()),
-            Self::Binomial => {
+            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline | Self::Quantile | Self::Huber | Self::Expectile => eta,
+            Self::Binomial | Self::Beta if eta >= 0.0 => 1.0 / (1.0 + (-eta).exp()),
+            Self::Binomial | Self::Beta => {
                 let e = eta.exp();
                 e / (1.0 + e)
             }
             Self::Probit => std_norm_cdf(eta).clamp(1e-15, 1.0 - 1e-15),
-            Self::Poisson | Self::Gamma | Self::Tweedie => eta.clamp(-700.0, 700.0).exp(),
+            Self::Poisson | Self::Gamma | Self::Tweedie | Self::NegativeBinomial => eta.clamp(-700.0, 700.0).exp(),
         }
     }
 
@@ -78,16 +84,19 @@ impl LeafFamily {
     pub fn deviance_with_params(self, y: f64, mean: f64, tweedie_p: f64, tobit_threshold: f64) -> f64 {
         if y.is_nan() || mean.is_nan()
             || (self != Self::Gaussian && self != Self::Tobit && self != Self::Heteroscedastic && self != Self::Softmax && self != Self::Survival
-                && self != Self::Aft && self != Self::Cure && self != Self::Spline && self != Self::Quantile && self != Self::Huber
+                && self != Self::Aft && self != Self::Cure && self != Self::Spline && self != Self::Quantile && self != Self::Huber && self != Self::Expectile
                 && (!y.is_finite() || !mean.is_finite() || mean < 0.0 || y < 0.0))
-            || ((self == Self::Binomial || self == Self::Probit) && (mean > 1.0 || y > 1.0))
+            || ((self == Self::Binomial || self == Self::Probit || self == Self::Beta) && (mean > 1.0 || y > 1.0))
             || (self == Self::Gamma && (y <= 0.0 || mean <= 0.0))
         {
             return f64::NAN;
         }
         match self {
             Self::Gaussian | Self::Heteroscedastic | Self::Survival | Self::Aft | Self::Cure | Self::Spline | Self::Quantile => (y - mean).powi(2),
+            Self::Expectile => 2.0 * crate::solver::problems::expectile::expectile_loss(y - mean, 0.5),
             Self::Huber => 2.0 * crate::solver::problems::huber::huber_loss(y - mean, 1.345),
+            Self::NegativeBinomial => crate::solver::problems::glm_extra::nb2_unit_deviance(y, mean, 0.1),
+            Self::Beta => crate::solver::problems::glm_extra::beta_unit_deviance(y, mean),
             Self::Softmax => {
                 if y < 0.0 || mean <= 0.0 {
                     f64::NAN
@@ -132,20 +141,20 @@ impl LeafFamily {
     /// the tree's public query reports that case as an error.
     pub fn cdf(self, mean: f64, value: f64) -> f64 {
         if value.is_nan() || mean.is_nan()
-            || ((self == Self::Binomial || self == Self::Probit) && (mean < 0.0 || mean > 1.0))
-            || ((self == Self::Poisson || self == Self::Gamma || self == Self::Tweedie) && mean < 0.0)
+            || ((self == Self::Binomial || self == Self::Probit || self == Self::Beta) && (mean < 0.0 || mean > 1.0))
+            || ((self == Self::Poisson || self == Self::Gamma || self == Self::Tweedie || self == Self::NegativeBinomial) && mean < 0.0)
         {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian | Self::Softmax | Self::Quantile | Self::Huber => f64::NAN,
+            Self::Gaussian | Self::Softmax | Self::Quantile | Self::Huber | Self::Expectile | Self::Beta => f64::NAN,
             Self::Heteroscedastic => std_norm_cdf(value - mean),
             Self::Survival | Self::Aft | Self::Cure | Self::Spline => (1.0 - mean).clamp(0.0, 1.0),
             _ if value < 0.0 && self != Self::Tobit => 0.0,
             Self::Binomial | Self::Probit if value < 1.0 => 1.0 - mean,
             Self::Binomial | Self::Probit => 1.0,
-            Self::Poisson if mean == 0.0 || value == f64::INFINITY => 1.0,
-            Self::Poisson => gamma_ur(value.floor() + 1.0, mean),
+            Self::Poisson | Self::NegativeBinomial if mean == 0.0 || value == f64::INFINITY => 1.0,
+            Self::Poisson | Self::NegativeBinomial => gamma_ur(value.floor() + 1.0, mean),
             Self::Gamma => 1.0 - (-value / mean.max(1e-12)).exp(),
             Self::Tweedie => {
                 if value == 0.0 {

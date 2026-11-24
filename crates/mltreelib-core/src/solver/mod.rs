@@ -198,6 +198,10 @@ const GLM_FAMILIES: &[LeafFamily] = &[
     LeafFamily::Tweedie,
     LeafFamily::Tobit,
     LeafFamily::Quantile,
+    LeafFamily::Huber,
+    LeafFamily::Expectile,
+    LeafFamily::NegativeBinomial,
+    LeafFamily::Beta,
 ];
 
 /// Solver memory profile used for leaf compatibility and cost comparisons.
@@ -355,7 +359,10 @@ pub fn check_leaf_solver_compatibility(
                 solver_applies: true,
             })
         }
-        LeafProblemType::HuberLocation(_) | LeafProblemType::HuberRegression { .. } => {
+        LeafProblemType::HuberLocation(_)
+        | LeafProblemType::HuberRegression { .. }
+        | LeafProblemType::ExpectileLocation { .. }
+        | LeafProblemType::ExpectileRegression { .. } => {
             if solver == LeafSolver::Irls {
                 return Ok(LeafSolverCompatibility {
                     solver,
@@ -367,6 +374,12 @@ pub fn check_leaf_solver_compatibility(
                     "solver {solver:?} supports neither gradients nor derivative-free operation"
                 ));
             }
+            Ok(LeafSolverCompatibility {
+                solver,
+                solver_applies: true,
+            })
+        }
+        LeafProblemType::NegativeBinomialGlm { .. } | LeafProblemType::BetaGlm { .. } => {
             Ok(LeafSolverCompatibility {
                 solver,
                 solver_applies: true,
@@ -625,6 +638,184 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
             || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
         {
             return Err("Huber solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    let non_neg = problem
+        .extra
+        .and_then(|e| e.get("non_negative"))
+        .copied()
+        .unwrap_or(0.0)
+        > 0.5;
+    if non_neg {
+        let non_neg_intercept = problem
+            .extra
+            .and_then(|e| e.get("non_negative_intercept"))
+            .copied()
+            .unwrap_or(0.0)
+            > 0.5;
+        let result = crate::solver::problems::nnls::solve_nnls(
+            &view,
+            problem.l2,
+            non_neg_intercept,
+            3 * view.n_features() + 30,
+            1e-8,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("NNLS solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Expectile {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for expectile regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let tau = problem
+            .extra
+            .and_then(|e| e.get("expectile_tau"))
+            .copied()
+            .unwrap_or(0.5);
+        let solution = crate::solver::problems::expectile::solve_expectile_lbfgs(
+            &view,
+            tau,
+            problem.l2,
+            100,
+            1e-4,
+            None,
+        )?;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("expectile solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::NegativeBinomial {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for negative binomial regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let initial_alpha = problem
+            .extra
+            .and_then(|e| e.get("nb_alpha"))
+            .copied();
+        let result = crate::solver::problems::glm_extra::solve_negative_binomial_regression(
+            &view,
+            initial_alpha,
+            problem.l2,
+            15,
+            1e-5,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("negative binomial solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Beta {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for beta regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let initial_phi = problem
+            .extra
+            .and_then(|e| e.get("beta_phi"))
+            .copied();
+        let result = crate::solver::problems::glm_extra::solve_beta_regression(
+            &view,
+            initial_phi,
+            problem.l2,
+            15,
+            1e-5,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("beta solver produced a non-finite leaf model".into());
         }
         let mut model = crate::node_stats::LinearModel {
             cols: problem.chosen.to_vec(),

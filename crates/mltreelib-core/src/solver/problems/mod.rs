@@ -6,12 +6,26 @@
 //! - Problem declarations for modular regression dispatch (Spec 27)
 //! - Quantile regression loss, surrogate, solver, and crossing diagnostics (Phase 2)
 
+pub mod expectile;
+pub mod glm_extra;
 pub mod huber;
+pub mod nnls;
 pub mod quantile;
+
+pub use expectile::{
+    eval_expectile_loss, eval_expectile_loss_and_grad, expectile_deriv, expectile_loss,
+    solve_expectile_lbfgs, weighted_expectile, ExpectileObjective,
+};
+pub use glm_extra::{
+    beta_unit_deviance, eval_beta_deviance, eval_nb2_deviance, nb2_unit_deviance,
+    solve_beta_regression, solve_negative_binomial_regression, BetaFitResult,
+    NegativeBinomialFitResult,
+};
 pub use huber::{
     eval_huber_loss, eval_huber_loss_and_grad, huber_loss, huber_psi, solve_huber_location_lbfgs,
     solve_huber_regression, weighted_mad_scale, HuberFitResult, HuberObjective,
 };
+pub use nnls::{solve_cholesky, solve_nnls, NnlsFitResult};
 pub use quantile::{
     asymmetric_weight, detect_quantile_crossings, pinball_loss, smoothed_pinball_loss,
     solve_quantile_lbfgs, QuantileCrossingReport, SmoothedQuantileObjective,

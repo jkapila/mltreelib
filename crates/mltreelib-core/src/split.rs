@@ -3117,8 +3117,16 @@ impl<'a> Grower<'a> {
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }
             LeafFamily::Tobit => 0.0,
-            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline | LeafFamily::Quantile | LeafFamily::Huber => {
-                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, Spline, Quantile, and Huber use SSE/custom scans")
+            LeafFamily::NegativeBinomial => {
+                let alpha = 0.1;
+                let inv_a = 1.0 / alpha;
+                2.0 * (sy - xlog(sy, mean) + (sy + sw * inv_a) * (1.0 + alpha * mean).ln())
+            }
+            LeafFamily::Beta => -2.0 * (
+                xlog(sy, mean) + xlog((sw - sy).max(0.0), 1.0 - mean)
+            ),
+            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline | LeafFamily::Quantile | LeafFamily::Huber | LeafFamily::Expectile => {
+                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, Spline, Quantile, Huber, and Expectile use SSE/custom scans")
             }
         }
     }
