@@ -4,6 +4,28 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.15
+
+### Spec 27 regression methods expansion
+
+- Implement cardinality-adaptive binned histogram split routing for accelerated continuous regression tree partitioning.
+- Implement multivariate linear quantile regression leaves with smoothed pinball loss and L-BFGS Quasi-Newton optimization, non-crossing diagnostics, and 0D median fallback.
+- Implement robust Huber hyperplane regression with median absolute deviation (MAD) scale estimation ($\hat{\sigma} = 1.4826 \cdot \text{MAD}(r)$) and outlier rejection.
+- Implement asymmetric expectile regression with squared loss routing for continuous risk envelopes.
+- Implement Non-Negative Least Squares (NNLS) with active set Lawson-Hanson updates for sign-constrained physical modeling.
+- Implement Group Lasso and Sparse-Group Lasso via Proximal Block Coordinate Descent (BCD) with soft-thresholding for structured multi-collinear groupings.
+- Implement Negative Binomial and Beta Generalized Linear Model (GLM) leaves for overdispersed count and bounded rate distributions.
+- Implement Penalized B-Spline Generalized Additive Models (GAM) with adaptive quantile-spaced knot placement.
+- Evaluate hierarchical shrinkage between parent and child leaves for variance reduction across deep tree splits.
+
+### Documentation and example consolidation
+
+- Consolidate 27 fragmented example pages into 11 flagship guides organized across Data & Metrics, Regression & Continuous Models, Causal & Unsupervised, and Architecture, Inspection & Tuning.
+- Standardize all public example code on high-level unified facades (`AnomalyModel`/`AnomalyTree`, `ClusterModel`, `ComponentModel`, `ModelTree`, `optimize`/`AskTell`).
+- Add publication-grade SVG visual assets for multi-study regression benchmarks, optimization trajectories, and factor analysis rotation biplots.
+- Relocate Field Notes into the Benchmarks navigation section and streamline top-level documentation structure.
+
+
 ## v0.4.14
 
 ### Standalone optimization solvers and multi-objective algorithms

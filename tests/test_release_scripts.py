@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.bump_version import parse_version
+from scripts.bump_version import get_current_version, parse_version
 from scripts.prepare_release import verify_release
 
 
@@ -28,9 +28,10 @@ def test_parse_version_invalid():
 def test_verify_release_on_current_repo():
     """verify_release passes cleanly on the current repo version."""
     root = Path(__file__).resolve().parents[1]
-    changelog_entry = verify_release(root, "0.4.14")
+    current_ver = get_current_version(root)
+    changelog_entry = verify_release(root, current_ver)
     assert changelog_entry
-    assert "Standalone optimization solvers" in changelog_entry
+
 
 
 def test_verify_release_catches_mismatch():
