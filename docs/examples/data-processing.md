@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Data Ingestion, Missing Routing & Categorical Encoders**](data-matrix-and-routing.md).
+
 # Data Processing
 
 The data & feature layer, one script at a time: ingest and missingness, the

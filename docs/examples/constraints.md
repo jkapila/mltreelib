@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Tree Architecture, Growth Knobs & Structural Constraints**](tree-architecture-and-knobs.md).
+
 # Monotone and interaction constraints
 
 `ModelTree` supports structural constraint options. These controls do not establish global monotonicity for every leaf configuration. A repeated check of the healthcare example found two decreases on its 24-point age grid with linear leaves and none with mean leaves. This is a behavior gap to investigate. Check predictions on relevant grids and holdout data.

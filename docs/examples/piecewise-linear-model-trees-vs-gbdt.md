@@ -2,6 +2,10 @@
 description: Compare mean and linear regression tree leaves on real diamond prices using the same split and depth, then inspect held-out residuals.
 ---
 
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Piecewise Linear Model Trees & Quinlan M5/Cubist Rules**](piecewise-linear-and-cubist.md).
+
+
 # Decision tree regression with linear leaves: a worked diamond price example
 
 Consider a 0.95-carat and a 0.99-carat diamond with the same grades. If they reach the same constant leaf, a conventional regression tree predicts the same price for both. A linear leaf can assign different prices inside that region. We can test whether that flexibility improves predictions by changing only the leaf type.

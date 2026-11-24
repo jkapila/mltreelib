@@ -32,6 +32,8 @@ This mathematical criterion produces severe interpretability issues in real-worl
    $$\hat{\mathbf{X}} = \mathbf{Z} \mathbf{V}^T = (\mathbf{Z} \mathbf{T}) (\mathbf{V} \mathbf{T})^{-T} = \mathbf{Z}^* (\mathbf{V}^*)^T$$
    When $\mathbf{T}$ is orthogonal ($\mathbf{T}^T \mathbf{T} = \mathbf{I}$), the reconstructed subspace and the total variance explained remain **100% identical**. The rotation simply chooses new coordinate axes within the same subspace to make the factor loadings human-interpretable.
 
+![PCA Rotations: Unrotated vs Promax/Varimax Simple Structure Biplot](../assets/guides/pca-rotations.svg)
+
 ---
 
 ## Thurstone's Simple Structure Criteria (1947)

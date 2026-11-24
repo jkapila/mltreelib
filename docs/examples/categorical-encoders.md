@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Data Ingestion, Missing Routing & Categorical Encoders**](data-matrix-and-routing.md).
+
 # Categorical encoders deep-dive
 
 Tour of categorical encoders in `mltreelib` evaluated on real churn data (5,000 rows, 4 categorical columns).

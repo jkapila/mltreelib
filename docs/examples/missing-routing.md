@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Data Ingestion, Missing Routing & Categorical Encoders**](data-matrix-and-routing.md).
+
 # Missing data routing & surrogate splits
 
 In `mltreelib`, missing data is a first-class citizen. `ModelTree` supports missing predictor values (`None` and NaN) in the workflows below. Input validation and missing-target behavior vary by operation. Check the contract for the selected estimator.

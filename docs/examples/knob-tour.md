@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Tree Architecture, Growth Knobs & Structural Constraints**](tree-architecture-and-knobs.md).
+
 # Growth knob tour
 
 Every growth knob on `ModelTree` with real, deterministic output.

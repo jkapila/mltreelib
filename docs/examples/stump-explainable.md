@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Model Inspection, Quinlan Rules & Explainable Stumps**](model-inspection-and-rules.md).
+
 # Explainable Decision Stumps & Leaf Retraining
 
 A single decision stump (`max_depth=1`) splits feature space into two transparent regimes, then fits independent models inside each leaf. This pattern replicates the high-explainability output of **Quinlan's Cubist and C5.0** — models senior executives, actuaries, and clinical leaders understand in seconds.

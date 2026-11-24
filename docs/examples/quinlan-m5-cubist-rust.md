@@ -2,6 +2,10 @@
 description: Fit a readable linear-leaf model tree in Python on concrete compressive strength, then inspect its rules, local coefficients and held-out residuals.
 ---
 
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Piecewise Linear Model Trees & Quinlan M5/Cubist Rules**](piecewise-linear-and-cubist.md).
+
+
 # Cubist-style model trees in Python: explain a concrete strength prediction
 
 Concrete strength depends on the recipe and curing age. It is plausible that those relationships differ across mixtures. A model tree divides the measurements into regions and fits a local equation in each region. We can inspect those regions and test whether the local equations improve held-out predictions.

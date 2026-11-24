@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Generic Bounded Solvers & Hyperparameter Optimization**](optimization-and-tuning.md).
+
 # Hyperparameter search (Optuna)
 
 The full `ModelTree` growth surface is a search space — and Optuna is the

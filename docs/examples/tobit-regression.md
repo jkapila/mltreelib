@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Distributional & Censored Trees**](distributional-and-censored-trees.md).
+
 # Tobit & Censored Regression Trees
 
 Tobit models a latent response censored at a known boundary. A natural lower bound or a real zero alone does not establish censoring. Latent-normal and censoring assumptions must fit the application.

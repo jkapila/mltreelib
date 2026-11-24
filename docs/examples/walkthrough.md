@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Model Inspection, Quinlan Rules & Explainable Stumps**](model-inspection-and-rules.md).
+
 # Review a fitted tree before handing it off
 
 Use this checklist after you run a [modeling pathway](../guides/index.md). The example uses the concrete strength tree to show what to deliver with a fitted regression model.
