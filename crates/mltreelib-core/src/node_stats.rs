@@ -1905,7 +1905,8 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
             | LeafFamily::Aft
             | LeafFamily::Cure
             | LeafFamily::Spline
-            | LeafFamily::Quantile => mean,
+            | LeafFamily::Quantile
+            | LeafFamily::Huber => mean,
         },
         summary: None,
     };
@@ -2033,7 +2034,8 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
                 | LeafFamily::Aft
                 | LeafFamily::Cure
                 | LeafFamily::Spline
-                | LeafFamily::Quantile => {
+                | LeafFamily::Quantile
+                | LeafFamily::Huber => {
                     gram.add_row(&row, y, w);
                 }
             }

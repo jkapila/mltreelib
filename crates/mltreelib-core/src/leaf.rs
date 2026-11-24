@@ -101,6 +101,14 @@ pub enum LeafProblemType {
     },
     /// Weighted Huber M-location objective.
     HuberLocation(LeafFamily),
+    /// Multivariate Huber regression with tuning constant delta and robust scale sigma.
+    HuberRegression {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        delta: f64,
+        #[serde(with = "crate::persistence::float")]
+        scale: f64,
+    },
     /// Weighted mean computed without optimization.
     ClosedFormMean(LeafFamily),
     /// Probability, odds, or log-odds transform of the fitted mean.
@@ -135,6 +143,7 @@ impl LeafProblemType {
                 LeafFamily::Cure => Self::Cure(family),
                 LeafFamily::Spline => Self::Spline(family),
                 LeafFamily::Quantile => Self::WeightedQuantile { family, tau: 0.5 },
+                LeafFamily::Huber => Self::HuberRegression { family, delta: 1.345, scale: 1.0 },
                 _ => Self::PenalizedGlm(family),
             },
             LeafKind::Median => Self::WeightedMedian(family),
@@ -467,6 +476,8 @@ pub struct LeafControl {
     pub spline_knots: usize,
     /// Target quantile tau in (0, 1) for quantile leaves (default 0.5).
     pub tau: f64,
+    /// Huber tuning constant delta > 0 for Huber regression leaves (default 1.345).
+    pub huber_delta: f64,
 }
 
 impl Default for LeafControl {
@@ -505,6 +516,7 @@ impl Default for LeafControl {
             cure_fraction: None,
             spline_knots: 3,
             tau: 0.5,
+            huber_delta: 1.345,
         }
     }
 }
@@ -528,6 +540,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             _ => p.tau,
         };
         extra.insert("tau".to_string(), tau);
+        extra.insert("huber_delta".to_string(), p.huber_delta);
         let leaf_monotone = if !p.leaf_monotone.is_empty() {
             p.leaf_monotone.clone()
         } else {
@@ -567,6 +580,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             cure_fraction: p.cure_fraction,
             spline_knots: p.spline_knots,
             tau,
+            huber_delta: p.huber_delta,
         }
     }
 }
@@ -601,6 +615,8 @@ impl crate::model_tree::ModelTreeParams {
         self.aft_dist = control.aft_dist;
         self.cure_fraction = control.cure_fraction;
         self.spline_knots = control.spline_knots;
+        self.tau = control.tau;
+        self.huber_delta = control.huber_delta;
     }
 }
 
@@ -1517,7 +1533,8 @@ pub fn fit_leaf_model(
                 .as_ref()
                 .map(|m| m.iter().map(|&v| Some(v)).collect())
                 .unwrap_or_default();
-            let lm = if family == LeafFamily::Quantile && actual_rows.len() < chosen.len() + 1 {
+            let is_special_linear = family == LeafFamily::Quantile || family == LeafFamily::Huber;
+            let lm = if is_special_linear && actual_rows.len() < chosen.len() + 1 {
                 solver_used = LeafSolverDiagnostic::Rejected {
                     solver: control.solver,
                     reason: format!(
@@ -1552,7 +1569,7 @@ pub fn fit_leaf_model(
                     Ok(output) => {
                         solver_used = output.diagnostic;
                         output.linear.or_else(|| {
-                            if family == LeafFamily::Quantile {
+                            if is_special_linear {
                                 None
                             } else {
                                 Some(LinearModel {
@@ -1577,16 +1594,16 @@ pub fn fit_leaf_model(
                                 reason: reason.clone(),
                             };
                         }
-                        if family == LeafFamily::Quantile {
+                        if is_special_linear {
                             None
                         } else {
                             Some(LinearModel {
                                 coef: vec![0.0; chosen.len()],
                                 na_coef: if any_missing {
-                                    vec![0.0; chosen.len()]
-                                } else {
-                                    Vec::new()
-                                },
+                                        vec![0.0; chosen.len()]
+                                    } else {
+                                        Vec::new()
+                                    },
                                 feature_means: f_means.clone(),
                                 cols: chosen.clone(),
                                 intercept: f64::NAN,
@@ -1618,7 +1635,7 @@ pub fn fit_leaf_model(
     let yws: Vec<(f64, f64)> = if matches!(
         control.leaf,
         LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
-    ) || family == LeafFamily::Quantile {
+    ) || family == LeafFamily::Quantile || family == LeafFamily::Huber {
         rows.iter()
             .filter(|&&r| w[r] > 0.0)
             .map(|&r| (y[r], w[r]))
@@ -1684,6 +1701,9 @@ pub fn fit_leaf_model(
                 _ => control.tau,
             };
             Some(w_quantile(&yws, q_tau))
+        }
+        _ if family == LeafFamily::Huber => {
+            Some(huber_location(&yws))
         }
         _ => Some(stats.mean),
     };

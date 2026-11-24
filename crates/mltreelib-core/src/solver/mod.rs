@@ -355,7 +355,7 @@ pub fn check_leaf_solver_compatibility(
                 solver_applies: true,
             })
         }
-        LeafProblemType::HuberLocation(_) => {
+        LeafProblemType::HuberLocation(_) | LeafProblemType::HuberRegression { .. } => {
             if solver == LeafSolver::Irls {
                 return Ok(LeafSolverCompatibility {
                     solver,
@@ -579,6 +579,52 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
             || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
         {
             return Err("quantile solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Huber {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for Huber regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let delta = problem
+            .extra
+            .and_then(|e| e.get("huber_delta"))
+            .copied()
+            .unwrap_or(1.345);
+        let result = crate::solver::problems::huber::solve_huber_regression(
+            &view,
+            delta,
+            problem.l2,
+            30,
+            200,
+            1e-6,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("Huber solver produced a non-finite leaf model".into());
         }
         let mut model = crate::node_stats::LinearModel {
             cols: problem.chosen.to_vec(),

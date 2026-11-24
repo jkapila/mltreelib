@@ -48,6 +48,8 @@ pub enum LeafFamily {
     Spline,
     /// Quantile regression with pinball loss (Spec 27 Phase 2).
     Quantile,
+    /// Huber M-regression with robust loss (Spec 27 Phase 3).
+    Huber,
 }
 
 impl LeafFamily {
@@ -55,7 +57,7 @@ impl LeafFamily {
     /// prevent exponential overflow/underflow even when extrapolating.
     pub fn inverse_link(self, eta: f64) -> f64 {
         match self {
-            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline | Self::Quantile => eta,
+            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline | Self::Quantile | Self::Huber => eta,
             Self::Binomial if eta >= 0.0 => 1.0 / (1.0 + (-eta).exp()),
             Self::Binomial => {
                 let e = eta.exp();
@@ -76,7 +78,7 @@ impl LeafFamily {
     pub fn deviance_with_params(self, y: f64, mean: f64, tweedie_p: f64, tobit_threshold: f64) -> f64 {
         if y.is_nan() || mean.is_nan()
             || (self != Self::Gaussian && self != Self::Tobit && self != Self::Heteroscedastic && self != Self::Softmax && self != Self::Survival
-                && self != Self::Aft && self != Self::Cure && self != Self::Spline
+                && self != Self::Aft && self != Self::Cure && self != Self::Spline && self != Self::Quantile && self != Self::Huber
                 && (!y.is_finite() || !mean.is_finite() || mean < 0.0 || y < 0.0))
             || ((self == Self::Binomial || self == Self::Probit) && (mean > 1.0 || y > 1.0))
             || (self == Self::Gamma && (y <= 0.0 || mean <= 0.0))
@@ -85,6 +87,7 @@ impl LeafFamily {
         }
         match self {
             Self::Gaussian | Self::Heteroscedastic | Self::Survival | Self::Aft | Self::Cure | Self::Spline | Self::Quantile => (y - mean).powi(2),
+            Self::Huber => 2.0 * crate::solver::problems::huber::huber_loss(y - mean, 1.345),
             Self::Softmax => {
                 if y < 0.0 || mean <= 0.0 {
                     f64::NAN
@@ -135,7 +138,7 @@ impl LeafFamily {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian | Self::Softmax | Self::Quantile => f64::NAN,
+            Self::Gaussian | Self::Softmax | Self::Quantile | Self::Huber => f64::NAN,
             Self::Heteroscedastic => std_norm_cdf(value - mean),
             Self::Survival | Self::Aft | Self::Cure | Self::Spline => (1.0 - mean).clamp(0.0, 1.0),
             _ if value < 0.0 && self != Self::Tobit => 0.0,

@@ -6,7 +6,12 @@
 //! - Problem declarations for modular regression dispatch (Spec 27)
 //! - Quantile regression loss, surrogate, solver, and crossing diagnostics (Phase 2)
 
+pub mod huber;
 pub mod quantile;
+pub use huber::{
+    eval_huber_loss, eval_huber_loss_and_grad, huber_loss, huber_psi, solve_huber_location_lbfgs,
+    solve_huber_regression, weighted_mad_scale, HuberFitResult, HuberObjective,
+};
 pub use quantile::{
     asymmetric_weight, detect_quantile_crossings, pinball_loss, smoothed_pinball_loss,
     solve_quantile_lbfgs, QuantileCrossingReport, SmoothedQuantileObjective,

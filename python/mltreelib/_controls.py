@@ -67,6 +67,7 @@ _LEAF_FIELDS = frozenset(
         "l2",
         "leaf_digest",
         "tau",
+        "huber_delta",
         "leaf_monotone",
         "mars_degree",
         "mars_terms",

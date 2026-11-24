@@ -2479,6 +2479,7 @@ fn extract_leaf_control<'py>(
     l2: Option<f64>,
     leaf_digest: Option<bool>,
     tau: Option<f64>,
+    huber_delta: Option<f64>,
     leaf_features_arg: Option<Bound<'py, PyAny>>,
     effective_col_names: &[String],
 ) -> PyResult<mltreelib_core::leaf::LeafControl> {
@@ -2538,6 +2539,7 @@ fn extract_leaf_control<'py>(
                         "cure" => LeafFamily::Cure,
                         "spline" => LeafFamily::Spline,
                         "quantile" => LeafFamily::Quantile,
+                        "huber" => LeafFamily::Huber,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2643,6 +2645,14 @@ fn extract_leaf_control<'py>(
                 if let Some(item) = dict.get_item("spline_knots")? {
                     c.spline_knots = item.extract::<usize>()?;
                 }
+                if let Some(item) = dict.get_item("huber_delta")? {
+                    let d = item.extract::<f64>()?;
+                    if d <= 0.0 || !d.is_finite() {
+                        return Err(PyValueError::new_err("huber_delta must be positive and finite"));
+                    }
+                    c.huber_delta = d;
+                    c.extra.insert("huber_delta".to_string(), d);
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2655,6 +2665,7 @@ fn extract_leaf_control<'py>(
                             | "l2"
                             | "leaf_digest"
                             | "tau"
+                            | "huber_delta"
                             | "leaf_features"
                             | "retrain_cols"
                             | "shrinkage"
@@ -2716,6 +2727,7 @@ fn extract_leaf_control<'py>(
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
             "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2734,6 +2746,13 @@ fn extract_leaf_control<'py>(
     }
     if let Some(v) = leaf_digest {
         ctrl.leaf_digest = v;
+    }
+    if let Some(d) = huber_delta {
+        if d <= 0.0 || !d.is_finite() {
+            return Err(PyValueError::new_err("huber_delta must be positive and finite"));
+        }
+        ctrl.huber_delta = d;
+        ctrl.extra.insert("huber_delta".to_string(), d);
     }
     if let Some(t) = tau {
         if !(0.0..=1.0).contains(&t) {
@@ -2787,6 +2806,7 @@ impl PyLeafControl {
         l2 = 1e-3,
         leaf_digest = true,
         tau = 0.5,
+        huber_delta = 1.345,
         leaf_features = None,
         leaf_monotone = None,
         monotone = None,
@@ -2820,6 +2840,7 @@ impl PyLeafControl {
         l2: f64,
         leaf_digest: bool,
         tau: f64,
+        huber_delta: f64,
         leaf_features: Option<Vec<usize>>,
         leaf_monotone: Option<Vec<i8>>,
         monotone: Option<Vec<i8>>,
@@ -2882,6 +2903,7 @@ impl PyLeafControl {
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
             "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let solver = parse_leaf_solver(leaf_solver.unwrap_or("irls"))?;
@@ -2940,6 +2962,7 @@ impl PyLeafControl {
                 cure_fraction,
                 spline_knots,
                 tau,
+                huber_delta,
             },
         };
         if strict_solver {
@@ -2981,12 +3004,18 @@ impl PyLeafControl {
             LeafFamily::Cure => "cure".to_string(),
             LeafFamily::Spline => "spline".to_string(),
             LeafFamily::Quantile => "quantile".to_string(),
+            LeafFamily::Huber => "huber".to_string(),
         }
     }
 
     #[getter]
     fn get_tau(&self) -> f64 {
         self.inner.tau
+    }
+
+    #[getter]
+    fn get_huber_delta(&self) -> f64 {
+        self.inner.huber_delta
     }
 
     #[getter]
@@ -3137,6 +3166,7 @@ impl PyLeafControl {
                 "survival" => LeafFamily::Survival,
                 "heteroscedastic" => LeafFamily::Heteroscedastic,
                 "quantile" => LeafFamily::Quantile,
+                "huber" => LeafFamily::Huber,
                 other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
             };
         }
@@ -3538,7 +3568,7 @@ impl PyModelTree {
         purity_gate_metric = "sd", tail_quantile = None,
         gain = None, split_precision = Some(0.001), split_cols = None,
         col_sample = None, seed = 42,
-        leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.5,
+        leaf = "linear", tau = 0.5, huber_delta = 1.345, l1 = 0.0, l2 = 0.5,
         leaf_cols = "all", leaf_digest = true,
         cat_order = None, cat_search = "cumulative",
         monotone = vec![], tree_monotone = None, leaf_monotone = None,
@@ -3583,6 +3613,7 @@ impl PyModelTree {
         seed: u64,
         leaf: &str,
         tau: f64,
+        huber_delta: f64,
         l1: f64,
         l2: f64,
         leaf_cols: &str,
@@ -3745,6 +3776,7 @@ impl PyModelTree {
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
             "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
@@ -4010,6 +4042,7 @@ impl PyModelTree {
             max_bins,
             min_bin_rows,
             tau,
+            huber_delta,
             leaf_na_policy: leaf_na_policy_enum,
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
@@ -4037,6 +4070,7 @@ impl PyModelTree {
                 ctrl_obj.py(),
                 Some(ctrl_obj),
                 &params,
+                None,
                 None,
                 None,
                 None,
@@ -4266,6 +4300,7 @@ impl PyModelTree {
                 None,
                 None,
                 None,
+                None,
                 &[],
             )?;
             self.params.n_classes = self.params.n_classes.or(ctrl.n_classes);
@@ -4344,6 +4379,7 @@ impl PyModelTree {
         l2 = None,
         leaf_digest = None,
         tau = None,
+        huber_delta = None,
         event = None,
         n_classes = None
     ))]
@@ -4364,6 +4400,7 @@ impl PyModelTree {
         l2: Option<f64>,
         leaf_digest: Option<bool>,
         tau: Option<f64>,
+        huber_delta: Option<f64>,
         event: Option<Vec<f64>>,
         n_classes: Option<usize>,
     ) -> PyResult<Py<PyModelTree>> {
@@ -4416,6 +4453,7 @@ impl PyModelTree {
                     l2,
                     leaf_digest,
                     tau,
+                    huber_delta,
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
@@ -4453,6 +4491,7 @@ impl PyModelTree {
                     l2,
                     leaf_digest,
                     tau,
+                    huber_delta,
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
@@ -5504,6 +5543,7 @@ impl PyModelTree {
             },
         )?;
         d.set_item("tau", self.params.tau)?;
+        d.set_item("huber_delta", self.params.huber_delta)?;
         d.set_item(
             "leaf_family",
             match self.params.leaf_family {
@@ -5521,6 +5561,7 @@ impl PyModelTree {
                 LeafFamily::Cure => "cure",
                 LeafFamily::Spline => "spline",
                 LeafFamily::Quantile => "quantile",
+                LeafFamily::Huber => "huber",
             },
         )?;
         d.set_item("l1", self.params.l1)?;

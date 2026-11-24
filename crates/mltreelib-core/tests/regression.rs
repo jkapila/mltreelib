@@ -552,3 +552,191 @@ fn test_detect_quantile_crossings_diagnostics() {
     assert!((rep_crossed.max_violation - 0.5).abs() < 1e-9);
     assert_eq!(rep_crossed.crossings, vec![(1, 1, 2)]);
 }
+
+// ---------------------------------------------------------------------------
+// Spec 27 Phase 3: Huber Regression with Robust Scale
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_huber_loss_and_psi_properties() {
+    use mltreelib_core::solver::problems::huber::{huber_loss, huber_psi};
+
+    let delta = 1.345;
+    // Quadratic region (|r| <= delta)
+    let r1 = 0.5;
+    assert!((huber_loss(r1, delta) - 0.5 * r1 * r1).abs() < 1e-12);
+    assert!((huber_psi(r1, delta) - r1).abs() < 1e-12);
+
+    // Linear region (|r| > delta)
+    let r2 = 3.0;
+    let expected_loss = delta * (r2 - 0.5 * delta);
+    assert!((huber_loss(r2, delta) - expected_loss).abs() < 1e-12);
+    assert!((huber_psi(r2, delta) - delta).abs() < 1e-12);
+
+    let r3 = -4.0;
+    let expected_loss_neg = delta * (4.0 - 0.5 * delta);
+    assert!((huber_loss(r3, delta) - expected_loss_neg).abs() < 1e-12);
+    assert!((huber_psi(r3, delta) - (-delta)).abs() < 1e-12);
+}
+
+#[test]
+fn test_weighted_mad_scale_recovery() {
+    use mltreelib_core::solver::problems::huber::weighted_mad_scale;
+
+    // Normal samples scaled by sigma = 3.0 with unit weights
+    // Quantiles of standard normal: median of |Z| is approx 0.67449
+    // Multiplying by 1.4826 recovers sigma
+    let mut rng_state = 123456789u64;
+    let mut lcg = || -> f64 {
+        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (rng_state >> 33) as f64 / (1u64 << 31) as f64
+    };
+
+    let sigma_true = 3.0;
+    let mut residuals = Vec::with_capacity(500);
+    for _ in 0..250 {
+        // Box-Muller transform
+        let u1 = lcg().max(1e-10);
+        let u2 = lcg();
+        let z0 = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        let z1 = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).sin();
+        residuals.push((z0 * sigma_true, 1.0));
+        residuals.push((z1 * sigma_true, 1.0));
+    }
+
+    let estimated_scale = weighted_mad_scale(&residuals);
+    // Should recover sigma = 3.0 within statistical sample tolerance (~10%)
+    assert!(
+        (estimated_scale - sigma_true).abs() < 0.4,
+        "Expected scale close to 3.0, got {estimated_scale}"
+    );
+}
+
+#[test]
+fn test_huber_regression_outlier_resistance() {
+    use mltreelib_core::solver::problems::huber::solve_huber_regression;
+    use mltreelib_core::solver::DenseView;
+
+    // Model: y = 2.0 * x1 - 1.5 * x2 + 4.0
+    let n = 200;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+
+    let mut rng_state = 987654321u64;
+    let mut lcg = || -> f64 {
+        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (rng_state >> 33) as f64 / (1u64 << 31) as f64
+    };
+
+    for i in 0..n {
+        let x1 = lcg() * 4.0 - 2.0;
+        let x2 = lcg() * 4.0 - 2.0;
+        x_mat.push(vec![x1, x2]);
+
+        // Standard small noise
+        let noise = (lcg() - 0.5) * 0.2;
+        let mut y = 4.0 + 2.0 * x1 - 1.5 * x2 + noise;
+
+        // 10% severe contamination outliers: add +/- 200.0
+        if i % 10 == 0 {
+            y += if i % 20 == 0 { 200.0 } else { -200.0 };
+        }
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+
+    let result = solve_huber_regression(&view, 1.345, 1e-4, 30, 200, 1e-5)
+        .expect("Huber regression should solve cleanly on contaminated data");
+
+    assert!(result.converged, "Huber regression should converge");
+    assert_eq!(result.coefficients.len(), 3); // [intercept, beta1, beta2]
+
+    let intercept = result.coefficients[0];
+    let beta1 = result.coefficients[1];
+    let beta2 = result.coefficients[2];
+
+    // Check recovered parameters against ground truth [4.0, 2.0, -1.5]
+    assert!(
+        (intercept - 4.0).abs() < 0.35,
+        "Intercept expected ~4.0, got {intercept}"
+    );
+    assert!(
+        (beta1 - 2.0).abs() < 0.25,
+        "beta1 expected ~2.0, got {beta1}"
+    );
+    assert!(
+        (beta2 - (-1.5)).abs() < 0.25,
+        "beta2 expected ~-1.5, got {beta2}"
+    );
+}
+
+#[test]
+fn test_huber_model_tree_leaf_and_support_rule() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    // Synthesize clean linear data with 2 outliers
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..50 {
+        let x1 = (i as f64) * 0.1;
+        let x2 = (i as f64) * 0.2;
+        x.push(vec![Some(x1), Some(x2)]);
+        let mut yi = 1.0 + 2.0 * x1 + 0.5 * x2;
+        if i == 5 {
+            yi += 100.0; // Outlier
+        }
+        if i == 45 {
+            yi -= 100.0; // Outlier
+        }
+        y.push(Some(yi));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 10,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Huber,
+        huber_delta: 1.345,
+        l2: 0.1,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit with Huber leaf should succeed");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 50);
+
+    for (leaf_model, _) in tree.leaves() {
+        if let Some(ref lm) = leaf_model.linear {
+            assert!(
+                lm.summary.is_none(),
+                "Multivariate Huber leaf must not report OLS standard errors"
+            );
+        }
+    }
+
+    // Check minimum support fallback when leaf rows < features + 1
+    let mut x_tiny = Vec::new();
+    let mut y_tiny = Vec::new();
+    for i in 0..12 {
+        x_tiny.push(vec![Some(i as f64), Some((i * 2) as f64), Some((i * 3) as f64)]);
+        y_tiny.push(Some(i as f64));
+    }
+    let params_tiny = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 3, // P=3 => requires 4 rows for linear fit
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Huber,
+        huber_delta: 1.345,
+        ..Default::default()
+    };
+    let tree_tiny = ModelTree::fit(&x_tiny, &y_tiny, params_tiny).expect("Fit should succeed with 0D center fallback");
+    let preds_tiny = tree_tiny.predict(&x_tiny);
+    assert_eq!(preds_tiny.len(), 12);
+    for p in preds_tiny {
+        assert!(p.is_finite(), "Prediction should be finite from 0D Huber center fallback");
+    }
+}
+

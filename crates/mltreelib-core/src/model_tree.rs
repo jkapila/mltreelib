@@ -54,6 +54,10 @@ fn default_tau() -> f64 {
     0.5
 }
 
+fn default_huber_delta() -> f64 {
+    1.345
+}
+
 /// Growth and leaf parameters.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
@@ -243,6 +247,9 @@ pub struct ModelTreeParams {
     /// Target quantile tau in (0, 1) for quantile leaves and models (default 0.5).
     #[serde(default = "default_tau")]
     pub tau: f64,
+    /// Huber tuning constant delta > 0 for Huber regression leaves (default 1.345).
+    #[serde(default = "default_huber_delta")]
+    pub huber_delta: f64,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -385,6 +392,7 @@ impl Default for ModelTreeParams {
             max_bins: 256,
             min_bin_rows: 1,
             tau: 0.5,
+            huber_delta: 1.345,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -659,12 +667,22 @@ impl ModelTree {
         if params.cp_alpha < 0.0 {
             return Err("cp_alpha must be >= 0".to_string());
         }
+        if params.huber_delta <= 0.0 || !params.huber_delta.is_finite() {
+            return Err("huber_delta must be positive and finite".to_string());
+        }
         if params.leaf_family == LeafFamily::Quantile {
             if !matches!(
                 params.leaf,
                 LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
             ) {
                 return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Huber {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Huber
+            ) {
+                return Err("huber family supports linear, mean, or huber leaves".into());
             }
         } else if params.leaf_family != LeafFamily::Gaussian {
             if !matches!(
@@ -1130,12 +1148,22 @@ impl ModelTree {
         if control.l1 < 0.0 || control.l2 < 0.0 {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
+        if control.huber_delta <= 0.0 || !control.huber_delta.is_finite() {
+            return Err("huber_delta must be positive and finite".to_string());
+        }
         if control.family == LeafFamily::Quantile {
             if !matches!(
                 control.leaf,
                 LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
             ) {
                 return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if control.family == LeafFamily::Huber {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Huber
+            ) {
+                return Err("huber family supports linear, mean, or huber leaves".into());
             }
         } else if control.family != LeafFamily::Gaussian {
             if !matches!(
