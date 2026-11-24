@@ -616,9 +616,9 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
             &view,
             delta,
             problem.l2,
-            30,
-            200,
-            1e-6,
+            15,
+            60,
+            1e-4,
         )?;
         let solution = result.coefficients;
         if !solution.iter().all(|value| value.is_finite())

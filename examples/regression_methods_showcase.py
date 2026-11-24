@@ -61,6 +61,7 @@ def run_concrete_benchmark():
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=4, min_rows=15)),
         ("Binned Histogram Split (Mean Leaf)", ModelTree(leaf="mean", max_depth=4, min_rows=15, split_eval="histogram", max_bins=64)),
         ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=20, l2=0.1)),
+        ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=4, min_rows=20, l2=0.1)),
         ("Median Leaf (L1 Location)", ModelTree(leaf="median", max_depth=4, min_rows=15)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=4, min_rows=20, l2=0.1)),
     ]
@@ -104,7 +105,9 @@ def run_insurance_benchmark():
     configs = [
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=3, min_rows=25)),
         ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5)),
-        ("Median Leaf", ModelTree(leaf="median", max_depth=3, min_rows=25)),
+        ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=3, min_rows=30, l2=0.5)),
+        ("Median Leaf (0D L1)", ModelTree(leaf="median", max_depth=3, min_rows=25)),
+        ("Huber Leaf (0D Location)", ModelTree(leaf="huber", max_depth=3, min_rows=25)),
         ("Quantile Linear (tau=0.10 Lower Risk)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.10, max_depth=3, min_rows=30, l2=0.5)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=3, min_rows=30, l2=0.5)),
         ("Quantile Linear (tau=0.90 Upper Risk)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.90, max_depth=3, min_rows=30, l2=0.5)),
@@ -162,6 +165,7 @@ def run_diamonds_benchmark():
         ("Fast Exact Scan (Mean Leaf)", ModelTree(leaf="mean", max_depth=5, min_rows=50, split_eval="fast")),
         ("Adaptive Binned Split (max_bins=64)", ModelTree(leaf="mean", max_depth=5, min_rows=50, split_eval="histogram", max_bins=64)),
         ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=100, l2=1.0)),
+        ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=4, min_rows=100, l2=1.0)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=4, min_rows=100, l2=1.0)),
     ]
 

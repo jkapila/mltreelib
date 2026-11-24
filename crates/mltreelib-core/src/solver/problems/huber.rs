@@ -264,7 +264,7 @@ pub fn solve_huber_location_lbfgs<D: DesignMatrix>(
 
     for _iter in 0..max_iter {
         let max_grad = grad.iter().fold(0.0f64, |acc, &g| acc.max(g.abs()));
-        if max_grad < tol {
+        if max_grad / (n as f64).max(1.0) < tol {
             return Ok(beta);
         }
 
@@ -294,7 +294,12 @@ pub fn solve_huber_location_lbfgs<D: DesignMatrix>(
                 1.0
             }
         } else {
-            1.0
+            let g_norm = grad.iter().fold(0.0f64, |acc, &g| acc.max(g.abs()));
+            if g_norm > 1.0 {
+                1.0 / g_norm
+            } else {
+                1.0
+            }
         };
 
         for j in 0..p {
