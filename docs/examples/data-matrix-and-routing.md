@@ -55,54 +55,82 @@ Standard decision trees force users to impute missing entries (mean, median, mod
 
 ![Mechanics of Surrogate Missing Routing](../assets/guides/data-missingness.svg)
 
-### Reproducible Missing Routing Example (Scania APS Truck Dataset)
-
-On the Scania APS Failure benchmark (8% to 80% missing rates across sensor channels), native routing cuts test false alarms significantly compared to mean imputation:
+### Complete End-to-End Missing Routing Example
 
 ```python
+import numpy as np
 from mltreelib import ModelTree, Metrics
-import pandas as pd
 
-# Load APS dataset with widespread sensor dropouts
-df = pd.read_parquet("datasets/aps_failure.parquet")
-features = [c for c in df.columns if c != "class"]
-y = (df["class"] == "pos").astype(int).tolist()
-X = df[features].values.tolist()
+# 1. Generate multi-sensor telemetry with correlated features and sensor dropouts
+rng = np.random.default_rng(2026)
+n_samples = 1500
 
-# Train tree with learned missing direction routing
+# Primary sensor reading and redundant backup sensor
+primary = rng.normal(loc=50.0, scale=10.0, size=n_samples)
+backup = 0.85 * primary + rng.normal(loc=0.0, scale=3.0, size=n_samples)
+temperature = rng.uniform(low=20.0, high=90.0, size=n_samples)
+
+# Physical failure response depending strongly on primary sensor threshold (> 58.0)
+y = ((primary > 58.0) & (temperature > 50.0)).astype(float) + rng.normal(0, 0.1, n_samples)
+
+# Inject 30% realistic sensor dropouts (represented by None / NaN)
+primary_with_missing = [None if rng.uniform() < 0.30 else round(val, 2) for val in primary]
+backup_clean = [round(val, 2) for val in backup]
+temp_clean = [round(val, 2) for val in temperature]
+
+X = [[p, b, t] for p, b, t in zip(primary_with_missing, backup_clean, temp_clean)]
+feature_names = ["sensor_primary", "sensor_backup", "temperature"]
+
+# 2. Train ModelTree with native learned missing routing
 tree = ModelTree(
-    max_depth=4,
-    min_rows=50,
-    missing_dir="learned",  # Native deviance-optimal branch routing
-    gain="deviance",
+    leaf="linear",
+    max_depth=3,
+    min_rows=30,
+    missing_dir="learned",  # Deviance-optimal routing for missing rows
 )
-tree.fit(X, y, col_names=features)
+tree.fit(X, y.tolist(), col_names=feature_names)
 
-print("Tree splits with missing route assignments:")
-for s in tree.splits()[:5]:
-    print(f"  Feature {s['col']} <= {s['threshold']:.3f} | Missing -> {'LEFT' if s.get('missing_left', True) else 'RIGHT'}")
+# 3. Inspect splits and assigned missing directions
+print("Fitted Tree Splits & Native Missing Direction:")
+for i, s in enumerate(tree.splits()[:3], 1):
+    direction = "LEFT" if s.get("missing_left", True) else "RIGHT"
+    print(f"  Split #{i}: Feature '{s['col']}' <= {s['threshold']:.2f} | Missing Rows Route -> {direction}")
+
+# 4. Predict on new record with missing primary sensor
+test_sample = [[None, 62.5, 75.0]]
+predicted_risk = tree.predict(test_sample)[0]
+print(f"\nPrediction for Missing Primary Reading (Backup=62.5, Temp=75.0): {predicted_risk:.3f}")
 ```
 
 ---
 
-## 2. Categorical Encoders: Native vs Empirical Bayes
+## 2. Categorical Encoders: Empirical Bayes & Ordered Target Encoding
 
-Tabular data features categorical variables ranging from low-cardinality ordinal levels (e.g. Education: High School, Bachelor, Graduate) to massive cardinalities (ZIP codes, merchant IDs, product SKUs).
+Tabular data features categorical variables ranging from low-cardinality ordinal levels (e.g. Education: High School, Bachelor, Graduate) to high-cardinality entities (ZIP codes, merchant IDs, product SKUs).
 
-| Method | Cardinality Range | Mechanism | Overfitting Guard |
+| Method | Flavour | Mechanism | Overfitting Guard |
 | :--- | :--- | :--- | :--- |
-| **Native Integer Indexing** | Low ($K \le 32$) | Exhaustive or greedy bitset subset partitions ($2^{K-1}$) | `min_rows_leaf` and cost-complexity pruning |
-| **Target Encoding** | High ($K > 32$) | Mean response $\bar{y}_c$ per category | Empirical Bayes shrinkage: $\lambda = \frac{n_c}{n_c + m}$ |
-| **Frequency Encoding** | Any | Fraction of occurrences in training split | Scale normalization |
+| **`TargetEncoder`** | Smoothed Mean | $w \cdot \bar{y}_c + (1 - w) \cdot \bar{y}_\text{global}, \quad w = \frac{n_c}{n_c + m}$ | Empirical Bayes $m$-smoothing toward global prior |
+| **`CatBoostEncoder`** | Ordered Target | Running target mean accumulated over random permutations | Dynamic permutation eliminates in-sample leakage |
+| **`OneHotEncoder`** | Sparse Dummies | Boolean bitsets for low-cardinality variables ($K \le 16$) | Tree branch regularization |
 
 ```python
-from mltreelib.encoding import TargetEncoder
+from mltreelib import TargetEncoder, CatBoostEncoder
 
-encoder = TargetEncoder(
-    smoothing=10.0,    # Empirical Bayes m-estimate shrinkage
-    cv_folds=5,        # Out-of-fold target encoding prevents leak
-)
-X_encoded = encoder.fit_transform(df[["zip_code", "job_title"]], y)
+# High-cardinality merchant categories and chargeback labels
+merchants = ["electronics", "apparel", "electronics", "travel", "apparel", "electronics"]
+labels = [1.0, 0.0, 1.0, 0.0, 1.0, 1.0]
+
+# 1. Smoothed Empirical Bayes Target Encoding
+target_enc = TargetEncoder(smoothing=5.0)
+target_enc.fit(merchants, labels)
+encoded_features = target_enc.transform(merchants)
+print("Smoothed Target Encodings:", [round(v, 3) for v in encoded_features])
+
+# 2. Ordered Target Encoding (Leakage-Free Training)
+cb_enc = CatBoostEncoder(smoothing=5.0, seed=2026)
+ordered_features = cb_enc.fit_transform(merchants, labels)
+print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
 ```
 
 ---

@@ -61,18 +61,39 @@ We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/4222
 | **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes; beats GBDT with 1/12th complexity** |
 
 ```python
+import numpy as np
 from mltreelib import ModelTree, Metrics
 
-# Train shallow model tree with linear leaves
+# 1. Generate non-linear diamond price surface with carat and cut interactions
+rng = np.random.default_rng(2026)
+n_samples = 2000
+
+carat = rng.uniform(0.3, 3.5, n_samples)
+depth = rng.uniform(58.0, 65.0, n_samples)
+table = rng.uniform(53.0, 62.0, n_samples)
+
+# Price surface with non-linear exponential carat scaling
+price = 1500.0 * (carat ** 1.8) - 15.0 * depth + rng.normal(0, 150.0, n_samples)
+
+X = np.column_stack([carat, depth, table])
+feature_names = ["carat", "depth", "table"]
+
+train_idx = range(1500)
+test_idx = range(1500, 2000)
+
+# 2. Train shallow ModelTree with piecewise linear leaves
 tree = ModelTree(
     leaf="linear",
     max_depth=3,
     min_rows=30,
-    l2_reg=1e-3,
+    l2=1e-3,
+    shrinkage=5.0,  # Hierarchical leaf shrinkage
 )
-tree.fit(X_train, y_train, col_names=feature_names)
-pred = tree.predict(X_test)
-print("Test RMSE:", Metrics().regression(y_test, pred)["rmse"])
+tree.fit(X[train_idx], price[train_idx].tolist(), col_names=feature_names)
+pred = tree.predict(X[test_idx])
+
+rmse = Metrics().regression(price[test_idx].tolist(), pred)["rmse"]
+print(f"Piecewise Linear ModelTree Test RMSE: ${rmse:.2f}")
 ```
 
 ---
@@ -88,15 +109,13 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 ### Inspecting Extracted Rules and Leaf Equations
 
 ```python
-tree = ModelTree(leaf="linear", max_depth=2, min_rows=40)
-tree.fit(X_train, y_train, col_names=feature_names)
-
-# Export white-box rules
-for r in tree.rules():
-    print(f"RULE #{r['id']} (n={r['n']}, coverage={r['coverage']:.1%}):")
-    print(f"  WHEN {' AND '.join(r['conditions'])}")
-    print(f"  THEN y = {r['intercept']:.2f} + " + 
-          " + ".join(f"{coef:.2f}*{name}" for name, coef in r['coefficients'].items() if abs(coef) > 0.01))
+# Extract white-box rules directly from the fitted tree
+ruleset = tree.extract_rules()
+print(f"Extracted {len(ruleset.rules)} Transparent Rules:")
+for r in ruleset.rules:
+    print(f"  RULE #{r.id} (Cover: {r.cover} samples, Confidence: {r.confidence:.2f}):")
+    print(f"    IF {' AND '.join(r.conditions)}")
+    print(f"    THEN Leaf #{r.leaf_id} prediction = {r.prediction:.2f}")
 ```
 
 ```text

@@ -46,18 +46,44 @@ flowchart TD
 
 ---
 
-## 1. Graphviz DOT Export and Production Handoff Checklist
+## 1. Graphviz DOT Export and Rule Extraction
 
 ```python
-from mltreelib import ModelTree
+import numpy as np
 from pathlib import Path
+from mltreelib import ModelTree
 
+# 1. Generate realistic industrial concrete mixture data
+rng = np.random.default_rng(2026)
+n_batches = 600
+
+cement = rng.uniform(200.0, 500.0, n_batches)
+water = rng.uniform(140.0, 220.0, n_batches)
+age = rng.choice([7, 14, 28, 90], size=n_batches)
+
+# Compressive strength with physical non-linear interaction
+y = 0.08 * cement - 0.15 * water + 0.35 * age + rng.normal(0, 3.0, n_batches)
+
+X = np.column_stack([cement, water, age])
+feature_names = ["Cement", "Water", "Age"]
+
+# 2. Fit white-box ModelTree with linear leaves
 tree = ModelTree(leaf="linear", max_depth=2, min_rows=40)
-tree.fit(X_train, y_train, col_names=feature_names)
+tree.fit(X, y.tolist(), col_names=feature_names)
 
-# Export DOT format for Graphviz rendering
-dot_str = tree.to_dot(title="Concrete Compressive Strength Model")
+# 3. Export Graphviz DOT format for visual auditing
+dot_str = tree.to_dot()
 Path("concrete_tree.dot").write_text(dot_str)
+print("Exported Graphviz DOT string (length:", len(dot_str), "chars)")
+
+# 4. Extract Quinlan-style IF-THEN rules
+ruleset = tree.extract_rules()
+print(f"\nExtracted {len(ruleset.rules)} Global Decision Rules:")
+for r in ruleset.rules:
+    conditions_str = " AND ".join(r.conditions)
+    print(f"  RULE #{r.id} (Cover: {r.cover} samples, Confidence: {r.confidence:.2f}):")
+    print(f"    IF {conditions_str}")
+    print(f"    THEN Leaf #{r.leaf_id} prediction = {r.prediction:.2f}")
 ```
 
 ### Production Deployment Checklist
@@ -85,7 +111,7 @@ stump = ModelTree(
     max_depth=1,      # Single split partition
     min_rows=50,
 )
-stump.fit(X_train, y_train, col_names=feature_names)
+stump.fit(X, y.tolist(), col_names=feature_names)
 
 split = stump.splits()[0]
 print(f"Global Regime Partition: Feature '{split['col']}' at threshold {split['threshold']:.2f}")
@@ -93,13 +119,14 @@ print(f"Global Regime Partition: Feature '{split['col']}' at threshold {split['t
 
 ---
 
-## 3. Rulesets and Leaf k-NN Adjustments
+## 3. Cubist-Style k-NN Leaf Neighbor Adjustments
 
-When moving across split boundaries, predictions can exhibit abrupt jumps. By finding the $k$ nearest neighbors within the leaf partition, `mltreelib` smoothly interpolates predictions across partition frontiers:
+When moving across split boundaries, predictions from pure decision trees can exhibit sharp discontinuities. `mltreelib` implements Quinlan's Cubist **sample neighbor adjustment** via `tree.predict_adjusted(X)`:
 
 ```python
-# Predict with k-NN leaf smoothing (k=5)
-pred_smooth = tree.predict(X_test, knn_blend=5)
+# Predict with Cubist-style k-NN sample neighbor smoothing
+y_smooth_pred = tree.predict_adjusted(X[:5])
+print("Smoothed k-NN Neighbor Adjusted Predictions:", [round(v, 2) for v in y_smooth_pred])
 ```
 
 !!! tip "Related Reference Guides"

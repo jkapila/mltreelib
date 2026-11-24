@@ -76,9 +76,7 @@ nav = [
     { "Regression Arena" = "benchmarks/elo_board.md" },
     { "Classification Arena" = "benchmarks/elo_cla_board.md" },
     { "Datasets" = "benchmarks/datasets.md" },
-  ] },
-  { "Research" = [
-    { "Field notes" = "field-notes.md" },
+    { "Field Notes" = "field-notes.md" },
   ] },
   { "API reference" = [
     { "Overview" = "reference/api/index.md" },

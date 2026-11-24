@@ -66,16 +66,41 @@ where $\mathbf{\Lambda} = \mathbf{V}^* = \mathbf{V} \mathbf{T}$ is the rotated l
 - **Biquartimax ($\gamma = 0.5$)**: Fixed equal weighting between row and column simplicity criteria.
 
 ```python
+import numpy as np
 from mltreelib import ComponentModel
 
-# Fit PCA with Varimax rotation (pure Rust core)
+# 1. Generate correlated multi-test aptitude battery
+rng = np.random.default_rng(2026)
+n_students = 500
+
+# Latent ability factors: Verbal (v) and Quantitative/Spatial (m)
+v = rng.normal(0, 1, n_students)
+m = 0.45 * v + rng.normal(0, 0.89, n_students)  # Correlated latent abilities
+
+# Observed test battery scores with noise
+read = 0.85 * v + rng.normal(0, 0.4, n_students)
+vocab = 0.80 * v + rng.normal(0, 0.4, n_students)
+gram = 0.75 * v + rng.normal(0, 0.4, n_students)
+geom = 0.85 * m + rng.normal(0, 0.4, n_students)
+arith = 0.80 * m + rng.normal(0, 0.4, n_students)
+algeb = 0.88 * m + rng.normal(0, 0.3, n_students)
+
+X = np.column_stack([read, vocab, gram, geom, arith, algeb])
+feature_names = ["Reading", "Vocab", "Grammar", "Geometry", "Arithmetic", "Algebra"]
+
+# 2. Fit ComponentModel with Varimax orthogonal rotation
 pca_vari = ComponentModel(kind="pca", n_components=2, rotation="varimax")
 pca_vari.fit(X)
 
-# Transformed factor scores and rotated loadings
-Z = pca_vari.transform(X)
-loadings = pca_vari.components_
-rot_matrix = pca_vari.rotation_matrix_
+# 3. Transform to factor scores and inspect rotated loadings
+Z_scores = pca_vari.transform(X)
+loadings = np.array(pca_vari.components_)
+
+print("Varimax Rotated Factor Loadings (Simple Structure):")
+print(f"{'Test':12} | {'Factor 1 (Verbal)':18} | {'Factor 2 (Math)':18}")
+print("-" * 54)
+for name, row in zip(feature_names, loadings):
+    print(f"{name:12} | {row[0]:+18.3f} | {row[1]:+18.3f}")
 ```
 
 ---

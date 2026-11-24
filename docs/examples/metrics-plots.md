@@ -88,24 +88,46 @@ For continuous pricing, demand forecasting, and risk models:
 ## 4. Code Example: Computing the Full Metrics Suite
 
 ```python
+import numpy as np
 from mltreelib import Metrics, plots
 import matplotlib.pyplot as plt
 
+# 1. Generate realistic credit default probabilities and observed labels
+rng = np.random.default_rng(2026)
+n_cases = 1000
+
+# True baseline event probability
+true_risk = rng.beta(a=0.8, b=4.0, size=n_cases)
+y_true = rng.binomial(1, true_risk).tolist()
+
+# Predicted risk probabilities from champion model and noisy challenger
+y_prob_champ = np.clip(true_risk + rng.normal(0, 0.08, n_cases), 0.001, 0.999).tolist()
+y_prob_chal = np.clip(true_risk + rng.normal(0, 0.15, n_cases), 0.001, 0.999).tolist()
+
+# 2. Compute Discrimination and Calibration Metrics
 metrics = Metrics()
 
-# 1. Classification Evaluation
-clf_report = metrics.classification(y_true, y_prob, threshold=0.15)
-print(f"ROC-AUC: {clf_report['roc_auc']:.4f} | PR-AUC: {clf_report['pr_auc']:.4f}")
-print(f"Brier Score: {clf_report['brier_score']:.4f} | KS Statistic: {clf_report['ks_stat']:.4f}")
+roc = metrics.roc_curve(y_true, y_prob_champ)
+pr = metrics.pr_curve(y_true, y_prob_champ)
+brier = metrics.brier_score(y_true, y_prob_champ)
+ks_res = metrics.ks_statistic(y_true, y_prob_champ)
 
-# 2. Population Stability Index (PSI) Drift Check
-psi_res = metrics.psi(baseline_scores, current_scores, bins=10)
-print(f"Population Stability Index: {psi_res['psi']:.4f} (Status: {psi_res['status']})")
+print("Champion Model Performance:")
+print(f"  ROC-AUC: {roc['auc']:.4f}")
+print(f"  Average Precision (PR-AUC): {pr['average_precision']:.4f}")
+print(f"  Brier Reliability Score: {brier:.4f}")
+print(f"  Kolmogorov-Smirnov (KS): {ks_res['ks']:.4f} (Score @ KS cutoff = {ks_res['score_at_ks']:.3f})")
 
-# 3. Render Diagnostics Side-by-Side
+# 3. Population Stability Index (PSI) Drift Check against subsequent test cohort
+y_prob_subsequent = np.clip(true_risk * 1.15 + rng.normal(0, 0.08, n_cases), 0.001, 0.999).tolist()
+psi_res = metrics.stability_index(y_prob_champ, y_prob_subsequent, 10)
+psi_val = psi_res["psi"]
+print(f"  Population Stability Index (PSI): {psi_val:.4f} ({'Stable' if psi_val < 0.10 else 'Shift Detected'})")
+
+# 4. Render Calibration and Double Lift Curves Side-by-Side
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-plots.plot_calibration(y_true, y_prob, ax=ax1)
-plots.plot_double_lift(y_true, pred_challenger, pred_champion, ax=ax2)
+plots.plot_calibration(y_true, y_prob_champ, ax=ax1)
+plots.plot_double_lift(y_true, y_prob_chal, y_prob_champ, ax=ax2)
 plt.tight_layout()
 plt.show()
 ```

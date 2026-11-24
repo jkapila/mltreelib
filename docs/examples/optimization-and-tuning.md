@@ -61,72 +61,131 @@ All algorithms conform to the `OptimizerKind` enum with explicit box bounds $\bo
 
 ---
 
-## 2. Standalone Numerical Optimization Example
+## 2. Standalone Numerical Optimization: One-Shot & Ask-Tell Interface
+
+### Method A: One-Shot Minimization (`optimize`)
 
 Minimizing the classic 2D Rosenbrock function ($f(x, y) = (1 - x)^2 + 100(y - x^2)^2$) inside bounds $[-5, 5] \times [-5, 5]$:
 
 ```python
-from mltreelib.solvers import minimize, Bounds
+from mltreelib.solvers import optimize
 
+# Objective function to minimize
 def rosenbrock(x):
     return (1.0 - x[0])**2 + 100.0 * (x[1] - x[0]**2)**2
 
-bounds = Bounds(lower=[-5.0, -5.0], upper=[5.0, 5.0])
+bounds = [(-5.0, 5.0), (-5.0, 5.0)]
 
-# Solve with adaptive SHADE evolutionary swarm
-res = minimize(
+# Solve using Nelder-Mead simplex search
+res = optimize(
     rosenbrock,
-    x0=[0.0, 0.0],
-    method="shade",
     bounds=bounds,
-    max_evals=1000,
+    start=[0.0, 0.0],
+    method="nelder_mead",
+    max_evaluations=1000,
 )
 
-print(f"Status: {res.status} | Evals: {res.n_evals}")
-print(f"Optimal Parameters: x* = {res.x[0]:.6f}, y* = {res.x[1]:.6f} (Loss = {res.fun:.2e})")
+print(f"Status: {res.status} | Total Evaluations: {res.evaluations}")
+print(f"Optimal Parameters: x* = {res.best_x[0]:.4f}, y* = {res.best_x[1]:.4f} (Loss = {res.best_value:.2e})")
 ```
 
 ```text
-Status: Converged | Evals: 342
-Optimal Parameters: x* = 1.000000, y* = 1.000000 (Loss = 1.42e-12)
+Status: converged | Total Evaluations: 206
+Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
+```
+
+---
+
+### Method B: Asynchronous Population Search (`AskTell`)
+
+For expensive simulation models, distributed workers, or hardware-in-the-loop tuning, `mltreelib` provides the decoupled **Ask-Tell** paradigm:
+
+```python
+from mltreelib.solvers import AskTell
+
+# Initialize evolutionary CMA-ES optimizer with box bounds
+optimizer = AskTell(
+    "cma_es",
+    bounds=[(-5.0, 5.0), (-5.0, 5.0)],
+    max_evaluations=120,
+    seed=2026,
+)
+
+# Active optimization loop
+while not optimizer.should_stop:
+    # 1. Ask optimizer for the next candidate parameter vectors to evaluate
+    candidates = optimizer.ask()
+
+    # 2. Evaluate objective loss across candidates (can run in parallel across CPU/GPU)
+    fitness_scores = [rosenbrock(pt) for pt in candidates]
+
+    # 3. Tell optimizer the evaluated losses to update internal covariance state
+    optimizer.tell(fitness_scores)
+
+print(f"AskTell Optimization Complete:")
+print(f"  Evaluations: {optimizer.evaluations}")
+print(f"  Best Solution: x* = {optimizer.best_x[0]:.4f}, y* = {optimizer.best_x[1]:.4f}")
+print(f"  Minimum Objective Loss: {optimizer.best_value:.4e}")
 ```
 
 ---
 
 ## 3. Automated Tree Hyperparameter Optimization (HPO)
 
-Rather than hand-tuning `max_depth`, `min_rows`, and `l2_reg`, `mltreelib` can wrap tree cross-validation directly inside the optimizer:
+Rather than manually guessing `max_depth` and `min_rows`, `mltreelib` wraps tree cross-validation directly inside the numerical optimizer:
 
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
-from mltreelib.solvers import minimize, Bounds
+from mltreelib.solvers import optimize
 
-def evaluate_tree(params):
-    max_depth = int(round(params[0]))
+# 1. Generate synthetic non-linear response surface
+rng = np.random.default_rng(2026)
+n_train, n_val = 1000, 300
+
+X_train = rng.uniform(-3.0, 3.0, size=(n_train, 4))
+y_train = X_train[:, 0] * 1.5 + np.sin(X_train[:, 1] * 2.0) + rng.normal(0, 0.2, n_train)
+
+X_val = rng.uniform(-3.0, 3.0, size=(n_val, 4))
+y_val = X_val[:, 0] * 1.5 + np.sin(X_val[:, 1] * 2.0) + rng.normal(0, 0.2, n_val)
+
+metrics = Metrics()
+
+# 2. Objective function: Validation RMSE of ModelTree given continuous hyperparameters
+def evaluate_tree_hpo(params):
+    depth = int(round(params[0]))
     min_rows = int(round(params[1]))
-    l2_reg = 10.0 ** params[2]  # Log-scale exploration
-    
-    tree = ModelTree(max_depth=max_depth, min_rows=min_rows, l2_reg=l2_reg)
-    tree.fit(X_train, y_train)
+    l2 = 10.0 ** params[2]  # Log-scale exploration for regularization
+
+    tree = ModelTree(
+        leaf="linear",
+        max_depth=depth,
+        min_rows=min_rows,
+        l2=l2,
+    )
+    tree.fit(X_train, y_train.tolist())
     pred_val = tree.predict(X_val)
-    return Metrics().regression(y_val, pred_val)["rmse"]
+    return metrics.regression(y_val.tolist(), pred_val)["rmse"]
 
-# Search space: depth in [1, 8], min_rows in [5, 100], l2_reg in 10^[-4, 2]
-bounds = Bounds(lower=[1.0, 5.0, -4.0], upper=[8.0, 100.0, 2.0])
+# Search bounds: depth in [1, 6], min_rows in [10, 60], log10(l2) in [-4, 1]
+bounds = [(1.0, 6.0), (10.0, 60.0), (-4.0, 1.0)]
 
-hpo_res = minimize(
-    evaluate_tree,
-    x0=[4.0, 30.0, -2.0],
-    method="nelder_mead",
+# 3. Optimize hyperparameters via Powell direction-set search
+hpo_res = optimize(
+    evaluate_tree_hpo,
     bounds=bounds,
-    max_evals=60,
+    start=[3.0, 30.0, -2.0],
+    method="powell",
+    max_evaluations=40,
 )
 
-best_depth = int(round(hpo_res.x[0]))
-best_min_rows = int(round(hpo_res.x[1]))
-best_l2 = 10.0 ** hpo_res.x[2]
-print(f"Best Configuration: depth={best_depth}, min_rows={best_min_rows}, l2_reg={best_l2:.4f}")
+best_depth = int(round(hpo_res.best_x[0]))
+best_min_rows = int(round(hpo_res.best_x[1]))
+best_l2 = 10.0 ** hpo_res.best_x[2]
+
+print("HPO Search Results:")
+print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
+print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
 ```
 
 !!! tip "Related Suites"

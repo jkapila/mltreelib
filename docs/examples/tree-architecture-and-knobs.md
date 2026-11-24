@@ -86,35 +86,43 @@ In regulated domains such as insurance rating and credit underwriting, legal and
 ![Monotone Constraints Comparison: Unconstrained Overfitting vs Monotonic Curves](../assets/constraints_monotone_comparison.png)
 
 ```python
-# 10 features: enforce +1 for utilization, -1 for income, 0 for neutral
-monotone_spec = [1, -1, 1, 1, -1, 0, 1, 0, 1, 0]
+import numpy as np
+from mltreelib import ModelTree, Metrics
 
-tree = ModelTree(
-    max_depth=3,
-    monotone_constraints=monotone_spec,
-    interaction_groups=[[0, 1, 2], [3, 4, 5]],  # Restrict feature interactions
-)
-tree.fit(X, y)
-```
+# 1. Generate credit applicant data with natural risk relationships
+rng = np.random.default_rng(2026)
+n_applicants = 1200
 
----
+# Predictors: Revolving Utilization (%), Borrower Age (Years), Monthly Income ($k)
+utilization = rng.uniform(0.05, 1.20, n_applicants)
+age = rng.uniform(21.0, 75.0, n_applicants)
+income = rng.uniform(2.0, 20.0, n_applicants)
 
-## 3. Honest Tree Estimation
+# Default risk increases with utilization, decreases with age and income
+risk_score = 0.45 * utilization - 0.005 * age - 0.02 * income + rng.normal(0, 0.05, n_applicants)
 
-Inspired by Wager and Athey's causal forests, **honest trees** decouple split selection from leaf parameter estimation. The training data $\mathcal{D}$ is partitioned into two disjoint subsets:
-1. **Split Sample ($\mathcal{D}_\text{split}$)**: Used solely to find optimal feature split thresholds.
-2. **Estimation Sample ($\mathcal{D}_\text{est}$)**: Routed down the frozen tree structure to compute unbiased leaf parameters (means, probabilities, or linear slopes).
+X = np.column_stack([utilization, age, income])
+feature_names = ["revolving_utilization", "borrower_age", "monthly_income"]
 
-Honest trees eliminate split-selection bias, ensuring that leaf standard errors and confidence intervals hold asymptotically.
+# 2. Enforce domain monotonicity: +1 (increasing), -1 (decreasing)
+# Utilization must increase risk (+1), Age must decrease risk (-1), Income must decrease risk (-1)
+monotone_spec = [1, -1, -1]
 
-```python
 tree = ModelTree(
     leaf="linear",
-    honesty=True,
-    honesty_fraction=0.5,  # 50/50 split between structure and leaf estimation
-    random_seed=2026,
+    max_depth=3,
+    min_rows=30,
+    monotone=monotone_spec,     # Enforces sign constraints along every split path
+    honesty=True,               # Disjoint sample splitting for structure vs leaf estimation
+    honesty_fraction=0.5,
+    seed=2026,
 )
-tree.fit(X_train, y_train)
+tree.fit(X, risk_score.tolist(), col_names=feature_names)
+
+print("Monotone & Honest Tree Fit Successfully.")
+print(f"Total Leaves: {len(tree.leaves())}")
+for s in tree.splits():
+    print(f"  Split: Feature '{s['col']}' <= {s['threshold']:.3f}")
 ```
 
 !!! tip "Related Suites and Documents"
