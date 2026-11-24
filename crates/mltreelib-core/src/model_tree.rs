@@ -323,6 +323,11 @@ pub struct ModelTreeParams {
     pub cure_fraction: Option<f64>,
     /// Number of interior spline knots for Royston-Parmar leaves (default 3).
     pub spline_knots: usize,
+    /// Coefficient group definitions for Group Lasso and Sparse-Group Lasso leaves.
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    /// Group L2 penalty multiplier for Group Lasso and Sparse-Group Lasso (default 0.0).
+    #[serde(with = "crate::persistence::float")]
+    pub group_l2: f64,
 }
 
 /// Fairness criterion evaluated when fairness_penalty > 0.
@@ -439,6 +444,8 @@ impl Default for ModelTreeParams {
             aft_dist: crate::node_stats::AftDist::Weibull,
             cure_fraction: None,
             spline_knots: 3,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }

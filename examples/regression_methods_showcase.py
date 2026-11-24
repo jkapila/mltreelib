@@ -16,8 +16,10 @@ from random import Random
 import statistics
 import pandas as pd
 from mltreelib import (
+    GamRegressor,
     GrowthControl,
     LeafControl,
+    MarsRegressor,
     Metrics,
     ModelTree,
     detect_quantile_crossings,
@@ -60,21 +62,26 @@ def run_concrete_benchmark():
     configs = [
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=4, min_rows=15)),
         ("Binned Histogram Split (Mean Leaf)", ModelTree(leaf="mean", max_depth=4, min_rows=15, split_eval="histogram", max_bins=64)),
-        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=20, l2=0.1)),
+        ("OLS Linear Model Tree (shrinkage=0.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=20, l2=0.1, shrinkage=0.0)),
+        ("Hierarchical Shrunk Tree (shrinkage=10.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=4, min_rows=20, l2=0.1, shrinkage=10.0)),
         ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=4, min_rows=20, l2=0.1)),
         ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=4, min_rows=20, l2=0.1)),
         ("Expectile Linear (tau=0.75)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.75, max_depth=4, min_rows=20, l2=0.1)),
         ("Median Leaf (L1 Location)", ModelTree(leaf="median", max_depth=4, min_rows=15)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=4, min_rows=20, l2=0.1)),
+        ("MARS Quantile Knots (max_terms=15)", MarsRegressor(max_terms=15, degree=1, quantile_knots=True, ridge_lambda=1e-3)),
+        ("Penalized B-Spline GAM (n_knots=8)", GamRegressor(n_knots=8, degree=3)),
     ]
 
-    print(f"\n{'Model Configuration':<36} | {'Test RMSE':<10} | {'Test MAE':<10} | {'Leaves':<6}")
-    print("-" * 70)
+    print(f"\n{'Model Configuration':<42} | {'Test RMSE':<10} | {'Test MAE':<10} | {'Complexity':<10}")
+    print("-" * 78)
     for name, model in configs:
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
         rep = metrics.regression(y_test, preds)
-        print(f"{name:<36} | {rep['rmse']:<10.3f} | {rep['mae']:<10.3f} | {model.n_leaves():<6}")
+        terms = model.n_leaves() if hasattr(model, "n_leaves") else (model.n_terms() if callable(model.n_terms) else model.n_terms)
+        complexity = f"{terms} {'leaves' if hasattr(model, 'n_leaves') else 'terms'}"
+        print(f"{name:<42} | {rep['rmse']:<10.3f} | {rep['mae']:<10.3f} | {complexity:<10}")
 
 
 def run_insurance_benchmark():
@@ -104,9 +111,14 @@ def run_insurance_benchmark():
     metrics = Metrics()
     print(f"Loaded {len(X)} rows ({len(train_idx)} train, {len(test_idx)} test), {len(feat_names)} encoded features.")
 
+    region_cols = [i for i, c in enumerate(feat_names) if c.startswith("region_")]
+    groups = {"region": region_cols} if region_cols else None
+
     configs = [
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=3, min_rows=25)),
-        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5)),
+        ("OLS Linear Model Tree (shrinkage=0.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5, shrinkage=0.0)),
+        ("Hierarchical Shrunk Tree (shrinkage=15.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5, shrinkage=15.0)),
+        ("Group Lasso Tree (region group_l2=5.0)", ModelTree(leaf="linear", alpha=1.0, l1=0.0, group_l2=5.0, groups=groups, max_depth=3, min_rows=30)),
         ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=3, min_rows=30, l2=0.5)),
         ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=3, min_rows=30, l2=0.5)),
         ("Expectile Linear (tau=0.50)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.50, max_depth=3, min_rows=30, l2=0.5)),
@@ -115,10 +127,12 @@ def run_insurance_benchmark():
         ("Quantile Linear (tau=0.10 Lower Risk)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.10, max_depth=3, min_rows=30, l2=0.5)),
         ("Quantile Linear (tau=0.50 Median)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.50, max_depth=3, min_rows=30, l2=0.5)),
         ("Quantile Linear (tau=0.90 Upper Risk)", ModelTree(leaf="linear", leaf_family="quantile", tau=0.90, max_depth=3, min_rows=30, l2=0.5)),
+        ("MARS Quantile Knots (max_terms=15)", MarsRegressor(max_terms=15, degree=1, quantile_knots=True, ridge_lambda=1e-3)),
+        ("Penalized B-Spline GAM", GamRegressor(n_knots=8, degree=3)),
     ]
 
-    print(f"\n{'Model Configuration':<38} | {'Test RMSE':<10} | {'Test MAE':<10} | {'MedAE':<10}")
-    print("-" * 75)
+    print(f"\n{'Model Configuration':<44} | {'Test RMSE':<10} | {'Test MAE':<10} | {'MedAE':<10}")
+    print("-" * 80)
     quantile_preds = []
     taus = [0.10, 0.50, 0.90]
 
@@ -127,7 +141,7 @@ def run_insurance_benchmark():
         preds = model.predict(X_test)
         rep = metrics.regression(y_test, preds)
         medae = statistics.median(abs(yt - yp) for yt, yp in zip(y_test, preds))
-        print(f"{name:<38} | {rep['rmse']:<10.1f} | {rep['mae']:<10.1f} | {medae:<10.1f}")
+        print(f"{name:<44} | {rep['rmse']:<10.1f} | {rep['mae']:<10.1f} | {medae:<10.1f}")
         if "tau=0.10" in name or "tau=0.50" in name or "tau=0.90" in name:
             quantile_preds.append(preds)
 
@@ -168,7 +182,8 @@ def run_diamonds_benchmark():
     configs = [
         ("Fast Exact Scan (Mean Leaf)", ModelTree(leaf="mean", max_depth=3, min_rows=50, split_eval="fast")),
         ("Adaptive Binned Split (max_bins=64)", ModelTree(leaf="mean", max_depth=3, min_rows=50, split_eval="histogram", max_bins=64)),
-        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=80, l2=1.0)),
+        ("OLS Linear Model Tree (shrinkage=0.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=80, l2=1.0, shrinkage=0.0)),
+        ("Hierarchical Shrunk Tree (shrinkage=25.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=80, l2=1.0, shrinkage=25.0)),
         ("Huber Linear Model Tree", ModelTree(leaf="linear", leaf_family="huber", huber_delta=1.345, max_depth=3, min_rows=80, l2=1.0)),
         ("NNLS Non-Negative Linear", ModelTree(leaf="linear", non_negative=True, max_depth=3, min_rows=80, l2=1.0)),
         ("Expectile Linear (tau=0.50)", ModelTree(leaf="linear", leaf_family="expectile", expectile_tau=0.50, max_depth=3, min_rows=80, l2=1.0)),
@@ -176,15 +191,15 @@ def run_diamonds_benchmark():
     ]
 
     import time
-    print(f"\n{'Model Configuration':<38} | {'Fit Time':<10} | {'Test RMSE':<10} | {'Test MAE':<10}")
-    print("-" * 75)
+    print(f"\n{'Model Configuration':<44} | {'Fit Time':<10} | {'Test RMSE':<10} | {'Test MAE':<10}")
+    print("-" * 80)
     for name, model in configs:
         t0 = time.perf_counter()
         model.fit(X_train, y_train)
         fit_time = time.perf_counter() - t0
         preds = model.predict(X_test)
         rep = metrics.regression(y_test, preds)
-        print(f"{name:<38} | {fit_time:<9.3f}s | {rep['rmse']:<10.1f} | {rep['mae']:<10.1f}")
+        print(f"{name:<44} | {fit_time:<9.3f}s | {rep['rmse']:<10.1f} | {rep['mae']:<10.1f}")
 
 
 def run_wine_quality_benchmark():
@@ -213,14 +228,15 @@ def run_wine_quality_benchmark():
 
     configs = [
         ("CART Mean Leaf", ModelTree(leaf="mean", max_depth=3, min_rows=30)),
-        ("OLS Linear Model Tree", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5)),
+        ("OLS Linear Model Tree (shrinkage=0.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5, shrinkage=0.0)),
+        ("Hierarchical Shrunk Tree (shrinkage=10.0)", ModelTree(leaf="linear", leaf_family="gaussian", max_depth=3, min_rows=30, l2=0.5, shrinkage=10.0)),
         ("Poisson GLM Tree", ModelTree(leaf="linear", leaf_family="poisson", max_depth=3, min_rows=30, l2=0.5)),
         ("Negative Binomial GLM Tree", ModelTree(leaf="linear", leaf_family="negative_binomial", max_depth=3, min_rows=30, l2=0.5)),
         ("Beta Regression Tree (Rate / 10)", ModelTree(leaf="linear", leaf_family="beta", max_depth=3, min_rows=30, l2=0.5)),
     ]
 
-    print(f"\n{'Model Configuration':<38} | {'Test RMSE':<10} | {'Test MAE':<10}")
-    print("-" * 65)
+    print(f"\n{'Model Configuration':<44} | {'Test RMSE':<10} | {'Test MAE':<10}")
+    print("-" * 70)
     for name, model in configs:
         if "Beta" in name:
             # Rescale count in 0..10 to (0, 1) rate
@@ -233,7 +249,7 @@ def run_wine_quality_benchmark():
             preds = model.predict(X_test)
 
         rep = metrics.regression(y_test, preds)
-        print(f"{name:<38} | {rep['rmse']:<10.3f} | {rep['mae']:<10.3f}")
+        print(f"{name:<44} | {rep['rmse']:<10.3f} | {rep['mae']:<10.3f}")
 
 
 if __name__ == "__main__":

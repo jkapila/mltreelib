@@ -1071,3 +1071,312 @@ fn test_beta_model_tree_fit() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Spec 27 Phase 6: Group Lasso and Sparse-Group Lasso Tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_group_lasso_zeroing() {
+    use mltreelib_core::solver::groups::{GroupKind, GroupSpec};
+    use mltreelib_core::solver::{solve_group_lasso, DenseView};
+
+    let n = 120;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+
+    // Group 1: features 1 and 2 are signal (y = 3.0 + 2.0*x1 + 3.0*x2)
+    // Group 2: features 3 and 4 are pure noise
+    for i in 0..n {
+        let x1 = ((i * 7) % 19) as f64 * 0.1;
+        let x2 = ((i * 13) % 23) as f64 * 0.1;
+        let x3 = ((i * 3) % 11) as f64 * 0.1;
+        let x4 = ((i * 5) % 17) as f64 * 0.1;
+        let y = 3.0 + 2.0 * x1 + 3.0 * x2;
+        x_mat.push(vec![x1, x2, x3, x4]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let groups = vec![
+        GroupSpec::new(GroupKind::CoefficientGroup, "signal_grp", vec![1, 2]),
+        GroupSpec::new(GroupKind::CoefficientGroup, "noise_grp", vec![3, 4]),
+    ];
+
+    let (beta, report) = solve_group_lasso(
+        &view,
+        &groups,
+        1.0, // alpha
+        0.0, // lambda1 (pure Group Lasso)
+        5.0, // lambda2 (group penalty)
+        0.01, // ridge
+        &[0, 0, 0, 0],
+        None,
+    )
+    .expect("solve_group_lasso should succeed");
+
+    assert_eq!(beta.len(), 5); // intercept + 4 features
+    assert!(
+        beta[1].abs() > 0.5 && beta[2].abs() > 0.5,
+        "Signal group should be non-zero: beta[1]={}, beta[2]={}",
+        beta[1],
+        beta[2]
+    );
+    assert_eq!(beta[3], 0.0, "Noise group member 3 must be strictly zeroed");
+    assert_eq!(beta[4], 0.0, "Noise group member 4 must be strictly zeroed");
+
+    assert!(report.active_groups.contains(&"signal_grp".to_string()));
+    assert!(report.zeroed_groups.contains(&"noise_grp".to_string()));
+    assert_eq!(report.active_ratio, 0.5);
+}
+
+#[test]
+fn test_sparse_group_lasso_within_group_sparsity() {
+    use mltreelib_core::solver::groups::{GroupKind, GroupSpec};
+    use mltreelib_core::solver::{solve_group_lasso, DenseView};
+
+    let n = 120;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+
+    // Group 1 has 3 features: x1 is strong signal, x2 is zero-weight, x3 is noise
+    // Group 2 has 2 features: x4 and x5 are pure noise
+    for i in 0..n {
+        let x1 = ((i * 7) % 19) as f64 * 0.1;
+        let x2 = ((i * 13) % 23) as f64 * 0.1;
+        let x3 = ((i * 3) % 11) as f64 * 0.1;
+        let x4 = ((i * 5) % 17) as f64 * 0.1;
+        let x5 = ((i * 11) % 7) as f64 * 0.1;
+        let y = 5.0 + 4.0 * x1;
+        x_mat.push(vec![x1, x2, x3, x4, x5]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let groups = vec![
+        GroupSpec::new(GroupKind::CoefficientGroup, "grp1", vec![1, 2, 3]),
+        GroupSpec::new(GroupKind::CoefficientGroup, "grp2", vec![4, 5]),
+    ];
+
+    // Sparse-Group Lasso: both lambda1 > 0 and lambda2 > 0
+    let (beta, report) = solve_group_lasso(
+        &view,
+        &groups,
+        1.0,
+        2.0, // lambda1: coordinate sparsity inside group
+        3.0, // lambda2: group-level shrinkage
+        0.01,
+        &[0, 0, 0, 0, 0],
+        None,
+    )
+    .expect("solve_group_lasso should succeed");
+
+    assert!(beta[1] > 1.0, "Active signal member beta[1] preserved: {}", beta[1]);
+    assert_eq!(beta[2], 0.0, "Within-group noise member beta[2] should be zeroed");
+    assert_eq!(beta[3], 0.0, "Within-group noise member beta[3] should be zeroed");
+    assert_eq!(beta[4], 0.0, "Group 2 member beta[4] should be zeroed");
+    assert_eq!(beta[5], 0.0, "Group 2 member beta[5] should be zeroed");
+    assert_eq!(report.active_groups, vec!["grp1".to_string()]);
+    assert_eq!(report.zeroed_groups, vec!["grp2".to_string()]);
+}
+
+#[test]
+fn test_group_lasso_scalar_equivalence() {
+    use mltreelib_core::solver::{solve_ccd, CcdOptions, DenseView};
+
+    let n = 80;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let x1 = ((i * 3) % 17) as f64 * 0.1;
+        let x2 = ((i * 7) % 13) as f64 * 0.1;
+        let y = 2.0 + 1.5 * x1 - 0.8 * x2;
+        x_mat.push(vec![x1, x2]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+
+    // Run standard scalar CCD
+    let opts_scalar = CcdOptions {
+        l1: 1.0,
+        l2: 0.1,
+        max_iter: 500,
+        tol: 1e-8,
+        monotone: Vec::new(),
+        groups: None,
+        group_l2: 0.0,
+    };
+    let beta_scalar = solve_ccd(&view, &opts_scalar, None).unwrap();
+
+    // Run CCD with empty groups
+    let opts_grouped_empty = CcdOptions {
+        l1: 1.0,
+        l2: 0.1,
+        max_iter: 500,
+        tol: 1e-8,
+        monotone: Vec::new(),
+        groups: Some(Vec::new()),
+        group_l2: 0.0,
+    };
+    let beta_grouped_empty = solve_ccd(&view, &opts_grouped_empty, None).unwrap();
+
+    for (s, g) in beta_scalar.iter().zip(beta_grouped_empty.iter()) {
+        assert!(
+            (s - g).abs() < 1e-12,
+            "Scalar CCD and grouped CCD with group_l2=0 must agree bit-for-bit"
+        );
+    }
+}
+
+#[test]
+fn test_grouped_monotone_constraints() {
+    use mltreelib_core::solver::groups::{GroupKind, GroupSpec};
+    use mltreelib_core::solver::{solve_group_lasso, DenseView};
+
+    let n = 80;
+    let mut x_mat = Vec::with_capacity(n);
+    let mut y_vec = Vec::with_capacity(n);
+
+    // Negative relationship: y = 10 - 3*x1 - 2*x2
+    for i in 0..n {
+        let x1 = (i as f64) * 0.1;
+        let x2 = ((i * 3) % 11) as f64 * 0.1;
+        let y = 10.0 - 3.0 * x1 - 2.0 * x2;
+        x_mat.push(vec![x1, x2]);
+        y_vec.push(y);
+    }
+
+    let view = DenseView::new(&x_mat, &y_vec, None, true);
+    let groups = vec![GroupSpec::new(GroupKind::CoefficientGroup, "grp", vec![1, 2])];
+
+    // Enforce positive monotone constraint on member 1; group shares it
+    let (beta, _) = solve_group_lasso(
+        &view,
+        &groups,
+        0.1,
+        0.0,
+        0.1,
+        0.01,
+        &[1, 0], // member 1 has +1, member 2 has 0 -> group shares +1
+        None,
+    )
+    .unwrap();
+
+    assert!(beta[1] >= 0.0, "beta[1] must satisfy positive monotone constraint: {}", beta[1]);
+    assert!(beta[2] >= 0.0, "beta[2] must inherit positive monotone constraint: {}", beta[2]);
+}
+
+#[test]
+fn test_group_validation_overlap_and_intercept() {
+    use mltreelib_core::solver::groups::{validate_groups, GroupKind, GroupSpec, GroupValidationError};
+
+    // 1. Intercept inclusion error
+    let bad_intercept = vec![GroupSpec::new(GroupKind::CoefficientGroup, "g1", vec![0, 1])];
+    let err = validate_groups(&bad_intercept, 5, true, Some(50));
+    assert_eq!(
+        err,
+        Err(GroupValidationError::InterceptIncluded {
+            group: "g1".to_string()
+        })
+    );
+
+    // 2. Overlapping groups error
+    let overlap = vec![
+        GroupSpec::new(GroupKind::CoefficientGroup, "g1", vec![1, 2]),
+        GroupSpec::new(GroupKind::CoefficientGroup, "g2", vec![2, 3]),
+    ];
+    let err2 = validate_groups(&overlap, 5, true, Some(50));
+    assert!(matches!(err2, Err(GroupValidationError::OverlappingCoefficientGroups { .. })));
+}
+
+// ---------------------------------------------------------------------------
+// Spec 27 Phase 11: Penalized-Spline GAM & MARS Improvement Tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_gam_smooth_sine_recovery() {
+    use mltreelib_core::gam::GamRegressor;
+
+    let n = 100;
+    let mut x = Vec::with_capacity(n);
+    let mut y = Vec::with_capacity(n);
+
+    // Non-linear relationship: y = 2.0 + sin(x1)
+    for i in 0..n {
+        let x1 = (i as f64) * 0.06;
+        let yi = 2.0 + x1.sin();
+        x.push(vec![x1]);
+        y.push(yi);
+    }
+
+    let mut gam = GamRegressor::new(8, None);
+    gam.fit(&x, &y).expect("GAM fit should succeed");
+
+    let preds = gam.predict(&x).expect("GAM predict should succeed");
+    assert_eq!(preds.len(), n);
+
+    let mut max_err: f64 = 0.0;
+    let mut mse: f64 = 0.0;
+    for i in 0..n {
+        let err = (preds[i] - y[i]).abs();
+        max_err = max_err.max(err);
+        mse += err * err;
+    }
+    let rmse = (mse / (n as f64)).sqrt();
+
+    assert!(rmse < 0.15, "GAM should fit smooth sine function with RMSE < 0.15, got {rmse}");
+    assert!(gam.model.as_ref().unwrap().edf > 1.5, "GAM effective degrees of freedom should reflect non-linearity");
+}
+
+#[test]
+fn test_gam_gcv_selection_and_penalty() {
+    use mltreelib_core::gam::GamRegressor;
+
+    let n = 80;
+    let mut x = Vec::with_capacity(n);
+    let mut y = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let x1 = (i as f64) * 0.1;
+        let x2 = ((i * 3) % 17) as f64 * 0.1;
+        let yi = 1.0 + 2.0 * x1 + 0.5 * x2.powi(2);
+        x.push(vec![x1, x2]);
+        y.push(yi);
+    }
+
+    let mut gam = GamRegressor::new(6, None);
+    gam.fit(&x, &y).unwrap();
+
+    let m = gam.model.as_ref().unwrap();
+    assert!(m.gcv.is_finite() && m.gcv > 0.0, "GCV score must be positive finite");
+    assert!(m.lambda > 0.0, "Selected lambda must be positive");
+    assert_eq!(m.coefs.len(), 2, "Must produce spline coefficients for both features");
+}
+
+#[test]
+fn test_mars_quantile_knots_placement() {
+    use mltreelib_core::mars::MarsRegressor;
+
+    let n = 120;
+    let mut x = Vec::with_capacity(n);
+    let mut y = Vec::with_capacity(n);
+
+    // Skewed predictor with hinge at x = 3.0
+    for i in 0..n {
+        let x1 = (i as f64).powf(1.5) * 0.01;
+        let yi = if x1 > 3.0 { 2.0 * (x1 - 3.0) } else { 0.0 };
+        x.push(vec![x1]);
+        y.push(yi);
+    }
+
+    let mut reg = MarsRegressor::new(1, 10, 2.0);
+    reg.params.quantile_knots = true;
+    reg.fit(&x, &y).expect("MARS with quantile knots should fit");
+
+    let preds = reg.model.as_ref().unwrap().predict(&x);
+    assert_eq!(preds.len(), n);
+    let last_err = (preds[n - 1] - y[n - 1]).abs();
+    assert!(last_err < 1.0, "MARS should fit hinge pattern accurately");
+}
+

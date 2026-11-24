@@ -2456,12 +2456,65 @@ fn select_alias<'a>(
     Ok(canonical.or(legacy))
 }
 
+fn parse_group_specs(
+    groups_obj: &Bound<'_, PyAny>,
+) -> PyResult<Vec<mltreelib_core::solver::groups::GroupSpec>> {
+    let mut specs = Vec::new();
+    if let Ok(dict) = groups_obj.cast::<pyo3::types::PyDict>() {
+        for (k, v) in dict.iter() {
+            let name = k.extract::<String>()?;
+            let members = v.extract::<Vec<usize>>()?;
+            specs.push(mltreelib_core::solver::groups::GroupSpec::new(
+                mltreelib_core::solver::groups::GroupKind::CoefficientGroup,
+                name,
+                members,
+            ));
+        }
+    } else if let Ok(list) = groups_obj.cast::<pyo3::types::PyList>() {
+        for item in list.iter() {
+            if let Ok(d) = item.cast::<pyo3::types::PyDict>() {
+                let name = d
+                    .get_item("name")?
+                    .ok_or_else(|| PyValueError::new_err("group dict must contain 'name'"))?
+                    .extract::<String>()?;
+                let members = d
+                    .get_item("members")?
+                    .ok_or_else(|| PyValueError::new_err("group dict must contain 'members'"))?
+                    .extract::<Vec<usize>>()?;
+                let weight = if let Some(w) = d.get_item("weight")? {
+                    Some(w.extract::<f64>()?)
+                } else {
+                    None
+                };
+                let mut spec = mltreelib_core::solver::groups::GroupSpec::new(
+                    mltreelib_core::solver::groups::GroupKind::CoefficientGroup,
+                    name,
+                    members,
+                );
+                if let Some(w) = weight {
+                    spec = spec.with_weight(w);
+                }
+                specs.push(spec);
+            }
+        }
+    } else {
+        return Err(PyValueError::new_err(
+            "groups must be a dict {name: [col_indices]} or a list of dicts [{'name': ..., 'members': ...}]",
+        ));
+    }
+    Ok(specs)
+}
+
 fn inherit_leaf_inputs(
     mut control: mltreelib_core::leaf::LeafControl,
     params: &ModelTreeParams,
 ) -> mltreelib_core::leaf::LeafControl {
     control.events = control.events.or_else(|| params.events.clone());
     control.treatments = control.treatments.or_else(|| params.treatments.clone());
+    control.groups = control.groups.or_else(|| params.groups.clone());
+    if control.group_l2 == 0.0 && params.group_l2 > 0.0 {
+        control.group_l2 = params.group_l2;
+    }
     if control.leaf_monotone.is_empty() {
         control.leaf_monotone.clone_from(&params.leaf_monotone);
     }
@@ -2711,6 +2764,12 @@ fn extract_leaf_control<'py>(
                         c.extra.insert("beta_phi".to_string(), val);
                     }
                 }
+                if let Some(item) = dict.get_item("group_l2")? {
+                    c.group_l2 = item.extract::<f64>()?;
+                }
+                if let Some(item) = dict.get_item("groups")? {
+                    c.groups = Some(parse_group_specs(&item)?);
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2729,6 +2788,8 @@ fn extract_leaf_control<'py>(
                             | "non_negative_intercept"
                             | "nb_alpha"
                             | "beta_phi"
+                            | "group_l2"
+                            | "groups"
                             | "leaf_features"
                             | "retrain_cols"
                             | "shrinkage"
@@ -2888,6 +2949,8 @@ impl PyLeafControl {
         non_negative_intercept = false,
         nb_alpha = None,
         beta_phi = None,
+        group_l2 = 0.0,
+        groups = None,
         leaf_features = None,
         leaf_monotone = None,
         monotone = None,
@@ -2927,6 +2990,8 @@ impl PyLeafControl {
         non_negative_intercept: bool,
         nb_alpha: Option<f64>,
         beta_phi: Option<f64>,
+        group_l2: f64,
+        groups: Option<Bound<'_, PyAny>>,
         leaf_features: Option<Vec<usize>>,
         leaf_monotone: Option<Vec<i8>>,
         monotone: Option<Vec<i8>>,
@@ -3081,6 +3146,12 @@ impl PyLeafControl {
                 non_negative_intercept,
                 nb_alpha,
                 beta_phi,
+                groups: if let Some(g) = groups {
+                    Some(parse_group_specs(&g)?)
+                } else {
+                    None
+                },
+                group_l2,
             },
         };
         if strict_solver {
@@ -3724,7 +3795,7 @@ impl PyModelTree {
         col_sample = None, seed = 42,
         leaf = "linear", tau = 0.5, huber_delta = 1.345,
         expectile_tau = 0.5, non_negative = false, non_negative_intercept = false,
-        nb_alpha = None, beta_phi = None,
+        nb_alpha = None, beta_phi = None, group_l2 = 0.0, groups = None,
         l1 = 0.0, l2 = 0.5,
         leaf_cols = "all", leaf_digest = true,
         cat_order = None, cat_search = "cumulative",
@@ -3776,6 +3847,8 @@ impl PyModelTree {
         non_negative_intercept: bool,
         nb_alpha: Option<f64>,
         beta_phi: Option<f64>,
+        group_l2: f64,
+        groups: Option<Bound<'_, PyAny>>,
         l1: f64,
         l2: f64,
         leaf_cols: &str,
@@ -4214,6 +4287,12 @@ impl PyModelTree {
             non_negative_intercept,
             nb_alpha,
             beta_phi,
+            groups: if let Some(g) = groups {
+                Some(parse_group_specs(&g)?)
+            } else {
+                None
+            },
+            group_l2,
             leaf_na_policy: leaf_na_policy_enum,
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
@@ -5814,6 +5893,7 @@ impl PyModelTree {
         d.set_item("non_negative_intercept", self.params.non_negative_intercept)?;
         d.set_item("nb_alpha", self.params.nb_alpha)?;
         d.set_item("beta_phi", self.params.beta_phi)?;
+        d.set_item("group_l2", self.params.group_l2)?;
         Ok(d.into())
     }
 
@@ -7000,7 +7080,9 @@ impl PyMarsRegressor {
         pmethod = "backward",
         glm = "gaussian",
         allowed = None,
-        verbose = 0
+        verbose = 0,
+        quantile_knots = false,
+        ridge_lambda = 1e-5
     ))]
     fn new(
         degree: usize,
@@ -7015,6 +7097,8 @@ impl PyMarsRegressor {
         glm: &str,
         allowed: Option<Vec<Vec<bool>>>,
         verbose: u8,
+        quantile_knots: bool,
+        ridge_lambda: f64,
     ) -> PyResult<Self> {
         let pm = mltreelib_core::mars::MarsPruningMethod::from_str(pmethod)
             .map_err(PyValueError::new_err)?;
@@ -7031,6 +7115,8 @@ impl PyMarsRegressor {
         reg.params.glm = gm;
         reg.params.allowed = allowed;
         reg.params.verbose = verbose;
+        reg.params.quantile_knots = quantile_knots;
+        reg.params.ridge_lambda = ridge_lambda;
 
         Ok(PyMarsRegressor { inner: reg })
     }
@@ -7093,6 +7179,157 @@ impl PyMarsRegressor {
             .as_ref()
             .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
         Ok(m.equation(col_names.as_deref()))
+    }
+}
+
+/// Generalized Additive Models (GAM) with Penalized B-Splines (P-Splines).
+#[pyclass(name = "GamRegressor")]
+pub struct PyGamRegressor {
+    inner: mltreelib_core::gam::GamRegressor,
+}
+
+#[pymethods]
+impl PyGamRegressor {
+    #[new]
+    #[pyo3(signature = (
+        n_knots = 8,
+        degree = 3,
+        lambda_val = None,
+        lambda_min = 1e-4,
+        lambda_max = 1e4,
+        n_grid = 25,
+        n_splines = None
+    ))]
+    fn new(
+        n_knots: usize,
+        degree: usize,
+        lambda_val: Option<f64>,
+        lambda_min: f64,
+        lambda_max: f64,
+        n_grid: usize,
+        n_splines: Option<usize>,
+    ) -> PyResult<Self> {
+        let knots = n_splines.unwrap_or(n_knots);
+        let mut reg = mltreelib_core::gam::GamRegressor::new(knots, lambda_val);
+        reg.params.degree = degree;
+        reg.params.lambda_min = lambda_min;
+        reg.params.lambda_max = lambda_max;
+        reg.params.n_grid = n_grid;
+        Ok(PyGamRegressor { inner: reg })
+    }
+
+    #[pyo3(signature = (x, y, sample_weights = None))]
+    fn fit(
+        &mut self,
+        x: &Bound<'_, pyo3::PyAny>,
+        y: Vec<f64>,
+        sample_weights: Option<Vec<f64>>,
+    ) -> PyResult<()> {
+        let mat = if let Ok(vec2d) = x.extract::<Vec<Vec<f64>>>() {
+            vec2d
+        } else if let Ok(vec1d) = x.extract::<Vec<f64>>() {
+            vec1d.into_iter().map(|v| vec![v]).collect()
+        } else {
+            return Err(PyValueError::new_err("Expected 1D or 2D array for x"));
+        };
+        self.inner
+            .fit_weighted(&mat, &y, sample_weights.as_deref())
+            .map_err(PyValueError::new_err)
+    }
+
+    fn predict(&self, x: &Bound<'_, pyo3::PyAny>) -> PyResult<Vec<f64>> {
+        let mat = if let Ok(vec2d) = x.extract::<Vec<Vec<f64>>>() {
+            vec2d
+        } else if let Ok(vec1d) = x.extract::<Vec<f64>>() {
+            vec1d.into_iter().map(|v| vec![v]).collect()
+        } else {
+            return Err(PyValueError::new_err("Expected 1D or 2D array for x"));
+        };
+        self.inner.predict(&mat).map_err(PyValueError::new_err)
+    }
+
+    #[getter(edf)]
+    fn get_edf(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.edf)
+    }
+
+    fn edf(&self) -> PyResult<f64> {
+        self.get_edf()
+    }
+
+    #[getter(gcv)]
+    fn get_gcv(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.gcv)
+    }
+
+    fn gcv(&self) -> PyResult<f64> {
+        self.get_gcv()
+    }
+
+    #[getter(lambda_val)]
+    fn get_lambda_val(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.lambda)
+    }
+
+    fn lambda_val(&self) -> PyResult<f64> {
+        self.get_lambda_val()
+    }
+
+    #[getter(n_terms)]
+    fn get_n_terms(&self) -> PyResult<usize> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.n_terms())
+    }
+
+    fn n_terms(&self) -> PyResult<usize> {
+        self.get_n_terms()
+    }
+
+    #[getter(intercept)]
+    fn get_intercept(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.intercept)
+    }
+
+    fn intercept(&self) -> PyResult<f64> {
+        self.get_intercept()
+    }
+
+    #[getter(coefs)]
+    fn get_coefs(&self) -> PyResult<Vec<Vec<f64>>> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.coefs.clone())
+    }
+
+    fn coefs(&self) -> PyResult<Vec<Vec<f64>>> {
+        self.get_coefs()
     }
 }
 
@@ -7246,6 +7483,7 @@ fn detect_quantile_crossings<'py>(
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     solvers::register(m)?;
     m.add_class::<PyMarsRegressor>()?;
+    m.add_class::<PyGamRegressor>()?;
     m.add_class::<PyHdbscanTree>()?;
     m.add_class::<PyUnsupervisedProximityForest>()?;
     m.add_class::<PyClTree>()?;

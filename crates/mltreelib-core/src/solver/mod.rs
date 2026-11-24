@@ -53,6 +53,78 @@ pub use problems::{
 pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
 
+/// Report summarizing group selection outcomes in Group and Sparse-Group Lasso.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct GroupSelectionReport {
+    /// Names of groups that have at least one non-zero coefficient.
+    pub active_groups: Vec<String>,
+    /// Names of groups where all coefficients were set to zero.
+    pub zeroed_groups: Vec<String>,
+    /// L2 norm of coefficients for each group: name -> norm.
+    pub group_norms: std::collections::HashMap<String, f64>,
+    /// Proportion of groups that are active (non-zero).
+    pub active_ratio: f64,
+}
+
+/// Computes group selection summary report.
+pub fn compute_group_selection_report(
+    coef: &[f64],
+    groups: &[GroupSpec],
+) -> GroupSelectionReport {
+    let mut active_groups = Vec::new();
+    let mut zeroed_groups = Vec::new();
+    let mut group_norms = std::collections::HashMap::new();
+
+    for g in groups {
+        if g.kind == GroupKind::CoefficientGroup {
+            let norm = crate::solver::problems::group_l2_norm(coef, &g.members);
+            group_norms.insert(g.name.clone(), norm);
+            if norm > 1e-12 {
+                active_groups.push(g.name.clone());
+            } else {
+                zeroed_groups.push(g.name.clone());
+            }
+        }
+    }
+    let total = active_groups.len() + zeroed_groups.len();
+    let active_ratio = if total > 0 {
+        active_groups.len() as f64 / total as f64
+    } else {
+        0.0
+    };
+    GroupSelectionReport {
+        active_groups,
+        zeroed_groups,
+        group_norms,
+        active_ratio,
+    }
+}
+
+/// Solves Group Lasso or Sparse-Group Lasso directly over any design matrix.
+pub fn solve_group_lasso<D: DesignMatrix>(
+    design: &D,
+    groups: &[GroupSpec],
+    alpha: f64,
+    lambda1: f64,
+    lambda2: f64,
+    ridge_l2: f64,
+    monotone: &[i8],
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, GroupSelectionReport), String> {
+    let opts = CcdOptions {
+        l1: alpha * lambda1,
+        l2: ridge_l2,
+        max_iter: 1000,
+        tol: 1e-7,
+        monotone: monotone.to_vec(),
+        groups: Some(groups.to_vec()),
+        group_l2: alpha * lambda2,
+    };
+    let beta = solve_ccd(design, &opts, warm_start)?;
+    let report = compute_group_selection_report(&beta, groups);
+    Ok((beta, report))
+}
+
 /// General solver options for fitting a linear or generalized linear model.
 #[derive(Clone, Debug)]
 pub struct SolverOptions {
@@ -63,6 +135,8 @@ pub struct SolverOptions {
     pub max_iter: usize,
     pub tol: f64,
     pub verbose: u8,
+    pub groups: Option<Vec<GroupSpec>>,
+    pub group_l2: f64,
 }
 
 impl Default for SolverOptions {
@@ -75,6 +149,8 @@ impl Default for SolverOptions {
             max_iter: 1000,
             tol: 1e-6,
             verbose: 0,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }
@@ -86,6 +162,7 @@ pub struct LinearModelResult {
     pub coef: Vec<f64>,
     pub na_coef: Vec<f64>,
     pub summary: Option<GlmSummary>,
+    pub group_report: Option<GroupSelectionReport>,
 }
 
 /// Fits a model by automatically routing to the optimal solver:
@@ -106,9 +183,14 @@ pub fn fit_model<D: DesignMatrix>(
     let is_gaussian = options.family == GlmFamily::Gaussian;
     let has_l1 = options.l1 > 0.0;
     let has_monotone = options.monotone.iter().any(|&m| m != 0);
+    let has_groups = options
+        .groups
+        .as_ref()
+        .map_or(false, |g| !g.is_empty())
+        || options.group_l2 > 0.0;
 
     let (beta, summary) = if is_gaussian {
-        if !has_l1 && !has_monotone {
+        if !has_l1 && !has_monotone && !has_groups {
             // Fast path: Exact Cholesky with QR fallback + full hypothesis testing summary
             solve_normal(design, options.l2, feature_names)?
         } else {
@@ -117,8 +199,8 @@ pub fn fit_model<D: DesignMatrix>(
             (sol, None)
         }
     } else {
-        if has_l1 {
-            return Err("L1 regularization currently supported for Gaussian family. Use L2 with GLM families.".to_string());
+        if has_l1 || has_groups {
+            return Err("L1/Group regularization currently supported for Gaussian family. Use L2 with GLM families.".to_string());
         }
         // Non-linear GLM: Quasi-Newton L-BFGS
         let (sol, _) = solve_iterative(design, LeafSolver::Lbfgs, options, 42, warm_start)?;
@@ -132,11 +214,17 @@ pub fn fit_model<D: DesignMatrix>(
         Vec::new()
     };
 
+    let group_report = options
+        .groups
+        .as_ref()
+        .map(|grps| compute_group_selection_report(&beta, grps));
+
     Ok(LinearModelResult {
         intercept,
         coef,
         na_coef: Vec::new(),
         summary,
+        group_report,
     })
 }
 
@@ -451,6 +539,8 @@ pub(crate) fn solve_iterative<D: DesignMatrix>(
                 max_iter: options.max_iter,
                 tol: options.tol,
                 monotone: options.monotone.clone(),
+                groups: options.groups.clone(),
+                group_l2: options.group_l2,
             },
             warm_start,
         ),
@@ -509,6 +599,8 @@ pub(crate) struct LeafLinearProblem<'a> {
     pub tweedie_p: f64,
     pub tobit_threshold: f64,
     pub verbose: u8,
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    pub group_l2: f64,
 }
 
 /// One leaf optimization problem routed through the unified solver entry.
@@ -941,6 +1033,8 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
                 max_iter: 1000,
                 tol: 1e-7,
                 monotone: problem.monotone.to_vec(),
+                groups: problem.groups.clone(),
+                group_l2: problem.group_l2,
                 ..Default::default()
             };
             match solve_iterative(&view, LeafSolver::Ccd, &options, 42, None) {
@@ -1002,6 +1096,8 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
                 max_iter: 100,
                 tol: 1e-6,
                 verbose: problem.verbose,
+                groups: problem.groups.clone(),
+                group_l2: problem.group_l2,
             };
             let (solution, _) = solve_iterative(&view, problem.solver, &options, 42, None)?;
             let mut model = crate::node_stats::LinearModel {

@@ -518,6 +518,10 @@ pub struct LeafControl {
     pub nb_alpha: Option<f64>,
     /// Fixed beta regression precision parameter phi > 0 (None = estimate from data).
     pub beta_phi: Option<f64>,
+    /// Coefficient group definitions for Group Lasso and Sparse-Group Lasso leaves.
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    /// Group L2 penalty multiplier for Group Lasso and Sparse-Group Lasso (default 0.0).
+    pub group_l2: f64,
 }
 
 impl Default for LeafControl {
@@ -562,6 +566,8 @@ impl Default for LeafControl {
             non_negative_intercept: false,
             nb_alpha: None,
             beta_phi: None,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }
@@ -648,6 +654,8 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             non_negative_intercept: p.non_negative_intercept,
             nb_alpha: p.nb_alpha,
             beta_phi: p.beta_phi,
+            groups: p.groups.clone(),
+            group_l2: p.group_l2,
         }
     }
 }
@@ -684,6 +692,8 @@ impl crate::model_tree::ModelTreeParams {
         self.spline_knots = control.spline_knots;
         self.tau = control.tau;
         self.huber_delta = control.huber_delta;
+        self.groups = control.groups;
+        self.group_l2 = control.group_l2;
     }
 }
 
@@ -1635,6 +1645,8 @@ pub fn fit_leaf_model(
                         tweedie_p: control.tweedie_p,
                         tobit_threshold: control.tobit_threshold,
                         verbose: control.verbose,
+                        groups: control.groups.clone(),
+                        group_l2: control.group_l2,
                     }),
                 ) {
                     Ok(output) => {

@@ -134,6 +134,8 @@ fn test_ccd_lasso_sparsity() {
         max_iter: 1000,
         tol: 1e-7,
         monotone: Vec::new(),
+        groups: None,
+        group_l2: 0.0,
     };
     let beta = solve_ccd(&view, &opts, None).expect("solve_ccd failed");
 
@@ -165,6 +167,8 @@ fn test_ccd_monotone_constraints() {
         max_iter: 1000,
         tol: 1e-7,
         monotone: vec![1],
+        groups: None,
+        group_l2: 0.0,
     };
     let beta = solve_ccd(&view, &opts, None).unwrap();
 

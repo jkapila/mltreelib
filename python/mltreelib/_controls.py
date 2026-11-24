@@ -73,6 +73,8 @@ _LEAF_FIELDS = frozenset(
         "non_negative_intercept",
         "nb_alpha",
         "beta_phi",
+        "group_l2",
+        "groups",
         "leaf_monotone",
         "mars_degree",
         "mars_terms",

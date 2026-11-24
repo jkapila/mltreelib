@@ -33,6 +33,7 @@ pub mod timefeat;
 pub mod transform;
 pub mod trie_knn;
 pub mod mars;
+pub mod gam;
 pub mod rules;
 pub mod knn;
 pub mod solver;
