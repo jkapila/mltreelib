@@ -1,0 +1,43 @@
+# mltreelib
+
+> High-performance tree-based machine learning with a pure Rust core (`mltreelib-core`) and thin Python/R interfaces. Specializes in continuous leaf model trees, piecewise linear trees, honest causal uplift trees, multi-factor rotations, anomaly detection, and clustering with zero scikit-learn runtime dependency.
+
+## Core Documentation
+
+- [Quickstart](https://jkapila.github.io/mltreelib/quickstart/): Fast installation, basic model tree fitting, and prediction workflows.
+- [Installation](https://jkapila.github.io/mltreelib/installation/): Installing via pip/uv with prebuilt wheels or building from source with Cargo.
+- [Tree Architecture & Growth Knobs](https://jkapila.github.io/mltreelib/examples/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
+- [Data Ingestion & Routing](https://jkapila.github.io/mltreelib/examples/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
+- [Metrics, Diagnostics & Calibration](https://jkapila.github.io/mltreelib/examples/metrics-plots/): Gini, ROC/PR curves, Brier calibration, and Population Stability Index (PSI).
+
+## Regression & Continuous Modeling
+
+- [Comprehensive Regression Showcase](https://jkapila.github.io/mltreelib/examples/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
+- [Piecewise Linear Trees & Cubist Rules](https://jkapila.github.io/mltreelib/examples/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
+- [Distributional & Censored Trees](https://jkapila.github.io/mltreelib/examples/distributional-and-censored-trees/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+
+## Causal & Unsupervised Learning
+
+- [Causal Uplift Modeling](https://jkapila.github.io/mltreelib/examples/causal-uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
+- [Unsupervised Clustering & Anomalies](https://jkapila.github.io/mltreelib/examples/unsupervised-clustering-and-anomalies/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations](https://jkapila.github.io/mltreelib/examples/pca-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+
+## Optimization & Solvers
+
+- [Solvers & Hyperparameter Tuning](https://jkapila.github.io/mltreelib/examples/optimization-and-tuning/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Model Inspection & Rules](https://jkapila.github.io/mltreelib/examples/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
+
+## API Reference
+
+- [API Reference Overview](https://jkapila.github.io/mltreelib/reference/api/): Full API documentation for all classes, methods, and functions.
+- [ModelTree](https://jkapila.github.io/mltreelib/reference/api/model-tree/): Core tree estimator configuration and methods.
+- [AnomalyModel](https://jkapila.github.io/mltreelib/reference/api/anomaly/): Unsupervised anomaly detection facade.
+- [ClusterModel](https://jkapila.github.io/mltreelib/reference/api/cluster/): Unsupervised clustering facade.
+- [ComponentModel](https://jkapila.github.io/mltreelib/reference/api/components/): Continuous decomposition and factor rotation facade.
+- [Solvers](https://jkapila.github.io/mltreelib/reference/api/solvers/): Standalone optimization algorithms.
+
+## Benchmark Suites
+
+- [Benchmark Suites Overview](https://jkapila.github.io/mltreelib/suites/): 11 mathematical benchmark suites evaluating speed, accuracy, and failure modes.
+- [TabArena Datasets](https://jkapila.github.io/mltreelib/benchmarks/datasets/): 51 tabular benchmark datasets from OpenML suite 457.
+- [Elo Ratings](https://jkapila.github.io/mltreelib/benchmarks/elo/): Head-to-head Elo leaderboards against LightGBM, CatBoost, and XGBoost.
