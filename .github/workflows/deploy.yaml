@@ -19,6 +19,7 @@ jobs:
         run: |
           uv sync --group dev
           uv run zensical build
+          uv run python scripts/generate_sitemap_and_aeo.py
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
