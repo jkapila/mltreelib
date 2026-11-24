@@ -45,8 +45,10 @@ pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
 pub use oct::{fit_optimal_tree, OptimalTreeNode, OptimalTreeResult};
 pub use problems::{
-    group_l2_norm, group_lasso_penalty, group_soft_threshold, sparse_group_lasso_penalty,
-    RegressionProblemKind,
+    asymmetric_weight, detect_quantile_crossings, group_l2_norm, group_lasso_penalty,
+    group_soft_threshold, pinball_loss, smoothed_pinball_loss, solve_quantile_lbfgs,
+    sparse_group_lasso_penalty, QuantileCrossingReport, RegressionProblemKind,
+    SmoothedQuantileObjective,
 };
 pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
@@ -195,6 +197,7 @@ const GLM_FAMILIES: &[LeafFamily] = &[
     LeafFamily::Gamma,
     LeafFamily::Tweedie,
     LeafFamily::Tobit,
+    LeafFamily::Quantile,
 ];
 
 /// Solver memory profile used for leaf compatibility and cost comparisons.
@@ -550,6 +553,52 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
         problem.impute_means,
     );
     let nc = problem.chosen.len();
+    if problem.family == LeafFamily::Quantile {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for quantile regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let tau = problem
+            .extra
+            .and_then(|e| e.get("tau"))
+            .copied()
+            .unwrap_or(0.5);
+        let solution = crate::solver::problems::quantile::solve_quantile_lbfgs(
+            &view,
+            tau,
+            1e-4,
+            problem.l2,
+            250,
+            1e-7,
+            None,
+        )?;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("quantile solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
     match problem.solver {
         LeafSolver::Irls if problem.family == LeafFamily::Gaussian => {
             let mut gram = crate::node_stats::Gram::new(view.n_features());

@@ -330,3 +330,225 @@ fn test_binned_histogram_supports_regression_gains() {
         assert!(tree.unwrap().n_leaves() >= 2);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Spec 27 Phase 2: Quantile Regression Tests
+// ---------------------------------------------------------------------------
+
+use mltreelib_core::solver::{
+    asymmetric_weight, detect_quantile_crossings, pinball_loss, smoothed_pinball_loss,
+    solve_quantile_lbfgs, SmoothedQuantileObjective,
+};
+
+#[test]
+fn test_asymmetric_weight() {
+    assert_eq!(asymmetric_weight(2.5, 0.75), 0.75);
+    assert_eq!(asymmetric_weight(0.0, 0.75), 0.75);
+    assert_eq!(asymmetric_weight(-1.5, 0.75), 0.25);
+    assert_eq!(asymmetric_weight(1.0, 0.5), 0.5);
+    assert_eq!(asymmetric_weight(-1.0, 0.5), 0.5);
+}
+
+#[test]
+fn test_exact_pinball_loss() {
+    let tau = 0.8;
+    // r >= 0: tau * r
+    assert!((pinball_loss(2.0, tau) - 1.6).abs() < 1e-12);
+    assert_eq!(pinball_loss(0.0, tau), 0.0);
+    // r < 0: (1 - tau) * (-r)
+    assert!((pinball_loss(-2.0, tau) - 0.4).abs() < 1e-12);
+}
+
+#[test]
+fn test_smoothed_pinball_surrogate_and_gradient() {
+    let tau = 0.7;
+    let eps = 1e-3;
+
+    // Far positive: matches exact pinball loss
+    let (loss_pos, grad_pos) = smoothed_pinball_loss(2.0, tau, eps);
+    assert!((loss_pos - pinball_loss(2.0, tau)).abs() < 1e-12);
+    assert!((grad_pos - tau).abs() < 1e-12);
+
+    // Far negative: matches exact pinball loss
+    let (loss_neg, grad_neg) = smoothed_pinball_loss(-2.0, tau, eps);
+    assert!((loss_neg - pinball_loss(-2.0, tau)).abs() < 1e-12);
+    assert!((grad_neg - (tau - 1.0)).abs() < 1e-12);
+
+    // Inside transition [-eps, eps]: verify derivative via finite difference
+    for r in [-0.0008, -0.0002, 0.0, 0.0003, 0.0009] {
+        let (loss, grad) = smoothed_pinball_loss(r, tau, eps);
+        let h = 1e-7;
+        let (loss_plus, _) = smoothed_pinball_loss(r + h, tau, eps);
+        let (loss_minus, _) = smoothed_pinball_loss(r - h, tau, eps);
+        let fd_grad = (loss_plus - loss_minus) / (2.0 * h);
+        assert!(
+            (grad - fd_grad).abs() < 1e-5,
+            "Gradient mismatch at r={r}: analytical={grad}, fd={fd_grad}"
+        );
+        assert!(loss >= 0.0, "Loss must be non-negative");
+    }
+}
+
+#[test]
+fn test_smoothed_quantile_objective_gradient_conformance() {
+    use mltreelib_core::solver::generic::{Objective, SmoothObjective};
+
+    // Design matrix with intercept + 2 features on 20 rows
+    let mut x_dense = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..20 {
+        let x1 = (i as f64) * 0.1;
+        let x2 = ((i % 5) as f64) * 0.2;
+        x_dense.push(vec![x1, x2]);
+        y.push(1.5 + 2.0 * x1 - 0.5 * x2);
+    }
+    let design = DenseView::new(&x_dense, &y, None, true);
+    let obj = SmoothedQuantileObjective::new(&design, 0.6, 1e-4, 0.01);
+
+    let beta = vec![1.2, 1.8, -0.3];
+    let grad = obj.gradient(&beta).expect("Gradient computation failed");
+    let h = 1e-7;
+    for j in 0..beta.len() {
+        let mut beta_plus = beta.clone();
+        let mut beta_minus = beta.clone();
+        beta_plus[j] += h;
+        beta_minus[j] -= h;
+        let val_plus = obj.value(&beta_plus).unwrap();
+        let val_minus = obj.value(&beta_minus).unwrap();
+        let fd = (val_plus - val_minus) / (2.0 * h);
+        assert!(
+            (grad[j] - fd).abs() < 1e-4,
+            "Finite difference gradient mismatch in dimension {j}: analytic={}, fd={}",
+            grad[j],
+            fd
+        );
+    }
+}
+
+#[test]
+fn test_solve_quantile_lbfgs_parameter_recovery() {
+    let mut x_dense = Vec::new();
+    let mut y = Vec::new();
+    // Planted model: y = 2.0 + 3.0 * x1 + uniform(-0.1, 0.1)
+    for i in 0..100 {
+        let x1 = (i as f64) / 50.0;
+        let noise = ((i as f64 * 7.0).sin()) * 0.05;
+        x_dense.push(vec![x1]);
+        y.push(2.0 + 3.0 * x1 + noise);
+    }
+    let design = DenseView::new(&x_dense, &y, None, true);
+
+    // Median tau = 0.5
+    let sol_med = solve_quantile_lbfgs(&design, 0.5, 1e-4, 1e-5, 250, 1e-7, None)
+        .expect("L-BFGS solve failed");
+    assert_eq!(sol_med.len(), 2);
+    assert!((sol_med[0] - 2.0).abs() < 0.15, "Intercept recovery failed: {}", sol_med[0]);
+    assert!((sol_med[1] - 3.0).abs() < 0.15, "Slope recovery failed: {}", sol_med[1]);
+
+    // Upper quantile tau = 0.9 should have a higher intercept than median
+    let sol_hi = solve_quantile_lbfgs(&design, 0.9, 1e-4, 1e-5, 250, 1e-7, None)
+        .expect("L-BFGS solve failed");
+    assert!(
+        sol_hi[0] >= sol_med[0] - 0.01,
+        "tau=0.9 intercept {} should be >= tau=0.5 intercept {}",
+        sol_hi[0],
+        sol_med[0]
+    );
+}
+
+#[test]
+fn test_quantile_linear_leaf_model_tree_fit_and_predict() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..120 {
+        let x1 = (i as f64) * 0.05;
+        x.push(vec![Some(x1)]);
+        y.push(Some(1.0 + 2.5 * x1 + ((i % 7) as f64) * 0.1));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 2,
+        min_rows: 20,
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Quantile,
+        tau: 0.75,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree quantile fit failed");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 120);
+    assert!(preds.iter().all(|p| p.is_finite()));
+
+    // Verify invalid OLS summaries are omitted
+    for (leaf, _) in tree.leaves() {
+        if let Some(lm) = &leaf.linear {
+            assert!(lm.summary.is_none(), "Quantile leaf must not contain OLS standard errors");
+        }
+    }
+}
+
+#[test]
+fn test_quantile_minimum_support_fallback() {
+    use mltreelib_core::family::LeafFamily;
+    use mltreelib_core::leaf::LeafKind;
+    use mltreelib_core::model_tree::{ModelTree, ModelTreeParams};
+
+    // Small dataset where leaf will have few rows relative to features
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for i in 0..15 {
+        x.push(vec![Some(i as f64), Some((i * 2) as f64), Some((i * 3) as f64)]);
+        y.push(Some(i as f64));
+    }
+
+    let params = ModelTreeParams {
+        max_depth: 3,
+        min_rows: 3, // leaves can have 3 rows, but P=3 features (+1 intercept => requires 4 rows)
+        leaf: LeafKind::Linear,
+        leaf_family: LeafFamily::Quantile,
+        tau: 0.5,
+        ..Default::default()
+    };
+
+    let tree = ModelTree::fit(&x, &y, params).expect("ModelTree fit should not fail on small leaves");
+    let preds = tree.predict(&x);
+    assert_eq!(preds.len(), 15);
+    for p in preds {
+        assert!(p.is_finite(), "Prediction should be finite from 0D quantile center fallback");
+    }
+}
+
+#[test]
+fn test_detect_quantile_crossings_diagnostics() {
+    // 3 quantiles: tau = [0.1, 0.5, 0.9]
+    let taus = vec![0.1, 0.5, 0.9];
+
+    // Case 1: Monotone predictions (no crossings)
+    let preds_clean = vec![
+        vec![1.0, 2.0, 3.0],
+        vec![0.5, 1.5, 2.5],
+        vec![2.0, 3.0, 4.0],
+    ];
+    let rep_clean = detect_quantile_crossings(&preds_clean, &taus);
+    assert_eq!(rep_clean.n_crossings, 0);
+    assert_eq!(rep_clean.n_violating_rows, 0);
+    assert_eq!(rep_clean.crossing_rate, 0.0);
+    assert_eq!(rep_clean.max_violation, 0.0);
+
+    // Case 2: Crossing at row 1: Q_0.5 = 2.5 > Q_0.9 = 2.0
+    let preds_crossed = vec![
+        vec![1.0, 2.0, 3.0],
+        vec![0.5, 2.5, 2.0], // crossing!
+        vec![2.0, 3.0, 4.0],
+    ];
+    let rep_crossed = detect_quantile_crossings(&preds_crossed, &taus);
+    assert_eq!(rep_crossed.n_crossings, 1);
+    assert_eq!(rep_crossed.n_violating_rows, 1);
+    assert!((rep_crossed.max_violation - 0.5).abs() < 1e-9);
+    assert_eq!(rep_crossed.crossings, vec![(1, 1, 2)]);
+}

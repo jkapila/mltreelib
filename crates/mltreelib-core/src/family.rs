@@ -46,6 +46,8 @@ pub enum LeafFamily {
     Cure,
     /// Royston-Parmar flexible restricted cubic spline model on log cumulative hazard.
     Spline,
+    /// Quantile regression with pinball loss (Spec 27 Phase 2).
+    Quantile,
 }
 
 impl LeafFamily {
@@ -53,7 +55,7 @@ impl LeafFamily {
     /// prevent exponential overflow/underflow even when extrapolating.
     pub fn inverse_link(self, eta: f64) -> f64 {
         match self {
-            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline => eta,
+            Self::Gaussian | Self::Tobit | Self::Softmax | Self::Survival | Self::Heteroscedastic | Self::Aft | Self::Cure | Self::Spline | Self::Quantile => eta,
             Self::Binomial if eta >= 0.0 => 1.0 / (1.0 + (-eta).exp()),
             Self::Binomial => {
                 let e = eta.exp();
@@ -82,7 +84,7 @@ impl LeafFamily {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian | Self::Heteroscedastic | Self::Survival | Self::Aft | Self::Cure | Self::Spline => (y - mean).powi(2),
+            Self::Gaussian | Self::Heteroscedastic | Self::Survival | Self::Aft | Self::Cure | Self::Spline | Self::Quantile => (y - mean).powi(2),
             Self::Softmax => {
                 if y < 0.0 || mean <= 0.0 {
                     f64::NAN
@@ -133,7 +135,7 @@ impl LeafFamily {
             return f64::NAN;
         }
         match self {
-            Self::Gaussian | Self::Softmax => f64::NAN,
+            Self::Gaussian | Self::Softmax | Self::Quantile => f64::NAN,
             Self::Heteroscedastic => std_norm_cdf(value - mean),
             Self::Survival | Self::Aft | Self::Cure | Self::Spline => (1.0 - mean).clamp(0.0, 1.0),
             _ if value < 0.0 && self != Self::Tobit => 0.0,

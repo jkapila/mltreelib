@@ -1904,7 +1904,8 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
             | LeafFamily::Heteroscedastic
             | LeafFamily::Aft
             | LeafFamily::Cure
-            | LeafFamily::Spline => mean,
+            | LeafFamily::Spline
+            | LeafFamily::Quantile => mean,
         },
         summary: None,
     };
@@ -2031,7 +2032,8 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
                 | LeafFamily::Heteroscedastic
                 | LeafFamily::Aft
                 | LeafFamily::Cure
-                | LeafFamily::Spline => {
+                | LeafFamily::Spline
+                | LeafFamily::Quantile => {
                     gram.add_row(&row, y, w);
                 }
             }

@@ -2537,6 +2537,7 @@ fn extract_leaf_control<'py>(
                         "aft" => LeafFamily::Aft,
                         "cure" => LeafFamily::Cure,
                         "spline" => LeafFamily::Spline,
+                        "quantile" => LeafFamily::Quantile,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2578,6 +2579,8 @@ fn extract_leaf_control<'py>(
                     if !(0.0..=1.0).contains(&t) {
                         return Err(PyValueError::new_err("tau must be in [0, 1]"));
                     }
+                    c.tau = t;
+                    c.extra.insert("tau".to_string(), t);
                     if matches!(c.leaf, LeafKind::Quantile(_)) {
                         c.leaf = LeafKind::Quantile(t);
                     }
@@ -2712,6 +2715,7 @@ fn extract_leaf_control<'py>(
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2735,6 +2739,8 @@ fn extract_leaf_control<'py>(
         if !(0.0..=1.0).contains(&t) {
             return Err(PyValueError::new_err("tau must be in [0, 1]"));
         }
+        ctrl.tau = t;
+        ctrl.extra.insert("tau".to_string(), t);
         if matches!(ctrl.leaf, LeafKind::Quantile(_)) {
             ctrl.leaf = LeafKind::Quantile(t);
         }
@@ -2875,6 +2881,7 @@ impl PyLeafControl {
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let solver = parse_leaf_solver(leaf_solver.unwrap_or("irls"))?;
@@ -2932,6 +2939,7 @@ impl PyLeafControl {
                 aft_dist: aft_dist_enum,
                 cure_fraction,
                 spline_knots,
+                tau,
             },
         };
         if strict_solver {
@@ -2972,7 +2980,13 @@ impl PyLeafControl {
             LeafFamily::Aft => "aft".to_string(),
             LeafFamily::Cure => "cure".to_string(),
             LeafFamily::Spline => "spline".to_string(),
+            LeafFamily::Quantile => "quantile".to_string(),
         }
+    }
+
+    #[getter]
+    fn get_tau(&self) -> f64 {
+        self.inner.tau
     }
 
     #[getter]
@@ -3122,6 +3136,7 @@ impl PyLeafControl {
                 "softmax" => LeafFamily::Softmax,
                 "survival" => LeafFamily::Survival,
                 "heteroscedastic" => LeafFamily::Heteroscedastic,
+                "quantile" => LeafFamily::Quantile,
                 other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
             };
         }
@@ -3142,6 +3157,8 @@ impl PyLeafControl {
             copy.inner.leaf_digest = val;
         }
         if let Some(t) = tau {
+            copy.inner.tau = t;
+            copy.inner.extra.insert("tau".to_string(), t);
             if matches!(copy.inner.leaf, LeafKind::Quantile(_)) {
                 copy.inner.leaf = LeafKind::Quantile(t);
             }
@@ -3727,6 +3744,7 @@ impl PyModelTree {
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
@@ -3991,6 +4009,7 @@ impl PyModelTree {
             max_classes,
             max_bins,
             min_bin_rows,
+            tau,
             leaf_na_policy: leaf_na_policy_enum,
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
@@ -5484,9 +5503,7 @@ impl PyModelTree {
                 LeafKind::LogOdds => "log_odds",
             },
         )?;
-        if let LeafKind::Quantile(tau) = self.params.leaf {
-            d.set_item("tau", tau)?;
-        }
+        d.set_item("tau", self.params.tau)?;
         d.set_item(
             "leaf_family",
             match self.params.leaf_family {
@@ -5503,6 +5520,7 @@ impl PyModelTree {
                 LeafFamily::Aft => "aft",
                 LeafFamily::Cure => "cure",
                 LeafFamily::Spline => "spline",
+                LeafFamily::Quantile => "quantile",
             },
         )?;
         d.set_item("l1", self.params.l1)?;
@@ -6985,6 +7003,24 @@ fn competing_risks_calibration<'py>(
     cr_calibration_to_dict(py, &r)
 }
 
+/// Detects row-level quantile crossing violations across multiple quantile predictions.
+#[pyfunction]
+#[pyo3(signature = (preds_matrix, taus))]
+fn detect_quantile_crossings<'py>(
+    py: Python<'py>,
+    preds_matrix: Vec<Vec<f64>>,
+    taus: Vec<f64>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let report = mltreelib_core::solver::detect_quantile_crossings(&preds_matrix, &taus);
+    let dict = PyDict::new(py);
+    dict.set_item("n_crossings", report.n_crossings)?;
+    dict.set_item("n_violating_rows", report.n_violating_rows)?;
+    dict.set_item("crossing_rate", report.crossing_rate)?;
+    dict.set_item("max_violation", report.max_violation)?;
+    dict.set_item("crossings", report.crossings)?;
+    Ok(dict)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     solvers::register(m)?;
@@ -7043,5 +7079,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(integrated_calibration_index, m)?)?;
     m.add_function(wrap_pyfunction!(one_calibration, m)?)?;
     m.add_function(wrap_pyfunction!(competing_risks_calibration, m)?)?;
+    m.add_function(wrap_pyfunction!(detect_quantile_crossings, m)?)?;
     Ok(())
 }

@@ -50,6 +50,10 @@ fn default_min_bin_rows() -> usize {
     1
 }
 
+fn default_tau() -> f64 {
+    0.5
+}
+
 /// Growth and leaf parameters.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
@@ -236,6 +240,9 @@ pub struct ModelTreeParams {
     /// Minimum observations per quantile bin for continuous features (default 1).
     #[serde(default = "default_min_bin_rows")]
     pub min_bin_rows: usize,
+    /// Target quantile tau in (0, 1) for quantile leaves and models (default 0.5).
+    #[serde(default = "default_tau")]
+    pub tau: f64,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -377,6 +384,7 @@ impl Default for ModelTreeParams {
             max_classes: 256,
             max_bins: 256,
             min_bin_rows: 1,
+            tau: 0.5,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -651,7 +659,14 @@ impl ModelTree {
         if params.cp_alpha < 0.0 {
             return Err("cp_alpha must be >= 0".to_string());
         }
-        if params.leaf_family != LeafFamily::Gaussian {
+        if params.leaf_family == LeafFamily::Quantile {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
+            ) {
+                return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if params.leaf_family != LeafFamily::Gaussian {
             if !matches!(
                 params.leaf,
                 LeafKind::Mean
@@ -1115,7 +1130,14 @@ impl ModelTree {
         if control.l1 < 0.0 || control.l2 < 0.0 {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
-        if control.family != LeafFamily::Gaussian {
+        if control.family == LeafFamily::Quantile {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
+            ) {
+                return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if control.family != LeafFamily::Gaussian {
             if !matches!(
                 control.leaf,
                 LeafKind::Mean

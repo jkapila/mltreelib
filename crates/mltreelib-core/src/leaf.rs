@@ -134,6 +134,7 @@ impl LeafProblemType {
                 LeafFamily::Aft => Self::Aft(family),
                 LeafFamily::Cure => Self::Cure(family),
                 LeafFamily::Spline => Self::Spline(family),
+                LeafFamily::Quantile => Self::WeightedQuantile { family, tau: 0.5 },
                 _ => Self::PenalizedGlm(family),
             },
             LeafKind::Median => Self::WeightedMedian(family),
@@ -464,6 +465,8 @@ pub struct LeafControl {
     pub cure_fraction: Option<f64>,
     /// Number of interior spline knots for Royston-Parmar leaves (default 3).
     pub spline_knots: usize,
+    /// Target quantile tau in (0, 1) for quantile leaves (default 0.5).
+    pub tau: f64,
 }
 
 impl Default for LeafControl {
@@ -501,6 +504,7 @@ impl Default for LeafControl {
             aft_dist: crate::node_stats::AftDist::Weibull,
             cure_fraction: None,
             spline_knots: 3,
+            tau: 0.5,
         }
     }
 }
@@ -519,6 +523,11 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         if let Some(g) = p.knn_gamma {
             extra.insert("knn_gamma".to_string(), g);
         }
+        let tau = match p.leaf {
+            LeafKind::Quantile(t) => t,
+            _ => p.tau,
+        };
+        extra.insert("tau".to_string(), tau);
         let leaf_monotone = if !p.leaf_monotone.is_empty() {
             p.leaf_monotone.clone()
         } else {
@@ -557,6 +566,7 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             aft_dist: p.aft_dist,
             cure_fraction: p.cure_fraction,
             spline_knots: p.spline_knots,
+            tau,
         }
     }
 }
@@ -1465,6 +1475,7 @@ pub fn fit_leaf_model(
     }
 
     if family != LeafFamily::Gaussian
+        && family != LeafFamily::Quantile
         && (control.leaf == LeafKind::Mean
             || ((family == LeafFamily::Binomial || family == LeafFamily::Probit)
                 && (stats.mean == 0.0 || stats.mean == 1.0))
@@ -1506,74 +1517,98 @@ pub fn fit_leaf_model(
                 .as_ref()
                 .map(|m| m.iter().map(|&v| Some(v)).collect())
                 .unwrap_or_default();
-            let lm = match crate::solver::solve_leaf_problem(
-                &crate::solver::LeafFitProblem::Linear(crate::solver::LeafLinearProblem {
-                    cols,
-                    y,
-                    w,
-                    rows: &actual_rows,
-                    chosen: &chosen,
-                    with_indicators: any_missing,
-                    impute_means: impute_means.as_deref(),
-                    family,
+            let lm = if family == LeafFamily::Quantile && actual_rows.len() < chosen.len() + 1 {
+                solver_used = LeafSolverDiagnostic::Rejected {
                     solver: control.solver,
-                    l1: control.l1,
-                    l2: control.l2,
-                    monotone: control.effective_leaf_monotone(),
-                    mean: stats.mean,
-                    extra: Some(&control.extra),
-                    tweedie_p: control.tweedie_p,
-                    tobit_threshold: control.tobit_threshold,
-                    verbose: control.verbose,
-                }),
-            ) {
-                Ok(output) => {
-                    solver_used = output.diagnostic;
-                    output.linear.unwrap_or(LinearModel {
-                        coef: vec![0.0; chosen.len()],
-                        na_coef: if any_missing {
-                            vec![0.0; chosen.len()]
-                        } else {
-                            Vec::new()
-                        },
-                        feature_means: f_means.clone(),
-                        cols: chosen.clone(),
-                        intercept: f64::NAN,
-                        summary: None,
-                    })
-                }
-                Err(reason) => {
-                    if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) {
-                        solver_used = LeafSolverDiagnostic::Failed {
-                            solver: control.solver,
-                            reason: reason.clone(),
-                        };
+                    reason: format!(
+                        "leaf rows {} < features {} + 1 (minimum support rule)",
+                        actual_rows.len(),
+                        chosen.len()
+                    ),
+                };
+                None
+            } else {
+                match crate::solver::solve_leaf_problem(
+                    &crate::solver::LeafFitProblem::Linear(crate::solver::LeafLinearProblem {
+                        cols,
+                        y,
+                        w,
+                        rows: &actual_rows,
+                        chosen: &chosen,
+                        with_indicators: any_missing,
+                        impute_means: impute_means.as_deref(),
+                        family,
+                        solver: control.solver,
+                        l1: control.l1,
+                        l2: control.l2,
+                        monotone: control.effective_leaf_monotone(),
+                        mean: stats.mean,
+                        extra: Some(&control.extra),
+                        tweedie_p: control.tweedie_p,
+                        tobit_threshold: control.tobit_threshold,
+                        verbose: control.verbose,
+                    }),
+                ) {
+                    Ok(output) => {
+                        solver_used = output.diagnostic;
+                        output.linear.or_else(|| {
+                            if family == LeafFamily::Quantile {
+                                None
+                            } else {
+                                Some(LinearModel {
+                                    coef: vec![0.0; chosen.len()],
+                                    na_coef: if any_missing {
+                                        vec![0.0; chosen.len()]
+                                    } else {
+                                        Vec::new()
+                                    },
+                                    feature_means: f_means.clone(),
+                                    cols: chosen.clone(),
+                                    intercept: f64::NAN,
+                                    summary: None,
+                                })
+                            }
+                        })
                     }
-                    LinearModel {
-                        coef: vec![0.0; chosen.len()],
-                        na_coef: if any_missing {
-                            vec![0.0; chosen.len()]
+                    Err(reason) => {
+                        if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) {
+                            solver_used = LeafSolverDiagnostic::Failed {
+                                solver: control.solver,
+                                reason: reason.clone(),
+                            };
+                        }
+                        if family == LeafFamily::Quantile {
+                            None
                         } else {
-                            Vec::new()
-                        },
-                        feature_means: f_means.clone(),
-                        cols: chosen.clone(),
-                        intercept: f64::NAN,
-                        summary: None,
+                            Some(LinearModel {
+                                coef: vec![0.0; chosen.len()],
+                                na_coef: if any_missing {
+                                    vec![0.0; chosen.len()]
+                                } else {
+                                    Vec::new()
+                                },
+                                feature_means: f_means.clone(),
+                                cols: chosen.clone(),
+                                intercept: f64::NAN,
+                                summary: None,
+                            })
+                        }
                     }
                 }
             };
-            if control.verbose >= 3 {
-                println!(
-                    "      [leaf linear fit] rows={} cols={} l1={:.4} l2={:.4} intercept={:.4}",
-                    actual_rows.len(),
-                    chosen.len(),
-                    control.l1,
-                    control.l2,
-                    lm.intercept
-                );
+            if let Some(ref m) = lm {
+                if control.verbose >= 3 {
+                    println!(
+                        "      [leaf linear fit] rows={} cols={} l1={:.4} l2={:.4} intercept={:.4}",
+                        actual_rows.len(),
+                        chosen.len(),
+                        control.l1,
+                        control.l2,
+                        m.intercept
+                    );
+                }
             }
-            Some(lm)
+            lm
         }
     } else {
         None
@@ -1583,7 +1618,7 @@ pub fn fit_leaf_model(
     let yws: Vec<(f64, f64)> = if matches!(
         control.leaf,
         LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
-    ) {
+    ) || family == LeafFamily::Quantile {
         rows.iter()
             .filter(|&&r| w[r] > 0.0)
             .map(|&r| (y[r], w[r]))
@@ -1643,6 +1678,13 @@ pub fn fit_leaf_model(
         LeafKind::Prob => Some(stats.prob()),
         LeafKind::Odds => Some(stats.odds()),
         LeafKind::LogOdds => Some(stats.log_odds()),
+        _ if family == LeafFamily::Quantile => {
+            let q_tau = match control.leaf {
+                LeafKind::Quantile(t) => t,
+                _ => control.tau,
+            };
+            Some(w_quantile(&yws, q_tau))
+        }
         _ => Some(stats.mean),
     };
     LeafModel {

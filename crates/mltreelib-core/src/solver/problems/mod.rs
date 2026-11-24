@@ -4,6 +4,13 @@
 //! - Group-aware penalty norms ($\ell_2$ group norms, group soft-thresholding)
 //! - Group Lasso and Sparse-Group Lasso loss evaluations
 //! - Problem declarations for modular regression dispatch (Spec 27)
+//! - Quantile regression loss, surrogate, solver, and crossing diagnostics (Phase 2)
+
+pub mod quantile;
+pub use quantile::{
+    asymmetric_weight, detect_quantile_crossings, pinball_loss, smoothed_pinball_loss,
+    solve_quantile_lbfgs, QuantileCrossingReport, SmoothedQuantileObjective,
+};
 
 use crate::solver::groups::{GroupKind, GroupSpec};
 

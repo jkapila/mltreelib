@@ -3117,8 +3117,8 @@ impl<'a> Grower<'a> {
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }
             LeafFamily::Tobit => 0.0,
-            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
-                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, and Spline use SSE/custom scans")
+            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline | LeafFamily::Quantile => {
+                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, Spline, and Quantile use SSE/custom scans")
             }
         }
     }
