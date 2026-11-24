@@ -2456,12 +2456,65 @@ fn select_alias<'a>(
     Ok(canonical.or(legacy))
 }
 
+fn parse_group_specs(
+    groups_obj: &Bound<'_, PyAny>,
+) -> PyResult<Vec<mltreelib_core::solver::groups::GroupSpec>> {
+    let mut specs = Vec::new();
+    if let Ok(dict) = groups_obj.cast::<pyo3::types::PyDict>() {
+        for (k, v) in dict.iter() {
+            let name = k.extract::<String>()?;
+            let members = v.extract::<Vec<usize>>()?;
+            specs.push(mltreelib_core::solver::groups::GroupSpec::new(
+                mltreelib_core::solver::groups::GroupKind::CoefficientGroup,
+                name,
+                members,
+            ));
+        }
+    } else if let Ok(list) = groups_obj.cast::<pyo3::types::PyList>() {
+        for item in list.iter() {
+            if let Ok(d) = item.cast::<pyo3::types::PyDict>() {
+                let name = d
+                    .get_item("name")?
+                    .ok_or_else(|| PyValueError::new_err("group dict must contain 'name'"))?
+                    .extract::<String>()?;
+                let members = d
+                    .get_item("members")?
+                    .ok_or_else(|| PyValueError::new_err("group dict must contain 'members'"))?
+                    .extract::<Vec<usize>>()?;
+                let weight = if let Some(w) = d.get_item("weight")? {
+                    Some(w.extract::<f64>()?)
+                } else {
+                    None
+                };
+                let mut spec = mltreelib_core::solver::groups::GroupSpec::new(
+                    mltreelib_core::solver::groups::GroupKind::CoefficientGroup,
+                    name,
+                    members,
+                );
+                if let Some(w) = weight {
+                    spec = spec.with_weight(w);
+                }
+                specs.push(spec);
+            }
+        }
+    } else {
+        return Err(PyValueError::new_err(
+            "groups must be a dict {name: [col_indices]} or a list of dicts [{'name': ..., 'members': ...}]",
+        ));
+    }
+    Ok(specs)
+}
+
 fn inherit_leaf_inputs(
     mut control: mltreelib_core::leaf::LeafControl,
     params: &ModelTreeParams,
 ) -> mltreelib_core::leaf::LeafControl {
     control.events = control.events.or_else(|| params.events.clone());
     control.treatments = control.treatments.or_else(|| params.treatments.clone());
+    control.groups = control.groups.or_else(|| params.groups.clone());
+    if control.group_l2 == 0.0 && params.group_l2 > 0.0 {
+        control.group_l2 = params.group_l2;
+    }
     if control.leaf_monotone.is_empty() {
         control.leaf_monotone.clone_from(&params.leaf_monotone);
     }
@@ -2479,6 +2532,7 @@ fn extract_leaf_control<'py>(
     l2: Option<f64>,
     leaf_digest: Option<bool>,
     tau: Option<f64>,
+    huber_delta: Option<f64>,
     leaf_features_arg: Option<Bound<'py, PyAny>>,
     effective_col_names: &[String],
 ) -> PyResult<mltreelib_core::leaf::LeafControl> {
@@ -2503,6 +2557,19 @@ fn extract_leaf_control<'py>(
                                 return Err(PyValueError::new_err("tau must be in [0, 1]"));
                             }
                             LeafKind::Quantile(t)
+                        }
+                        "expectile" => {
+                            let t = match dict.get_item("expectile_tau")? {
+                                Some(v) => v.extract::<f64>()?,
+                                None => match dict.get_item("tau")? {
+                                    Some(v) => v.extract::<f64>()?,
+                                    None => 0.5,
+                                },
+                            };
+                            if !(0.0..=1.0).contains(&t) {
+                                return Err(PyValueError::new_err("expectile_tau must be in [0, 1]"));
+                            }
+                            LeafKind::Expectile(t)
                         }
                         "huber" => LeafKind::Huber,
                         "mars" => LeafKind::Mars,
@@ -2537,6 +2604,11 @@ fn extract_leaf_control<'py>(
                         "aft" => LeafFamily::Aft,
                         "cure" => LeafFamily::Cure,
                         "spline" => LeafFamily::Spline,
+                        "quantile" => LeafFamily::Quantile,
+                        "huber" => LeafFamily::Huber,
+                        "expectile" => LeafFamily::Expectile,
+                        "negative_binomial" | "negbin" => LeafFamily::NegativeBinomial,
+                        "beta" => LeafFamily::Beta,
                         other => {
                             return Err(PyValueError::new_err(format!(
                                 "unrecognized leaf family '{other}' in control dict"
@@ -2578,8 +2650,13 @@ fn extract_leaf_control<'py>(
                     if !(0.0..=1.0).contains(&t) {
                         return Err(PyValueError::new_err("tau must be in [0, 1]"));
                     }
+                    c.tau = t;
+                    c.extra.insert("tau".to_string(), t);
                     if matches!(c.leaf, LeafKind::Quantile(_)) {
                         c.leaf = LeafKind::Quantile(t);
+                    }
+                    if matches!(c.leaf, LeafKind::Expectile(_)) {
+                        c.leaf = LeafKind::Expectile(t);
                     }
                 }
                 let feat_item = match dict.get_item("leaf_features")? {
@@ -2640,6 +2717,59 @@ fn extract_leaf_control<'py>(
                 if let Some(item) = dict.get_item("spline_knots")? {
                     c.spline_knots = item.extract::<usize>()?;
                 }
+                if let Some(item) = dict.get_item("huber_delta")? {
+                    let d = item.extract::<f64>()?;
+                    if d <= 0.0 || !d.is_finite() {
+                        return Err(PyValueError::new_err("huber_delta must be positive and finite"));
+                    }
+                    c.huber_delta = d;
+                    c.extra.insert("huber_delta".to_string(), d);
+                }
+                if let Some(item) = dict.get_item("expectile_tau")? {
+                    let t = item.extract::<f64>()?;
+                    if !(0.0..=1.0).contains(&t) {
+                        return Err(PyValueError::new_err("expectile_tau must be in (0, 1)"));
+                    }
+                    c.expectile_tau = t;
+                    c.extra.insert("expectile_tau".to_string(), t);
+                    if matches!(c.leaf, LeafKind::Expectile(_)) {
+                        c.leaf = LeafKind::Expectile(t);
+                    }
+                }
+                if let Some(item) = dict.get_item("non_negative")? {
+                    let nn = item.extract::<bool>()?;
+                    c.non_negative = nn;
+                    if nn {
+                        c.extra.insert("non_negative".to_string(), 1.0);
+                    }
+                }
+                if let Some(item) = dict.get_item("non_negative_intercept")? {
+                    let nni = item.extract::<bool>()?;
+                    c.non_negative_intercept = nni;
+                    if nni {
+                        c.extra.insert("non_negative_intercept".to_string(), 1.0);
+                    }
+                }
+                if let Some(item) = dict.get_item("nb_alpha")? {
+                    let a = item.extract::<Option<f64>>()?;
+                    c.nb_alpha = a;
+                    if let Some(val) = a {
+                        c.extra.insert("nb_alpha".to_string(), val);
+                    }
+                }
+                if let Some(item) = dict.get_item("beta_phi")? {
+                    let p_val = item.extract::<Option<f64>>()?;
+                    c.beta_phi = p_val;
+                    if let Some(val) = p_val {
+                        c.extra.insert("beta_phi".to_string(), val);
+                    }
+                }
+                if let Some(item) = dict.get_item("group_l2")? {
+                    c.group_l2 = item.extract::<f64>()?;
+                }
+                if let Some(item) = dict.get_item("groups")? {
+                    c.groups = Some(parse_group_specs(&item)?);
+                }
                 for (k, v) in dict.iter() {
                     let key = k.extract::<String>()?;
                     if !matches!(
@@ -2652,6 +2782,14 @@ fn extract_leaf_control<'py>(
                             | "l2"
                             | "leaf_digest"
                             | "tau"
+                            | "huber_delta"
+                            | "expectile_tau"
+                            | "non_negative"
+                            | "non_negative_intercept"
+                            | "nb_alpha"
+                            | "beta_phi"
+                            | "group_l2"
+                            | "groups"
                             | "leaf_features"
                             | "retrain_cols"
                             | "shrinkage"
@@ -2688,6 +2826,13 @@ fn extract_leaf_control<'py>(
                 }
                 LeafKind::Quantile(t_val)
             }
+            "expectile" => {
+                let t_val = tau.unwrap_or(0.5);
+                if !(0.0..=1.0).contains(&t_val) {
+                    return Err(PyValueError::new_err("expectile_tau must be in [0, 1]"));
+                }
+                LeafKind::Expectile(t_val)
+            }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
             "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
@@ -2712,6 +2857,11 @@ fn extract_leaf_control<'py>(
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
+            "expectile" => LeafFamily::Expectile,
+            "negative_binomial" | "negbin" => LeafFamily::NegativeBinomial,
+            "beta" => LeafFamily::Beta,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
     }
@@ -2731,12 +2881,24 @@ fn extract_leaf_control<'py>(
     if let Some(v) = leaf_digest {
         ctrl.leaf_digest = v;
     }
+    if let Some(d) = huber_delta {
+        if d <= 0.0 || !d.is_finite() {
+            return Err(PyValueError::new_err("huber_delta must be positive and finite"));
+        }
+        ctrl.huber_delta = d;
+        ctrl.extra.insert("huber_delta".to_string(), d);
+    }
     if let Some(t) = tau {
         if !(0.0..=1.0).contains(&t) {
             return Err(PyValueError::new_err("tau must be in [0, 1]"));
         }
+        ctrl.tau = t;
+        ctrl.extra.insert("tau".to_string(), t);
         if matches!(ctrl.leaf, LeafKind::Quantile(_)) {
             ctrl.leaf = LeafKind::Quantile(t);
+        }
+        if matches!(ctrl.leaf, LeafKind::Expectile(_)) {
+            ctrl.leaf = LeafKind::Expectile(t);
         }
     }
     if let Some(ref feat_obj) = leaf_features_arg {
@@ -2781,6 +2943,14 @@ impl PyLeafControl {
         l2 = 1e-3,
         leaf_digest = true,
         tau = 0.5,
+        huber_delta = 1.345,
+        expectile_tau = 0.5,
+        non_negative = false,
+        non_negative_intercept = false,
+        nb_alpha = None,
+        beta_phi = None,
+        group_l2 = 0.0,
+        groups = None,
         leaf_features = None,
         leaf_monotone = None,
         monotone = None,
@@ -2814,6 +2984,14 @@ impl PyLeafControl {
         l2: f64,
         leaf_digest: bool,
         tau: f64,
+        huber_delta: f64,
+        expectile_tau: f64,
+        non_negative: bool,
+        non_negative_intercept: bool,
+        nb_alpha: Option<f64>,
+        beta_phi: Option<f64>,
+        group_l2: f64,
+        groups: Option<Bound<'_, PyAny>>,
         leaf_features: Option<Vec<usize>>,
         leaf_monotone: Option<Vec<i8>>,
         monotone: Option<Vec<i8>>,
@@ -2853,6 +3031,12 @@ impl PyLeafControl {
                 }
                 LeafKind::Quantile(tau)
             }
+            "expectile" => {
+                if !(0.0..=1.0).contains(&expectile_tau) {
+                    return Err(PyValueError::new_err("expectile_tau must be in [0, 1]"));
+                }
+                LeafKind::Expectile(expectile_tau)
+            }
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
             "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
@@ -2875,6 +3059,11 @@ impl PyLeafControl {
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
+            "expectile" => LeafFamily::Expectile,
+            "negative_binomial" | "negbin" => LeafFamily::NegativeBinomial,
+            "beta" => LeafFamily::Beta,
             other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
         };
         let solver = parse_leaf_solver(leaf_solver.unwrap_or("irls"))?;
@@ -2910,7 +3099,25 @@ impl PyLeafControl {
                 leaf_monotone: mono.clone(),
                 monotone: mono,
                 leaf_features,
-                extra: std::collections::HashMap::new(),
+                extra: {
+                    let mut ex = std::collections::HashMap::new();
+                    ex.insert("huber_delta".to_string(), huber_delta);
+                    ex.insert("tau".to_string(), tau);
+                    ex.insert("expectile_tau".to_string(), expectile_tau);
+                    if non_negative {
+                        ex.insert("non_negative".to_string(), 1.0);
+                    }
+                    if non_negative_intercept {
+                        ex.insert("non_negative_intercept".to_string(), 1.0);
+                    }
+                    if let Some(a) = nb_alpha {
+                        ex.insert("nb_alpha".to_string(), a);
+                    }
+                    if let Some(p_val) = beta_phi {
+                        ex.insert("beta_phi".to_string(), p_val);
+                    }
+                    ex
+                },
                 events,
                 treatments,
                 n_classes,
@@ -2932,6 +3139,19 @@ impl PyLeafControl {
                 aft_dist: aft_dist_enum,
                 cure_fraction,
                 spline_knots,
+                tau,
+                huber_delta,
+                expectile_tau,
+                non_negative,
+                non_negative_intercept,
+                nb_alpha,
+                beta_phi,
+                groups: if let Some(g) = groups {
+                    Some(parse_group_specs(&g)?)
+                } else {
+                    None
+                },
+                group_l2,
             },
         };
         if strict_solver {
@@ -2947,6 +3167,7 @@ impl PyLeafControl {
             LeafKind::Mean => "mean".to_string(),
             LeafKind::Median => "median".to_string(),
             LeafKind::Quantile(t) => format!("quantile({t})"),
+            LeafKind::Expectile(t) => format!("expectile({t})"),
             LeafKind::Huber => "huber".to_string(),
             LeafKind::Mars => "mars".to_string(),
             LeafKind::Knn => "knn".to_string(),
@@ -2972,7 +3193,47 @@ impl PyLeafControl {
             LeafFamily::Aft => "aft".to_string(),
             LeafFamily::Cure => "cure".to_string(),
             LeafFamily::Spline => "spline".to_string(),
+            LeafFamily::Quantile => "quantile".to_string(),
+            LeafFamily::Huber => "huber".to_string(),
+            LeafFamily::Expectile => "expectile".to_string(),
+            LeafFamily::NegativeBinomial => "negative_binomial".to_string(),
+            LeafFamily::Beta => "beta".to_string(),
         }
+    }
+
+    #[getter]
+    fn get_tau(&self) -> f64 {
+        self.inner.tau
+    }
+
+    #[getter]
+    fn get_huber_delta(&self) -> f64 {
+        self.inner.huber_delta
+    }
+
+    #[getter]
+    fn get_expectile_tau(&self) -> f64 {
+        self.inner.expectile_tau
+    }
+
+    #[getter]
+    fn get_non_negative(&self) -> bool {
+        self.inner.non_negative
+    }
+
+    #[getter]
+    fn get_non_negative_intercept(&self) -> bool {
+        self.inner.non_negative_intercept
+    }
+
+    #[getter]
+    fn get_nb_alpha(&self) -> Option<f64> {
+        self.inner.nb_alpha
+    }
+
+    #[getter]
+    fn get_beta_phi(&self) -> Option<f64> {
+        self.inner.beta_phi
     }
 
     #[getter]
@@ -3102,6 +3363,7 @@ impl PyLeafControl {
                 "mean" => LeafKind::Mean,
                 "median" => LeafKind::Median,
                 "quantile" => LeafKind::Quantile(tau.unwrap_or(0.5)),
+                "expectile" => LeafKind::Expectile(tau.unwrap_or(0.5)),
                 "huber" => LeafKind::Huber,
                 "mars" => LeafKind::Mars,
                 "prob" => LeafKind::Prob,
@@ -3122,6 +3384,11 @@ impl PyLeafControl {
                 "softmax" => LeafFamily::Softmax,
                 "survival" => LeafFamily::Survival,
                 "heteroscedastic" => LeafFamily::Heteroscedastic,
+                "quantile" => LeafFamily::Quantile,
+                "huber" => LeafFamily::Huber,
+                "expectile" => LeafFamily::Expectile,
+                "negative_binomial" | "negbin" => LeafFamily::NegativeBinomial,
+                "beta" => LeafFamily::Beta,
                 other => return Err(PyValueError::new_err(format!("unrecognized leaf family '{other}'"))),
             };
         }
@@ -3142,8 +3409,13 @@ impl PyLeafControl {
             copy.inner.leaf_digest = val;
         }
         if let Some(t) = tau {
+            copy.inner.tau = t;
+            copy.inner.extra.insert("tau".to_string(), t);
             if matches!(copy.inner.leaf, LeafKind::Quantile(_)) {
                 copy.inner.leaf = LeafKind::Quantile(t);
+            }
+            if matches!(copy.inner.leaf, LeafKind::Expectile(_)) {
+                copy.inner.leaf = LeafKind::Expectile(t);
             }
         }
         if leaf_features.is_some() {
@@ -3436,8 +3708,10 @@ impl PyModelTree {
     ///        all). Splits only — leaves see all columns.
     ///     col_sample: per-node random column subset fraction (None = all).
     ///     seed: seed for the per-node column subset.
-    ///     split_eval: "fast" (default), "histogram" (up to 256 bins for
-    ///         classification gains), or "exhaustive".
+    ///     split_eval: "fast" (default), "histogram" (cardinality-adaptive binned
+    ///         evaluation up to max_bins), or "exhaustive".
+    ///     max_bins: maximum histogram bins per numeric feature (default 256).
+    ///     min_bin_rows: minimum rows per quantile bin for continuous features (default 1).
     ///     presort: upfront numeric column sorting (default false).
     ///   LEAF
     ///     leaf: "linear", "mean", "median", "quantile" (with tau), "huber", or "mars".
@@ -3519,7 +3793,10 @@ impl PyModelTree {
         purity_gate_metric = "sd", tail_quantile = None,
         gain = None, split_precision = Some(0.001), split_cols = None,
         col_sample = None, seed = 42,
-        leaf = "linear", tau = 0.5, l1 = 0.0, l2 = 0.5,
+        leaf = "linear", tau = 0.5, huber_delta = 1.345,
+        expectile_tau = 0.5, non_negative = false, non_negative_intercept = false,
+        nb_alpha = None, beta_phi = None, group_l2 = 0.0, groups = None,
+        l1 = 0.0, l2 = 0.5,
         leaf_cols = "all", leaf_digest = true,
         cat_order = None, cat_search = "cumulative",
         monotone = vec![], tree_monotone = None, leaf_monotone = None,
@@ -3536,7 +3813,7 @@ impl PyModelTree {
         mars_degree = 1, mars_terms = 10, mars_penalty = 2.0,
         knn_k = 5, knn_k_validity = 5, knn_variant = "uniform", knn_metric = "euclidean",
         knn_gamma = None, knn_p = 2.0,
-        shrinkage = 0.0, max_classes = 256, leaf_na_policy = "drop_fallback", preset = None,
+        shrinkage = 0.0, max_classes = 256, max_bins = 256, min_bin_rows = 1, leaf_na_policy = "drop_fallback", preset = None,
         control = None, leaf_control = None,
         mmd_kernel = None, mmd_bandwidth = None,
         fairness_penalty = None, protected_col = None, fairness_metric = None,
@@ -3564,6 +3841,14 @@ impl PyModelTree {
         seed: u64,
         leaf: &str,
         tau: f64,
+        huber_delta: f64,
+        expectile_tau: f64,
+        non_negative: bool,
+        non_negative_intercept: bool,
+        nb_alpha: Option<f64>,
+        beta_phi: Option<f64>,
+        group_l2: f64,
+        groups: Option<Bound<'_, PyAny>>,
         l1: f64,
         l2: f64,
         leaf_cols: &str,
@@ -3610,6 +3895,8 @@ impl PyModelTree {
         knn_p: f64,
         shrinkage: f64,
         max_classes: usize,
+        max_bins: usize,
+        min_bin_rows: usize,
         leaf_na_policy: &str,
         preset: Option<&str>,
         control: Option<Bound<'_, PyAny>>,
@@ -3697,6 +3984,7 @@ impl PyModelTree {
             "mean" => LeafKind::Mean,
             "median" => LeafKind::Median,
             "quantile" => LeafKind::Quantile(tau),
+            "expectile" => LeafKind::Expectile(expectile_tau),
             "huber" => LeafKind::Huber,
             "mars" => LeafKind::Mars,
             "knn" | "dwknn" | "uniform_knn" | "distance_knn" => LeafKind::Knn,
@@ -3705,7 +3993,7 @@ impl PyModelTree {
             "log_odds" | "logit" => LeafKind::LogOdds,
             other => {
                 return Err(PyValueError::new_err(format!(
-                    "leaf must be 'linear', 'mean', 'median', 'quantile', 'huber', 'mars', 'prob', 'odds', or 'log_odds', got {other}"
+                    "leaf must be 'linear', 'mean', 'median', 'quantile', 'expectile', 'huber', 'mars', 'prob', 'odds', or 'log_odds', got {other}"
                 )))
             }
         };
@@ -3723,6 +4011,11 @@ impl PyModelTree {
             "aft" => LeafFamily::Aft,
             "cure" => LeafFamily::Cure,
             "spline" => LeafFamily::Spline,
+            "quantile" => LeafFamily::Quantile,
+            "huber" => LeafFamily::Huber,
+            "expectile" => LeafFamily::Expectile,
+            "negative_binomial" | "negbin" => LeafFamily::NegativeBinomial,
+            "beta" => LeafFamily::Beta,
             other => {
                 return Err(PyValueError::new_err(format!(
                     "leaf_family must be 'gaussian', 'binomial', 'poisson', 'probit', 'gamma', 'tweedie', 'tobit', 'softmax', 'survival', or 'heteroscedastic', got {other}"
@@ -3985,6 +4278,21 @@ impl PyModelTree {
             knn_p,
             shrinkage,
             max_classes,
+            max_bins,
+            min_bin_rows,
+            tau,
+            huber_delta,
+            expectile_tau,
+            non_negative,
+            non_negative_intercept,
+            nb_alpha,
+            beta_phi,
+            groups: if let Some(g) = groups {
+                Some(parse_group_specs(&g)?)
+            } else {
+                None
+            },
+            group_l2,
             leaf_na_policy: leaf_na_policy_enum,
             target_vectors: None,
             fairness_penalty: fairness_penalty.unwrap_or(0.0),
@@ -4012,6 +4320,7 @@ impl PyModelTree {
                 ctrl_obj.py(),
                 Some(ctrl_obj),
                 &params,
+                None,
                 None,
                 None,
                 None,
@@ -4241,6 +4550,7 @@ impl PyModelTree {
                 None,
                 None,
                 None,
+                None,
                 &[],
             )?;
             self.params.n_classes = self.params.n_classes.or(ctrl.n_classes);
@@ -4319,6 +4629,7 @@ impl PyModelTree {
         l2 = None,
         leaf_digest = None,
         tau = None,
+        huber_delta = None,
         event = None,
         n_classes = None
     ))]
@@ -4339,6 +4650,7 @@ impl PyModelTree {
         l2: Option<f64>,
         leaf_digest: Option<bool>,
         tau: Option<f64>,
+        huber_delta: Option<f64>,
         event: Option<Vec<f64>>,
         n_classes: Option<usize>,
     ) -> PyResult<Py<PyModelTree>> {
@@ -4391,6 +4703,7 @@ impl PyModelTree {
                     l2,
                     leaf_digest,
                     tau,
+                    huber_delta,
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
@@ -4428,6 +4741,7 @@ impl PyModelTree {
                     l2,
                     leaf_digest,
                     tau,
+                    huber_delta,
                     leaf_features.or(retrain_cols),
                     &data_col_names,
                 )?;
@@ -5470,6 +5784,7 @@ impl PyModelTree {
                 LeafKind::Mean => "mean",
                 LeafKind::Median => "median",
                 LeafKind::Quantile(_) => "quantile",
+                LeafKind::Expectile(_) => "expectile",
                 LeafKind::Huber => "huber",
                 LeafKind::Mars => "mars",
                 LeafKind::Knn => "knn",
@@ -5478,9 +5793,8 @@ impl PyModelTree {
                 LeafKind::LogOdds => "log_odds",
             },
         )?;
-        if let LeafKind::Quantile(tau) = self.params.leaf {
-            d.set_item("tau", tau)?;
-        }
+        d.set_item("tau", self.params.tau)?;
+        d.set_item("huber_delta", self.params.huber_delta)?;
         d.set_item(
             "leaf_family",
             match self.params.leaf_family {
@@ -5497,6 +5811,11 @@ impl PyModelTree {
                 LeafFamily::Aft => "aft",
                 LeafFamily::Cure => "cure",
                 LeafFamily::Spline => "spline",
+                LeafFamily::Quantile => "quantile",
+                LeafFamily::Huber => "huber",
+                LeafFamily::Expectile => "expectile",
+                LeafFamily::NegativeBinomial => "negative_binomial",
+                LeafFamily::Beta => "beta",
             },
         )?;
         d.set_item("l1", self.params.l1)?;
@@ -5551,6 +5870,8 @@ impl PyModelTree {
                 SplitEval::Exhaustive => "exhaustive",
             },
         )?;
+        d.set_item("max_bins", self.params.max_bins)?;
+        d.set_item("min_bin_rows", self.params.min_bin_rows)?;
         d.set_item("presort", self.params.presort)?;
         d.set_item("events", self.params.events.clone())?;
         d.set_item("n_classes", self.params.n_classes)?;
@@ -5567,6 +5888,12 @@ impl PyModelTree {
         d.set_item("knn_p", self.params.knn_p)?;
         d.set_item("shrinkage", self.params.shrinkage)?;
         d.set_item("max_classes", self.params.max_classes)?;
+        d.set_item("expectile_tau", self.params.expectile_tau)?;
+        d.set_item("non_negative", self.params.non_negative)?;
+        d.set_item("non_negative_intercept", self.params.non_negative_intercept)?;
+        d.set_item("nb_alpha", self.params.nb_alpha)?;
+        d.set_item("beta_phi", self.params.beta_phi)?;
+        d.set_item("group_l2", self.params.group_l2)?;
         Ok(d.into())
     }
 
@@ -6753,7 +7080,9 @@ impl PyMarsRegressor {
         pmethod = "backward",
         glm = "gaussian",
         allowed = None,
-        verbose = 0
+        verbose = 0,
+        quantile_knots = false,
+        ridge_lambda = 1e-5
     ))]
     fn new(
         degree: usize,
@@ -6768,6 +7097,8 @@ impl PyMarsRegressor {
         glm: &str,
         allowed: Option<Vec<Vec<bool>>>,
         verbose: u8,
+        quantile_knots: bool,
+        ridge_lambda: f64,
     ) -> PyResult<Self> {
         let pm = mltreelib_core::mars::MarsPruningMethod::from_str(pmethod)
             .map_err(PyValueError::new_err)?;
@@ -6784,6 +7115,8 @@ impl PyMarsRegressor {
         reg.params.glm = gm;
         reg.params.allowed = allowed;
         reg.params.verbose = verbose;
+        reg.params.quantile_knots = quantile_knots;
+        reg.params.ridge_lambda = ridge_lambda;
 
         Ok(PyMarsRegressor { inner: reg })
     }
@@ -6846,6 +7179,157 @@ impl PyMarsRegressor {
             .as_ref()
             .ok_or_else(|| PyValueError::new_err("MarsRegressor is not fitted"))?;
         Ok(m.equation(col_names.as_deref()))
+    }
+}
+
+/// Generalized Additive Models (GAM) with Penalized B-Splines (P-Splines).
+#[pyclass(name = "GamRegressor")]
+pub struct PyGamRegressor {
+    inner: mltreelib_core::gam::GamRegressor,
+}
+
+#[pymethods]
+impl PyGamRegressor {
+    #[new]
+    #[pyo3(signature = (
+        n_knots = 8,
+        degree = 3,
+        lambda_val = None,
+        lambda_min = 1e-4,
+        lambda_max = 1e4,
+        n_grid = 25,
+        n_splines = None
+    ))]
+    fn new(
+        n_knots: usize,
+        degree: usize,
+        lambda_val: Option<f64>,
+        lambda_min: f64,
+        lambda_max: f64,
+        n_grid: usize,
+        n_splines: Option<usize>,
+    ) -> PyResult<Self> {
+        let knots = n_splines.unwrap_or(n_knots);
+        let mut reg = mltreelib_core::gam::GamRegressor::new(knots, lambda_val);
+        reg.params.degree = degree;
+        reg.params.lambda_min = lambda_min;
+        reg.params.lambda_max = lambda_max;
+        reg.params.n_grid = n_grid;
+        Ok(PyGamRegressor { inner: reg })
+    }
+
+    #[pyo3(signature = (x, y, sample_weights = None))]
+    fn fit(
+        &mut self,
+        x: &Bound<'_, pyo3::PyAny>,
+        y: Vec<f64>,
+        sample_weights: Option<Vec<f64>>,
+    ) -> PyResult<()> {
+        let mat = if let Ok(vec2d) = x.extract::<Vec<Vec<f64>>>() {
+            vec2d
+        } else if let Ok(vec1d) = x.extract::<Vec<f64>>() {
+            vec1d.into_iter().map(|v| vec![v]).collect()
+        } else {
+            return Err(PyValueError::new_err("Expected 1D or 2D array for x"));
+        };
+        self.inner
+            .fit_weighted(&mat, &y, sample_weights.as_deref())
+            .map_err(PyValueError::new_err)
+    }
+
+    fn predict(&self, x: &Bound<'_, pyo3::PyAny>) -> PyResult<Vec<f64>> {
+        let mat = if let Ok(vec2d) = x.extract::<Vec<Vec<f64>>>() {
+            vec2d
+        } else if let Ok(vec1d) = x.extract::<Vec<f64>>() {
+            vec1d.into_iter().map(|v| vec![v]).collect()
+        } else {
+            return Err(PyValueError::new_err("Expected 1D or 2D array for x"));
+        };
+        self.inner.predict(&mat).map_err(PyValueError::new_err)
+    }
+
+    #[getter(edf)]
+    fn get_edf(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.edf)
+    }
+
+    fn edf(&self) -> PyResult<f64> {
+        self.get_edf()
+    }
+
+    #[getter(gcv)]
+    fn get_gcv(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.gcv)
+    }
+
+    fn gcv(&self) -> PyResult<f64> {
+        self.get_gcv()
+    }
+
+    #[getter(lambda_val)]
+    fn get_lambda_val(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.lambda)
+    }
+
+    fn lambda_val(&self) -> PyResult<f64> {
+        self.get_lambda_val()
+    }
+
+    #[getter(n_terms)]
+    fn get_n_terms(&self) -> PyResult<usize> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.n_terms())
+    }
+
+    fn n_terms(&self) -> PyResult<usize> {
+        self.get_n_terms()
+    }
+
+    #[getter(intercept)]
+    fn get_intercept(&self) -> PyResult<f64> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.intercept)
+    }
+
+    fn intercept(&self) -> PyResult<f64> {
+        self.get_intercept()
+    }
+
+    #[getter(coefs)]
+    fn get_coefs(&self) -> PyResult<Vec<Vec<f64>>> {
+        let m = self
+            .inner
+            .model
+            .as_ref()
+            .ok_or_else(|| PyValueError::new_err("GamRegressor is not fitted"))?;
+        Ok(m.coefs.clone())
+    }
+
+    fn coefs(&self) -> PyResult<Vec<Vec<f64>>> {
+        self.get_coefs()
     }
 }
 
@@ -6977,10 +7461,29 @@ fn competing_risks_calibration<'py>(
     cr_calibration_to_dict(py, &r)
 }
 
+/// Detects row-level quantile crossing violations across multiple quantile predictions.
+#[pyfunction]
+#[pyo3(signature = (preds_matrix, taus))]
+fn detect_quantile_crossings<'py>(
+    py: Python<'py>,
+    preds_matrix: Vec<Vec<f64>>,
+    taus: Vec<f64>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let report = mltreelib_core::solver::detect_quantile_crossings(&preds_matrix, &taus);
+    let dict = PyDict::new(py);
+    dict.set_item("n_crossings", report.n_crossings)?;
+    dict.set_item("n_violating_rows", report.n_violating_rows)?;
+    dict.set_item("crossing_rate", report.crossing_rate)?;
+    dict.set_item("max_violation", report.max_violation)?;
+    dict.set_item("crossings", report.crossings)?;
+    Ok(dict)
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     solvers::register(m)?;
     m.add_class::<PyMarsRegressor>()?;
+    m.add_class::<PyGamRegressor>()?;
     m.add_class::<PyHdbscanTree>()?;
     m.add_class::<PyUnsupervisedProximityForest>()?;
     m.add_class::<PyClTree>()?;
@@ -7035,5 +7538,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(integrated_calibration_index, m)?)?;
     m.add_function(wrap_pyfunction!(one_calibration, m)?)?;
     m.add_function(wrap_pyfunction!(competing_risks_calibration, m)?)?;
+    m.add_function(wrap_pyfunction!(detect_quantile_crossings, m)?)?;
     Ok(())
 }

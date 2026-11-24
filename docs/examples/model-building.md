@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Tree Architecture, Growth Knobs & Structural Constraints**](tree-architecture-and-knobs.md).
+
 # Model building & predictions
 
 Every parameter and nuance the tree handles, on one big, tedious dataset —

@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Unsupervised Density Trees: Clustering & Anomaly Detection**](unsupervised-clustering-and-anomalies.md).
+
 # Compare anomaly review budgets
 
 The [Shuttle anomaly pathway](../guides/anomaly.md) makes a 5% review queue. This example asks how the apparent precision and recall change if the team can inspect 1%, 5%, or 10% of a batch. It uses the same fitted score for all three policies.

@@ -1894,9 +1894,12 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
         },
         feature_means: Vec::new(),
         intercept: match family {
-            LeafFamily::Binomial => mean.ln() - (-mean).ln_1p(),
+            LeafFamily::Binomial | LeafFamily::Beta => {
+                let m = mean.clamp(1e-4, 1.0 - 1e-4);
+                m.ln() - (-m).ln_1p()
+            }
             LeafFamily::Probit => std_norm_inv_cdf(mean),
-            LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie => mean.max(1e-12).ln(),
+            LeafFamily::Poisson | LeafFamily::Gamma | LeafFamily::Tweedie | LeafFamily::NegativeBinomial => mean.max(1e-12).ln(),
             LeafFamily::Gaussian
             | LeafFamily::Tobit
             | LeafFamily::Softmax
@@ -1904,7 +1907,10 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
             | LeafFamily::Heteroscedastic
             | LeafFamily::Aft
             | LeafFamily::Cure
-            | LeafFamily::Spline => mean,
+            | LeafFamily::Spline
+            | LeafFamily::Quantile
+            | LeafFamily::Huber
+            | LeafFamily::Expectile => mean,
         },
         summary: None,
     };
@@ -2025,13 +2031,27 @@ pub(crate) fn fit_glm_design<D: crate::solver::DesignMatrix>(
                     };
                     gram.add_row(&row, y_latent, w);
                 }
+                LeafFamily::NegativeBinomial => {
+                    let alpha = 0.1;
+                    let working = eta + (y - mean) / mean.max(1e-12);
+                    let weight = w * mean.max(1e-12) / (1.0 + alpha * mean);
+                    gram.add_row(&row, working, weight.max(1e-12));
+                }
+                LeafFamily::Beta => {
+                    let variance = (mean * (1.0 - mean)).max(1e-12);
+                    let working = eta + (y - mean) / variance;
+                    gram.add_row(&row, working, w * variance);
+                }
                 LeafFamily::Gaussian
                 | LeafFamily::Softmax
                 | LeafFamily::Survival
                 | LeafFamily::Heteroscedastic
                 | LeafFamily::Aft
                 | LeafFamily::Cure
-                | LeafFamily::Spline => {
+                | LeafFamily::Spline
+                | LeafFamily::Quantile
+                | LeafFamily::Huber
+                | LeafFamily::Expectile => {
                     gram.add_row(&row, y, w);
                 }
             }

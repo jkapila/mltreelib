@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Generic Bounded Solvers & Hyperparameter Optimization**](optimization-and-tuning.md).
+
 # Generic optimizer and real-data tuning
 
 `mltreelib.solvers.optimize` minimizes a callable scalar objective inside

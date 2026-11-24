@@ -46,6 +46,8 @@ pub enum LeafKind {
     Median,
     /// Weighted quantile at tau (0.5 = median; any tau in (0, 1)).
     Quantile(#[serde(with = "crate::persistence::float")] f64),
+    /// Weighted expectile at tau (0.5 = mean; any tau in (0, 1)).
+    Expectile(#[serde(with = "crate::persistence::float")] f64),
     /// Huber M-location (quadratic near the center, linear in the tails).
     Huber,
     /// Piecewise MARS splines (earth models fit at the leaf).
@@ -101,6 +103,38 @@ pub enum LeafProblemType {
     },
     /// Weighted Huber M-location objective.
     HuberLocation(LeafFamily),
+    /// Multivariate Huber regression with tuning constant delta and robust scale sigma.
+    HuberRegression {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        delta: f64,
+        #[serde(with = "crate::persistence::float")]
+        scale: f64,
+    },
+    /// Weighted expectile asymmetric squared loss objective.
+    ExpectileLocation {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        tau: f64,
+    },
+    /// Multivariate expectile regression with target level tau.
+    ExpectileRegression {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        tau: f64,
+    },
+    /// Negative binomial overdispersed count regression with dispersion alpha.
+    NegativeBinomialGlm {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        alpha: f64,
+    },
+    /// Beta regression for unit-interval targets with precision phi.
+    BetaGlm {
+        family: LeafFamily,
+        #[serde(with = "crate::persistence::float")]
+        phi: f64,
+    },
     /// Weighted mean computed without optimization.
     ClosedFormMean(LeafFamily),
     /// Probability, odds, or log-odds transform of the fitted mean.
@@ -134,10 +168,16 @@ impl LeafProblemType {
                 LeafFamily::Aft => Self::Aft(family),
                 LeafFamily::Cure => Self::Cure(family),
                 LeafFamily::Spline => Self::Spline(family),
+                LeafFamily::Quantile => Self::WeightedQuantile { family, tau: 0.5 },
+                LeafFamily::Huber => Self::HuberRegression { family, delta: 1.345, scale: 1.0 },
+                LeafFamily::Expectile => Self::ExpectileRegression { family, tau: 0.5 },
+                LeafFamily::NegativeBinomial => Self::NegativeBinomialGlm { family, alpha: 0.0 },
+                LeafFamily::Beta => Self::BetaGlm { family, phi: 1.0 },
                 _ => Self::PenalizedGlm(family),
             },
             LeafKind::Median => Self::WeightedMedian(family),
             LeafKind::Quantile(tau) => Self::WeightedQuantile { family, tau },
+            LeafKind::Expectile(tau) => Self::ExpectileLocation { family, tau },
             LeafKind::Huber => Self::HuberLocation(family),
             LeafKind::Mean => Self::ClosedFormMean(family),
             LeafKind::Prob | LeafKind::Odds | LeafKind::LogOdds => {
@@ -464,6 +504,24 @@ pub struct LeafControl {
     pub cure_fraction: Option<f64>,
     /// Number of interior spline knots for Royston-Parmar leaves (default 3).
     pub spline_knots: usize,
+    /// Target quantile tau in (0, 1) for quantile leaves (default 0.5).
+    pub tau: f64,
+    /// Huber tuning constant delta > 0 for Huber regression leaves (default 1.345).
+    pub huber_delta: f64,
+    /// Target expectile tau in (0, 1) for expectile regression leaves (default 0.5).
+    pub expectile_tau: f64,
+    /// Enforce non-negative coefficients (slopes >= 0) via Lawson-Hanson NNLS (default false).
+    pub non_negative: bool,
+    /// Enforce non-negative intercept in addition to slopes in NNLS (default false).
+    pub non_negative_intercept: bool,
+    /// Fixed negative binomial dispersion parameter alpha >= 0 (None = estimate from data).
+    pub nb_alpha: Option<f64>,
+    /// Fixed beta regression precision parameter phi > 0 (None = estimate from data).
+    pub beta_phi: Option<f64>,
+    /// Coefficient group definitions for Group Lasso and Sparse-Group Lasso leaves.
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    /// Group L2 penalty multiplier for Group Lasso and Sparse-Group Lasso (default 0.0).
+    pub group_l2: f64,
 }
 
 impl Default for LeafControl {
@@ -501,6 +559,15 @@ impl Default for LeafControl {
             aft_dist: crate::node_stats::AftDist::Weibull,
             cure_fraction: None,
             spline_knots: 3,
+            tau: 0.5,
+            huber_delta: 1.345,
+            expectile_tau: 0.5,
+            non_negative: false,
+            non_negative_intercept: false,
+            nb_alpha: None,
+            beta_phi: None,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }
@@ -518,6 +585,29 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
         extra.insert("knn_p".to_string(), p.knn_p);
         if let Some(g) = p.knn_gamma {
             extra.insert("knn_gamma".to_string(), g);
+        }
+        let tau = match p.leaf {
+            LeafKind::Quantile(t) => t,
+            _ => p.tau,
+        };
+        extra.insert("tau".to_string(), tau);
+        extra.insert("huber_delta".to_string(), p.huber_delta);
+        let exp_tau = match p.leaf {
+            LeafKind::Expectile(t) => t,
+            _ => p.expectile_tau,
+        };
+        extra.insert("expectile_tau".to_string(), exp_tau);
+        if p.non_negative {
+            extra.insert("non_negative".to_string(), 1.0);
+        }
+        if p.non_negative_intercept {
+            extra.insert("non_negative_intercept".to_string(), 1.0);
+        }
+        if let Some(alpha) = p.nb_alpha {
+            extra.insert("nb_alpha".to_string(), alpha);
+        }
+        if let Some(phi) = p.beta_phi {
+            extra.insert("beta_phi".to_string(), phi);
         }
         let leaf_monotone = if !p.leaf_monotone.is_empty() {
             p.leaf_monotone.clone()
@@ -557,6 +647,15 @@ impl From<&crate::model_tree::ModelTreeParams> for LeafControl {
             aft_dist: p.aft_dist,
             cure_fraction: p.cure_fraction,
             spline_knots: p.spline_knots,
+            tau,
+            huber_delta: p.huber_delta,
+            expectile_tau: exp_tau,
+            non_negative: p.non_negative,
+            non_negative_intercept: p.non_negative_intercept,
+            nb_alpha: p.nb_alpha,
+            beta_phi: p.beta_phi,
+            groups: p.groups.clone(),
+            group_l2: p.group_l2,
         }
     }
 }
@@ -591,6 +690,10 @@ impl crate::model_tree::ModelTreeParams {
         self.aft_dist = control.aft_dist;
         self.cure_fraction = control.cure_fraction;
         self.spline_knots = control.spline_knots;
+        self.tau = control.tau;
+        self.huber_delta = control.huber_delta;
+        self.groups = control.groups;
+        self.group_l2 = control.group_l2;
     }
 }
 
@@ -1465,6 +1568,7 @@ pub fn fit_leaf_model(
     }
 
     if family != LeafFamily::Gaussian
+        && family != LeafFamily::Quantile
         && (control.leaf == LeafKind::Mean
             || ((family == LeafFamily::Binomial || family == LeafFamily::Probit)
                 && (stats.mean == 0.0 || stats.mean == 1.0))
@@ -1506,74 +1610,105 @@ pub fn fit_leaf_model(
                 .as_ref()
                 .map(|m| m.iter().map(|&v| Some(v)).collect())
                 .unwrap_or_default();
-            let lm = match crate::solver::solve_leaf_problem(
-                &crate::solver::LeafFitProblem::Linear(crate::solver::LeafLinearProblem {
-                    cols,
-                    y,
-                    w,
-                    rows: &actual_rows,
-                    chosen: &chosen,
-                    with_indicators: any_missing,
-                    impute_means: impute_means.as_deref(),
-                    family,
+            let is_special_linear = family == LeafFamily::Quantile
+                || family == LeafFamily::Huber
+                || family == LeafFamily::Expectile
+                || family == LeafFamily::NegativeBinomial
+                || family == LeafFamily::Beta;
+            let lm = if is_special_linear && actual_rows.len() < chosen.len() + 1 {
+                solver_used = LeafSolverDiagnostic::Rejected {
                     solver: control.solver,
-                    l1: control.l1,
-                    l2: control.l2,
-                    monotone: control.effective_leaf_monotone(),
-                    mean: stats.mean,
-                    extra: Some(&control.extra),
-                    tweedie_p: control.tweedie_p,
-                    tobit_threshold: control.tobit_threshold,
-                    verbose: control.verbose,
-                }),
-            ) {
-                Ok(output) => {
-                    solver_used = output.diagnostic;
-                    output.linear.unwrap_or(LinearModel {
-                        coef: vec![0.0; chosen.len()],
-                        na_coef: if any_missing {
-                            vec![0.0; chosen.len()]
-                        } else {
-                            Vec::new()
-                        },
-                        feature_means: f_means.clone(),
-                        cols: chosen.clone(),
-                        intercept: f64::NAN,
-                        summary: None,
-                    })
-                }
-                Err(reason) => {
-                    if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) {
-                        solver_used = LeafSolverDiagnostic::Failed {
-                            solver: control.solver,
-                            reason: reason.clone(),
-                        };
+                    reason: format!(
+                        "leaf rows {} < features {} + 1 (minimum support rule)",
+                        actual_rows.len(),
+                        chosen.len()
+                    ),
+                };
+                None
+            } else {
+                match crate::solver::solve_leaf_problem(
+                    &crate::solver::LeafFitProblem::Linear(crate::solver::LeafLinearProblem {
+                        cols,
+                        y,
+                        w,
+                        rows: &actual_rows,
+                        chosen: &chosen,
+                        with_indicators: any_missing,
+                        impute_means: impute_means.as_deref(),
+                        family,
+                        solver: control.solver,
+                        l1: control.l1,
+                        l2: control.l2,
+                        monotone: control.effective_leaf_monotone(),
+                        mean: stats.mean,
+                        extra: Some(&control.extra),
+                        tweedie_p: control.tweedie_p,
+                        tobit_threshold: control.tobit_threshold,
+                        verbose: control.verbose,
+                        groups: control.groups.clone(),
+                        group_l2: control.group_l2,
+                    }),
+                ) {
+                    Ok(output) => {
+                        solver_used = output.diagnostic;
+                        output.linear.or_else(|| {
+                            if is_special_linear {
+                                None
+                            } else {
+                                Some(LinearModel {
+                                    coef: vec![0.0; chosen.len()],
+                                    na_coef: if any_missing {
+                                        vec![0.0; chosen.len()]
+                                    } else {
+                                        Vec::new()
+                                    },
+                                    feature_means: f_means.clone(),
+                                    cols: chosen.clone(),
+                                    intercept: f64::NAN,
+                                    summary: None,
+                                })
+                            }
+                        })
                     }
-                    LinearModel {
-                        coef: vec![0.0; chosen.len()],
-                        na_coef: if any_missing {
-                            vec![0.0; chosen.len()]
+                    Err(reason) => {
+                        if !matches!(solver_used, LeafSolverDiagnostic::Rejected { .. }) {
+                            solver_used = LeafSolverDiagnostic::Failed {
+                                solver: control.solver,
+                                reason: reason.clone(),
+                            };
+                        }
+                        if is_special_linear {
+                            None
                         } else {
-                            Vec::new()
-                        },
-                        feature_means: f_means.clone(),
-                        cols: chosen.clone(),
-                        intercept: f64::NAN,
-                        summary: None,
+                            Some(LinearModel {
+                                coef: vec![0.0; chosen.len()],
+                                na_coef: if any_missing {
+                                        vec![0.0; chosen.len()]
+                                    } else {
+                                        Vec::new()
+                                    },
+                                feature_means: f_means.clone(),
+                                cols: chosen.clone(),
+                                intercept: f64::NAN,
+                                summary: None,
+                            })
+                        }
                     }
                 }
             };
-            if control.verbose >= 3 {
-                println!(
-                    "      [leaf linear fit] rows={} cols={} l1={:.4} l2={:.4} intercept={:.4}",
-                    actual_rows.len(),
-                    chosen.len(),
-                    control.l1,
-                    control.l2,
-                    lm.intercept
-                );
+            if let Some(ref m) = lm {
+                if control.verbose >= 3 {
+                    println!(
+                        "      [leaf linear fit] rows={} cols={} l1={:.4} l2={:.4} intercept={:.4}",
+                        actual_rows.len(),
+                        chosen.len(),
+                        control.l1,
+                        control.l2,
+                        m.intercept
+                    );
+                }
             }
-            Some(lm)
+            lm
         }
     } else {
         None
@@ -1582,8 +1717,11 @@ pub fn fit_leaf_model(
     // targets only (same population as the stats).
     let yws: Vec<(f64, f64)> = if matches!(
         control.leaf,
-        LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Huber
-    ) {
+        LeafKind::Median | LeafKind::Quantile(_) | LeafKind::Expectile(_) | LeafKind::Huber
+    ) || family == LeafFamily::Quantile
+        || family == LeafFamily::Expectile
+        || family == LeafFamily::Huber
+    {
         rows.iter()
             .filter(|&&r| w[r] > 0.0)
             .map(|&r| (y[r], w[r]))
@@ -1643,6 +1781,29 @@ pub fn fit_leaf_model(
         LeafKind::Prob => Some(stats.prob()),
         LeafKind::Odds => Some(stats.odds()),
         LeafKind::LogOdds => Some(stats.log_odds()),
+        _ if family == LeafFamily::Quantile => {
+            let q_tau = match control.leaf {
+                LeafKind::Quantile(t) => t,
+                _ => control.tau,
+            };
+            Some(w_quantile(&yws, q_tau))
+        }
+        _ if family == LeafFamily::Huber => {
+            Some(huber_location(&yws))
+        }
+        _ if family == LeafFamily::Expectile => {
+            let exp_tau = match control.leaf {
+                LeafKind::Expectile(t) => t,
+                _ => control.expectile_tau,
+            };
+            Some(crate::solver::problems::expectile::weighted_expectile(&yws, exp_tau))
+        }
+        LeafKind::Expectile(t) => {
+            Some(crate::solver::problems::expectile::weighted_expectile(&yws, t))
+        }
+        _ if family == LeafFamily::Beta => {
+            Some(stats.mean.clamp(1e-4, 1.0 - 1e-4))
+        }
         _ => Some(stats.mean),
     };
     LeafModel {

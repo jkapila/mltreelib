@@ -84,14 +84,33 @@ pub(crate) fn uses_class_histogram(gain: &GainFn) -> bool {
     matches!(gain, GainFn::Gini | GainFn::Entropy | GainFn::GainRatio | GainFn::Twoing)
 }
 
-const HISTOGRAM_BINS: usize = 256;
+pub(crate) fn uses_histogram_split(gain: &GainFn) -> bool {
+    uses_class_histogram(gain)
+        || matches!(
+            gain,
+            GainFn::Sse
+                | GainFn::Deviance
+                | GainFn::FriedmanMse
+                | GainFn::Sdr
+                | GainFn::AbsoluteError
+                | GainFn::Huber
+                | GainFn::Poisson
+        )
+}
 
 /// Fit shared numeric cut points on structure rows only, preserving ties.
-pub(crate) fn histogram_cuts(
+///
+/// Uses cardinality-adaptive bin allocation:
+/// - Low-cardinality (|unique| <= max_bins): exact unique values as edges with zero
+///   quantile estimation and candidate thresholds matching the raw scan.
+/// - High-cardinality (|unique| > max_bins): quantile-based bin cuts, enforcing min_bin_rows.
+pub fn histogram_cuts(
     cols: &[Vec<Option<f64>>],
     rows: &[usize],
     params: &crate::model_tree::ModelTreeParams,
 ) -> Vec<Vec<f64>> {
+    let max_bins = params.max_bins.max(2);
+    let min_bin_rows = params.min_bin_rows.max(1);
     cols.iter()
         .enumerate()
         .map(|(j, col)| {
@@ -100,26 +119,54 @@ pub(crate) fn histogram_cuts(
             }
             let grid = grid_of(&params.dtypes, params.split_precision, j);
             let inverse = grid.filter(|&step| step > 0.0).map(|step| 1.0 / step);
-            let mut values: Vec<f64> = rows
+            let mut raw_values: Vec<f64> = rows
                 .iter()
                 .filter_map(|&row| col[row])
                 .map(|value| round_for_scan(value, inverse))
                 .collect();
-            values.sort_unstable_by(f64::total_cmp);
-            values.dedup();
-            let bins = values.len().min(HISTOGRAM_BINS);
-            (1..bins)
-                .map(|bin| {
-                    let boundary = bin * values.len() / bins;
-                    let (lo, hi) = (values[boundary - 1], values[boundary]);
-                    if grid.is_some() {
-                        lo
-                    } else {
-                        let midpoint = lo.midpoint(hi);
-                        if midpoint < hi { midpoint } else { lo }
-                    }
-                })
-                .collect()
+            if raw_values.is_empty() {
+                return Vec::new();
+            }
+            raw_values.sort_unstable_by(f64::total_cmp);
+            let mut unique_values = raw_values.clone();
+            unique_values.dedup();
+            let n_unique = unique_values.len();
+            if n_unique <= 1 {
+                return Vec::new();
+            }
+
+            if n_unique <= max_bins {
+                // Low-cardinality exact: midpoints between adjacent unique values
+                (1..n_unique)
+                    .map(|bin| {
+                        let (lo, hi) = (unique_values[bin - 1], unique_values[bin]);
+                        if grid.is_some() {
+                            lo
+                        } else {
+                            let midpoint = lo.midpoint(hi);
+                            if midpoint < hi { midpoint } else { lo }
+                        }
+                    })
+                    .collect()
+            } else {
+                // High-cardinality continuous: quantiles up to max_bins
+                let n_rows = raw_values.len();
+                let effective_bins = max_bins.min((n_rows / min_bin_rows).max(2));
+                let mut q_cuts: Vec<f64> = (1..effective_bins)
+                    .map(|bin| {
+                        let boundary = bin * n_rows / effective_bins;
+                        let (lo, hi) = (raw_values[boundary - 1], raw_values[boundary]);
+                        if grid.is_some() {
+                            lo
+                        } else {
+                            let midpoint = lo.midpoint(hi);
+                            if midpoint < hi { midpoint } else { lo }
+                        }
+                    })
+                    .collect();
+                q_cuts.dedup();
+                q_cuts
+            }
         })
         .collect()
 }
@@ -221,6 +268,7 @@ struct ScanStats {
 pub(crate) struct SplitScratch {
     pub pairs: Vec<(f64, f64, f64, f64)>,
     binned_pairs: Vec<(f64, f64, f64, f64)>,
+    pub bin_offsets: Vec<usize>,
     pub pairs_yw: Vec<(f64, f64)>,
     pub missing_yws: Vec<(f64, f64)>,
     pub level_moments: Vec<(f64, usize, f64, f64, f64, f64, f64, f64, f64, f64)>, // (level, n, sw, swy, swy2, sw_prot, s1_y1, s0_y1, s1_y0, s0_y0)
@@ -236,21 +284,31 @@ pub(crate) struct SplitScratch {
 }
 
 impl SplitScratch {
-    /// Group equal bin IDs in linear time without sorting the individual values.
-    fn group_bins(&mut self) {
-        let mut offsets = [0; HISTOGRAM_BINS];
+    /// Group equal bin IDs in linear time without sorting individual values.
+    fn group_bins(&mut self, num_bins: usize) {
+        if num_bins == 0 {
+            return;
+        }
+        self.bin_offsets.clear();
+        self.bin_offsets.resize(num_bins, 0);
         for &(bin, ..) in &self.pairs {
-            offsets[bin as usize] += 1;
+            let b = bin as usize;
+            if b < num_bins {
+                self.bin_offsets[b] += 1;
+            }
         }
         let mut next = 0;
-        for offset in &mut offsets {
+        for offset in &mut self.bin_offsets {
             next += std::mem::replace(offset, next);
         }
         self.binned_pairs.resize(self.pairs.len(), (0.0, 0.0, 0.0, 0.0));
         for &pair in &self.pairs {
-            let offset = &mut offsets[pair.0 as usize];
-            self.binned_pairs[*offset] = pair;
-            *offset += 1;
+            let b = pair.0 as usize;
+            if b < num_bins {
+                let offset = &mut self.bin_offsets[b];
+                self.binned_pairs[*offset] = pair;
+                *offset += 1;
+            }
         }
         std::mem::swap(&mut self.pairs, &mut self.binned_pairs);
     }
@@ -806,7 +864,10 @@ impl<'a> Grower<'a> {
         let mut st = ScanStats::default();
         let t0 = Instant::now();
 
-        let is_standard_gain = matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
+        let is_standard_gain = matches!(
+            self.params.gain,
+            GainFn::Sse | GainFn::Deviance | GainFn::FriedmanMse | GainFn::Sdr
+        );
         if is_standard_gain {
             let prot_col_opt = self.params.protected_col;
             let mut by_level: std::collections::HashMap<u64, (usize, f64, f64, f64, f64, f64, f64, f64, f64)> =
@@ -953,6 +1014,21 @@ impl<'a> Grower<'a> {
                         }
                         GainFn::Sse | GainFn::Deviance => {
                             parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
+                        }
+                        GainFn::FriedmanMse => {
+                            if alsw > 0.0 && arsw > 0.0 && total_w > 0.0 {
+                                let mean_l = alswy / alsw;
+                                let mean_r = arswy / arsw;
+                                (alsw * arsw / total_w) * (mean_l - mean_r).powi(2)
+                            } else {
+                                0.0
+                            }
+                        }
+                        GainFn::Sdr => {
+                            let sd_parent = (parent_sse / total_w.max(1e-12)).max(0.0).sqrt();
+                            let sd_l = if alsw > 0.0 { (sse(alsw, alswy, alswy2) / alsw).max(0.0).sqrt() } else { 0.0 };
+                            let sd_r = if arsw > 0.0 { (sse(arsw, arswy, arswy2) / arsw).max(0.0).sqrt() } else { 0.0 };
+                            sd_parent - (alsw / total_w) * sd_l - (arsw / total_w) * sd_r
                         }
                         _ => unreachable!(),
                     };
@@ -1505,8 +1581,8 @@ impl<'a> Grower<'a> {
             return (None, st);
         }
 
-        if cuts.is_some() {
-            scratch.group_bins();
+        if let Some(cuts) = cuts {
+            scratch.group_bins(cuts.len() + 1);
         } else {
             scratch
                 .pairs
@@ -1576,7 +1652,10 @@ impl<'a> Grower<'a> {
             scratch.h_cand_right.clear();
             scratch.h_cand_right.resize(nc, 0.0);
         } else {
-            let is_custom_gain = !matches!(self.params.gain, GainFn::Sse | GainFn::Deviance);
+            let is_custom_gain = !matches!(
+                self.params.gain,
+                GainFn::Sse | GainFn::Deviance | GainFn::FriedmanMse | GainFn::Sdr
+            );
             if is_custom_gain {
                 scratch.pairs_yw.clear();
                 scratch.pairs_yw.extend(scratch.pairs.iter().map(|&(_, y, w, _)| (y, w)));
@@ -1658,7 +1737,11 @@ impl<'a> Grower<'a> {
                 continue;
             }
             let threshold = if let Some(cuts) = cuts {
-                cuts[v as usize]
+                if cuts.is_empty() {
+                    continue;
+                }
+                let idx = (v as usize).min(cuts.len() - 1);
+                cuts[idx]
             } else if let Some(et_cut) = extratrees_cut {
                 et_cut
             } else {
@@ -1725,6 +1808,21 @@ impl<'a> Grower<'a> {
                         }
                         GainFn::Sse | GainFn::Deviance => {
                             parent_sse - (sse(alsw, alswy, alswy2) + sse(arsw, arswy, arswy2))
+                        }
+                        GainFn::FriedmanMse => {
+                            if alsw > 0.0 && arsw > 0.0 && total_w > 0.0 {
+                                let mean_l = alswy / alsw;
+                                let mean_r = arswy / arsw;
+                                (alsw * arsw / total_w) * (mean_l - mean_r).powi(2)
+                            } else {
+                                0.0
+                            }
+                        }
+                        GainFn::Sdr => {
+                            let sd_parent = (parent_sse / total_w.max(1e-12)).max(0.0).sqrt();
+                            let sd_l = if alsw > 0.0 { (sse(alsw, alswy, alswy2) / alsw).max(0.0).sqrt() } else { 0.0 };
+                            let sd_r = if arsw > 0.0 { (sse(arsw, arswy, arswy2) / arsw).max(0.0).sqrt() } else { 0.0 };
+                            sd_parent - (alsw / total_w) * sd_l - (arsw / total_w) * sd_r
                         }
                         ref gfn => {
                             let yws_sorted = &scratch.pairs_yw;
@@ -3019,8 +3117,16 @@ impl<'a> Grower<'a> {
                 -2.0 * (sy * m.powf(1.0 - p) / (1.0 - p) - sw * m.powf(2.0 - p) / (2.0 - p))
             }
             LeafFamily::Tobit => 0.0,
-            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline => {
-                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, and Spline use SSE/custom scans")
+            LeafFamily::NegativeBinomial => {
+                let alpha = 0.1;
+                let inv_a = 1.0 / alpha;
+                2.0 * (sy - xlog(sy, mean) + (sy + sw * inv_a) * (1.0 + alpha * mean).ln())
+            }
+            LeafFamily::Beta => -2.0 * (
+                xlog(sy, mean) + xlog((sw - sy).max(0.0), 1.0 - mean)
+            ),
+            LeafFamily::Gaussian | LeafFamily::Softmax | LeafFamily::Survival | LeafFamily::Heteroscedastic | LeafFamily::Aft | LeafFamily::Cure | LeafFamily::Spline | LeafFamily::Quantile | LeafFamily::Huber | LeafFamily::Expectile => {
+                unreachable!("Gaussian, Softmax, Survival, Aft, Cure, Spline, Quantile, Huber, and Expectile use SSE/custom scans")
             }
         }
     }

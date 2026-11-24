@@ -510,7 +510,7 @@ pub(crate) fn w_median(p: &[(f64, f64)]) -> f64 {
 }
 
 /// Weighted quantile at `tau` in [0, 1] (weighted order statistic).
-pub(crate) fn w_quantile(p: &[(f64, f64)], tau: f64) -> f64 {
+pub fn w_quantile(p: &[(f64, f64)], tau: f64) -> f64 {
     let mut v: Vec<(f64, f64)> = p.to_vec();
     v.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("NaN in target"));
     let total: f64 = v.iter().map(|&(_, w)| w).sum();

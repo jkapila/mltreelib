@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Tree Architecture, Growth Knobs & Structural Constraints**](tree-architecture-and-knobs.md).
+
 # Two-Control Architecture & 0D Leaf Formulations
 
 `ModelTree` decouples tree growth from leaf modeling and provides rich 0D statistical profiles across terminal nodes:

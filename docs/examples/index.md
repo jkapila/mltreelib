@@ -1,71 +1,98 @@
 ---
-title: "Examples Library Overview"
-description: "Worked examples, tutorials, and specialized studies for mltreelib: concrete strength, diamond pricing, miami housing, categorical encoders, and tree inspection."
+title: "Examples & Case Studies Library"
+description: "Comprehensive worked tutorials, case studies, and specialized topic guides for mltreelib: regression trees, cubist rules, distributional splits, causal uplift, and bounded solvers."
 keywords:
   - decision tree examples
   - model tree tutorials
   - mltreelib examples
+  - regression showcase
+  - cubist tree rust
 ---
 
-# Examples & Specialized Studies
+# Examples & Specialized Case Studies
 
-Worked tutorials, case studies, and focused topic guides demonstrating `mltreelib` on real-world datasets.
+Worked tutorials, case studies, and focused topic guides demonstrating `mltreelib` on real-world datasets across data ingestion, metrics, regression, causal inference, unsupervised density trees, and numerical optimization.
 
 !!! tip "Looking for the 11 Core Benchmark Suites?"
     The formal mathematical formulations, empirical benchmark tables, and solver evaluations live in the dedicated [**Benchmark Suites**](../suites/index.md) section.
 
 ---
 
-## Featured Worked Tutorials
+## Featured Flagship Case Studies
 
 <div class="grid cards" markdown>
 
--   :lucide-gem: __Diamond Price Prediction (Linear Leaves vs Step Functions)__
+-   :lucide-bar-chart-3: __Comprehensive Regression Showcase (4-Study Empirical Benchmark)__
 
     ---
 
-    Worked comparison of constant mean leaves vs piecewise linear regression tree leaves on 6,000 diamond sales.
+    Systematic evaluation of 0D location leaves, 1D linear trees, Huber M-regression, quantile envelopes, MARS, B-spline GAMs, and Group Lasso across 4 datasets.
 
-    [:octicons-arrow-right-24: Open Tutorial](piecewise-linear-model-trees-vs-gbdt.md)
+    [:octicons-arrow-right-24: Open Showcase](regression-methods-showcase.md)
 
--   :lucide-hammer: __Concrete Compressive Strength (Cubist & M5-Style Trees)__
-
-    ---
-
-    Inspect local linear equations, split conditions, and Quinlan rule handoffs on 1,030 industrial concrete mixtures.
-
-    [:octicons-arrow-right-24: Open Tutorial](quinlan-m5-cubist-rust.md)
-
--   :lucide-home: __Miami Housing Valuation (Tweedie vs Squared Error)__
+-   :lucide-gem: __Piecewise Linear Model Trees & Cubist Rules__
 
     ---
 
-    Choosing the right split loss for positive, skewed, and zero-inflated targets on 8,000 Miami home sales.
+    Worked comparison of constant mean leaves vs piecewise linear regression tree leaves and Quinlan M5 rule extractions on Diamond and Concrete benchmarks.
 
-    [:octicons-arrow-right-24: Open Tutorial](distributional-trees-tweedie-tobit.md)
+    [:octicons-arrow-right-24: Open Case Study](piecewise-linear-and-cubist.md)
 
--   :lucide-sliders: __Generic Bounded Optimizer & HPO Tuning__
+-   :lucide-scale: __Distributional & Censored Trees (Tweedie & Tobit)__
 
     ---
 
-    Optimizing ModelTree hyperparameters directly on tabular validation loss using Nelder-Mead, L-BFGS-B, and Powell.
+    Correcting for attenuation bias on censored boundaries (Tobit) and modeling positive zero-inflated claim skewness (Tweedie quasi-deviance).
 
-    [:octicons-arrow-right-24: Open Guide](generic-optimizer.md)
+    [:octicons-arrow-right-24: Open Case Study](distributional-and-censored-trees.md)
+
+-   :lucide-sliders: __Generic Bounded Solvers & Hyperparameter Tuning__
+
+    ---
+
+    14 pure-Rust numerical optimization algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) for standalone scalar minimization and automated tree HPO.
+
+    [:octicons-arrow-right-24: Open Guide](optimization-and-tuning.md)
 
 </div>
 
 ---
 
-## Specialized Topic Catalog
+## Topic Catalog by Domain
 
-| Guide | Primary Focus | Target Problem |
+### 1. Data Layer & Metrics
+
+| Guide | Focus Area | Primary Benchmark / Target |
 | :--- | :--- | :--- |
-| **[Generic Optimizer Guide](generic-optimizer.md)** | Bounded Scalar Minimization | 14 algorithms (L-BFGS-B, Nelder-Mead, Powell, SHADE, CMA-ES) on black-box functions. |
-| **[PCA Rotations & Simple Structure](pca-rotations.md)** | Factor Rotations | Varimax, Quartimax, and Promax orthogonal/oblique simple structure. |
-| **[Data Processing](data-processing.md)** | Frame & Ingest Engine | Typed column frames, NA policies, and zero-copy Rust transforms. |
-| **[Optional Categorical Encoders](categorical-encoders.md)** | Categorical Ingestion | Native integer indexing, target encoding, and frequency scaling. |
-| **[Missing Data & Routing](missing-routing.md)** | Native NA Handling | Surrogate split mechanics and learned missing-left branching. |
-| **[Model Building & Growth Knobs](model-building.md)** | Tree Hyperparameters | `max_depth`, `min_rows`, `min_gain`, and cost-complexity pruning. |
-| **[Hyperparameter Search (HPO)](hpo.md)** | Automated Tuning | Grid search, random search, and Latin hypercube validation sweeps. |
-| **[Tree Inspection & Export](inspection.md)** | White-Box Auditing | DOT Graphviz exports, Quinlan rulesets, and leaf equations. |
-| **[Rules, Summaries & Neighbors](rules-summary-knn.md)** | Instance Explanations | Leaf k-nearest neighbor adjustments and local rule filtering. |
+| **[Data Ingestion, Missing Routing & Encoders](data-matrix-and-routing.md)** | Data Layer & Ingestion | Typed columnar frames, surrogate split routing, and native categorical indexing. |
+| **[Metrics, Diagnostics & Probability Calibration](metrics-plots.md)** | Model Diagnostics | ROC, Precision-Recall, Decile Gain, Double Lift, PSI drift, and reliability calibration. |
+| **[PCA Rotations & Simple Structure](pca-rotations.md)** | Factor Analysis | Varimax, Quartimax, and Promax orthogonal/oblique simple structure. |
+
+---
+
+### 2. Regression & Continuous Models
+
+| Guide | Focus Area | Primary Benchmark / Target |
+| :--- | :--- | :--- |
+| **[Comprehensive Regression Showcase](regression-methods-showcase.md)** | Full Regression Taxonomy | 4-study empirical benchmark across OLS, Huber, Quantile, NNLS, Group Lasso, GAM, and GLMs. |
+| **[Piecewise Linear Trees & Cubist Rules](piecewise-linear-and-cubist.md)** | Local Linear Leaves | Diamond price prediction ($N=6,000$) and Concrete compressive strength ($N=1,030$). |
+| **[Distributional & Censored Trees](distributional-and-censored-trees.md)** | Non-Gaussian Responses | Tweedie quasi-deviance on Miami home sales and Tobit latent models on labor hours. |
+
+---
+
+### 3. Causal & Unsupervised
+
+| Guide | Focus Area | Primary Benchmark / Target |
+| :--- | :--- | :--- |
+| **[Causal Uplift & Treatment Effects](causal-uplift.md)** | Causal Inference | Treatment-effect recovery, honest subsampling, and Qini curves on simulated trials. |
+| **[Unsupervised Density Trees: Clustering & Anomalies](unsupervised-clustering-and-anomalies.md)** | Density Partitioning | CLTree clustering, Extended Isolation Forest (EIF), and GritBot condition mining. |
+
+---
+
+### 4. Architecture, Inspection & Tuning
+
+| Guide | Focus Area | Primary Benchmark / Target |
+| :--- | :--- | :--- |
+| **[Tree Architecture, Growth Knobs & Constraints](tree-architecture-and-knobs.md)** | Tree Controls | Two-control decoupling, monotone constraints, interaction groups, and honest splits. |
+| **[Model Inspection, Quinlan Rules & Stumps](model-inspection-and-rules.md)** | White-Box Auditing | Graphviz DOT exports, flat IF-THEN rulesets, explainable stumps, and leaf k-NN smoothing. |
+| **[Generic Solvers & Hyperparameter Tuning](optimization-and-tuning.md)** | Numerical Optimization | 14 bounded solvers, Rosenbrock minimization, and validation loss sweeps. |

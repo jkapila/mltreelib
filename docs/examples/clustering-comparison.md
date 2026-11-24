@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Unsupervised Density Trees: Clustering & Anomaly Detection**](unsupervised-clustering-and-anomalies.md).
+
 # Check whether a clustering tree is stable after refitting
 
 Start with the [wine chemistry pathway](../guides/clustering.md) to fit and inspect a segment tree. This example changes the question. If you collect another training sample, do you group the same review wines together?

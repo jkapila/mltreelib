@@ -51,6 +51,8 @@ _GROWTH_FIELDS = frozenset(
         "ebm_fast",
         "target_cause",
         "n_classes",
+        "max_bins",
+        "min_bin_rows",
     ]
 )
 _LEAF_FIELDS = frozenset(
@@ -65,6 +67,14 @@ _LEAF_FIELDS = frozenset(
         "l2",
         "leaf_digest",
         "tau",
+        "huber_delta",
+        "expectile_tau",
+        "non_negative",
+        "non_negative_intercept",
+        "nb_alpha",
+        "beta_phi",
+        "group_l2",
+        "groups",
         "leaf_monotone",
         "mars_degree",
         "mars_terms",

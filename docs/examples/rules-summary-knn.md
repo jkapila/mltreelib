@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Model Inspection, Quinlan Rules & Explainable Stumps**](model-inspection-and-rules.md).
+
 # Rules, Leaf Regression Summaries & k-NN Adjustments
 
 Three classical capabilities modernizing Quinlan's C5.0 and Cubist lineage in Rust:

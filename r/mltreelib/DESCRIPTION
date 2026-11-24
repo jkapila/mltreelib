@@ -1,7 +1,7 @@
 Package: mltreelib
 Type: Package
 Title: Tree Models from mltreelib-core
-Version: 0.4.14
+Version: 0.4.15
 Authors@R: person("Jitin Kapila", email = "jitin.kapila@gmail.com", role = c("aut", "cre"))
 Author: Jitin Kapila [aut, cre]
 Maintainer: Jitin Kapila <jitin.kapila@gmail.com>

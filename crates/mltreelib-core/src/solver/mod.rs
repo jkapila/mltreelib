@@ -15,9 +15,11 @@ pub mod evolutionary;
 pub mod ensemble_prune;
 pub mod family;
 pub mod generic;
+pub mod groups;
 pub mod lbfgs;
 pub mod normal;
 pub mod oct;
+pub mod problems;
 pub mod sparse_rule;
 pub mod summary;
 
@@ -35,11 +37,93 @@ pub use generic::{
     Bounds, Budget, Constraint, ConstraintKind, Objective, ObjectiveError, OptimizationRequest,
     OptimizationResult, OptimizerKind, SmoothObjective, SolveStatus,
 };
+pub use groups::{
+    canonicalize_groups, expand_missing_indicators, validate_groups, GroupKind, GroupSpec,
+    GroupValidationError,
+};
 pub use lbfgs::{solve_lbfgs, LbfgsOptions};
 pub use normal::solve_normal;
 pub use oct::{fit_optimal_tree, OptimalTreeNode, OptimalTreeResult};
+pub use problems::{
+    asymmetric_weight, detect_quantile_crossings, group_l2_norm, group_lasso_penalty,
+    group_soft_threshold, pinball_loss, smoothed_pinball_loss, solve_quantile_lbfgs,
+    sparse_group_lasso_penalty, QuantileCrossingReport, RegressionProblemKind,
+    SmoothedQuantileObjective,
+};
 pub use sparse_rule::{fit_sparse_rule_selection, predict_sparse_rules, SparseRuleResult};
 pub use summary::{CoeffStats, GlmSummary};
+
+/// Report summarizing group selection outcomes in Group and Sparse-Group Lasso.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct GroupSelectionReport {
+    /// Names of groups that have at least one non-zero coefficient.
+    pub active_groups: Vec<String>,
+    /// Names of groups where all coefficients were set to zero.
+    pub zeroed_groups: Vec<String>,
+    /// L2 norm of coefficients for each group: name -> norm.
+    pub group_norms: std::collections::HashMap<String, f64>,
+    /// Proportion of groups that are active (non-zero).
+    pub active_ratio: f64,
+}
+
+/// Computes group selection summary report.
+pub fn compute_group_selection_report(
+    coef: &[f64],
+    groups: &[GroupSpec],
+) -> GroupSelectionReport {
+    let mut active_groups = Vec::new();
+    let mut zeroed_groups = Vec::new();
+    let mut group_norms = std::collections::HashMap::new();
+
+    for g in groups {
+        if g.kind == GroupKind::CoefficientGroup {
+            let norm = crate::solver::problems::group_l2_norm(coef, &g.members);
+            group_norms.insert(g.name.clone(), norm);
+            if norm > 1e-12 {
+                active_groups.push(g.name.clone());
+            } else {
+                zeroed_groups.push(g.name.clone());
+            }
+        }
+    }
+    let total = active_groups.len() + zeroed_groups.len();
+    let active_ratio = if total > 0 {
+        active_groups.len() as f64 / total as f64
+    } else {
+        0.0
+    };
+    GroupSelectionReport {
+        active_groups,
+        zeroed_groups,
+        group_norms,
+        active_ratio,
+    }
+}
+
+/// Solves Group Lasso or Sparse-Group Lasso directly over any design matrix.
+pub fn solve_group_lasso<D: DesignMatrix>(
+    design: &D,
+    groups: &[GroupSpec],
+    alpha: f64,
+    lambda1: f64,
+    lambda2: f64,
+    ridge_l2: f64,
+    monotone: &[i8],
+    warm_start: Option<&[f64]>,
+) -> Result<(Vec<f64>, GroupSelectionReport), String> {
+    let opts = CcdOptions {
+        l1: alpha * lambda1,
+        l2: ridge_l2,
+        max_iter: 1000,
+        tol: 1e-7,
+        monotone: monotone.to_vec(),
+        groups: Some(groups.to_vec()),
+        group_l2: alpha * lambda2,
+    };
+    let beta = solve_ccd(design, &opts, warm_start)?;
+    let report = compute_group_selection_report(&beta, groups);
+    Ok((beta, report))
+}
 
 /// General solver options for fitting a linear or generalized linear model.
 #[derive(Clone, Debug)]
@@ -51,6 +135,8 @@ pub struct SolverOptions {
     pub max_iter: usize,
     pub tol: f64,
     pub verbose: u8,
+    pub groups: Option<Vec<GroupSpec>>,
+    pub group_l2: f64,
 }
 
 impl Default for SolverOptions {
@@ -63,6 +149,8 @@ impl Default for SolverOptions {
             max_iter: 1000,
             tol: 1e-6,
             verbose: 0,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }
@@ -74,6 +162,7 @@ pub struct LinearModelResult {
     pub coef: Vec<f64>,
     pub na_coef: Vec<f64>,
     pub summary: Option<GlmSummary>,
+    pub group_report: Option<GroupSelectionReport>,
 }
 
 /// Fits a model by automatically routing to the optimal solver:
@@ -94,9 +183,14 @@ pub fn fit_model<D: DesignMatrix>(
     let is_gaussian = options.family == GlmFamily::Gaussian;
     let has_l1 = options.l1 > 0.0;
     let has_monotone = options.monotone.iter().any(|&m| m != 0);
+    let has_groups = options
+        .groups
+        .as_ref()
+        .map_or(false, |g| !g.is_empty())
+        || options.group_l2 > 0.0;
 
     let (beta, summary) = if is_gaussian {
-        if !has_l1 && !has_monotone {
+        if !has_l1 && !has_monotone && !has_groups {
             // Fast path: Exact Cholesky with QR fallback + full hypothesis testing summary
             solve_normal(design, options.l2, feature_names)?
         } else {
@@ -105,8 +199,8 @@ pub fn fit_model<D: DesignMatrix>(
             (sol, None)
         }
     } else {
-        if has_l1 {
-            return Err("L1 regularization currently supported for Gaussian family. Use L2 with GLM families.".to_string());
+        if has_l1 || has_groups {
+            return Err("L1/Group regularization currently supported for Gaussian family. Use L2 with GLM families.".to_string());
         }
         // Non-linear GLM: Quasi-Newton L-BFGS
         let (sol, _) = solve_iterative(design, LeafSolver::Lbfgs, options, 42, warm_start)?;
@@ -120,11 +214,17 @@ pub fn fit_model<D: DesignMatrix>(
         Vec::new()
     };
 
+    let group_report = options
+        .groups
+        .as_ref()
+        .map(|grps| compute_group_selection_report(&beta, grps));
+
     Ok(LinearModelResult {
         intercept,
         coef,
         na_coef: Vec::new(),
         summary,
+        group_report,
     })
 }
 
@@ -185,6 +285,11 @@ const GLM_FAMILIES: &[LeafFamily] = &[
     LeafFamily::Gamma,
     LeafFamily::Tweedie,
     LeafFamily::Tobit,
+    LeafFamily::Quantile,
+    LeafFamily::Huber,
+    LeafFamily::Expectile,
+    LeafFamily::NegativeBinomial,
+    LeafFamily::Beta,
 ];
 
 /// Solver memory profile used for leaf compatibility and cost comparisons.
@@ -342,7 +447,10 @@ pub fn check_leaf_solver_compatibility(
                 solver_applies: true,
             })
         }
-        LeafProblemType::HuberLocation(_) => {
+        LeafProblemType::HuberLocation(_)
+        | LeafProblemType::HuberRegression { .. }
+        | LeafProblemType::ExpectileLocation { .. }
+        | LeafProblemType::ExpectileRegression { .. } => {
             if solver == LeafSolver::Irls {
                 return Ok(LeafSolverCompatibility {
                     solver,
@@ -354,6 +462,12 @@ pub fn check_leaf_solver_compatibility(
                     "solver {solver:?} supports neither gradients nor derivative-free operation"
                 ));
             }
+            Ok(LeafSolverCompatibility {
+                solver,
+                solver_applies: true,
+            })
+        }
+        LeafProblemType::NegativeBinomialGlm { .. } | LeafProblemType::BetaGlm { .. } => {
             Ok(LeafSolverCompatibility {
                 solver,
                 solver_applies: true,
@@ -425,6 +539,8 @@ pub(crate) fn solve_iterative<D: DesignMatrix>(
                 max_iter: options.max_iter,
                 tol: options.tol,
                 monotone: options.monotone.clone(),
+                groups: options.groups.clone(),
+                group_l2: options.group_l2,
             },
             warm_start,
         ),
@@ -483,6 +599,8 @@ pub(crate) struct LeafLinearProblem<'a> {
     pub tweedie_p: f64,
     pub tobit_threshold: f64,
     pub verbose: u8,
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    pub group_l2: f64,
 }
 
 /// One leaf optimization problem routed through the unified solver entry.
@@ -540,6 +658,276 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
         problem.impute_means,
     );
     let nc = problem.chosen.len();
+    if problem.family == LeafFamily::Quantile {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for quantile regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let tau = problem
+            .extra
+            .and_then(|e| e.get("tau"))
+            .copied()
+            .unwrap_or(0.5);
+        let solution = crate::solver::problems::quantile::solve_quantile_lbfgs(
+            &view,
+            tau,
+            1e-4,
+            problem.l2,
+            250,
+            1e-7,
+            None,
+        )?;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("quantile solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Huber {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for Huber regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let delta = problem
+            .extra
+            .and_then(|e| e.get("huber_delta"))
+            .copied()
+            .unwrap_or(1.345);
+        let result = crate::solver::problems::huber::solve_huber_regression(
+            &view,
+            delta,
+            problem.l2,
+            15,
+            60,
+            1e-4,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("Huber solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    let non_neg = problem
+        .extra
+        .and_then(|e| e.get("non_negative"))
+        .copied()
+        .unwrap_or(0.0)
+        > 0.5;
+    if non_neg {
+        let non_neg_intercept = problem
+            .extra
+            .and_then(|e| e.get("non_negative_intercept"))
+            .copied()
+            .unwrap_or(0.0)
+            > 0.5;
+        let result = crate::solver::problems::nnls::solve_nnls(
+            &view,
+            problem.l2,
+            non_neg_intercept,
+            3 * view.n_features() + 30,
+            1e-8,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("NNLS solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Expectile {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for expectile regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let tau = problem
+            .extra
+            .and_then(|e| e.get("expectile_tau"))
+            .copied()
+            .unwrap_or(0.5);
+        let solution = crate::solver::problems::expectile::solve_expectile_lbfgs(
+            &view,
+            tau,
+            problem.l2,
+            100,
+            1e-4,
+            None,
+        )?;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("expectile solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::NegativeBinomial {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for negative binomial regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let initial_alpha = problem
+            .extra
+            .and_then(|e| e.get("nb_alpha"))
+            .copied();
+        let result = crate::solver::problems::glm_extra::solve_negative_binomial_regression(
+            &view,
+            initial_alpha,
+            problem.l2,
+            15,
+            1e-5,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("negative binomial solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
+    if problem.family == LeafFamily::Beta {
+        if problem.rows.len() < nc + 1 {
+            return Err(format!(
+                "insufficient leaf rows for beta regression: rows {} < features {} + 1 (minimum support rule)",
+                problem.rows.len(),
+                nc
+            ));
+        }
+        let initial_phi = problem
+            .extra
+            .and_then(|e| e.get("beta_phi"))
+            .copied();
+        let result = crate::solver::problems::glm_extra::solve_beta_regression(
+            &view,
+            initial_phi,
+            problem.l2,
+            15,
+            1e-5,
+        )?;
+        let solution = result.coefficients;
+        if !solution.iter().all(|value| value.is_finite())
+            || (0..view.n_rows()).any(|i| !view.eval_row(i, &solution).is_finite())
+        {
+            return Err("beta solver produced a non-finite leaf model".into());
+        }
+        let mut model = crate::node_stats::LinearModel {
+            cols: problem.chosen.to_vec(),
+            coef: solution[1..1 + nc].to_vec(),
+            na_coef: if problem.with_indicators {
+                solution[1 + nc..].to_vec()
+            } else {
+                Vec::new()
+            },
+            feature_means: Vec::new(),
+            intercept: solution[0],
+            summary: None,
+        };
+        apply_feature_means(&mut model, problem.impute_means);
+        return Ok(LeafSolveOutput {
+            linear: Some(model),
+            center: None,
+            diagnostic: LeafSolverDiagnostic::Applied(problem.solver),
+        });
+    }
     match problem.solver {
         LeafSolver::Irls if problem.family == LeafFamily::Gaussian => {
             let mut gram = crate::node_stats::Gram::new(view.n_features());
@@ -645,6 +1033,8 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
                 max_iter: 1000,
                 tol: 1e-7,
                 monotone: problem.monotone.to_vec(),
+                groups: problem.groups.clone(),
+                group_l2: problem.group_l2,
                 ..Default::default()
             };
             match solve_iterative(&view, LeafSolver::Ccd, &options, 42, None) {
@@ -706,6 +1096,8 @@ fn solve_linear_leaf(problem: &LeafLinearProblem<'_>) -> Result<LeafSolveOutput,
                 max_iter: 100,
                 tol: 1e-6,
                 verbose: problem.verbose,
+                groups: problem.groups.clone(),
+                group_l2: problem.group_l2,
             };
             let (solution, _) = solve_iterative(&view, problem.solver, &options, 42, None)?;
             let mut model = crate::node_stats::LinearModel {

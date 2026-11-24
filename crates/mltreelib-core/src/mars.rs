@@ -171,6 +171,11 @@ pub struct MarsParams {
     pub allowed: Option<Vec<Vec<bool>>>,
     /// Verbosity level: 0 = silent, >=1 logs forward pass and pruning.
     pub verbose: u8,
+    /// Regularization ridge penalty for forward pass and OLS fits (default 1e-5).
+    #[serde(with = "crate::persistence::float")]
+    pub ridge_lambda: f64,
+    /// Place knots at empirical quantile percentiles (default true).
+    pub quantile_knots: bool,
 }
 
 impl Default for MarsParams {
@@ -188,6 +193,8 @@ impl Default for MarsParams {
             glm: MarsGlmFamily::Gaussian,
             allowed: None,
             verbose: 0,
+            ridge_lambda: 1e-5,
+            quantile_knots: true,
         }
     }
 }
@@ -351,7 +358,7 @@ impl MarsRegressor {
             );
         }
         let mut active_basis: Vec<BasisFunction> = vec![BasisFunction::constant()];
-        let (_initial_coef, initial_rss) = fit_basis(&active_basis, x, y, weights, self.params.glm)?;
+        let (_initial_coef, initial_rss) = fit_basis(&active_basis, x, y, weights, self.params.glm, self.params.ridge_lambda)?;
         let initial_total_rss = initial_rss.max(1e-12);
 
         let mut current_rss = initial_rss;
@@ -359,7 +366,7 @@ impl MarsRegressor {
         // 2. Forward Pass: expand basis with reflected pairs
         while active_basis.len() + 2 <= self.params.max_terms {
             // Compute current residuals r_i for Fast MARS screening
-            let (_c_curr, _) = fit_basis(&active_basis, x, y, weights, self.params.glm)?;
+            let (_c_curr, _) = fit_basis(&active_basis, x, y, weights, self.params.glm, self.params.ridge_lambda)?;
             let mut residuals = vec![0.0; n];
             for i in 0..n {
                 let mut pred = 0.0;
@@ -419,17 +426,31 @@ impl MarsRegressor {
                         continue;
                     }
 
-                    let start_k = endspan;
-                    let end_k = n_unique - endspan;
-                    let max_candidates = 35;
-                    let step = if n_unique > 100 {
-                        (n_unique / max_candidates).max(minspan)
+                    let knots: Vec<f64> = if self.params.quantile_knots && n_unique > 30 {
+                        let max_cand = 35;
+                        let n_cand = max_cand.min(n_unique.saturating_sub(endspan * 2));
+                        let mut cand = Vec::with_capacity(n_cand);
+                        for ki in 1..=n_cand {
+                            let frac = ki as f64 / (n_cand + 1) as f64;
+                            let idx = ((frac * (n_unique - 1) as f64).round() as usize)
+                                .clamp(endspan, n_unique.saturating_sub(endspan + 1));
+                            cand.push(col_vals[idx]);
+                        }
+                        cand.dedup();
+                        cand
                     } else {
-                        1
+                        let start_k = endspan;
+                        let end_k = n_unique - endspan;
+                        let max_candidates = 35;
+                        let step = if n_unique > 100 {
+                            (n_unique / max_candidates).max(minspan)
+                        } else {
+                            1
+                        };
+                        (start_k..end_k).step_by(step).map(|k| col_vals[k]).collect()
                     };
 
-                    for k in (start_k..end_k).step_by(step) {
-                        let knot = col_vals[k];
+                    for knot in knots {
                         let mut cand1 = parent.clone();
                         cand1.factors.push(HingeFactor::hinge(j, knot, true));
                         let mut cand2 = parent.clone();
@@ -464,7 +485,7 @@ impl MarsRegressor {
                     test_basis.push(c2.clone());
                 }
 
-                if let Ok((_coef, rss_test)) = fit_basis(&test_basis, x, y, weights, self.params.glm) {
+                if let Ok((_coef, rss_test)) = fit_basis(&test_basis, x, y, weights, self.params.glm, self.params.ridge_lambda) {
                     let gain = current_rss - rss_test;
                     if gain > best_gain {
                         best_gain = gain;
@@ -500,13 +521,13 @@ impl MarsRegressor {
         // 3. Backward Pass: Pruning
         let (final_basis, final_coef, final_rss, final_gcv) = match self.params.pmethod {
             MarsPruningMethod::None => {
-                let (c, r) = fit_basis(&active_basis, x, y, weights, self.params.glm)?;
+                let (c, r) = fit_basis(&active_basis, x, y, weights, self.params.glm, self.params.ridge_lambda)?;
                 let g = compute_gcv(r, total_weight, active_basis.len(), self.params.penalty);
                 (active_basis, c, r, g)
             }
             MarsPruningMethod::Backward => {
                 let mut trajectory: Vec<(Vec<BasisFunction>, Vec<f64>, f64, f64)> = Vec::new();
-                let (full_coef, full_rss) = fit_basis(&active_basis, x, y, weights, self.params.glm)?;
+                let (full_coef, full_rss) = fit_basis(&active_basis, x, y, weights, self.params.glm, self.params.ridge_lambda)?;
                 let full_gcv = compute_gcv(full_rss, total_weight, active_basis.len(), self.params.penalty);
                 trajectory.push((active_basis.clone(), full_coef, full_rss, full_gcv));
 
@@ -521,7 +542,7 @@ impl MarsRegressor {
                         let mut candidate_basis = curr_basis.clone();
                         candidate_basis.remove(del_idx);
 
-                        if let Ok((c, rss)) = fit_basis(&candidate_basis, x, y, weights, self.params.glm) {
+                        if let Ok((c, rss)) = fit_basis(&candidate_basis, x, y, weights, self.params.glm, self.params.ridge_lambda) {
                             if rss < best_del_rss {
                                 best_del_rss = rss;
                                 best_del_idx = del_idx;
@@ -546,7 +567,7 @@ impl MarsRegressor {
             }
             MarsPruningMethod::Cv(k_folds) => {
                 // K-fold cross-validation pruning
-                prune_by_cv(&active_basis, x, y, weights, self.params.glm, k_folds, self.params.penalty)?
+                prune_by_cv(&active_basis, x, y, weights, self.params.glm, k_folds, self.params.penalty, self.params.ridge_lambda)?
             }
         };
 
@@ -674,9 +695,10 @@ fn fit_basis(
     y: &[f64],
     weights: Option<&[f64]>,
     glm: MarsGlmFamily,
+    ridge_lambda: f64,
 ) -> Result<(Vec<f64>, f64), String> {
     match glm {
-        MarsGlmFamily::Gaussian => fit_weighted_ols(basis, x, y, weights),
+        MarsGlmFamily::Gaussian => fit_weighted_ols(basis, x, y, weights, ridge_lambda),
         MarsGlmFamily::Binomial => fit_irls_binomial(basis, x, y, weights),
         MarsGlmFamily::Poisson => fit_irls_poisson(basis, x, y, weights),
     }
@@ -688,6 +710,7 @@ fn fit_weighted_ols(
     x: &[Vec<f64>],
     y: &[f64],
     weights: Option<&[f64]>,
+    ridge_lambda: f64,
 ) -> Result<(Vec<f64>, f64), String> {
     let k = basis.len();
     if k == 0 {
@@ -720,9 +743,10 @@ fn fit_weighted_ols(
         }
     }
 
-    // Add ridge lambda = 1e-7 on non-intercept diagonal to handle collinear hinge pairs
+    // Add ridge lambda on non-intercept diagonal to handle collinear hinge pairs
+    let ridge = if ridge_lambda > 0.0 { ridge_lambda } else { 1e-7 };
     for j in 1..k {
-        xtx[j * k + j] += 1e-7;
+        xtx[j * k + j] += ridge;
     }
 
     let a_mat = faer::Mat::from_fn(k, k, |i, j| xtx[i * k + j]);
@@ -795,7 +819,7 @@ fn fit_irls_binomial(
             working_z[i] = eta + (y[i] - mu) / var;
         }
 
-        if let Ok((new_c, _)) = fit_weighted_ols(basis, x, &working_z, Some(&working_w)) {
+        if let Ok((new_c, _)) = fit_weighted_ols(basis, x, &working_z, Some(&working_w), 1e-5) {
             let mut max_diff: f64 = 0.0;
             for j in 0..k {
                 max_diff = max_diff.max((new_c[j] - coef[j]).abs());
@@ -863,7 +887,7 @@ fn fit_irls_poisson(
             working_z[i] = eta + (y[i] - mu) / mu;
         }
 
-        if let Ok((new_c, _)) = fit_weighted_ols(basis, x, &working_z, Some(&working_w)) {
+        if let Ok((new_c, _)) = fit_weighted_ols(basis, x, &working_z, Some(&working_w), 1e-5) {
             let mut max_diff: f64 = 0.0;
             for j in 0..k {
                 max_diff = max_diff.max((new_c[j] - coef[j]).abs());
@@ -902,6 +926,7 @@ fn prune_by_cv(
     glm: MarsGlmFamily,
     k_folds: usize,
     penalty: f64,
+    ridge_lambda: f64,
 ) -> Result<(Vec<BasisFunction>, Vec<f64>, f64, f64), String> {
     let n = x.len();
     let folds = k_folds.clamp(2, 20);
@@ -918,7 +943,7 @@ fn prune_by_cv(
         for del_idx in 1..curr.len() {
             let mut cand = curr.clone();
             cand.remove(del_idx);
-            if let Ok((_, rss)) = fit_basis(&cand, x, y, weights, glm) {
+            if let Ok((_, rss)) = fit_basis(&cand, x, y, weights, glm, ridge_lambda) {
                 if rss < best_del_rss {
                     best_del_rss = rss;
                     best_del = del_idx;
@@ -963,7 +988,7 @@ fn prune_by_cv(
         let w_train_opt = if weights.is_some() { Some(&w_train_buf[..]) } else { None };
 
         for (m_idx, basis_sub) in seq.iter().enumerate() {
-            if let Ok((coef, _)) = fit_basis(basis_sub, &x_train, &y_train, w_train_opt, glm) {
+            if let Ok((coef, _)) = fit_basis(basis_sub, &x_train, &y_train, w_train_opt, glm, ridge_lambda) {
                 for (vi, vrow) in x_val.iter().enumerate() {
                     let mut pred = 0.0;
                     for (bj, b) in basis_sub.iter().enumerate() {
@@ -986,7 +1011,7 @@ fn prune_by_cv(
         .unwrap_or(0);
 
     let best_basis = seq[best_m_idx].clone();
-    let (best_coef, best_rss) = fit_basis(&best_basis, x, y, weights, glm)?;
+    let (best_coef, best_rss) = fit_basis(&best_basis, x, y, weights, glm, ridge_lambda)?;
     let total_w: f64 = match weights {
         Some(w) => w.iter().sum(),
         None => n as f64,

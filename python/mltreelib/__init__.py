@@ -25,6 +25,7 @@ from mltreelib._core import (
     DensityEstimationTree,
     EmbeddingEncoder,
     ExtendedIsolationTree,
+    GamRegressor,
     GritBot,
     GroupedScaler,
     HalfSpaceTree,
@@ -55,6 +56,7 @@ from mltreelib._core import (
     competing_risks_report,
     d_calibration,
     decomposed_transform,
+    detect_quantile_crossings,
     fast_interaction_screen,
     generate,
     grouped_scale,
@@ -129,6 +131,7 @@ __all__ = [
     "DensityEstimationTree",
     "EmbeddingEncoder",
     "ExtendedIsolationTree",
+    "GamRegressor",
     "GritBot",
     "GroupedScaler",
     "GrowthControl",
@@ -164,6 +167,7 @@ __all__ = [
     "d_calibration",
     "dataset_path",
     "decomposed_transform",
+    "detect_quantile_crossings",
     "distributions_to_quantiles",
     "fast_interaction_screen",
     "generate",
@@ -181,4 +185,4 @@ __all__ = [
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.4.14"
+__version__ = "0.4.15"

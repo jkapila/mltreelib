@@ -42,6 +42,26 @@ use crate::split::{CatOrder, CatSearch, ColType};
 pub use crate::node_stats::{LeafModel as NodeModel, LeafStats as NodeStats, LinearModel};
 pub use crate::split::SplitEval;
 
+fn default_max_bins() -> usize {
+    256
+}
+
+fn default_min_bin_rows() -> usize {
+    1
+}
+
+fn default_tau() -> f64 {
+    0.5
+}
+
+fn default_huber_delta() -> f64 {
+    1.345
+}
+
+fn default_expectile_tau() -> f64 {
+    0.5
+}
+
 /// Growth and leaf parameters.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModelTreeParams {
@@ -222,6 +242,33 @@ pub struct ModelTreeParams {
     pub n_classes: Option<usize>,
     /// Maximum number of distinct integer classes supported by fast histogram binning (default 256).
     pub max_classes: usize,
+    /// Maximum number of histogram bins per numeric feature for binned split evaluation (default 256).
+    #[serde(default = "default_max_bins")]
+    pub max_bins: usize,
+    /// Minimum observations per quantile bin for continuous features (default 1).
+    #[serde(default = "default_min_bin_rows")]
+    pub min_bin_rows: usize,
+    /// Target quantile tau in (0, 1) for quantile leaves and models (default 0.5).
+    #[serde(default = "default_tau")]
+    pub tau: f64,
+    /// Huber tuning constant delta > 0 for Huber regression leaves (default 1.345).
+    #[serde(default = "default_huber_delta")]
+    pub huber_delta: f64,
+    /// Target expectile tau in (0, 1) for expectile regression leaves (default 0.5).
+    #[serde(default = "default_expectile_tau")]
+    pub expectile_tau: f64,
+    /// Enforce non-negative coefficients (slopes >= 0) via Lawson-Hanson NNLS (default false).
+    #[serde(default)]
+    pub non_negative: bool,
+    /// Enforce non-negative intercept in addition to slopes in NNLS (default false).
+    #[serde(default)]
+    pub non_negative_intercept: bool,
+    /// Fixed negative binomial dispersion parameter alpha >= 0 (None = estimate from data).
+    #[serde(default)]
+    pub nb_alpha: Option<f64>,
+    /// Fixed beta regression precision parameter phi > 0 (None = estimate from data).
+    #[serde(default)]
+    pub beta_phi: Option<f64>,
     /// Maximum degree of interaction for MARS leaves (default 1).
     pub mars_degree: usize,
     /// Maximum number of terms for MARS leaves (default 10).
@@ -276,6 +323,11 @@ pub struct ModelTreeParams {
     pub cure_fraction: Option<f64>,
     /// Number of interior spline knots for Royston-Parmar leaves (default 3).
     pub spline_knots: usize,
+    /// Coefficient group definitions for Group Lasso and Sparse-Group Lasso leaves.
+    pub groups: Option<Vec<crate::solver::groups::GroupSpec>>,
+    /// Group L2 penalty multiplier for Group Lasso and Sparse-Group Lasso (default 0.0).
+    #[serde(with = "crate::persistence::float")]
+    pub group_l2: f64,
 }
 
 /// Fairness criterion evaluated when fairness_penalty > 0.
@@ -361,6 +413,15 @@ impl Default for ModelTreeParams {
             train_ids: false,
             n_classes: None,
             max_classes: 256,
+            max_bins: 256,
+            min_bin_rows: 1,
+            tau: 0.5,
+            huber_delta: 1.345,
+            expectile_tau: 0.5,
+            non_negative: false,
+            non_negative_intercept: false,
+            nb_alpha: None,
+            beta_phi: None,
             mars_degree: 1,
             mars_terms: 10,
             mars_penalty: 2.0,
@@ -383,6 +444,8 @@ impl Default for ModelTreeParams {
             aft_dist: crate::node_stats::AftDist::Weibull,
             cure_fraction: None,
             spline_knots: 3,
+            groups: None,
+            group_l2: 0.0,
         }
     }
 }
@@ -597,9 +660,9 @@ impl ModelTree {
             params.gain = *base_gain.clone();
         }
         if params.split_eval == SplitEval::Histogram
-            && (!crate::split::uses_class_histogram(&params.gain) || params.extratrees)
+            && (!crate::split::uses_histogram_split(&params.gain) || params.extratrees)
         {
-            return Err("histogram split evaluation requires gini, entropy, gain_ratio or twoing without extratrees".into());
+            return Err("histogram split evaluation requires a supported classification or regression gain without extratrees".into());
         }
         if params.tree_monotone.is_empty() && !params.monotone.is_empty() {
             params.tree_monotone = params.monotone.clone();
@@ -635,7 +698,52 @@ impl ModelTree {
         if params.cp_alpha < 0.0 {
             return Err("cp_alpha must be >= 0".to_string());
         }
-        if params.leaf_family != LeafFamily::Gaussian {
+        if params.huber_delta <= 0.0 || !params.huber_delta.is_finite() {
+            return Err("huber_delta must be positive and finite".to_string());
+        }
+        if params.expectile_tau <= 0.0 || params.expectile_tau >= 1.0 || !params.expectile_tau.is_finite() {
+            return Err("expectile_tau must be in (0, 1)".to_string());
+        }
+        if let Some(alpha) = params.nb_alpha {
+            if alpha < 0.0 || !alpha.is_finite() {
+                return Err("nb_alpha must be non-negative and finite".to_string());
+            }
+        }
+        if let Some(phi) = params.beta_phi {
+            if phi <= 0.0 || !phi.is_finite() {
+                return Err("beta_phi must be strictly positive and finite".to_string());
+            }
+        }
+        if params.leaf_family == LeafFamily::Quantile {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
+            ) {
+                return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Huber {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Huber
+            ) {
+                return Err("huber family supports linear, mean, or huber leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Expectile {
+            if !matches!(
+                params.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Expectile(_)
+            ) {
+                return Err("expectile family supports linear, mean, or expectile leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::NegativeBinomial {
+            if !matches!(params.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("negative binomial family supports linear or mean leaves".into());
+            }
+        } else if params.leaf_family == LeafFamily::Beta {
+            if !matches!(params.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("beta family supports linear or mean leaves".into());
+            }
+        } else if params.leaf_family != LeafFamily::Gaussian {
             if !matches!(
                 params.leaf,
                 LeafKind::Mean
@@ -677,11 +785,14 @@ impl ModelTree {
                     LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
                         return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
-                        return Err("poisson and tweedie targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie | LeafFamily::NegativeBinomial if t < 0.0 => {
+                        return Err("poisson, tweedie, and negative binomial targets must be non-negative".into());
                     }
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
+                    }
+                    LeafFamily::Beta if t <= 0.0 || t >= 1.0 => {
+                        return Err("beta targets must be strictly inside (0, 1)".into());
                     }
                     LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
                         return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());
@@ -1099,7 +1210,39 @@ impl ModelTree {
         if control.l1 < 0.0 || control.l2 < 0.0 {
             return Err("penalties l1 and l2 must be non-negative".to_string());
         }
-        if control.family != LeafFamily::Gaussian {
+        if control.huber_delta <= 0.0 || !control.huber_delta.is_finite() {
+            return Err("huber_delta must be positive and finite".to_string());
+        }
+        if control.family == LeafFamily::Quantile {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Quantile(_)
+            ) {
+                return Err("quantile family supports linear, mean, or quantile leaves".into());
+            }
+        } else if control.family == LeafFamily::Huber {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Huber
+            ) {
+                return Err("huber family supports linear, mean, or huber leaves".into());
+            }
+        } else if control.family == LeafFamily::Expectile {
+            if !matches!(
+                control.leaf,
+                LeafKind::Linear | LeafKind::Mean | LeafKind::Expectile(_)
+            ) {
+                return Err("expectile family supports linear, mean, or expectile leaves".into());
+            }
+        } else if control.family == LeafFamily::NegativeBinomial {
+            if !matches!(control.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("negative binomial family supports linear or mean leaves".into());
+            }
+        } else if control.family == LeafFamily::Beta {
+            if !matches!(control.leaf, LeafKind::Linear | LeafKind::Mean) {
+                return Err("beta family supports linear or mean leaves".into());
+            }
+        } else if control.family != LeafFamily::Gaussian {
             if !matches!(
                 control.leaf,
                 LeafKind::Mean
@@ -1158,11 +1301,14 @@ impl ModelTree {
                     LeafFamily::Binomial | LeafFamily::Probit if t != 0.0 && t != 1.0 => {
                         return Err("binomial and probit targets must be 0 or 1".into());
                     }
-                    LeafFamily::Poisson | LeafFamily::Tweedie if t < 0.0 => {
-                        return Err("poisson and tweedie targets must be non-negative".into());
+                    LeafFamily::Poisson | LeafFamily::Tweedie | LeafFamily::NegativeBinomial if t < 0.0 => {
+                        return Err("poisson, tweedie, and negative binomial targets must be non-negative".into());
                     }
                     LeafFamily::Gamma if t <= 0.0 => {
                         return Err("gamma targets must be strictly positive".into());
+                    }
+                    LeafFamily::Beta if t <= 0.0 || t >= 1.0 => {
+                        return Err("beta targets must be strictly inside (0, 1)".into());
                     }
                     LeafFamily::Softmax if t < 0.0 || t.fract() != 0.0 => {
                         return Err("softmax targets must be non-negative integers (0, 1, 2, ...)".into());

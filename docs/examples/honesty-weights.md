@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Tree Architecture, Growth Knobs & Structural Constraints**](tree-architecture-and-knobs.md).
+
 # Honest trees & sample weights
 
 `ModelTree` supports sample-splitting honesty to reduce reuse of outcomes for split selection and leaf estimation, as well as observation weights for cost-sensitive learning and survey sampling.

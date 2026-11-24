@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Model Inspection, Quinlan Rules & Explainable Stumps**](model-inspection-and-rules.md).
+
 # Inspection
 
 Metrics reports and every structural view of a fitted tree — the numbers

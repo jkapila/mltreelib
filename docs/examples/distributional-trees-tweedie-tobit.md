@@ -2,6 +2,10 @@
 description: Compare squared-error and Tweedie splits on held-out Miami home sales and choose a tree criterion for positive, skewed or censored outcomes.
 ---
 
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Distributional & Censored Trees**](distributional-and-censored-trees.md).
+
+
 # Beyond mean squared error: choose a tree split for the outcome you have
 
 A tree split chooses what patterns the model pays attention to. Squared error gives large absolute misses more weight. This can be a sensible choice when absolute errors matter. A different criterion can prioritize structure at different scales or account for how the target was observed.

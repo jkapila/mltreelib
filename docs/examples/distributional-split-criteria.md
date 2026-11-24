@@ -1,3 +1,6 @@
+!!! info "Consolidated Flagship Guide"
+    This topic is now part of the comprehensive flagship guide: [**Distributional & Censored Trees**](distributional-and-censored-trees.md).
+
 # Distributional, Hurdle & Survival Split Criteria
 
 This guide demonstrates `mltreelib`'s specialized tree-splitting criteria on real-world benchmark datasets.

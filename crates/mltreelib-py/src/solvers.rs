@@ -175,6 +175,8 @@ fn fit_glm(
         max_iter,
         tol,
         verbose: 0,
+        groups: None,
+        group_l2: 0.0,
     };
     py.detach(|| fit_dense(&X, &y, sample_weight.as_deref(), solver, &options, seed))
         .map(PyFitResult)
