@@ -1,6 +1,6 @@
-"""Generate standard-compliant sitemaps (sitemap.xml, sitemap-index.xml, sitemap-0.xml),
+"""Generate standard-compliant sitemaps (single sitemap.xml),
 
-robots.txt, llms.txt, and llms-full.txt for mltreelib documentation.
+llms.txt, and llms-full.txt for mltreelib documentation.
 Aligned with modern search engine (Google Search Console) and AEO/GEO crawler standards.
 """
 
@@ -60,7 +60,7 @@ def determine_priority_and_freq(rel_url: str) -> tuple[str, str]:
 
 
 def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
-    """Scan site directory and generate sitemap.xml, sitemap-0.xml, and sitemap-index.xml."""
+    """Scan site directory and generate sitemap.xml."""
     pages: list[dict[str, str]] = []
 
     # Map of relative url -> source markdown file
@@ -101,7 +101,7 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
     # Sort so root is first, then alphabetical
     pages.sort(key=lambda p: (0 if p["loc"] == f"{BASE_URL}/" else 1, p["loc"]))
 
-    # 1. Build sitemap-0.xml content
+    # Build sitemap.xml content
     xml_header = '<?xml version="1.0" encoding="UTF-8"?>\n'
     urlset_attrs = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     sitemap_lines = [f"{xml_header}<urlset {urlset_attrs}>"]
@@ -117,101 +117,13 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
     sitemap_lines.append("</urlset>\n")
     sitemap_content = "\n".join(sitemap_lines)
 
-    # 2. Build sitemap-index.xml content
-    latest_mod = pages[0]["lastmod"] if pages else datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-    index_lines = [
-        f"{xml_header}<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
-        f"  <sitemap>",
-        f"    <loc>{BASE_URL}/sitemap-0.xml</loc>",
-        f"    <lastmod>{latest_mod}</lastmod>",
-        f"  </sitemap>",
-        f"  <sitemap>",
-        f"    <loc>{BASE_URL}/sitemap.xml</loc>",
-        f"    <lastmod>{latest_mod}</lastmod>",
-        f"  </sitemap>",
-        f"</sitemapindex>\n",
-    ]
-    index_content = "\n".join(index_lines)
-
     # Write files to site_dir and docs_dir
     for target_dir in [site_dir, docs_dir]:
         target_dir.mkdir(parents=True, exist_ok=True)
-        (target_dir / "sitemap-0.xml").write_text(sitemap_content, encoding="utf-8")
         (target_dir / "sitemap.xml").write_text(sitemap_content, encoding="utf-8")
-        (target_dir / "sitemap-index.xml").write_text(index_content, encoding="utf-8")
 
     print(f"[OK] Generated sitemaps with {len(pages)} URLs in {site_dir} and {docs_dir}.")
     return pages
-
-
-def generate_robots_txt(site_dir: Path, docs_dir: Path) -> None:
-    """Generate robots.txt allowing all major AI search and indexing bots."""
-    robots_content = f"""User-agent: *
-Allow: /
-
-# AEO / GEO AI Crawlers and Retrieval Agents
-User-agent: GPTBot
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Perplexity-User
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-User-agent: Applebot-Extended
-Allow: /
-
-User-agent: CCBot
-Allow: /
-
-User-agent: Amazonbot
-Allow: /
-
-User-agent: Meta-ExternalAgent
-Allow: /
-
-User-agent: DuckAssistBot
-Allow: /
-
-User-agent: cohere-ai
-Allow: /
-
-User-agent: YouBot
-Allow: /
-
-User-agent: MistralAI-User
-Allow: /
-
-Sitemap: {BASE_URL}/sitemap.xml
-Sitemap: {BASE_URL}/sitemap-index.xml
-Sitemap: {BASE_URL}/sitemap-0.xml
-"""
-    for target_dir in [site_dir, docs_dir]:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        (target_dir / "robots.txt").write_text(robots_content, encoding="utf-8")
-    print(f"[OK] Generated robots.txt in {site_dir} and {docs_dir}.")
 
 
 def generate_llms_txt(site_dir: Path, docs_dir: Path) -> None:
@@ -306,7 +218,6 @@ def main() -> None:
     site_dir = root / "site"
     docs_dir = root / "docs"
 
-    generate_robots_txt(site_dir, docs_dir)
     generate_llms_txt(site_dir, docs_dir)
     generate_llms_full_txt(site_dir, docs_dir)
     generate_sitemaps(site_dir, docs_dir)
