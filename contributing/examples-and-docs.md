@@ -29,7 +29,19 @@ Update the page that already teaches the topic. Add a page only when none fits, 
 ## Examples directory
 
 - `examples/quickstart.py` and `examples/guides/<topic>.py`: short, finish in seconds to a minute, print what to look for, start with a docstring whose first line says what the script shows (it becomes the gallery description).
+- Scripts that need packages beyond the dev environment (for example scikit-learn, LightGBM, optuna, scipy, pygraphviz) say so in a `Usage:` block of the docstring with `uv run --with <package> python <script>`, and the gallery's Run column shows that command. Never add such packages to the project's dependencies; optional ones (a figure renderer) are noted as optional.
 - Slow runs and measurements belong in `benchmarks/`, tooling in `scripts/`.
+
+## Building the docs
+
+The docs build renders tree graphs, so it needs system Graphviz and the `docs` dependency group:
+
+```sh
+sudo apt-get install graphviz libgraphviz-dev      # or your platform's Graphviz development package
+uv sync --group dev --group docs
+```
+
+The docs workflow does the same. The test workflow does not need Graphviz.
 
 ## Gates
 
