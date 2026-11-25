@@ -23,6 +23,8 @@ Design docs and research live in `references/` (start with
 
 mltreelib is a one-stop, end-to-end library for building models the right way, from the maintainer's 15+ years of practice. One consistent surface across regression, classification, survival, uplift, clustering, anomaly detection, components and forecasting; metrics and summaries in the same place. The single tree is built as far as it will go (split, grow, prune, leaf) because it is the model you can explain to the business; the leaf is a knob so that divide and conquer replaces one global regression that would not work. Planned areas: data, core and metrics (including drift monitoring). Early development: APIs may change; new features start as an issue.
 
+Completeness and reliability of the existing surface come before new capability. Every leaf family must have a summary table.
+
 Hard rules: **no scikit-learn dependency, ever**; shrink the dependency set and build inside the package when possible; **missing values are never imputed, dropped or recoded by data helpers** (only the model handles them); defaults are identical on every surface; results are reproducible to about 12 significant digits on the same platform.
 
 **Resuming work?** Read the latest dated handoff in `references/research/` (currently [2026-11-26-session-handoff.md](references/research/2026-11-26-session-handoff.md)) for branch state, open issues and the ordered next steps.

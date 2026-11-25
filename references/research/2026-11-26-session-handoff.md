@@ -39,6 +39,13 @@ Read this first in the next session, then `AGENTS.md` and `contributing/definiti
 9. Backlog in Spec 33 section F: stale figures, typed tables with no run block, `hpo_shapes.py` never run end to end, other API reference pages stale against the generator, `to_json` timing check.
 10. Decisions made on 2026-11-26: no pull request or version until the docs rework and bugs are done; `pygraphviz` stays in the `docs` group only (not `dev`); `cvxpy` is an optional extra (`pip install "mltreelib[cvx]"`) used only by the three exact reference solvers in `solvers.py` (`solve_sparse_rules_cvx`, `solve_knapsack_pruning_cvx`, `solve_oct_mip_cvx`), which cross-check the native Rust solvers; `DatasetBuilder` opt-in drop/impute stays, default allow. Still unanswered from the maintainer: which sign convention for weight of evidence (the code uses ln(event share / non-event share), opposite of many scorecard tools), which model family summary the maintainer once asked for (the stub says only Gaussian linear has a table), the name of the pandas data-preparation package the maintainer used before.
 
+## Decisions added late on 2026-11-26
+
+- WOE sign convention stays as shipped (ln event share over non-event share); documented.
+- **Every leaf family needs a summary table**, no exception (mean, median, linear and parametric families, quantile, Huber, MARS, k-NN, survival, Tobit, softmax, heteroscedastic, anything added later). Spec 35 now requires a conformance test over all accepted leaf and family combinations that fails on a stub. Issue 24 carries it.
+- Completeness and reliability before new capability: no new analysis tooling now (the unnamed pandas package the maintainer once used is parked).
+- Research idea recorded in `specs/README.md`: a tree as the leaf model of a tree (each leaf fits its own tree on its rows). Not scheduled.
+
 ## Rules to remember (all in AGENTS.md and contributing/)
 
 - No scikit-learn ever; shrink dependencies; build inside the package. Data helpers never impute, drop, recode or reorder missing values. Defaults identical on every surface. Reproducible to about 12 digits; compare with relative tolerance, never string equality.

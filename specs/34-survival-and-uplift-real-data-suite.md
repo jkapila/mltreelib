@@ -144,6 +144,11 @@ All helpers live in the data module (`mltreelib.data`), are pure Python with the
 
 **Existing dataset-builder options.** The opt-in drop and impute policies stay, with "allow" (no treatment) as the default; new helpers do not copy that pattern.
 
+## Decisions Recorded
+
+- **Weight-of-evidence sign convention stays** as shipped: WOE = ln(event share / non-event share), documented in the reference page. It is the public convention for now; changing it would be a breaking change and needs an issue.
+- **No further data-analysis tooling in this release.** The maintainer asked for completeness and reliability of what exists before adding capability (for example tools that describe how the data is represented); those are parked.
+
 ## Out of Scope
 
 - Observational causal inference methods and any claim of causal effect from observational data.

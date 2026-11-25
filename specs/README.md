@@ -131,3 +131,10 @@ Guiding rules: no scikit-learn dependency, a shrinking dependency set (build ins
 - Spec 20's header says some unsupervised snapshots remain open, but they are implemented.
 - Specs 21 and 26 both describe the generic bounded optimizer seam; 11 and 27 overlap on overdispersed and bounded outcomes; 20 and 25 both specify snapshot round-trip. Add cross-references.
 - Spec 34 is partly landed (on-demand datasets with checksums exist), but its header says proposed.
+
+### Research ideas (not scheduled)
+
+- **A tree as a leaf model.** Each leaf of a tree fits its own tree on the rows that reach it, so a region is treated as a universe of its own: its own features, depth, criterion and leaf family. In principle the result is one deeper tree, so the value must come from what a single tree cannot do: different complexity per region, different feature sets or leaf families per region, local missing-value routing, local regularisation. Risks: overfitting and explanation length. Related work: M5 smoothing, hierarchical mixtures of experts, cluster-then-model, Cubist rule committees. Approach if pursued: a leaf family `tree` that recurses with its own controls, a summary that nests the sub-tree, and a benchmark against a plain deeper tree at equal leaf count.
+- **Data-representation analysis tools** (how the data is structured and shaped) are parked until the existing surface is complete.
+
+**Principle: completeness and reliability of what the package already covers come before new capability.**
