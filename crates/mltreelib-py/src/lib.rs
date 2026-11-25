@@ -4537,21 +4537,21 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
+    #[pyo3(signature = (x, y = None, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
     fn fit(
         &mut self,
-        x: Table<'_>,
-        y: Bound<'_, PyAny>,
+        x: Bound<'_, PyAny>,
+        y: Option<Bound<'_, PyAny>>,
         w: Option<Vec<f64>>,
         mut dtypes: Option<Vec<String>>,
         control: Option<Bound<'_, PyAny>>,
         id_col: Option<Bound<'_, PyAny>>,
         group_col: Option<Bound<'_, PyAny>>,
         mut col_names: Option<Vec<String>>,
-        event: Option<Vec<f64>>,
-        treatment: Option<Vec<f64>>,
+        mut event: Option<Vec<f64>>,
+        mut treatment: Option<Vec<f64>>,
         n_classes: Option<usize>,
-        sample_weight: Option<Vec<f64>>,
+        mut sample_weight: Option<Vec<f64>>,
         row_weights: Option<Vec<f64>>,
         col_weights: Option<Vec<f64>>,
         feature_weights: Option<Vec<f64>>,
@@ -4566,10 +4566,63 @@ impl PyModelTree {
         extratrees: Option<bool>,
         ebm_fast: Option<bool>,
     ) -> PyResult<()> {
-        let (mut x, table_names) = (x.rows, x.names);
+        // A Dataset (any object with `fit_args()`) supplies x, y, names, dtypes and roles.
+        let x_obj = x;
+        let mut y = y;
+        let (mut x, table_names) = if x_obj.hasattr("fit_args")? {
+            let args = x_obj.call_method0("fit_args")?;
+            let get = |key: &str| -> PyResult<Option<Bound<'_, PyAny>>> {
+                match args.get_item(key) {
+                    Ok(v) if !v.is_none() => Ok(Some(v)),
+                    _ => Ok(None),
+                }
+            };
+            let numeric = |name: &str, v: Bound<'_, PyAny>| -> PyResult<Vec<f64>> {
+                v.extract::<Vec<f64>>().map_err(|_| {
+                    PyValueError::new_err(format!(
+                        "Dataset role '{name}' must be numeric (for example 0/1); recode it before building the Dataset, the library never recodes values"
+                    ))
+                })
+            };
+            if y.is_none() {
+                y = get("y")?;
+            }
+            if dtypes.is_none() {
+                if let Some(v) = get("dtypes")? {
+                    dtypes = Some(v.extract::<Vec<String>>()?);
+                }
+            }
+            if event.is_none() {
+                if let Some(v) = get("event")? {
+                    event = Some(numeric("event", v)?);
+                }
+            }
+            if treatment.is_none() {
+                if let Some(v) = get("treatment")? {
+                    treatment = Some(numeric("treatment", v)?);
+                }
+            }
+            if sample_weight.is_none() && w.is_none() {
+                if let Some(v) = get("sample_weight")? {
+                    sample_weight = Some(numeric("weights", v)?);
+                }
+            }
+            let rows = get("x")?
+                .ok_or_else(|| PyValueError::new_err("Dataset.fit_args() returned no 'x'"))?
+                .extract::<Vec<Vec<Option<Bound<'_, PyAny>>>>>()?;
+            let names = match get("col_names")? {
+                Some(v) => Some(v.extract::<Vec<String>>()?),
+                None => None,
+            };
+            (rows, names)
+        } else {
+            let t = x_obj.extract::<Table<'_>>()?;
+            (t.rows, t.names)
+        };
         if col_names.is_none() {
             col_names = table_names;
         }
+        let y = y.ok_or_else(|| PyValueError::new_err("fit() needs y, unless x is a Dataset that has a target"))?;
         if let Some(fm) = fairness_metric {
             self.params.fairness_metric = match fm.to_lowercase().as_str() {
                 "equalized_odds" | "equalizedodds" | "eo" => mltreelib_core::model_tree::FairnessMetric::EqualizedOdds,

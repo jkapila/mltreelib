@@ -10,11 +10,13 @@ from mltreelib.data import access, assoc, binning, profile, scaling, split
 from mltreelib.data.access import *
 from mltreelib.data.assoc import *
 from mltreelib.data.binning import *
+from mltreelib.data.dataset import Dataset
 from mltreelib.data.profile import *
 from mltreelib.data.scaling import *
 from mltreelib.data.split import *
 
 __all__ = [
+    "Dataset",
     "FeatureTransformer",
     "GroupedFeatureTransformer",
     "access",

@@ -36,6 +36,10 @@ def _columns(x: Any) -> tuple[list[str], list[list[Any]]] | None:
 
 def to_rows(x: Any) -> tuple[list[list[Any]], list[str] | None]:
     """Return ``(rows, column_names)``; names are ``None`` when the input has none."""
+    predict_args = getattr(x, "predict_args", None)
+    if callable(predict_args):  # a Dataset: its feature rows (and names) only
+        args = predict_args()
+        return args["x"], args.get("col_names")
     if isinstance(x, (list, tuple)):  # already rows: no copy, no scan
         return x, None  # type: ignore[return-value]
     cols = _columns(x)
