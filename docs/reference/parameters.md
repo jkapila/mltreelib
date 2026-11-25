@@ -101,8 +101,9 @@ Controls post-fit pruning, missing value handling, and sample splitting.
 
 | Parameter | Type | Default | Options | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **`prune`** | `str` | `"cp"` | `"cp"`, `"cost_complexity"`, `"bic"`, `"aic"`, `"none"` | Post-pruning algorithm. `"cp"` matches CART/rpart complexity pruning; `"bic"` penalizes number of active parameters using Bayesian Information Criterion. |
-| **`cp_alpha`** | `float` | `5.0` | `[0.0, \infty)` | Complexity pruning penalty multiplier. Higher values produce shallower, more general trees. |
+| **`prune`** | `str` | `"cp"` | `"cp"`, `"bic"`, `"mdl"`, `"none"` | Post-pruning, bottom-up with one penalty. `"cp"` is cost-complexity pruning in the CART/rpart family; `"bic"` and `"mdl"` use encoding-cost criteria. There is no cross-validated choice of the penalty. |
+| **`cp_alpha`** | `float` | `5.0` | `[0.0, \infty)` | Absolute per-leaf penalty for `prune="cp"`, in target units (squared-error or deviance units). A split is kept only if its error reduction exceeds the penalty, so the effect depends on the target's scale. Overridden by `cp`. |
+| **`cp`** | `float` | `None` | `[0.0, \infty)` | Scale-free penalty for `prune="cp"` as a fraction of the root cost (rpart's `cp`). When set it overrides `cp_alpha`. `cp=0.01` means a split must reduce the total error by at least 1% of the root error. |
 | **`honesty`** | `bool` | `False` | `True`, `False` | Enables honest estimation (Wager & Athey 2018). Tree splits are learned on a training sub-sample, while leaf models are fitted on a held-out estimation sub-sample. Guarantees asymptotic normality. |
 | **`honesty_fraction`** | `float` | `0.5` | `(0.0, 1.0)` | Proportion of rows allocated to the split-learning sub-sample when `honesty=True`. |
 | **`maxsurrogate`** | `int` | `0` | `[0, 10]` | Number of surrogate split variables stored per node (CART style). When a primary split feature is missing during prediction, the highest-agreement surrogate variable routes the sample. |

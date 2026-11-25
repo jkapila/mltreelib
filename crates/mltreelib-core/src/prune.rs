@@ -32,6 +32,17 @@ impl PruneCost {
     }
 }
 impl<'a> Grower<'a> {
+    /// Cost of the whole training set as one leaf, before any penalty: the
+    /// reference that the scale-free `cp` is a fraction of (as in rpart).
+    pub(crate) fn root_prune_cost(&self, rows: &[usize]) -> f64 {
+        if self.params.leaf_family != crate::family::LeafFamily::Gaussian {
+            let leaf = self.make_leaf_for_scan(rows, &[]);
+            let deviance = self.leaf_deviance(rows, &leaf);
+            return if deviance.is_finite() { deviance } else { 0.0 };
+        }
+        crate::node_stats::FrameStats::from_ty(self.y, self.w, rows).sse
+    }
+
     /// Encoding cost of treating `rows` as one leaf (prune criterion).
     pub(crate) fn leaf_cost(&self, rows: &[usize], path: &[usize], sse: f64) -> f64 {
         let n = rows.len() as f64;
@@ -47,7 +58,7 @@ impl<'a> Grower<'a> {
                 return f64::NAN;
             }
             return match self.params.prune {
-                PruneCost::Cp => deviance + self.params.cp_alpha,
+                PruneCost::Cp => deviance + self.cp_penalty,
                 PruneCost::Bic => {
                     let k = leaf.linear.as_ref()
                         .map(|m| 1 + m.coef.len() + m.na_coef.len()).unwrap_or(1);
@@ -58,7 +69,7 @@ impl<'a> Grower<'a> {
         }
         match self.params.prune {
             PruneCost::None => 0.0,
-            PruneCost::Cp => sse + self.params.cp_alpha,
+            PruneCost::Cp => sse + self.cp_penalty,
             PruneCost::Bic => {
                 n * (sse / n).max(1e-300).ln() + n.ln()
             }

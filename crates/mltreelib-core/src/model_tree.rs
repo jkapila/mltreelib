@@ -185,6 +185,13 @@ pub struct ModelTreeParams {
     /// when the children's deviance reduction does not earn `cp_alpha`.
     #[serde(with = "crate::persistence::float")]
     pub cp_alpha: f64,
+    /// Scale-free cost-complexity (`prune="cp"`, rpart `cp`): when set,
+    /// the per-leaf penalty is `cp` times the root node's cost (its
+    /// weighted SSE, or its deviance for a non-Gaussian family), so the
+    /// same value means the same pruning strength whatever the units of
+    /// the target. Overrides `cp_alpha`. `None` keeps the absolute `cp_alpha`.
+    #[serde(default, with = "crate::persistence::float")]
+    pub cp: Option<f64>,
     /// Leaf cap (sklearn `max_leaf_nodes` / LightGBM `num_leaves`): stop
     /// splitting once this many leaves exist (depth-first budget, exact
     /// bound). `None` = unlimited (bounded by `max_depth`).
@@ -395,6 +402,7 @@ impl Default for ModelTreeParams {
             honesty_fraction: 0.5,
             maxsurrogate: 0,
             cp_alpha: 5.0,
+            cp: None,
             max_leaf_nodes: None,
             minsplit: None,
             minbucket: None,
@@ -698,6 +706,11 @@ impl ModelTree {
         if params.cp_alpha < 0.0 {
             return Err("cp_alpha must be >= 0".to_string());
         }
+        if let Some(c) = params.cp {
+            if !c.is_finite() || c < 0.0 {
+                return Err("cp must be a finite value >= 0".to_string());
+            }
+        }
         if params.huber_delta <= 0.0 || !params.huber_delta.is_finite() {
             return Err("huber_delta must be positive and finite".to_string());
         }
@@ -974,10 +987,14 @@ impl ModelTree {
             fast_interactions,
             trace: Vec::new(),
             costs: Vec::new(),
+            cp_penalty: params.cp_alpha,
             rng_counter: 0,
             tail_bounds,
             max_depth_seen: 0,
         };
+        if let Some(c) = params.cp {
+            grower.cp_penalty = c * grower.root_prune_cost(&rows);
+        }
         if params.verbose > 0 {
             grower.log(
                 1,
@@ -2652,6 +2669,8 @@ pub(crate) struct Grower<'a> {
     pub(crate) trace: Vec<String>,
     /// Prune-cost bookkeeping aligned with node indices (`prune != None`).
     pub(crate) costs: Vec<f64>,
+    /// Resolved per-leaf cost-complexity penalty (`cp_alpha`, or `cp` times the root cost).
+    pub(crate) cp_penalty: f64,
     /// Per-node counter for the random column subset (seeded, deterministic).
     pub(crate) rng_counter: u64,
     /// Tail bounds (lower, upper) for extrema protection.

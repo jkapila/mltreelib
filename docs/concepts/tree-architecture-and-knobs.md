@@ -52,24 +52,38 @@ The balance between model bias and variance is tuned via recursive growth contro
 | Parameter | Type | Default | Operational Effect |
 | :--- | :--- | :---: | :--- |
 | `max_depth` | `int` | `6` | Hard ceiling on recursive partitioning depth. |
-| `min_rows` | `int` | `20` | Minimum sample count required to attempt a split. |
-| `min_gain` | `float` | `0.0` | Minimum reduction in split deviance required to accept a partition. |
-| `prune` | `str` | `"none"` | Cost-complexity pruning (`"cost_complexity"` via holdout cross-validation). |
+| `min_rows` | `int` | `15` | Minimum rows on each side of a split. |
+| `min_gain` | `float` | `1e-9` | Minimum reduction in split deviance required to accept a partition. |
+| `prune` | `str` | `"cp"` | Post-pruning: `"cp"` (cost-complexity), `"bic"`, `"mdl"` or `"none"`. |
+| `cp_alpha` | `float` | `5.0` | Absolute per-leaf penalty in target units (squared-error units for a Gaussian leaf). Depends on the target's scale. |
+| `cp` | `float` | `None` | Scale-free penalty as a fraction of the root cost, as in rpart. When set it overrides `cp_alpha`. |
+
+The defaults above come from the live constructor. Pruning is bottom-up with one penalty: a split survives only when its error reduction exceeds the per-leaf penalty. There is no cross-validated choice of the penalty.
 
 ![Empirical Growth Knob Grid: Depth vs Min Rows Trade-off Surface](../assets/core_growth_knob_grid.png)
 
+<!-- run -->
 ```python
-from mltreelib import ModelTree
+from mltreelib import ModelTree, load_dataset
 
-# Regularized tree growth configuration
-tree = ModelTree(
-    max_depth=4,
-    min_rows=35,
-    min_gain=1e-4,
-    prune="cost_complexity",
-    ccp_alpha=0.015,
-)
-tree.fit(X_train, y_train)
+data = load_dataset("concrete_compressive_strength")
+target = "ConcreteCompressiveStrength"
+names = [c for c in data["columns"] if c != target]
+X = [[data["columns"][c][i] for c in names] for i in range(data["n_rows"])]
+y = data["columns"][target]
+
+for cp in (None, 0.001, 0.01, 0.05):
+    tree = ModelTree(leaf="mean", max_depth=6, min_rows=15, prune="cp", cp=cp)
+    tree.fit(X, y, col_names=names)
+    print(f"cp={cp}: {tree.n_leaves()} leaves")
+```
+
+<!-- output -->
+```text
+cp=None: 36 leaves
+cp=0.001: 30 leaves
+cp=0.01: 13 leaves
+cp=0.05: 5 leaves
 ```
 
 ---

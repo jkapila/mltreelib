@@ -30,6 +30,7 @@ _GROWTH_FIELDS = frozenset(
         "imbalance_penalty",
         "prune",
         "cp_alpha",
+        "cp",
         "honesty",
         "honesty_fraction",
         "maxsurrogate",

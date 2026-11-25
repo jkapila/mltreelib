@@ -3742,7 +3742,9 @@ impl PyModelTree {
     ///        the gain (grf-style).
     ///   PRUNING
     ///     prune: "none", "bic", "mdl" or "cp" (cost-complexity).
-    ///     cp_alpha: per-leaf penalty with prune="cp".
+    ///     cp_alpha: absolute per-leaf penalty with prune="cp" (target units).
+    ///     cp: scale-free penalty with prune="cp", as a fraction of the root
+    ///         cost (rpart `cp`). Overrides cp_alpha when set.
     ///   SAMPLING (honesty)
     ///     honesty: structure/estimation sample split (grf-style).
     ///     honesty_fraction: share of rows assigned to structure.
@@ -3802,7 +3804,7 @@ impl PyModelTree {
         monotone = vec![], tree_monotone = None, leaf_monotone = None,
         col_weights = None, interaction_groups = None,
         alpha = 0.0, imbalance_penalty = 0.0,
-        prune = "cp", cp_alpha = 5.0,
+        prune = "cp", cp_alpha = 5.0, cp = None,
         honesty = false, honesty_fraction = 0.5,
         maxsurrogate = 0,
         split_test = "none", split_alpha = 0.05, bonferroni = false,
@@ -3864,6 +3866,7 @@ impl PyModelTree {
         imbalance_penalty: f64,
         prune: &str,
         cp_alpha: f64,
+        cp: Option<f64>,
         honesty: bool,
         honesty_fraction: f64,
         maxsurrogate: usize,
@@ -4250,6 +4253,7 @@ impl PyModelTree {
             honesty_fraction,
             maxsurrogate,
             cp_alpha,
+            cp,
             max_leaf_nodes,
             minsplit,
             minbucket,
@@ -5846,6 +5850,7 @@ impl PyModelTree {
             },
         )?;
         d.set_item("cp_alpha", self.params.cp_alpha)?;
+        d.set_item("cp", self.params.cp)?;
         d.set_item("honesty", self.params.honesty)?;
         d.set_item("honesty_fraction", self.params.honesty_fraction)?;
         d.set_item("maxsurrogate", self.params.maxsurrogate)?;
