@@ -1,548 +1,548 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jkapila.github.io/mltreelib/</loc>
-    <lastmod>2026-11-24T18:55:43.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/benchmarks/datasets/</loc>
-    <lastmod>2026-10-29T04:40:25.000Z</lastmod>
+    <lastmod>2026-10-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/benchmarks/elo/</loc>
-    <lastmod>2026-11-21T07:58:59.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_board/</loc>
-    <lastmod>2026-11-21T07:58:59.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_cla_board/</loc>
-    <lastmod>2026-11-21T07:58:59.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/benchmarks/elo_overall/</loc>
-    <lastmod>2026-11-21T07:58:59.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/prescriptive-inventory-replenishment/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/segregate-first-two-stage-survival-trees/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/uplift-modeling-with-causal-trees/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/why-credit-scoring-needs-glass-box-trees/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/zero-imputation-predictive-maintenance/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/anomaly-comparison/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/categorical-encoders/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/causal-uplift/</loc>
-    <lastmod>2026-11-19T16:03:22.000Z</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/clustering-comparison/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/constraints/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/data-matrix-and-routing/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/data-processing/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/distributional-and-censored-trees/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/distributional-split-criteria/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/distributional-trees-tweedie-tobit/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/generic-optimizer/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/honesty-weights/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/hpo/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/inspection/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/knob-tour/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/metrics-plots/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/missing-routing/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/model-building/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/model-inspection-and-rules/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/optimization-and-tuning/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/pca-rotations/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/piecewise-linear-and-cubist/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/piecewise-linear-model-trees-vs-gbdt/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/quinlan-m5-cubist-rust/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/regression-methods-showcase/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/rules-summary-knn/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/stump-explainable/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/tobit-regression/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/tree-architecture-and-knobs/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/two-controls-and-0d/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/unsupervised-clustering-and-anomalies/</loc>
-    <lastmod>2026-11-24T18:00:15.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/examples/walkthrough/</loc>
-    <lastmod>2026-11-24T17:22:11.000Z</lastmod>
+    <lastmod>2026-11-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/field-notes/</loc>
-    <lastmod>2026-10-28T22:14:52.000Z</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/</loc>
-    <lastmod>2026-11-19T16:55:50.000Z</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/advanced-modeling/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/anomaly/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/classification/</loc>
-    <lastmod>2026-11-18T18:52:36.000Z</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/clustering/</loc>
-    <lastmod>2026-11-20T15:24:33.000Z</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/data/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/evaluation/</loc>
-    <lastmod>2026-11-21T11:21:44.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/real-data/</loc>
-    <lastmod>2026-11-22T18:12:50.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/regression/</loc>
-    <lastmod>2026-11-22T18:12:50.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/serving-contract/</loc>
-    <lastmod>2026-11-20T20:07:10.000Z</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/survival/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/uplift/</loc>
-    <lastmod>2026-11-19T16:55:50.000Z</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/visualization/</loc>
-    <lastmod>2026-11-18T18:52:36.000Z</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/installation/</loc>
-    <lastmod>2026-11-20T20:07:10.000Z</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/quickstart/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/anomaly/</loc>
-    <lastmod>2026-11-22T16:46:28.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/cluster/</loc>
-    <lastmod>2026-11-22T16:46:28.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/components/</loc>
-    <lastmod>2026-11-22T13:06:50.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/data/</loc>
-    <lastmod>2026-11-21T13:36:24.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/encoders/</loc>
-    <lastmod>2026-11-21T13:36:24.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/features/</loc>
-    <lastmod>2026-11-21T13:36:24.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/metrics/</loc>
-    <lastmod>2026-11-21T13:36:24.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/model-tree/</loc>
-    <lastmod>2026-11-22T16:46:28.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/report/</loc>
-    <lastmod>2026-11-22T13:06:50.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/rules/</loc>
-    <lastmod>2026-11-22T13:06:50.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/rust-generic/</loc>
-    <lastmod>2026-11-21T15:52:52.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/api/solvers/</loc>
-    <lastmod>2026-11-21T15:52:52.000Z</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/data/</loc>
-    <lastmod>2026-11-18T16:17:27.000Z</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/metrics/</loc>
-    <lastmod>2026-11-19T12:20:13.000Z</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/model/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/parameters/</loc>
-    <lastmod>2026-11-20T15:24:33.000Z</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/reports/</loc>
-    <lastmod>2026-11-19T12:20:13.000Z</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/component-benchmarks/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/constraints-and-honesty/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/core-tree-architecture/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/distributional-leaves/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/hierarchical-retrain/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/missing-data-routing/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/solver-benchmarks/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/statistical-and-metric-splitting/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/survival-trees/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/timeseries-forecasting/</loc>
-    <lastmod>2026-11-23T17:25:28.000Z</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/suites/unsupervised-trees/</loc>
-    <lastmod>2026-11-22T20:02:15.000Z</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

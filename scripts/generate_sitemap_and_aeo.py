@@ -27,9 +27,8 @@ def get_git_timestamp(file_path: Path) -> str:
         )
         timestamp = res.stdout.strip()
         if timestamp:
-            # Parse and normalize to UTC Z format
             dt = datetime.datetime.fromisoformat(timestamp).astimezone(datetime.timezone.utc)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            return dt.strftime("%Y-%m-%d")
     except Exception:
         pass
 
@@ -37,10 +36,10 @@ def get_git_timestamp(file_path: Path) -> str:
     try:
         mtime = os.path.getmtime(file_path)
         dt = datetime.datetime.fromtimestamp(mtime, tz=datetime.timezone.utc)
-        return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        return dt.strftime("%Y-%m-%d")
     except Exception:
         now = datetime.datetime.now(datetime.timezone.utc)
-        return now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        return now.strftime("%Y-%m-%d")
 
 
 def determine_priority_and_freq(rel_url: str) -> tuple[str, str]:
@@ -104,13 +103,7 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
 
     # 1. Build sitemap-0.xml content
     xml_header = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    urlset_attrs = (
-        'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
-        'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" '
-        'xmlns:xhtml="http://www.w3.org/1999/xhtml" '
-        'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" '
-        'xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"'
-    )
+    urlset_attrs = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     sitemap_lines = [f"{xml_header}<urlset {urlset_attrs}>"]
     for p in pages:
         sitemap_lines.append(
@@ -125,7 +118,7 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
     sitemap_content = "\n".join(sitemap_lines)
 
     # 2. Build sitemap-index.xml content
-    latest_mod = pages[0]["lastmod"] if pages else datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    latest_mod = pages[0]["lastmod"] if pages else datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     index_lines = [
         f"{xml_header}<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
         f"  <sitemap>",
