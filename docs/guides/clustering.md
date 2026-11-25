@@ -105,4 +105,4 @@ The [synthetic clustering workflow](https://github.com/jkapila/mltreelib/blob/ma
 
 ![Controlled clustering refit on a synthetic review set](../assets/guides/clustering-workflow.svg)
 
-See [Blockeel et al. on predictive clustering](https://arxiv.org/abs/cs/0011030) and the [engine comparison](anomaly-trees.md).
+See [Blockeel et al. on predictive clustering](https://arxiv.org/abs/cs/0011030) and the [engine comparison](../concepts/anomaly-trees.md).

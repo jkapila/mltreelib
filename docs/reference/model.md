@@ -137,4 +137,4 @@ numbering, `2·depth` indent, `x< t` / `x>=t` labels, `format(signif(x,7))`
 columns, `*` terminal markers. Node ids in `to_dot()` match the text print.
 
 Next: [Metrics](metrics.md) to evaluate, or the
-[examples](../guides/tree-architecture-and-knobs.md) to see it all run.
+[examples](../concepts/tree-architecture-and-knobs.md) to see it all run.

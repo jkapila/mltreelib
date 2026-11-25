@@ -112,6 +112,6 @@ For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted thre
 
 ## Next Steps
 
-- For unsupervised clustering with rule extraction, study **[Unsupervised Trees](clustering-trees.md)**.
-- For missing sensor routing under telemetry dropouts, review **[Native Missing Data](missing-data-routing.md)**.
+- For unsupervised clustering with rule extraction, study **[Unsupervised Trees](../concepts/clustering-trees.md)**.
+- For missing sensor routing under telemetry dropouts, review **[Native Missing Data](../concepts/missing-data-routing.md)**.
 - See the full **[Anomaly API Reference](../reference/api/anomaly.md)**.

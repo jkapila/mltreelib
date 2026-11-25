@@ -224,9 +224,9 @@ pred_huber = huber_tree.predict(X_test)
 ```
 
 !!! tip "Related guides"
-    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
-    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
-    - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+    - [Distributional & Censored Leaf Families](../concepts/distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
+    - [Solvers, Optimizers & Real-Data Tuning](../concepts/solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
+    - [Core Tree Architecture & Growth Knobs](../concepts/core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
 
 ## Full output
 

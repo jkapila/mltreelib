@@ -17,7 +17,7 @@ Review budgets are limited, so an anomaly model must rank true failures into the
 - `kind="hst"`: half-space trees for streaming data.
 - `kind="rct"`: random cut trees.
 
-For a task-first walkthrough on real telemetry, see [Anomaly detection in Python](anomaly.md). To find segments instead, see [Clustering trees](clustering-trees.md).
+For a task-first walkthrough on real telemetry, see [Anomaly detection in Python](../guides/anomaly.md). To find segments instead, see [Clustering trees](clustering-trees.md).
 
 Script: [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py).
 
@@ -162,5 +162,5 @@ Top 3 Flagged Anomalies:
    In very high dimensions ($P > 1,000$), random normal vectors $\mathbf{n} \sim \mathcal{N}(0, \mathbf{I})$ become nearly orthogonal to all coordinate axes, diluting cut selectivity. Subsetting random coordinate subspaces (e.g. 2–10 features per oblique cut) preserves discrimination.
 
 !!! tip "Related guides"
-    - [Anomaly detection in Python](anomaly.md) for the end-to-end shuttle example.
+    - [Anomaly detection in Python](../guides/anomaly.md) for the end-to-end shuttle example.
     - [API reference: AnomalyModel](../reference/api/anomaly.md).

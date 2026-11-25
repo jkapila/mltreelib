@@ -68,8 +68,8 @@ uv run python examples/guides/real_tree_studies.py wine  # after downloading Win
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |
 | solve a real problem | [Real datasets and worked studies](guides/real-data.md) |
 | change one part of a model | [Example library](guides/index.md) |
-| wrangle data & encodings | [Examples — Data Processing](guides/data-matrix-and-routing.md) |
-| know every knob | [Examples — Model building & predictions](guides/tree-architecture-and-knobs.md) |
+| wrangle data & encodings | [Examples — Data Processing](concepts/data-matrix-and-routing.md) |
+| know every knob | [Examples — Model building & predictions](concepts/tree-architecture-and-knobs.md) |
 | read the numbers | [Examples — Inspection](guides/model-inspection-and-rules.md) |
 | draw the tree | [Visualization](guides/visualization.md) |
 | see how it compares | [Overall Elo Arena](benchmarks/elo_overall.md) |

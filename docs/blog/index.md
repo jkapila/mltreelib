@@ -84,9 +84,9 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 | How do I audit a classifier and choose an operating threshold? | [Decision trees for credit scoring](why-credit-scoring-needs-glass-box-trees.md) | Give Me Some Credit |
 | Does an uplift model improve targeting without waking sleeping dogs? | [Causal trees for uplift modeling](uplift-modeling-with-causal-trees.md) | Hillstrom randomized trial (42,693 analyzed; 64,000 raw) |
 | Can a tree score industrial telemetry with missing sensor values without imputation? | [Decision trees and missing sensor data](zero-imputation-predictive-maintenance.md) | Scania APS Failure |
-| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](../guides/piecewise-linear-and-cubist.md) | UCI concrete strength |
-| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](../guides/distributional-leaves.md) | Miami home sales |
-| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](../guides/piecewise-linear-and-cubist.md) | Diamonds |
+| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](../concepts/piecewise-linear-and-cubist.md) | UCI concrete strength |
+| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](../concepts/distributional-leaves.md) | Miami home sales |
+| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](../concepts/piecewise-linear-and-cubist.md) | Diamonds |
 
 ---
 

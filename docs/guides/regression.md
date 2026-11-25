@@ -96,4 +96,4 @@ On the fixed random split, test RMSE was 1,225.052 versus 3,982.039 for the trai
 
 The real tree splits on named size measurements, including `x` and `y`, and exposes leaf support and coefficients. Inspect the feature definitions and leaf sample sizes before drawing business conclusions. Category values in fitted structures can appear as internal codes. Coefficients and paths describe the prediction model; they do not establish what happens if a business changes a feature.
 
-For more on local slopes and the fair comparison setup, see the [model tree regression reference](piecewise-linear-and-cubist.md).
+For more on local slopes and the fair comparison setup, see the [model tree regression reference](../concepts/piecewise-linear-and-cubist.md).

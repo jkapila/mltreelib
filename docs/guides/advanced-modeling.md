@@ -4,11 +4,11 @@ Start with a [regression or classification pathway](index.md). Then choose the c
 
 | Need | Technique | Read next |
 |---|---|---|
-| Outcome is censored at a known bound | Tobit leaves | [Tobit example](distributional-leaves.md) |
-| Domain limits on direction or combinations | Monotone or interaction constraints | [Constraint example](tree-architecture-and-knobs.md) |
-| Preserve segments while updating leaf models | Leaf retraining | [Retraining examples](hierarchical-retrain.md) |
-| Control fit complexity and flexibility | Growth and leaf settings | [Growth knob tour](tree-architecture-and-knobs.md) |
-| Different outcome distributions | Distributional families | [Distributional leaves](distributional-leaves.md) |
+| Outcome is censored at a known bound | Tobit leaves | [Tobit example](../concepts/distributional-leaves.md) |
+| Domain limits on direction or combinations | Monotone or interaction constraints | [Constraint example](../concepts/tree-architecture-and-knobs.md) |
+| Preserve segments while updating leaf models | Leaf retraining | [Retraining examples](../concepts/hierarchical-retrain.md) |
+| Control fit complexity and flexibility | Growth and leaf settings | [Growth knob tour](../concepts/tree-architecture-and-knobs.md) |
+| Different outcome distributions | Distributional families | [Distributional leaves](../concepts/distributional-leaves.md) |
 | Predict only from approved input columns | Feature and interaction controls | [Parameters](../reference/parameters.md) |
 
 ## Censored outcomes: Tobit
@@ -78,8 +78,8 @@ Splits preserved: True
 Updated prediction: [1.5]
 ```
 
-This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](hierarchical-retrain.md) for alternative feature sets and routing.
+This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](../concepts/hierarchical-retrain.md) for alternative feature sets and routing.
 
 ## Tune deliberately
 
-Start with `max_depth` and `min_rows` to control partition size. Compare mean and linear leaves only when their assumptions and interpretation fit the outcome. Tune on a validation set and keep a final test set untouched. The [knob tour](tree-architecture-and-knobs.md) is a parameter reference, not a recommended sequence or a substitute for evaluation.
+Start with `max_depth` and `min_rows` to control partition size. Compare mean and linear leaves only when their assumptions and interpretation fit the outcome. Tune on a validation set and keep a final test set untouched. The [knob tour](../concepts/tree-architecture-and-knobs.md) is a parameter reference, not a recommended sequence or a substitute for evaluation.

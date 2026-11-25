@@ -11,11 +11,11 @@ mltreelib is a single-tree-first library: one readable tree, fitted fast, that y
 
 | You need | mltreelib | Where to read more |
 | :--- | :--- | :--- |
-| Missing data without imputation | `None` and `NaN` are normalized at ingestion. Missing in gives missing out, with surrogate-split routing. It never panics. | [Missing-data routing](guides/missing-data-routing.md) |
-| Linear or spline leaves, not constants | `ModelTree(leaf="linear")` fits a regularized linear model per leaf. `"mars"`, `"huber"`, `"quantile"` and `"knn"` leaves are also available. | [Quickstart](quickstart.md), [Piecewise linear trees](guides/piecewise-linear-and-cubist.md) |
+| Missing data without imputation | `None` and `NaN` are normalized at ingestion. Missing in gives missing out, with surrogate-split routing. It never panics. | [Missing-data routing](concepts/missing-data-routing.md) |
+| Linear or spline leaves, not constants | `ModelTree(leaf="linear")` fits a regularized linear model per leaf. `"mars"`, `"huber"`, `"quantile"` and `"knn"` leaves are also available. | [Quickstart](quickstart.md), [Piecewise linear trees](concepts/piecewise-linear-and-cubist.md) |
 | Rules you can read | Extract C5.0-style rules, print rpart-style structure, per-leaf `summary(lm)` tables. | [Inspection, rules and stumps](guides/model-inspection-and-rules.md) |
-| Distributions, not just means | Gamma, Poisson, Tweedie, Tobit and heteroscedastic leaves, plus survival and competing-risk leaves. | [Distributional leaves](guides/distributional-leaves.md), [Survival](guides/survival.md) |
-| Constraints and honesty | Monotone splits and slopes, interaction isolation, and honest (split/estimate) sampling. | [Constraints and honesty](guides/constraints-and-honesty.md) |
+| Distributions, not just means | Gamma, Poisson, Tweedie, Tobit and heteroscedastic leaves, plus survival and competing-risk leaves. | [Distributional leaves](concepts/distributional-leaves.md), [Survival](guides/survival.md) |
+| Constraints and honesty | Monotone splits and slopes, interaction isolation, and honest (split/estimate) sampling. | [Constraints and honesty](concepts/constraints-and-honesty.md) |
 | One API across tasks | `ModelTree`, `ClusterModel`, `AnomalyModel`, `ComponentModel` and `RuleModel` share a `fit` / `predict` shape. | [Guides](guides/index.md) |
 | A small runtime | A Rust core with a thin Python layer and no scikit-learn dependency. | [Installation](installation.md) |
 
@@ -27,4 +27,4 @@ mltreelib is a single-tree-first library: one readable tree, fitted fast, that y
 
 ## Where the evidence is
 
-Claims on this page are qualitative. For measured results, see the [Elo arena](benchmarks/elo.md), which compares mltreelib against peer libraries on 56 datasets, and the [regression methods study](guides/regression-methods-showcase.md). Both show how to reproduce the numbers.
+Claims on this page are qualitative. For measured results, see the [Elo arena](benchmarks/elo.md), which compares mltreelib against peer libraries on 56 datasets, and the [regression methods study](benchmarks/regression-methods.md). Both show how to reproduce the numbers.

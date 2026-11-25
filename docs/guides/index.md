@@ -58,7 +58,12 @@ flowchart TD
 
 The [dataset setup page](real-data.md) lists the downloads. Synthetic checks sit after the practical workflows. They make known effects and missing-data behavior easier to test.
 
-## Go deeper
+## How this site is organized
 
-- **How it works**: [tree architecture](core-tree-architecture.md), [constraints and honesty](constraints-and-honesty.md), [missing-data routing](missing-data-routing.md), [distributional leaves](distributional-leaves.md), [splitting criteria](statistical-and-metric-splitting.md), [solvers](solvers-and-optimizers.md).
-- **Worked examples**: [regression methods](regression-methods-showcase.md), [piecewise linear and Cubist](piecewise-linear-and-cubist.md), [causal uplift](uplift.md), [model inspection](model-inspection-and-rules.md).
+| You want to | Go to |
+| :--- | :--- |
+| do a task end to end | **Guides** (this section) |
+| understand why it works | [Concepts](../concepts/core-tree-architecture.md): mechanism and math, e.g. [constraints and honesty](../concepts/constraints-and-honesty.md), [missing-data routing](../concepts/missing-data-routing.md), [distributional leaves](../concepts/distributional-leaves.md) |
+| run code | [Examples](../examples.md): one runnable script per topic |
+| see proof | [Benchmarks](../benchmarks/elo.md): the Elo arena and the [regression methods study](../benchmarks/regression-methods.md) |
+| see a business case | [Blog](../blog/index.md) |

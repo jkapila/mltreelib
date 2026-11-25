@@ -195,8 +195,8 @@ dot_code = model_tree.to_dot()
 ## Next Steps
 
 - Explore the **[Practical Modeling Pathways](guides/index.md)** for end-to-end classification, survival, and uplift workflows.
-- Study **[Dynamic Leaf Retraining](guides/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
-- Review **[Distributional Leaves](guides/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
+- Study **[Dynamic Leaf Retraining](concepts/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
+- Review **[Distributional Leaves](concepts/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
 - Inspect the **[API Reference](reference/model.md)** for all parameters and methods.
 
 ---
@@ -288,7 +288,7 @@ Numerics run in the Rust core; the data layer is the same code the
 
 ---
 
-## Document: regression-methods-showcase.md
+## Document: regression-methods.md
 
 ---
 title: "Comprehensive Regression Methods & Regularizers Showcase"
@@ -516,9 +516,9 @@ pred_huber = huber_tree.predict(X_test)
 ```
 
 !!! tip "Related guides"
-    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
-    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
-    - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+    - [Distributional & Censored Leaf Families](../concepts/distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
+    - [Solvers, Optimizers & Real-Data Tuning](../concepts/solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
+    - [Core Tree Architecture & Growth Knobs](../concepts/core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
 
 ## Full output
 
@@ -702,7 +702,7 @@ $$\hat{\boldsymbol{\beta}}_\text{leaf}^* = \gamma \hat{\boldsymbol{\beta}}_\text
 Setting `shrinkage=10.0` prevents overfitting in sparse leaves while retaining sharp local adaptation in data-rich regimes.
 
 !!! tip "Related guides"
-    - [Comprehensive Regression Showcase](regression-methods-showcase.md) for 4-study comparisons with Huber, NNLS, GAM, and GLMs.
+    - [Comprehensive Regression Showcase](../benchmarks/regression-methods.md) for 4-study comparisons with Huber, NNLS, GAM, and GLMs.
     - [Core Tree Architecture](core-tree-architecture.md) for split optimization proofs.
 
 
@@ -1350,7 +1350,7 @@ Review budgets are limited, so an anomaly model must rank true failures into the
 - `kind="hst"`: half-space trees for streaming data.
 - `kind="rct"`: random cut trees.
 
-For a task-first walkthrough on real telemetry, see [Anomaly detection in Python](anomaly.md). To find segments instead, see [Clustering trees](clustering-trees.md).
+For a task-first walkthrough on real telemetry, see [Anomaly detection in Python](../guides/anomaly.md). To find segments instead, see [Clustering trees](clustering-trees.md).
 
 Script: [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py).
 
@@ -1495,7 +1495,7 @@ Top 3 Flagged Anomalies:
    In very high dimensions ($P > 1,000$), random normal vectors $\mathbf{n} \sim \mathcal{N}(0, \mathbf{I})$ become nearly orthogonal to all coordinate axes, diluting cut selectivity. Subsetting random coordinate subspaces (e.g. 2–10 features per oblique cut) preserves discrimination.
 
 !!! tip "Related guides"
-    - [Anomaly detection in Python](anomaly.md) for the end-to-end shuttle example.
+    - [Anomaly detection in Python](../guides/anomaly.md) for the end-to-end shuttle example.
     - [API reference: AnomalyModel](../reference/api/anomaly.md).
 
 
@@ -1523,7 +1523,7 @@ Distance-based clustering (k-means, DBSCAN) does not give you readable assignmen
 - `kind="hdbscan"`: mutual-reachability minimum spanning tree with a condensed hierarchy.
 - `kind="urf"`: unsupervised random forest.
 
-For a task-first walkthrough on a real dataset, see [Clustering in Python](clustering.md). To find outliers instead, see [Anomaly trees](anomaly-trees.md).
+For a task-first walkthrough on a real dataset, see [Clustering in Python](../guides/clustering.md). To find outliers instead, see [Anomaly trees](anomaly-trees.md).
 
 Script: [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py).
 
@@ -1642,7 +1642,7 @@ Background Noise Points Rejected: 64
    Greedy variance reduction can isolate tiny clusters ($n < 5$). Use `min_rows >= 25` so segments are viable operational cohorts.
 
 !!! tip "Related guides"
-    - [Clustering in Python](clustering.md) for the end-to-end wine example.
+    - [Clustering in Python](../guides/clustering.md) for the end-to-end wine example.
     - [API reference: ClusterModel](../reference/api/cluster.md).
 
 

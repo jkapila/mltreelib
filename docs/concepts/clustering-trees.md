@@ -18,7 +18,7 @@ Distance-based clustering (k-means, DBSCAN) does not give you readable assignmen
 - `kind="hdbscan"`: mutual-reachability minimum spanning tree with a condensed hierarchy.
 - `kind="urf"`: unsupervised random forest.
 
-For a task-first walkthrough on a real dataset, see [Clustering in Python](clustering.md). To find outliers instead, see [Anomaly trees](anomaly-trees.md).
+For a task-first walkthrough on a real dataset, see [Clustering in Python](../guides/clustering.md). To find outliers instead, see [Anomaly trees](anomaly-trees.md).
 
 Script: [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py).
 
@@ -137,5 +137,5 @@ Background Noise Points Rejected: 64
    Greedy variance reduction can isolate tiny clusters ($n < 5$). Use `min_rows >= 25` so segments are viable operational cohorts.
 
 !!! tip "Related guides"
-    - [Clustering in Python](clustering.md) for the end-to-end wine example.
+    - [Clustering in Python](../guides/clustering.md) for the end-to-end wine example.
     - [API reference: ClusterModel](../reference/api/cluster.md).

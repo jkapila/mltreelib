@@ -162,5 +162,5 @@ Smoothed k-NN Neighbor Adjusted Predictions: [19.74, 3.83, 10.12, 6.66, 0.11]
 ```
 
 !!! tip "Related Reference Guides"
-    - [Dynamic Leaf Retraining & Stumps](hierarchical-retrain.md).
+    - [Dynamic Leaf Retraining & Stumps](../concepts/hierarchical-retrain.md).
     - [Model Review Checklist](serving-contract.md) for enterprise deployment.

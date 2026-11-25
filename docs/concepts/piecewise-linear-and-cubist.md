@@ -165,5 +165,5 @@ $$\hat{\boldsymbol{\beta}}_\text{leaf}^* = \gamma \hat{\boldsymbol{\beta}}_\text
 Setting `shrinkage=10.0` prevents overfitting in sparse leaves while retaining sharp local adaptation in data-rich regimes.
 
 !!! tip "Related guides"
-    - [Comprehensive Regression Showcase](regression-methods-showcase.md) for 4-study comparisons with Huber, NNLS, GAM, and GLMs.
+    - [Comprehensive Regression Showcase](../benchmarks/regression-methods.md) for 4-study comparisons with Huber, NNLS, GAM, and GLMs.
     - [Core Tree Architecture](core-tree-architecture.md) for split optimization proofs.

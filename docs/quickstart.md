@@ -182,8 +182,8 @@ dot_code = model_tree.to_dot()
 ## Next Steps
 
 - Explore the **[Practical Modeling Pathways](guides/index.md)** for end-to-end classification, survival, and uplift workflows.
-- Study **[Dynamic Leaf Retraining](guides/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
-- Review **[Distributional Leaves](guides/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
+- Study **[Dynamic Leaf Retraining](concepts/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
+- Review **[Distributional Leaves](concepts/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
 - Inspect the **[API Reference](reference/model.md)** for all parameters and methods.
 
 ---

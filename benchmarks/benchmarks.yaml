@@ -15,7 +15,7 @@
 - id: regression-methods
   script: benchmarks/suites/regression_methods_showcase.py
   title: "Regression methods across real datasets"
-  page: guides/regression-methods-showcase.md
+  page: benchmarks/regression-methods.md
   verifies: "Huber, quantile, expectile, NNLS and group-lasso GAM against baselines"
   reproduce: uv run python -u benchmarks/suites/regression_methods_showcase.py
   results:

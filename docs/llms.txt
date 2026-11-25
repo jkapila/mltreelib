@@ -6,25 +6,25 @@
 
 - [Quickstart](https://jkapila.github.io/mltreelib/quickstart/): Fast installation, basic model tree fitting, and prediction workflows.
 - [Installation](https://jkapila.github.io/mltreelib/installation/): Installing via pip/uv with prebuilt wheels or building from source with Cargo.
-- [Tree Architecture & Growth Knobs](https://jkapila.github.io/mltreelib/guides/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
-- [Data Ingestion & Routing](https://jkapila.github.io/mltreelib/guides/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
+- [Tree Architecture & Growth Knobs](https://jkapila.github.io/mltreelib/concepts/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
+- [Data Ingestion & Routing](https://jkapila.github.io/mltreelib/concepts/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
 - [Metrics, Diagnostics & Calibration](https://jkapila.github.io/mltreelib/guides/metrics-plots/): Gini, ROC/PR curves, Brier calibration, and Population Stability Index (PSI).
 
 ## Regression & Continuous Modeling
 
-- [Comprehensive Regression Showcase](https://jkapila.github.io/mltreelib/guides/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
-- [Piecewise Linear Trees & Cubist Rules](https://jkapila.github.io/mltreelib/guides/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
-- [Distributional & Censored Trees](https://jkapila.github.io/mltreelib/guides/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+- [Comprehensive Regression Showcase](https://jkapila.github.io/mltreelib/benchmarks/regression-methods/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
+- [Piecewise Linear Trees & Cubist Rules](https://jkapila.github.io/mltreelib/concepts/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
+- [Distributional & Censored Trees](https://jkapila.github.io/mltreelib/concepts/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
 
 ## Causal & Unsupervised Learning
 
 - [Causal Uplift Modeling](https://jkapila.github.io/mltreelib/guides/uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
-- [Clustering & Anomaly Trees](https://jkapila.github.io/mltreelib/guides/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
-- [PCA, Factor Analysis & Rotations](https://jkapila.github.io/mltreelib/guides/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+- [Clustering & Anomaly Trees](https://jkapila.github.io/mltreelib/concepts/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations](https://jkapila.github.io/mltreelib/concepts/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
 
 ## Optimization & Solvers
 
-- [Solvers & Hyperparameter Tuning](https://jkapila.github.io/mltreelib/guides/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Solvers & Hyperparameter Tuning](https://jkapila.github.io/mltreelib/concepts/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
 - [Model Inspection & Rules](https://jkapila.github.io/mltreelib/guides/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
 
 ## API Reference

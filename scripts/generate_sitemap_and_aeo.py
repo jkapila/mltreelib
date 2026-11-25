@@ -134,25 +134,25 @@ def generate_llms_txt(site_dir: Path, docs_dir: Path) -> None:
 
 - [Quickstart]({BASE_URL}/quickstart/): Fast installation, basic model tree fitting, and prediction workflows.
 - [Installation]({BASE_URL}/installation/): Installing via pip/uv with prebuilt wheels or building from source with Cargo.
-- [Tree Architecture & Growth Knobs]({BASE_URL}/guides/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
-- [Data Ingestion & Routing]({BASE_URL}/guides/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
+- [Tree Architecture & Growth Knobs]({BASE_URL}/concepts/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
+- [Data Ingestion & Routing]({BASE_URL}/concepts/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
 - [Metrics, Diagnostics & Calibration]({BASE_URL}/guides/metrics-plots/): Gini, ROC/PR curves, Brier calibration, and Population Stability Index (PSI).
 
 ## Regression & Continuous Modeling
 
-- [Comprehensive Regression Showcase]({BASE_URL}/guides/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
-- [Piecewise Linear Trees & Cubist Rules]({BASE_URL}/guides/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
-- [Distributional & Censored Trees]({BASE_URL}/guides/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+- [Comprehensive Regression Showcase]({BASE_URL}/benchmarks/regression-methods/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
+- [Piecewise Linear Trees & Cubist Rules]({BASE_URL}/concepts/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
+- [Distributional & Censored Trees]({BASE_URL}/concepts/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
 
 ## Causal & Unsupervised Learning
 
 - [Causal Uplift Modeling]({BASE_URL}/guides/uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
-- [Clustering & Anomaly Trees]({BASE_URL}/guides/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
-- [PCA, Factor Analysis & Rotations]({BASE_URL}/guides/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+- [Clustering & Anomaly Trees]({BASE_URL}/concepts/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations]({BASE_URL}/concepts/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
 
 ## Optimization & Solvers
 
-- [Solvers & Hyperparameter Tuning]({BASE_URL}/guides/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Solvers & Hyperparameter Tuning]({BASE_URL}/concepts/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
 - [Model Inspection & Rules]({BASE_URL}/guides/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
 
 ## API Reference
@@ -189,15 +189,15 @@ def generate_llms_full_txt(site_dir: Path, docs_dir: Path) -> None:
     key_files = [
         docs_dir / "quickstart.md",
         docs_dir / "installation.md",
-        docs_dir / "guides/regression-methods-showcase.md",
-        docs_dir / "guides/piecewise-linear-and-cubist.md",
-        docs_dir / "guides/distributional-leaves.md",
+        docs_dir / "benchmarks/regression-methods.md",
+        docs_dir / "concepts/piecewise-linear-and-cubist.md",
+        docs_dir / "concepts/distributional-leaves.md",
         docs_dir / "guides/uplift.md",
-        docs_dir / "guides/anomaly-trees.md",
-        docs_dir / "guides/clustering-trees.md",
-        docs_dir / "guides/tree-architecture-and-knobs.md",
-        docs_dir / "guides/solvers-and-optimizers.md",
-        docs_dir / "guides/components-and-rotations.md",
+        docs_dir / "concepts/anomaly-trees.md",
+        docs_dir / "concepts/clustering-trees.md",
+        docs_dir / "concepts/tree-architecture-and-knobs.md",
+        docs_dir / "concepts/solvers-and-optimizers.md",
+        docs_dir / "concepts/components-and-rotations.md",
     ]
 
     for f in key_files:
