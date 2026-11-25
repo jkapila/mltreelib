@@ -13,7 +13,7 @@ code. Narrative guides with verified examples:
 
 | page | classes | functions |
 |---|---|---|
-| [Data](data/) | DatasetBuilder | generate, load_dataset, list_datasets, summarize, winnow |
+| [Data](data/) | DatasetBuilder, FeatureTransformer, GroupedFeatureTransformer | generate, load_dataset, list_datasets, summarize, winnow, bin_edges, binner, boxcox_lambda, class_balance, constant_columns, correlation_filter, correlation_matrix, cramers_v_matrix, describe, duplicate_columns, duplicate_rows, infer_types, information_value_table, iv_bins, iv_levels, kfold, leakage_hints, log1p, missing_profile, missing_vs_target, near_zero_variance, outlier_flags, repeated_kfold, schema_capture, schema_validate, select_rows, survival_xy, take, train_test_split, train_val_test_split, uplift_xy, vif, xy, yeojohnson_lambda |
 | [ModelTree](model-tree/) | ModelTree, GrowthControl, LeafControl | — |
 | [Metrics](metrics/) | Metrics | — |
 | [Encoders & scalers](encoders/) | IndexMapper, VariableScaler, GroupedScaler, BaseNEncoder, CatBoostEncoder, CountEncoder, EmbeddingEncoder, HashingEncoder, JamesSteinEncoder, LeaveOneOutEncoder, MEstimatorEncoder, OneHotEncoder, QuantileEncoder, SumEncoder, TargetEncoder, TfidfEncoder, WoEEncoder | — |

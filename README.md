@@ -118,7 +118,7 @@ Full walkthrough, tree printout and comparison with a constant-leaf tree: [Quick
 | Rules and inspection | `RuleModel`, `ModelTree.extract_rules()` | [Rules and stumps](https://jkapila.github.io/mltreelib/guides/model-inspection-and-rules/) |
 | Forecasting features | `lag_by_days`, `windowed_transform` | [Time series](https://jkapila.github.io/mltreelib/concepts/timeseries-forecasting/) |
 | Solvers and optimizers | `mltreelib.solvers.fit`, `mltreelib.solvers.optimize` | [Solvers](https://jkapila.github.io/mltreelib/concepts/solvers-and-optimizers/) |
-| Data preparation and synthetic data | `load_dataset`, `generate`, encoders | [Prepare data](https://jkapila.github.io/mltreelib/guides/data/) |
+| Data preparation and synthetic data | `load_dataset`, `generate`, `mltreelib.data` (`describe`, `missing_profile`, `train_test_split`, `xy`, `iv_bins`), encoders | [Prepare data](https://jkapila.github.io/mltreelib/guides/data/) |
 | Metrics and diagnostics | `Metrics` | [Evaluate](https://jkapila.github.io/mltreelib/guides/evaluation/) |
 
 Notes:

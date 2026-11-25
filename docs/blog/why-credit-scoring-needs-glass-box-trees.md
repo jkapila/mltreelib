@@ -85,14 +85,16 @@ Traditional credit risk models discard incomplete cases or inject heuristic medi
 ```python
 import pandas as pd
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import xy
 
 from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("GiveMeSomeCredit"))
 target = "FinancialDistressNextTwoYears"
-features = [c for c in df.columns if c != target]
+d = xy(df.to_dict("list"), target)
+features = d["names"]
 
-y = (df[target] == "Yes").astype(int).tolist()
-X = df[features].values.tolist()
+y = [1 if v == "Yes" else 0 for v in d["y"]]
+X = d["x"]
 
 # Define domain monotonicity:
 # Utilization (+1), Age (-1), 30-59 DPD (+1), DebtRatio (+1), Income (-1),

@@ -11,8 +11,19 @@ import inspect
 from pathlib import Path
 
 import mltreelib
+import mltreelib.data as data_helpers
 
 OUT = Path("docs/reference/api")
+
+# Public names of mltreelib.data, listed on the Data page next to the top-level ones.
+DATA_HELPER_CLASSES = [
+    n for n in data_helpers.__all__ if inspect.isclass(getattr(data_helpers, n))
+]
+DATA_HELPER_FUNCTIONS = [
+    n for n in data_helpers.__all__ if inspect.isfunction(getattr(data_helpers, n))
+]
+# Extra modules whose public names are merged into a page (top-level names win).
+EXTRA_MODULES = {"data.md": ["mltreelib.data"]}
 
 ENCODERS = [
     "BaseNEncoder",
@@ -35,11 +46,14 @@ PAGES = [
     (
         "data.md",
         "Data",
-        ["DatasetBuilder"],
-        ["generate", "load_dataset", "list_datasets", "summarize", "winnow"],
+        ["DatasetBuilder"] + DATA_HELPER_CLASSES,
+        ["generate", "load_dataset", "list_datasets", "summarize", "winnow"]
+        + DATA_HELPER_FUNCTIONS,
         (
-            "Typed ingest, the synthetic generator, dataset helpers and column "
-            "screening. Guide with real examples: [Data](../data.md)."
+            "Typed ingest, the synthetic generator, dataset helpers, column "
+            "screening, and the `mltreelib.data` helpers for profiling, splitting, "
+            "association, binning and scaling. Guides: [Data](../data.md), "
+            "[Prepare data](../../guides/data.md)."
         ),
     ),
     (
@@ -396,7 +410,7 @@ def write_rust_page():
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    def members(module):
+    def module_members(module):
         classes = {
             n: c
             for n, c in inspect.getmembers(module, inspect.isclass)
@@ -409,6 +423,16 @@ def main():
             )
             if not n.startswith("_")
         }
+        return classes, fns
+
+    def members(modules):
+        classes, fns = {}, {}
+        for module in modules:
+            module_classes, module_fns = module_members(module)
+            for n, c in module_classes.items():
+                classes.setdefault(n, c)
+            for n, f in module_fns.items():
+                fns.setdefault(n, f)
         return classes, fns
 
     pages = [
@@ -444,7 +468,8 @@ def main():
     (OUT / "index.md").write_text("".join(index))
 
     for fname, title, module, cl, fn, blurb in pages:
-        classes, fns = members(module)
+        extra = [importlib.import_module(p) for p in EXTRA_MODULES.get(fname, [])]
+        classes, fns = members([module] + extra)
         buf = [f"# API reference — {title}\n", "\n", HEADER, "\n", blurb, "\n\n"]
         for name in fn:
             if name in fns:

@@ -110,18 +110,19 @@ We evaluate on the standard actuarial dataset: **Healthcare Insurance Expenses**
 <!-- run -->
 ```python
 from mltreelib import Metrics, ModelTree, load_dataset
+from mltreelib.data import select_rows, train_test_split, xy
 
 # 1. Load domain benchmark dataset
 data = load_dataset("healthcare_insurance_expenses")
 features = ["age", "bmi", "children"]
 n_rows = data["n_rows"]
+d = xy(data, "charges", features=features)
 
-X = [[float(data["columns"][c][i]) for c in features] for i in range(n_rows)]
-y = [float(v) for v in data["columns"]["charges"]]
-
-split_idx = int(n_rows * 0.8)
-X_train, y_train = X[:split_idx], y[:split_idx]
-X_test, y_test = X[split_idx:], y[split_idx:]
+# 80/20 split with no shuffling: first 80% of rows train, last 20% test
+train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+X_train, y_train = train["x"], train["y"]
+X_test, y_test = test["x"], test["y"]
 
 # 2. Fit unconstrained baseline
 tree_uncon = ModelTree(max_depth=3, min_rows=20, leaf="mean")

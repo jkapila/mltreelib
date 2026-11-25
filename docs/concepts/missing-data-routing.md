@@ -95,6 +95,7 @@ We evaluate native routing against standard mean imputation on the **Scania APS 
 <!-- run -->
 ```python
 from mltreelib import Metrics, ModelTree, load_dataset
+from mltreelib.data import missing_profile, select_rows, train_test_split, xy
 
 # 1. Load Scania truck telemetry benchmark
 data = load_dataset("APSFailure")
@@ -103,15 +104,18 @@ features = [
     "aa_000", "ab_000", "ac_000", "ad_000", "ae_000", "af_000",
     "ag_000", "ag_001", "ag_002", "ag_003", "ag_004", "ag_005"
 ]
-n_sample = 12000
 
-y_raw = data["columns"][target][:n_sample]
-y = [1 if v in ("pos", "1", 1) else 0 for v in y_raw]
-X = [[data["columns"][c][i] for c in features] for i in range(n_sample)]
+# Missingness of ab_000 in the first 12,000 records (missing values are counted, not imputed)
+ab = missing_profile({"ab_000": data["columns"]["ab_000"][:12000]})
+print(f"ab_000 missing in first 12,000 rows: {ab['per_column']['ab_000']['pct_missing']:.1f}%")
 
-split = 8000
-X_train, y_train = X[:split], y[:split]
-X_test, y_test = X[split:10000], y[split:10000]
+# First 10,000 rows in file order: 8,000 train, then 2,000 test (no shuffling)
+d = select_rows(xy(data, target, features=features), range(10000))
+train_idx, test_idx = train_test_split(10000, test_size=2000, time_order=list(range(10000)))
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+X_train, X_test = train["x"], test["x"]
+y_train = [1 if v in ("pos", "1", 1) else 0 for v in train["y"]]
+y_test = [1 if v in ("pos", "1", 1) else 0 for v in test["y"]]
 
 # 2. Fit ModelTree with Native Missing Routing and 2 Surrogates per node
 tree_native = ModelTree(
@@ -135,6 +139,7 @@ print(f"Native Routing -> Average Precision: {pr['average_precision']:.4f}, ROC-
 
 <!-- output -->
 ```text
+ab_000 missing in first 12,000 rows: 77.4%
 Native Routing -> Average Precision: 0.4916, ROC-AUC: 0.9524
 ```
 

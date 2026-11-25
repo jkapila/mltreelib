@@ -66,6 +66,7 @@ The runnable block under the table is a different, synthetic setup: one 2,000-ro
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
+from mltreelib.data import train_test_split
 
 # 1. Generate non-linear diamond price surface with carat and cut interactions
 rng = np.random.default_rng(2026)
@@ -81,8 +82,8 @@ price = 1500.0 * (carat ** 1.8) - 15.0 * depth + rng.normal(0, 150.0, n_samples)
 X = np.column_stack([carat, depth, table])
 feature_names = ["carat", "depth", "table"]
 
-train_idx = range(1500)
-test_idx = range(1500, 2000)
+# First 1,500 rows train, last 500 test (the rows are i.i.d., so file order is immaterial)
+train_idx, test_idx = train_test_split(n_samples, test_size=500, time_order=list(range(n_samples)))
 
 # 2. Train shallow ModelTree with piecewise linear leaves
 tree = ModelTree(
@@ -122,14 +123,17 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 ```python
 import pandas as pd
 from mltreelib import ModelTree
+from mltreelib.data import select_rows, train_test_split, xy
 
 from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
 target = "ConcreteCompressiveStrength"
-features = df.columns.drop(target).tolist()
+d = xy(df.to_dict("list"), target)
+# Seeded shuffle, then keep 800 rows for training (the test part is dropped)
+train_idx, _ = train_test_split(len(df), test_size=len(df) - 800, seed=2026)
+train = select_rows(d, train_idx)
 concrete_tree = ModelTree(leaf="linear", max_depth=3, min_rows=40)
-concrete_tree.fit(df[features].iloc[:800].to_numpy().tolist(),
-                  df[target].iloc[:800].tolist(), col_names=features)
+concrete_tree.fit(train["x"], train["y"], col_names=d["names"])
 
 # Extract white-box rules directly from the fitted tree
 ruleset = concrete_tree.extract_rules()
@@ -143,32 +147,32 @@ for r in ruleset.rules:
 <!-- output -->
 ```text
 Extracted 7 Transparent Rules:
-  RULE #1 (Cover: 333 samples, Confidence: 0.95):
-    IF Cement > 164.6000 AND Cement <= 350.0000 AND Age > 14.0000
+  RULE #1 (Cover: 328 samples, Confidence: 0.95):
+    IF Cement > 159.0000 AND Cement <= 356.0000 AND Age > 14.0000
     THEN Leaf #4 prediction = 39.96
-  RULE #2 (Cover: 134 samples, Confidence: 0.95):
+  RULE #2 (Cover: 140 samples, Confidence: 0.95):
     IF Cement <= 350.0000 AND Age <= 7.0000
-    THEN Leaf #0 prediction = 16.11
-  RULE #3 (Cover: 102 samples, Confidence: 0.95):
-    IF Cement <= 164.6000 AND Age > 14.0000
-    THEN Leaf #3 prediction = 25.93
-  RULE #4 (Cover: 74 samples, Confidence: 0.95):
+    THEN Leaf #0 prediction = 15.55
+  RULE #3 (Cover: 86 samples, Confidence: 0.95):
+    IF Cement <= 159.0000 AND Age > 14.0000
+    THEN Leaf #3 prediction = 25.28
+  RULE #4 (Cover: 76 samples, Confidence: 0.95):
     IF Cement > 350.0000 AND Age <= 14.0000
-    THEN Leaf #2 prediction = 34.80
-  RULE #5 (Cover: 68 samples, Confidence: 0.95):
-    IF Cement > 350.0000 AND Water <= 181.1000 AND Age > 14.0000
-    THEN Leaf #5 prediction = 63.13
-  RULE #6 (Cover: 48 samples, Confidence: 0.95):
-    IF Cement > 350.0000 AND Water > 181.1000 AND Age > 14.0000
-    THEN Leaf #6 prediction = 44.97
-  RULE #7 (Cover: 41 samples, Confidence: 0.95):
+    THEN Leaf #2 prediction = 36.09
+  RULE #5 (Cover: 74 samples, Confidence: 0.95):
+    IF Cement > 356.0000 AND Water <= 181.1000 AND Age > 14.0000
+    THEN Leaf #5 prediction = 64.02
+  RULE #6 (Cover: 51 samples, Confidence: 0.95):
     IF Cement <= 350.0000 AND Age > 7.0000 AND Age <= 14.0000
-    THEN Leaf #1 prediction = 27.85
+    THEN Leaf #1 prediction = 27.67
+  RULE #7 (Cover: 45 samples, Confidence: 0.95):
+    IF Cement > 356.0000 AND Water > 181.1000 AND Age > 14.0000
+    THEN Leaf #6 prediction = 46.42
 ```
 
 ---
 
-**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 41 samples) falls in the N < 50 range, where unregularized OLS has high variance.
+**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 45 samples) falls in the N < 50 range, where unregularized OLS has high variance.
 
 ## 3. Hierarchical Leaf Shrinkage
 

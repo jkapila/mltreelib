@@ -79,18 +79,22 @@ We evaluate on the full 76,000 heavy Scania truck records from [APSFailure (Open
 
 In heavy machinery, missing sensor values are rarely missing-at-random. A sensor channel reads `NaN` when line pressure drops below sensor power thresholds, when high vibration disconnects harness wiring, or during severe bus resets. Treating missingness as an explicit routing direction captures failure risk directly:
 
+<!-- run -->
 ```python
 import pandas as pd
-from mltreelib import Metrics, ModelTree
+from mltreelib import ModelTree
 
 from mltreelib import dataset_path
+from mltreelib.data import select_rows, train_val_test_split, xy
 df = pd.read_parquet(dataset_path("APSFailure"))
 target = "AirPressureSystemFailure"
-features = [c for c in df.columns if c != target]
+# Raw telemetry: NaN stays NaN; the tree routes missing values itself
+d = xy(df.to_dict("list"), target)
 
-y = (df[target] == "pos").astype(int).tolist()
-# Raw telemetry ingestion: NaN values converted to Python None
-X = [[None if pd.isna(v) else v for v in row] for row in df[features].itertuples(index=False, name=None)]
+# Seeded split: 50,000 train, 13,000 validation, 13,000 test trucks (seed 42)
+train_idx, _, _ = train_val_test_split(len(df), val_size=13000, test_size=13000, seed=42)
+train = select_rows(d, train_idx)
+y_train = [1 if v == "pos" else 0 for v in train["y"]]
 
 # Train native missing-routing tree in pure Rust
 tree = ModelTree(
@@ -101,7 +105,7 @@ tree = ModelTree(
     min_rows=100,
     prune="none",
 )
-tree.fit(X, y, col_names=features)
+tree.fit(train["x"], y_train, col_names=d["names"], dtypes=d["dtypes"])
 ```
 
 At every candidate split on feature $j$, `mltreelib` evaluates two split routing hypotheses in parallel:
@@ -116,18 +120,32 @@ The core selects the partition that maximizes binomial deviance reduction. Missi
 
 Fitting `ModelTree` with `max_depth=4` on 50,000 training trucks uncovers clear split conditions and learned missing-value routes:
 
+<!-- run -->
+```python
+for s in tree.splits():
+    routed = "Left" if s["missing_left"] else "Right"
+    print(f"Split: {s['col']} <= {s['threshold']:,.2f} | Missing routed: {routed} (Gain = {s['gain']:.2f})")
 ```
-Discovered Native Routing Splits:
-  - Split: cs_004 <= 510,732.00 | Missing routed: Left  (Gain = 57.89)
-  - Split: ag_002 <=  25,538.00 | Missing routed: Right (Gain = 117.68)
-  - Split: bx_000 <= 7,867,694.00 | Missing routed: Left  (Gain = 360.14)
-  - Split: ay_005 <= 923,732.00 | Missing routed: Left  (Gain = 257.83)
-  - Split: ay_008 <= 19,423,926.00 | Missing routed: Right (Gain = 57.71)
+
+<!-- output -->
+```text
+Split: bc_000 <= 1,228.00 | Missing routed: Left (Gain = 10.33)
+Split: az_000 <= 8,106.00 | Missing routed: Left (Gain = 31.55)
+Split: cn_002 <= 23,118.00 | Missing routed: Right (Gain = 44.68)
+Split: bh_000 <= 146,656.00 | Missing routed: Right (Gain = 61.29)
+Split: ag_002 <= 22,446.00 | Missing routed: Left (Gain = 178.85)
+Split: cc_000 <= 7,133,298.00 | Missing routed: Left (Gain = 478.95)
+Split: ee_005 <= 3,337,490.00 | Missing routed: Left (Gain = 72.63)
+Split: ay_005 <= 923,732.00 | Missing routed: Left (Gain = 109.05)
+Split: aq_000 <= 3,612,606.00 | Missing routed: Right (Gain = 276.57)
+Split: ee_005 <= 3,428,806.00 | Missing routed: Left (Gain = 44.63)
+Split: ag_001 <= 4,406.00 | Missing routed: Left (Gain = 501.41)
+Split: ck_000 <= 2,699,134.08 | Missing routed: Left (Gain = 4210.94)
 ```
 
 ![Fitted Native Missing-Routing Decision Tree Diagram](../assets/predictive_maintenance_tree.svg)
 
-Notice that on `ag_002` and `ay_008`, missing telemetry is routed to the **right branch** (the high-risk branch), because sensor disconnects correlate heavily with severe electrical and pneumatic failure. An imputation pipeline replacing those missing cells with median values would have pushed those trucks into the safe left branch, causing fatal missed breakdowns.
+Notice that the learned missing direction differs between splits. On `cn_002`, `bh_000` and `aq_000`, missing telemetry is routed to the **right branch**. On `ag_002` it is routed left. The direction is learned from the training trucks, not set by hand.
 
 ---
 

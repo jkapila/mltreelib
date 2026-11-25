@@ -42,14 +42,15 @@ flowchart TD
     class UnbiasedModel causalBox;
 ```
 
-Run this Python block from the repository root. `group_value` comes from the example script.
+Run this Python block from the repository root. `group_value` is defined in the block.
 
+<!-- run -->
 ```python
 from math import sqrt
-from random import Random
 
 import pandas as pd
 from mltreelib import ModelTree, dataset_path
+from mltreelib.data import select_rows, train_val_test_split, uplift_xy
 
 def group_value(y, w, selected):
     """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
@@ -70,23 +71,22 @@ def group_value(y, w, selected):
 df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
-types = ["numeric"] * 5 + ["categorical"] * 2
-ids = list(range(len(df)))
-Random(2026).shuffle(ids)
-a, b = int(.6 * len(ids)), int(.8 * len(ids))
+d = uplift_xy(df.to_dict("list"), "segment", "visit", features=features)
 
-def inputs(indices):
-    part = df.iloc[indices]
-    x = [[None if pd.isna(v) else v for v in row]
-         for row in part[features].itertuples(index=False, name=None)]
-    return x, part.visit.tolist(), (part.segment == "Womens E-Mail").astype(int).tolist()
+# Seeded 60% train / 20% validation / 20% test split
+train_idx, val_idx, test_idx = train_val_test_split(len(df), val_size=0.2, test_size=0.2, seed=2026)
 
-x_train, y_train, w_train = inputs(ids[:a])
-x_val, y_val, w_val = inputs(ids[a:b])
-x_test, y_test, w_test = inputs(ids[b:])
+def inputs(idx):
+    rows = select_rows(d, idx)
+    return rows["x"], rows["outcome"], [1 if s == "Womens E-Mail" else 0 for s in rows["treatment"]]
+
+x_train, y_train, w_train = inputs(train_idx)
+x_val, y_val, w_val = inputs(val_idx)
+x_test, y_test, w_test = inputs(test_idx)
+print(f"Rows: train {len(x_train)}, validation {len(x_val)}, test {len(x_test)}")
 tree = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250,
                  prune="none", honesty=True, seed=42)
-tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
+tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=d["dtypes"])
 
 val_scores = tree.predict(x_val, kind="uplift")
 def value_at(threshold):
@@ -99,6 +99,14 @@ for selected in ([score > threshold for score in test_scores],
     print(group_value(y_test, w_test, selected))
 ```
 
+<!-- output -->
+```text
+Rows: train 25615, validation 8539, test 8539
+(0.03713903371682102, 4711, 2388, 2323, (0.026102043930241136, 0.0481760235034009))
+(0.044668736821524516, 8539, 4263, 4276, (0.030347650544788125, 0.05898982309826091))
+(0.0, 0, 0, 0, None)
+```
+
 The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.
 
 **Next:** report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.
@@ -109,13 +117,13 @@ The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows.
 
 | Test policy | Selected | Treated / control | Incremental visits per eligible customer | Approximate 95% interval |
 |---|---:|---:|---:|---:|
-| Validation-selected policy | 8,539 | 4,270 / 4,269 | 0.04517 | 0.03108 to 0.05927 |
-| Treat all | 8,539 | 4,270 / 4,269 | 0.04517 | 0.03108 to 0.05927 |
+| Validation-selected policy | 4,711 | 2,388 / 2,323 | 0.03714 | 0.02610 to 0.04818 |
+| Treat all | 8,539 | 4,263 / 4,276 | 0.04467 | 0.03035 to 0.05899 |
 | Treat none | 0 | — | 0 | — |
 
 ![Hillstrom randomized held-out policy comparison](../assets/guides/real-uplift.svg)
 
-The chosen policy treats everyone. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
+The validation-selected policy emails 4,711 of the 8,539 test customers. It yields 0.03714 incremental visits per eligible customer, below 0.04467 for treat-all. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
 
 **Next:** check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.
 

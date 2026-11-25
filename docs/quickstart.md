@@ -51,22 +51,23 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
 
 === "ModelTree (Linear Ridge)"
 
+    <!-- run -->
     ```python
     from mltreelib import Metrics, ModelTree, load_dataset
+    from mltreelib.data import select_rows, train_test_split, xy
 
     # 1. Load benchmark dataset (1,030 mixtures, 8 features)
     data = load_dataset("concrete_compressive_strength")
     target = "ConcreteCompressiveStrength"
-    feature_names = [col for col in data["columns"].keys() if col != target]
+    d = xy(data, target)
+    feature_names = d["names"]
     n_rows = data["n_rows"]
 
-    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-    y = data["columns"][target]
-
-    # 80/20 train/test split
-    split_idx = int(n_rows * 0.8)
-    X_train, y_train = X[:split_idx], y[:split_idx]
-    X_test, y_test = X[split_idx:], y[split_idx:]
+    # 80/20 split with no shuffling: first 80% of rows train, last 20% test
+    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+    X_train, y_train = train["x"], train["y"]
+    X_test, y_test = test["x"], test["y"]
 
     # Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=3)
     model_tree = ModelTree(leaf="linear", max_depth=3, min_rows=20, l2=1e-3)
@@ -79,28 +80,28 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
     ```
 
-!!! example "Output of `examples/quickstart.py`"
-
+    <!-- output -->
     ```text
-    --8<-- "docs/snippets/outputs/quickstart.txt"
+    ModelTree (Linear): RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
     ```
 
 === "ModelTree(leaf='mean') Baseline"
 
+    <!-- run -->
     ```python
     from mltreelib import Metrics, ModelTree, load_dataset
+    from mltreelib.data import select_rows, train_test_split, xy
 
     data = load_dataset("concrete_compressive_strength")
     target = "ConcreteCompressiveStrength"
-    feature_names = [col for col in data["columns"].keys() if col != target]
+    d = xy(data, target)
+    feature_names = d["names"]
     n_rows = data["n_rows"]
 
-    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-    y = data["columns"][target]
-
-    split_idx = int(n_rows * 0.8)
-    X_train, y_train = X[:split_idx], y[:split_idx]
-    X_test, y_test = X[split_idx:], y[split_idx:]
+    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+    X_train, y_train = train["x"], train["y"]
+    X_test, y_test = test["x"], test["y"]
 
     # Fit piecewise-constant CART decision tree (leaf="mean", depth=3)
     cart = ModelTree(leaf="mean", max_depth=3, min_rows=20)
@@ -112,25 +113,20 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Mean)  : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
     ```
 
+    <!-- output -->
+    ```text
+    ModelTree (Mean)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+    ```
+
 ---
 
 ## 3. Empirical Results & Performance Comparison
 
-```text
-Loaded Concrete Compressive Strength: 1030 rows, 8 features.
-Train rows: 824, Test rows: 206
-
-=== Model Performance on Test Set ===
-ModelTree (leaf="mean", d=3)    : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-sklearn DecisionTreeRegressor   : RMSE = 10.92 MPa, R2 = 0.579, MAE = 8.36 MPa
-mltreelib ModelTree (Linear)    : RMSE =  7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
---> Error reduction with linear leaves: 34.3%
-```
+The two tabs above print the holdout metrics for the same 824-row train and 206-row test split. The tree has 8 leaves at depth 3.
 
 | Model | Leaf Formulation | Depth | Test RMSE (MPa) | Test $R^2$ | Test MAE (MPa) |
 |---|---|:---:|:---:|:---:|:---:|
 | **`ModelTree(leaf="mean")`** | Constant Mean | 3 | 11.09 | 0.566 | 8.47 |
-| **`sklearn.tree.DecisionTreeRegressor`** | Constant Mean | 3 | 10.92 | 0.579 | 8.36 |
 | **`mltreelib` ModelTree (Linear)** | Regularized Linear Ridge | 3 | **7.28** | **0.813** | **5.07** |
 
 With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves achieves a **34.3% error reduction** over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.
@@ -144,8 +140,14 @@ With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves
 
 ## 4. Transparent Tree Structure & Inspection
 
-`ModelTree` prints in `rpart`-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants:
+`ModelTree` prints in `rpart`-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants. The fitted linear-leaf tree from section 2 prints as:
 
+<!-- run -->
+```python
+print(model_tree)
+```
+
+<!-- output -->
 ```text
 n= 824 
 

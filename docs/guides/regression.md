@@ -18,26 +18,24 @@ from statistics import mean
 
 import pandas as pd
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import select_rows, take, train_test_split, xy
 
 from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("diamonds")).sample(frac=1, random_state=2026)
-features = df.columns.drop("price").tolist()
-types = ["categorical" if c in {"cut", "color", "clarity"} else "numeric"
-         for c in features]
-train, test = df.iloc[:6000], df.iloc[6000:8000]
+df = pd.read_parquet(dataset_path("diamonds"))
 
-def rows(frame):
-    return [[None if pd.isna(v) else v for v in row]
-            for row in frame[features].itertuples(index=False, name=None)]
-
-x_train, x_test = rows(train), rows(test)
-y_train, y_test = train["price"].tolist(), test["price"].tolist()
+# Seeded 8,000-row subset, then 6,000 rows to fit and 2,000 rows to evaluate
+sub, _ = train_test_split(len(df), test_size=len(df) - 8000, seed=2026)
+d = xy(take(df.to_dict("list"), sub), "price")
+train_idx, test_idx = train_test_split(8000, test_size=2000, seed=2026)
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+x_train, x_test = train["x"], test["x"]
+y_train, y_test = train["y"], test["y"]
 metrics = Metrics()
-print("baseline", metrics.regression(y_test, [mean(y_train)] * len(test))["rmse"])
+print("baseline", metrics.regression(y_test, [mean(y_train)] * len(y_test))["rmse"])
 
 for leaf in ("mean", "linear"):
     tree = ModelTree(leaf=leaf, max_depth=2, min_rows=40, prune="none")
-    tree.fit(x_train, y_train, col_names=features, dtypes=types)
+    tree.fit(x_train, y_train, col_names=d["names"], dtypes=d["dtypes"])
     predictions = tree.predict(x_test)
     print(leaf, metrics.regression(y_test, predictions)["rmse"])
     print(tree.splits()[:1], tree.leaves()[0])
@@ -45,11 +43,11 @@ for leaf in ("mean", "linear"):
 
 <!-- output -->
 ```text
-baseline 3997.909177541611
-mean 1712.2427217715297
-[{'col': 'carat', 'threshold': 0.87, 'missing_left': True, 'gain': 12621939723.095982}] {'id': 0, 'node_id': 0, 'cols': [], 'coef': [], 'na_coef': [], 'intercept': None, 'response_constant': 1429.890843104411, 'n': 3582, 'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331, 'stats': {'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331}, 'quantiles': [565.4020833333334, 729.5107790859337, 1089.1532531984144, 1980.0605097649789, 2763.0413519430763]}
-linear 1367.3485664664854
-[{'col': 'carat', 'threshold': 0.87, 'missing_left': True, 'gain': 12621939723.095982}] {'id': 0, 'node_id': 0, 'cols': ['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z'], 'coef': [5910.566159277382, -27.432000634949066, 12.716280090919211, -1.5433009189100604, -20.656956810987097, -18.763771275611948, -455.40156014726284, 440.60100215221235, -496.57381645128595], 'na_coef': [], 'intercept': 2548.6775050468987, 'response_constant': 1429.890843104411, 'n': 3582, 'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331, 'stats': {'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331}, 'quantiles': [565.4020833333334, 729.5107790859337, 1089.1532531984144, 1980.0605097649789, 2763.0413519430763]}
+baseline 3926.2557646498512
+mean 1612.879501881558
+[{'col': 'y', 'threshold': 5.51, 'missing_left': True, 'gain': 3276525595.283859}] {'id': 0, 'node_id': 0, 'cols': [], 'coef': [], 'na_coef': [], 'intercept': None, 'response_constant': 1040.1300184162062, 'n': 2715, 'mean': 1040.1300184162062, 'std': 510.8581907087139, 'var': 260976.0910141807, 'median': 885.0622838438737, 'mad': 269.93771615612627, 'iqr': 621.9573823969416, 'min': 327.0, 'max': 4916.0, 'skew': 1.3335229794484276, 'kurtosis': 2.366125996173917, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 250.9071812114085, 'stats': {'mean': 1040.1300184162062, 'std': 510.8581907087139, 'var': 260976.0910141807, 'median': 885.0622838438737, 'mad': 269.93771615612627, 'iqr': 621.9573823969416, 'min': 327.0, 'max': 4916.0, 'skew': 1.3335229794484276, 'kurtosis': 2.366125996173917, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 250.9071812114085}, 'quantiles': [536.6743042952208, 670.3266601562501, 885.0622838438737, 1292.2840425531917, 1801.448761904762]}
+linear 1576.247632527968
+[{'col': 'y', 'threshold': 5.51, 'missing_left': True, 'gain': 3276525595.283859}] {'id': 0, 'node_id': 0, 'cols': ['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z'], 'coef': [2677.0852587525414, -49.024889583752284, -15.934142441466289, -6.7691799670315, -41.49994088143296, -0.7937450802700305, 311.27773566368626, -274.0675469515239, 539.8387048871042], 'na_coef': [], 'intercept': 941.9868429241058, 'response_constant': 1040.1300184162062, 'n': 2715, 'mean': 1040.1300184162062, 'std': 510.8581907087139, 'var': 260976.0910141807, 'median': 885.0622838438737, 'mad': 269.93771615612627, 'iqr': 621.9573823969416, 'min': 327.0, 'max': 4916.0, 'skew': 1.3335229794484276, 'kurtosis': 2.366125996173917, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 250.9071812114085, 'stats': {'mean': 1040.1300184162062, 'std': 510.8581907087139, 'var': 260976.0910141807, 'median': 885.0622838438737, 'mad': 269.93771615612627, 'iqr': 621.9573823969416, 'min': 327.0, 'max': 4916.0, 'skew': 1.3335229794484276, 'kurtosis': 2.366125996173917, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 250.9071812114085}, 'quantiles': [536.6743042952208, 670.3266601562501, 885.0622838438737, 1292.2840425531917, 1801.448761904762]}
 ```
 
 Run the [complete study](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) to regenerate the chart.
@@ -66,11 +64,11 @@ uv run python examples/guides/real_tree_studies.py diamonds
 
 | Prediction | Test RMSE |
 |---|---:|
-| Global training mean | 3,998 |
-| Mean leaves | 1,712 |
-| Linear leaves | 1,367 |
+| Global training mean | 3,926 |
+| Mean leaves | 1,613 |
+| Linear leaves | 1,576 |
 
-Both trees include a split on carat at 0.87. The linear leaves reduced test RMSE by about 20% compared with the mean leaves in this run. The first leaf had 3,582 training records.
+Both trees split first on `y` at 5.51. The linear leaves lowered test RMSE only slightly, from 1,613 to 1,576, compared with the mean leaves in this run. The first leaf had 2,715 training records.
 
 The left panel summarizes error with RMSE. The right panel shows prediction minus observed price. Look for systematic underpricing below the zero line and overpricing above it. Add MAE if you need the average absolute error in price units. Review residuals by cut, price band and support. A shallow linear tree can follow a trend inside a leaf. Check for extrapolation and sudden changes at split boundaries before relying on that trend.
 
@@ -99,7 +97,7 @@ For this seed and simulated data, linear leaves at depth 4 had the lowest valida
 
 The same configuration then fits 6,000 rows from the real [OpenML diamonds dataset 46923](https://www.openml.org/d/46923) and predicts 2,000 separate rows. The data has 53,940 total records. Download its parquet file to `datasets/diamonds.parquet`; see the [dataset manifest](https://github.com/jkapila/mltreelib/blob/main/datasets/MANIFEST.md). The example needs pandas, pyarrow and matplotlib.
 
-On the fixed random split in the block above, test RMSE was 1,367 for linear leaves, 1,712 for mean leaves and 3,998 for the training-mean baseline (the same numbers as the table in section 3). These values use the dataset's price units and describe this split, not a benchmark result. The block reports RMSE only; add MAE in your own run if you need it. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
+On the fixed random split in the block above, test RMSE was 1,576 for linear leaves, 1,613 for mean leaves and 3,926 for the training-mean baseline (the same numbers as the table in section 3). These values use the dataset's price units and describe this split, not a benchmark result. The block reports RMSE only; add MAE in your own run if you need it. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
 
 The real tree splits on named size measurements, including `x` and `y`, and exposes leaf support and coefficients. Inspect the feature definitions and leaf sample sizes before drawing business conclusions. Category values in fitted structures can appear as internal codes. Coefficients and paths describe the prediction model; they do not establish what happens if a business changes a feature.
 

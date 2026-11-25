@@ -62,12 +62,13 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 ```python
 import pandas as pd
 from mltreelib import ClusterModel
+from mltreelib.data import xy
 
 from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1500, random_state=2026)
 feature_names = ["fixed_acidity", "volatile_acidity", "citric_acid",
                  "residual_sugar", "chlorides", "alcohol"]
-X_wine = df[feature_names].to_numpy().tolist()
+X_wine = xy(df.to_dict("list"), "median_wine_quality", features=feature_names)["x"]
 
 pct = ClusterModel(kind="pct", max_depth=3, min_rows=20)
 pct.fit(X_wine, col_names=feature_names)

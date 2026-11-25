@@ -125,6 +125,13 @@ Items left after the first pass of the documentation audit. They are worked one 
 - The Elo pages still show the old sequential ratings and the old rank headline. They switch to the order-independent rating with intervals and the baseline anchor in one step, together with any new entrants, so the published numbers change once.
 - The "Why mltreelib" page is rewritten in the maintainer's own words about why the project exists.
 
+**F. Found during the helper pass (typed content with no generator, or figures that may be stale):**
+- Typed tables and prose with no run block: the components page (variance, covariance and NMF tables, the API-gap block), the piecewise-linear comparison table, solvers section 5 (wall-clock column), uplift sections 4 and 5, survival section 4, regression section 4, clustering sections 4 and 5, the uplift blog (20-seed table, population effect figures), the zero-imputation blog (sections 1, 4, 5), the two-stage survival blog (sections 4 onward), the credit-scoring blog (sections 2, 4, 5 and the rule-set tail).
+- Blog numbers that came from example scripts whose splits are now seeded helper splits: two-stage survival (C-index, integrated Brier score, cohort sizes), causal uplift (Qini, AUUC, 20-seed table), credit scoring (cost, queue, AUROC, Brier and the 20-seed table). The credit post also had two numbers that matched no run before this work. Each is either regenerated from the script and tied to a run block, or removed.
+- Figures that may embed old numbers: real-survival, real-uplift, real-credit, real-diamonds-leaves, real-wine-clustering, causal uplift figures, the growth-knob grid, the solver Pareto figure, and the quickstart tree-versus-flat figure. Re-render with the owning scripts.
+- The hyperparameter-search example (`hpo_shapes.py`) was switched to the seeded split helper but not run end to end (each study can take up to 10 minutes); run it once and record the result.
+- API reference pages other than the data page are stale against the generator (old blurb links, duplicate class names, a dropped note); regenerate and review the whole set in one change.
+
 **E. Generated files:**
 - Regenerate the model-readable index files and the sitemap after every docs change, and fail the build if they are stale.
 

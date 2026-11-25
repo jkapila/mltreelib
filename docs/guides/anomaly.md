@@ -47,6 +47,7 @@ You can evaluate on industrial telemetry using `load_dataset("APSFailure")` or t
 ```python
 from mltreelib import Metrics, load_dataset
 from mltreelib import AnomalyModel
+from mltreelib.data import select_rows, train_test_split, xy
 
 # 1. Load industrial sensor telemetry
 data = load_dataset("APSFailure")
@@ -54,13 +55,14 @@ target = "AirPressureSystemFailure"
 features = ["aa_000", "ab_000", "ac_000", "ad_000", "ae_000", "af_000"]
 n_sample = 10000
 
-y_raw = data["columns"][target][:n_sample]
-y = [1 if v in ("pos", "1", 1) else 0 for v in y_raw]
-X = [[data["columns"][c][i] for c in features] for i in range(n_sample)]
-
-split = 7000
-X_train = [X[i] for i in range(split) if y[i] == 0]  # Fit reference on normal operating states
-X_test, y_test = X[split:], y[split:]
+# First 10,000 rows in file order: 7,000 train, then 3,000 test (no shuffling)
+d = select_rows(xy(data, target, features=features), range(n_sample))
+train_idx, test_idx = train_test_split(n_sample, test_size=3000, time_order=list(range(n_sample)))
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+y_train = [1 if v in ("pos", "1", 1) else 0 for v in train["y"]]
+y_test = [1 if v in ("pos", "1", 1) else 0 for v in test["y"]]
+X_train = [x for x, label in zip(train["x"], y_train) if label == 0]  # Fit reference on normal operating states
+X_test = test["x"]
 
 # 2. Fit Extended Isolation Forest (oblique cuts, depth=10)
 tree = AnomalyModel(kind="eif", max_depth=10, extension_level=1, seed=42)

@@ -64,22 +64,23 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
 
 === "ModelTree (Linear Ridge)"
 
+    <!-- run -->
     ```python
     from mltreelib import Metrics, ModelTree, load_dataset
+    from mltreelib.data import select_rows, train_test_split, xy
 
     # 1. Load benchmark dataset (1,030 mixtures, 8 features)
     data = load_dataset("concrete_compressive_strength")
     target = "ConcreteCompressiveStrength"
-    feature_names = [col for col in data["columns"].keys() if col != target]
+    d = xy(data, target)
+    feature_names = d["names"]
     n_rows = data["n_rows"]
 
-    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-    y = data["columns"][target]
-
-    # 80/20 train/test split
-    split_idx = int(n_rows * 0.8)
-    X_train, y_train = X[:split_idx], y[:split_idx]
-    X_test, y_test = X[split_idx:], y[split_idx:]
+    # 80/20 split with no shuffling: first 80% of rows train, last 20% test
+    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+    X_train, y_train = train["x"], train["y"]
+    X_test, y_test = test["x"], test["y"]
 
     # Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=3)
     model_tree = ModelTree(leaf="linear", max_depth=3, min_rows=20, l2=1e-3)
@@ -92,28 +93,28 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
     ```
 
-!!! example "Output of `examples/quickstart.py`"
-
+    <!-- output -->
     ```text
-    --8<-- "docs/snippets/outputs/quickstart.txt"
+    ModelTree (Linear): RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
     ```
 
 === "ModelTree(leaf='mean') Baseline"
 
+    <!-- run -->
     ```python
     from mltreelib import Metrics, ModelTree, load_dataset
+    from mltreelib.data import select_rows, train_test_split, xy
 
     data = load_dataset("concrete_compressive_strength")
     target = "ConcreteCompressiveStrength"
-    feature_names = [col for col in data["columns"].keys() if col != target]
+    d = xy(data, target)
+    feature_names = d["names"]
     n_rows = data["n_rows"]
 
-    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-    y = data["columns"][target]
-
-    split_idx = int(n_rows * 0.8)
-    X_train, y_train = X[:split_idx], y[:split_idx]
-    X_test, y_test = X[split_idx:], y[split_idx:]
+    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+    X_train, y_train = train["x"], train["y"]
+    X_test, y_test = test["x"], test["y"]
 
     # Fit piecewise-constant CART decision tree (leaf="mean", depth=3)
     cart = ModelTree(leaf="mean", max_depth=3, min_rows=20)
@@ -125,25 +126,20 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Mean)  : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
     ```
 
+    <!-- output -->
+    ```text
+    ModelTree (Mean)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+    ```
+
 ---
 
 ## 3. Empirical Results & Performance Comparison
 
-```text
-Loaded Concrete Compressive Strength: 1030 rows, 8 features.
-Train rows: 824, Test rows: 206
-
-=== Model Performance on Test Set ===
-ModelTree (leaf="mean", d=3)    : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-sklearn DecisionTreeRegressor   : RMSE = 10.92 MPa, R2 = 0.579, MAE = 8.36 MPa
-mltreelib ModelTree (Linear)    : RMSE =  7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
---> Error reduction with linear leaves: 34.3%
-```
+The two tabs above print the holdout metrics for the same 824-row train and 206-row test split. The tree has 8 leaves at depth 3.
 
 | Model | Leaf Formulation | Depth | Test RMSE (MPa) | Test $R^2$ | Test MAE (MPa) |
 |---|---|:---:|:---:|:---:|:---:|
 | **`ModelTree(leaf="mean")`** | Constant Mean | 3 | 11.09 | 0.566 | 8.47 |
-| **`sklearn.tree.DecisionTreeRegressor`** | Constant Mean | 3 | 10.92 | 0.579 | 8.36 |
 | **`mltreelib` ModelTree (Linear)** | Regularized Linear Ridge | 3 | **7.28** | **0.813** | **5.07** |
 
 With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves achieves a **34.3% error reduction** over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.
@@ -157,8 +153,14 @@ With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves
 
 ## 4. Transparent Tree Structure & Inspection
 
-`ModelTree` prints in `rpart`-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants:
+`ModelTree` prints in `rpart`-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants. The fitted linear-leaf tree from section 2 prints as:
 
+<!-- run -->
+```python
+print(model_tree)
+```
+
+<!-- output -->
 ```text
 n= 824 
 
@@ -608,6 +610,7 @@ The runnable block under the table is a different, synthetic setup: one 2,000-ro
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
+from mltreelib.data import train_test_split
 
 # 1. Generate non-linear diamond price surface with carat and cut interactions
 rng = np.random.default_rng(2026)
@@ -623,8 +626,8 @@ price = 1500.0 * (carat ** 1.8) - 15.0 * depth + rng.normal(0, 150.0, n_samples)
 X = np.column_stack([carat, depth, table])
 feature_names = ["carat", "depth", "table"]
 
-train_idx = range(1500)
-test_idx = range(1500, 2000)
+# First 1,500 rows train, last 500 test (the rows are i.i.d., so file order is immaterial)
+train_idx, test_idx = train_test_split(n_samples, test_size=500, time_order=list(range(n_samples)))
 
 # 2. Train shallow ModelTree with piecewise linear leaves
 tree = ModelTree(
@@ -664,14 +667,17 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 ```python
 import pandas as pd
 from mltreelib import ModelTree
+from mltreelib.data import select_rows, train_test_split, xy
 
 from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
 target = "ConcreteCompressiveStrength"
-features = df.columns.drop(target).tolist()
+d = xy(df.to_dict("list"), target)
+# Seeded shuffle, then keep 800 rows for training (the test part is dropped)
+train_idx, _ = train_test_split(len(df), test_size=len(df) - 800, seed=2026)
+train = select_rows(d, train_idx)
 concrete_tree = ModelTree(leaf="linear", max_depth=3, min_rows=40)
-concrete_tree.fit(df[features].iloc[:800].to_numpy().tolist(),
-                  df[target].iloc[:800].tolist(), col_names=features)
+concrete_tree.fit(train["x"], train["y"], col_names=d["names"])
 
 # Extract white-box rules directly from the fitted tree
 ruleset = concrete_tree.extract_rules()
@@ -685,32 +691,32 @@ for r in ruleset.rules:
 <!-- output -->
 ```text
 Extracted 7 Transparent Rules:
-  RULE #1 (Cover: 333 samples, Confidence: 0.95):
-    IF Cement > 164.6000 AND Cement <= 350.0000 AND Age > 14.0000
+  RULE #1 (Cover: 328 samples, Confidence: 0.95):
+    IF Cement > 159.0000 AND Cement <= 356.0000 AND Age > 14.0000
     THEN Leaf #4 prediction = 39.96
-  RULE #2 (Cover: 134 samples, Confidence: 0.95):
+  RULE #2 (Cover: 140 samples, Confidence: 0.95):
     IF Cement <= 350.0000 AND Age <= 7.0000
-    THEN Leaf #0 prediction = 16.11
-  RULE #3 (Cover: 102 samples, Confidence: 0.95):
-    IF Cement <= 164.6000 AND Age > 14.0000
-    THEN Leaf #3 prediction = 25.93
-  RULE #4 (Cover: 74 samples, Confidence: 0.95):
+    THEN Leaf #0 prediction = 15.55
+  RULE #3 (Cover: 86 samples, Confidence: 0.95):
+    IF Cement <= 159.0000 AND Age > 14.0000
+    THEN Leaf #3 prediction = 25.28
+  RULE #4 (Cover: 76 samples, Confidence: 0.95):
     IF Cement > 350.0000 AND Age <= 14.0000
-    THEN Leaf #2 prediction = 34.80
-  RULE #5 (Cover: 68 samples, Confidence: 0.95):
-    IF Cement > 350.0000 AND Water <= 181.1000 AND Age > 14.0000
-    THEN Leaf #5 prediction = 63.13
-  RULE #6 (Cover: 48 samples, Confidence: 0.95):
-    IF Cement > 350.0000 AND Water > 181.1000 AND Age > 14.0000
-    THEN Leaf #6 prediction = 44.97
-  RULE #7 (Cover: 41 samples, Confidence: 0.95):
+    THEN Leaf #2 prediction = 36.09
+  RULE #5 (Cover: 74 samples, Confidence: 0.95):
+    IF Cement > 356.0000 AND Water <= 181.1000 AND Age > 14.0000
+    THEN Leaf #5 prediction = 64.02
+  RULE #6 (Cover: 51 samples, Confidence: 0.95):
     IF Cement <= 350.0000 AND Age > 7.0000 AND Age <= 14.0000
-    THEN Leaf #1 prediction = 27.85
+    THEN Leaf #1 prediction = 27.67
+  RULE #7 (Cover: 45 samples, Confidence: 0.95):
+    IF Cement > 356.0000 AND Water > 181.1000 AND Age > 14.0000
+    THEN Leaf #6 prediction = 46.42
 ```
 
 ---
 
-**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 41 samples) falls in the N < 50 range, where unregularized OLS has high variance.
+**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 45 samples) falls in the N < 50 range, where unregularized OLS has high variance.
 
 ## 3. Hierarchical Leaf Shrinkage
 
@@ -1121,14 +1127,15 @@ flowchart TD
     class UnbiasedModel causalBox;
 ```
 
-Run this Python block from the repository root. `group_value` comes from the example script.
+Run this Python block from the repository root. `group_value` is defined in the block.
 
+<!-- run -->
 ```python
 from math import sqrt
-from random import Random
 
 import pandas as pd
 from mltreelib import ModelTree, dataset_path
+from mltreelib.data import select_rows, train_val_test_split, uplift_xy
 
 def group_value(y, w, selected):
     """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
@@ -1149,23 +1156,22 @@ def group_value(y, w, selected):
 df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
-types = ["numeric"] * 5 + ["categorical"] * 2
-ids = list(range(len(df)))
-Random(2026).shuffle(ids)
-a, b = int(.6 * len(ids)), int(.8 * len(ids))
+d = uplift_xy(df.to_dict("list"), "segment", "visit", features=features)
 
-def inputs(indices):
-    part = df.iloc[indices]
-    x = [[None if pd.isna(v) else v for v in row]
-         for row in part[features].itertuples(index=False, name=None)]
-    return x, part.visit.tolist(), (part.segment == "Womens E-Mail").astype(int).tolist()
+# Seeded 60% train / 20% validation / 20% test split
+train_idx, val_idx, test_idx = train_val_test_split(len(df), val_size=0.2, test_size=0.2, seed=2026)
 
-x_train, y_train, w_train = inputs(ids[:a])
-x_val, y_val, w_val = inputs(ids[a:b])
-x_test, y_test, w_test = inputs(ids[b:])
+def inputs(idx):
+    rows = select_rows(d, idx)
+    return rows["x"], rows["outcome"], [1 if s == "Womens E-Mail" else 0 for s in rows["treatment"]]
+
+x_train, y_train, w_train = inputs(train_idx)
+x_val, y_val, w_val = inputs(val_idx)
+x_test, y_test, w_test = inputs(test_idx)
+print(f"Rows: train {len(x_train)}, validation {len(x_val)}, test {len(x_test)}")
 tree = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250,
                  prune="none", honesty=True, seed=42)
-tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
+tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=d["dtypes"])
 
 val_scores = tree.predict(x_val, kind="uplift")
 def value_at(threshold):
@@ -1178,6 +1184,14 @@ for selected in ([score > threshold for score in test_scores],
     print(group_value(y_test, w_test, selected))
 ```
 
+<!-- output -->
+```text
+Rows: train 25615, validation 8539, test 8539
+(0.03713903371682102, 4711, 2388, 2323, (0.026102043930241136, 0.0481760235034009))
+(0.044668736821524516, 8539, 4263, 4276, (0.030347650544788125, 0.05898982309826091))
+(0.0, 0, 0, 0, None)
+```
+
 The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.
 
 **Next:** report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.
@@ -1188,13 +1202,13 @@ The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows.
 
 | Test policy | Selected | Treated / control | Incremental visits per eligible customer | Approximate 95% interval |
 |---|---:|---:|---:|---:|
-| Validation-selected policy | 8,539 | 4,270 / 4,269 | 0.04517 | 0.03108 to 0.05927 |
-| Treat all | 8,539 | 4,270 / 4,269 | 0.04517 | 0.03108 to 0.05927 |
+| Validation-selected policy | 4,711 | 2,388 / 2,323 | 0.03714 | 0.02610 to 0.04818 |
+| Treat all | 8,539 | 4,263 / 4,276 | 0.04467 | 0.03035 to 0.05899 |
 | Treat none | 0 | — | 0 | — |
 
 ![Hillstrom randomized held-out policy comparison](../assets/guides/real-uplift.svg)
 
-The chosen policy treats everyone. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
+The validation-selected policy emails 4,711 of the 8,539 test customers. It yields 0.03714 incremental visits per eligible customer, below 0.04467 for treat-all. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
 
 **Next:** check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.
 
@@ -1606,12 +1620,13 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 ```python
 import pandas as pd
 from mltreelib import ClusterModel
+from mltreelib.data import xy
 
 from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1500, random_state=2026)
 feature_names = ["fixed_acidity", "volatile_acidity", "citric_acid",
                  "residual_sugar", "chlorides", "alcohol"]
-X_wine = df[feature_names].to_numpy().tolist()
+X_wine = xy(df.to_dict("list"), "median_wine_quality", features=feature_names)["x"]
 
 pct = ClusterModel(kind="pct", max_depth=3, min_rows=20)
 pct.fit(X_wine, col_names=feature_names)
@@ -1777,12 +1792,12 @@ The defaults above come from the live constructor. Pruning is bottom-up with one
 <!-- run -->
 ```python
 from mltreelib import ModelTree, load_dataset
+from mltreelib.data import xy
 
 data = load_dataset("concrete_compressive_strength")
 target = "ConcreteCompressiveStrength"
-names = [c for c in data["columns"] if c != target]
-X = [[data["columns"][c][i] for c in names] for i in range(data["n_rows"])]
-y = data["columns"][target]
+d = xy(data, target)
+X, y, names = d["x"], d["y"], d["names"]
 
 for cp in (None, 0.001, 0.01, 0.05):
     tree = ModelTree(leaf="mean", max_depth=6, min_rows=15, prune="cp", cp=cp)
@@ -2031,20 +2046,23 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 ### Benchmark Results on Concrete Strength (80/20 split)
 
-The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
+The block below fits each solver on the same seeded 80/20 split of the Concrete data (seed 2026) and scores the held-out 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
 
 <!-- run -->
 ```python
 import pandas as pd
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import select_rows, train_test_split, xy
 
 from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
 target = "ConcreteCompressiveStrength"
-features = df.columns.drop(target).tolist()
-cut = int(0.8 * len(df))
-x_train, x_test = df[features].iloc[:cut].to_numpy().tolist(), df[features].iloc[cut:].to_numpy().tolist()
-y_train, y_test = df[target].iloc[:cut].tolist(), df[target].iloc[cut:].tolist()
+d = xy(df.to_dict("list"), target)
+# Seeded 80/20 split: the helper shuffles with seed 2026, so file order does not matter
+train_idx, test_idx = train_test_split(len(df), test_size=0.2, seed=2026)
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+x_train, y_train = train["x"], train["y"]
+x_test, y_test = test["x"], test["y"]
 
 metrics = Metrics()
 for depth in (0, 2):
@@ -2058,31 +2076,31 @@ for depth in (0, 2):
 
 <!-- output -->
 ```text
-depth=0 irls   rmse=10.321 r2=0.679
-depth=0 lbfgs  rmse=10.323 r2=0.679
-depth=0 shade  rmse=10.317 r2=0.679
-depth=0 ga     rmse=10.811 r2=0.648
-depth=0 cmaes  rmse=12.402 r2=0.537
-depth=0 nes    rmse=12.974 r2=0.493
-depth=0 ccd    rmse=10.321 r2=0.679
-depth=2 irls   rmse=6.855 r2=0.858
-depth=2 lbfgs  rmse=7.174 r2=0.845
-depth=2 shade  rmse=7.175 r2=0.845
-depth=2 ga     rmse=7.971 r2=0.809
-depth=2 cmaes  rmse=10.291 r2=0.681
-depth=2 nes    rmse=12.013 r2=0.565
-depth=2 ccd    rmse=6.858 r2=0.858
+depth=0 irls   rmse=10.745 r2=0.563
+depth=0 lbfgs  rmse=10.757 r2=0.562
+depth=0 shade  rmse=10.765 r2=0.561
+depth=0 ga     rmse=11.205 r2=0.524
+depth=0 cmaes  rmse=12.336 r2=0.424
+depth=0 nes    rmse=12.008 r2=0.454
+depth=0 ccd    rmse=10.746 r2=0.563
+depth=2 irls   rmse=6.770 r2=0.826
+depth=2 lbfgs  rmse=7.055 r2=0.811
+depth=2 shade  rmse=7.045 r2=0.812
+depth=2 ga     rmse=8.319 r2=0.738
+depth=2 cmaes  rmse=9.464 r2=0.661
+depth=2 nes    rmse=12.333 r2=0.424
+depth=2 ccd    rmse=6.761 r2=0.827
 ```
 
 | Solver | Family | RMSE (MPa), depth 0 | $R^2$, depth 0 | RMSE (MPa), depth 2 | $R^2$, depth 2 |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **`irls`** | Analytical Cholesky | 10.321 | 0.679 | 6.855 | 0.858 |
-| **`lbfgs`** | Quasi-Newton | 10.323 | 0.679 | 7.174 | 0.845 |
-| **`shade`** | Continuous DE | 10.317 | 0.679 | 7.175 | 0.845 |
-| **`ga`** | Genetic Algorithm | 10.811 | 0.648 | 7.971 | 0.809 |
-| **`cmaes`** | Evolutionary Covariance | 12.402 | 0.537 | 10.291 | 0.681 |
-| **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
-| **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
+| **`irls`** | Analytical Cholesky | 10.745 | 0.563 | 6.770 | 0.826 |
+| **`lbfgs`** | Quasi-Newton | 10.757 | 0.562 | 7.055 | 0.811 |
+| **`shade`** | Continuous DE | 10.765 | 0.561 | 7.045 | 0.812 |
+| **`ga`** | Genetic Algorithm | 11.205 | 0.524 | 8.319 | 0.738 |
+| **`cmaes`** | Evolutionary Covariance | 12.336 | 0.424 | 9.464 | 0.661 |
+| **`nes`** | Natural Gradient | 12.008 | 0.454 | 12.333 | 0.424 |
+| **`ccd`** | Cyclic Coordinate Descent | 10.746 | 0.563 | 6.761 | 0.827 |
 
 **Next:** step 4 reads the RMSE and R² values from step 3 to point out which solvers land close together and which trail.
 
@@ -2095,11 +2113,11 @@ depth=2 ccd    rmse=6.858 r2=0.858
 ### Key Observations:
 
 1. **Global linear fit (`max_depth=0`)**:
-   `irls`, `lbfgs`, `shade` and `ccd` land within 0.01 MPa of each other (10.317 to 10.323). `ga` is at 10.811, `cmaes` at 12.402 and `nes` at 12.974.
+   `irls`, `lbfgs`, `shade` and `ccd` land within 0.02 MPa of each other (10.745 to 10.765). `ga` is at 11.205, `nes` at 12.008 and `cmaes` at 12.336.
 2. **Shallow tree (`max_depth=2`)**:
-   `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
+   `ccd` (6.761 MPa) and `irls` (6.770 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.05 MPa, `ga` at 8.319 MPa. `cmaes` and `nes` are the weakest.
 3. **Gradient-free SHADE**:
-   On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
+   On this split `shade` needs no gradients and stays within 0.01 MPa of `lbfgs` at both depths. At depth 0 it is slightly above `irls` (10.765 vs 10.745 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
 
 **Next:** step 5 leaves the leaf fits and applies a search to any bounded scalar objective through `optimize`, including `ModelTree` hyperparameters.
 
@@ -2412,7 +2430,7 @@ HPO Search Results:
 ## Operational Limitations & Numerical Failure Modes
 
 1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.008 MPa at depth 0, the second-weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
 2. **Coordinate Descent Collinearity Stagnation**:
    When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
 3. **Non-Convex Local Minima & Stochastic Reproducibility**:
@@ -2570,9 +2588,9 @@ from mltreelib import ComponentModel
 
 # Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
 from mltreelib import dataset_path
+from mltreelib.data import xy
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
-features = [c for c in df.columns if c not in ("median_wine_quality", "wine_color")]
-X = df[features].to_numpy().tolist()
+X = xy(df.to_dict("list"), "median_wine_quality", exclude=["wine_color"])["x"]
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations

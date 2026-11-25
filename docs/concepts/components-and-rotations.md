@@ -135,9 +135,9 @@ from mltreelib import ComponentModel
 
 # Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
 from mltreelib import dataset_path
+from mltreelib.data import xy
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
-features = [c for c in df.columns if c not in ("median_wine_quality", "wine_color")]
-X = df[features].to_numpy().tolist()
+X = xy(df.to_dict("list"), "median_wine_quality", exclude=["wine_color"])["x"]
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations

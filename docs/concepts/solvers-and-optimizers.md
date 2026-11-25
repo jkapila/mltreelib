@@ -159,20 +159,23 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 ### Benchmark Results on Concrete Strength (80/20 split)
 
-The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
+The block below fits each solver on the same seeded 80/20 split of the Concrete data (seed 2026) and scores the held-out 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
 
 <!-- run -->
 ```python
 import pandas as pd
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import select_rows, train_test_split, xy
 
 from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
 target = "ConcreteCompressiveStrength"
-features = df.columns.drop(target).tolist()
-cut = int(0.8 * len(df))
-x_train, x_test = df[features].iloc[:cut].to_numpy().tolist(), df[features].iloc[cut:].to_numpy().tolist()
-y_train, y_test = df[target].iloc[:cut].tolist(), df[target].iloc[cut:].tolist()
+d = xy(df.to_dict("list"), target)
+# Seeded 80/20 split: the helper shuffles with seed 2026, so file order does not matter
+train_idx, test_idx = train_test_split(len(df), test_size=0.2, seed=2026)
+train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+x_train, y_train = train["x"], train["y"]
+x_test, y_test = test["x"], test["y"]
 
 metrics = Metrics()
 for depth in (0, 2):
@@ -186,31 +189,31 @@ for depth in (0, 2):
 
 <!-- output -->
 ```text
-depth=0 irls   rmse=10.321 r2=0.679
-depth=0 lbfgs  rmse=10.323 r2=0.679
-depth=0 shade  rmse=10.317 r2=0.679
-depth=0 ga     rmse=10.811 r2=0.648
-depth=0 cmaes  rmse=12.402 r2=0.537
-depth=0 nes    rmse=12.974 r2=0.493
-depth=0 ccd    rmse=10.321 r2=0.679
-depth=2 irls   rmse=6.855 r2=0.858
-depth=2 lbfgs  rmse=7.174 r2=0.845
-depth=2 shade  rmse=7.175 r2=0.845
-depth=2 ga     rmse=7.971 r2=0.809
-depth=2 cmaes  rmse=10.291 r2=0.681
-depth=2 nes    rmse=12.013 r2=0.565
-depth=2 ccd    rmse=6.858 r2=0.858
+depth=0 irls   rmse=10.745 r2=0.563
+depth=0 lbfgs  rmse=10.757 r2=0.562
+depth=0 shade  rmse=10.765 r2=0.561
+depth=0 ga     rmse=11.205 r2=0.524
+depth=0 cmaes  rmse=12.336 r2=0.424
+depth=0 nes    rmse=12.008 r2=0.454
+depth=0 ccd    rmse=10.746 r2=0.563
+depth=2 irls   rmse=6.770 r2=0.826
+depth=2 lbfgs  rmse=7.055 r2=0.811
+depth=2 shade  rmse=7.045 r2=0.812
+depth=2 ga     rmse=8.319 r2=0.738
+depth=2 cmaes  rmse=9.464 r2=0.661
+depth=2 nes    rmse=12.333 r2=0.424
+depth=2 ccd    rmse=6.761 r2=0.827
 ```
 
 | Solver | Family | RMSE (MPa), depth 0 | $R^2$, depth 0 | RMSE (MPa), depth 2 | $R^2$, depth 2 |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **`irls`** | Analytical Cholesky | 10.321 | 0.679 | 6.855 | 0.858 |
-| **`lbfgs`** | Quasi-Newton | 10.323 | 0.679 | 7.174 | 0.845 |
-| **`shade`** | Continuous DE | 10.317 | 0.679 | 7.175 | 0.845 |
-| **`ga`** | Genetic Algorithm | 10.811 | 0.648 | 7.971 | 0.809 |
-| **`cmaes`** | Evolutionary Covariance | 12.402 | 0.537 | 10.291 | 0.681 |
-| **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
-| **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
+| **`irls`** | Analytical Cholesky | 10.745 | 0.563 | 6.770 | 0.826 |
+| **`lbfgs`** | Quasi-Newton | 10.757 | 0.562 | 7.055 | 0.811 |
+| **`shade`** | Continuous DE | 10.765 | 0.561 | 7.045 | 0.812 |
+| **`ga`** | Genetic Algorithm | 11.205 | 0.524 | 8.319 | 0.738 |
+| **`cmaes`** | Evolutionary Covariance | 12.336 | 0.424 | 9.464 | 0.661 |
+| **`nes`** | Natural Gradient | 12.008 | 0.454 | 12.333 | 0.424 |
+| **`ccd`** | Cyclic Coordinate Descent | 10.746 | 0.563 | 6.761 | 0.827 |
 
 **Next:** step 4 reads the RMSE and R² values from step 3 to point out which solvers land close together and which trail.
 
@@ -223,11 +226,11 @@ depth=2 ccd    rmse=6.858 r2=0.858
 ### Key Observations:
 
 1. **Global linear fit (`max_depth=0`)**:
-   `irls`, `lbfgs`, `shade` and `ccd` land within 0.01 MPa of each other (10.317 to 10.323). `ga` is at 10.811, `cmaes` at 12.402 and `nes` at 12.974.
+   `irls`, `lbfgs`, `shade` and `ccd` land within 0.02 MPa of each other (10.745 to 10.765). `ga` is at 11.205, `nes` at 12.008 and `cmaes` at 12.336.
 2. **Shallow tree (`max_depth=2`)**:
-   `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
+   `ccd` (6.761 MPa) and `irls` (6.770 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.05 MPa, `ga` at 8.319 MPa. `cmaes` and `nes` are the weakest.
 3. **Gradient-free SHADE**:
-   On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
+   On this split `shade` needs no gradients and stays within 0.01 MPa of `lbfgs` at both depths. At depth 0 it is slightly above `irls` (10.765 vs 10.745 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
 
 **Next:** step 5 leaves the leaf fits and applies a search to any bounded scalar objective through `optimize`, including `ModelTree` hyperparameters.
 
@@ -540,7 +543,7 @@ HPO Search Results:
 ## Operational Limitations & Numerical Failure Modes
 
 1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.008 MPa at depth 0, the second-weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
 2. **Coordinate Descent Collinearity Stagnation**:
    When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
 3. **Non-Convex Local Minima & Stochastic Reproducibility**:
