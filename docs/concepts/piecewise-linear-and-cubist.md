@@ -46,7 +46,9 @@ flowchart LR
 
 ## 1. Step Functions vs Linear Leaves (The Diamond Price Benchmark)
 
-We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/42225)) comparing a standard 0D constant CART tree, a 100-tree GBDT ensemble, and a shallow 1D Model Tree (`max_depth=3`, 8 linear leaves).
+The table below comes from a separate benchmark on real diamond sales ([OpenML 42225](https://www.openml.org/d/42225)). It compares a standard 0D constant CART tree, a 100-tree GBDT ensemble, and a shallow `ModelTree` (`max_depth=3`, 8 linear leaves). That benchmark is not regenerated on this page.
+
+The runnable block under the table is a different, synthetic setup: one 2,000-row price surface, 1,500 rows for training and 500 for testing, with one `ModelTree`. Its test RMSE is not comparable with the table, because the data, sample sizes and models differ.
 
 ![Decision Tree Step Functions vs Continuous Linear Leaves](../assets/plot_tree_regression_comparison.png)
 
@@ -58,7 +60,7 @@ We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/4222
 | :--- | :--- | :---: | :---: | :--- |
 | **CART Baseline** | 0D Constant Mean | Depth 6 (64 leaves) | $1,280 | Jagged staircases; zero extrapolation |
 | **GBDT (LightGBM)** | 0D Constant Sum | 100 Trees (Depth 4) | $742 | Hundreds of orthogonal step boundaries |
-| **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes; beats GBDT with 1/12th complexity** |
+| **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes on the real diamond benchmark (not reproduced by the block below)** |
 
 <!-- run -->
 ```python
@@ -106,7 +108,7 @@ Piecewise Linear ModelTree Test RMSE: $155.99
 
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
 
-On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules.
+On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules. The block below fits a small linear-leaf tree on the local Concrete parquet (800 shuffled rows) and extracts its rules.
 
 ![Concrete Compressive Strength Decision Tree](../assets/guides/real-concrete-tree.svg)
 
@@ -116,8 +118,19 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 
 <!-- run -->
 ```python
+import pandas as pd
+from mltreelib import ModelTree
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+target = "ConcreteCompressiveStrength"
+features = df.columns.drop(target).tolist()
+concrete_tree = ModelTree(leaf="linear", max_depth=3, min_rows=40)
+concrete_tree.fit(df[features].iloc[:800].to_numpy().tolist(),
+                  df[target].iloc[:800].tolist(), col_names=features)
+
 # Extract white-box rules directly from the fitted tree
-ruleset = tree.extract_rules()
+ruleset = concrete_tree.extract_rules()
 print(f"Extracted {len(ruleset.rules)} Transparent Rules:")
 for r in ruleset.rules:
     print(f"  RULE #{r.id} (Cover: {r.cover} samples, Confidence: {r.confidence:.2f}):")
@@ -127,31 +140,28 @@ for r in ruleset.rules:
 
 <!-- output -->
 ```text
-Extracted 8 Transparent Rules:
-  RULE #1 (Cover: 326 samples, Confidence: 0.95):
-    IF carat <= 1.0420
-    THEN Leaf #0 prediction = -115.74
-  RULE #2 (Cover: 205 samples, Confidence: 0.95):
-    IF carat > 1.0420 AND carat <= 1.4930
-    THEN Leaf #1 prediction = 1425.82
-  RULE #3 (Cover: 192 samples, Confidence: 0.95):
-    IF carat > 1.4930 AND carat <= 1.9260
-    THEN Leaf #2 prediction = 3037.00
-  RULE #4 (Cover: 168 samples, Confidence: 0.95):
-    IF carat > 2.5740 AND carat <= 2.9060
-    THEN Leaf #5 prediction = 8269.63
-  RULE #5 (Cover: 166 samples, Confidence: 0.95):
-    IF carat > 1.9260 AND carat <= 2.2530
-    THEN Leaf #3 prediction = 4787.94
-  RULE #6 (Cover: 154 samples, Confidence: 0.95):
-    IF carat > 2.9060 AND carat <= 3.2260
-    THEN Leaf #6 prediction = 10416.46
-  RULE #7 (Cover: 150 samples, Confidence: 0.95):
-    IF carat > 2.2530 AND carat <= 2.5740
-    THEN Leaf #4 prediction = 6525.48
-  RULE #8 (Cover: 139 samples, Confidence: 0.95):
-    IF carat > 3.2260
-    THEN Leaf #7 prediction = 12297.76
+Extracted 7 Transparent Rules:
+  RULE #1 (Cover: 333 samples, Confidence: 0.95):
+    IF Cement > 164.6000 AND Cement <= 350.0000 AND Age > 14.0000
+    THEN Leaf #4 prediction = 39.96
+  RULE #2 (Cover: 134 samples, Confidence: 0.95):
+    IF Cement <= 350.0000 AND Age <= 7.0000
+    THEN Leaf #0 prediction = 16.11
+  RULE #3 (Cover: 102 samples, Confidence: 0.95):
+    IF Cement <= 164.6000 AND Age > 14.0000
+    THEN Leaf #3 prediction = 25.93
+  RULE #4 (Cover: 74 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Age <= 14.0000
+    THEN Leaf #2 prediction = 34.80
+  RULE #5 (Cover: 68 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Water <= 181.1000 AND Age > 14.0000
+    THEN Leaf #5 prediction = 63.13
+  RULE #6 (Cover: 48 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Water > 181.1000 AND Age > 14.0000
+    THEN Leaf #6 prediction = 44.97
+  RULE #7 (Cover: 41 samples, Confidence: 0.95):
+    IF Cement <= 350.0000 AND Age > 7.0000 AND Age <= 14.0000
+    THEN Leaf #1 prediction = 27.85
 ```
 
 ---

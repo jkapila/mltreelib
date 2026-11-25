@@ -88,6 +88,7 @@ Observed values contribute to continuous slopes $\beta_j$, while missing states 
 
 We evaluate native routing against standard mean imputation on the **Scania APS Failure** benchmark (76,000 industrial truck diagnostic records, 171 sensor channels).
 
+<!-- run -->
 ```python
 from mltreelib import Metrics, ModelTree, load_dataset
 
@@ -128,40 +129,20 @@ roc = metrics.roc_curve(y_test, probs)
 print(f"Native Routing -> Average Precision: {pr['average_precision']:.4f}, ROC-AUC: {roc['auc']:.4f}")
 ```
 
----
-
-## 4. Empirical Results: Native Routing vs Mean Imputation
-
+<!-- output -->
 ```text
-Loaded Scania APS Failure benchmark: 12000 samples, 12 sensor channels.
-Train rows: 8000, Val rows: 2000, Test rows: 2000
-Sensor 'ab_000' missing rate: 77.4%
-
-=== 1. Native Routing & Surrogate Splits (maxsurrogate=2) ===
-Primary split node: aa_000 <= 101748.00 (missing_left=True)
-Native Routing   -> Average Precision: 0.5924, ROC-AUC: 0.9848, Brier: 0.0135
-
-=== 2. Comparison against Standard Mean Imputation Baseline ===
-Mean Imputation  -> Average Precision: 0.5706, ROC-AUC: 0.9846, Brier: 0.0139
---> Average Precision advantage of Native Missing Routing: +3.8%
-
-Complete Records   (n=394): Brier = 0.0060
-Incomplete Records (n=1606): Brier = 0.0153
-Native routing preserves calibrated probabilities even when multiple sensor channels are missing.
+Native Routing -> Average Precision: 0.4916, ROC-AUC: 0.9524
 ```
 
-| Evaluation Strategy | Missing Handling | PR Average Precision | ROC-AUC | Brier Score | Preprocessing Latency |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Mean Imputation Baseline** | Global Column Mean | 0.5706 | 0.9846 | 0.0139 | High (Offline Table Sync) |
-| **`mltreelib` Native Routing** | Learned `missing_left` + Surrogates | **0.5924** | **0.9848** | **0.0135** | **Zero Latency (Pure Rust)** |
+---
 
-![Native Missing Data Routing and Surrogate Performance on Scania APS Telemetry](../assets/missing_routing_aps.png)
+## 4. Reading the benchmark result
 
-### Key Quantitative Findings:
+The block in section 3 fits one `ModelTree` with native missing routing on the first 8,000 APS rows and scores 2,000 later rows. On that split it prints average precision 0.4916 and ROC-AUC 0.9524.
 
-1. **High Missingness Tolerance (Panel 1)**: Key diagnostic sensors like `ab_000` exhibit **77.4% missingness** in production telemetry. Standard imputation collapses 77% of this channel to a single scalar value, destroying its variance.
-2. **Competitive Precision-Recall without Imputation Pipelines (Panel 2)**: On this single fixed evaluation split, native missing routing achieves **0.5924 Average Precision** (a +3.8% directional difference over mean imputation's 0.5706) with ROC-AUC virtually tied (**0.9848 vs 0.9846**). This confirms that native routing matches or directionally improves upon imputation without requiring online mean table synchronization.
-3. **Calibrated Probabilities on Incomplete Telemetry (Panel 4)**: On 1,606 test records with at least one missing sensor, `ModelTree` achieves a **0.0153 Brier score**, maintaining reliable probability calibration without collapsing to the prior mean.
+Missingness is high in this channel. In the first 12,000 records, `ab_000` is missing for 77.4% of rows, so a routing rule that handles missing values directly matters for this data.
+
+Earlier drafts of this page compared native routing with mean imputation and reported Brier scores by complete and incomplete records. No block on this page produces those numbers, so they are not quoted here. Run such a comparison on your own split before making a claim about imputation.
 
 ---
 

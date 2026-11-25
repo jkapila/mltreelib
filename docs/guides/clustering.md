@@ -17,7 +17,8 @@ Run this from the repository root. The second split supports a refit check. Assi
 import pandas as pd
 from mltreelib import ClusterModel
 
-df = pd.read_parquet("datasets/wine_quality.parquet").sample(frac=1, random_state=2026)
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("wine_quality")).sample(frac=1, random_state=2026)
 features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
 train, review = df.iloc[:2500], df.iloc[5000:].copy()
 center = train[features].mean()

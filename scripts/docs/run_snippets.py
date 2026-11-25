@@ -21,6 +21,7 @@ import argparse
 import contextlib
 import io
 import os
+import tempfile
 import re
 import sys
 import textwrap
@@ -99,8 +100,11 @@ def main(argv=None):
     ap.add_argument("paths", nargs="*")
     args = ap.parse_args(argv)
     os.environ.setdefault("MPLBACKEND", "Agg")
-    os.chdir(ROOT)
+    # Run snippets in a scratch directory so files they write (dot, csv, png)
+    # never land in the repo; repo-relative reads must use absolute paths or the dataset API.
     pages = [Path(p).resolve() for p in args.paths] or default_pages()
+    scratch = tempfile.mkdtemp(prefix="docsnip-")
+    os.chdir(scratch)
     bad = False
     for page in pages:
         try:

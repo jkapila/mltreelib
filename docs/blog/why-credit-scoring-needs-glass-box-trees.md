@@ -86,7 +86,8 @@ Traditional credit risk models discard incomplete cases or inject heuristic medi
 import pandas as pd
 from mltreelib import Metrics, ModelTree
 
-df = pd.read_parquet("datasets/GiveMeSomeCredit.parquet")
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("GiveMeSomeCredit"))
 target = "FinancialDistressNextTwoYears"
 features = [c for c in df.columns if c != target]
 

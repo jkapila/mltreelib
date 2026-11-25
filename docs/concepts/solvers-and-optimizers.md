@@ -38,15 +38,15 @@ All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear
 flowchart LR
     Data["Candidate Data in Leaf Node\n[X, y]"] --> Fam{"Is the loss smooth\nand convex?"}
 
-    Fam -- "Yes: Gaussian / Ridge" --> S1["irls (Cholesky / faer)\nExact closed-form solution\nLatency: ~1.28 ms"]
-    Fam -- "Yes: Smooth GLM / Tobit" --> S2["lbfgs (Quasi-Newton)\nArmijo line-search\nLatency: ~5.12 ms"]
-    Fam -- "L1 Elastic Net Sparsity" --> S3["ccd (Coordinate Descent)\nExact zero-coefficients\nLatency: ~4.10 s"]
+    Fam -- "Yes: Gaussian / Ridge" --> S1["irls (Cholesky / faer)\nExact closed-form solution"]
+    Fam -- "Yes: Smooth GLM / Tobit" --> S2["lbfgs (Quasi-Newton)\nArmijo line-search"]
+    Fam -- "L1 Elastic Net Sparsity" --> S3["ccd (Coordinate Descent)\nExact zero-coefficients"]
     Fam -- "No: Non-Convex / Multi-Modal / Glitchy" --> S4{"Derivative-Free\nEvolutionary Family"}
 
-    S4 --> E1["shade: Adaptive Differential Evolution\nLatency: ~26.6 ms | Near-optimal"]
-    S4 --> E2["cmaes: Covariance Matrix Adaptation\nLatency: ~11.6 ms | Ill-conditioned"]
-    S4 --> E3["ga: Real-Coded Genetic Algorithm\nLatency: ~41.1 ms | Global exploration"]
-    S4 --> E4["nes: Natural Evolution Strategies\nLatency: ~10.7 ms | Gradient estimation"]
+    S4 --> E1["shade: Adaptive Differential Evolution\nNear-optimal"]
+    S4 --> E2["cmaes: Covariance Matrix Adaptation\nIll-conditioned"]
+    S4 --> E3["ga: Real-Coded Genetic Algorithm\nGlobal exploration"]
+    S4 --> E4["nes: Natural Evolution Strategies\nGradient estimation"]
 
     classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
     classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
@@ -153,17 +153,60 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
     tree.fit(X_train, y_train)
     ```
 
-### Benchmark Results (Standalone Global Fit, `max_depth=0`)
+### Benchmark Results on Concrete Strength (80/20 split)
 
-| Solver | Family | Latency (ms) | Holdout Test RMSE (MPa) | Test $R^2$ | Convergence Character |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **`irls`** | Analytical Cholesky | **1.28 ms** | **10.224** | **0.631** | Exact analytical optimum in 1 step. |
-| **`lbfgs`** | Quasi-Newton | **5.12 ms** | 10.287 | 0.626 | Converges in 14 iterations to machine precision. |
-| **`shade`** | Continuous DE | 26.62 ms | 10.269 | 0.627 | Reaches 99.6% of exact analytical optimum without gradients. |
-| **`ga`** | Genetic Algorithm | 41.15 ms | 10.360 | 0.621 | Robust global convergence across 100 generations. |
-| **`cmaes`** | Evolutionary Covariance | 11.65 ms | 11.346 | 0.545 | Fast adaptation; sensitive to raw unstandardized scale. |
-| **`nes`** | Natural Gradient | 10.68 ms | 16.919 | -0.011 | Fast step updates; requires standardized inputs. |
-| **`ccd`** | Cyclic Coordinate Descent | 4,101.09 ms | **10.224** | **0.631** | Exact analytical match; coordinate sweeps on raw scale. |
+The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
+
+<!-- run -->
+```python
+import pandas as pd
+from mltreelib import Metrics, ModelTree
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+target = "ConcreteCompressiveStrength"
+features = df.columns.drop(target).tolist()
+cut = int(0.8 * len(df))
+x_train, x_test = df[features].iloc[:cut].to_numpy().tolist(), df[features].iloc[cut:].to_numpy().tolist()
+y_train, y_test = df[target].iloc[:cut].tolist(), df[target].iloc[cut:].tolist()
+
+metrics = Metrics()
+for depth in (0, 2):
+    for solver in ("irls", "lbfgs", "shade", "ga", "cmaes", "nes", "ccd"):
+        extra = {"l1": 0.1} if solver == "ccd" else {}
+        tree = ModelTree(max_depth=depth, leaf="linear", leaf_solver=solver, l2=0.01, seed=42, **extra)
+        tree.fit(x_train, y_train)
+        result = metrics.regression(y_test, tree.predict(x_test))
+        print(f"depth={depth} {solver:6s} rmse={result['rmse']:.3f} r2={result['r2']:.3f}")
+```
+
+<!-- output -->
+```text
+depth=0 irls   rmse=10.321 r2=0.679
+depth=0 lbfgs  rmse=10.323 r2=0.679
+depth=0 shade  rmse=10.317 r2=0.679
+depth=0 ga     rmse=10.811 r2=0.648
+depth=0 cmaes  rmse=12.402 r2=0.537
+depth=0 nes    rmse=12.974 r2=0.493
+depth=0 ccd    rmse=10.321 r2=0.679
+depth=2 irls   rmse=6.855 r2=0.858
+depth=2 lbfgs  rmse=7.174 r2=0.845
+depth=2 shade  rmse=7.175 r2=0.845
+depth=2 ga     rmse=7.971 r2=0.809
+depth=2 cmaes  rmse=10.291 r2=0.681
+depth=2 nes    rmse=12.013 r2=0.565
+depth=2 ccd    rmse=6.858 r2=0.858
+```
+
+| Solver | Family | RMSE (MPa), depth 0 | $R^2$, depth 0 | RMSE (MPa), depth 2 | $R^2$, depth 2 |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`irls`** | Analytical Cholesky | 10.321 | 0.679 | 6.855 | 0.858 |
+| **`lbfgs`** | Quasi-Newton | 10.323 | 0.679 | 7.174 | 0.845 |
+| **`shade`** | Continuous DE | 10.317 | 0.679 | 7.175 | 0.845 |
+| **`ga`** | Genetic Algorithm | 10.811 | 0.648 | 7.971 | 0.809 |
+| **`cmaes`** | Evolutionary Covariance | 12.402 | 0.537 | 10.291 | 0.681 |
+| **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
+| **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
 
 ---
 
@@ -173,17 +216,12 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 ### Key Observations:
 
-1. **Analytical & Quasi-Newton Supremacy on Convex Surfaces**:
-   `irls` (1.28 ms) and `lbfgs` (5.12 ms) define the Pareto frontier for smooth convex losses. Both reach optimal holdout test RMSE (10.224 MPa).
-2. **Derivative-Free Precision with SHADE**:
-   `shade` achieves **10.269 MPa** (within 0.4% of the exact analytical minimum) in only 26.6 ms without evaluating a single gradient or Hessian. This makes it ideal for non-differentiable penalties, multi-objective fitness, or discontinuous loss landscapes.
-3. **Tree-Decoupled Leaf Performance (`max_depth=2`, 4 Leaves)**:
-   When deployed inside a partitioned model tree:
-   - `irls`: 3.53 ms total fit time $\to$ **7.183 MPa** RMSE ($R^2 = 0.818$).
-   - `lbfgs`: 3.30 ms total fit time $\to$ **7.583 MPa** RMSE ($R^2 = 0.797$).
-   - `shade`: 29.19 ms total fit time $\to$ **7.606 MPa** RMSE ($R^2 = 0.796$).
-   - `ga`: 45.43 ms total fit time $\to$ **8.005 MPa** RMSE ($R^2 = 0.774$).
-   - `cmaes`: 12.45 ms total fit time $\to$ **10.285 MPa** RMSE ($R^2 = 0.626$).
+1. **Global linear fit (`max_depth=0`)**:
+   `irls`, `lbfgs`, `shade` and `ccd` land within 0.01 MPa of each other (10.317 to 10.323). `ga` is at 10.811, `cmaes` at 12.402 and `nes` at 12.974.
+2. **Shallow tree (`max_depth=2`)**:
+   `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
+3. **Gradient-free SHADE**:
+   On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
 
 ---
 
@@ -212,18 +250,56 @@ Status: evaluation_limit, Best objective: 0.562600
 
 ### Standard Mathematical Landscapes Benchmark
 
-| Problem | Method | Evaluations | Best Value | Latency (ms) | Status |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **Sphere ($D=5$)** | `lbfgs_b` | 11 | **0.000000** | 1.29 ms | converged |
-| | `nelder_mead` | 150 | **0.000000** | 0.57 ms | evaluation_limit |
-| | `cmaes` | 150 | **0.000000** | 0.15 ms | evaluation_limit |
-| | `shade` | 150 | **0.000000** | 0.65 ms | evaluation_limit |
-| | `random_search` | 64 | 11.796410 | 0.70 ms | converged |
-| **Rosenbrock ($D=2$)** | `nelder_mead` | 150 | **0.000000** | 0.12 ms | evaluation_limit |
-| | `cmaes` | 150 | 0.089766 | 0.12 ms | evaluation_limit |
-| | `shade` | 150 | 0.412864 | 0.13 ms | evaluation_limit |
-| | `lbfgs_b` | 150 | 0.610721 | 0.20 ms | evaluation_limit |
-| | `random_search` | 64 | 1.177699 | 0.04 ms | converged |
+The block below runs each method on the sphere (5 dimensions) and the Rosenbrock function (2 dimensions). Its output gives evaluation counts, best values and status. Timings are omitted because they vary by machine.
+
+<!-- run -->
+```python
+from mltreelib.solvers import optimize
+
+def sphere(x):
+    return sum(v * v for v in x)
+
+def rosenbrock(x):
+    return (1.0 - x[0])**2 + 100.0 * (x[1] - x[0]**2)**2
+
+cases = [
+    ("Sphere (D=5)", sphere, [(-5.0, 5.0)] * 5,
+     [("lbfgs_b", 150), ("nelder_mead", 150), ("cmaes", 150), ("shade", 150), ("random_search", 64)]),
+    ("Rosenbrock (D=2)", rosenbrock, [(-2.0, 2.0)] * 2,
+     [("nelder_mead", 150), ("cmaes", 150), ("shade", 150), ("lbfgs_b", 150), ("random_search", 64)]),
+]
+for name, objective, bounds, methods in cases:
+    for method, budget in methods:
+        res = optimize(objective, bounds=bounds, method=method, max_evaluations=budget, seed=42)
+        print(f"{name} | {method} | {res.evaluations} | {res.best_value:.6f} | {res.status}")
+```
+
+<!-- output -->
+```text
+Sphere (D=5) | lbfgs_b | 11 | 0.000000 | converged
+Sphere (D=5) | nelder_mead | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | cmaes | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | shade | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | random_search | 64 | 11.796410 | converged
+Rosenbrock (D=2) | nelder_mead | 150 | 0.000000 | evaluation_limit
+Rosenbrock (D=2) | cmaes | 150 | 0.089766 | evaluation_limit
+Rosenbrock (D=2) | shade | 150 | 0.412864 | evaluation_limit
+Rosenbrock (D=2) | lbfgs_b | 150 | 0.610721 | evaluation_limit
+Rosenbrock (D=2) | random_search | 64 | 1.177699 | converged
+```
+
+| Problem | Method | Evaluations | Best Value | Status |
+| :--- | :--- | :---: | :---: | :--- |
+| **Sphere ($D=5$)** | `lbfgs_b` | 11 | **0.000000** | converged |
+| | `nelder_mead` | 150 | **0.000000** | evaluation_limit |
+| | `cmaes` | 150 | **0.000000** | evaluation_limit |
+| | `shade` | 150 | **0.000000** | evaluation_limit |
+| | `random_search` | 64 | 11.796410 | converged |
+| **Rosenbrock ($D=2$)** | `nelder_mead` | 150 | **0.000000** | evaluation_limit |
+| | `cmaes` | 150 | 0.089766 | evaluation_limit |
+| | `shade` | 150 | 0.412864 | evaluation_limit |
+| | `lbfgs_b` | 150 | 0.610721 | evaluation_limit |
+| | `random_search` | 64 | 1.177699 | converged |
 
 ### Real-Data ModelTree Hyperparameter Tuning
 
@@ -252,9 +328,9 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
 ## 7. Operational Limitations & Numerical Failure Modes
 
 1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (as seen with `nes` RMSE 16.919 MPa). Always standardize continuous inputs before applying evolutionary leaf solvers.
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
 2. **Coordinate Descent Collinearity Stagnation**:
-   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring thousands of coordinate sweeps to achieve convergence (latency 4,101 ms). For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
+   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
 3. **Non-Convex Local Minima & Stochastic Reproducibility**:
    Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
 4. **Box Bounds vs. Coupled Constraints in `optimize`**:
@@ -328,6 +404,7 @@ All algorithms conform to the `OptimizerKind` enum with explicit box bounds $\bo
 
 Minimizing the classic 2D Rosenbrock function ($f(x, y) = (1 - x)^2 + 100(y - x^2)^2$) inside bounds $[-5, 5] \times [-5, 5]$:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import optimize
 
@@ -350,6 +427,7 @@ print(f"Status: {res.status} | Total Evaluations: {res.evaluations}")
 print(f"Optimal Parameters: x* = {res.best_x[0]:.4f}, y* = {res.best_x[1]:.4f} (Loss = {res.best_value:.2e})")
 ```
 
+<!-- output -->
 ```text
 Status: converged | Total Evaluations: 206
 Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
@@ -361,6 +439,7 @@ Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
 
 For expensive simulation models, distributed workers, or hardware-in-the-loop tuning, `mltreelib` provides the decoupled **Ask-Tell** paradigm:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import AskTell
 
@@ -387,6 +466,14 @@ print(f"AskTell Optimization Complete:")
 print(f"  Evaluations: {optimizer.evaluations}")
 print(f"  Best Solution: x* = {optimizer.best_x[0]:.4f}, y* = {optimizer.best_x[1]:.4f}")
 print(f"  Minimum Objective Loss: {optimizer.best_value:.4e}")
+```
+
+<!-- output -->
+```text
+AskTell Optimization Complete:
+  Evaluations: 120
+  Best Solution: x* = 1.1018, y* = 1.1581
+  Minimum Objective Loss: 3.2271e-01
 ```
 
 ---

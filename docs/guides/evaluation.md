@@ -21,13 +21,13 @@ uv run python examples/guides/data_metrics_pathway.py
 
 ### Regression: compare with a baseline
 
-The script compares test MAE with a constant equal to the **training** outcome mean. For this synthetic run, model MAE is 2.505 and baseline MAE is 5.098. Those numbers describe this generated sample, not a general benchmark. Use residual plots to look for error patterns rather than relying only on an average.
+The script compares test MAE with a constant equal to the **training** outcome mean. Its numbers describe its own generated sample, so run it to see them. Use residual plots to look for error patterns rather than relying only on an average.
 
 ![Held-out regression residuals](../assets/guides/data-residuals.svg)
 
 ### Classification: ranking, calibration and decisions
 
-The script chooses among four thresholds on validation data. Its illustrative cost assigns three units to a missed event and one unit to a false alert. The selected threshold is 0.2. The test confusion matrix is `[[6, 486], [1, 507]]`, with actual classes in rows and predicted classes in columns. Test average precision is 0.643.
+The script chooses among four thresholds on validation data, using an illustrative cost that assigns three units to a missed event and one unit to a false alert. Run it for its selected threshold and test confusion matrix. The block below checks calibration on seeded synthetic data.
 
 ![Held-out precision-recall curve](../assets/guides/data-pr.svg)
 
@@ -38,17 +38,37 @@ A precision–recall curve shows the tradeoff as the score threshold changes. Co
 Calibration compares predicted probabilities with observed event frequencies in bins. Small bins make the plot unstable. The 1,000 test rows come from a synthetic distribution; the plot alone does not establish calibration in production.
 
 Use `IsotonicCalibrator` to fit a monotone mapping for binary event probabilities.
-Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows.
+Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows. On this seeded sample the calibrated test Brier score is 0.1933, against 0.1946 for the raw probabilities: a small difference on 1,000 rows.
 
+<!-- run -->
 ```python
-from mltreelib import Metrics
+import numpy as np
+from mltreelib import Metrics, ModelTree
 from mltreelib.calibration import IsotonicCalibrator
+
+rng = np.random.default_rng(7)
+X = rng.normal(size=(4000, 4))
+p_true = 1 / (1 + np.exp(-(1.5 * X[:, 0] - X[:, 1])))
+y = (rng.uniform(size=4000) < p_true).astype(int).tolist()
+X = X.tolist()
+X_train, y_train = X[:2000], y[:2000]
+X_val, y_val = X[2000:3000], y[2000:3000]
+X_test, y_test = X[3000:], y[3000:]
+
+model = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance",
+                  max_depth=3, min_rows=50, prune="none")
+model.fit(X_train, y_train, dtypes=["numeric"] * 4)
 
 calibrator = IsotonicCalibrator.fit(y_val, model.predict_proba(X_val))
 raw = model.predict_proba(X_test)
 calibrated = calibrator.predict(raw)
 metrics = Metrics()
 print(metrics.brier_score(y_test, raw), metrics.brier_score(y_test, calibrated))
+```
+
+<!-- output -->
+```text
+0.19456565411850799 0.1932642638524234
 ```
 
 ![Held-out confusion matrix](../assets/guides/data-confusion.svg)

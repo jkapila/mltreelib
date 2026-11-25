@@ -97,10 +97,10 @@ We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing 
 ```python
 import numpy as np
 import pandas as pd
-from mltreelib import Metrics, ModelTree
+from mltreelib import Metrics, ModelTree, dataset_path
 
-# Load Hillstrom dataset and filter for Women's E-Mail vs Control
-df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
+# Load Hillstrom dataset (downloaded on first use) and filter for Women's E-Mail vs Control
+df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df["segment"].isin(["Womens E-Mail", "No E-Mail"])].reset_index(drop=True)
 
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]

@@ -126,33 +126,36 @@ $$\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \f
 We evaluate the full component analysis suite on the **Wine Quality** dataset (1,000 samples, 12 continuous chemical features).
 
 ```python
-from mltreelib import ComponentModel, AnomalyModel, load_dataset
+import pandas as pd
+from mltreelib import ComponentModel
 
-# Ingest Wine Quality benchmark
-data = load_dataset("wine_quality")
-X = [[data["columns"][c][i] for c in data["columns"].keys() if c != "quality"] for i in range(1000)]
+# Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
+features = [c for c in df.columns if c not in ("median_wine_quality", "wine_color")]
+X = df[features].to_numpy().tolist()
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations
 
 ```python
 # Fit ComponentModel with Varimax and Promax rotations
-comp_varimax = ComponentModel(n_components=3, method="pca", rotation="varimax")
+comp_varimax = ComponentModel(kind="pca", n_components=3, rotation="varimax")
 comp_varimax.fit(X)
 
-comp_promax = ComponentModel(n_components=3, method="pca", rotation="promax", promax_m=4)
+comp_promax = ComponentModel(kind="pca", n_components=3, rotation="promax", promax_m=4.0)
 comp_promax.fit(X)
 ```
 
-| Method | Variance Retained | Rotation Matrix | Loading Sparsity | Fit Time (ms) |
-| :--- | :---: | :---: | :---: | :---: |
-| **`NONE`** (Raw PCA) | 60.68% | No | 25.0% | 6.01 ms |
-| **`VARIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.86 ms |
-| **`QUARTIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 1.59 ms |
-| **`EQUAMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.05 ms |
-| **`PARSIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 2.04 ms |
-| **`BIQUARTIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.67 ms |
-| **`PROMAX`** | 60.68% | Yes (oblique) | **36.1%** | 2.22 ms |
+| Method | Variance Retained | Rotation Matrix | Loading Sparsity |
+| :--- | :---: | :---: | :---: |
+| **`NONE`** (Raw PCA) | 60.68% | No | 25.0% |
+| **`VARIMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`QUARTIMAX`** | 60.68% | Yes (orthogonal) | 25.0% |
+| **`EQUAMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`PARSIMAX`** | 60.68% | Yes (orthogonal) | 25.0% |
+| **`BIQUARTIMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`PROMAX`** | 60.68% | Yes (oblique) | **36.1%** |
 
 > **Key Finding**: Rotated factor loadings preserve 100% of subspace variance (60.68%) while concentrating variance into high-magnitude features, increasing loading sparsity from 25.0% to 36.1% under Promax.
 
@@ -161,17 +164,17 @@ comp_promax.fit(X)
 ### 2. Covariance Whitening: ZCA vs. PCA
 
 ```python
-comp_zca = ComponentModel(method="zca_whitening")
+comp_zca = ComponentModel(kind="whitening", whitening_kind="zca")
 Z_zca = comp_zca.fit_transform(X)
 
-comp_pca_white = ComponentModel(method="pca_whitening")
+comp_pca_white = ComponentModel(kind="whitening", whitening_kind="pca")
 Z_pca_white = comp_pca_white.fit_transform(X)
 ```
 
-| Method | Fit Time (ms) | Mean Covariance Error $\|\text{Cov}(Z) - I\|_{\text{mean}}$ | Key Property |
-| :--- | :---: | :---: | :--- |
-| **`ZCA`** | 5.18 ms | **0.006972** | Minimizes $\|Z - X\|_F$; keeps whitened features closest to raw inputs. |
-| **`PCA Whitening`** | 3.34 ms | **0.006704** | Aligns coordinates along principal variance axes. |
+| Method | Mean Covariance Error $\|\text{Cov}(Z) - I\|_{\text{mean}}$ | Key Property |
+| :--- | :---: | :--- |
+| **`ZCA`** | **0.006972** | Minimizes $\|Z - X\|_F$; keeps whitened features closest to raw inputs. |
+| **`PCA Whitening`** | **0.006704** | Aligns coordinates along principal variance axes. |
 
 ---
 
@@ -179,19 +182,19 @@ Z_pca_white = comp_pca_white.fit_transform(X)
 
 ```python
 # Compare NMF solvers on strictly non-negative chemical features
-nmf_mu = ComponentModel(n_components=3, method="nmf", nmf_solver="mu")
-nmf_als = ComponentModel(n_components=3, method="nmf", nmf_solver="als", l2=0.01)
-nmf_hals = ComponentModel(n_components=3, method="nmf", nmf_solver="hals")
-nmf_sparse = ComponentModel(n_components=3, method="nmf", nmf_solver="hals", l1=0.01, l2=0.005)
+nmf_mu = ComponentModel(kind="nmf", n_components=3, solver="mu")
+nmf_als = ComponentModel(kind="nmf", n_components=3, solver="als", l2_reg=0.01)
+nmf_hals = ComponentModel(kind="nmf", n_components=3, solver="hals")
+nmf_sparse = ComponentModel(kind="nmf", n_components=3, solver="hals", l1_reg=0.01, l2_reg=0.005)
 ```
 
-| Solver | Reconstruction Error $\|X - WH\|_F$ | $H$ Sparsity (% zeros) | Fit Latency (ms) |
-| :--- | :---: | :---: | :---: |
-| **`MU`** (Multiplicative Updates) | 233.0816 | 0.0% | 15.67 ms |
-| **`ALS`** ($L_1=0, L_2=0.01$) | 172.5155 | 0.0% | 15.08 ms |
-| **`HALS`** | **142.3001** | 8.3% | 16.58 ms |
-| **`HALS`** ($L_1=0.01, L_2=0.005$) | 256.4853 | **36.1%** | 15.00 ms |
-| **`HALS`** ($L_1=0.01, L_2=0.05$) | 256.4980 | **36.1%** | 15.32 ms |
+| Solver | Reconstruction Error $\|X - WH\|_F$ | $H$ Sparsity (% zeros) |
+| :--- | :---: | :---: |
+| **`MU`** (Multiplicative Updates) | 233.0816 | 0.0% |
+| **`ALS`** ($L_1=0, L_2=0.01$) | 172.5155 | 0.0% |
+| **`HALS`** | **142.3001** | 8.3% |
+| **`HALS`** ($L_1=0.01, L_2=0.005$) | 256.4853 | **36.1%** |
+| **`HALS`** ($L_1=0.01, L_2=0.05$) | 256.4980 | **36.1%** |
 
 > **Key Finding**: HALS coordinate descent achieves superior loss convergence (142.30 vs. 233.08 for MU) and enables true $L_1$ zero-coefficient sparsity (36.1%) without division-by-zero numerical collapse.
 
@@ -202,6 +205,7 @@ nmf_sparse = ComponentModel(n_components=3, method="nmf", nmf_solver="hals", l1=
 Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
 $$\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2$$
 
+<!-- API-GAP: subspace reconstruction error as an anomaly score is not exposed. AnomalyModel has no PCA kind (its kinds are eif, det, hst, rct, active, context) and ComponentModel has no inverse_transform. The block below is not runnable; the output under it is hand-written and not generated. -->
 ```python
 # Detect anomalies via subspace reconstruction error
 detector = AnomalyModel(method="pca", n_components=3)
@@ -381,7 +385,7 @@ Real-world latent dimensions often correlate (for example, verbal aptitude corre
 
 ```python
 # Fit PCA with Promax oblique rotation (power m=4.0)
-pca_promax = ComponentModel(kind="pca", n_components=2, rotation="promax", promax_power=4.0)
+pca_promax = ComponentModel(kind="pca", n_components=2, rotation="promax", promax_m=4.0)
 pca_promax.fit(X)
 
 # Loadings and inter-factor correlation
@@ -440,13 +444,12 @@ Thurstone Sparsity (< 0.15):   0 of 16 (0.0%)     |              8 of 16 (50.0%)
 #### Configuration Parameters
 ```python
 ComponentModel(
-    kind="pca",               # "pca", "svd", "whitening", "fastica", "nmf"
+    kind="pca",               # "pca", "svd", "whitening", "ica", "nmf", "fa"
     n_components=2,           # Subspace rank
-    rotation="varimax",       # None, "varimax", "quartimax", "equamax", "parsimax", "biquartimax", "promax"
-    promax_power=4.0,         # Promax target exponent (default 4.0)
-    gamma=None,               # Custom Orthomax gamma parameter (if rotation="orthomax")
-    max_iter=100,             # Max Jacobi planar rotation iterations
-    tol=1e-6,                 # Jacobi convergence tolerance
+    rotation="varimax",       # "none", "varimax", "quartimax", "equamax", "parsimax", "biquartimax", "promax"
+    promax_m=4.0,             # Promax target exponent (default 4.0)
+    max_iter=200,             # Max iterations for iterative algorithms
+    tol=1e-4,                 # Convergence tolerance for iterative algorithms
     seed=42,                  # Random seed
 )
 ```

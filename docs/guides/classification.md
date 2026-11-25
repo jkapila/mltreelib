@@ -15,7 +15,8 @@ Use observed values as supplied. In the sample, monthly income and number of dep
 import pandas as pd
 from mltreelib import Metrics, ModelTree
 
-df = pd.read_parquet("datasets/GiveMeSomeCredit.parquet")
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("GiveMeSomeCredit"))
 df = df.sample(frac=1, random_state=2026).iloc[:12000]
 target = "FinancialDistressNextTwoYears"
 features = df.columns.drop(target).tolist()

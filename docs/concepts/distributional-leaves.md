@@ -163,7 +163,7 @@ flowchart TD
     B -- "Bounded Rates y in (0, 1)" --> F["Beta Regression Tree\nLogit link with precision phi"]
 
     C --> G["ModelTree(gain='tweedie', tweedie_p=1.5)"]
-    D --> H["ModelTree(leaf_family='tobit', tobit_c=0.0)"]
+    D --> H["ModelTree(leaf_family='tobit', tobit_threshold=0.0)"]
     E --> I["ModelTree(gain='heteroscedastic')"]
     F --> J["ModelTree(leaf_family='beta')"]
 

@@ -17,7 +17,8 @@ from statistics import mean
 import pandas as pd
 from mltreelib import Metrics, ModelTree
 
-df = pd.read_parquet("datasets/diamonds.parquet").sample(frac=1, random_state=2026)
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("diamonds")).sample(frac=1, random_state=2026)
 features = df.columns.drop("price").tolist()
 types = ["categorical" if c in {"cut", "color", "clarity"} else "numeric"
          for c in features]
@@ -92,7 +93,7 @@ For this seed and simulated data, linear leaves at depth 4 had the lowest valida
 
 The same configuration then fits 6,000 rows from the real [OpenML diamonds dataset 46923](https://www.openml.org/d/46923) and predicts 2,000 separate rows. The data has 53,940 total records. Download its parquet file to `datasets/diamonds.parquet`; see the [dataset manifest](https://github.com/jkapila/mltreelib/blob/main/datasets/MANIFEST.md). The example needs pandas, pyarrow and matplotlib.
 
-On the fixed random split, test RMSE was 1,225.052 versus 3,982.039 for the training-mean baseline. Test MAE was 641.615 versus 3,012.514. These values use the dataset's price units and describe this split, not a benchmark result. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
+On the fixed random split in the block above, test RMSE was 1,367 for linear leaves, 1,712 for mean leaves and 3,998 for the training-mean baseline (the same numbers as the table in section 3). These values use the dataset's price units and describe this split, not a benchmark result. The block reports RMSE only; add MAE in your own run if you need it. The selected real training columns contained no missing values, so the synthetic check supplies the missing-data exercise.
 
 The real tree splits on named size measurements, including `x` and `y`, and exposes leaf support and coefficients. Inspect the feature definitions and leaf sample sizes before drawing business conclusions. Category values in fitted structures can appear as internal codes. Coefficients and paths describe the prediction model; they do not establish what happens if a business changes a feature.
 

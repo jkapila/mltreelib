@@ -583,7 +583,9 @@ flowchart LR
 
 ## 1. Step Functions vs Linear Leaves (The Diamond Price Benchmark)
 
-We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/42225)) comparing a standard 0D constant CART tree, a 100-tree GBDT ensemble, and a shallow 1D Model Tree (`max_depth=3`, 8 linear leaves).
+The table below comes from a separate benchmark on real diamond sales ([OpenML 42225](https://www.openml.org/d/42225)). It compares a standard 0D constant CART tree, a 100-tree GBDT ensemble, and a shallow `ModelTree` (`max_depth=3`, 8 linear leaves). That benchmark is not regenerated on this page.
+
+The runnable block under the table is a different, synthetic setup: one 2,000-row price surface, 1,500 rows for training and 500 for testing, with one `ModelTree`. Its test RMSE is not comparable with the table, because the data, sample sizes and models differ.
 
 ![Decision Tree Step Functions vs Continuous Linear Leaves](../assets/plot_tree_regression_comparison.png)
 
@@ -595,7 +597,7 @@ We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/4222
 | :--- | :--- | :---: | :---: | :--- |
 | **CART Baseline** | 0D Constant Mean | Depth 6 (64 leaves) | $1,280 | Jagged staircases; zero extrapolation |
 | **GBDT (LightGBM)** | 0D Constant Sum | 100 Trees (Depth 4) | $742 | Hundreds of orthogonal step boundaries |
-| **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes; beats GBDT with 1/12th complexity** |
+| **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes on the real diamond benchmark (not reproduced by the block below)** |
 
 <!-- run -->
 ```python
@@ -643,7 +645,7 @@ Piecewise Linear ModelTree Test RMSE: $155.99
 
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
 
-On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules.
+On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules. The block below fits a small linear-leaf tree on the local Concrete parquet (800 shuffled rows) and extracts its rules.
 
 ![Concrete Compressive Strength Decision Tree](../assets/guides/real-concrete-tree.svg)
 
@@ -653,8 +655,19 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 
 <!-- run -->
 ```python
+import pandas as pd
+from mltreelib import ModelTree
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+target = "ConcreteCompressiveStrength"
+features = df.columns.drop(target).tolist()
+concrete_tree = ModelTree(leaf="linear", max_depth=3, min_rows=40)
+concrete_tree.fit(df[features].iloc[:800].to_numpy().tolist(),
+                  df[target].iloc[:800].tolist(), col_names=features)
+
 # Extract white-box rules directly from the fitted tree
-ruleset = tree.extract_rules()
+ruleset = concrete_tree.extract_rules()
 print(f"Extracted {len(ruleset.rules)} Transparent Rules:")
 for r in ruleset.rules:
     print(f"  RULE #{r.id} (Cover: {r.cover} samples, Confidence: {r.confidence:.2f}):")
@@ -664,31 +677,28 @@ for r in ruleset.rules:
 
 <!-- output -->
 ```text
-Extracted 8 Transparent Rules:
-  RULE #1 (Cover: 326 samples, Confidence: 0.95):
-    IF carat <= 1.0420
-    THEN Leaf #0 prediction = -115.74
-  RULE #2 (Cover: 205 samples, Confidence: 0.95):
-    IF carat > 1.0420 AND carat <= 1.4930
-    THEN Leaf #1 prediction = 1425.82
-  RULE #3 (Cover: 192 samples, Confidence: 0.95):
-    IF carat > 1.4930 AND carat <= 1.9260
-    THEN Leaf #2 prediction = 3037.00
-  RULE #4 (Cover: 168 samples, Confidence: 0.95):
-    IF carat > 2.5740 AND carat <= 2.9060
-    THEN Leaf #5 prediction = 8269.63
-  RULE #5 (Cover: 166 samples, Confidence: 0.95):
-    IF carat > 1.9260 AND carat <= 2.2530
-    THEN Leaf #3 prediction = 4787.94
-  RULE #6 (Cover: 154 samples, Confidence: 0.95):
-    IF carat > 2.9060 AND carat <= 3.2260
-    THEN Leaf #6 prediction = 10416.46
-  RULE #7 (Cover: 150 samples, Confidence: 0.95):
-    IF carat > 2.2530 AND carat <= 2.5740
-    THEN Leaf #4 prediction = 6525.48
-  RULE #8 (Cover: 139 samples, Confidence: 0.95):
-    IF carat > 3.2260
-    THEN Leaf #7 prediction = 12297.76
+Extracted 7 Transparent Rules:
+  RULE #1 (Cover: 333 samples, Confidence: 0.95):
+    IF Cement > 164.6000 AND Cement <= 350.0000 AND Age > 14.0000
+    THEN Leaf #4 prediction = 39.96
+  RULE #2 (Cover: 134 samples, Confidence: 0.95):
+    IF Cement <= 350.0000 AND Age <= 7.0000
+    THEN Leaf #0 prediction = 16.11
+  RULE #3 (Cover: 102 samples, Confidence: 0.95):
+    IF Cement <= 164.6000 AND Age > 14.0000
+    THEN Leaf #3 prediction = 25.93
+  RULE #4 (Cover: 74 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Age <= 14.0000
+    THEN Leaf #2 prediction = 34.80
+  RULE #5 (Cover: 68 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Water <= 181.1000 AND Age > 14.0000
+    THEN Leaf #5 prediction = 63.13
+  RULE #6 (Cover: 48 samples, Confidence: 0.95):
+    IF Cement > 350.0000 AND Water > 181.1000 AND Age > 14.0000
+    THEN Leaf #6 prediction = 44.97
+  RULE #7 (Cover: 41 samples, Confidence: 0.95):
+    IF Cement <= 350.0000 AND Age > 7.0000 AND Age <= 14.0000
+    THEN Leaf #1 prediction = 27.85
 ```
 
 ---
@@ -875,7 +885,7 @@ flowchart TD
     B -- "Bounded Rates y in (0, 1)" --> F["Beta Regression Tree\nLogit link with precision phi"]
 
     C --> G["ModelTree(gain='tweedie', tweedie_p=1.5)"]
-    D --> H["ModelTree(leaf_family='tobit', tobit_c=0.0)"]
+    D --> H["ModelTree(leaf_family='tobit', tobit_threshold=0.0)"]
     E --> I["ModelTree(gain='heteroscedastic')"]
     F --> J["ModelTree(leaf_family='beta')"]
 
@@ -1058,7 +1068,7 @@ Decide whether to send a campaign email to everyone, a subset, or nobody. Compar
 
 The [Hillstrom email experiment](https://www.tensorflow.org/datasets/catalog/hillstrom) randomly assigned 64,000 customers to a men's email, women's email or no email. This example compares **women's email versus no email**, using a website visit within two weeks as the outcome. It excludes the men's arm and uses only pre-treatment features. A visit is not a purchase or profit.
 
-The publisher's original download endpoint failed HTTPS certificate validation in our environment. We used this [public mirror](https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv), SHA-256 `0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece`. The mirror matches published row and arm counts; independent byte equivalence with the original is not established. Save the CSV as `datasets/external/real_eval/hillstrom.csv`. It is excluded from Git.
+`dataset_path("hillstrom_email")` downloads the CSV from the [publisher's MineThatData page](https://blog.minethatdata.com/2008/03/minethatdata-e-mail-analytics-and-data.html) on first use and caches it under `~/.cache/mltreelib/datasets/` (or `MLTREELIB_DATA_DIR`). The publisher's HTTPS endpoint fails certificate validation, so the file is fetched over plain HTTP and checked against SHA-256 `0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece`.
 
 ```bash
 uv run python examples/guides/real_survival_uplift.py uplift
@@ -1099,7 +1109,7 @@ from math import sqrt
 from random import Random
 
 import pandas as pd
-from mltreelib import ModelTree
+from mltreelib import ModelTree, dataset_path
 
 def group_value(y, w, selected):
     """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
@@ -1117,7 +1127,7 @@ def group_value(y, w, selected):
     se = q * sqrt(var(a) / len(a) + var(b) / len(b))
     return q * diff, n, len(a), len(b), (q * diff - 1.96 * se, q * diff + 1.96 * se)
 
-df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
+df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
 types = ["numeric"] * 5 + ["categorical"] * 2
@@ -1548,24 +1558,37 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 
 ### PCT on Wine Quality (1,500 Samples, 6 Chemical Dimensions)
 - **Problem**: Group wines by multi-target chemical similarity (`fixed_acidity`, `volatile_acidity`, `citric_acid`, `residual_sugar`, `chlorides`, `alcohol`).
-- **Performance**: Discovers 8 compact, homogeneous clusters in **11.48 ms fit latency**.
-- **Interpretability**: Each leaf provides explicit chemical thresholds (e.g. `alcohol <= 10.2` and `volatile_acidity > 0.48`), allowing domain chemists to audit segment boundaries directly.
+- **Setup**: the Python example below samples 1,500 wines (seed 2026) and fits `kind="pct"` with `max_depth=3` and `min_rows=20`. The printed rules list each leaf's conditions.
+- **Interpretability**: Each leaf gives explicit chemical thresholds, which a domain chemist can audit directly. Run the block to see the thresholds for this sample.
 
-| Algorithm | Split mechanism | Fit latency | Output |
-| :--- | :--- | :---: | :--- |
-| **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | **11.48 ms** | 8 clusters, fully interpretable IF-THEN rules |
+| Algorithm | Split mechanism | Output |
+| :--- | :--- | :--- |
+| **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | IF-THEN rules, one per leaf |
 
 ---
 
 ## 3. Python usage
 
+<!-- run -->
 ```python
+import pandas as pd
 from mltreelib import ClusterModel
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1500, random_state=2026)
+feature_names = ["fixed_acidity", "volatile_acidity", "citric_acid",
+                 "residual_sugar", "chlorides", "alcohol"]
+X_wine = df[feature_names].to_numpy().tolist()
 
 pct = ClusterModel(kind="pct", max_depth=3, min_rows=20)
 pct.fit(X_wine, col_names=feature_names)
 cluster_ids = pct.predict(X_wine)
 print(f"Cluster rules: {pct.rules()}")
+```
+
+<!-- output -->
+```text
+Cluster rules: [{'cluster_id': 0, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity <= 8.1500', 'prototype': [6.728115942028986, 0.2692898550724639, 0.3207826086956529, 2.9837681159420266, 0.04681014492753618, 10.887125603864735], 'size': 690}, {'cluster_id': 1, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity > 8.1500', 'prototype': [9.450000000000001, 0.3011250000000001, 0.44583333333333325, 2.5287500000000005, 0.06599999999999998, 10.773055555555555], 'size': 120}, {'cluster_id': 2, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid <= 0.4150', 'prototype': [6.915789473684216, 0.2615789473684209, 0.29338815789473655, 11.977960526315796, 0.04586184210526313, 9.886348684210537], 'size': 304}, {'cluster_id': 3, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid > 0.4150', 'prototype': [7.213461538461536, 0.28802884615384616, 0.5402884615384613, 12.855769230769228, 0.04719230769230769, 9.596153846153847], 'size': 104}, {'cluster_id': 4, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid <= 0.3050', 'prototype': [7.359808612440196, 0.6314114832535888, 0.12325358851674637, 2.621052631578947, 0.07461244019138757, 10.309808612440193], 'size': 209}, {'cluster_id': 5, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid > 0.3050', 'prototype': [9.273584905660375, 0.5666981132075471, 0.451132075471698, 4.116981132075471, 0.07441509433962265, 10.624528301886793], 'size': 53}, {'cluster_id': 6, 'rule': 'volatile_acidity > 0.4575 AND chlorides > 0.1225', 'prototype': [8.3, 0.5832499999999999, 0.3415, 4.665, 0.2637, 9.615], 'size': 20}]
 ```
 
 ---
@@ -1578,6 +1601,7 @@ Rather than tuning distance metrics across noisy dimensions, `ClusterModel(kind=
 
 ### Complete End-to-End Example
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ClusterModel
@@ -1623,13 +1647,14 @@ for cid in sorted(unique_clusters):
     print(f"  Cluster #{cid} (n={len(members)}): Orders = {mean_orders:.1f}/mo, Spend = ${mean_ticket:.2f}")
 ```
 
+<!-- output -->
 ```text
 Total Customers: 980
 Identified 3 Cohesive Density Clusters: [0, 1, 2]
-Background Noise Points Rejected: 64
-  Cluster #0 (n=298): Orders = 15.1/mo, Spend = $24.89
-  Cluster #1 (n=296): Orders = 5.0/mo, Spend = $180.12
-  Cluster #2 (n=302): Orders = 29.8/mo, Spend = $449.65
+Background Noise Points Rejected: 232
+  Cluster #0 (n=229): Orders = 5.1/mo, Spend = $180.86
+  Cluster #1 (n=286): Orders = 14.9/mo, Spend = $24.61
+  Cluster #2 (n=233): Orders = 29.5/mo, Spend = $446.29
 ```
 
 ---
@@ -1834,15 +1859,15 @@ All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear
 flowchart LR
     Data["Candidate Data in Leaf Node\n[X, y]"] --> Fam{"Is the loss smooth\nand convex?"}
 
-    Fam -- "Yes: Gaussian / Ridge" --> S1["irls (Cholesky / faer)\nExact closed-form solution\nLatency: ~1.28 ms"]
-    Fam -- "Yes: Smooth GLM / Tobit" --> S2["lbfgs (Quasi-Newton)\nArmijo line-search\nLatency: ~5.12 ms"]
-    Fam -- "L1 Elastic Net Sparsity" --> S3["ccd (Coordinate Descent)\nExact zero-coefficients\nLatency: ~4.10 s"]
+    Fam -- "Yes: Gaussian / Ridge" --> S1["irls (Cholesky / faer)\nExact closed-form solution"]
+    Fam -- "Yes: Smooth GLM / Tobit" --> S2["lbfgs (Quasi-Newton)\nArmijo line-search"]
+    Fam -- "L1 Elastic Net Sparsity" --> S3["ccd (Coordinate Descent)\nExact zero-coefficients"]
     Fam -- "No: Non-Convex / Multi-Modal / Glitchy" --> S4{"Derivative-Free\nEvolutionary Family"}
 
-    S4 --> E1["shade: Adaptive Differential Evolution\nLatency: ~26.6 ms | Near-optimal"]
-    S4 --> E2["cmaes: Covariance Matrix Adaptation\nLatency: ~11.6 ms | Ill-conditioned"]
-    S4 --> E3["ga: Real-Coded Genetic Algorithm\nLatency: ~41.1 ms | Global exploration"]
-    S4 --> E4["nes: Natural Evolution Strategies\nLatency: ~10.7 ms | Gradient estimation"]
+    S4 --> E1["shade: Adaptive Differential Evolution\nNear-optimal"]
+    S4 --> E2["cmaes: Covariance Matrix Adaptation\nIll-conditioned"]
+    S4 --> E3["ga: Real-Coded Genetic Algorithm\nGlobal exploration"]
+    S4 --> E4["nes: Natural Evolution Strategies\nGradient estimation"]
 
     classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
     classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
@@ -1949,17 +1974,60 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
     tree.fit(X_train, y_train)
     ```
 
-### Benchmark Results (Standalone Global Fit, `max_depth=0`)
+### Benchmark Results on Concrete Strength (80/20 split)
 
-| Solver | Family | Latency (ms) | Holdout Test RMSE (MPa) | Test $R^2$ | Convergence Character |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **`irls`** | Analytical Cholesky | **1.28 ms** | **10.224** | **0.631** | Exact analytical optimum in 1 step. |
-| **`lbfgs`** | Quasi-Newton | **5.12 ms** | 10.287 | 0.626 | Converges in 14 iterations to machine precision. |
-| **`shade`** | Continuous DE | 26.62 ms | 10.269 | 0.627 | Reaches 99.6% of exact analytical optimum without gradients. |
-| **`ga`** | Genetic Algorithm | 41.15 ms | 10.360 | 0.621 | Robust global convergence across 100 generations. |
-| **`cmaes`** | Evolutionary Covariance | 11.65 ms | 11.346 | 0.545 | Fast adaptation; sensitive to raw unstandardized scale. |
-| **`nes`** | Natural Gradient | 10.68 ms | 16.919 | -0.011 | Fast step updates; requires standardized inputs. |
-| **`ccd`** | Cyclic Coordinate Descent | 4,101.09 ms | **10.224** | **0.631** | Exact analytical match; coordinate sweeps on raw scale. |
+The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and $R^2$ only. Wall-clock timings are machine-dependent, so this page does not quote them.
+
+<!-- run -->
+```python
+import pandas as pd
+from mltreelib import Metrics, ModelTree
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("concrete_compressive_strength")).sample(frac=1, random_state=2026)
+target = "ConcreteCompressiveStrength"
+features = df.columns.drop(target).tolist()
+cut = int(0.8 * len(df))
+x_train, x_test = df[features].iloc[:cut].to_numpy().tolist(), df[features].iloc[cut:].to_numpy().tolist()
+y_train, y_test = df[target].iloc[:cut].tolist(), df[target].iloc[cut:].tolist()
+
+metrics = Metrics()
+for depth in (0, 2):
+    for solver in ("irls", "lbfgs", "shade", "ga", "cmaes", "nes", "ccd"):
+        extra = {"l1": 0.1} if solver == "ccd" else {}
+        tree = ModelTree(max_depth=depth, leaf="linear", leaf_solver=solver, l2=0.01, seed=42, **extra)
+        tree.fit(x_train, y_train)
+        result = metrics.regression(y_test, tree.predict(x_test))
+        print(f"depth={depth} {solver:6s} rmse={result['rmse']:.3f} r2={result['r2']:.3f}")
+```
+
+<!-- output -->
+```text
+depth=0 irls   rmse=10.321 r2=0.679
+depth=0 lbfgs  rmse=10.323 r2=0.679
+depth=0 shade  rmse=10.317 r2=0.679
+depth=0 ga     rmse=10.811 r2=0.648
+depth=0 cmaes  rmse=12.402 r2=0.537
+depth=0 nes    rmse=12.974 r2=0.493
+depth=0 ccd    rmse=10.321 r2=0.679
+depth=2 irls   rmse=6.855 r2=0.858
+depth=2 lbfgs  rmse=7.174 r2=0.845
+depth=2 shade  rmse=7.175 r2=0.845
+depth=2 ga     rmse=7.971 r2=0.809
+depth=2 cmaes  rmse=10.291 r2=0.681
+depth=2 nes    rmse=12.013 r2=0.565
+depth=2 ccd    rmse=6.858 r2=0.858
+```
+
+| Solver | Family | RMSE (MPa), depth 0 | $R^2$, depth 0 | RMSE (MPa), depth 2 | $R^2$, depth 2 |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`irls`** | Analytical Cholesky | 10.321 | 0.679 | 6.855 | 0.858 |
+| **`lbfgs`** | Quasi-Newton | 10.323 | 0.679 | 7.174 | 0.845 |
+| **`shade`** | Continuous DE | 10.317 | 0.679 | 7.175 | 0.845 |
+| **`ga`** | Genetic Algorithm | 10.811 | 0.648 | 7.971 | 0.809 |
+| **`cmaes`** | Evolutionary Covariance | 12.402 | 0.537 | 10.291 | 0.681 |
+| **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
+| **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
 
 ---
 
@@ -1969,17 +2037,12 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 ### Key Observations:
 
-1. **Analytical & Quasi-Newton Supremacy on Convex Surfaces**:
-   `irls` (1.28 ms) and `lbfgs` (5.12 ms) define the Pareto frontier for smooth convex losses. Both reach optimal holdout test RMSE (10.224 MPa).
-2. **Derivative-Free Precision with SHADE**:
-   `shade` achieves **10.269 MPa** (within 0.4% of the exact analytical minimum) in only 26.6 ms without evaluating a single gradient or Hessian. This makes it ideal for non-differentiable penalties, multi-objective fitness, or discontinuous loss landscapes.
-3. **Tree-Decoupled Leaf Performance (`max_depth=2`, 4 Leaves)**:
-   When deployed inside a partitioned model tree:
-   - `irls`: 3.53 ms total fit time $\to$ **7.183 MPa** RMSE ($R^2 = 0.818$).
-   - `lbfgs`: 3.30 ms total fit time $\to$ **7.583 MPa** RMSE ($R^2 = 0.797$).
-   - `shade`: 29.19 ms total fit time $\to$ **7.606 MPa** RMSE ($R^2 = 0.796$).
-   - `ga`: 45.43 ms total fit time $\to$ **8.005 MPa** RMSE ($R^2 = 0.774$).
-   - `cmaes`: 12.45 ms total fit time $\to$ **10.285 MPa** RMSE ($R^2 = 0.626$).
+1. **Global linear fit (`max_depth=0`)**:
+   `irls`, `lbfgs`, `shade` and `ccd` land within 0.01 MPa of each other (10.317 to 10.323). `ga` is at 10.811, `cmaes` at 12.402 and `nes` at 12.974.
+2. **Shallow tree (`max_depth=2`)**:
+   `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
+3. **Gradient-free SHADE**:
+   On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
 
 ---
 
@@ -2008,18 +2071,56 @@ Status: evaluation_limit, Best objective: 0.562600
 
 ### Standard Mathematical Landscapes Benchmark
 
-| Problem | Method | Evaluations | Best Value | Latency (ms) | Status |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **Sphere ($D=5$)** | `lbfgs_b` | 11 | **0.000000** | 1.29 ms | converged |
-| | `nelder_mead` | 150 | **0.000000** | 0.57 ms | evaluation_limit |
-| | `cmaes` | 150 | **0.000000** | 0.15 ms | evaluation_limit |
-| | `shade` | 150 | **0.000000** | 0.65 ms | evaluation_limit |
-| | `random_search` | 64 | 11.796410 | 0.70 ms | converged |
-| **Rosenbrock ($D=2$)** | `nelder_mead` | 150 | **0.000000** | 0.12 ms | evaluation_limit |
-| | `cmaes` | 150 | 0.089766 | 0.12 ms | evaluation_limit |
-| | `shade` | 150 | 0.412864 | 0.13 ms | evaluation_limit |
-| | `lbfgs_b` | 150 | 0.610721 | 0.20 ms | evaluation_limit |
-| | `random_search` | 64 | 1.177699 | 0.04 ms | converged |
+The block below runs each method on the sphere (5 dimensions) and the Rosenbrock function (2 dimensions). Its output gives evaluation counts, best values and status. Timings are omitted because they vary by machine.
+
+<!-- run -->
+```python
+from mltreelib.solvers import optimize
+
+def sphere(x):
+    return sum(v * v for v in x)
+
+def rosenbrock(x):
+    return (1.0 - x[0])**2 + 100.0 * (x[1] - x[0]**2)**2
+
+cases = [
+    ("Sphere (D=5)", sphere, [(-5.0, 5.0)] * 5,
+     [("lbfgs_b", 150), ("nelder_mead", 150), ("cmaes", 150), ("shade", 150), ("random_search", 64)]),
+    ("Rosenbrock (D=2)", rosenbrock, [(-2.0, 2.0)] * 2,
+     [("nelder_mead", 150), ("cmaes", 150), ("shade", 150), ("lbfgs_b", 150), ("random_search", 64)]),
+]
+for name, objective, bounds, methods in cases:
+    for method, budget in methods:
+        res = optimize(objective, bounds=bounds, method=method, max_evaluations=budget, seed=42)
+        print(f"{name} | {method} | {res.evaluations} | {res.best_value:.6f} | {res.status}")
+```
+
+<!-- output -->
+```text
+Sphere (D=5) | lbfgs_b | 11 | 0.000000 | converged
+Sphere (D=5) | nelder_mead | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | cmaes | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | shade | 150 | 0.000000 | evaluation_limit
+Sphere (D=5) | random_search | 64 | 11.796410 | converged
+Rosenbrock (D=2) | nelder_mead | 150 | 0.000000 | evaluation_limit
+Rosenbrock (D=2) | cmaes | 150 | 0.089766 | evaluation_limit
+Rosenbrock (D=2) | shade | 150 | 0.412864 | evaluation_limit
+Rosenbrock (D=2) | lbfgs_b | 150 | 0.610721 | evaluation_limit
+Rosenbrock (D=2) | random_search | 64 | 1.177699 | converged
+```
+
+| Problem | Method | Evaluations | Best Value | Status |
+| :--- | :--- | :---: | :---: | :--- |
+| **Sphere ($D=5$)** | `lbfgs_b` | 11 | **0.000000** | converged |
+| | `nelder_mead` | 150 | **0.000000** | evaluation_limit |
+| | `cmaes` | 150 | **0.000000** | evaluation_limit |
+| | `shade` | 150 | **0.000000** | evaluation_limit |
+| | `random_search` | 64 | 11.796410 | converged |
+| **Rosenbrock ($D=2$)** | `nelder_mead` | 150 | **0.000000** | evaluation_limit |
+| | `cmaes` | 150 | 0.089766 | evaluation_limit |
+| | `shade` | 150 | 0.412864 | evaluation_limit |
+| | `lbfgs_b` | 150 | 0.610721 | evaluation_limit |
+| | `random_search` | 64 | 1.177699 | converged |
 
 ### Real-Data ModelTree Hyperparameter Tuning
 
@@ -2048,9 +2149,9 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
 ## 7. Operational Limitations & Numerical Failure Modes
 
 1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (as seen with `nes` RMSE 16.919 MPa). Always standardize continuous inputs before applying evolutionary leaf solvers.
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
 2. **Coordinate Descent Collinearity Stagnation**:
-   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring thousands of coordinate sweeps to achieve convergence (latency 4,101 ms). For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
+   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
 3. **Non-Convex Local Minima & Stochastic Reproducibility**:
    Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
 4. **Box Bounds vs. Coupled Constraints in `optimize`**:
@@ -2124,6 +2225,7 @@ All algorithms conform to the `OptimizerKind` enum with explicit box bounds $\bo
 
 Minimizing the classic 2D Rosenbrock function ($f(x, y) = (1 - x)^2 + 100(y - x^2)^2$) inside bounds $[-5, 5] \times [-5, 5]$:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import optimize
 
@@ -2146,6 +2248,7 @@ print(f"Status: {res.status} | Total Evaluations: {res.evaluations}")
 print(f"Optimal Parameters: x* = {res.best_x[0]:.4f}, y* = {res.best_x[1]:.4f} (Loss = {res.best_value:.2e})")
 ```
 
+<!-- output -->
 ```text
 Status: converged | Total Evaluations: 206
 Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
@@ -2157,6 +2260,7 @@ Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
 
 For expensive simulation models, distributed workers, or hardware-in-the-loop tuning, `mltreelib` provides the decoupled **Ask-Tell** paradigm:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import AskTell
 
@@ -2183,6 +2287,14 @@ print(f"AskTell Optimization Complete:")
 print(f"  Evaluations: {optimizer.evaluations}")
 print(f"  Best Solution: x* = {optimizer.best_x[0]:.4f}, y* = {optimizer.best_x[1]:.4f}")
 print(f"  Minimum Objective Loss: {optimizer.best_value:.4e}")
+```
+
+<!-- output -->
+```text
+AskTell Optimization Complete:
+  Evaluations: 120
+  Best Solution: x* = 1.1018, y* = 1.1581
+  Minimum Objective Loss: 3.2271e-01
 ```
 
 ---
@@ -2386,33 +2498,36 @@ $$\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \f
 We evaluate the full component analysis suite on the **Wine Quality** dataset (1,000 samples, 12 continuous chemical features).
 
 ```python
-from mltreelib import ComponentModel, AnomalyModel, load_dataset
+import pandas as pd
+from mltreelib import ComponentModel
 
-# Ingest Wine Quality benchmark
-data = load_dataset("wine_quality")
-X = [[data["columns"][c][i] for c in data["columns"].keys() if c != "quality"] for i in range(1000)]
+# Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
+features = [c for c in df.columns if c not in ("median_wine_quality", "wine_color")]
+X = df[features].to_numpy().tolist()
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations
 
 ```python
 # Fit ComponentModel with Varimax and Promax rotations
-comp_varimax = ComponentModel(n_components=3, method="pca", rotation="varimax")
+comp_varimax = ComponentModel(kind="pca", n_components=3, rotation="varimax")
 comp_varimax.fit(X)
 
-comp_promax = ComponentModel(n_components=3, method="pca", rotation="promax", promax_m=4)
+comp_promax = ComponentModel(kind="pca", n_components=3, rotation="promax", promax_m=4.0)
 comp_promax.fit(X)
 ```
 
-| Method | Variance Retained | Rotation Matrix | Loading Sparsity | Fit Time (ms) |
-| :--- | :---: | :---: | :---: | :---: |
-| **`NONE`** (Raw PCA) | 60.68% | No | 25.0% | 6.01 ms |
-| **`VARIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.86 ms |
-| **`QUARTIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 1.59 ms |
-| **`EQUAMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.05 ms |
-| **`PARSIMAX`** | 60.68% | Yes (orthogonal) | 25.0% | 2.04 ms |
-| **`BIQUARTIMAX`** | 60.68% | Yes (orthogonal) | 27.8% | 2.67 ms |
-| **`PROMAX`** | 60.68% | Yes (oblique) | **36.1%** | 2.22 ms |
+| Method | Variance Retained | Rotation Matrix | Loading Sparsity |
+| :--- | :---: | :---: | :---: |
+| **`NONE`** (Raw PCA) | 60.68% | No | 25.0% |
+| **`VARIMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`QUARTIMAX`** | 60.68% | Yes (orthogonal) | 25.0% |
+| **`EQUAMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`PARSIMAX`** | 60.68% | Yes (orthogonal) | 25.0% |
+| **`BIQUARTIMAX`** | 60.68% | Yes (orthogonal) | 27.8% |
+| **`PROMAX`** | 60.68% | Yes (oblique) | **36.1%** |
 
 > **Key Finding**: Rotated factor loadings preserve 100% of subspace variance (60.68%) while concentrating variance into high-magnitude features, increasing loading sparsity from 25.0% to 36.1% under Promax.
 
@@ -2421,17 +2536,17 @@ comp_promax.fit(X)
 ### 2. Covariance Whitening: ZCA vs. PCA
 
 ```python
-comp_zca = ComponentModel(method="zca_whitening")
+comp_zca = ComponentModel(kind="whitening", whitening_kind="zca")
 Z_zca = comp_zca.fit_transform(X)
 
-comp_pca_white = ComponentModel(method="pca_whitening")
+comp_pca_white = ComponentModel(kind="whitening", whitening_kind="pca")
 Z_pca_white = comp_pca_white.fit_transform(X)
 ```
 
-| Method | Fit Time (ms) | Mean Covariance Error $\|\text{Cov}(Z) - I\|_{\text{mean}}$ | Key Property |
-| :--- | :---: | :---: | :--- |
-| **`ZCA`** | 5.18 ms | **0.006972** | Minimizes $\|Z - X\|_F$; keeps whitened features closest to raw inputs. |
-| **`PCA Whitening`** | 3.34 ms | **0.006704** | Aligns coordinates along principal variance axes. |
+| Method | Mean Covariance Error $\|\text{Cov}(Z) - I\|_{\text{mean}}$ | Key Property |
+| :--- | :---: | :--- |
+| **`ZCA`** | **0.006972** | Minimizes $\|Z - X\|_F$; keeps whitened features closest to raw inputs. |
+| **`PCA Whitening`** | **0.006704** | Aligns coordinates along principal variance axes. |
 
 ---
 
@@ -2439,19 +2554,19 @@ Z_pca_white = comp_pca_white.fit_transform(X)
 
 ```python
 # Compare NMF solvers on strictly non-negative chemical features
-nmf_mu = ComponentModel(n_components=3, method="nmf", nmf_solver="mu")
-nmf_als = ComponentModel(n_components=3, method="nmf", nmf_solver="als", l2=0.01)
-nmf_hals = ComponentModel(n_components=3, method="nmf", nmf_solver="hals")
-nmf_sparse = ComponentModel(n_components=3, method="nmf", nmf_solver="hals", l1=0.01, l2=0.005)
+nmf_mu = ComponentModel(kind="nmf", n_components=3, solver="mu")
+nmf_als = ComponentModel(kind="nmf", n_components=3, solver="als", l2_reg=0.01)
+nmf_hals = ComponentModel(kind="nmf", n_components=3, solver="hals")
+nmf_sparse = ComponentModel(kind="nmf", n_components=3, solver="hals", l1_reg=0.01, l2_reg=0.005)
 ```
 
-| Solver | Reconstruction Error $\|X - WH\|_F$ | $H$ Sparsity (% zeros) | Fit Latency (ms) |
-| :--- | :---: | :---: | :---: |
-| **`MU`** (Multiplicative Updates) | 233.0816 | 0.0% | 15.67 ms |
-| **`ALS`** ($L_1=0, L_2=0.01$) | 172.5155 | 0.0% | 15.08 ms |
-| **`HALS`** | **142.3001** | 8.3% | 16.58 ms |
-| **`HALS`** ($L_1=0.01, L_2=0.005$) | 256.4853 | **36.1%** | 15.00 ms |
-| **`HALS`** ($L_1=0.01, L_2=0.05$) | 256.4980 | **36.1%** | 15.32 ms |
+| Solver | Reconstruction Error $\|X - WH\|_F$ | $H$ Sparsity (% zeros) |
+| :--- | :---: | :---: |
+| **`MU`** (Multiplicative Updates) | 233.0816 | 0.0% |
+| **`ALS`** ($L_1=0, L_2=0.01$) | 172.5155 | 0.0% |
+| **`HALS`** | **142.3001** | 8.3% |
+| **`HALS`** ($L_1=0.01, L_2=0.005$) | 256.4853 | **36.1%** |
+| **`HALS`** ($L_1=0.01, L_2=0.05$) | 256.4980 | **36.1%** |
 
 > **Key Finding**: HALS coordinate descent achieves superior loss convergence (142.30 vs. 233.08 for MU) and enables true $L_1$ zero-coefficient sparsity (36.1%) without division-by-zero numerical collapse.
 
@@ -2462,6 +2577,7 @@ nmf_sparse = ComponentModel(n_components=3, method="nmf", nmf_solver="hals", l1=
 Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
 $$\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2$$
 
+<!-- API-GAP: subspace reconstruction error as an anomaly score is not exposed. AnomalyModel has no PCA kind (its kinds are eif, det, hst, rct, active, context) and ComponentModel has no inverse_transform. The block below is not runnable; the output under it is hand-written and not generated. -->
 ```python
 # Detect anomalies via subspace reconstruction error
 detector = AnomalyModel(method="pca", n_components=3)
@@ -2641,7 +2757,7 @@ Real-world latent dimensions often correlate (for example, verbal aptitude corre
 
 ```python
 # Fit PCA with Promax oblique rotation (power m=4.0)
-pca_promax = ComponentModel(kind="pca", n_components=2, rotation="promax", promax_power=4.0)
+pca_promax = ComponentModel(kind="pca", n_components=2, rotation="promax", promax_m=4.0)
 pca_promax.fit(X)
 
 # Loadings and inter-factor correlation
@@ -2700,13 +2816,12 @@ Thurstone Sparsity (< 0.15):   0 of 16 (0.0%)     |              8 of 16 (50.0%)
 #### Configuration Parameters
 ```python
 ComponentModel(
-    kind="pca",               # "pca", "svd", "whitening", "fastica", "nmf"
+    kind="pca",               # "pca", "svd", "whitening", "ica", "nmf", "fa"
     n_components=2,           # Subspace rank
-    rotation="varimax",       # None, "varimax", "quartimax", "equamax", "parsimax", "biquartimax", "promax"
-    promax_power=4.0,         # Promax target exponent (default 4.0)
-    gamma=None,               # Custom Orthomax gamma parameter (if rotation="orthomax")
-    max_iter=100,             # Max Jacobi planar rotation iterations
-    tol=1e-6,                 # Jacobi convergence tolerance
+    rotation="varimax",       # "none", "varimax", "quartimax", "equamax", "parsimax", "biquartimax", "promax"
+    promax_m=4.0,             # Promax target exponent (default 4.0)
+    max_iter=200,             # Max iterations for iterative algorithms
+    tol=1e-4,                 # Convergence tolerance for iterative algorithms
     seed=42,                  # Random seed
 )
 ```

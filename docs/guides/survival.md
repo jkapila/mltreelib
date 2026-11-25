@@ -6,7 +6,7 @@ Use baseline measurements to estimate survival at one, three and five years. The
 
 The `survival` package's [FLCHAIN cohort](https://cran.r-project.org/web/packages/survival/survival.pdf) contains 7,874 people and right-censored follow-up. `futime` is follow-up in days and `death=1` records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude `chapter`, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 952 of the 5,500 training records and 398 of the 2,374 test records; values enter the tree without imputation.
 
-Download [FLCHAIN CSV from Rdatasets](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) to `datasets/external/real_eval/flchain.csv`. The checked file SHA-256 is `a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563`. Run the shared [real-data evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_survival_uplift.py).
+The snippet below gets the file with `dataset_path("flchain_rdatasets")`. It downloads the [FLCHAIN CSV from Rdatasets](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) on first use, caches it under `~/.cache/mltreelib/datasets/` (or `MLTREELIB_DATA_DIR`) and checks SHA-256 `a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563`. Run the shared [real-data evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_survival_uplift.py).
 
 ```bash
 uv run python examples/guides/real_survival_uplift.py survival
@@ -51,7 +51,7 @@ from collections import Counter
 from random import Random
 
 import pandas as pd
-from mltreelib import ModelTree
+from mltreelib import ModelTree, dataset_path
 
 def censor_km(times, events):
     """Censoring survival G(t), estimated from training observations."""
@@ -77,7 +77,7 @@ def brier(times, events, predictions, horizon, censor):
             total += (1 - pred) ** 2 / g_h
     return total / len(times)
 
-df = pd.read_csv("datasets/external/real_eval/flchain.csv")
+df = pd.read_csv(dataset_path("flchain_rdatasets"))
 features = ["age", "sex", "kappa", "lambda", "creatinine"]
 types = ["numeric", "categorical", "numeric", "numeric", "numeric"]
 ids = list(range(len(df)))

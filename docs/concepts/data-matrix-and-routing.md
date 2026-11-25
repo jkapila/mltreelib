@@ -57,6 +57,7 @@ Standard decision trees force users to impute missing entries (mean, median, mod
 
 ### Complete End-to-End Missing Routing Example
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -102,6 +103,16 @@ predicted_risk = tree.predict(test_sample)[0]
 print(f"\nPrediction for Missing Primary Reading (Backup=62.5, Temp=75.0): {predicted_risk:.3f}")
 ```
 
+<!-- output -->
+```text
+Fitted Tree Splits & Native Missing Direction:
+  Split #1: Feature 'temperature' <= 49.77 | Missing Rows Route -> LEFT
+  Split #2: Feature 'sensor_primary' <= 57.93 | Missing Rows Route -> LEFT
+  Split #3: Feature 'temperature' <= 49.97 | Missing Rows Route -> LEFT
+
+Prediction for Missing Primary Reading (Backup=62.5, Temp=75.0): 0.885
+```
+
 ---
 
 ## 2. Categorical Encoders: Empirical Bayes & Ordered Target Encoding
@@ -114,6 +125,7 @@ Tabular data features categorical variables ranging from low-cardinality ordinal
 | **`CatBoostEncoder`** | Ordered Target | Running target mean accumulated over random permutations | Dynamic permutation eliminates in-sample leakage |
 | **`OneHotEncoder`** | Sparse Dummies | Boolean bitsets for low-cardinality variables ($K \le 16$) | Tree branch regularization |
 
+<!-- run -->
 ```python
 from mltreelib import TargetEncoder, CatBoostEncoder
 
@@ -131,6 +143,12 @@ print("Smoothed Target Encodings:", [round(v, 3) for v in encoded_features])
 cb_enc = CatBoostEncoder(prior=5.0, permutations=4, seed=2026)
 ordered_features = cb_enc.fit_transform(merchants, labels)
 print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
+```
+
+<!-- output -->
+```text
+Smoothed Target Encodings: [0.792, 0.619, 0.792, 0.556, 0.619, 0.792]
+Ordered CatBoost Encodings: [2.653, 2.458, 2.264, 3.333, 2.917, 2.361]
 ```
 
 ---

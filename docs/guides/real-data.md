@@ -15,8 +15,8 @@ For an OpenML source below, open its dataset page and download the Parquet file.
 | Give Me Some Credit | [OpenML 46929](https://www.openml.org/d/46929) | `datasets/GiveMeSomeCredit.parquet` | [Classification](classification.md) |
 | Wine Quality | [OpenML 46964](https://www.openml.org/d/46964) | `datasets/wine_quality.parquet` | [Clustering](clustering.md) |
 | Statlog Shuttle | [UCI 148](https://archive.ics.uci.edu/dataset/148/statlog+shuttle) | `datasets/external/shuttle/` | [Anomaly detection and archive setup](anomaly.md) |
-| FLCHAIN | [Rdatasets CSV](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) | `datasets/external/real_eval/flchain.csv` | [Survival](survival.md) |
-| Hillstrom | [CSV mirror](https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv) | `datasets/external/real_eval/hillstrom.csv` | [Uplift and source checks](uplift.md) |
+| FLCHAIN | [Rdatasets CSV](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) | `dataset_path("flchain_rdatasets")` (downloaded on demand) | [Survival](survival.md) |
+| Hillstrom | [MineThatData CSV](http://www.minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv) | `dataset_path("hillstrom_email")` (downloaded on demand) | [Uplift and source checks](uplift.md) |
 | APS Failure | [OpenML 46908](https://www.openml.org/d/46908) | `datasets/APSFailure.parquet` | [Missing sensor data](../blog/zero-imputation-predictive-maintenance.md) |
 | Concrete strength | [OpenML 46917](https://www.openml.org/d/46917) | `datasets/concrete_compressive_strength.parquet` | [Local models and rules](../concepts/piecewise-linear-and-cubist.md) |
 | Miami housing | [OpenML 46942](https://www.openml.org/d/46942) | `datasets/miami_housing.parquet` | [Distributional splits](../concepts/distributional-leaves.md) |

@@ -43,24 +43,37 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 
 ### PCT on Wine Quality (1,500 Samples, 6 Chemical Dimensions)
 - **Problem**: Group wines by multi-target chemical similarity (`fixed_acidity`, `volatile_acidity`, `citric_acid`, `residual_sugar`, `chlorides`, `alcohol`).
-- **Performance**: Discovers 8 compact, homogeneous clusters in **11.48 ms fit latency**.
-- **Interpretability**: Each leaf provides explicit chemical thresholds (e.g. `alcohol <= 10.2` and `volatile_acidity > 0.48`), allowing domain chemists to audit segment boundaries directly.
+- **Setup**: the Python example below samples 1,500 wines (seed 2026) and fits `kind="pct"` with `max_depth=3` and `min_rows=20`. The printed rules list each leaf's conditions.
+- **Interpretability**: Each leaf gives explicit chemical thresholds, which a domain chemist can audit directly. Run the block to see the thresholds for this sample.
 
-| Algorithm | Split mechanism | Fit latency | Output |
-| :--- | :--- | :---: | :--- |
-| **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | **11.48 ms** | 8 clusters, fully interpretable IF-THEN rules |
+| Algorithm | Split mechanism | Output |
+| :--- | :--- | :--- |
+| **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | IF-THEN rules, one per leaf |
 
 ---
 
 ## 3. Python usage
 
+<!-- run -->
 ```python
+import pandas as pd
 from mltreelib import ClusterModel
+
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1500, random_state=2026)
+feature_names = ["fixed_acidity", "volatile_acidity", "citric_acid",
+                 "residual_sugar", "chlorides", "alcohol"]
+X_wine = df[feature_names].to_numpy().tolist()
 
 pct = ClusterModel(kind="pct", max_depth=3, min_rows=20)
 pct.fit(X_wine, col_names=feature_names)
 cluster_ids = pct.predict(X_wine)
 print(f"Cluster rules: {pct.rules()}")
+```
+
+<!-- output -->
+```text
+Cluster rules: [{'cluster_id': 0, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity <= 8.1500', 'prototype': [6.728115942028986, 0.2692898550724639, 0.3207826086956529, 2.9837681159420266, 0.04681014492753618, 10.887125603864735], 'size': 690}, {'cluster_id': 1, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity > 8.1500', 'prototype': [9.450000000000001, 0.3011250000000001, 0.44583333333333325, 2.5287500000000005, 0.06599999999999998, 10.773055555555555], 'size': 120}, {'cluster_id': 2, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid <= 0.4150', 'prototype': [6.915789473684216, 0.2615789473684209, 0.29338815789473655, 11.977960526315796, 0.04586184210526313, 9.886348684210537], 'size': 304}, {'cluster_id': 3, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid > 0.4150', 'prototype': [7.213461538461536, 0.28802884615384616, 0.5402884615384613, 12.855769230769228, 0.04719230769230769, 9.596153846153847], 'size': 104}, {'cluster_id': 4, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid <= 0.3050', 'prototype': [7.359808612440196, 0.6314114832535888, 0.12325358851674637, 2.621052631578947, 0.07461244019138757, 10.309808612440193], 'size': 209}, {'cluster_id': 5, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid > 0.3050', 'prototype': [9.273584905660375, 0.5666981132075471, 0.451132075471698, 4.116981132075471, 0.07441509433962265, 10.624528301886793], 'size': 53}, {'cluster_id': 6, 'rule': 'volatile_acidity > 0.4575 AND chlorides > 0.1225', 'prototype': [8.3, 0.5832499999999999, 0.3415, 4.665, 0.2637, 9.615], 'size': 20}]
 ```
 
 ---
@@ -73,6 +86,7 @@ Rather than tuning distance metrics across noisy dimensions, `ClusterModel(kind=
 
 ### Complete End-to-End Example
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ClusterModel
@@ -118,13 +132,14 @@ for cid in sorted(unique_clusters):
     print(f"  Cluster #{cid} (n={len(members)}): Orders = {mean_orders:.1f}/mo, Spend = ${mean_ticket:.2f}")
 ```
 
+<!-- output -->
 ```text
 Total Customers: 980
 Identified 3 Cohesive Density Clusters: [0, 1, 2]
-Background Noise Points Rejected: 64
-  Cluster #0 (n=298): Orders = 15.1/mo, Spend = $24.89
-  Cluster #1 (n=296): Orders = 5.0/mo, Spend = $180.12
-  Cluster #2 (n=302): Orders = 29.8/mo, Spend = $449.65
+Background Noise Points Rejected: 232
+  Cluster #0 (n=229): Orders = 5.1/mo, Spend = $180.86
+  Cluster #1 (n=286): Orders = 14.9/mo, Spend = $24.61
+  Cluster #2 (n=233): Orders = 29.5/mo, Spend = $446.29
 ```
 
 ---

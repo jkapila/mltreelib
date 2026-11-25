@@ -6,7 +6,7 @@ Decide whether to send a campaign email to everyone, a subset, or nobody. Compar
 
 The [Hillstrom email experiment](https://www.tensorflow.org/datasets/catalog/hillstrom) randomly assigned 64,000 customers to a men's email, women's email or no email. This example compares **women's email versus no email**, using a website visit within two weeks as the outcome. It excludes the men's arm and uses only pre-treatment features. A visit is not a purchase or profit.
 
-The publisher's original download endpoint failed HTTPS certificate validation in our environment. We used this [public mirror](https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv), SHA-256 `0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece`. The mirror matches published row and arm counts; independent byte equivalence with the original is not established. Save the CSV as `datasets/external/real_eval/hillstrom.csv`. It is excluded from Git.
+`dataset_path("hillstrom_email")` downloads the CSV from the [publisher's MineThatData page](https://blog.minethatdata.com/2008/03/minethatdata-e-mail-analytics-and-data.html) on first use and caches it under `~/.cache/mltreelib/datasets/` (or `MLTREELIB_DATA_DIR`). The publisher's HTTPS endpoint fails certificate validation, so the file is fetched over plain HTTP and checked against SHA-256 `0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece`.
 
 ```bash
 uv run python examples/guides/real_survival_uplift.py uplift
@@ -47,7 +47,7 @@ from math import sqrt
 from random import Random
 
 import pandas as pd
-from mltreelib import ModelTree
+from mltreelib import ModelTree, dataset_path
 
 def group_value(y, w, selected):
     """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
@@ -65,7 +65,7 @@ def group_value(y, w, selected):
     se = q * sqrt(var(a) / len(a) + var(b) / len(b))
     return q * diff, n, len(a), len(b), (q * diff - 1.96 * se, q * diff + 1.96 * se)
 
-df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
+df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
 types = ["numeric"] * 5 + ["categorical"] * 2

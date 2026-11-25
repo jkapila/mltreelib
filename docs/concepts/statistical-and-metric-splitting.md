@@ -63,6 +63,49 @@ Target modalities derived from the same underlying portfolio distribution:
 2. **Distribution Target ($Y \in \mathbb{R}^{20}$)**: 20-point quantile curve of future loss distributions.
 3. **Embedding Vector Target ($Y \in \mathbb{R}^5$)**: 5-dimensional risk embedding vector.
 
+### Shared setup
+
+The block below generates the benchmark data used by every section on this page. It is seeded, so every run gives the same rows.
+
+<!-- run -->
+```python
+import numpy as np
+from mltreelib import ModelTree, fast_interaction_screen
+
+def brief(split):
+    """Printable split: threshold and gain, with the test gate reduced to its verdict and p-value."""
+    if split is None:
+        return None
+    out = {k: v for k, v in split.items() if k != "gate"}
+    gate = split.get("gate")
+    if gate:
+        out["gate"] = {"test": gate["test_name"], "passed": gate["passed"], "p_value": float(f"{gate['p_value']:.3g}")}
+    return out
+
+rng = np.random.default_rng(2026)
+n = 300
+score = rng.uniform(-2.0, 2.0, n)
+zip_idx = rng.integers(0, 50, n)                  # 50 levels with no true signal
+tier_flag = rng.integers(0, 2, n).astype(float)
+gender = rng.integers(0, 2, n).astype(float)      # protected attribute (column 3)
+gender_proxy = gender + rng.normal(0, 0.3, n)
+fair_merit = rng.normal(50.0, 10.0, n)
+
+y_scalar = np.where(score > 0, 2.0 * score, -1.0 * score) + 0.5 * tier_flag + rng.normal(0, 0.3, n)
+y_vectors = np.column_stack([y_scalar + rng.normal(0, s, n) for s in (0.2, 0.4, 0.6, 0.8, 1.0)])
+y_quantiles = np.sort(y_scalar[:, None] + rng.normal(0, 0.3, (n, 20)), axis=1)
+y_rare = (y_scalar > np.quantile(y_scalar, 0.95)).astype(int)
+y_fair = (y_scalar > np.median(y_scalar)).astype(int)
+y_inter = y_scalar + 1.5 * (score > 0) * tier_flag + rng.normal(0, 0.2, n)
+
+X = [[float(score[i]), f"z{zip_idx[i]:02d}", float(tier_flag[i]), float(gender[i]),
+      float(gender_proxy[i]), float(fair_merit[i])] for i in range(n)]
+col_names = ["score", "zip_code", "tier_flag", "gender", "gender_proxy", "fair_merit"]
+dtypes = ["numeric", "categorical", "numeric", "numeric", "numeric", "numeric"]
+y_scalar, y_fair, y_rare, y_inter = (v.tolist() for v in (y_scalar, y_fair, y_rare, y_inter))
+y_vectors, y_quantiles = y_vectors.tolist(), y_quantiles.tolist()
+```
+
 ---
 
 ## 1. Baseline: Standard CART (`gain="sse"`)
@@ -72,6 +115,7 @@ Standard recursive partitioning greedily maximizes variance reduction:
 $$\text{Gain}_{\text{SSE}} = \text{SSE}(P) - [\text{SSE}(L) + \text{SSE}(R)]$$
 
 ### Code Run
+<!-- run -->
 ```python
 from mltreelib import ModelTree
 
@@ -79,13 +123,12 @@ from mltreelib import ModelTree
 tree_cart = ModelTree(max_depth=1, min_rows=15, gain="sse", prune="none")
 tree_cart.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_cart.root_split())
+print("Split:", brief(tree_cart.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': -0.012, 'missing_left': True, 'gain': 1222.8814}
-Note:  Greedily isolates variance; susceptible to Loh's cardinality trap on high-level factors.
+Split: {'col': 'score', 'threshold': 1.024, 'missing_left': True, 'gain': 230.66928608111027}
 ```
 
 ---
@@ -99,6 +142,7 @@ Fits the leaf linear regression **once** at the parent node, calculates individu
 $$\max_{t \in [\underline{t}, \bar{t}]} \frac{\|W(t)\|^2}{t(1-t)}$$
 
 ### Code Run
+<!-- run -->
 ```python
 # MOB parameter instability test
 tree_mob = ModelTree(
@@ -111,15 +155,14 @@ tree_mob = ModelTree(
 )
 tree_mob.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_mob.root_split())
+print("Split:", brief(tree_mob.root_split()))
 print("Diagnostics:", tree_mob.split_diagnostics()[0])
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split:       {'col': 'score', 'threshold': -1.495, 'missing_left': True, 'gain': 212.9632}
-Diagnostics: {'p_value': 0.0000e+00, 'test_stat': 212.9632, 'test_name': 'mob'}
-Note:        Evaluates structural break in linear slopes; avoids combinatorial refits.
+Split: {'col': 'score', 'threshold': 1.2910996796255607, 'missing_left': True, 'gain': 220.67164097676942, 'gate': {'test': 'mob', 'passed': True, 'p_value': 1.13e-41}}
+Diagnostics: None
 ```
 
 ---
@@ -133,6 +176,7 @@ CTree separates variable selection from splitpoint selection using permutation r
 $$c_j = z_j^2 \sim \chi^2_1 \quad (\text{numeric}), \qquad c_j = \frac{\text{SSB}}{V_Y} \sim \chi^2_{C - 1} \quad (\text{categorical})$$
 
 ### Code Run
+<!-- run -->
 ```python
 # CTree unbiased permutation rank test
 tree_ctree = ModelTree(
@@ -141,16 +185,16 @@ tree_ctree = ModelTree(
     max_depth=1,
     min_rows=15,
     prune="none",
+    seed=42,
 )
 tree_ctree.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_ctree.root_split())
+print("Split:", brief(tree_ctree.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': 0.011, 'missing_left': True, 'gain': 141.5636}
-Note:  Strictly unbiased variable selection; rejects 50-level noise feature 'zip_code'.
+Split: {'col': 'score', 'threshold': 1.0283967960109397, 'missing_left': True, 'gain': 181.71945630327696, 'gate': {'test': 'ctree', 'passed': True, 'p_value': 1.22e-20}}
 ```
 
 ---
@@ -165,6 +209,7 @@ Note:  Strictly unbiased variable selection; rejects 50-level noise feature 'zip
   $$\text{Gain}_{\text{MMD}} = \frac{W_L W_R}{W_L + W_R} \left( \mathbb{E}[k(Y_L, Y_L')] + \mathbb{E}[k(Y_R, Y_R')] - 2 \mathbb{E}[k(Y_L, Y_R)] \right)$$
 
 ### Code Run
+<!-- run -->
 ```python
 # Energy Distance on 5D vector embeddings
 tree_energy = ModelTree(gain="energy_distance", max_depth=1, min_rows=15, prune="none")
@@ -178,11 +223,10 @@ print("Energy Split:", tree_energy.root_split())
 print("MMD Split:   ", tree_mmd.root_split())
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Energy Split: {'col': 'score', 'threshold': 0.011, 'missing_left': True, 'gain': 903.1499}
-MMD Split:    {'col': 'score', 'threshold': 0.011, 'missing_left': True, 'gain': 58.1626}
-Note:         Optimizes multi-target embeddings without parametric assumptions; detects covariance shifts.
+Energy Split: {'col': 'score', 'threshold': 0.6623265781115386, 'missing_left': True, 'gain': 260.3186456820423}
+MMD Split:    {'col': 'score', 'threshold': 0.6623265781115386, 'missing_left': True, 'gain': 36.172842507608216}
 ```
 
 ---
@@ -198,23 +242,23 @@ $$\text{Gain}_{\mathcal{W}_2}(L, R) = \frac{W_L W_R}{W_L + W_R} \frac{1}{D} \sum
 Leaves output the predicted Fréchet barycenter distribution via `predict_vector`.
 
 ### Code Run
+<!-- run -->
 ```python
 # Wasserstein-2 Optimal Transport on 20-point quantile curves
 tree_wass = ModelTree(gain="wasserstein", max_depth=1, min_rows=15, prune="none")
 tree_wass.fit(X, y_quantiles, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_wass.root_split())
+print("Split:", brief(tree_wass.root_split()))
 
 # Predict Fréchet barycenter distribution for new profiles
 barycenter_preds = tree_wass.predict_vector([X[0]])
 print(f"Leaf Fréchet Barycenter (len={len(barycenter_preds[0])}):", [round(v, 2) for v in barycenter_preds[0][:5]], "...")
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': 0.011, 'missing_left': True, 'gain': 1221.0445}
-Leaf Fréchet Barycenter (len=20): [-3.42, -3.11, -2.89, -2.71, -2.55] ...
-Note: Directly splits and outputs continuous distribution curves.
+Split: {'col': 'score', 'threshold': 0.9984062680756454, 'missing_left': True, 'gain': 232.62597045559357}
+Leaf Fréchet Barycenter (len=20): [0.61, 0.74, 0.82, 0.88, 0.93] ...
 ```
 
 ---
@@ -230,6 +274,7 @@ $$\text{Gain}_{\text{fair}} = \text{BaseGain}(L, R) - \lambda \cdot \text{Impuri
 When $\lambda > 0$, candidate splits that create disparate impact on protected groups are penalized, forcing the tree to select clean, fair merit features.
 
 ### Code Run
+<!-- run -->
 ```python
 # Demographic Parity Fair Tree (lambda = 1.0 on protected column 3 'gender')
 tree_fair = ModelTree(
@@ -242,13 +287,12 @@ tree_fair = ModelTree(
 )
 tree_fair.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_fair.root_split())
+print("Split:", brief(tree_fair.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': 0.107, 'missing_left': True, 'gain': 1191.7879}
-Note:  Penalizes proxy discrimination; narrows selection rate gap between protected groups.
+Split: {'col': 'score', 'threshold': 0.978, 'missing_left': True, 'gain': 225.8005722154365}
 ```
 
 ---
@@ -262,18 +306,18 @@ Evaluates the skew-invariant Hellinger affinity divergence between child partiti
 $$H^2(L, R) = \sum_{k=1}^C \left(\sqrt{p_{L, k}} - \sqrt{p_{R, k}}\right)^2$$
 
 ### Code Run
+<!-- run -->
 ```python
 # Hellinger Distance on rare catastrophic risk event (~5% prevalence)
 tree_hellinger = ModelTree(gain="hellinger", max_depth=1, min_rows=5, prune="none")
 tree_hellinger.fit(X, y_rare, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_hellinger.root_split())
+print("Split:", brief(tree_hellinger.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': -1.409, 'missing_left': True, 'gain': 70.7933}
-Note:  Skew-invariant divergence; cleanly isolates rare tail catastrophe without score collapse.
+Split: {'col': 'score', 'threshold': 1.518, 'missing_left': True, 'gain': 14.418261616207234}
 ```
 
 ---
@@ -285,18 +329,18 @@ Note:  Skew-invariant divergence; cleanly isolates rare tail catastrophe without
 Maximizes the standardized two-sample linear rank statistic $T^2(s) = S_L^2 / \text{Var}(S_L)$ with strict invariance under monotonic scalings:
 
 ### Code Run
+<!-- run -->
 ```python
 # MaxStat Rank Splitting
 tree_maxstat = ModelTree(gain="maxstat", max_depth=1, min_rows=15, prune="none")
 tree_maxstat.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_maxstat.root_split())
+print("Split:", brief(tree_maxstat.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'score', 'threshold': -0.012, 'missing_left': True, 'gain': 149.2552}
-Note:  Standardized two-sample linear rank divergence; invariant to monotone target scalings.
+Split: {'col': 'score', 'threshold': 0.653, 'missing_left': True, 'gain': 162.61270961812826}
 ```
 
 ---
@@ -312,21 +356,21 @@ $$Z = \sum_{k=1}^d \alpha_k X_{j_k}, \quad \alpha_k \in \{-1, +1\}$$
 When an oblique projection beats the best univariate axis split, it is selected and exposed with full algebraic transparency in `root_split()["oblique"]`:
 
 ### Code Run
+<!-- run -->
 ```python
 # SPORF: 2-feature oblique projections (30 candidate hyperplanes)
 tree_sporf = ModelTree(sporf_d=2, sporf_projections=30, max_depth=1, min_rows=15, seed=42, prune="none")
 tree_sporf.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
 root = tree_sporf.root_split()
-print("Split:", root)
-print("Oblique Equation:", root["oblique"]["equation"])
+print("Split:", brief(root))
+print("Oblique Equation:", root.get("oblique"))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': '-1.00*score -1.00*gender_proxy <= -1.2379', 'threshold': -1.238, 'gain': 3263.2392, 'oblique': {'cols': ['score', 'gender_proxy'], 'weights': [-1.0, -1.0], 'equation': '-1.00*score -1.00*gender_proxy <= -1.2379'}}
-Oblique Equation: -1.00*score -1.00*gender_proxy <= -1.2379
-Note:  Evaluates random linear combinations of 2 features; eliminates diagonal staircasing.
+Split: {'col': 'score', 'threshold': 1.024, 'missing_left': True, 'gain': 230.66928608111027}
+Oblique Equation: None
 ```
 
 ---
@@ -340,6 +384,7 @@ $$\text{Disparity}_{\text{EO}} = \frac{1}{2} \left( |\text{TPR}_1 - \text{TPR}_0
 $$\text{Gain}_{\text{Fair}} = \max\left(0, \, \text{Gain}_{\text{Raw}} - \lambda \cdot \text{SSE}_{\text{parent}} \cdot \text{Disparity}_{\text{EO}}\right)$$
 
 ### Code Run
+<!-- run -->
 ```python
 # Equalized Odds constrained splitting (protected attribute = col 3 'gender')
 tree_eo = ModelTree(
@@ -352,13 +397,12 @@ tree_eo = ModelTree(
 )
 tree_eo.fit(X, y_fair, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_eo.root_split())
+print("Split:", brief(tree_eo.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'fair_merit', 'threshold': 50.005, 'missing_left': True, 'gain': 1816.0941}
-Note:  Penalizes TPR and FPR disparate error rates; suppresses unfair proxy and selects fair_merit (EO gap=0.000).
+Split: {'col': 'score', 'threshold': 0.556, 'missing_left': True, 'gain': 32.655054958482374}
 ```
 
 ---
@@ -370,6 +414,7 @@ Note:  Penalizes TPR and FPR disparate error rates; suppresses unfair proxy and 
 $$s \sim \text{Uniform}(\min X_j, \max X_j)$$
 
 ### Code Run
+<!-- run -->
 ```python
 # ExtraTrees single random uniform cutpoint per feature
 tree_et = ModelTree(
@@ -381,13 +426,12 @@ tree_et = ModelTree(
 )
 tree_et.fit(X, y_scalar, col_names=col_names, dtypes=dtypes)
 
-print("Split:", tree_et.root_split())
+print("Split:", brief(tree_et.root_split()))
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Split: {'col': 'tier_flag', 'threshold': 0.147, 'missing_left': True, 'gain': 2410.5738}
-Note:  Evaluates exactly 1 random cut per continuous feature in O(1) time without sorting.
+Split: {'col': 'tier_flag', 'threshold': 0.17000300711858152, 'missing_left': True, 'gain': 13.53578234120738}
 ```
 
 ---
@@ -399,11 +443,14 @@ Note:  Evaluates exactly 1 random cut per continuous feature in O(1) time withou
 $$\text{InteractionGain}(j, k) = \frac{\sum_{a,b \in \{0, 1\}} N_{ab} (\bar{y}_{ab} - \hat{y}_{\text{add}})^2}{\text{SSE}_{\text{parent}}}$$
 
 ### Code Run
+<!-- run -->
 ```python
 from mltreelib import fast_interaction_screen
 
-# Standalone FAST screening over all candidate pairs
-screened = fast_interaction_screen(X, y_inter, col_names=col_names, top_k=3, min_samples=15)
+# Standalone FAST screening over all candidate pairs (numeric columns only)
+num_cols = [0, 2, 3, 4, 5]
+X_num = [[row[c] for c in num_cols] for row in X]
+screened = fast_interaction_screen(X_num, y_inter, col_names=[col_names[c] for c in num_cols], top_k=3, min_samples=15)
 print("Top Screened Pairs:", [(s['col1_name'], s['col2_name'], s['score']) for s in screened])
 
 # Tree fitted with FAST interaction constraint
@@ -411,11 +458,9 @@ tree_fast = ModelTree(ebm_fast=True, max_depth=2, min_rows=15, prune="none")
 tree_fast.fit(X, y_inter, col_names=col_names, dtypes=dtypes)
 ```
 
-### Visual Execution Output
+<!-- output -->
 ```text
-Top Screened Pairs: [('score', 'tier_flag', 0.1481), ('tier_flag', 'gender', 0.0226), ('score', 'zip_code', 0.0204)]
-Split: Pair 'score&tier_flag' at cuts (0.034, 0.500)
-Note:  Screens all 15 pairs in O(P²); reduces test MSE by 33.1% over purely additive main effects.
+Top Screened Pairs: [('score', 'tier_flag', 0.02277241345815803), ('score', 'gender_proxy', 0.008102755421687815), ('tier_flag', 'gender_proxy', 0.0049030349540955375)]
 ```
 
 ---

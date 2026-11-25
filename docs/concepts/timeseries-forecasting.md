@@ -85,19 +85,34 @@ We evaluate on a simulated multi-store retail panel (240 records across 2 stores
 - **Training Period**: First 90 days (2025-01-01 to 2025-03-31, 180 records).
 - **Out-of-Time Test Period**: Final 30 days (2025-04-01 to 2025-04-30, 60 records).
 
+<!-- run -->
 ```python
-from mltreelib import Metrics, ModelTree
+import datetime as dt
+import numpy as np
+from mltreelib import ModelTree
 from mltreelib import calendar_features, decomposed_transform, lag_by_days, windowed_transform
 
-# 1. Transform features in pure Rust
-cal = calendar_features(dates)
-lag_1 = lag_by_days(keys=stores, dates=dates, values=sales, days=1)
-lag_7 = lag_by_days(keys=stores, dates=dates, values=sales, days=7)
-win_7 = windowed_transform(keys=stores, dates=dates, values=sales, days=7, stat="mean")
-decomp = decomposed_transform(values=sales, period=7, model="additive")
+# 0. Seeded synthetic panel: 2 stores x 120 days, weekend lift, upward trend
+rng = np.random.default_rng(2026)
+start = dt.date(2025, 1, 1)
+dates, stores, sales = [], [], []
+for day in range(120):
+    d = start + dt.timedelta(days=day)
+    for store in (0, 1):
+        dates.append(d.isoformat())
+        stores.append(f"store_{store}")
+        sales.append(100 + 0.8 * day + 15.0 * (d.weekday() >= 5) + 10.0 * store + rng.normal(0, 5))
 
-# 2. Build feature matrix and split out-of-time
-X = list(zip(cal["weekday"], cal["month"], lag_1, lag_7, win_7, decomp["trend"]))
+# 1. Transform features (pure Rust)
+cal = calendar_features(dates)
+lag_1 = lag_by_days(keys=stores, dates=dates, values=sales, lag_days=1)
+lag_7 = lag_by_days(keys=stores, dates=dates, values=sales, lag_days=7)
+win_7 = windowed_transform(keys=stores, dates=dates, values=sales, window_days=7, kind="mean", include_current=False)
+# Note: the decomposition uses the whole panel, so it is not a strictly out-of-time feature.
+decomp = decomposed_transform(keys=stores, dates=dates, values=sales, season_granularity="weekday", trend_window=7)
+
+# 2. Build feature matrix and split out-of-time (first 180 rows = first 90 days)
+X = [list(row) for row in zip(cal["weekday"], cal["month"], lag_1, lag_7, win_7, decomp["detrended"])]
 X_train, y_train = X[:180], sales[:180]
 X_test, y_test = X[180:], sales[180:]
 
@@ -110,45 +125,30 @@ pred_cart = tree_cart.predict(X_test)
 tree_linear = ModelTree(max_depth=3, min_rows=15, leaf="linear", l2=1e-3)
 tree_linear.fit(X_train, y_train)
 pred_linear = tree_linear.predict(X_test)
+
+rmse = lambda pred: (sum((p - t) ** 2 for p, t in zip(pred, y_test)) / len(y_test)) ** 0.5
+print(f"Out-of-time RMSE  CART: {rmse(pred_cart):.2f}  linear leaves: {rmse(pred_linear):.2f}")
+print(f"Test sales range: {min(y_test):.1f} to {max(y_test):.1f}")
+```
+
+<!-- output -->
+```text
+Out-of-time RMSE  CART: 15.13  linear leaves: 2.66
+Test sales range: 171.1 to 225.2
 ```
 
 ---
 
 ## 4. Empirical Benchmark Output & Quantitative Findings
 
-```text
-Generated retail sales panel: 240 rows (120 days x 2 stores).
-Date range: 2025-01-01 to 2025-04-30
+The block in section 2 builds the features on the seeded panel, trains a CART-style baseline (`leaf="mean"`) and a linear-leaf tree on the first 180 rows, and scores the last 60 rows. It prints:
 
-=== 1. Pure Rust Time Feature Transforms ===
-Engineered features in pure Rust (mltreelib-core):
-  - calendar_features : weekday, weekend, month, day_of_year
-  - lag_by_days       : 1-day lag, 7-day lag (initial 14 rows None)
-  - windowed_transform: 7-day trailing mean
-  - decomposed        : detrended, deseasonalized, residual
+- Out-of-time RMSE 15.13 for the mean-leaf baseline.
+- Out-of-time RMSE 2.66 for the linear-leaf tree.
 
-Out-of-time evaluation split:
-  Train: 180 rows (2025-01-01 to 2025-03-31)
-  Test : 60 rows (2025-04-01 to 2025-04-30)
-
-=== 2. ModelTree Out-of-Time Forecasting vs CART Step Function ===
-Standard CART (Mean) : Test RMSE = 12.87, R2 = 0.787, MAE = 10.06
-ModelTree (Linear)   : Test RMSE = 4.26, R2 = 0.977, MAE = 3.56
---> Out-of-time forecast error reduction: 66.9%
-```
-
-| Model Configuration | Leaf Type | Out-of-Time Test RMSE | Out-of-Time $R^2$ | Test MAE | Forecast Error Reduction |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Standard CART Baseline** | Piecewise Mean | 12.87 | 0.787 | 10.06 | Baseline |
-| **`mltreelib.ModelTree`** | Piecewise Linear Ridge | **4.26** | **0.977** | **3.56** | **66.9% Lower Error** |
+On this synthetic panel the linear leaves give the lower error. Mean leaves predict piecewise-constant values, so they cannot follow the upward trend beyond the training range. These are results for one simulated panel with one seed, not a general forecasting benchmark. The decomposed feature uses the whole panel, so this example is not a strictly out-of-time feature set.
 
 ![Time Series Additive Decomposition and Out-of-Time Forecasting](../assets/timeseries_decomposition.png)
-
-### Key Quantitative Findings:
-
-1. **Massive Out-of-Time Error Drop (66.9%)**: `ModelTree` reduces out-of-sample RMSE from **12.87 to 4.26** and lifts $R^2$ from **0.787 to 0.977**, accurately capturing post-March trend expansion.
-2. **Elimination of the Flat Ceiling (Panel 2)**: Standard CART flattens into horizontal plateaus as test dates exceed training values. `ModelTree` linear leaves maintain positive trend derivatives across all store cohorts.
-3. **Rust Transformation Latency**: Feature engineering on the multi-store panel executes in compiled Rust, completely eliminating Python date-parsing and pandas groupby bottlenecks.
 
 ---
 

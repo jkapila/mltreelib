@@ -83,7 +83,8 @@ In heavy machinery, missing sensor values are rarely missing-at-random. A sensor
 import pandas as pd
 from mltreelib import Metrics, ModelTree
 
-df = pd.read_parquet("datasets/APSFailure.parquet")
+from mltreelib import dataset_path
+df = pd.read_parquet(dataset_path("APSFailure"))
 target = "AirPressureSystemFailure"
 features = [c for c in df.columns if c != target]
 

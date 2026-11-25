@@ -130,7 +130,8 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 plots.plot_calibration(y_true, y_prob_champ, ax=ax1)
 plots.plot_double_lift(y_true, y_prob_chal, y_prob_champ, ax=ax2)
 plt.tight_layout()
-plt.show()
+# In a script or notebook, call plt.show() to display the figure.
+plt.close(fig)
 ```
 
 <!-- output -->

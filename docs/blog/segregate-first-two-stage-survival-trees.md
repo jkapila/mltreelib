@@ -125,7 +125,8 @@ from mltreelib import ModelTree, Metrics
 import numpy as np
 
 # 1. Load benchmark dataset
-table = pq.read_table("datasets/Bank_Customer_Churn.parquet")
+from mltreelib import dataset_path
+table = pq.read_table(dataset_path("Bank_Customer_Churn"))
 df = table.to_pydict()
 n = len(df["churn"])
 

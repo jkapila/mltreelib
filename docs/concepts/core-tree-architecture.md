@@ -77,6 +77,7 @@ flowchart LR
 
 We evaluate the architecture on the standard civil engineering benchmark: Yeh (1998) Concrete Compressive Strength (1,030 industrial concrete mixtures, 8 continuous ingredients; 80% train / 20% test).
 
+<!-- run -->
 ```python
 from mltreelib import ModelTree, LeafControl, Metrics, load_dataset
 
@@ -114,6 +115,11 @@ model.fit(X_train, y_train, col_names=feature_names)
 preds = model.predict(X_test)
 m = Metrics().regression(y_test, preds)
 print(f"ModelTree Linear Leaves: RMSE = {m['rmse']:.2f} MPa, R2 = {m['r2']:.3f}, MAE = {m['mae']:.2f} MPa")
+```
+
+<!-- output -->
+```text
+ModelTree Linear Leaves: RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
 ```
 
 ---
@@ -154,6 +160,7 @@ Depth 5 -> CART RMSE: 9.53 MPa  | ModelTree RMSE: 6.25 MPa (21 leaves)
 
 Every terminal leaf in `ModelTree` computes a comprehensive **0D statistical profile** over its assigned partition samples without extra passes. Access these profiles directly via `leaf["stats"]` or `tree.leaf_stats()`:
 
+<!-- run -->
 ```python
 leaves = model.leaves()
 for idx, leaf in enumerate(leaves[:2]):
@@ -164,13 +171,13 @@ for idx, leaf in enumerate(leaves[:2]):
     print(f"  Shape  : skewness={stats['skew']:.2f}, kurtosis={stats['kurtosis']:.2f}")
 ```
 
+<!-- output -->
 ```text
-Leaf 0 (n=143):
+Leaf 0 (support n=143):
   Center : mean=15.44, median=14.37
   Spread : variance=45.41, MAD=4.15, IQR=8.96
   Shape  : skewness=1.10, kurtosis=1.79
-
-Leaf 1 (n=47):
+Leaf 1 (support n=47):
   Center : mean=27.67, median=25.69
   Spread : variance=48.11, MAD=4.43, IQR=10.67
   Shape  : skewness=0.41, kurtosis=-0.51

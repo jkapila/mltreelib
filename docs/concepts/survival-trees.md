@@ -177,6 +177,32 @@ Standard survival tree libraries fit flat step functions in leaves. `mltreelib` 
 
 Fit trees using the standard 2-tuple target `(durations, events)`:
 
+The examples below use a seeded synthetic competing-risks cohort: 800 patients, two covariates (`age`, `biomarker`), cause 1 = relapse, cause 2 = competing death, and 0 = censored. The first 600 rows train the trees and the rest are test rows.
+
+<!-- run -->
+```python
+import numpy as np
+from mltreelib import ModelTree
+
+rng = np.random.default_rng(2026)
+n = 800
+age = rng.normal(0.0, 1.0, n)
+biomarker = rng.normal(0.0, 1.0, n)
+t1 = rng.exponential(3.0 * np.exp(-(0.5 * biomarker + 0.2 * age)))  # latent time to cause 1
+t2 = rng.exponential(5.0 * np.exp(-0.3 * age))                      # latent time to cause 2
+cens = rng.exponential(6.0, n)
+dur = np.minimum(np.minimum(t1, t2), cens)
+ev = np.where(dur == cens, 0, np.where(t1 <= t2, 1, 2))
+
+X = np.column_stack([age, biomarker]).tolist()
+col_names = ["age", "biomarker"]
+X_train, X_test = X[:600], X[600:]
+dur_train, ev_train = dur[:600].tolist(), ev[:600].tolist()
+dur_test, ev_test = dur[600:].tolist(), ev[600:].tolist()
+time_horizons = [1.0, 2.0, 5.0]
+```
+
+<!-- run -->
 ```python
 from mltreelib import ModelTree
 
@@ -187,7 +213,7 @@ tree = ModelTree(
     gain="gray",
     target_cause=1,
 )
-tree.fit(X_train, (dur_train, ev_train))
+tree.fit(X_train, (dur_train, ev_train), col_names=col_names)
 
 # 2. Frontier parametric AFT tree with smooth Weibull linear leaves
 tree_aft = ModelTree(
@@ -198,23 +224,14 @@ tree_aft = ModelTree(
     aft_dist="weibull",   # "weibull", "lognormal", or "loglogistic"
     leaf="linear",        # Linear covariate response inside each leaf
 )
-tree_aft.fit(X_train, (dur_train, ev_train))
-```
-
-Console Output:
-
-```text
->>> tree.fit(X_train, (dur_train, ev_train))
-Tree fitted successfully! Total leaves: 5, depth: 3
-
->>> tree_aft.fit(X_train, (dur_train, ev_train))
-AFT Tree fitted successfully! Total leaves: 6, depth: 3
+tree_aft.fit(X_train, (dur_train, ev_train), col_names=col_names)
 ```
 
 ### Prediction Methods via `kind`
 
 Query predictions using the unified `predict` method:
 
+<!-- run -->
 ```python
 # Select 3 sample test patients across prognostic risk strata
 X_sample = X_test[:3]
@@ -249,6 +266,27 @@ risk_scores = tree.predict(X_sample, kind="risk", cause=1)
 print("5. Prognostic Risk Scores (Cause 1):", [round(r, 4) for r in risk_scores])
 ```
 
+<!-- output -->
+```text
+1. Predicted Median Survival Times: [1.4, 1.66, 1.4]
+2. Survival Probabilities S(t) at horizons [1.0, 2.0, 5.0]:
+   Patient 1: [0.6173, 0.4061, 0.0221]
+   Patient 2: [0.6195, 0.4172, 0.0822]
+   Patient 3: [0.6173, 0.4061, 0.0221]
+3. Cumulative Hazard Lambda(t) at horizons [1.0, 2.0, 5.0]:
+   Patient 1: [0.4805, 0.8961, 3.5955]
+   Patient 2: [0.4771, 0.8698, 2.4466]
+   Patient 3: [0.4805, 0.8961, 3.5955]
+4. Cumulative Incidence F_c(t) for Cause 1 & Cause 2:
+   Patient 1 Cause 1 (Relapse): [0.2455, 0.3612, 0.5673]
+   Patient 1 Cause 2 (Death):   [0.1372, 0.2327, 0.4106]
+   Patient 2 Cause 1 (Relapse): [0.1665, 0.2378, 0.4185]
+   Patient 2 Cause 2 (Death):   [0.214, 0.345, 0.4992]
+   Patient 3 Cause 1 (Relapse): [0.2455, 0.3612, 0.5673]
+   Patient 3 Cause 2 (Death):   [0.1372, 0.2327, 0.4106]
+5. Prognostic Risk Scores (Cause 1): [-1.3951, -1.6617, -1.3951]
+```
+
 Console Output:
 
 ```text
@@ -281,6 +319,7 @@ Console Output:
 
 Evaluate models with classical IPCW concordance and frontier calibration metrics:
 
+<!-- run -->
 ```python
 from mltreelib import (
     Metrics,
@@ -335,6 +374,18 @@ cr_rep = competing_risks_calibration(
 print(f"Competing Risks: Cause 1 ICI = {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI = {cr_rep['cause_ici'][2]:.4f}")
 ```
 
+<!-- output -->
+```text
+Cause 1 Harrell C:  0.6647
+Cause 1 Uno IPCW C: 0.6666
+Cause 1 IBS:        0.2101
+Brier at horizons:  {'1': 0.1759, '2': 0.2097, '5': 0.2219}
+D-Calibration: Chi2 = 380.026, p-value = 0.0000, Calibrated = False
+ICI: 0.5672, E50: 0.4702, E90: 1.0000, Emax: 1.0000
+1-Calibration: Intercept = 0.564, Slope = 0.255
+Competing Risks: Cause 1 ICI = 0.4270, Cause 2 ICI = 0.3489
+```
+
 Console Output:
 
 ```text
@@ -355,9 +406,36 @@ Competing Risks: Cause 1 ICI = 0.0384, Cause 2 ICI = 0.0412
 
 Extract human-readable decision rules using Quinlan's rule syntax:
 
+<!-- run -->
 ```python
 rules = tree.extract_rules()
 print(rules)
+```
+
+<!-- output -->
+```text
+RuleSet (4 rules, default prediction = 0.0000, default confidence = 50.0%):
+
+Rule 1 (cover: 189, errors: 0, confidence: 95.0%):
+  IF biomarker <= -0.5670
+  THEN prediction = 1.6617
+
+Rule 2 (cover: 176, errors: 0, confidence: 95.0%):
+  IF biomarker > -0.5670
+     AND biomarker <= 0.2120
+  THEN prediction = 1.3951
+
+Rule 3 (cover: 148, errors: 0, confidence: 95.0%):
+  IF biomarker > 0.2120
+     AND biomarker <= 0.9510
+  THEN prediction = 1.0404
+
+Rule 4 (cover: 87, errors: 0, confidence: 95.0%):
+  IF biomarker > 0.9510
+  THEN prediction = 0.7843
+
+Default Rule:
+  THEN prediction = 0.0000 (confidence: 50.0%)
 ```
 
 Console Output on Benchmark Cohort ($N=600$ training):
