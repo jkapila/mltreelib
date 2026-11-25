@@ -142,7 +142,7 @@ encoded_features = target_enc.transform(merchants)
 print("Smoothed Target Encodings:", [round(v, 3) for v in encoded_features])
 
 # 2. Ordered Target Encoding (Leakage-Free Training)
-cb_enc = CatBoostEncoder(prior=5.0, permutations=4, seed=2026)
+cb_enc = CatBoostEncoder(prior=0.5, permutations=4, seed=2026)  # prior multiplies the global mean; keep it <= 1 for a 0/1 target
 ordered_features = cb_enc.fit_transform(merchants, labels)
 print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
 ```
@@ -150,7 +150,7 @@ print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
 <!-- output -->
 ```text
 Smoothed Target Encodings: [0.792, 0.619, 0.792, 0.556, 0.619, 0.792]
-Ordered CatBoost Encodings: [2.653, 2.458, 2.264, 3.333, 2.917, 2.361]
+Ordered CatBoost Encodings: [0.528, 0.583, 0.639, 0.333, 0.292, 0.611]
 ```
 
 ---
