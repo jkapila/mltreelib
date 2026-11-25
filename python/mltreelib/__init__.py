@@ -70,6 +70,7 @@ from mltreelib._core import (
     winnow,
 )
 from mltreelib.components import ComponentModel, ComponentResult
+from mltreelib.metrics_report import MetricsReport
 from mltreelib.models import (
     AnomalyModel,
     AnomalyResult,
@@ -145,6 +146,7 @@ __all__ = [
     "MEstimatorEncoder",
     "MarsRegressor",
     "Metrics",
+    "MetricsReport",
     "ModelReport",
     "ModelTree",
     "OneHotEncoder",
