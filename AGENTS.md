@@ -25,6 +25,8 @@ mltreelib is a one-stop, end-to-end library for building models the right way, f
 
 Hard rules: **no scikit-learn dependency, ever**; shrink the dependency set and build inside the package when possible; **missing values are never imputed, dropped or recoded by data helpers** (only the model handles them); defaults are identical on every surface; results are reproducible to about 12 significant digits on the same platform.
 
+**Resuming work?** Read the latest dated handoff in `references/research/` (currently [2026-11-26-session-handoff.md](references/research/2026-11-26-session-handoff.md)) for branch state, open issues and the ordered next steps.
+
 ## Contributor guides (read before changing anything)
 
 | Topic | Read |
