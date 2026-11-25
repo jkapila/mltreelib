@@ -19,6 +19,7 @@ jobs:
         run: |
           uv sync --group dev
           uv run python scripts/docs/check_nav.py
+          uv run python scripts/docs/check_benchmarks.py
           uv run zensical build
           uv run python scripts/generate_sitemap_and_aeo.py
       - name: Publish to gh-pages

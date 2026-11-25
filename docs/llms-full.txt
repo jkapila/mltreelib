@@ -92,6 +92,12 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
     ```
 
+!!! example "Output of `examples/quickstart.py`"
+
+    ```text
+    --8<-- "docs/snippets/outputs/quickstart.txt"
+    ```
+
 === "ModelTree(leaf='mean') Baseline"
 
     ```python
@@ -305,7 +311,7 @@ This showcase provides an empirical benchmark across four distinct regression re
 All benchmarks run from a single reproducible script with zero `scikit-learn` dependency:
 
 ```bash
-uv run python -u examples/guides/regression_methods_showcase.py
+uv run python -u benchmarks/suites/regression_methods_showcase.py
 ```
 
 ```mermaid
@@ -513,6 +519,16 @@ pred_huber = huber_tree.predict(X_test)
     - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
     - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
     - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+
+## Full output
+
+Everything the script prints, captured from a real run. Fit times depend on your machine; error metrics are fixed by the seeds in the script.
+
+!!! example "Output of `benchmarks/suites/regression_methods_showcase.py`"
+
+    ```text
+    --8<-- "docs/snippets/outputs/regression_methods_showcase.txt"
+    ```
 
 
 ---
@@ -980,7 +996,6 @@ print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["thr
 ```
 
 !!! tip "Related guides"
-    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full mathematical derivations.
     - [Survival & Competing Risks Trees](survival-trees.md) for right-censored time-to-event outcomes.
 
 
@@ -1109,13 +1124,13 @@ Synthetic truth is available here: the selected policy's true net value is 0.725
 
 ## Next steps and references
 
-[Causal uplift guide](uplift.md) · [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
+[Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
 
 ---
 
 ## Worked example: recovering a known treatment effect
 
-Use simulation to check numerical effect recovery. The [Hillstrom pathway](uplift.md) shows how to evaluate a real randomized policy when individual effects are unknown.
+Use simulation to check numerical effect recovery. The Hillstrom sections above show how to evaluate a real randomized policy when individual effects are unknown.
 
 ![Expected net outcome of three policies in the controlled randomized simulation](../assets/guides/uplift-evaluation.svg)
 
@@ -1322,7 +1337,7 @@ from mltreelib import AnomalyModel
 
 eif = AnomalyModel(kind="eif", max_depth=8, seed=42)
 eif.fit(X_telemetry)
-anomaly_scores = eif.score_samples(X_telemetry)
+anomaly_scores = eif.predict_score(X_telemetry)
 ```
 
 ---
@@ -2153,9 +2168,6 @@ print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
 print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
 ```
 
-!!! tip "Related guides"
-    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for full convergence benchmark tables.
-
 
 ---
 
@@ -2426,7 +2438,6 @@ uv run python benchmarks/suites/component_benchmarks.py
 Executable Reference Scripts:
 - [`examples/guides/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
 - [`benchmarks/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py) — Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
-- [Components and rotations](components-and-rotations.md) — component benchmarks and rotation checks.
 
 ---
 

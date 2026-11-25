@@ -19,7 +19,7 @@ This showcase provides an empirical benchmark across four distinct regression re
 All benchmarks run from a single reproducible script with zero `scikit-learn` dependency:
 
 ```bash
-uv run python -u examples/guides/regression_methods_showcase.py
+uv run python -u benchmarks/suites/regression_methods_showcase.py
 ```
 
 ```mermaid
@@ -227,3 +227,13 @@ pred_huber = huber_tree.predict(X_test)
     - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
     - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
     - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+
+## Full output
+
+Everything the script prints, captured from a real run. Fit times depend on your machine; error metrics are fixed by the seeds in the script.
+
+!!! example "Output of `benchmarks/suites/regression_methods_showcase.py`"
+
+    ```text
+    --8<-- "docs/snippets/outputs/regression_methods_showcase.txt"
+    ```

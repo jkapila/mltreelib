@@ -31,7 +31,7 @@ Taxonomy of regression capabilities in mltreelib:
 -----------------------------------------------------------------------------------------
 
 Run:
-    uv run python examples/guides/regression_methods_showcase.py
+    uv run python benchmarks/suites/regression_methods_showcase.py
 """
 
 from __future__ import annotations

@@ -1,0 +1,122 @@
+# Benchmark manifest. `publish: true` entries are shown on the site and must have
+# a narrated page, a results file and a reproduce command (scripts/docs/check_benchmarks.py).
+# Everything else is an internal regression check and stays off the site.
+
+- id: elo-arena
+  script: benchmarks/arena/elo_score_all.py
+  title: "Elo arena: 56 datasets, 47 entrants"
+  page: benchmarks/elo.md
+  verifies: "Accuracy and speed of mltreelib against peer libraries on TabArena-v0.1 (OpenML suite 457)"
+  reproduce: uv run python -u benchmarks/arena/elo_score_all.py
+  results:
+    - benchmarks/elo_scores.csv
+    - benchmarks/elo_cla_scores.csv
+  publish: true
+- id: regression-methods
+  script: benchmarks/suites/regression_methods_showcase.py
+  title: "Regression methods across real datasets"
+  page: guides/regression-methods-showcase.md
+  verifies: "Huber, quantile, expectile, NNLS and group-lasso GAM against baselines"
+  reproduce: uv run python -u benchmarks/suites/regression_methods_showcase.py
+  results:
+    - docs/snippets/outputs/regression_methods_showcase.txt
+  publish: true
+- id: causal-benchmark
+  script: benchmarks/suites/causal_benchmark.py
+  publish: false
+- id: component-benchmarks
+  script: benchmarks/suites/component_benchmarks.py
+  publish: false
+- id: constraints-and-honesty
+  script: benchmarks/suites/constraints_and_honesty.py
+  publish: false
+- id: constraints-check
+  script: benchmarks/suites/constraints_check.py
+  publish: false
+- id: core-tree-architecture
+  script: benchmarks/suites/core_tree_architecture.py
+  publish: false
+- id: default-search
+  script: benchmarks/suites/default_search.py
+  publish: false
+- id: distributional-leaf-benchmarks
+  script: benchmarks/suites/distributional_leaf_benchmarks.py
+  publish: false
+- id: missing-routing-benchmark
+  script: benchmarks/suites/missing_routing_benchmark.py
+  publish: false
+- id: solver-benchmarks
+  script: benchmarks/suites/solver_benchmarks.py
+  publish: false
+- id: statistical-and-metric-splitting
+  script: benchmarks/suites/statistical_and_metric_splitting.py
+  publish: false
+- id: stump-leaf-retrain
+  script: benchmarks/suites/stump_leaf_retrain.py
+  publish: false
+- id: survival-and-competing-risks
+  script: benchmarks/suites/survival_and_competing_risks.py
+  publish: false
+- id: survival-benchmark
+  script: benchmarks/suites/survival_benchmark.py
+  publish: false
+- id: timeseries-additive-forecasting
+  script: benchmarks/suites/timeseries_additive_forecasting.py
+  publish: false
+- id: tobit-benchmark
+  script: benchmarks/suites/tobit_benchmark.py
+  publish: false
+- id: unsupervised-trees
+  script: benchmarks/suites/unsupervised_trees.py
+  publish: false
+- id: validate-solvers-and-splits
+  script: benchmarks/suites/validate_solvers_and_splits.py
+  publish: false
+- id: bench-binned-splits
+  script: benchmarks/speed/bench_binned_splits.py
+  publish: false
+- id: bench-bootstrap-scaling
+  script: benchmarks/speed/bench_bootstrap_scaling.py
+  publish: false
+- id: bench-optimizations
+  script: benchmarks/speed/bench_optimizations.py
+  publish: false
+- id: benchmark-large-scale
+  script: benchmarks/speed/benchmark_large_scale.py
+  publish: false
+- id: benchmark-optimizers
+  script: benchmarks/speed/benchmark_optimizers.py
+  publish: false
+- id: benchmark-real-classification
+  script: benchmarks/speed/benchmark_real_classification.py
+  publish: false
+- id: benchmark-solvers
+  script: benchmarks/speed/benchmark_solvers.py
+  publish: false
+- id: benchmark-standalone-solvers
+  script: benchmarks/speed/benchmark_standalone_solvers.py
+  publish: false
+- id: benchmark-unified-trees
+  script: benchmarks/speed/benchmark_unified_trees.py
+  publish: false
+- id: model-tree-benchmark
+  script: benchmarks/speed/model_tree_benchmark.py
+  publish: false
+- id: purity-and-mars-benchmark
+  script: benchmarks/speed/purity_and_mars_benchmark.py
+  publish: false
+- id: realdata-benchmark
+  script: benchmarks/speed/realdata_benchmark.py
+  publish: false
+- id: speed-run
+  script: benchmarks/speed/speed_run.py
+  publish: false
+- id: speed-scan
+  script: benchmarks/speed/speed_scan.py
+  publish: false
+- id: tune-elo-regression
+  script: benchmarks/hpo/tune_elo_regression.py
+  publish: false
+- id: tune-knn-leaves
+  script: benchmarks/hpo/tune_knn_leaves.py
+  publish: false

@@ -79,6 +79,12 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
     print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
     ```
 
+!!! example "Output of `examples/quickstart.py`"
+
+    ```text
+    --8<-- "docs/snippets/outputs/quickstart.txt"
+    ```
+
 === "ModelTree(leaf='mean') Baseline"
 
     ```python

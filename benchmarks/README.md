@@ -1,120 +1,34 @@
-# Elo Benchmarking & ModelTree Experimentation Guide
+# Benchmarks
 
-This guide describes how to run, manage, and extend the multi-language Elo benchmarking arena (comparing **Python, Rust, and R** models) and how to configure and benchmark experimental knobs for **`ModelTree`**.
+Benchmarks measure; examples teach (see `examples/`). Everything here may be slow and may need datasets or R.
 
----
+```text
+benchmarks/
+├── benchmarks.yaml   manifest: which benchmarks are published to the site
+├── arena/            Elo arena: prepare, fit, score and report (and the MARS fixtures it uses)
+├── suites/           one verification suite per topic; also the regression methods study
+├── speed/            speed and scaling checks
+├── hpo/              internal tuning runs
+├── elo_*.csv         small tracked results the site reads
+└── runs/ rounds/ *_data/ logs   run artifacts; most of these are not meant to be tracked
+```
 
-## 1. Quick Start
+## Publishing a benchmark
 
-All runs enforce a strict **300s process-group timeout** (hard kill via `SIGKILL` without thread leakage). External challengers are loaded ephemerally via `uv run --with ...`, keeping the core `mltreelib` virtualenv dependency-lean.
+A benchmark appears on the site only if its entry in `benchmarks.yaml` has `publish: true`. The docs build runs `scripts/docs/check_benchmarks.py`, which fails unless the entry has:
 
-### Run Full Regression Suite (18 Datasets, 34 Models)
+- a `page` that is in the nav, with narration (what it verifies, how to read it, its limits)
+- `results` files that exist (a small CSV, or a captured output)
+- a `reproduce` command
+- a `title`
+
+Every script under `suites/`, `speed/` and `hpo/` must be listed in the manifest, published or not.
+
+## Capturing printed output for docs
+
 ```bash
-bash benchmarks/arena/elo_run_resume.sh
-```
-Or directly via Python orchestrator:
-```bash
-uv run \
-  --with pandas --with pyarrow --with numpy \
-  --with lightgbm --with catboost --with ctboost --with chimeraboost \
-  --with interpret --with scikit-learn --with statsmodels \
-  --with mars-earth --with trust-free --with forust --with perpetual \
-  python benchmarks/arena/elo_score_all.py --task reg
+uv run python scripts/docs/capture_outputs.py benchmarks/suites/regression_methods_showcase.py
+uv run python scripts/docs/capture_outputs.py --check examples/quickstart.py
 ```
 
-### Run Full Classification Suite (24 Datasets, 28 Models)
-```bash
-bash benchmarks/arena/elo_run_cla.sh
-```
-Or directly:
-```bash
-uv run \
-  --with pandas --with pyarrow --with numpy \
-  --with lightgbm --with catboost --with ctboost --with chimeraboost \
-  --with interpret --with scikit-learn --with statsmodels \
-  --with mars-earth --with trust-free --with forust --with perpetual \
-  python benchmarks/arena/elo_score_all.py --task cla
-```
-*(Note: ModelTree classification is currently undergoing internal development and will be attached to the classification board once complete.)*
-
-### View Live Elo Leaderboards
-```bash
-uv run python benchmarks/arena/elo_report.py        # Regression Elo ratings
-uv run python benchmarks/arena/elo_report_cla.py    # Classification Elo ratings
-```
-
----
-
-## 2. Managing Runs & Common Flags
-
-| Environment Variable | Description | Example |
-| :--- | :--- | :--- |
-| `ELO_DATASETS` | Restrict run to specific comma-separated datasets | `ELO_DATASETS=ta_fiat500,boston` |
-| `ELO_RETRY=1` | Force re-running pairs that previously scored or failed | `ELO_RETRY=1` |
-| `ELO_EXCLUDE` | Exclude model name substrings (e.g. skip challengers) | `ELO_EXCLUDE=sklearn,statsmodels` |
-| `--budget <sec>` | Adjust hard timeout per fit (default `300.0`s) | `--budget 60.0` |
-
-Logs are streamed live to stdout and appended to `benchmarks/elo_run.log` (or `benchmarks/elo_cla_run.log`).
-
----
-
-## 3. Data Ingestion & Categorical Taxonomy
-
-All data in `benchmarks/elo_data/` and `benchmarks/elo_cla_data/` is kept **raw**:
-- Categorical features are preserved as strings without one-hot encoding or arbitrary column capping.
-- Each dataset includes `<dataset>.meta.json` defining column roles (`numeric` vs `categorical`).
-
-In the output CSVs (`benchmarks/elo_scores.csv` and `benchmarks/elo_cla_scores.csv`), every entry tracks how categoricals were handled:
-- **`internal`** (*native / as-is*): Consumes raw categories directly without driver encoding (`ModelTree`, `LightGBM`, `CatBoost`, `CTBoost`, `ChimeraBoost`, `EBM`, `HistGradientBoosting`, `modeltrees`, R factors like `rpart`, `cubist`, `C5.0`, `ctree`, `glmtree`).
-- **`external`** (*driver-encoded*): Requires driver-side `OrdinalEncoder` fit on train (`sklearn RF`, `sklearn GBM`, `ExtraTrees`, `sklearn tree`, `forust`, `perpetual`, `MARS`).
-- **`none`** (*numeric-only*): Strictly requires numeric matrices; refuses categorical columns (`statsmodels`, `trust-free`, R `grf`).
-
----
-
-## 4. `ModelTree` Knobs & Experimentation Guide
-
-`ModelTree` (implemented in pure Rust with PyO3 bindings) exposes rich algorithmic knobs that can be systematically benchmarked.
-
-### Available Knobs in `ModelTree(**kwargs)`
-
-1. **Significance & Hypothesis Testing (MOB-style)**:
-   - `split_test`: `"chow"` (structural break test) or `"none"`.
-   - `split_alpha`: significance threshold (default `0.05`).
-   - `bonferroni`: whether to apply Bonferroni candidate correction (default `false`).
-   - *Result on `ta_fiat500`*: Drops RMSE from **789.07 down to 715.32**!
-
-2. **Categorical Search Strategies**:
-   - `cat_order`: `"frequency_desc"`, `"target_mean"`, or level list.
-   - `cat_search`: `"cumulative"`, `"single_vs_rest"`, or `"both"`.
-   - *Result on `credit-g`*: Drops logloss from **0.8776 down to 0.7156**!
-
-3. **Honesty & Sample Splitting (grf-style)**:
-   - `honesty`: `true` / `false` (structure / estimation split).
-   - `honesty_fraction`: fraction of data for structure (default `0.5`).
-   - *Result on `ta_fiat500`*: Drops RMSE from **789.07 down to 763.02**.
-
-4. **Split Criteria (Gain)**:
-   - `gain`: `"sse"`, `"friedman_mse"`, `"absolute_error"`, `"huber"`, `"poisson"`, `"gini"`, `"entropy"`.
-
-5. **Leaf Models & Regularization**:
-   - `leaf`: `"linear"`, `"mean"`, `"median"`, `"quantile"`, `"huber"`.
-   - `l1`: Lasso penalty on leaf slopes.
-   - `l2`: Ridge penalty on leaf slopes (default `0.5`).
-   - `leaf_cols`: `"all"` vs `"path"` (split-path columns only).
-
-6. **Screening & Preselection**:
-   - `preselect`: `"none"`, `"winnow"`, `"boruta"`, `"shadowmax"`, `"variance"`, `"mutual_info"`, `"unitree"`.
-   - `min_relevance`: threshold for screening.
-
-### How to Add a New ModelTree Variant to the Elo Board
-
-Edit [`benchmarks/arena/elo_models_reg.py`](file:///mnt/d/Programs/mltreelib/benchmarks/arena/elo_models_reg.py) or [`benchmarks/arena/elo_models_cla.py`](file:///mnt/d/Programs/mltreelib/benchmarks/arena/elo_models_cla.py):
-
-```python
-# In make_models():
-ms["ModelTree(chow)"] = make_mt("linear", "all", split_test="chow", split_alpha=0.05, bonferroni=True)
-ms["ModelTree(target_mean)"] = make_mt("linear", "all", cat_order="target_mean", cat_search="both")
-ms["ModelTree(honest)"] = make_mt("linear", "all", honesty=True, honesty_fraction=0.5)
-```
-
-The orchestrator will automatically pick up the new variants on the next run.
+This saves stdout to `docs/snippets/outputs/<script>.txt`. Pages embed it with `--8<-- "docs/snippets/outputs/<script>.txt"` inside a `text` fence, so the printed result is what the script really prints. `--check` fails when a saved output is stale. Use it only for scripts whose output has no timings; benchmark outputs that print fit times will always differ between runs.
