@@ -10,6 +10,9 @@ Tunes:
 Evaluates:
 1. Binary Classification: credit-g (1,000 rows x 20 features)
 2. Multiclass Classification: SDSS17 (78,053 rows, subsample 10,000 for fast trials x 11 features, 3 classes)
+
+Usage:
+    uv run --with optuna python examples/guides/hpo_optuna_classification.py
 """
 
 import csv

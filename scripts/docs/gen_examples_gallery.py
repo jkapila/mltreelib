@@ -1,7 +1,7 @@
 """Generate docs/examples.md: one table row per runnable script in examples/.
 
 Run: uv run python scripts/docs/gen_examples_gallery.py
-The 'What it shows' column is the first line of each script's module docstring.
+The 'What it shows' column is the first line of each script's module docstring; the 'Run' column is the first `uv run` line of its Usage block (scripts that need extra packages use `uv run --with <package> python ...`).
 """
 
 import ast
@@ -14,7 +14,8 @@ for f in sorted((root / "examples").rglob("*.py")):
     doc = ast.get_docstring(ast.parse(f.read_text(encoding="utf-8"))) or ""
     first = doc.strip().split("\n")[0].strip().rstrip(".") if doc else ""
     rel = f.relative_to(root).as_posix()
-    rows.append(f"| [`{f.name}`]({BLOB}{rel}) | {first.replace('|', '/') or '-'} |")
+    cmd = next((ln.strip() for ln in doc.splitlines() if ln.strip().startswith("uv run")), f"uv run python {rel}")
+    rows.append(f"| [`{f.name}`]({BLOB}{rel}) | {first.replace('|', '/') or '-'} | `{cmd}` |")
 
 page = f"""---
 title: Examples
@@ -31,8 +32,8 @@ Run any script from the repository root:
 uv run python examples/quickstart.py
 ```
 
-| Script | What it shows |
-| :--- | :--- |
+| Script | What it shows | Run |
+| :--- | :--- | :--- |
 {chr(10).join(rows)}
 """
 (root / "docs" / "examples.md").write_text(page, encoding="utf-8")

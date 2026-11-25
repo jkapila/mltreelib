@@ -20,6 +20,9 @@ Builds on:
    - mltreelib ModelTree (Piecewise linear)
 
 Outputs both PNG and SVG to docs/assets/.
+
+Usage:
+    uv run --with catboost --with lightgbm --with scikit-learn python examples/guides/plot_sklearn_comparisons.py
 """
 
 from pathlib import Path

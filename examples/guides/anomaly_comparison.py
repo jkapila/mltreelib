@@ -34,6 +34,7 @@ from mltreelib import (
     GritBot,
     UnsupervisedRandomForest,
 )
+from mltreelib.data import xy
 
 
 def compute_spearman_rank_corr(x, y):
@@ -87,8 +88,8 @@ def main():
     all_cols = num_cols + cat_cols
     dtypes = ["float"] * len(num_cols) + ["cat"] * len(cat_cols)
 
-    data_mixed = df[all_cols].values.tolist()
-    data_num = df[num_cols].values.tolist()
+    data_mixed = xy(df, "good_or_bad_customer", features=all_cols)["x"]
+    data_num = xy(df, "good_or_bad_customer", features=num_cols)["x"]
 
     # Min-max normalize numeric data to [0, 1] for fixed-window and non-negative algorithms
     num_arr = np.array(data_num, dtype=float)

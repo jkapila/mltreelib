@@ -17,6 +17,7 @@ Run:
 import time
 
 from mltreelib import LeafControl, ModelTree
+from mltreelib.data import xy
 from mltreelib.datasets import load_dataset
 
 
@@ -61,9 +62,8 @@ def main():
     d = load_dataset("healthcare_insurance_expenses")
     cols = ["age", "bmi", "children", "smoker"]
     n_rows = len(d["columns"]["charges"])
-    x = [[d["columns"][c][i] for c in cols] for i in range(n_rows)]
-    y = d["columns"]["charges"]
-    dtypes = ["numeric", "numeric", "numeric", "categorical"]
+    dx = xy(d, "charges", features=cols)
+    x, y, dtypes = dx["x"], dx["y"], dx["dtypes"]
 
     # 1. Fit base decision stump (max_depth=1)
     t0 = time.perf_counter()

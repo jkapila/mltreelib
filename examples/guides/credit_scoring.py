@@ -4,6 +4,9 @@ Evaluates 150,000 applicants from Give Me Some Credit (OpenML 46929).
 Compares Empirical Prior Baseline, Linear Scorecard, Glass-Box Tree (depth=3),
 and Monotone-Constrained Tree (depth=4) across a 20-seed benchmark.
 Generates publication-quality calibration, cost-curve, and tree architecture diagrams.
+
+Usage:
+    uv run --with lightgbm --with scikit-learn --with scipy python examples/guides/credit_scoring.py
 """
 
 import os
@@ -26,6 +29,7 @@ from sklearn.preprocessing import StandardScaler
 from lightgbm import LGBMClassifier
 
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import missing_profile, train_val_test_split, xy
 
 
 def load_credit_data(path: str = "datasets/GiveMeSomeCredit.parquet") -> pd.DataFrame:
@@ -83,32 +87,31 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     features = [c for c in df.columns if c != target]
 
     y_all = (df[target] == "Yes").astype(int).to_numpy()
-    X_all = df[features].to_numpy()
+    # numpy for SimpleImputer and fancy indexing; xy keeps NaN as missing
+    X_all = np.array(xy(df, target, features=features)["x"], dtype=float)
     n_total = len(df)
     n_pos = sum(y_all)
     prevalence = n_pos / n_total * 100.0
 
     print(f"Total applicants: {n_total:,} | Distress events: {n_pos:,} ({prevalence:.2f}%)")
-    missing_counts = df[features].isna().sum()
+    mp = missing_profile(df[features])
     print("Missing values in features:")
-    for col, cnt in missing_counts[missing_counts > 0].items():
-        print(f"  - {col}: {cnt:,} missing ({cnt / n_total * 100.0:.2f}%)")
+    for col, s in mp["per_column"].items():
+        if s["n_missing"] > 0:
+            print(f"  - {col}: {s['n_missing']:,} missing ({s['pct_missing']:.2f}%)")
 
     # Domain monotonicity constraints:
     # Utilization (+1), Age (-1), 30-59 DPD (+1), DebtRatio (+1), Income (-1),
     # OpenCreditLines (0), 90 DPD (+1), RealEstate (0), 60-89 DPD (+1), Dependents (0)
     monotone_vec = [1, -1, 1, 1, -1, 0, 1, 0, 1, 0]
 
-    # Split sizes: 100,000 train, 25,000 validation, 25,000 test
-    n_train = 100000
+    # Split sizes: 100,000 train, 25,000 validation, 25,000 test (seeded shuffle)
     n_val = 25000
     n_test = 25000
 
     # 1. Single-Seed In-Depth Diagnosis (Seed 42)
     print("\n--- Fitting Glass-Box Decision Tree (Seed 42) ---")
-    rng0 = np.random.default_rng(42)
-    perm0 = rng0.permutation(n_total)
-    tr_idx, val_idx, te_idx = perm0[:n_train], perm0[n_train:n_train+n_val], perm0[n_train+n_val:]
+    tr_idx, val_idx, te_idx = train_val_test_split(n_total, val_size=n_val, test_size=n_test, seed=42)
 
     X_tr0, y_tr0 = X_all[tr_idx].tolist(), y_all[tr_idx].tolist()
     X_val0, y_val0 = X_all[val_idx].tolist(), y_all[val_idx].tolist()
@@ -240,9 +243,7 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     metrics_gbdt = {"cost": [], "queue": [], "brier": [], "auc": [], "ap": []}
 
     for seed in range(n_seeds):
-        rng = np.random.default_rng(2000 + seed)
-        perm = rng.permutation(n_total)
-        tr, val, te = perm[:n_train], perm[n_train:n_train+n_val], perm[n_train+n_val:]
+        tr, val, te = train_val_test_split(n_total, val_size=n_val, test_size=n_test, seed=2000 + seed)
 
         X_tr_np, y_tr_np = X_all[tr], y_all[tr]
         X_val_np, y_val_np = X_all[val], y_all[val]

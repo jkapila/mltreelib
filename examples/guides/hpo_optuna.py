@@ -10,7 +10,7 @@ Tunes:
 7. Honesty & Estimation: honesty, honesty_fraction
 
 Usage:
-    uv run --with pandas --with optuna python examples/guides/hpo_optuna.py [n_trials]
+    uv run --with optuna python examples/guides/hpo_optuna.py [n_trials]
 """
 
 import sys

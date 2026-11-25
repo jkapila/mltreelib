@@ -6,28 +6,31 @@ nothing is ever encoded), NAs route as-is. Raw categorical labels and missing pr
 Fit, evaluate, interpret.
 
     uv run python examples/guides/churn_demo.py
+    (optional: add `--with pygraphviz` after `uv run` to render the tree; needs Graphviz)
 """
 
 import pandas as pd
 from mltreelib import Metrics, ModelTree
+from mltreelib.data import select_rows, train_test_split, xy
 
 df = pd.read_parquet("datasets/Bank_Customer_Churn.parquet")
 y = (df["churn"] == "Yes").astype(float).tolist()  # churn: No/Yes -> 0/1
 print(f"rows: {len(df)}   churn rate: {sum(y) / len(y):.3f}")
 
-# Pass raw categories and missing predictors directly to ModelTree.
-cols = [c for c in df.columns if c != "churn"]
-n_train = int(0.8 * len(df))
+# Raw categories and missing predictors go straight to ModelTree (NaN is missing, kept as is).
+dx = xy(df, "churn")
+cols = dx["names"]
 dtypes = ["categorical" if col in ("country", "gender", "credit_card", "active_member") else "numeric" for col in cols]
-X = [[None if pd.isna(v) else v for v in row] for row in df[cols].itertuples(index=False, name=None)]
 print("columns (xN index -> name, dtype):")
 print(
     "  " + ", ".join(f"x{i}={n}({d[:4]})" for i, (n, d) in enumerate(zip(cols, dtypes)))
 )
 
-# Deterministic 80/20 split.
-xtr, ytr = X[:n_train], y[:n_train]
-xte, yte = X[n_train:], y[n_train:]
+# Deterministic 80/20 split, no shuffling: first 80% of rows train, last 20% test.
+tr_idx, te_idx = train_test_split(len(df), test_size=0.2, time_order=list(range(len(df))))
+train, test = select_rows(dx, tr_idx), select_rows(dx, te_idx)
+xtr, ytr = train["x"], [y[i] for i in tr_idx]
+xte, yte = test["x"], [y[i] for i in te_idx]
 
 model = ModelTree(max_depth=4, min_rows=40)
 model.fit(xtr, ytr, dtypes=dtypes, col_names=cols)

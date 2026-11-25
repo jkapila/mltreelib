@@ -5,26 +5,27 @@ step functions on continuous tabular dynamics (Yeh 1998 Concrete Compressive Str
 
 Usage:
     uv run python examples/quickstart.py
+    (optional: add `--with pygraphviz` after `uv run` to also render the tree as SVG; needs Graphviz)
 """
 
 import numpy as np
 from mltreelib import Metrics, ModelTree, load_dataset
+from mltreelib.data import select_rows, train_test_split, xy
 
 
 def main():
     # 1. Load standard real benchmark dataset (1,030 industrial concrete mixtures)
     data = load_dataset("concrete_compressive_strength")
     target = "ConcreteCompressiveStrength"
-    feature_names = [col for col in data["columns"].keys() if col != target]
     n_rows = data["n_rows"]
+    d = xy(data, target)
+    feature_names = d["names"]
 
-    X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-    y = data["columns"][target]
-
-    # 80/20 train/test split
-    split_idx = int(n_rows * 0.8)
-    X_train, y_train = X[:split_idx], y[:split_idx]
-    X_test, y_test = X[split_idx:], y[split_idx:]
+    # 80/20 train/test split, no shuffling: first 80% of rows train, last 20% test
+    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
+    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
+    X_train, y_train = train["x"], train["y"]
+    X_test, y_test = test["x"], test["y"]
 
     print(f"Loaded Concrete Compressive Strength: {n_rows} rows, {len(feature_names)} features.")
     print(f"Train rows: {len(X_train)}, Test rows: {len(X_test)}\n")

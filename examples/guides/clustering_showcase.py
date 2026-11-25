@@ -20,6 +20,7 @@ from mltreelib import (
     TrieKNN,
     UnsupervisedRandomForest,
 )
+from mltreelib.data import select_rows, take, train_test_split, xy
 
 
 def showcase_trie_knn(df):
@@ -36,12 +37,12 @@ def showcase_trie_knn(df):
     # Target: good_or_bad_customer (1 = good, 0 = bad)
     y_raw = df["good_or_bad_customer"].tolist()
     y = [1.0 if str(v).lower() in ["1", "good", "true"] else 0.0 for v in y_raw]
-    x = df[all_cols].values.tolist()
+    dx = xy(df, "good_or_bad_customer", features=all_cols)
 
-    # Split train / test
-    split = 800
-    x_train, y_train = x[:split], y[:split]
-    x_test, y_test = x[split:], y[split:]
+    # Split train / test: first 800 rows train, last 200 test (no shuffling)
+    tr, te = train_test_split(len(df), test_size=0.2, time_order=list(range(len(df))))
+    x_train, y_train = select_rows(dx, tr)["x"], take(y, tr)
+    x_test, y_test = select_rows(dx, te)["x"], take(y, te)
 
     model = TrieKNN(task="classification", k=5, weights="distance")
     model.fit(x_train, y_train, col_names=all_cols, dtypes=dtypes)
@@ -54,7 +55,7 @@ def showcase_trie_knn(df):
 
     print("\nSample Test Predictions:")
     for i in range(5):
-        row = df.iloc[split + i]
+        row = df.iloc[te[i]]
         actual = y_test[i]
         pred = preds[i]
         prob = probs[i]
@@ -99,7 +100,8 @@ def showcase_pct(df):
     desc_dtypes = ["cat", "cat", "cat", "float"]
     target_cols = ["duration_months", "credit_amount"]
 
-    x = df[descriptive_cols].values.tolist()
+    # x via xy; the multi-target y is not a single target column, so it stays as is.
+    x = xy(df, target_cols[0], features=descriptive_cols)["x"]
     y = df[target_cols].values.tolist()
 
     pct = PredictiveClusteringTree(
@@ -131,7 +133,7 @@ def showcase_pct(df):
         "installment_rate_percent",
         "age_years",
     ]
-    x_num = df[numeric_cols].values.tolist()
+    x_num = xy(df, "good_or_bad_customer", features=numeric_cols)["x"]
     pct_unsup = PredictiveClusteringTree(
         max_depth=3, min_samples_split=30, min_samples_leaf=15
     )
@@ -148,7 +150,7 @@ def showcase_cltree(df):
 
     # Use continuous features to isolate dense clusters from background empty space
     cols = ["duration_months", "credit_amount", "age_years"]
-    data = df[cols].values.tolist()
+    data = xy(df, "good_or_bad_customer", features=cols)["x"]
 
     clt = CLTree(max_depth=5, min_samples_leaf=15, min_density=0.60)
     clt.fit(data, col_names=cols)
@@ -184,7 +186,7 @@ def showcase_hdbscan(df):
 
     # Use continuous features: duration, credit_amount, age
     cols = ["duration_months", "credit_amount", "age_years"]
-    data = df[cols].values.tolist()
+    data = xy(df, "good_or_bad_customer", features=cols)["x"]
 
     # Normalize data for distance-based reachability
     means = [sum(row[j] for row in data) / len(data) for j in range(len(cols))]
@@ -252,7 +254,7 @@ def showcase_urf(df):
     print("=" * 80)
 
     cols = ["duration_months", "credit_amount", "age_years", "installment_rate_percent"]
-    data = df[cols].values.tolist()
+    data = xy(df, "good_or_bad_customer", features=cols)["x"]
 
     urf = UnsupervisedRandomForest(n_trees=50, max_depth=6, min_samples_leaf=5, seed=42)
     urf.fit(data, n_clusters=3)
