@@ -94,6 +94,7 @@ _LAZY_EXPORTS: dict[str, tuple[str, str | None]] = {
     "load_dataset": ("mltreelib.datasets", "load_dataset"),
     "dataset_path": ("mltreelib.datasets", "dataset_path"),
     "plots": ("mltreelib.plots", None),
+    "data": ("mltreelib.data", None),
 }
 
 
@@ -165,6 +166,7 @@ __all__ = [
     "competing_risks_calibration",
     "competing_risks_report",
     "d_calibration",
+    "data",
     "dataset_path",
     "decomposed_transform",
     "detect_quantile_crossings",
