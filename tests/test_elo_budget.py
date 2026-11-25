@@ -2,15 +2,15 @@ import sys
 import time
 from pathlib import Path
 
-# Add repo root and examples/ to sys.path
+# Add the arena scripts to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
-EXAMPLES_DIR = REPO_ROOT / "examples"
-for p in [str(REPO_ROOT), str(EXAMPLES_DIR)]:
+ARENA_DIR = REPO_ROOT / "benchmarks" / "arena"
+for p in [str(REPO_ROOT), str(ARENA_DIR)]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from examples.elo_budget import run_with_budget
-from examples.elo_common import ScoreSheet, calculate_elo
+from elo_budget import run_with_budget
+from elo_common import ScoreSheet, calculate_elo
 
 
 def test_run_with_budget_success():
