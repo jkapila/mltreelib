@@ -28,4 +28,4 @@ uv run pytest tests -q          # Python behaviour tests
 uv run ruff check <files>       # lint (must be clean)
 ```
 
-Network tests are gated (for example `MLTREELIB_NETWORK_TESTS=1`) and skipped by default. Run the Rust and Python suites before committing; run the docs gates in [definition-of-done.md](definition-of-done.md) when docs or examples changed.
+Tests that need an extra package use `pytest.importorskip` and run with `uv run --with <package> pytest <file>` (for example the CVXPY reference solvers in `tests/cvx_reference.py`); the package itself never depends on them. Network tests are gated (for example `MLTREELIB_NETWORK_TESTS=1`) and skipped by default. Run the Rust and Python suites before committing; run the docs gates in [definition-of-done.md](definition-of-done.md) when docs or examples changed.
