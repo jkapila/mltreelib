@@ -14,17 +14,17 @@
 
 - [Comprehensive Regression Showcase](https://jkapila.github.io/mltreelib/guides/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
 - [Piecewise Linear Trees & Cubist Rules](https://jkapila.github.io/mltreelib/guides/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
-- [Distributional & Censored Trees](https://jkapila.github.io/mltreelib/guides/distributional-and-censored-trees/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+- [Distributional & Censored Trees](https://jkapila.github.io/mltreelib/guides/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
 
 ## Causal & Unsupervised Learning
 
-- [Causal Uplift Modeling](https://jkapila.github.io/mltreelib/guides/causal-uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
-- [Unsupervised Clustering & Anomalies](https://jkapila.github.io/mltreelib/guides/unsupervised-clustering-and-anomalies/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
-- [PCA, Factor Analysis & Rotations](https://jkapila.github.io/mltreelib/guides/pca-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+- [Causal Uplift Modeling](https://jkapila.github.io/mltreelib/guides/uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
+- [Clustering & Anomaly Trees](https://jkapila.github.io/mltreelib/guides/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations](https://jkapila.github.io/mltreelib/guides/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
 
 ## Optimization & Solvers
 
-- [Solvers & Hyperparameter Tuning](https://jkapila.github.io/mltreelib/guides/optimization-and-tuning/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Solvers & Hyperparameter Tuning](https://jkapila.github.io/mltreelib/guides/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
 - [Model Inspection & Rules](https://jkapila.github.io/mltreelib/guides/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
 
 ## API Reference

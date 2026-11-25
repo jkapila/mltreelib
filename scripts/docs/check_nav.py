@@ -1,4 +1,4 @@
-"""Fail if a docs page is neither in the zensical.toml nav nor a `moved_to` stub."""
+"""Fail if a docs page is not in the zensical.toml nav."""
 
 import re
 import sys
@@ -13,8 +13,6 @@ orphans = []
 for md in sorted((root / "docs").rglob("*.md")):
     rel = md.relative_to(root / "docs").as_posix()
     if rel in nav or rel in excluded or rel.startswith("reference/api/"):
-        continue
-    if md.read_text(encoding="utf-8").startswith("---") and "moved_to:" in md.read_text(encoding="utf-8")[:300]:
         continue
     orphans.append(rel)
 missing = sorted(n for n in nav if not n.startswith("http") and not (root / "docs" / n).exists())

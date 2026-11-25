@@ -4,7 +4,7 @@ Use a fixed review budget to surface unusual operating states without synthetic 
 
 ```mermaid
 flowchart LR
-    A["Raw Telemetry Stream\n(Sensors, Intermittent Dropouts)"] --> B["AnomalyTree(kind='eif')\n(Oblique Random Cuts)"]
+    A["Raw Telemetry Stream\n(Sensors, Intermittent Dropouts)"] --> B["AnomalyModel(kind='eif')\n(Oblique Random Cuts)"]
     B --> C["Continuous Anomaly Scores\ns(x) in [0, 1]"]
     C --> D{"Operational Review Budget\n(e.g., Top 5% of Volume)"}
     D -- "Above Threshold" --> E["High-Priority Review Queue\n(Analyst Inspection)"]
@@ -31,7 +31,7 @@ flowchart LR
 
 Standard Isolation Forests construct trees by sampling orthogonal, axis-aligned cuts. On correlated or multi-modal feature distributions, axis-aligned splits produce artificial rectangular bands of low average path length, creating false-positive "ghost" anomalies in empty spaces between normal clusters.
 
-`AnomalyTree(kind="eif")` implements **Extended Isolation Forest (EIF)**, sampling random oblique hyperplanes with uniformly distributed normal vectors. This achieves rotationally invariant scoring contours that isolate true anomalies without axis-aligned artifacts.
+`AnomalyModel(kind="eif")` implements **Extended Isolation Forest (EIF)**, sampling random oblique hyperplanes with uniformly distributed normal vectors. This achieves rotationally invariant scoring contours that isolate true anomalies without axis-aligned artifacts.
 
 ![Extended Isolation Forest vs Axis-Aligned Isolation Forest Density Contours](../assets/unsupervised_clusters_anomalies.png)
 
@@ -43,7 +43,7 @@ You can evaluate on industrial telemetry using `load_dataset("APSFailure")` or t
 
 ```python
 from mltreelib import Metrics, load_dataset
-from mltreelib.anomaly import AnomalyTree
+from mltreelib import AnomalyModel
 
 # 1. Load industrial sensor telemetry
 data = load_dataset("APSFailure")
@@ -60,7 +60,7 @@ X_train = [X[i] for i in range(split) if y[i] == 0]  # Fit reference on normal o
 X_test, y_test = X[split:], y[split:]
 
 # 2. Fit Extended Isolation Forest (oblique cuts, depth=10)
-tree = AnomalyTree(kind="eif", max_depth=10, extension_level=1, seed=42)
+tree = AnomalyModel(kind="eif", max_depth=10, extension_level=1, seed=42)
 tree.fit(X_train, col_names=features)
 
 # 3. Score held-out telemetry
@@ -82,13 +82,13 @@ print(f"ROC-AUC            : {metrics.roc_curve(y_test, scores)['auc']:.4f}")
 
 `kind="binary"` returns labels from the fitted threshold, and `kind="score"` returns the same scores as `score_samples()`. The extended isolation tree and its aliases also expose `kind="path_length"`.
 
-For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted threshold. Use `AnomalyTree.load("anomalies.json")` to restore scoring and labels. The [API reference](../reference/api/anomaly.md) lists the JSON and byte methods.
+For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted threshold. Use `AnomalyModel.load("anomalies.json")` to restore scoring and labels. The [API reference](../reference/api/anomaly.md) lists the JSON and byte methods.
 
 ---
 
 ## 3. Understand the Anomaly Engine Family
 
-`AnomalyTree` provides a unified interface across multiple tree-based anomaly engines:
+`AnomalyModel` provides a unified interface across multiple tree-based anomaly engines:
 
 | Engine (`kind`) | Core Mechanism | Best Used For |
 |---|---|---|
@@ -103,6 +103,6 @@ For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted thre
 
 ## Next Steps
 
-- For unsupervised clustering with rule extraction, study **[Unsupervised Trees](unsupervised-trees.md)**.
+- For unsupervised clustering with rule extraction, study **[Unsupervised Trees](clustering-trees.md)**.
 - For missing sensor routing under telemetry dropouts, review **[Native Missing Data](missing-data-routing.md)**.
 - See the full **[Anomaly API Reference](../reference/api/anomaly.md)**.

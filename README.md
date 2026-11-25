@@ -75,8 +75,8 @@ npx skills add jkapila/mltreelib --skill mltreelib
   - *Classification*: `entropy`, `gini`, `gain_ratio` (C4.5 normalized information gain), `twoing` (CART balanced contrast).
   - *Custom*: User-defined Python callables receiving lazy $(y, w)$ candidate slices.
 - **Distributional Leaves**: Gaussian, Binomial (Logit/Probit), Poisson (Rate), Softmax / Multinomial ($C \ge 3$), Survival & Competing Risks (Nelson-Aalen / Kaplan-Meier / Aalen-Johansen CIF), Tobit (Censored), Tweedie, and Heteroscedastic $(\mu, \sigma)$.
-- **Unified Clustering (`ClusterTree`)**: Unified facade supporting Predictive Clustering Trees (PCT), Unsupervised Random Forest (URF), HDBSCAN (condensed hierarchy, GLOSH outlier scores), and CLTree.
-- **Unified Anomaly Detection (`AnomalyTree` & `GritBot`)**: Unified facade supporting Extended Isolation Forest (EIF), Density Estimation Trees (DET), Half-Space Trees (HST), Random Cut Trees (RCT), Active feedback trees (AAD), Context sequence trees (CAT), and RuleQuest GritBot.
+- **Unified Clustering (`ClusterModel`)**: Unified facade supporting Predictive Clustering Trees (PCT), Unsupervised Random Forest (URF), HDBSCAN (condensed hierarchy, GLOSH outlier scores), and CLTree.
+- **Unified Anomaly Detection (`AnomalyModel` & `GritBot`)**: Unified facade supporting Extended Isolation Forest (EIF), Density Estimation Trees (DET), Half-Space Trees (HST), Random Cut Trees (RCT), Active feedback trees (AAD), Context sequence trees (CAT), and RuleQuest GritBot.
 - **Native Categorical Encoders (14)**: CatBoost, Target, Embedding, Weight of Evidence (WoE), James-Stein, Leave-One-Out, M-Estimator, Quantile, One-Hot, Base-N, Sum, Tfidf, Count, and Hashing.
 
 ---
@@ -190,21 +190,21 @@ print(f"Predicted CATE uplifts (first 4): {[round(u, 4) for u in uplifts[:4]]}")
 Predicted CATE uplifts (first 4): [0.4215, 0.3891, -0.1502, 0.7314]
 ```
 
-### 4. Unsupervised Clustering Trees (`ClusterTree`)
+### 4. Unsupervised Clustering Trees (`ClusterModel`)
 
-The unified `ClusterTree` interface provides a consistent scikit-learn-shaped API across divisive and density clustering engines (`kind="pct"`, `"urf"`, `"hdbscan"`, `"cltree"`):
+The unified `ClusterModel` interface provides a consistent scikit-learn-shaped API across divisive and density clustering engines (`kind="pct"`, `"urf"`, `"hdbscan"`, `"cltree"`):
 
 ```python
-from mltreelib.cluster import ClusterTree
+from mltreelib import ClusterModel
 
 # 1. Predictive Clustering Tree (divisive clustering with rule extraction)
-pct = ClusterTree(kind="pct", max_depth=2)
+pct = ClusterModel(kind="pct", max_depth=2)
 pct.fit(X)
 print(f"Discovered clusters: {set(pct.labels_)}")
 print(f"Out-of-sample predictions: {pct.predict([[0.0, 0.0], [4.0, 9.0]])}")
 
 # 2. Unsupervised Random Forest (proximity-based manifold clustering)
-urf = ClusterTree(kind="urf", n_clusters=3, seed=42)
+urf = ClusterModel(kind="urf", n_clusters=3, seed=42)
 urf.fit(X)
 print(f"URF cluster assignments: {set(urf.labels_)}")
 ```
@@ -216,16 +216,16 @@ URF cluster assignments: {0, 1, 2}
 ```
 *(Also supports `kind="hdbscan"` for density hierarchy/GLOSH outliers and `kind="cltree"` for bounding boxes)*
 
-### 5. Density & Outlier Detection Suite (`AnomalyTree`)
+### 5. Density & Outlier Detection Suite (`AnomalyModel`)
 
-The unified `AnomalyTree` facade wraps multiple tree-based anomaly engines (`kind="eif"`, `"det"`, `"hst"`, `"rct"`, `"active"`, `"context"`) under a consistent API:
+The unified `AnomalyModel` facade wraps multiple tree-based anomaly engines (`kind="eif"`, `"det"`, `"hst"`, `"rct"`, `"active"`, `"context"`) under a consistent API:
 
 ```python
 from mltreelib import GritBot
-from mltreelib.anomaly import AnomalyTree
+from mltreelib import AnomalyModel
 
 # 1. Extended Isolation Forest (oblique hyperplanes without ghost artifacts)
-detector = AnomalyTree(kind="eif", contamination=0.05, seed=42)
+detector = AnomalyModel(kind="eif", contamination=0.05, seed=42)
 detector.fit(X)
 scores = detector.predict(X, kind="score")
 preds = detector.predict(X)         # 1 = anomaly, 0 = inlier
@@ -264,7 +264,7 @@ name, and returns the best point, the best objective, the evaluation count,
 and the termination status. Methods include `random_search`, `latin_hypercube`,
 `lbfgs_b`, `bfgs`, `nonlinear_cg`, `nelder_mead`, `powell`, `simulated_annealing`,
 `cobyla`, `basin_hopping`, `cmaes`, `shade`, `nes`, and `ga`.
-See the [generic optimizer guide](docs/guides/optimization-and-tuning.md).
+See the [generic optimizer guide](docs/guides/solvers-and-optimizers.md).
 
 ```python
 # Fit global OLS regression with full R-style statistical tables

@@ -61,4 +61,4 @@ The [dataset setup page](real-data.md) lists the downloads. Synthetic checks sit
 ## Go deeper
 
 - **How it works**: [tree architecture](core-tree-architecture.md), [constraints and honesty](constraints-and-honesty.md), [missing-data routing](missing-data-routing.md), [distributional leaves](distributional-leaves.md), [splitting criteria](statistical-and-metric-splitting.md), [solvers](solvers-and-optimizers.md).
-- **Worked examples**: [regression methods](regression-methods-showcase.md), [piecewise linear and Cubist](piecewise-linear-and-cubist.md), [causal uplift](causal-uplift.md), [model inspection](model-inspection-and-rules.md).
+- **Worked examples**: [regression methods](regression-methods-showcase.md), [piecewise linear and Cubist](piecewise-linear-and-cubist.md), [causal uplift](uplift.md), [model inspection](model-inspection-and-rules.md).

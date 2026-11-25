@@ -74,8 +74,6 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
     # Collect from site_dir
     html_files = sorted(site_dir.rglob("index.html"))
     for html_file in html_files:
-        if 'name="robots" content="noindex"' in html_file.read_text(encoding="utf-8", errors="ignore"):
-            continue
         rel = html_file.relative_to(site_dir)
         if rel.as_posix() == "index.html":
             rel_url = "/"
@@ -144,17 +142,17 @@ def generate_llms_txt(site_dir: Path, docs_dir: Path) -> None:
 
 - [Comprehensive Regression Showcase]({BASE_URL}/guides/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
 - [Piecewise Linear Trees & Cubist Rules]({BASE_URL}/guides/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
-- [Distributional & Censored Trees]({BASE_URL}/guides/distributional-and-censored-trees/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+- [Distributional & Censored Trees]({BASE_URL}/guides/distributional-leaves/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
 
 ## Causal & Unsupervised Learning
 
-- [Causal Uplift Modeling]({BASE_URL}/guides/causal-uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
-- [Unsupervised Clustering & Anomalies]({BASE_URL}/guides/unsupervised-clustering-and-anomalies/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
-- [PCA, Factor Analysis & Rotations]({BASE_URL}/guides/pca-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+- [Causal Uplift Modeling]({BASE_URL}/guides/uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
+- [Clustering & Anomaly Trees]({BASE_URL}/guides/anomaly-trees/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations]({BASE_URL}/guides/components-and-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
 
 ## Optimization & Solvers
 
-- [Solvers & Hyperparameter Tuning]({BASE_URL}/guides/optimization-and-tuning/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Solvers & Hyperparameter Tuning]({BASE_URL}/guides/solvers-and-optimizers/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
 - [Model Inspection & Rules]({BASE_URL}/guides/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
 
 ## API Reference
@@ -193,12 +191,13 @@ def generate_llms_full_txt(site_dir: Path, docs_dir: Path) -> None:
         docs_dir / "installation.md",
         docs_dir / "guides/regression-methods-showcase.md",
         docs_dir / "guides/piecewise-linear-and-cubist.md",
-        docs_dir / "guides/distributional-and-censored-trees.md",
-        docs_dir / "guides/causal-uplift.md",
-        docs_dir / "guides/unsupervised-clustering-and-anomalies.md",
+        docs_dir / "guides/distributional-leaves.md",
+        docs_dir / "guides/uplift.md",
+        docs_dir / "guides/anomaly-trees.md",
+        docs_dir / "guides/clustering-trees.md",
         docs_dir / "guides/tree-architecture-and-knobs.md",
-        docs_dir / "guides/optimization-and-tuning.md",
-        docs_dir / "guides/pca-rotations.md",
+        docs_dir / "guides/solvers-and-optimizers.md",
+        docs_dir / "guides/components-and-rotations.md",
     ]
 
     for f in key_files:

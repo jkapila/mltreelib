@@ -4,7 +4,7 @@ Start with a [regression or classification pathway](index.md). Then choose the c
 
 | Need | Technique | Read next |
 |---|---|---|
-| Outcome is censored at a known bound | Tobit leaves | [Tobit example](distributional-and-censored-trees.md) |
+| Outcome is censored at a known bound | Tobit leaves | [Tobit example](distributional-leaves.md) |
 | Domain limits on direction or combinations | Monotone or interaction constraints | [Constraint example](tree-architecture-and-knobs.md) |
 | Preserve segments while updating leaf models | Leaf retraining | [Retraining examples](hierarchical-retrain.md) |
 | Control fit complexity and flexibility | Growth and leaf settings | [Growth knob tour](tree-architecture-and-knobs.md) |

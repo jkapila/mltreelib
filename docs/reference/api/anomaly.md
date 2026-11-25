@@ -73,7 +73,7 @@ Return effective configuration dictionary.
 ### AnomalyModel.feedback
 
 ```python
-feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
+feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
 ```
 
 Alias for update_feedback.
@@ -81,7 +81,7 @@ Alias for update_feedback.
 ### AnomalyModel.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyTree'
+fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyModel'
 ```
 
 Fit the anomaly model on training data.
@@ -193,7 +193,7 @@ Return the fitted model as a versioned JSON string.
 ### AnomalyModel.update_feedback
 
 ```python
-update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
+update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).
@@ -222,15 +222,15 @@ class AnomalyResult(scores: 'list[float]', predictions: 'list[int]', threshold: 
 
 Fitted anomaly detection output.
 
-## AnomalyTree
+## AnomalyModel
 
 ```python
-class AnomalyTree(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
+class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
 ```
 
 Backward-compatible alias for AnomalyModel.
 
-### AnomalyTree.conditional_prob
+### AnomalyModel.conditional_prob
 
 ```python
 conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
@@ -238,7 +238,7 @@ conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'float |
 
 Estimate a symbol's probability from the context after the last gap.
 
-### AnomalyTree.config
+### AnomalyModel.config
 
 ```python
 config(self) -> 'dict[str, Any]'
@@ -246,18 +246,18 @@ config(self) -> 'dict[str, Any]'
 
 Return effective configuration dictionary.
 
-### AnomalyTree.feedback
+### AnomalyModel.feedback
 
 ```python
-feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
+feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
 ```
 
 Alias for update_feedback.
 
-### AnomalyTree.fit
+### AnomalyModel.fit
 
 ```python
-fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyTree'
+fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyModel'
 ```
 
 Fit the anomaly model on training data.
@@ -265,7 +265,7 @@ Fit the anomaly model on training data.
 Accepts native Python lists. None and NaN cells stay missing. In context
 sequences, each missing symbol breaks the transition history.
 
-### AnomalyTree.from_bytes
+### AnomalyModel.from_bytes
 
 ```python
 from_bytes(data: bytes) -> ~_SnapshotT
@@ -273,7 +273,7 @@ from_bytes(data: bytes) -> ~_SnapshotT
 
 Restore a fitted model from UTF-8 JSON bytes.
 
-### AnomalyTree.from_json
+### AnomalyModel.from_json
 
 ```python
 from_json(data: str) -> ~_SnapshotT
@@ -281,7 +281,7 @@ from_json(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a versioned JSON string.
 
-### AnomalyTree.from_snapshot
+### AnomalyModel.from_snapshot
 
 ```python
 from_snapshot(data: str) -> ~_SnapshotT
@@ -289,7 +289,7 @@ from_snapshot(data: str) -> ~_SnapshotT
 
 Restore a fitted model from a JSON snapshot string.
 
-### AnomalyTree.load
+### AnomalyModel.load
 
 ```python
 load(path: str | pathlib.Path) -> ~_SnapshotT
@@ -297,7 +297,7 @@ load(path: str | pathlib.Path) -> ~_SnapshotT
 
 Restore a fitted model from a JSON file.
 
-### AnomalyTree.predict
+### AnomalyModel.predict
 
 ```python
 predict(self, x: 'Sequence[Sequence[Any]]', *, kind: 'str' = 'binary') -> 'list[int] | list[float]'
@@ -308,7 +308,7 @@ Predict binary labels, anomaly scores, or EIF path lengths.
 Context trees expose sequence predictions via ``surprise_score`` and
 ``conditional_prob``.
 
-### AnomalyTree.predict_density
+### AnomalyModel.predict_density
 
 ```python
 predict_density(self, x: 'Sequence[Sequence[Any]]') -> 'list[float]'
@@ -316,7 +316,7 @@ predict_density(self, x: 'Sequence[Sequence[Any]]') -> 'list[float]'
 
 Compute estimated probability density (only for density trees).
 
-### AnomalyTree.save
+### AnomalyModel.save
 
 ```python
 save(self, path: str | pathlib.Path) -> None
@@ -324,7 +324,7 @@ save(self, path: str | pathlib.Path) -> None
 
 Write the JSON snapshot, replacing the file after a complete write.
 
-### AnomalyTree.score_samples
+### AnomalyModel.score_samples
 
 ```python
 score_samples(self, x: 'Sequence[Sequence[Any]]') -> 'list[float]'
@@ -334,7 +334,7 @@ Compute continuous anomaly scores for data points.
 
 Higher scores indicate greater degree of anomalousness.
 
-### AnomalyTree.snapshot
+### AnomalyModel.snapshot
 
 ```python
 snapshot(self) -> str
@@ -342,7 +342,7 @@ snapshot(self) -> str
 
 Return the fitted model as a JSON snapshot string.
 
-### AnomalyTree.surprise_score
+### AnomalyModel.surprise_score
 
 ```python
 surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
@@ -350,7 +350,7 @@ surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'float | N
 
 Compute surprise in bits after the last gap. A missing symbol has no score.
 
-### AnomalyTree.to_bytes
+### AnomalyModel.to_bytes
 
 ```python
 to_bytes(self) -> bytes
@@ -358,7 +358,7 @@ to_bytes(self) -> bytes
 
 Return the fitted model as UTF-8 JSON bytes.
 
-### AnomalyTree.to_json
+### AnomalyModel.to_json
 
 ```python
 to_json(self) -> str
@@ -366,15 +366,15 @@ to_json(self) -> str
 
 Return the fitted model as a versioned JSON string.
 
-### AnomalyTree.update_feedback
+### AnomalyModel.update_feedback
 
 ```python
-update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyTree'
+update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
 ```
 
 Update model weights based on expert feedback (for Active anomaly tree).
 
-### AnomalyTree.report
+### AnomalyModel.report
 
 ```python
 @report
@@ -382,7 +382,7 @@ Update model weights based on expert feedback (for Active anomaly tree).
 
 Return structured ModelReport.
 
-### AnomalyTree.threshold
+### AnomalyModel.threshold
 
 ```python
 @threshold

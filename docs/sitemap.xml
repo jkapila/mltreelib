@@ -38,7 +38,7 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/blog/</loc>
-    <lastmod>2026-11-23</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -80,30 +80,36 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/advanced-modeling/</loc>
-    <lastmod>2026-11-22</lastmod>
+    <lastmod>2026-11-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jkapila.github.io/mltreelib/guides/anomaly-trees/</loc>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/anomaly/</loc>
-    <lastmod>2026-11-22</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/causal-uplift/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/classification/</loc>
+    <lastmod>2026-11-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jkapila.github.io/mltreelib/guides/clustering-trees/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -145,12 +151,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/distributional-and-censored-trees/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://jkapila.github.io/mltreelib/guides/distributional-leaves/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
@@ -182,18 +182,6 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/guides/model-inspection-and-rules/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/optimization-and-tuning/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/pca-rotations/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -265,18 +253,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/unsupervised-clustering-and-anomalies/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://jkapila.github.io/mltreelib/guides/unsupervised-trees/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://jkapila.github.io/mltreelib/guides/uplift/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
@@ -296,7 +272,7 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/quickstart/</loc>
-    <lastmod>2026-11-23</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -386,7 +362,7 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/metrics/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -404,7 +380,7 @@
   </url>
   <url>
     <loc>https://jkapila.github.io/mltreelib/reference/reports/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

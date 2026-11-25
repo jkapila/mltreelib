@@ -14,7 +14,7 @@ Run this from the repository root. The second split supports a refit check. Assi
 
 ```python
 import pandas as pd
-from mltreelib.cluster import ClusterTree
+from mltreelib import ClusterModel
 
 df = pd.read_parquet("datasets/wine_quality.parquet").sample(frac=1, random_state=2026)
 features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
@@ -25,7 +25,7 @@ scale = train[features].std()
 def design(frame):
     return ((frame[features] - center) / scale).to_numpy().tolist()
 
-tree = ClusterTree(kind="pct", max_depth=2, min_rows=150)
+tree = ClusterModel(kind="pct", max_depth=2, min_rows=150)
 tree.fit(design(train), col_names=features)
 review["segment"] = tree.predict(design(review), kind="cluster")
 print(review.groupby("segment")[features].median().round(3))
@@ -56,7 +56,7 @@ A scatter plot only shows two of the four input features. Use the profile panel 
 
 Report pairwise Jaccard agreement after refitting. It counts pairs assigned together in both fits as a fraction of pairs assigned together in either fit. It avoids matching arbitrary leaf IDs and excludes the usually large number of pairs separated by both fits. This tests the stability of one partition with fixed scaling. Before using the groups operationally, repeat with independent batches and compare against a simpler lab rule.
 
-## 4. Choose an engine through `ClusterTree`
+## 4. Choose an engine through `ClusterModel`
 
 The following observations are from a small numeric, two-group synthetic check. They establish the interface paths exercised, not comparative model quality.
 
@@ -71,7 +71,7 @@ The sample check returned 8 PCT leaves, 3 CLTree groups plus unassigned points, 
 
 For URF, `tree.predict(x, kind="distances")` returns one row per query and one column per training row in fit order. Each distance is the square root of one minus the fraction of trees in which the two rows share a leaf.
 
-For a fitted PCT, `tree.save("clusters.json")` stores the model, training assignments, and rules. Use `ClusterTree.load("clusters.json")` to restore the fitted tree. The [API reference](../reference/api/cluster.md) lists the JSON and byte methods.
+For a fitted PCT, `tree.save("clusters.json")` stores the model, training assignments, and rules. Use `ClusterModel.load("clusters.json")` to restore the fitted tree. The [API reference](../reference/api/cluster.md) lists the JSON and byte methods.
 
 ### Missing values and categories: product gaps
 
@@ -87,4 +87,4 @@ The [synthetic clustering workflow](https://github.com/jkapila/mltreelib/blob/ma
 
 ![Controlled clustering refit on a synthetic review set](../assets/guides/clustering-workflow.svg)
 
-See [Blockeel et al. on predictive clustering](https://arxiv.org/abs/cs/0011030) and the [engine comparison](unsupervised-clustering-and-anomalies.md).
+See [Blockeel et al. on predictive clustering](https://arxiv.org/abs/cs/0011030) and the [engine comparison](anomaly-trees.md).

@@ -87,7 +87,7 @@ We evaluate on a simulated multi-store retail panel (240 records across 2 stores
 
 ```python
 from mltreelib import Metrics, ModelTree
-from mltreelib.timefeat import calendar_features, decomposed_transform, lag_by_days, windowed_transform
+from mltreelib import calendar_features, decomposed_transform, lag_by_days, windowed_transform
 
 # 1. Transform features in pure Rust
 cal = calendar_features(dates)

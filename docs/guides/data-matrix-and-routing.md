@@ -137,22 +137,22 @@ print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
 
 ## 3. The Typed Ingestion Frame & Variance Decomposition
 
-At the Rust core level, datasets are ingested into `mltreelib-core::frame::DataFrame`. The engine automatically tracks column data types, computes realized variance shares, and isolates zero-variance or constant features before tree growth.
+At the Rust core level, datasets are ingested into a typed frame. The engine automatically tracks column data types, computes realized variance shares, and isolates zero-variance or constant features before tree growth.
 
 ![Realized Variance Share Decomposition](../assets/variance_shares.png)
 
 ```python
-from mltreelib.data import DataFrame
+from mltreelib import summarize
 
-frame = DataFrame.from_dict({
+columns = {
     "cement": [540.0, 540.0, 332.5],
     "water": [162.0, 162.0, 228.0],
     "age": [28, 28, 270],
-})
+}
 
-summary = frame.summarize()
-for col in summary:
-    print(f"{col.name:15} | Type: {col.dtype} | Missing: {col.n_missing} | Mean: {col.mean:.2f}")
+for name, values in columns.items():
+    s = summarize(values)
+    print(f"{name:10} | missing: {s['n_missing']} | mean: {s['mean']:.2f} | std: {s['std']:.2f}")
 ```
 
 !!! tip "Related guides"
