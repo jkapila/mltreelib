@@ -1,6 +1,6 @@
 # Spec 35: Simple Object Interfaces and Per-Family Summaries
 
-Status: proposed (parts A and B in progress)
+Status: partly landed (parts A and B shipped; C, D and the policy table open)
 
 Scope boundary: this spec owns the class-first surface for data (`Dataset`), evaluation (`MetricsReport`), model hand-off (`fit` and `predict` accepting a dataset), and the printed summaries every model family should produce. It does not change split criteria or leaf mathematics, except for the one gap named in part D. It builds on Spec 25 (model surface and reports) and Spec 34 (data helpers), and finishes items those specs promised.
 
@@ -78,6 +78,33 @@ The user's view:
 - Missing-value tests on every new class: counts shown, nothing dropped, input unchanged.
 - Determinism: same seed gives the same split and the same report text.
 - Prior art: the profile, split and access tests, the Gaussian summary snapshot, and the report tests from Spec 25.
+
+## Progress and Open Work
+
+Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
+
+| Issue | What | State |
+|---|---|---|
+| 16 | Docs showed code that did not run; stale defaults and snippets | fixed (docs pass); figures and typed tables remain (Spec 33 backlog, section F) |
+| 17 | Pandas frame rejected by `fit` | fixed (tables by duck typing) |
+| 18 | Non-deterministic categorical gate statistics | fixed (ordered maps) |
+| 19 | `CatBoostEncoder` example prior | fixed (docs); parameter still to be documented and possibly renamed |
+| 20 | Defaults differed between constructor, Rust core and `LeafControl`; timings in saved models | fixed; parity test added |
+| 21 | `mltreelib.data` helpers | done (profile, split, association, binning with exact mode, scaling, accessors) |
+| 22 | `MetricsReport` | done; uplift policy table and uplift-by-decile still missing |
+| 23 | `Dataset` class; `fit`/`predict` accept a dataset | done; clustering and anomaly facades do not accept a dataset yet |
+| 24 | Per-family summaries and `ModelTree.report()` | open (part C) |
+| 25 | `ClusterModel` and `AnomalyModel` report and summary | open (part C) |
+| 26 | Causal linear leaf; `leaf="linear"` equals `leaf="mean"` under the causal gain | open (part D) |
+| 27 | `Metrics` hangs, panics or silently recodes NaN inputs | open bug; `MetricsReport` refuses missing values outside regression and label classification until fixed |
+
+**Open work in order:**
+1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.
+2. Rework the regression guide (depth 4, where linear leaves lower the error by about five percent; print `summary()` and one `leaf_summary`) and the uplift guide (use `Dataset`, `MetricsReport`, the policy table; explain each snippet in plain words; state that a causal leaf is a difference of means whatever the leaf setting).
+3. Move the remaining docs pages and example scripts (about 40 files, 124 lines) from the helper functions to `Dataset` and `MetricsReport`.
+4. Fix `Metrics` missing-value handling (issue 27), then remove the `MetricsReport` refusals.
+5. Parts C and D (issues 24 to 26), ending with demonstrations in the guides.
+6. Let `ClusterModel`, `AnomalyModel` and the other facades accept a dataset.
 
 ## Out of Scope
 
