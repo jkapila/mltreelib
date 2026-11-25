@@ -126,3 +126,11 @@ Do not present the checks above as complete deployment coverage. See the [data g
 ## 5. Check split boundaries
 
 The DOT export in the checked build labels numeric branches as `<` and `>=`. In a one-feature reproduction with a threshold of zero, the fitted tree routed zero with lower values. It routed positive values to the other leaf. Use the fitted model to check predictions below, at, and above a threshold before translating a diagram into executable rules.
+
+## Numerical reproducibility
+
+Results are computed in IEEE 754 double precision and are reproducible to about 12 significant digits on the same platform, build, BLAS/LAPACK and thread settings. The test suite checks this at a relative tolerance of 1e-12. We make no guarantee of bit-identical output across operating systems, CPUs, BLAS or LAPACK implementations, thread counts or library versions; differences in the last digits are expected. Randomized procedures are reproducible given the same seed and RNG kind; the seed-to-stream mapping may change across versions.
+
+- **Same inputs, same model file.** A saved model (`to_json`, `to_bytes`) holds no wall-clock timings, so refitting on identical data and settings on the same machine gives a byte-identical file. Total fit time is a diagnostic and is not part of the saved model.
+- **Compare numbers, not printed text.** When you check a result against a stored one, use a relative tolerance (for example `abs(a - b) <= 1e-12 * max(1.0, abs(b))`), not string equality.
+- **Missing values are part of the data.** Results with missing values follow the same rule; nothing is imputed.
