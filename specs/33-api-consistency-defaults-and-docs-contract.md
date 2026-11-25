@@ -140,6 +140,8 @@ Items left after the first pass of the documentation audit. They are worked one 
 - **Defaults are identical on every surface.** The Rust core parameter struct, the Python constructor and the leaf control all use the same values: depth 6, minimum rows 15, ridge penalty 0.5. A parity test compares the core defaults with the constructor and the leaf control, so a drift fails the build.
 - **Serialised models carry no wall-clock timings.** Per-node timing diagnostics stay in memory only. A model refitted on identical inputs on the same machine saves to byte-identical output; total fit time is a diagnostic.
 - **Numerical contract.** Results are reproducible to about 12 significant digits on the same platform, build, BLAS and thread settings; no bit-identical guarantee across platforms, BLAS, thread counts or versions. Stated in the serving-contract guide and tested at a relative tolerance of 1e-12.
+- **Release gating.** No pull request and no version until the documentation rework and the open bugs (issues 24 to 27) are fixed, so the review sees the complete picture; then one pull request and one version.
+- **Optional dependencies.** `pygraphviz` belongs to the `docs` dependency group only (docs builds need system Graphviz). `cvxpy` is the optional `cvx` extra; it backs three exact reference solvers (sparse rule selection, ensemble pruning, an optimal stump by mixed-integer programming) that cross-check the native solvers, and nothing in the core needs it.
 - **Missing values.** NaN and `None` pass through; infinities and the pandas NA and NaT singletons are treated as missing at the model input boundary. Data helpers never alter missing values.
 
 ## Out of Scope

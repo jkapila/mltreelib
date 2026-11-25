@@ -59,6 +59,10 @@ plotting = [
 tuning = [
     "optuna>=3.0",
 ]
+# Exact reference solvers (mixed-integer and convex programs) used to cross-check the native solvers.
+cvx = [
+    "cvxpy>=1.4",
+]
 # All optional extras combined
 all = [
     "pyarrow>=14",
@@ -66,6 +70,7 @@ all = [
     "pygraphviz>=1.11",
     "seaborn>=0.13",
     "optuna>=3.0",
+    "cvxpy>=1.4",
 ]
 
 [dependency-groups]

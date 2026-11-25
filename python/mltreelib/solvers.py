@@ -90,7 +90,7 @@ def solve_sparse_rules_cvx(
     except ImportError as err:
         raise ImportError(
             "cvxpy is required for solve_sparse_rules_cvx. "
-            "Install with: uv add cvxpy or pip install cvxpy, "
+            "Install with: pip install \"mltreelib[cvx]\" (or pip install cvxpy), "
             "or use native mltreelib.solvers.select_sparse_rules."
         ) from err
 
@@ -142,7 +142,7 @@ def solve_knapsack_pruning_cvx(
     except ImportError as err:
         raise ImportError(
             "cvxpy is required for solve_knapsack_pruning_cvx. "
-            "Install with: uv add cvxpy or pip install cvxpy, "
+            "Install with: pip install \"mltreelib[cvx]\" (or pip install cvxpy), "
             "or use native mltreelib.solvers.prune_ensemble."
         ) from err
 
@@ -214,7 +214,7 @@ def solve_oct_mip_cvx(
     except ImportError as err:
         raise ImportError(
             "cvxpy is required for solve_oct_mip_cvx. "
-            "Install with: uv add cvxpy or pip install cvxpy, "
+            "Install with: pip install \"mltreelib[cvx]\" (or pip install cvxpy), "
             "or use native mltreelib.solvers.solve_optimal_tree."
         ) from err
 
