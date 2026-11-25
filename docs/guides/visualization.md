@@ -19,7 +19,9 @@ uv run python examples/guides/data_metrics_pathway.py
 
 The script needs matplotlib and writes SVG files to `docs/assets/guides/`. It uses the existing `mltreelib.plots` functions for model diagnostics. Install the project plotting extra for those dependencies. To render the DOT tree, install the Graphviz `dot` executable. The numerical metrics and tree DOT representation do not require Graphviz.
 
-## Use the plotting API
+**Next:** section 2 uses the plotting API, which needs the matplotlib from the plotting extra set up in section 1.
+
+## 2. Use the plotting API
 
 This complete example plots a small held-out regression result. The plotting layer is optional; `Metrics` returns numeric reports without matplotlib.
 
@@ -44,7 +46,9 @@ MAE: 0.2749999999999999
 
 ![Regression residuals](../assets/guides/data-residuals.svg)
 
-## Read a tree and explain one row
+**Next:** section 3 reads a fitted tree, because the residual plot shows errors but not how the model partitions the data.
+
+## 3. Read a tree and explain one row
 
 ![Mixed-data regression tree](../assets/guides/data-tree.svg)
 
@@ -54,7 +58,9 @@ MAE: 0.2749999999999999
 
 Split importance summarizes gain in a particular fitted tree. It is not a causal effect. Compare it with held-out errors and domain knowledge.
 
-## Evaluate a classification decision
+**Next:** section 4 checks the fitted model's decisions on held-out data, because the partitions alone do not show how often those decisions are right.
+
+## 4. Evaluate a classification decision
 
 ![Precision–recall curve](../assets/guides/data-pr.svg)
 
@@ -64,7 +70,9 @@ Split importance summarizes gain in a particular fitted tree. It is not a causal
 
 The [evaluation pathway](evaluation.md) explains the validation threshold, baseline and synthetic results. The catalog below covers the remaining plot functions.
 
-## Complete plot catalog
+**Next:** the catalog lists every public plot function, including those section 4 does not show, with the question each one answers.
+
+## 5. Complete plot catalog
 
 The public `mltreelib.plots` module exposes the functions below. `y_true` is the observed outcome. `scores` are model scores for the positive class. Classification plots expect aligned binary outcomes and scores. Use held-out data for assessment. The linked images come from the earlier metrics showcase and are illustrative; run the showcase to regenerate them.
 
@@ -96,4 +104,4 @@ The chart functions accept an optional Matplotlib `ax`; `plot_decomposition` use
 ![Score-band response example](../assets/plots/response.png)
 ![Decomposition example](../assets/plots/decomposition.png)
 
-When exporting a decision as a rule, [check split boundaries](serving-contract.md#check-split-boundaries) using the fitted model. The current DOT labels differ from prediction at an exact numeric split threshold in the checked example.
+When exporting a decision as a rule, [check split boundaries](serving-contract.md#5-check-split-boundaries) using the fitted model. The current DOT labels differ from prediction at an exact numeric split threshold in the checked example.

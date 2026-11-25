@@ -68,6 +68,8 @@ The solver applies Newton-Raphson with the inverse Mills ratio $\lambda(\alpha) 
 
 ---
 
+**Next:** fit four of these families (Probit, Gamma, Tweedie and Tobit) on real benchmark datasets, because the formulas above define each leaf's target but do not show how it performs on data.
+
 ## 2. Empirical Benchmark Suite Results
 
 We evaluate all four families on canonical domain benchmarks using [`benchmarks/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/distributional_leaf_benchmarks.py).
@@ -104,6 +106,8 @@ We evaluate all four families on canonical domain benchmarks using [`benchmarks/
 
 ---
 
+**Next:** call the same families from Python, because the benchmark results above come from a script and `leaf_family` is how a user picks a family on a `ModelTree`.
+
 ## 3. Python Usage Example
 
 ```python
@@ -133,18 +137,9 @@ pred_charges = gamma_tree.predict(X_test)
 
 ---
 
-## 4. Domain Limitations & Operational Boundaries
+**Next:** the worked example below generates its own data and runs the Tweedie, Tobit and heteroscedastic options, because the Python snippet above uses `X_train`, `y_hours` and `y_charges` without defining them.
 
-1. **Tobit Normality Sensitivity**:
-   Tobit maximum likelihood assumes normal errors $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$ in the latent space. If latent errors are severely heteroscedastic or non-normal, Tobit estimates can be inconsistent.
-2. **Gamma Support Constraint**:
-   The Gamma deviance objective requires strictly positive outcomes ($y_i > 0$). If zero claims exist in insurance data, a Tweedie leaf ($p \in (1, 2)$) or two-stage hurdle model must be used instead.
-3. **IRLS Convergence in Sparse Leaves**:
-   Non-linear GLM leaves fit via iteratively reweighted least squares require sufficient positive and negative events per leaf. Set `min_rows >= 25` to prevent separation divergence.
-
----
-
-## Worked example: Tweedie, Tobit and heteroscedastic trees
+## 4. Worked example: Tweedie, Tobit and heteroscedastic trees
 
 Classical decision trees minimize squared error (SSE) under the implicit assumption of homoscedastic Gaussian noise. Real-world business outcomes routinely violate this assumption:
 - **Zero-Mass & Positive Skew**: Insurance claim amounts, operational losses, and customer lifetime spend have a point mass at zero and heavy positive tails.
@@ -332,3 +327,16 @@ Discovered Volatility Split Threshold: 52.922
 
 !!! tip "Related guides"
     - [Survival & Competing Risks Trees](survival-trees.md) for right-censored time-to-event outcomes.
+
+---
+
+## Domain Limitations & Operational Boundaries
+
+1. **Tobit Normality Sensitivity**:
+   Tobit maximum likelihood assumes normal errors $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$ in the latent space. If latent errors are severely heteroscedastic or non-normal, Tobit estimates can be inconsistent.
+2. **Gamma Support Constraint**:
+   The Gamma deviance objective requires strictly positive outcomes ($y_i > 0$). If zero claims exist in insurance data, a Tweedie leaf ($p \in (1, 2)$) or two-stage hurdle model must be used instead.
+3. **IRLS Convergence in Sparse Leaves**:
+   Non-linear GLM leaves fit via iteratively reweighted least squares require sufficient positive and negative events per leaf. Set `min_rows >= 25` to prevent separation divergence.
+
+---

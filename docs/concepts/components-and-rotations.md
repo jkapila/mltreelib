@@ -69,6 +69,8 @@ flowchart LR
     class COMP,ANOM,ANOM2,CLUST taskBox;
 ```
 
+**Next:** step 2 gives the formulas for the decompositions shown in the diagram: PCA, the two whitening transforms, the orthomax and promax rotations, and NMF.
+
 ---
 
 ## 2. Mathematical Formulations
@@ -118,6 +120,8 @@ $$\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \f
   Sequential exact single-coordinate Non-Negative Least Squares (NNLS) update:
   $$H_{k, \cdot} \leftarrow \max\left(0, \, \frac{W_{\cdot, k}^T \left(X - \sum_{j \ne k} W_{\cdot, j} H_{j, \cdot}\right) - \lambda_1}{W_{\cdot, k}^T W_{\cdot, k} + \lambda_2}\right)$$
   Guarantees monotonic loss reduction with true $L_1$ sparsity without numerical instability.
+
+**Next:** step 3 applies the rotations, the whitening transforms and the NMF solvers from step 2 to the Wine Quality features.
 
 ---
 
@@ -227,31 +231,11 @@ Outlier Spike (+50.0) -> Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
 Ratio (Outlier/Inlier Loss): 3510781.2x separation
 ```
 
----
-
-## 4. Operational Limitations & Failure Modes
-
-1. **Strict Non-Negativity Violation in NMF**:
-   Non-Negative Matrix Factorization requires $X_{i, j} \ge 0$ for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval $[0, 1]$ before fitting NMF.
-2. **Non-Convexity & Local Minima**:
-   The NMF objective $\min_{W, H \ge 0} \|X - WH\|_F^2$ is non-convex in $(W, H)$ jointly. Convergence to a global minimum is not guaranteed. `mltreelib-core` uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.
-3. **Rotational Indeterminacy Under Degenerate Eigenvalues**:
-   When principal components share identical singular values ($\sigma_i \approx \sigma_j$), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.
-4. **Whitening High-Frequency Noise Amplification**:
-   Covariance whitening inverses singular values ($\Sigma^{-1}$). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor $\epsilon > 0$ when singular values approach machine precision.
+**Next:** the worked example is a separate, self-contained case: it generates a synthetic aptitude battery, not the wine data, to show why rotation makes loadings easier to read.
 
 ---
 
-## References
-
-- Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." *Psychometrika*, 23(3), 187-200.
-- Hendrickson, A. E., & White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." *British Journal of Statistical Psychology*, 17(1), 65-70.
-- Cichocki, A., & Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." *IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences*, 92(3), 708-721.
-- Bell, A. J., & Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." *Neural Computation*, 7(6), 1129-1159.
-
----
-
-## Worked example: PCA rotations
+## 4. Worked example: PCA rotations
 
 Principal Component Analysis (PCA) decomposes high-dimensional feature spaces into orthogonal axes that maximize explained variance. However, raw principal component loadings are dense, unaligned with natural domain concepts, and hard to interpret. 
 
@@ -460,3 +444,25 @@ ComponentModel(
 - `factor_correlations_`: Inter-factor correlation matrix $\mathbf{\Phi}$ (shape $k \times k$, identity for orthogonal rotations).
 - `explained_variance_ratio_`: Realized variance share per factor.
 - `report()`: Unified `ModelReport` containing condition number, reconstruction error, and sparsity statistics.
+
+---
+
+## Operational Limitations & Failure Modes
+
+1. **Strict Non-Negativity Violation in NMF**:
+   Non-Negative Matrix Factorization requires $X_{i, j} \ge 0$ for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval $[0, 1]$ before fitting NMF.
+2. **Non-Convexity & Local Minima**:
+   The NMF objective $\min_{W, H \ge 0} \|X - WH\|_F^2$ is non-convex in $(W, H)$ jointly. Convergence to a global minimum is not guaranteed. `mltreelib-core` uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.
+3. **Rotational Indeterminacy Under Degenerate Eigenvalues**:
+   When principal components share identical singular values ($\sigma_i \approx \sigma_j$), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.
+4. **Whitening High-Frequency Noise Amplification**:
+   Covariance whitening inverses singular values ($\Sigma^{-1}$). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor $\epsilon > 0$ when singular values approach machine precision.
+
+---
+
+## References
+
+- Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." *Psychometrika*, 23(3), 187-200.
+- Hendrickson, A. E., & White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." *British Journal of Statistical Psychology*, 17(1), 65-70.
+- Cichocki, A., & Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." *IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences*, 92(3), 708-721.
+- Bell, A. J., & Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." *Neural Computation*, 7(6), 1129-1159.

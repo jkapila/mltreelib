@@ -11,7 +11,7 @@
 | Survival | Censoring-aware discrimination and calibration | Risk sets and reliability at the chosen horizon |
 | Uplift | Randomized held-out policy value | Arm counts, uncertainty, cost and overlap |
 
-## A complete held-out example
+## 1. A complete held-out example
 
 The [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/guides/data_metrics_pathway.py) uses the same raw mixed inputs for regression and classification. It generates 4,000 synthetic rows with a fixed seed: 2,000 for training, 1,000 for validation and 1,000 for test. It uses raw category labels and missing numeric values without encoding or imputation.
 

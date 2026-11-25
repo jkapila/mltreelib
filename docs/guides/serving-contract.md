@@ -2,7 +2,7 @@
 
 Record the fitted model's prediction contract, then save the model and check predictions after reloading.
 
-## Record the prediction contract
+## 1. Record the prediction contract
 
 | Item | Record before handing off the model |
 |---|---|
@@ -38,7 +38,9 @@ sequenceDiagram
 
 `ModelTree` accepts raw categorical strings and missing predictor values. Preserve the fitted feature order. A row-based input does not carry column names at prediction time, so your application needs to check the schema before constructing rows.
 
-## Fit and predict with named records
+**Next:** section 2 applies that contract to a fitted model: it checks the field names against the fitted schema and builds each row in the fitted order.
+
+## 2. Fit and predict with named records
 
 The following example checks names before converting a record to the fitted order. It passes category labels and missing values directly to the tree.
 
@@ -67,7 +69,9 @@ Prediction: 1.5
 
 Check types, units, ranges and batch sizes at the application boundary as well. The short example checks field names only. It does not provide a complete serving validator.
 
-## Persist a fitted model
+**Next:** section 3 saves the fitted model and reloads it, then checks that predictions still match the in-process result from section 2.
+
+## 3. Persist a fitted model
 
 `ModelTree.save()` writes a versioned UTF-8 JSON file. `ModelTree.load()` restores the fitted tree, including the state used for inference.
 
@@ -99,7 +103,9 @@ Persistence rejects Python callbacks in the model configuration. Keep the packag
 
 The artifact contains the training rows and targets retained for neighbor adjustments. Apply the same access controls you use for training data.
 
-## Checks before release
+**Next:** section 4 lists the release checks, starting with a comparison of the in-process prediction against the intended serving path, which needs the reloaded model from section 3.
+
+## 4. Checks before release
 
 1. Compare a known in-process prediction with the intended serving path.
 2. Check missing values, unseen categories, invalid types and changed column order.
@@ -115,6 +121,8 @@ The following gaps were reproduced in the current worktree and are tracked for i
 
 Do not present the checks above as complete deployment coverage. See the [data guide](data.md), [evaluation guide](evaluation.md), and [documentation audit](https://github.com/jkapila/mltreelib/tree/main/references/research) for further work.
 
-## Check split boundaries
+**Next:** section 5 checks predictions on either side of a split threshold, which the release checks above do not cover, before a split is turned into an executable rule.
+
+## 5. Check split boundaries
 
 The DOT export in the checked build labels numeric branches as `<` and `>=`. In a one-feature reproduction with a threshold of zero, the fitted tree routed zero with lower values. It routed positive values to the other leaf. Use the fitted model to check predictions below, at, and above a threshold before translating a diagram into executable rules.

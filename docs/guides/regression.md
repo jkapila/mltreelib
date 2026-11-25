@@ -8,6 +8,8 @@ Save the [OpenML diamonds dataset 46923](https://www.openml.org/d/46923) to `dat
 
 The input includes numeric measurements such as carat and raw labels for cut, color and clarity. Keep those labels as strings. Select the target and feature order once.
 
+**Next:** fit the mean-leaf and linear-leaf trees on the 6,000 training rows and score the 2,000 test rows against the training-mean baseline.
+
 ## 2. Fit and compare
 
 <!-- run -->
@@ -58,6 +60,8 @@ uv run python examples/guides/real_tree_studies.py diamonds
 
 ![Test RMSE and errors across observed diamond prices for mean and linear leaves](../assets/guides/real-diamonds-leaves.svg)
 
+**Next:** read the test RMSE values from step 2 alongside the splits and leaves that produced them, before relying on the linear-leaf result.
+
 ## 3. Interpret the errors
 
 | Prediction | Test RMSE |
@@ -71,6 +75,8 @@ Both trees include a split on carat at 0.87. The linear leaves reduced test RMSE
 The left panel summarizes error with RMSE. The right panel shows prediction minus observed price. Look for systematic underpricing below the zero line and overpricing above it. Add MAE if you need the average absolute error in price units. Review residuals by cut, price band and support. A shallow linear tree can follow a trend inside a leaf. Check for extrapolation and sudden changes at split boundaries before relying on that trend.
 
 Use `splits()` to review named feature conditions and `leaves()` to inspect support and coefficients. Category conditions can display internal codes. Keep that mapping available before showing a rule to a reviewer.
+
+**Next:** repeat the comparison on synthetic data with raw category labels and 15% missing numeric inputs, because the real training columns used so far had no missing values.
 
 ## 4. Repeat the comparison with missing inputs
 

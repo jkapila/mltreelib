@@ -11,7 +11,7 @@ Start with a [regression or classification pathway](index.md). Then choose the c
 | Different outcome distributions | Distributional families | [Distributional leaves](../concepts/distributional-leaves.md) |
 | Predict only from approved input columns | Feature and interaction controls | [Parameters](../reference/parameters.md) |
 
-## Censored outcomes: Tobit
+## 1. Censored outcomes: Tobit
 
 Tobit is a model for a latent response observed only above a censoring boundary. Structural zeros, truncation and missing outcomes are different problems. Its interpretation depends on the assumed latent model and censoring mechanism.
 
@@ -36,7 +36,7 @@ Latent predictions: [2.1580410607837752, -1.7836864164002812, -1.213659884765208
 
 The response above is the fitted latent expectation, so negative values are possible even though observations are censored at zero. Evaluate the desired observed outcome separately. Correct censoring assumptions do not guarantee an unbiased result on every dataset. See [Tobin (1958)](https://doi.org/10.2307/1907382).
 
-## Constrain shape and interactions
+## 2. Constrain shape and interactions
 
 <!-- run -->
 ```python
@@ -56,7 +56,7 @@ Predictions: [0.5, 0.5, 2.5, 2.5]
 
 A positive constraint encodes a domain requirement. Check predictions on meaningful grids and held-out data. A check on the healthcare example found two decreases with linear leaves when age increased. The same check found no decreases with mean leaves. This is a tracked behavior gap; a finite grid does not prove monotonicity elsewhere. Do not assume local coefficient signs guarantee global monotonicity. Interaction constraints restrict paths and should also be checked with `split_paths()`.
 
-## Retrain leaves with fixed partitions
+## 3. Retrain leaves with fixed partitions
 
 <!-- run -->
 ```python
@@ -80,6 +80,8 @@ Updated prediction: [1.5]
 
 This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](../concepts/hierarchical-retrain.md) for alternative feature sets and routing.
 
-## Tune deliberately
+**Next:** section 4 covers tuning on validation data, the independent data that section 3 says a retrained model needs for evaluation.
+
+## 4. Tune deliberately
 
 Start with `max_depth` and `min_rows` to control partition size. Compare mean and linear leaves only when their assumptions and interpretation fit the outcome. Tune on a validation set and keep a final test set untouched. The [knob tour](../concepts/tree-architecture-and-knobs.md) is a parameter reference, not a recommended sequence or a substitute for evaluation.

@@ -37,6 +37,8 @@ $$\Delta \text{Var}(s) = \text{Var}(P) - \left[ \frac{N_L}{N} \text{Var}(L) + \f
 
 Because splits branch on readable feature predicates ($x_j \le \theta$), each cluster corresponds to an explicit, auditable IF-THEN rule.
 
+**Next:** the benchmark applies this variance-reduction split to six chemical features of the wine data and reports the output as one IF-THEN rule per leaf.
+
 ---
 
 ## 2. Benchmark
@@ -49,6 +51,8 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 | Algorithm | Split mechanism | Output |
 | :--- | :--- | :--- |
 | **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | IF-THEN rules, one per leaf |
+
+**Next:** the Python example fits `kind="pct"` on those same six features with `max_depth=3` and `min_rows=20`, then prints the rule and prototype for each leaf.
 
 ---
 
@@ -75,6 +79,8 @@ print(f"Cluster rules: {pct.rules()}")
 ```text
 Cluster rules: [{'cluster_id': 0, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity <= 8.1500', 'prototype': [6.728115942028986, 0.2692898550724639, 0.3207826086956529, 2.9837681159420266, 0.04681014492753618, 10.887125603864735], 'size': 690}, {'cluster_id': 1, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity > 8.1500', 'prototype': [9.450000000000001, 0.3011250000000001, 0.44583333333333325, 2.5287500000000005, 0.06599999999999998, 10.773055555555555], 'size': 120}, {'cluster_id': 2, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid <= 0.4150', 'prototype': [6.915789473684216, 0.2615789473684209, 0.29338815789473655, 11.977960526315796, 0.04586184210526313, 9.886348684210537], 'size': 304}, {'cluster_id': 3, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid > 0.4150', 'prototype': [7.213461538461536, 0.28802884615384616, 0.5402884615384613, 12.855769230769228, 0.04719230769230769, 9.596153846153847], 'size': 104}, {'cluster_id': 4, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid <= 0.3050', 'prototype': [7.359808612440196, 0.6314114832535888, 0.12325358851674637, 2.621052631578947, 0.07461244019138757, 10.309808612440193], 'size': 209}, {'cluster_id': 5, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid > 0.3050', 'prototype': [9.273584905660375, 0.5666981132075471, 0.451132075471698, 4.116981132075471, 0.07441509433962265, 10.624528301886793], 'size': 53}, {'cluster_id': 6, 'rule': 'volatile_acidity > 0.4575 AND chlorides > 0.1225', 'prototype': [8.3, 0.5832499999999999, 0.3415, 4.665, 0.2637, 9.615], 'size': 20}]
 ```
+
+**Next:** the PCT leaves above cover all 1,500 wines with no separate noise group, so the worked example uses `kind="cltree"` to find dense regions and mark low-density points as noise.
 
 ---
 
@@ -144,7 +150,7 @@ Background Noise Points Rejected: 232
 
 ---
 
-## 5. Limitations
+## Limitations
 
 1. **PCT target scaling.**
    Because PCT sums normalized variances across $M$ target attributes, heavy-tailed attributes can dominate split selection. Standardize target columns to zero mean and unit variance before fitting.

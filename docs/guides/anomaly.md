@@ -35,6 +35,8 @@ Standard Isolation Forests construct trees by sampling orthogonal, axis-aligned 
 
 ![Extended Isolation Forest vs Axis-Aligned Isolation Forest Density Contours](../assets/unsupervised_clusters_anomalies.png)
 
+**Next:** fit `AnomalyModel(kind="eif")` on the normal training rows and score held-out telemetry, which applies the oblique-cut model described above.
+
 ---
 
 ## 2. Fit the Reference Model and Score New Rows
@@ -92,6 +94,8 @@ ROC-AUC            : 0.8154
 `kind="binary"` returns labels from the fitted threshold, and `kind="score"` returns the same scores as `score_samples()`. The extended isolation tree and its aliases also expose `kind="path_length"`.
 
 For a fitted EIF, `tree.save("anomalies.json")` stores the model and fitted threshold. Use `AnomalyModel.load("anomalies.json")` to restore scoring and labels. The [API reference](../reference/api/anomaly.md) lists the JSON and byte methods.
+
+**Next:** the engine table lists the other `kind` values, to check whether a different engine suits your data better than the EIF used above.
 
 ---
 

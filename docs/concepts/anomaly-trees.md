@@ -41,6 +41,8 @@ $$s(\mathbf{x}, n) = 2^{-\frac{\mathbb{E}[h(\mathbf{x})]}{c(n)}}$$
 
 where $h(\mathbf{x})$ is the observed isolation tree depth, and $c(n) = 2 \ln(n - 1) + 0.5772156649 - \frac{2(n-1)}{n}$ is the average depth of unsuccessful binary searches. An anomaly score $s \to 1.0$ indicates an unmistakable outlier, while $s < 0.5$ indicates normal inlier space.
 
+**Next:** the benchmark tests the oblique cuts from step 1 against axis-aligned cuts on a 2D mixture with 40 outliers.
+
 ---
 
 ## 2. Benchmark
@@ -58,6 +60,8 @@ where $h(\mathbf{x})$ is the observed isolation tree depth, and $c(n) = 2 \ln(n 
 
 ![Anomaly detection comparison](../assets/unsupervised_clusters_anomalies.png)
 
+**Next:** the Python usage shows the minimal `AnomalyModel(kind="eif")` fit and scoring calls, which the worked example expands into a full triage run.
+
 ---
 
 ## 3. Python usage
@@ -69,6 +73,8 @@ eif = AnomalyModel(kind="eif", max_depth=8, seed=42)
 eif.fit(X_telemetry)
 anomaly_scores = eif.predict_score(X_telemetry)
 ```
+
+**Next:** the worked example applies the same `kind="eif"` model to labeled telemetry and measures how many of the 60 true anomalies fall in a 5% review budget.
 
 ---
 
@@ -154,9 +160,7 @@ Top 3 Flagged Anomalies:
 
 ---
 
----
-
-## 5. Limitations
+## Limitations
 
 1. **High-dimensional projection curse.**
    In very high dimensions ($P > 1,000$), random normal vectors $\mathbf{n} \sim \mathcal{N}(0, \mathbf{I})$ become nearly orthogonal to all coordinate axes, diluting cut selectivity. Subsetting random coordinate subspaces (e.g. 2–10 features per oblique cut) preserves discrimination.

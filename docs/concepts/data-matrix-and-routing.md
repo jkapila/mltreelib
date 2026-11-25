@@ -115,6 +115,8 @@ Prediction for Missing Primary Reading (Backup=62.5, Temp=75.0): 0.885
 
 ---
 
+**Next:** encode the categorical features, because the ingest diagram sends high-cardinality categories through an encoder before they reach the split engine.
+
 ## 2. Categorical Encoders: Empirical Bayes & Ordered Target Encoding
 
 Tabular data features categorical variables ranging from low-cardinality ordinal levels (e.g. Education: High School, Bachelor, Graduate) to high-cardinality entities (ZIP codes, merchant IDs, product SKUs).
@@ -152,6 +154,8 @@ Ordered CatBoost Encodings: [2.653, 2.458, 2.264, 3.333, 2.917, 2.361]
 ```
 
 ---
+
+**Next:** summarize each column's type, missing count and spread, because the engine checks these same properties before tree growth and isolates constant features.
 
 ## 3. The Typed Ingestion Frame & Variance Decomposition
 

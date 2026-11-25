@@ -12,6 +12,8 @@ The [Hillstrom email experiment](https://www.tensorflow.org/datasets/catalog/hil
 uv run python examples/guides/real_survival_uplift.py uplift
 ```
 
+**Next:** fit a causal tree on the randomized training rows from step 1, and use the validation rows to choose the email threshold while the test outcomes stay sealed.
+
 ## 2. Fit a causal tree and choose an email policy
 
 Use treatment as part of the target. The columns below describe customers before the campaign. Use validation to choose a threshold. Keep the randomized test outcomes sealed until after the policy is fixed.
@@ -99,6 +101,8 @@ for selected in ([score > threshold for score in test_scores],
 
 The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.
 
+**Next:** report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.
+
 ## 3. Interpret the held-out results
 
 The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree ranks customers. Validation selects the policy threshold, and the randomized test set estimates incremental visits. This example assumes zero treatment cost because campaign costs are not in the data.
@@ -112,6 +116,8 @@ The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows.
 ![Hillstrom randomized held-out policy comparison](../assets/guides/real-uplift.svg)
 
 The chosen policy treats everyone. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
+
+**Next:** check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.
 
 ## 4. Controlled check with synthetic truth
 
@@ -133,13 +139,11 @@ Within the selected subgroup, the script compares observed treated and control o
 
 Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. These calculations are example code, not a claim that the package already exposes uplift evaluation metrics.
 
-## Next steps and references
-
-[Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
+**Next:** the worked example also uses a simulation with a known effect, to check numerical effect recovery, which real Hillstrom outcomes cannot provide.
 
 ---
 
-## Worked example: recovering a known treatment effect
+## 5. Worked example: recovering a known treatment effect
 
 Use simulation to check numerical effect recovery. The Hillstrom sections above show how to evaluate a real randomized policy when individual effects are unknown.
 
@@ -273,3 +277,7 @@ tree.fit(X, (durations, events))
 
 Executable research script:
 - [`examples/guides/survival_causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py)
+
+## Next steps and references
+
+[Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)

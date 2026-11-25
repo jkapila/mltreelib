@@ -71,6 +71,8 @@ flowchart LR
     class H finalBox;
 ```
 
+**Next:** section 2 applies this decoupling to real data, setting `LeafControl` apart from the tree's `max_depth` and `min_rows`.
+
 ---
 
 ## 2. Benchmark Study: Yeh (1998) Concrete Compressive Strength
@@ -122,6 +124,8 @@ print(f"ModelTree Linear Leaves: RMSE = {m['rmse']:.2f} MPa, R2 = {m['r2']:.3f},
 ModelTree Linear Leaves: RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
 ```
 
+**Next:** section 3 reports the same holdout RMSE across depths 1 to 5, set against a CART tree at each depth.
+
 ---
 
 ## 3. Empirical Results & Growth Knob Grid
@@ -154,6 +158,8 @@ Depth 5 -> CART RMSE: 9.53 MPa  | ModelTree RMSE: 6.25 MPa (21 leaves)
 2. **Variance Reduction**: At depth 3, `ModelTree` achieves **7.28 MPa RMSE** and $R^2 = 0.813$, capturing 81.3% of the variance compared to CART's 56.6%.
 3. **Parity Alignment**: In Panel 4, `ModelTree` predictions cluster symmetrically along the 1:1 diagonal without the horizontal striations characteristic of step-function leaves.
 
+**Next:** section 4 inspects the leaves of the depth-3 model fitted in section 2, because each leaf profile describes one terminal partition of that tree.
+
 ---
 
 ## 4. 0D Descriptive Leaf Statistics
@@ -184,6 +190,8 @@ Leaf 1 (support n=47):
 ```
 
 You can predict these 0D moments row-wise at test time using `predict(X, kind="median"|"var"|"stats")`.
+
+**Next:** section 5 adds a Chow test gate that decides whether a split is kept, using the same `leaf_ctrl` and training data from section 2.
 
 ---
 
@@ -219,7 +227,7 @@ This prevents the tree from creating spurious subtrees where local regressions s
 
 ---
 
-## 6. Operational Limitations & Failure Modes
+## Operational Limitations & Failure Modes
 
 1. **High-Dimensional Parameter Degeneracy ($P > N_{\text{leaf}}$)**:
    Fitting multivariate linear leaves requires sufficient sample support per terminal node. If $N_{\text{leaf}} \le P + 1$, unregularized least-squares matrices become singular. Set `l2 > 0` (e.g. `l2=0.01`) or enforce `min_rows >= 2 * (P + 1)` in `ModelTree`.

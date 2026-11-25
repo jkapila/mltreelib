@@ -8,6 +8,8 @@ Save [OpenML Wine Quality 46964](https://www.openml.org/d/46964) to `datasets/wi
 
 PCT splits to reduce the variation of numeric features inside its leaves. The measurements have different units, so give them comparable scales using training means and standard deviations. Keep the original units for the report. Scaling is an explicit choice for this similarity objective.
 
+**Next:** fit the PCT model on the scaled training wines from step 1, then assign the held-out review wines to segments.
+
 ## 2. Fit, assign and profile
 
 Run this from the repository root. The second split supports a refit check. Assign the review records with both models before comparing them.
@@ -60,6 +62,8 @@ uv run python examples/guides/real_tree_studies.py wine
 
 ![Held-out wine assignments in sugar and acidity space, alongside four segment profiles](../assets/guides/real-wine-clustering.svg)
 
+**Next:** read the segment profiles from step 2 in lab units and check whether the segments hold when the model is refit on another training sample.
+
 ## 3. Read the profiles and check stability
 
 | Leaf | Review rows | Median residual sugar (g/L) | Median volatile acidity (g/L) | Median alcohol (%) |
@@ -74,6 +78,8 @@ The two lower-sugar groups differ on acidity. The higher-sugar groups differ on 
 A scatter plot only shows two of the four input features. Use the profile panel to see how the segments differ across the full feature list. It displays each segment's median in units of the training standard deviation. For a rule review, convert a standardized threshold back to lab units using `threshold * scale + center`.
 
 Report pairwise Jaccard agreement after refitting. It counts pairs assigned together in both fits as a fraction of pairs assigned together in either fit. It avoids matching arbitrary leaf IDs and excludes the usually large number of pairs separated by both fits. This tests the stability of one partition with fixed scaling. Before using the groups operationally, repeat with independent batches and compare against a simpler lab rule.
+
+**Next:** compare the other engines behind `ClusterModel`, because the profiles and stability check in step 3 describe only the PCT segmentation.
 
 ## 4. Choose an engine through `ClusterModel`
 
@@ -99,6 +105,8 @@ The wrapper currently converts `None` to `0.0` for `cltree`, `hdbscan` and `urf`
 PCT accepted raw categorical labels and missing numeric entries in a separate check. Its returned rules displayed category codes rather than the original labels. In that check, an unseen category and a missing category went to different leaves. Category-label rendering and unseen-category routing need further investigation before those rules become a business handoff.
 
 For density and proximity methods, check scaling, distance choice and the meaning of an unassigned or noise label. For all kinds, test the actual new-row behavior and input schema that your workflow uses.
+
+**Next:** run a synthetic example with known generating groups, which shows how a tree can split one true group into several leaves, something the wine segments cannot show.
 
 ## 5. Run the controlled stability example
 

@@ -56,6 +56,8 @@ flowchart LR
     class Final finalBox;
 ```
 
+**Next:** section 2 states each mechanism as a formula (split and leaf monotonicity, interaction groups, honest splitting), and each one addresses a risk listed in section 1.
+
 ---
 
 ## 2. Mathematical Formulation of Constraints
@@ -96,6 +98,8 @@ Under honest estimation, $\mathcal{D}$ is partitioned into disjoint sets $S^{\te
 $$\hat{\theta}_{\text{leaf}} = \arg\min_{\theta} \sum_{i \in S^{\text{est}} \cap \text{leaf}} \mathcal{L}(y_i, f(x_i; \theta))$$
 
 Honest estimates are asymptotically unbiased, Gaussian, and provide valid coverage intervals.
+
+**Next:** section 3 runs the healthcare insurance data through an unconstrained baseline and three trees that each use one of these mechanisms, then compares their test RMSE.
 
 ---
 
@@ -165,6 +169,8 @@ interaction groups test RMSE = 11934.83
 honest             test RMSE = 11864.07
 ```
 
+**Next:** section 4 reads the printed RMSE values from that run and states what they do and do not show.
+
 ---
 
 ## 4. Empirical Benchmark Output & Quantitative Findings
@@ -183,7 +189,7 @@ Reading the printed results:
 
 ---
 
-## 5. Domain Limitations & Operational Boundaries
+## Domain Limitations & Operational Boundaries
 
 1. **Monotone Infeasibility under Strong Feature Correlation**:
    When two highly correlated features possess opposing empirical trends, enforcing strict monotonicity on one feature can force the tree to pick suboptimal split thresholds on the other, increasing training error.

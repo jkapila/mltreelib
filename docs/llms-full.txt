@@ -216,6 +216,11 @@ dot_code = model_tree.to_dot()
 
 Install mltreelib as a Python wheel with a Rust core. Model fitting and inference require no additional Python packages.
 
+!!! warning "Early development"
+    mltreelib is at an early stage. APIs may change or break between releases.
+    For any new feature, please [raise an issue first](https://github.com/jkapila/mltreelib/issues)
+    so we can discuss scope before code is written.
+
 ## From PyPI
 
 ```bash
@@ -643,6 +648,8 @@ Piecewise Linear ModelTree Test RMSE: $155.99
 
 ---
 
+**Next:** turn the fitted linear leaves into IF-THEN rules, because the M5 and Cubist step is what makes each leaf's equation auditable.
+
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
 
 On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules. The block below fits a small linear-leaf tree on the local Concrete parquet (800 shuffled rows) and extracts its rules.
@@ -702,6 +709,8 @@ Extracted 7 Transparent Rules:
 ```
 
 ---
+
+**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 41 samples) falls in the N < 50 range, where unregularized OLS has high variance.
 
 ## 3. Hierarchical Leaf Shrinkage
 
@@ -790,6 +799,8 @@ The solver applies Newton-Raphson with the inverse Mills ratio $\lambda(\alpha) 
 
 ---
 
+**Next:** fit four of these families (Probit, Gamma, Tweedie and Tobit) on real benchmark datasets, because the formulas above define each leaf's target but do not show how it performs on data.
+
 ## 2. Empirical Benchmark Suite Results
 
 We evaluate all four families on canonical domain benchmarks using [`benchmarks/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/distributional_leaf_benchmarks.py).
@@ -826,6 +837,8 @@ We evaluate all four families on canonical domain benchmarks using [`benchmarks/
 
 ---
 
+**Next:** call the same families from Python, because the benchmark results above come from a script and `leaf_family` is how a user picks a family on a `ModelTree`.
+
 ## 3. Python Usage Example
 
 ```python
@@ -855,18 +868,9 @@ pred_charges = gamma_tree.predict(X_test)
 
 ---
 
-## 4. Domain Limitations & Operational Boundaries
+**Next:** the worked example below generates its own data and runs the Tweedie, Tobit and heteroscedastic options, because the Python snippet above uses `X_train`, `y_hours` and `y_charges` without defining them.
 
-1. **Tobit Normality Sensitivity**:
-   Tobit maximum likelihood assumes normal errors $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$ in the latent space. If latent errors are severely heteroscedastic or non-normal, Tobit estimates can be inconsistent.
-2. **Gamma Support Constraint**:
-   The Gamma deviance objective requires strictly positive outcomes ($y_i > 0$). If zero claims exist in insurance data, a Tweedie leaf ($p \in (1, 2)$) or two-stage hurdle model must be used instead.
-3. **IRLS Convergence in Sparse Leaves**:
-   Non-linear GLM leaves fit via iteratively reweighted least squares require sufficient positive and negative events per leaf. Set `min_rows >= 25` to prevent separation divergence.
-
----
-
-## Worked example: Tweedie, Tobit and heteroscedastic trees
+## 4. Worked example: Tweedie, Tobit and heteroscedastic trees
 
 Classical decision trees minimize squared error (SSE) under the implicit assumption of homoscedastic Gaussian noise. Real-world business outcomes routinely violate this assumption:
 - **Zero-Mass & Positive Skew**: Insurance claim amounts, operational losses, and customer lifetime spend have a point mass at zero and heavy positive tails.
@@ -1055,6 +1059,19 @@ Discovered Volatility Split Threshold: 52.922
 !!! tip "Related guides"
     - [Survival & Competing Risks Trees](survival-trees.md) for right-censored time-to-event outcomes.
 
+---
+
+## Domain Limitations & Operational Boundaries
+
+1. **Tobit Normality Sensitivity**:
+   Tobit maximum likelihood assumes normal errors $\epsilon_i \sim \mathcal{N}(0, \sigma^2)$ in the latent space. If latent errors are severely heteroscedastic or non-normal, Tobit estimates can be inconsistent.
+2. **Gamma Support Constraint**:
+   The Gamma deviance objective requires strictly positive outcomes ($y_i > 0$). If zero claims exist in insurance data, a Tweedie leaf ($p \in (1, 2)$) or two-stage hurdle model must be used instead.
+3. **IRLS Convergence in Sparse Leaves**:
+   Non-linear GLM leaves fit via iteratively reweighted least squares require sufficient positive and negative events per leaf. Set `min_rows >= 25` to prevent separation divergence.
+
+---
+
 
 ---
 
@@ -1073,6 +1090,8 @@ The [Hillstrom email experiment](https://www.tensorflow.org/datasets/catalog/hil
 ```bash
 uv run python examples/guides/real_survival_uplift.py uplift
 ```
+
+**Next:** fit a causal tree on the randomized training rows from step 1, and use the validation rows to choose the email threshold while the test outcomes stay sealed.
 
 ## 2. Fit a causal tree and choose an email policy
 
@@ -1161,6 +1180,8 @@ for selected in ([score > threshold for score in test_scores],
 
 The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.
 
+**Next:** report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.
+
 ## 3. Interpret the held-out results
 
 The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree ranks customers. Validation selects the policy threshold, and the randomized test set estimates incremental visits. This example assumes zero treatment cost because campaign costs are not in the data.
@@ -1174,6 +1195,8 @@ The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows.
 ![Hillstrom randomized held-out policy comparison](../assets/guides/real-uplift.svg)
 
 The chosen policy treats everyone. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
+
+**Next:** check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.
 
 ## 4. Controlled check with synthetic truth
 
@@ -1195,13 +1218,11 @@ Within the selected subgroup, the script compares observed treated and control o
 
 Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. These calculations are example code, not a claim that the package already exposes uplift evaluation metrics.
 
-## Next steps and references
-
-[Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
+**Next:** the worked example also uses a simulation with a known effect, to check numerical effect recovery, which real Hillstrom outcomes cannot provide.
 
 ---
 
-## Worked example: recovering a known treatment effect
+## 5. Worked example: recovering a known treatment effect
 
 Use simulation to check numerical effect recovery. The Hillstrom sections above show how to evaluate a real randomized policy when individual effects are unknown.
 
@@ -1336,6 +1357,10 @@ tree.fit(X, (durations, events))
 Executable research script:
 - [`examples/guides/survival_causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py)
 
+## Next steps and references
+
+[Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
+
 
 ---
 
@@ -1384,6 +1409,8 @@ $$s(\mathbf{x}, n) = 2^{-\frac{\mathbb{E}[h(\mathbf{x})]}{c(n)}}$$
 
 where $h(\mathbf{x})$ is the observed isolation tree depth, and $c(n) = 2 \ln(n - 1) + 0.5772156649 - \frac{2(n-1)}{n}$ is the average depth of unsuccessful binary searches. An anomaly score $s \to 1.0$ indicates an unmistakable outlier, while $s < 0.5$ indicates normal inlier space.
 
+**Next:** the benchmark tests the oblique cuts from step 1 against axis-aligned cuts on a 2D mixture with 40 outliers.
+
 ---
 
 ## 2. Benchmark
@@ -1401,6 +1428,8 @@ where $h(\mathbf{x})$ is the observed isolation tree depth, and $c(n) = 2 \ln(n 
 
 ![Anomaly detection comparison](../assets/unsupervised_clusters_anomalies.png)
 
+**Next:** the Python usage shows the minimal `AnomalyModel(kind="eif")` fit and scoring calls, which the worked example expands into a full triage run.
+
 ---
 
 ## 3. Python usage
@@ -1412,6 +1441,8 @@ eif = AnomalyModel(kind="eif", max_depth=8, seed=42)
 eif.fit(X_telemetry)
 anomaly_scores = eif.predict_score(X_telemetry)
 ```
+
+**Next:** the worked example applies the same `kind="eif"` model to labeled telemetry and measures how many of the 60 true anomalies fall in a 5% review budget.
 
 ---
 
@@ -1497,9 +1528,7 @@ Top 3 Flagged Anomalies:
 
 ---
 
----
-
-## 5. Limitations
+## Limitations
 
 1. **High-dimensional projection curse.**
    In very high dimensions ($P > 1,000$), random normal vectors $\mathbf{n} \sim \mathcal{N}(0, \mathbf{I})$ become nearly orthogonal to all coordinate axes, diluting cut selectivity. Subsetting random coordinate subspaces (e.g. 2–10 features per oblique cut) preserves discrimination.
@@ -1552,6 +1581,8 @@ $$\Delta \text{Var}(s) = \text{Var}(P) - \left[ \frac{N_L}{N} \text{Var}(L) + \f
 
 Because splits branch on readable feature predicates ($x_j \le \theta$), each cluster corresponds to an explicit, auditable IF-THEN rule.
 
+**Next:** the benchmark applies this variance-reduction split to six chemical features of the wine data and reports the output as one IF-THEN rule per leaf.
+
 ---
 
 ## 2. Benchmark
@@ -1564,6 +1595,8 @@ Because splits branch on readable feature predicates ($x_j \le \theta$), each cl
 | Algorithm | Split mechanism | Output |
 | :--- | :--- | :--- |
 | **Predictive Clustering Trees** | Multi-target variance ($\Delta \text{Var}$) | IF-THEN rules, one per leaf |
+
+**Next:** the Python example fits `kind="pct"` on those same six features with `max_depth=3` and `min_rows=20`, then prints the rule and prototype for each leaf.
 
 ---
 
@@ -1590,6 +1623,8 @@ print(f"Cluster rules: {pct.rules()}")
 ```text
 Cluster rules: [{'cluster_id': 0, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity <= 8.1500', 'prototype': [6.728115942028986, 0.2692898550724639, 0.3207826086956529, 2.9837681159420266, 0.04681014492753618, 10.887125603864735], 'size': 690}, {'cluster_id': 1, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar <= 7.4500 AND fixed_acidity > 8.1500', 'prototype': [9.450000000000001, 0.3011250000000001, 0.44583333333333325, 2.5287500000000005, 0.06599999999999998, 10.773055555555555], 'size': 120}, {'cluster_id': 2, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid <= 0.4150', 'prototype': [6.915789473684216, 0.2615789473684209, 0.29338815789473655, 11.977960526315796, 0.04586184210526313, 9.886348684210537], 'size': 304}, {'cluster_id': 3, 'rule': 'volatile_acidity <= 0.4575 AND residual_sugar > 7.4500 AND citric_acid > 0.4150', 'prototype': [7.213461538461536, 0.28802884615384616, 0.5402884615384613, 12.855769230769228, 0.04719230769230769, 9.596153846153847], 'size': 104}, {'cluster_id': 4, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid <= 0.3050', 'prototype': [7.359808612440196, 0.6314114832535888, 0.12325358851674637, 2.621052631578947, 0.07461244019138757, 10.309808612440193], 'size': 209}, {'cluster_id': 5, 'rule': 'volatile_acidity > 0.4575 AND chlorides <= 0.1225 AND citric_acid > 0.3050', 'prototype': [9.273584905660375, 0.5666981132075471, 0.451132075471698, 4.116981132075471, 0.07441509433962265, 10.624528301886793], 'size': 53}, {'cluster_id': 6, 'rule': 'volatile_acidity > 0.4575 AND chlorides > 0.1225', 'prototype': [8.3, 0.5832499999999999, 0.3415, 4.665, 0.2637, 9.615], 'size': 20}]
 ```
+
+**Next:** the PCT leaves above cover all 1,500 wines with no separate noise group, so the worked example uses `kind="cltree"` to find dense regions and mark low-density points as noise.
 
 ---
 
@@ -1659,7 +1694,7 @@ Background Noise Points Rejected: 232
 
 ---
 
-## 5. Limitations
+## Limitations
 
 1. **PCT target scaling.**
    Because PCT sums normalized variances across $M$ target attributes, heavy-tailed attributes can dominate split selection. Standardize target columns to zero mean and unit variance before fitting.
@@ -1729,25 +1764,41 @@ The balance between model bias and variance is tuned via recursive growth contro
 | Parameter | Type | Default | Operational Effect |
 | :--- | :--- | :---: | :--- |
 | `max_depth` | `int` | `6` | Hard ceiling on recursive partitioning depth. |
-| `min_rows` | `int` | `20` | Minimum sample count required to attempt a split. |
-| `min_gain` | `float` | `0.0` | Minimum reduction in split deviance required to accept a partition. |
-| `prune` | `str` | `"none"` | Cost-complexity pruning (`"cost_complexity"` via holdout cross-validation). |
+| `min_rows` | `int` | `15` | Minimum rows on each side of a split. |
+| `min_gain` | `float` | `1e-9` | Minimum reduction in split deviance required to accept a partition. |
+| `prune` | `str` | `"cp"` | Post-pruning: `"cp"` (cost-complexity), `"bic"`, `"mdl"` or `"none"`. |
+| `cp_alpha` | `float` | `5.0` | Absolute per-leaf penalty in target units (squared-error units for a Gaussian leaf). Depends on the target's scale. |
+| `cp` | `float` | `None` | Scale-free penalty as a fraction of the root cost, as in rpart. When set it overrides `cp_alpha`. |
+
+The defaults above come from the live constructor. Pruning is bottom-up with one penalty: a split survives only when its error reduction exceeds the per-leaf penalty. There is no cross-validated choice of the penalty.
 
 ![Empirical Growth Knob Grid: Depth vs Min Rows Trade-off Surface](../assets/core_growth_knob_grid.png)
 
+<!-- run -->
 ```python
-from mltreelib import ModelTree
+from mltreelib import ModelTree, load_dataset
 
-# Regularized tree growth configuration
-tree = ModelTree(
-    max_depth=4,
-    min_rows=35,
-    min_gain=1e-4,
-    prune="cost_complexity",
-    ccp_alpha=0.015,
-)
-tree.fit(X_train, y_train)
+data = load_dataset("concrete_compressive_strength")
+target = "ConcreteCompressiveStrength"
+names = [c for c in data["columns"] if c != target]
+X = [[data["columns"][c][i] for c in names] for i in range(data["n_rows"])]
+y = data["columns"][target]
+
+for cp in (None, 0.001, 0.01, 0.05):
+    tree = ModelTree(leaf="mean", max_depth=6, min_rows=15, prune="cp", cp=cp)
+    tree.fit(X, y, col_names=names)
+    print(f"cp={cp}: {tree.n_leaves()} leaves")
 ```
+
+<!-- output -->
+```text
+cp=None: 36 leaves
+cp=0.001: 30 leaves
+cp=0.01: 13 leaves
+cp=0.05: 5 leaves
+```
+
+**Next:** section 2 adds monotone and interaction constraints, which are set alongside the depth and `min_rows` bounds from section 1; its example sets `max_depth=3` and `min_rows=30`.
 
 ---
 
@@ -1880,6 +1931,8 @@ flowchart LR
     class E1,E2,E3,E4 evoBox;
 ```
 
+**Next:** step 2 gives the formula for each of the seven `leaf_solver` options that step 1 describes.
+
 ---
 
 ## 2. Mathematical Formulations of the Seven Solvers
@@ -1927,6 +1980,8 @@ Provides broad global exploration of non-convex and multi-modal leaf loss functi
 Updates parameter distribution parameters $\theta = (\mu, \sigma)$ along estimated natural gradient directions:
 $$\nabla_\mu J = \sum_{k=1}^\lambda w_k z_k, \qquad \nabla_\sigma J = \sum_{k=1}^\lambda w_k (z_k^2 - 1)$$
 Provides fast derivative-free updates along coordinate-aligned search directions.
+
+**Next:** step 3 runs all seven solvers on the same Concrete split, so the formulas from step 2 can be compared on test RMSE and R².
 
 ---
 
@@ -2029,6 +2084,8 @@ depth=2 ccd    rmse=6.858 r2=0.858
 | **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
 | **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
 
+**Next:** step 4 reads the RMSE and R² values from step 3 to point out which solvers land close together and which trail.
+
 ---
 
 ## 4. Latency vs. Accuracy Pareto Diagnostic
@@ -2043,6 +2100,8 @@ depth=2 ccd    rmse=6.858 r2=0.858
    `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
 3. **Gradient-free SHADE**:
    On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
+
+**Next:** step 5 leaves the leaf fits and applies a search to any bounded scalar objective through `optimize`, including `ModelTree` hyperparameters.
 
 ---
 
@@ -2134,6 +2193,8 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
 | **`powell`** | 100 | 2.77 dB | 0.39 s |
 | **`simulated_annealing`** | 100 | 2.92 dB | 0.45 s |
 
+**Next:** step 6 returns to the leaf solvers, which step 5 does not change, and turns the step 3 and step 4 results into selection rules.
+
 ---
 
 ## 6. Production Recommendations
@@ -2144,30 +2205,11 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
     - **Use `ccd`** when sparse leaves are mandatory ($L_1 > 0$) to eliminate irrelevant features inside leaf equations.
     - **Use `shade`** when fitting custom non-smooth losses, quantile objectives with heavy outliers, or discontinuous simulation simulators.
 
----
-
-## 7. Operational Limitations & Numerical Failure Modes
-
-1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
-2. **Coordinate Descent Collinearity Stagnation**:
-   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
-3. **Non-Convex Local Minima & Stochastic Reproducibility**:
-   Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
-4. **Box Bounds vs. Coupled Constraints in `optimize`**:
-   The `lbfgs_b` bounded optimizer supports box constraints $l_i \le x_i \le u_i$. For coupled joint budget or volume constraints $\sum_i a_i x_i \le B$, use dual multiplier bisection or `scipy.optimize.minimize(method="SLSQP")`.
+**Next:** the worked example covers the generic optimizer suite behind `optimize`, and its tree HPO example reuses that call from step 5.
 
 ---
 
-## References
-
-- Nocedal, J., & Wright, S. J. (2006). *Numerical Optimization*. Springer.
-- Tanabe, R., & Fukunaga, A. S. (2014). "Improving the search performance of SHADE using linear population size reduction." *IEEE CEC*, 1658-1665.
-- Hansen, N. (2016). "The CMA evolution strategy: A tutorial." *arXiv preprint arXiv:1604.00772*.
-
----
-
-## Worked example: generic solvers and tuning
+## 7. Worked example: generic solvers and tuning
 
 Modern machine learning packages outsource numerical optimization to external heavyweight dependencies (SciPy, NLopt, Pagmo). When running in high-throughput production environments, cross-language FFI overhead and divergent solver interfaces introduce latency and unpredictability.
 
@@ -2365,6 +2407,27 @@ HPO Search Results:
   Optimal Configuration: max_depth=5, min_rows=23, l2=4.9770e-03
 ```
 
+---
+
+## Operational Limitations & Numerical Failure Modes
+
+1. **Unstandardized Covariate Scaling**:
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
+2. **Coordinate Descent Collinearity Stagnation**:
+   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
+3. **Non-Convex Local Minima & Stochastic Reproducibility**:
+   Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
+4. **Box Bounds vs. Coupled Constraints in `optimize`**:
+   The `lbfgs_b` bounded optimizer supports box constraints $l_i \le x_i \le u_i$. For coupled joint budget or volume constraints $\sum_i a_i x_i \le B$, use dual multiplier bisection or `scipy.optimize.minimize(method="SLSQP")`.
+
+---
+
+## References
+
+- Nocedal, J., & Wright, S. J. (2006). *Numerical Optimization*. Springer.
+- Tanabe, R., & Fukunaga, A. S. (2014). "Improving the search performance of SHADE using linear population size reduction." *IEEE CEC*, 1658-1665.
+- Hansen, N. (2016). "The CMA evolution strategy: A tutorial." *arXiv preprint arXiv:1604.00772*.
+
 
 ---
 
@@ -2441,6 +2504,8 @@ flowchart LR
     class COMP,ANOM,ANOM2,CLUST taskBox;
 ```
 
+**Next:** step 2 gives the formulas for the decompositions shown in the diagram: PCA, the two whitening transforms, the orthomax and promax rotations, and NMF.
+
 ---
 
 ## 2. Mathematical Formulations
@@ -2490,6 +2555,8 @@ $$\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \f
   Sequential exact single-coordinate Non-Negative Least Squares (NNLS) update:
   $$H_{k, \cdot} \leftarrow \max\left(0, \, \frac{W_{\cdot, k}^T \left(X - \sum_{j \ne k} W_{\cdot, j} H_{j, \cdot}\right) - \lambda_1}{W_{\cdot, k}^T W_{\cdot, k} + \lambda_2}\right)$$
   Guarantees monotonic loss reduction with true $L_1$ sparsity without numerical instability.
+
+**Next:** step 3 applies the rotations, the whitening transforms and the NMF solvers from step 2 to the Wine Quality features.
 
 ---
 
@@ -2599,31 +2666,11 @@ Outlier Spike (+50.0) -> Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
 Ratio (Outlier/Inlier Loss): 3510781.2x separation
 ```
 
----
-
-## 4. Operational Limitations & Failure Modes
-
-1. **Strict Non-Negativity Violation in NMF**:
-   Non-Negative Matrix Factorization requires $X_{i, j} \ge 0$ for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval $[0, 1]$ before fitting NMF.
-2. **Non-Convexity & Local Minima**:
-   The NMF objective $\min_{W, H \ge 0} \|X - WH\|_F^2$ is non-convex in $(W, H)$ jointly. Convergence to a global minimum is not guaranteed. `mltreelib-core` uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.
-3. **Rotational Indeterminacy Under Degenerate Eigenvalues**:
-   When principal components share identical singular values ($\sigma_i \approx \sigma_j$), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.
-4. **Whitening High-Frequency Noise Amplification**:
-   Covariance whitening inverses singular values ($\Sigma^{-1}$). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor $\epsilon > 0$ when singular values approach machine precision.
+**Next:** the worked example is a separate, self-contained case: it generates a synthetic aptitude battery, not the wine data, to show why rotation makes loadings easier to read.
 
 ---
 
-## References
-
-- Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." *Psychometrika*, 23(3), 187-200.
-- Hendrickson, A. E., & White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." *British Journal of Statistical Psychology*, 17(1), 65-70.
-- Cichocki, A., & Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." *IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences*, 92(3), 708-721.
-- Bell, A. J., & Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." *Neural Computation*, 7(6), 1129-1159.
-
----
-
-## Worked example: PCA rotations
+## 4. Worked example: PCA rotations
 
 Principal Component Analysis (PCA) decomposes high-dimensional feature spaces into orthogonal axes that maximize explained variance. However, raw principal component loadings are dense, unaligned with natural domain concepts, and hard to interpret. 
 
@@ -2832,3 +2879,25 @@ ComponentModel(
 - `factor_correlations_`: Inter-factor correlation matrix $\mathbf{\Phi}$ (shape $k \times k$, identity for orthogonal rotations).
 - `explained_variance_ratio_`: Realized variance share per factor.
 - `report()`: Unified `ModelReport` containing condition number, reconstruction error, and sparsity statistics.
+
+---
+
+## Operational Limitations & Failure Modes
+
+1. **Strict Non-Negativity Violation in NMF**:
+   Non-Negative Matrix Factorization requires $X_{i, j} \ge 0$ for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval $[0, 1]$ before fitting NMF.
+2. **Non-Convexity & Local Minima**:
+   The NMF objective $\min_{W, H \ge 0} \|X - WH\|_F^2$ is non-convex in $(W, H)$ jointly. Convergence to a global minimum is not guaranteed. `mltreelib-core` uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.
+3. **Rotational Indeterminacy Under Degenerate Eigenvalues**:
+   When principal components share identical singular values ($\sigma_i \approx \sigma_j$), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.
+4. **Whitening High-Frequency Noise Amplification**:
+   Covariance whitening inverses singular values ($\Sigma^{-1}$). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor $\epsilon > 0$ when singular values approach machine precision.
+
+---
+
+## References
+
+- Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." *Psychometrika*, 23(3), 187-200.
+- Hendrickson, A. E., & White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." *British Journal of Statistical Psychology*, 17(1), 65-70.
+- Cichocki, A., & Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." *IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences*, 92(3), 708-721.
+- Bell, A. J., & Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." *Neural Computation*, 7(6), 1129-1159.

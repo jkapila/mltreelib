@@ -86,6 +86,8 @@ cp=0.01: 13 leaves
 cp=0.05: 5 leaves
 ```
 
+**Next:** section 2 adds monotone and interaction constraints, which are set alongside the depth and `min_rows` bounds from section 1; its example sets `max_depth=3` and `min_rows=30`.
+
 ---
 
 ## 2. Monotone & Interaction Constraints

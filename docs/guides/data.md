@@ -10,7 +10,7 @@
 | Target | Exclude the outcome and features that become available only after the prediction time. |
 | New data | Preserve column order, names, types and the fitted mapping. Test unknown levels and missing values. |
 
-## Example: native categories and missing predictors
+## 1. Example: native categories and missing predictors
 
 ```mermaid
 flowchart LR
@@ -55,7 +55,9 @@ print(model.splits())
 
 Use a separate encoder only when another downstream workflow needs it. If you use one, fit it on training data only.
 
-## Inspect before fitting
+**Next:** the inspection step checks where missing values occur in a training set, because missing predictors pass into the tree unchanged and their frequency matters before fitting.
+
+## 2. Inspect before fitting
 
 The [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/guides/data_metrics_pathway.py) creates a synthetic mixed dataset and splits it into training, validation and test rows. It counts missing values on the training rows before fitting. It passes the original categorical labels and missing numeric entries directly to both models.
 
@@ -69,7 +71,9 @@ uv run python examples/guides/data_metrics_pathway.py
 
 The example requires matplotlib to render the charts. Graphviz is optional for rendering the tree. The package plotting extra installs the chart dependencies; Graphviz also requires its system executable.
 
-## Choose the preparation
+**Next:** the preparation choice uses the missingness findings from step 2 to decide whether the downstream estimator needs a separate encoder.
+
+## 3. Choose the preparation
 
 Use native categorical inputs for `ModelTree`. Use an encoder when the downstream estimator requires it. Target-based encoders need leakage-safe training representations and an independently fitted evaluation pipeline. Missing-value behavior varies by operation. Test missing predictors, targets and unknown categories for the exact estimator before deployment.
 

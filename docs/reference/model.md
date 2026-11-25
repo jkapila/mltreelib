@@ -31,7 +31,7 @@ from_flat = ModelTree(max_depth=4, min_rows=8, leaf="linear", leaf_solver="lbfgs
 
 These calls show three ways to supply explicit settings. Dictionaries inherit the defaults of `ModelTree` for omitted keys. A typed `LeafControl` uses its own defaults. Existing flat keywords and the `control=` alias for `leaf_control=` are supported. Use `solver` inside a leaf control and `leaf_solver` in flat calls. Supply each setting once.
 
-The leaf model and family determine which solvers can fit it. The built-in linear and GLM paths offer the choices listed in the [parameter reference](parameters.md). Specialized leaves can use their own fitting methods. See [persist a fitted model](../guides/serving-contract.md#persist-a-fitted-model) for JSON, file, byte, and pickle examples.
+The leaf model and family determine which solvers can fit it. The built-in linear and GLM paths offer the choices listed in the [parameter reference](parameters.md). Specialized leaves can use their own fitting methods. See [persist a fitted model](../guides/serving-contract.md#3-persist-a-fitted-model) for JSON, file, byte, and pickle examples.
 
 The gain family is **sample-weight aware end to end**: weighted class
 masses for entropy/gini/gain_ratio/twoing, weighted moments for sdr/SSE,

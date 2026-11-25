@@ -8,6 +8,8 @@ Download [OpenML 46929](https://www.openml.org/d/46929) to `datasets/GiveMeSomeC
 
 Use observed values as supplied. In the sample, monthly income and number of dependents can be missing. Pass them through to the tree. The input schema is numeric and needs no encoder.
 
+**Next:** fit the tree on the 8,000 training rows and use the next 2,000 rows to choose a threshold, keeping the last 2,000 rows for the final report.
+
 ## 2. Fit and choose a threshold
 
 <!-- run -->
@@ -58,6 +60,8 @@ uv run python examples/guides/real_tree_studies.py credit
 
 ![Credit distress test precision–recall and probability calibration](../assets/guides/real-credit.svg)
 
+**Next:** read the test confusion matrix from step 2 at the validation threshold of 0.20, and compare the tree's average precision and Brier score with the reference values.
+
 ## 3. Read the result
 
 The validation threshold was **0.20**. It flagged 159 of 2,000 test rows. Of the 155 observed distress events, 73 were flagged and 82 were missed. The remaining 86 alerts were false positives.
@@ -70,6 +74,8 @@ The validation threshold was **0.20**. It flagged 159 of 2,000 test rows. Of the
 The root uses revolving utilization. A later split uses the count of payments 60 to 89 days past due. The training sample contains 1,616 missing income values and 222 missing dependent counts.
 
 Average precision measures how well the scores rank the positive cases. Compare it with test prevalence as a reference. Brier score measures squared probability error. Compare it with the constant training-rate model. The probability plot is a diagnostic. Review bin counts and treat sparsely populated bins with care.
+
+**Next:** review the splits and leaf support behind these alerts, because the metrics in step 3 come from one random historical split.
 
 ## 4. Review the model before acting
 

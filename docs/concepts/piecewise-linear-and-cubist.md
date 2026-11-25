@@ -106,6 +106,8 @@ Piecewise Linear ModelTree Test RMSE: $155.99
 
 ---
 
+**Next:** turn the fitted linear leaves into IF-THEN rules, because the M5 and Cubist step is what makes each leaf's equation auditable.
+
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
 
 On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), local chemistry and curing age interact continuously. Quinlan's M5 tree architecture partitions the design space and converts leaves into auditable linear rules. The block below fits a small linear-leaf tree on the local Concrete parquet (800 shuffled rows) and extracts its rules.
@@ -165,6 +167,8 @@ Extracted 7 Transparent Rules:
 ```
 
 ---
+
+**Next:** shrink leaf coefficients toward the parent node, because the smallest extracted rule (Rule 7, 41 samples) falls in the N < 50 range, where unregularized OLS has high variance.
 
 ## 3. Hierarchical Leaf Shrinkage
 

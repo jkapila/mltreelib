@@ -25,7 +25,7 @@ Companion executable script:
 
 ---
 
-## Architectural Splitting Taxonomy
+## 1. Architectural Splitting Taxonomy
 
 ```mermaid
 flowchart LR
@@ -48,7 +48,9 @@ flowchart LR
 
 ---
 
-## Shared Benchmark Task: Credit Portfolio Risk Valuation
+**Next:** generate the shared credit dataset, because every criterion below is evaluated on this same data, which makes the comparison head-to-head.
+
+## 2. Shared Benchmark Task: Credit Portfolio Risk Valuation
 
 We generate a unified financial risk dataset ($N = 300$) where each observation represents an account with:
 - `score`: Continuous risk score $\in [-2.0, 2.0]$ with an underlying structural break at $0.0$.
@@ -108,7 +110,9 @@ y_vectors, y_quantiles = y_vectors.tolist(), y_quantiles.tolist()
 
 ---
 
-## 1. Baseline: Standard CART (`gain="sse"`)
+**Next:** fit the standard CART split on this dataset, because it is the variance-reduction baseline that every later criterion is compared against.
+
+## 3. Baseline: Standard CART (`gain="sse"`)
 
 Standard recursive partitioning greedily maximizes variance reduction:
 
@@ -133,7 +137,9 @@ Split: {'col': 'score', 'threshold': 1.024, 'missing_left': True, 'gain': 230.66
 
 ---
 
-## 2. Phase 12A: Model-Based Recursive Partitioning (`gain="mob"`)
+**Next:** test the baseline's split with MOB, because MOB checks whether the linear fit changes along a continuous covariate, which the SSE split above does not test.
+
+## 4. Phase 12A: Model-Based Recursive Partitioning (`gain="mob"`)
 
 **Best for**: Detecting parameter instability or structural breaks along continuous covariates without refitting linear models across thousands of candidate cutpoints.
 
@@ -167,7 +173,9 @@ Diagnostics: None
 
 ---
 
-## 3. Phase 12B: Conditional Inference Trees (`gain="ctree"`)
+**Next:** switch to a permutation rank test (CTree), because CART suffers from selection bias on mixed-scale data with many-level factors such as `zip_code`, which CTree is built to avoid.
+
+## 5. Phase 12B: Conditional Inference Trees (`gain="ctree"`)
 
 **Best for**: Tabular datasets with mixed scale and high-cardinality factors (e.g. zip codes, store IDs, diagnoses) where CART suffers from selection bias.
 
@@ -199,7 +207,9 @@ Split: {'col': 'score', 'threshold': 1.0283967960109397, 'missing_left': True, '
 
 ---
 
-## 4. Phase 12C: Metric & Kernel Splitting (`gain="energy_distance"` & `gain="mmd"`)
+**Next:** score splits on multi-output targets with energy distance and MMD, because the CTree above uses a single scalar target and these criteria need vector targets.
+
+## 6. Phase 12C: Metric & Kernel Splitting (`gain="energy_distance"` & `gain="mmd"`)
 
 **Best for**: Multi-output targets, embeddings, representations, and complex distribution targets $Y \in \mathbb{R}^D$ where scalar variance is undefined.
 
@@ -231,7 +241,9 @@ MMD Split:    {'col': 'score', 'threshold': 0.6623265781115386, 'missing_left': 
 
 ---
 
-## 5. Phase 12D.1: Wasserstein-2 Optimal Transport (`gain="wasserstein"`)
+**Next:** use Wasserstein-2 on whole quantile curves, because the 12C criteria compare vector targets, while a 20-point quantile curve needs an optimal-transport distance.
+
+## 7. Phase 12D.1: Wasserstein-2 Optimal Transport (`gain="wasserstein"`)
 
 **Best for**: Target outcomes that are continuous distributions, quantile functions, or probability histograms (e.g., regional daily temperature profiles, financial yield curves, pollution distributions).
 
@@ -263,7 +275,9 @@ Leaf Fréchet Barycenter (len=20): [0.61, 0.74, 0.82, 0.88, 0.93] ...
 
 ---
 
-## 6. Phase 12D.2: Fairness-Constrained Splitting (`gain="fair"`)
+**Next:** add a demographic parity penalty on the protected column `gender`, because the criteria so far ignore protected attributes and this one penalizes splits that shift group shares between children.
+
+## 8. Phase 12D.2: Fairness-Constrained Splitting (`gain="fair"`)
 
 **Best for**: High-stakes automated decisions (credit approval, hiring, insurance underwriting) subject to demographic parity compliance bounds.
 
@@ -297,7 +311,9 @@ Split: {'col': 'score', 'threshold': 0.978, 'missing_left': True, 'gain': 225.80
 
 ---
 
-## 7. Phase 12E.1: Hellinger Distance Splitting (`gain="hellinger"`)
+**Next:** test Hellinger distance on a rare-event target with about 5% positives, because it is built for rare positives (under 5% of rows), a case the fairness criterion above does not address.
+
+## 9. Phase 12E.1: Hellinger Distance Splitting (`gain="hellinger"`)
 
 **Best for**: Highly imbalanced classification regimes (e.g. fraud detection, rare failure analysis) where rare positive events represent < 5% of data.
 
@@ -322,7 +338,9 @@ Split: {'col': 'score', 'threshold': 1.518, 'missing_left': True, 'gain': 14.418
 
 ---
 
-## 8. Phase 12E.2: Maximally Selected Rank Statistics (`gain="maxstat"`)
+**Next:** test rank-based splitting with MaxStat on a continuous target with outliers, because order preservation matters more than squared distance there.
+
+## 10. Phase 12E.2: Maximally Selected Rank Statistics (`gain="maxstat"`)
 
 **Best for**: Continuous targets with nonlinear monotone distortion or outliers where order preservation matters more than squared distance.
 
@@ -345,7 +363,9 @@ Split: {'col': 'score', 'threshold': 0.653, 'missing_left': True, 'gain': 162.61
 
 ---
 
-## 9. Phase 12F: SPORF Oblique Splitting (`sporf_d=2`)
+**Next:** allow splits on random combinations of features with SPORF, because the criteria above cut one column at a time and SPORF is built for diagonal boundaries.
+
+## 11. Phase 12F: SPORF Oblique Splitting (`sporf_d=2`)
 
 **Best for**: Non-axis-aligned data regimes where true boundaries are diagonal hyperplanes ($w_1 x_1 + w_2 x_2 \le c$).
 
@@ -375,7 +395,9 @@ Oblique Equation: None
 
 ---
 
-## 10. Phase 12G: Equalized Odds Fairness Penalty (`fairness_metric="equalized_odds"`)
+**Next:** change the fairness check from demographic parity to equalized odds, because equalized odds compares error rates (TPR and FPR) across groups, not group shares.
+
+## 12. Phase 12G: Equalized Odds Fairness Penalty (`fairness_metric="equalized_odds"`)
 
 **Best for**: Regulatory and credit compliance where decision error rates (True Positive Rate and False Positive Rate) must not disproportionately penalize a protected demographic subgroup:
 
@@ -407,7 +429,9 @@ Split: {'col': 'score', 'threshold': 0.556, 'missing_left': True, 'gain': 32.655
 
 ---
 
-## 11. Phase 12H: Extremely Randomized Splits / ExtraTrees (`extratrees=True`)
+**Next:** test randomized cutpoints with ExtraTrees, because they give O(1) split evaluation per feature, which matters for bagging and ensemble training.
+
+## 13. Phase 12H: Extremely Randomized Splits / ExtraTrees (`extratrees=True`)
 
 **Best for**: Fast $O(1)$ split evaluation during tree bagging and ensemble training, avoiding the $O(N \log N)$ sorting and exhaustive cutpoint scan per continuous feature:
 
@@ -436,7 +460,9 @@ Split: {'col': 'tier_flag', 'threshold': 0.17000300711858152, 'missing_left': Tr
 
 ---
 
-## 12. Phase 12I: EBM FAST Interaction Screening (`ebm_fast=True`)
+**Next:** screen all feature pairs for non-linear interactions with EBM FAST, because the earlier phases choose one split per node, and this screen looks at pairs of features.
+
+## 14. Phase 12I: EBM FAST Interaction Screening (`ebm_fast=True`)
 
 **Best for**: Discovering non-linear pairwise interactions across all $P(P-1)/2$ feature pairs without combinatorial model fitting:
 
@@ -465,7 +491,9 @@ Top Screened Pairs: [('score', 'tier_flag', 0.02277241345815803), ('score', 'gen
 
 ---
 
-## Unified Comparison Summary
+**Next:** compare every criterion in one summary table, because each phase above reports its own metric, and the table puts them side by side even though the metric columns are not on one scale.
+
+## 15. Unified Comparison Summary
 
 Running the standalone suite via `uv run python benchmarks/suites/statistical_and_metric_splitting.py`:
 
@@ -493,7 +521,7 @@ Phase 12I    | EBM FAST Interaction Tree        | Scalar     | Pair: score&tier_
 
 ---
 
-## 13. Operational Limitations & Practical Failure Modes
+## Operational Limitations & Practical Failure Modes
 
 1. **Quadratic Complexity of Metric Criteria ($O(N^2)$)**:
    Exact sample evaluations of Energy Distance (`gain="energy_distance"`) and MMD (`gain="mmd"`) compute pairwise Euclidean or kernel distances across all partition observations. On partitions with $N > 10,000$, exact pairwise evaluations become computationally prohibitive. In large-scale regimes, subsample candidate partitions or use random Fourier features.

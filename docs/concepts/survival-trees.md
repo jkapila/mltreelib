@@ -86,6 +86,8 @@ Behind each terminal node in the tree lives a complete multi-state survival dist
 5. **Leaf 5 (Rule 5: `biomarker > 1.471`) — Extreme Early Relapse ($N=41$, Median = 0.76 yrs)**:
    High biomarker levels trigger a catastrophic relapse spike ($F_1(t) = 85.4\%$ within the first 12 months). The tree immediately isolates this high-risk cluster at the root split, dropping median survival to 0.76 years.
 
+**Next:** step 2 lists the nine `gain=` criteria the tree uses to choose each split, and benchmarks six of them on one cohort.
+
 ---
 
 ## 2. The 9 Survival Split Criteria
@@ -131,6 +133,8 @@ survival_brier | 6      | 0.6952     | 0.6932     | 0.2155
 
 > **Takeaway**: `logrank` and `tarone_ware` maximize rank concordance ($C \approx 0.695$) and calibration ($\text{IBS} \approx 0.213$). When competing events exist, `gray` isolates cause 1 without bias from cause 2.
 
+**Next:** each split leaves a survival estimate in its leaf, so step 3 explains the non-parametric leaf estimators, the simplex invariant, and the parametric and spline leaf options.
+
 ---
 
 ## 3. Leaf Estimators & Invariants
@@ -170,6 +174,8 @@ Standard survival tree libraries fit flat step functions in leaves. `mltreelib` 
   Fits Royston-Parmar flexible spline log cumulative hazard functions:
   $$\ln \Lambda(t \mid x) = \gamma_0 + \gamma_1 \ln t + \sum_{k=1}^K \gamma_{k+1} v_k(\ln t) + \beta^T x$$
   Knob: `spline_knots=3`. Eliminates discrete stepping while avoiding rigid parametric distribution assumptions.
+
+**Next:** step 4 fits two trees with the leaf types from step 3 on a seeded synthetic cohort, then reads predictions from them by `kind`.
 
 ---
 
@@ -313,6 +319,8 @@ Console Output:
 5. Prognostic Risk Scores (Cause 1): [-1.6175, -1.9882, -2.9680]
 ```
 
+**Next:** step 5 scores the fitted trees on the test rows with discrimination and calibration metrics, using the CIF and survival predictions that step 4 returns.
+
 ---
 
 ## 5. Model Evaluation with Modern Calibration Metrics
@@ -400,6 +408,8 @@ ICI: 0.0421, E50: 0.0315, E90: 0.0872, Emax: 0.1248
 Competing Risks: Cause 1 ICI = 0.0384, Cause 2 ICI = 0.0412
 ```
 
+**Next:** step 6 turns the same fitted `tree` from step 4 into readable IF-THEN rules, a different view of the model that step 5 scored.
+
 ---
 
 ## 6. Interpretable Prognostic Rules
@@ -475,7 +485,7 @@ Default Rule:
 
 ---
 
-## 7. Assumptions & Limitations
+## Assumptions & Limitations
 
 1. **Conditionally Independent Censoring**:
    $T_i^* \perp C_i \mid X_i$. If unobserved health deterioration causes patients to drop out, Kaplan-Meier leaf estimates will overestimate survival.
@@ -488,7 +498,7 @@ Default Rule:
 
 ---
 
-## 8. Research Foundations & Benchmark Reproductions
+## Research Foundations & Benchmark Reproductions
 
 The implementation reproduces eleven key findings from classical (1988–2014) and frontier (2020–2026) survival analysis literature:
 

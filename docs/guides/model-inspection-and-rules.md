@@ -112,6 +112,8 @@ Extracted 4 Global Decision Rules:
 3. **Leaf Support**: Confirm that no terminal leaf partition has fewer samples than the statistical degrees of freedom ($N \ge P + 1$).
 4. **Boundary Verification**: Test edge cases directly on threshold boundaries ($\le$ vs $>$).
 
+**Next:** section 2 fits a single split with retrained linear leaves on the same data, reusing `X`, `y` and the feature names from section 1.
+
 ---
 
 ## 2. Explainable Stumps with Dynamic Leaf Retraining
@@ -142,6 +144,8 @@ print(f"Global Regime Partition: Feature '{split['col']}' at threshold {split['t
 ```text
 Global Regime Partition: Feature 'Age' at threshold 28.00
 ```
+
+**Next:** section 3 goes back to the full depth-2 `tree` from section 1, not the stump, because the k-NN smoothing runs on that fitted tree.
 
 ---
 

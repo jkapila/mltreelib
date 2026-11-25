@@ -50,6 +50,8 @@ flowchart LR
 
 ---
 
+**Next:** define the calendar-aware lag, decomposition and trend transforms, because each answers a failure listed above: shifts by calendar day, missing lags kept as `None`, and a trend term that lets leaves extrapolate.
+
 ## 2. Mathematical Formulation of Pure Rust Transforms
 
 ### A. Entity-Grouped Calendar Day Lags (`lag_by_days`)
@@ -78,6 +80,8 @@ $$\hat{y}(t, \mathbf{x}) = \beta_0 + \beta_{\text{trend}} \cdot t + \sum_{k=1}^P
 Because time $t$ enters as an explicit continuous predictor with non-zero slope $\beta_{\text{trend}}$, predictions continue along the secular trajectory beyond the training horizon.
 
 ---
+
+**Next:** run these transforms on a simulated panel and compare a linear-leaf tree with a mean-leaf baseline, because the formulas show that a trend term exists but not that it extrapolates out of time.
 
 ## 3. Benchmark Study: Multi-Store Retail Demand Panel
 
@@ -139,9 +143,11 @@ Test sales range: 171.1 to 225.2
 
 ---
 
+**Next:** read the RMSE output and its scope, because the run above is one simulated panel with one seed, and the page notes it is not a general forecasting benchmark.
+
 ## 4. Empirical Benchmark Output & Quantitative Findings
 
-The block in section 2 builds the features on the seeded panel, trains a CART-style baseline (`leaf="mean"`) and a linear-leaf tree on the first 180 rows, and scores the last 60 rows. It prints:
+The block in section 3 builds the features on the seeded panel, trains a CART-style baseline (`leaf="mean"`) and a linear-leaf tree on the first 180 rows, and scores the last 60 rows. It prints:
 
 - Out-of-time RMSE 15.13 for the mean-leaf baseline.
 - Out-of-time RMSE 2.66 for the linear-leaf tree.
@@ -152,7 +158,7 @@ On this synthetic panel the linear leaves give the lower error. Mean leaves pred
 
 ---
 
-## 5. Domain Limitations & Operational Boundaries
+## Domain Limitations & Operational Boundaries
 
 1. **Multi-Step Recursive Error Compounding**:
    In multi-step autoregressive rollouts, errors in $\hat{y}_{t+1}$ feed into lagged inputs for $\hat{y}_{t+2}$. For horizons exceeding 30 days, direct forecasting or periodic re-anchoring is required.

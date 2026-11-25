@@ -12,6 +12,8 @@ The snippet below gets the file with `dataset_path("flchain_rdatasets")`. It dow
 uv run python examples/guides/real_survival_uplift.py survival
 ```
 
+**Next:** fit survival trees on the training rows defined in step 1, keeping each follow-up time paired with its death flag.
+
 ## 2. Fit leaf survival curves
 
 `futime` is the time to death or last observation. Keep the event flag next to it. For example, someone censored at day 600 survived beyond day 365, but their status at day 1,095 is unknown. Do not replace the censored outcome with an event at day 600.
@@ -108,6 +110,8 @@ for depth in (0, 2):
 
 The depth-zero tree estimates one Kaplan–Meier curve for everyone. The deeper tree assigns a separate curve to each leaf. Inspect early and late horizons separately because each has a different set of known outcomes.
 
+**Next:** compare the tree with the global baseline at one, three and five years, using the held-out Brier scores printed in step 2.
+
 ## 3. Interpret the held-out results
 
 | Horizon, days | Test at risk | Censoring survival, training estimate | Tree IPCW Brier | Global baseline |
@@ -121,6 +125,8 @@ The depth-zero tree estimates one Kaplan–Meier curve for everyone. The deeper 
 The right panel shows two held-out feature rows routed through the training tree. They were selected by their predicted five-year survival, without using their outcomes. Their five-year predictions are 0.321 and 0.948. These are leaf estimates. The left panel measures error across all 2,374 test rows, which include 644 recorded deaths and 1,730 censored observations over the available follow-up.
 
 The example uses a seeded random split and estimates the marginal censoring distribution from training data only. A marginal censoring model assumes censoring is independent of the outcome in the relevant population. This observational cohort and one split do not establish clinical usefulness. Check conditional censoring, calibration, discrimination and uncertainty with the intended deployment population before interpreting the comparison.
+
+**Next:** repeat the Brier comparison on synthetic data where the true survival probability is known, because real individual survival probabilities are not observed.
 
 ## 4. Controlled check with synthetic truth
 
@@ -141,6 +147,8 @@ uv run python examples/guides/survival_uplift_evaluation.py
 The Brier score compares predicted survival probabilities with event outcomes at a fixed horizon. Inverse probability of censoring weights (IPCW) account for records censored before that horizon. Lower is better. This simulation uses the **known** censoring distribution. Real data requires a justified censoring model estimated without using the test outcomes for model selection, adequate follow-up, and positive censoring survival at each evaluated horizon. Conditional censoring requires appropriate conditional weights; a single global curve can be wrong.
 
 The script also compares predictions with the known synthetic survival probability. Real individual survival probabilities are not observed. Check discrimination and horizon-specific calibration on real held-out data, with uncertainty and risk-set sizes. This example implements the evaluation calculation locally; it does not claim an IPCW metric API exists in the package. See [Graf et al. (1999)](https://doi.org/10.1002/(SICI)1097-0258(19990915/30)18:17/18%3C2529::AID-SIM274%3E3.0.CO;2-5).
+
+**Next:** the last step extends the single-event setup to several causes, because follow-up data often has more than one way for the event to occur and the single-event comparison above does not describe that.
 
 ## 5. Competing risks and multi-cause endpoints
 

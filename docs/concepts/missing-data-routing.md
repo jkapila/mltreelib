@@ -49,6 +49,8 @@ flowchart LR
     class Left,Right leafBox;
 ```
 
+**Next:** section 2 gives the three routing mechanisms the library uses in place of imputation.
+
 ---
 
 ## 2. Mathematical Mechanics of Native Routing & Surrogates
@@ -81,6 +83,8 @@ When fitting linear model leaves on partially observed partitions, standard OLS 
 $$\hat{y}_i = \beta_0 + \sum_{j=1}^P \beta_j \cdot x_{ij} (1 - m_{ij}) + \sum_{j=1}^P \beta_{\text{NA}, j} \cdot m_{ij}$$
 
 Observed values contribute to continuous slopes $\beta_j$, while missing states contribute discrete level adjustments $\beta_{\text{NA}, j}$ without distorting gradient estimates.
+
+**Next:** section 3 fits a `ModelTree` with native routing and two surrogates per node on the Scania data, using the surrogate setting described in section 2.B.
 
 ---
 
@@ -134,6 +138,8 @@ print(f"Native Routing -> Average Precision: {pr['average_precision']:.4f}, ROC-
 Native Routing -> Average Precision: 0.4916, ROC-AUC: 0.9524
 ```
 
+**Next:** section 4 explains what the printed metrics cover and which comparisons this page does not report.
+
 ---
 
 ## 4. Reading the benchmark result
@@ -146,7 +152,7 @@ Earlier drafts of this page compared native routing with mean imputation and rep
 
 ---
 
-## 5. Domain Limitations & Failure Modes
+## Domain Limitations & Failure Modes
 
 1. **Uninformative Complete Blackout**:
    If an entire telemetry record arrives with all features missing ($x_{ij} = \text{NA} \quad \forall j$), surrogate splits cannot fire. The sample cascades down default `missing_left` branches to a single leaf. Upstream health monitors must flag complete packet loss.

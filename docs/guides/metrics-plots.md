@@ -49,6 +49,8 @@ uv run python examples/guides/metrics_showcase.py
 
 ![Evaluation Metrics Multi-Panel Diagnostic Surface](../assets/metrics_panels.png)
 
+**Next:** section 2 lists the classification charts to place on these axes, starting with ROC, PR and calibration.
+
 ---
 
 ## 2. Classification Diagnostics & Probability Calibration
@@ -69,6 +71,8 @@ In credit triage, fraud detection, and medical diagnosis, ranking alone is insuf
 | :---: | :---: |
 | ![Probability Calibration Curve](../assets/plots/calibration.png) | ![Double Lift Chart Comparison](../assets/plots/double_lift.png) |
 
+**Next:** section 3 covers the regression branch, which swaps the probability charts from section 2 for residual charts drawn on the same Axes.
+
 ---
 
 ## 3. Regression & Residual Diagnostics
@@ -82,6 +86,8 @@ For continuous pricing, demand forecasting, and risk models:
 | **`plot_breakdown`** | Why did this individual loan applicant receive this exact predicted rate? | DALE-style waterfall attribution decomposed by tree split paths. |
 
 ![Regression Residual Error Analysis](../assets/plots/residuals.png)
+
+**Next:** section 4 runs the classification side in one script, computing the ROC, PR, Brier, KS and PSI values from section 2 and plotting calibration and double-lift charts, without the regression charts from section 3.
 
 ---
 

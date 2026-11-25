@@ -59,6 +59,8 @@ flowchart LR
     class E1,E2,E3,E4 evoBox;
 ```
 
+**Next:** step 2 gives the formula for each of the seven `leaf_solver` options that step 1 describes.
+
 ---
 
 ## 2. Mathematical Formulations of the Seven Solvers
@@ -106,6 +108,8 @@ Provides broad global exploration of non-convex and multi-modal leaf loss functi
 Updates parameter distribution parameters $\theta = (\mu, \sigma)$ along estimated natural gradient directions:
 $$\nabla_\mu J = \sum_{k=1}^\lambda w_k z_k, \qquad \nabla_\sigma J = \sum_{k=1}^\lambda w_k (z_k^2 - 1)$$
 Provides fast derivative-free updates along coordinate-aligned search directions.
+
+**Next:** step 3 runs all seven solvers on the same Concrete split, so the formulas from step 2 can be compared on test RMSE and R².
 
 ---
 
@@ -208,6 +212,8 @@ depth=2 ccd    rmse=6.858 r2=0.858
 | **`nes`** | Natural Gradient | 12.974 | 0.493 | 12.013 | 0.565 |
 | **`ccd`** | Cyclic Coordinate Descent | 10.321 | 0.679 | 6.858 | 0.858 |
 
+**Next:** step 4 reads the RMSE and R² values from step 3 to point out which solvers land close together and which trail.
+
 ---
 
 ## 4. Latency vs. Accuracy Pareto Diagnostic
@@ -222,6 +228,8 @@ depth=2 ccd    rmse=6.858 r2=0.858
    `irls` (6.855 MPa) and `ccd` (6.858 MPa) give the lowest test RMSE here. `lbfgs` and `shade` are at about 7.17 MPa, `ga` at 7.971 MPa. `cmaes` and `nes` are the weakest.
 3. **Gradient-free SHADE**:
    On this split `shade` needs no gradients and matches `lbfgs` at both depths. At depth 0 it is slightly below `irls` (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.
+
+**Next:** step 5 leaves the leaf fits and applies a search to any bounded scalar objective through `optimize`, including `ModelTree` hyperparameters.
 
 ---
 
@@ -313,6 +321,8 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
 | **`powell`** | 100 | 2.77 dB | 0.39 s |
 | **`simulated_annealing`** | 100 | 2.92 dB | 0.45 s |
 
+**Next:** step 6 returns to the leaf solvers, which step 5 does not change, and turns the step 3 and step 4 results into selection rules.
+
 ---
 
 ## 6. Production Recommendations
@@ -323,30 +333,11 @@ Optimizing `ModelTree` hyperparameters (tree depth, minimum leaf rows, L2 penalt
     - **Use `ccd`** when sparse leaves are mandatory ($L_1 > 0$) to eliminate irrelevant features inside leaf equations.
     - **Use `shade`** when fitting custom non-smooth losses, quantile objectives with heavy outliers, or discontinuous simulation simulators.
 
----
-
-## 7. Operational Limitations & Numerical Failure Modes
-
-1. **Unstandardized Covariate Scaling**:
-   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
-2. **Coordinate Descent Collinearity Stagnation**:
-   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
-3. **Non-Convex Local Minima & Stochastic Reproducibility**:
-   Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
-4. **Box Bounds vs. Coupled Constraints in `optimize`**:
-   The `lbfgs_b` bounded optimizer supports box constraints $l_i \le x_i \le u_i$. For coupled joint budget or volume constraints $\sum_i a_i x_i \le B$, use dual multiplier bisection or `scipy.optimize.minimize(method="SLSQP")`.
+**Next:** the worked example covers the generic optimizer suite behind `optimize`, and its tree HPO example reuses that call from step 5.
 
 ---
 
-## References
-
-- Nocedal, J., & Wright, S. J. (2006). *Numerical Optimization*. Springer.
-- Tanabe, R., & Fukunaga, A. S. (2014). "Improving the search performance of SHADE using linear population size reduction." *IEEE CEC*, 1658-1665.
-- Hansen, N. (2016). "The CMA evolution strategy: A tutorial." *arXiv preprint arXiv:1604.00772*.
-
----
-
-## Worked example: generic solvers and tuning
+## 7. Worked example: generic solvers and tuning
 
 Modern machine learning packages outsource numerical optimization to external heavyweight dependencies (SciPy, NLopt, Pagmo). When running in high-throughput production environments, cross-language FFI overhead and divergent solver interfaces introduce latency and unpredictability.
 
@@ -543,3 +534,24 @@ HPO Search Results:
   Best Validation RMSE: 0.5174
   Optimal Configuration: max_depth=5, min_rows=23, l2=4.9770e-03
 ```
+
+---
+
+## Operational Limitations & Numerical Failure Modes
+
+1. **Unstandardized Covariate Scaling**:
+   Derivative-free evolutionary algorithms (`cmaes`, `nes`) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement $500 \, \text{kg/m}^3$ vs. Water $0.18 \, \text{kg/m}^3$), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split `nes` reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.
+2. **Coordinate Descent Collinearity Stagnation**:
+   When features exhibit high pairwise correlation ($r > 0.95$), cyclic coordinate descent (`ccd`) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without $L_1$ sparsity requirements, `irls` or `lbfgs` converges orders of magnitude faster.
+3. **Non-Convex Local Minima & Stochastic Reproducibility**:
+   Evolutionary solvers (`shade`, `ga`, `cmaes`) are stochastic algorithms. While seed pinning (`seed=42`) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.
+4. **Box Bounds vs. Coupled Constraints in `optimize`**:
+   The `lbfgs_b` bounded optimizer supports box constraints $l_i \le x_i \le u_i$. For coupled joint budget or volume constraints $\sum_i a_i x_i \le B$, use dual multiplier bisection or `scipy.optimize.minimize(method="SLSQP")`.
+
+---
+
+## References
+
+- Nocedal, J., & Wright, S. J. (2006). *Numerical Optimization*. Springer.
+- Tanabe, R., & Fukunaga, A. S. (2014). "Improving the search performance of SHADE using linear population size reduction." *IEEE CEC*, 1658-1665.
+- Hansen, N. (2016). "The CMA evolution strategy: A tutorial." *arXiv preprint arXiv:1604.00772*.

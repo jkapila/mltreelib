@@ -65,6 +65,8 @@ Fitting $\tau \in \{0.10, 0.50, 0.90\}$ on frozen cohorts constructs empirical p
 
 ---
 
+**Next:** run the retrain on the Yeh concrete data, because the solver choices above (mean, Ridge, Huber, quantile and binomial) only show their trade-offs once timings and outputs are measured on real data.
+
 ## 2. Empirical Benchmark: Yeh (1998) Concrete Retrain Laboratory
 
 We evaluate the speed and resilience of leaf retraining on Yeh (1998) Concrete Compressive Strength using [`benchmarks/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/stump_leaf_retrain.py).
@@ -122,6 +124,8 @@ Problem: Segment concrete curing regimes (Early-stage vs Mature) and
 
 ---
 
+**Next:** call both retrain modes from Python, because the benchmark used a fitted macro tree and the `mode` argument decides whether that tree is changed in place or left untouched.
+
 ## 3. Python Usage: Internal vs External Retrain Modes
 
 ```python
@@ -148,7 +152,7 @@ huber_tree = tree.retrain(
 
 ---
 
-## 4. Domain Limitations & Operational Boundaries
+## Domain Limitations & Operational Boundaries
 
 1. **Empty Leaf Partitions**:
    If incoming telemetry in `retrain()` contains zero samples falling into a specific leaf $\mathcal{R}_m$, the leaf model retains its previous coefficients or falls back to the parent node prior.

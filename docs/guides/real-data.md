@@ -23,7 +23,7 @@ For an OpenML source below, open its dataset page and download the Parquet file.
 
 For the full TabArena collection, see the [dataset manifest](https://github.com/jkapila/mltreelib/blob/main/datasets/MANIFEST.md).
 
-## Secondary example: bank churn
+## 1. Secondary example: bank churn
 
 Use [OpenML 46911](https://www.openml.org/d/46911) at `datasets/Bank_Customer_Churn.parquet` to compare three interfaces on the same mixed feature schema. The script fits a churn classifier, a cluster tree and an anomaly tree. Only the classifier uses churn labels.
 
