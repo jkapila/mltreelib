@@ -231,11 +231,11 @@ pub fn test_categorical_instability(
     k: usize,
     min_leaf: usize,
 ) -> Option<(f64, Vec<f64>, f64)> {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     // Group rows by category level
-    let mut groups: HashMap<u64, Vec<usize>> = HashMap::new();
-    let mut level_map: HashMap<u64, f64> = HashMap::new();
+    let mut groups: BTreeMap<u64, Vec<usize>> = BTreeMap::new();
+    let mut level_map: BTreeMap<u64, f64> = BTreeMap::new();
 
     for (idx, &r) in rows.iter().enumerate() {
         if let Some(v) = col[r] {
