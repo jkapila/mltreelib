@@ -365,8 +365,8 @@ impl Default for ModelTreeParams {
             // Scale-aware leaves (min_rows floor + minprob share), fine
             // grid, cost-complexity pruning -- see examples/default_bake.py
             // for the evidence tables.
-            max_depth: 5,
-            min_rows: 50,
+            max_depth: 6,
+            min_rows: 15,
             // Noise floor as much as a tuning knob: fitted-leaf gains below
             // this are numerical, not structural.
             min_gain: 1e-9,
@@ -522,8 +522,13 @@ pub struct NodeProfile {
     pub rows: usize,
     pub cols: usize,
     pub candidates: usize,
+    // Wall-clock timings are diagnostics only: kept in memory, never written
+    // to a saved model, so serialised trees are byte-identical across runs.
+    #[serde(skip_serializing, default)]
     pub group_ns: u64,
+    #[serde(skip_serializing, default)]
     pub scan_ns: u64,
+    #[serde(skip_serializing, default)]
     pub leaf_ns: u64,
     /// Chow gate result on the node's chosen split (`split_test=Chow`).
     pub gate: Option<GateNote>,

@@ -29,3 +29,14 @@ def test_categorical_gate_statistic_is_deterministic(test):
         variables = t.root_split()["gate"]["variables"]
         seen.add(json.dumps([(v["statistic"], v.get("p_value")) for v in variables]))
     assert len(seen) == 1
+
+
+def test_saved_model_is_byte_identical_for_identical_fits():
+    """Timing diagnostics are not serialised, so the saved model is reproducible."""
+    x, y = _data()
+    saved = set()
+    for _ in range(5):
+        t = ModelTree(gain="ctree", split_test="ctree", max_depth=3, min_rows=15, prune="none", seed=42)
+        t.fit(x, y, col_names=["score", "zip_code", "tier"], dtypes=["numeric", "categorical", "numeric"])
+        saved.add(t.to_json())
+    assert len(saved) == 1

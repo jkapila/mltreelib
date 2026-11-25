@@ -2966,7 +2966,7 @@ impl PyLeafControl {
         leaf_solver = None,
         leaf_cols = "all",
         l1 = 0.0,
-        l2 = 1e-3,
+        l2 = 0.5,
         leaf_digest = true,
         tau = 0.5,
         huber_delta = 1.345,
@@ -3582,6 +3582,150 @@ impl PyRuleSet {
 /// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
+/// Hyperparameters as a dict (shared by `config()` and `core_defaults()`).
+fn params_dict<'py>(py: Python<'py>, p: &ModelTreeParams) -> PyResult<Py<PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("max_depth", p.max_depth)?;
+    d.set_item("min_rows", p.min_rows)?;
+    d.set_item("minsplit", p.minsplit)?;
+    d.set_item("minbucket", p.minbucket)?;
+    d.set_item("minprob", p.minprob)?;
+    d.set_item("max_leaf_nodes", p.max_leaf_nodes)?;
+    d.set_item("min_gain", p.min_gain)?;
+    d.set_item("purity_gate", p.purity_gate)?;
+    d.set_item(
+        "purity_gate_metric",
+        match p.purity_gate_metric {
+            PurityMetric::Sd => "sd",
+            PurityMetric::Cv => "cv",
+        },
+    )?;
+    d.set_item("tail_quantile", p.tail_quantile)?;
+    d.set_item("split_precision", p.split_precision)?;
+    d.set_item("split_cols", p.split_cols.clone())?;
+    d.set_item("col_sample", p.col_sample)?;
+    d.set_item("seed", p.seed)?;
+    d.set_item(
+        "leaf",
+        match &p.leaf {
+            LeafKind::Linear => "linear",
+            LeafKind::Mean => "mean",
+            LeafKind::Median => "median",
+            LeafKind::Quantile(_) => "quantile",
+            LeafKind::Expectile(_) => "expectile",
+            LeafKind::Huber => "huber",
+            LeafKind::Mars => "mars",
+            LeafKind::Knn => "knn",
+            LeafKind::Prob => "prob",
+            LeafKind::Odds => "odds",
+            LeafKind::LogOdds => "log_odds",
+        },
+    )?;
+    d.set_item("tau", p.tau)?;
+    d.set_item("huber_delta", p.huber_delta)?;
+    d.set_item(
+        "leaf_family",
+        match p.leaf_family {
+            LeafFamily::Gaussian => "gaussian",
+            LeafFamily::Binomial => "binomial",
+            LeafFamily::Poisson => "poisson",
+            LeafFamily::Probit => "probit",
+            LeafFamily::Gamma => "gamma",
+            LeafFamily::Tweedie => "tweedie",
+            LeafFamily::Tobit => "tobit",
+            LeafFamily::Softmax => "softmax",
+            LeafFamily::Survival => "survival",
+            LeafFamily::Heteroscedastic => "heteroscedastic",
+            LeafFamily::Aft => "aft",
+            LeafFamily::Cure => "cure",
+            LeafFamily::Spline => "spline",
+            LeafFamily::Quantile => "quantile",
+            LeafFamily::Huber => "huber",
+            LeafFamily::Expectile => "expectile",
+            LeafFamily::NegativeBinomial => "negative_binomial",
+            LeafFamily::Beta => "beta",
+        },
+    )?;
+    d.set_item("l1", p.l1)?;
+    d.set_item("l2", p.l2)?;
+    d.set_item("leaf_solver", leaf_solver_name(p.leaf_solver))?;
+    d.set_item(
+        "leaf_cols",
+        match p.leaf_cols {
+            LeafCols::All => "all",
+            LeafCols::PathUsed => "path",
+        },
+    )?;
+    d.set_item("leaf_digest", p.leaf_digest)?;
+    d.set_item("tree_monotone", p.tree_monotone.clone())?;
+    d.set_item("leaf_monotone", p.leaf_monotone.clone())?;
+    d.set_item("monotone", p.monotone.clone())?;
+    d.set_item("col_weights", p.col_weights.clone())?;
+    d.set_item("interaction_groups", p.interaction_groups.clone())?;
+    d.set_item("alpha", p.alpha)?;
+    d.set_item("imbalance_penalty", p.imbalance_penalty)?;
+    d.set_item(
+        "prune",
+        match p.prune {
+            PruneCost::None => "none",
+            PruneCost::Bic => "bic",
+            PruneCost::Mdl => "mdl",
+            PruneCost::Cp => "cp",
+        },
+    )?;
+    d.set_item("cp_alpha", p.cp_alpha)?;
+    d.set_item("cp", p.cp)?;
+    d.set_item("honesty", p.honesty)?;
+    d.set_item("honesty_fraction", p.honesty_fraction)?;
+    d.set_item("maxsurrogate", p.maxsurrogate)?;
+    d.set_item(
+        "split_test",
+        match p.split_test {
+            SplitTest::None => "none",
+            SplitTest::Chow => "chow",
+            SplitTest::Mob => "mob",
+            SplitTest::Ctree => "ctree",
+        },
+    )?;
+    d.set_item("split_alpha", p.split_alpha)?;
+    d.set_item("bonferroni", p.bonferroni)?;
+    d.set_item("min_relevance", p.min_relevance)?;
+    d.set_item("verbose", p.verbose)?;
+    d.set_item(
+        "split_eval",
+        match p.split_eval {
+            SplitEval::Fast => "fast",
+            SplitEval::Histogram => "histogram",
+            SplitEval::Exhaustive => "exhaustive",
+        },
+    )?;
+    d.set_item("max_bins", p.max_bins)?;
+    d.set_item("min_bin_rows", p.min_bin_rows)?;
+    d.set_item("presort", p.presort)?;
+    d.set_item("events", p.events.clone())?;
+    d.set_item("n_classes", p.n_classes)?;
+    d.set_item("tweedie_p", p.tweedie_p)?;
+    d.set_item("tobit_threshold", p.tobit_threshold)?;
+    d.set_item("mars_degree", p.mars_degree)?;
+    d.set_item("mars_terms", p.mars_terms)?;
+    d.set_item("mars_penalty", p.mars_penalty)?;
+    d.set_item("knn_k", p.knn_k)?;
+    d.set_item("knn_k_validity", p.knn_k_validity)?;
+    d.set_item("knn_variant", p.knn_variant.as_str())?;
+    d.set_item("knn_metric", p.knn_metric.as_str())?;
+    d.set_item("knn_gamma", p.knn_gamma)?;
+    d.set_item("knn_p", p.knn_p)?;
+    d.set_item("shrinkage", p.shrinkage)?;
+    d.set_item("max_classes", p.max_classes)?;
+    d.set_item("expectile_tau", p.expectile_tau)?;
+    d.set_item("non_negative", p.non_negative)?;
+    d.set_item("non_negative_intercept", p.non_negative_intercept)?;
+    d.set_item("nb_alpha", p.nb_alpha)?;
+    d.set_item("beta_phi", p.beta_phi)?;
+    d.set_item("group_l2", p.group_l2)?;
+    Ok(d.into())
+}
+
 #[pyclass(name = "ModelTree", module = "mltreelib._core")]
 #[derive(Clone)]
 pub struct PyModelTree {
@@ -5801,146 +5945,13 @@ impl PyModelTree {
 
     /// Return all hyperparameter values as a dict.
     fn config(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
-        let d = PyDict::new(py);
-        d.set_item("max_depth", self.params.max_depth)?;
-        d.set_item("min_rows", self.params.min_rows)?;
-        d.set_item("minsplit", self.params.minsplit)?;
-        d.set_item("minbucket", self.params.minbucket)?;
-        d.set_item("minprob", self.params.minprob)?;
-        d.set_item("max_leaf_nodes", self.params.max_leaf_nodes)?;
-        d.set_item("min_gain", self.params.min_gain)?;
-        d.set_item("purity_gate", self.params.purity_gate)?;
-        d.set_item(
-            "purity_gate_metric",
-            match self.params.purity_gate_metric {
-                PurityMetric::Sd => "sd",
-                PurityMetric::Cv => "cv",
-            },
-        )?;
-        d.set_item("tail_quantile", self.params.tail_quantile)?;
-        d.set_item("split_precision", self.params.split_precision)?;
-        d.set_item("split_cols", self.params.split_cols.clone())?;
-        d.set_item("col_sample", self.params.col_sample)?;
-        d.set_item("seed", self.params.seed)?;
-        d.set_item(
-            "leaf",
-            match &self.params.leaf {
-                LeafKind::Linear => "linear",
-                LeafKind::Mean => "mean",
-                LeafKind::Median => "median",
-                LeafKind::Quantile(_) => "quantile",
-                LeafKind::Expectile(_) => "expectile",
-                LeafKind::Huber => "huber",
-                LeafKind::Mars => "mars",
-                LeafKind::Knn => "knn",
-                LeafKind::Prob => "prob",
-                LeafKind::Odds => "odds",
-                LeafKind::LogOdds => "log_odds",
-            },
-        )?;
-        d.set_item("tau", self.params.tau)?;
-        d.set_item("huber_delta", self.params.huber_delta)?;
-        d.set_item(
-            "leaf_family",
-            match self.params.leaf_family {
-                LeafFamily::Gaussian => "gaussian",
-                LeafFamily::Binomial => "binomial",
-                LeafFamily::Poisson => "poisson",
-                LeafFamily::Probit => "probit",
-                LeafFamily::Gamma => "gamma",
-                LeafFamily::Tweedie => "tweedie",
-                LeafFamily::Tobit => "tobit",
-                LeafFamily::Softmax => "softmax",
-                LeafFamily::Survival => "survival",
-                LeafFamily::Heteroscedastic => "heteroscedastic",
-                LeafFamily::Aft => "aft",
-                LeafFamily::Cure => "cure",
-                LeafFamily::Spline => "spline",
-                LeafFamily::Quantile => "quantile",
-                LeafFamily::Huber => "huber",
-                LeafFamily::Expectile => "expectile",
-                LeafFamily::NegativeBinomial => "negative_binomial",
-                LeafFamily::Beta => "beta",
-            },
-        )?;
-        d.set_item("l1", self.params.l1)?;
-        d.set_item("l2", self.params.l2)?;
-        d.set_item("leaf_solver", leaf_solver_name(self.params.leaf_solver))?;
-        d.set_item(
-            "leaf_cols",
-            match self.params.leaf_cols {
-                LeafCols::All => "all",
-                LeafCols::PathUsed => "path",
-            },
-        )?;
-        d.set_item("leaf_digest", self.params.leaf_digest)?;
-        d.set_item("tree_monotone", self.params.tree_monotone.clone())?;
-        d.set_item("leaf_monotone", self.params.leaf_monotone.clone())?;
-        d.set_item("monotone", self.params.monotone.clone())?;
-        d.set_item("col_weights", self.params.col_weights.clone())?;
-        d.set_item("interaction_groups", self.params.interaction_groups.clone())?;
-        d.set_item("alpha", self.params.alpha)?;
-        d.set_item("imbalance_penalty", self.params.imbalance_penalty)?;
-        d.set_item(
-            "prune",
-            match self.params.prune {
-                PruneCost::None => "none",
-                PruneCost::Bic => "bic",
-                PruneCost::Mdl => "mdl",
-                PruneCost::Cp => "cp",
-            },
-        )?;
-        d.set_item("cp_alpha", self.params.cp_alpha)?;
-        d.set_item("cp", self.params.cp)?;
-        d.set_item("honesty", self.params.honesty)?;
-        d.set_item("honesty_fraction", self.params.honesty_fraction)?;
-        d.set_item("maxsurrogate", self.params.maxsurrogate)?;
-        d.set_item(
-            "split_test",
-            match self.params.split_test {
-                SplitTest::None => "none",
-                SplitTest::Chow => "chow",
-                SplitTest::Mob => "mob",
-                SplitTest::Ctree => "ctree",
-            },
-        )?;
-        d.set_item("split_alpha", self.params.split_alpha)?;
-        d.set_item("bonferroni", self.params.bonferroni)?;
-        d.set_item("min_relevance", self.params.min_relevance)?;
-        d.set_item("verbose", self.params.verbose)?;
-        d.set_item(
-            "split_eval",
-            match self.params.split_eval {
-                SplitEval::Fast => "fast",
-                SplitEval::Histogram => "histogram",
-                SplitEval::Exhaustive => "exhaustive",
-            },
-        )?;
-        d.set_item("max_bins", self.params.max_bins)?;
-        d.set_item("min_bin_rows", self.params.min_bin_rows)?;
-        d.set_item("presort", self.params.presort)?;
-        d.set_item("events", self.params.events.clone())?;
-        d.set_item("n_classes", self.params.n_classes)?;
-        d.set_item("tweedie_p", self.params.tweedie_p)?;
-        d.set_item("tobit_threshold", self.params.tobit_threshold)?;
-        d.set_item("mars_degree", self.params.mars_degree)?;
-        d.set_item("mars_terms", self.params.mars_terms)?;
-        d.set_item("mars_penalty", self.params.mars_penalty)?;
-        d.set_item("knn_k", self.params.knn_k)?;
-        d.set_item("knn_k_validity", self.params.knn_k_validity)?;
-        d.set_item("knn_variant", self.params.knn_variant.as_str())?;
-        d.set_item("knn_metric", self.params.knn_metric.as_str())?;
-        d.set_item("knn_gamma", self.params.knn_gamma)?;
-        d.set_item("knn_p", self.params.knn_p)?;
-        d.set_item("shrinkage", self.params.shrinkage)?;
-        d.set_item("max_classes", self.params.max_classes)?;
-        d.set_item("expectile_tau", self.params.expectile_tau)?;
-        d.set_item("non_negative", self.params.non_negative)?;
-        d.set_item("non_negative_intercept", self.params.non_negative_intercept)?;
-        d.set_item("nb_alpha", self.params.nb_alpha)?;
-        d.set_item("beta_phi", self.params.beta_phi)?;
-        d.set_item("group_l2", self.params.group_l2)?;
-        Ok(d.into())
+        params_dict(py, &self.params)
+    }
+
+    /// Defaults of the Rust core parameter struct (for parity checks with the constructor).
+    #[staticmethod]
+    fn core_defaults(py: Python<'_>) -> PyResult<Py<PyDict>> {
+        params_dict(py, &ModelTreeParams::default())
     }
 
     fn __getattr__(&self, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
