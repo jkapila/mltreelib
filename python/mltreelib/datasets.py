@@ -1,12 +1,15 @@
 """Benchmark dataset loaders with local repository fallback and on-demand remote caching.
 
 The suite includes TabArena-v0.1 (OpenML suite 457) and the SurvSet survival benchmarks.
+Public CSV sources (FLCHAIN from Rdatasets, Hillstrom email uplift) are registered by URL.
 Datasets are NOT bundled into package wheels; they are loaded from local repository
-storage (`datasets/`) or downloaded on demand into `~/.cache/mltreelib/datasets/`.
+storage (`datasets/`) or downloaded on demand into `~/.cache/mltreelib/datasets/`
+(override with `MLTREELIB_DATA_DIR`).
 """
 
 from __future__ import annotations
 
+import hashlib
 import math
 import os
 import urllib.request
@@ -17,7 +20,13 @@ _CACHE_DIR = Path(
     os.environ.get("MLTREELIB_DATA_DIR", Path.home() / ".cache" / "mltreelib" / "datasets")
 )
 
-# OpenML ID registry for on-demand downloads
+# SHA-256 of the published file, checked after each download (keyed by registry name).
+DATASET_SHA256: dict[str, str] = {
+    "flchain_rdatasets": "a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563",
+    "hillstrom_email": "0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece",
+}
+
+# OpenML ID (int) or direct file URL (str) registry for on-demand downloads
 DATASET_REGISTRY: dict[str, int | str] = {
     # TabArena-v0.1 Curated Benchmarks
     "airfoil_self_noise": 46904,
@@ -79,48 +88,80 @@ DATASET_REGISTRY: dict[str, int | str] = {
     "rott2": 44105,
     "support": 44106,
     "gbsg2": 44107,
+    # Public CSV sources (no Parquet offered); checksums in DATASET_SHA256
+    "flchain_rdatasets": "https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv",
+    "hillstrom_email": "http://www.minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv",
 }
+
+_SUFFIXES = (".parquet", ".csv")
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def download_dataset(name: str, target_dir: Path | None = None) -> Path:
-    """Download a dataset on demand into the cache directory."""
+    """Download a dataset on demand into the cache directory.
+
+    The file is written to ``<name><suffix>.part`` and renamed only after the
+    download (and the SHA-256 check, when one is registered) succeeds.
+    """
     if name not in DATASET_REGISTRY:
         raise ValueError(f"unknown dataset '{name}' for download; registered: {sorted(DATASET_REGISTRY.keys())}")
-    
+
     out_dir = target_dir or _CACHE_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{name}.parquet"
+    target_spec = DATASET_REGISTRY[name]
+    suffix = ".csv" if isinstance(target_spec, str) and target_spec.endswith(".csv") else ".parquet"
+    out_path = out_dir / f"{name}{suffix}"
     if out_path.exists():
         return out_path
-    
-    target_spec = DATASET_REGISTRY[name]
+
     if isinstance(target_spec, int):
         url = f"https://data.openml.org/datasets/0004/{target_spec}/dataset_{target_spec}.pq"
     else:
         url = str(target_spec)
-        
+
+    part_path = out_path.with_name(out_path.name + ".part")
     try:
-        urllib.request.urlretrieve(url, out_path)
+        urllib.request.urlretrieve(url, part_path)
+        expected = DATASET_SHA256.get(name)
+        if expected is not None:
+            actual = _sha256(part_path)
+            if actual != expected:
+                raise ValueError(f"sha256 mismatch: expected {expected}, got {actual}")
+        part_path.replace(out_path)
     except Exception as e:
-        if out_path.exists():
-            out_path.unlink()
+        part_path.unlink(missing_ok=True)
         raise RuntimeError(f"failed to download dataset '{name}' from {url}: {e}") from e
-        
+
     return out_path
 
 
+def _find_file(name: str, directory: Path) -> Path | None:
+    for suffix in _SUFFIXES:
+        candidate = directory / f"{name}{suffix}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def dataset_path(name: str, auto_download: bool = True) -> Path:
-    """Locate the path of a dataset parquet file, checking local repo, cache, or downloading."""
+    """Locate a dataset file (Parquet or CSV), checking local repo, cache, or downloading."""
     # 1. Local repository datasets/ directory
-    local_path = _DATA_DIR / f"{name}.parquet"
-    if local_path.exists():
+    local_path = _find_file(name, _DATA_DIR)
+    if local_path is not None:
         return local_path
-        
+
     # 2. Local cache directory (~/.cache/mltreelib/datasets/)
-    cache_path = _CACHE_DIR / f"{name}.parquet"
-    if cache_path.exists():
+    cache_path = _find_file(name, _CACHE_DIR)
+    if cache_path is not None:
         return cache_path
-        
+
     # 3. On-demand download if registered
     if auto_download and name in DATASET_REGISTRY:
         return download_dataset(name)
@@ -155,6 +196,7 @@ def load_dataset(name: str, auto_download: bool = True) -> dict:
     """
     try:
         import pyarrow as pa
+        import pyarrow.csv as pacsv
         import pyarrow.parquet as pq
     except ImportError as e:
         raise ImportError(
@@ -163,7 +205,10 @@ def load_dataset(name: str, auto_download: bool = True) -> dict:
         ) from e
 
     path = dataset_path(name, auto_download=auto_download)
-    table = pq.read_table(path)
+    if path.suffix == ".csv":
+        table = pacsv.read_csv(path, convert_options=pacsv.ConvertOptions(strings_can_be_null=True))
+    else:
+        table = pq.read_table(path)
     columns: dict[str, list] = {}
     dtypes: dict[str, str] = {}
     for field in table.schema:

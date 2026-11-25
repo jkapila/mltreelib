@@ -16,10 +16,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
-from mltreelib import ModelTree, Metrics
+from mltreelib import ModelTree, Metrics, dataset_path
 
 
-DATA_PATH = Path("datasets/external/real_eval/flchain.csv")
+DATA_PATH = dataset_path("flchain_rdatasets")
 OUT_DIR = Path("docs/assets/guides")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

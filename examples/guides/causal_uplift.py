@@ -20,12 +20,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from mltreelib import Metrics, ModelTree
+from mltreelib import Metrics, ModelTree, dataset_path
 
 
-def load_hillstrom_data(path: str = "datasets/external/real_eval/hillstrom.csv") -> pd.DataFrame:
-    """Load Hillstrom dataset and filter for Women's E-Mail vs Control."""
-    p = Path(path)
+def load_hillstrom_data(path: str | None = None) -> pd.DataFrame:
+    """Load Hillstrom dataset (downloaded on first use) and filter for Women's E-Mail vs Control."""
+    p = Path(path) if path else dataset_path("hillstrom_email")
     if not p.is_file():
         raise FileNotFoundError(f"Hillstrom dataset not found at {p}")
     df = pd.read_csv(p)

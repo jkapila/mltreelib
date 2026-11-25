@@ -14,9 +14,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
-from mltreelib import ModelTree
+from mltreelib import ModelTree, dataset_path
 
-DATA = Path("datasets/external/real_eval")
 OUT = Path("docs/assets/guides")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -53,7 +52,7 @@ def brier(times, events, predictions, horizon, censor):
 
 
 def survival():
-    df = pd.read_csv(DATA / "flchain.csv")
+    df = pd.read_csv(dataset_path("flchain_rdatasets"))
     features = ["age", "sex", "kappa", "lambda", "creatinine"]
     x = [[None if pd.isna(v) else v for v in row] for row in df[features].itertuples(index=False, name=None)]
     t = df["futime"].astype(float).tolist(); e = df["death"].astype(float).tolist()
@@ -108,7 +107,7 @@ def group_value(y,w,selected):
 
 
 def uplift():
-    df=pd.read_csv(DATA/"hillstrom.csv")
+    df=pd.read_csv(dataset_path("hillstrom_email"))
     df=df[df["segment"].isin(["Womens E-Mail","No E-Mail"])].reset_index(drop=True)
     features=["recency","history","mens","womens","newbie","zip_code","channel"]
     types=["numeric"]*5+["categorical"]*2

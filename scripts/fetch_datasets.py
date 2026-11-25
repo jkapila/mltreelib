@@ -4,7 +4,8 @@
     uv run python scripts/fetch_datasets.py --only diabetes airfoil_self_noise
     uv run python scripts/fetch_datasets.py --list
 
-Files land in `datasets/<name>.parquet`. The folder is not tracked in git, so
+Files land in `datasets/<name>.parquet` (CSV sources such as `flchain_rdatasets`
+land as `datasets/<name>.csv`). The folder is not tracked in git, so
 run this script once per checkout before running the dataset examples or the
 real-data tests. One dataset can also be fetched on demand through
 `mltreelib.datasets.load_dataset(name)`, which caches it under
@@ -57,8 +58,8 @@ def main() -> None:
     args.target_dir.mkdir(parents=True, exist_ok=True)
     failures = []
     for index, name in enumerate(names, start=1):
-        target = args.target_dir / f"{name}.parquet"
-        if target.exists():
+        present = any((args.target_dir / f"{name}{ext}").exists() for ext in (".parquet", ".csv"))
+        if present:
             print(f"[{index}/{len(names)}] {name}: present")
             continue
         try:
