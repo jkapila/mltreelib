@@ -42,7 +42,7 @@ plt.close(fig)
 
 ![Mixed-data regression tree](../assets/guides/data-tree.svg)
 
-`model.to_dot()` returns DOT text. Supply that text to Graphviz to render a diagram. `model.splits()` and `model.leaves()` expose structured information, while `model.break_down(row)` supports a path-based explanation for numeric rows. A test with raw string categories raised `TypeError` even though prediction accepted those rows. Mixed-category explanations are a product gap to investigate. Use [tree inspection](../examples/inspection.md) for examples. Verify category labels and missing routing before presenting a rule as actionable. A path explains a prediction; it does not by itself establish a causal intervention.
+`model.to_dot()` returns DOT text. Supply that text to Graphviz to render a diagram. `model.splits()` and `model.leaves()` expose structured information, while `model.break_down(row)` supports a path-based explanation for numeric rows. A test with raw string categories raised `TypeError` even though prediction accepted those rows. Mixed-category explanations are a product gap to investigate. Use [tree inspection](model-inspection-and-rules.md) for examples. Verify category labels and missing routing before presenting a rule as actionable. A path explains a prediction; it does not by itself establish a causal intervention.
 
 ![Split importance](../assets/guides/data-importance.svg)
 

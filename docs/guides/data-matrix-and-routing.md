@@ -155,6 +155,6 @@ for col in summary:
     print(f"{col.name:15} | Type: {col.dtype} | Missing: {col.n_missing} | Mean: {col.mean:.2f}")
 ```
 
-!!! tip "Related Deep-Dive Suites"
-    - [Suite 3: Native Missing Data Routing & Surrogate Splits](../suites/missing-data-routing.md) for full mathematical proofs of surrogate agreement.
-    - [Suite 11: Component & Factor Analysis](../suites/component-benchmarks.md) for dimensionality reduction and whitening.
+!!! tip "Related guides"
+    - [Native Missing Data Routing & Surrogate Splits](missing-data-routing.md) for full mathematical proofs of surrogate agreement.
+    - [Component & Factor Analysis](components-and-rotations.md) for dimensionality reduction and whitening.

@@ -125,6 +125,6 @@ for s in tree.splits():
     print(f"  Split: Feature '{s['col']}' <= {s['threshold']:.3f}")
 ```
 
-!!! tip "Related Suites and Documents"
-    - [Suite 2: Structural Constraints & Honesty](../suites/constraints-and-honesty.md) for mathematical proofs of monotone projection.
-    - [Suite 1: Core Tree Architecture](../suites/core-tree-architecture.md) for allocator-free growth benchmarks.
+!!! tip "Related guides"
+    - [Structural Constraints & Honesty](constraints-and-honesty.md) for mathematical proofs of monotone projection.
+    - [Core Tree Architecture](core-tree-architecture.md) for allocator-free growth benchmarks.

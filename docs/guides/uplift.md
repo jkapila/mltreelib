@@ -119,4 +119,4 @@ Synthetic truth is available here: the selected policy's true net value is 0.725
 
 ## Next steps and references
 
-[Causal uplift guide](../examples/causal-uplift.md) · [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)
+[Causal uplift guide](causal-uplift.md) · [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)

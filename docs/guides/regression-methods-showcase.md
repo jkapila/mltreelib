@@ -223,7 +223,7 @@ huber_tree.fit(X_train, y_train)
 pred_huber = huber_tree.predict(X_test)
 ```
 
-!!! tip "Related Suites and Technical Derivations"
-    - [Suite 4: Distributional & Censored Leaf Families](../suites/distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
-    - [Suite 10: Solvers, Optimizers & Real-Data Tuning](../suites/solver-benchmarks.md) for proximal gradient and coordinate descent solver convergence profiles.
-    - [Suite 1: Core Tree Architecture & Growth Knobs](../suites/core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+!!! tip "Related guides"
+    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
+    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
+    - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.

@@ -174,6 +174,6 @@ volatility_tree.fit(X, returns.tolist(), col_names=["volatility_driver"])
 print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["threshold"])
 ```
 
-!!! tip "Related Suites"
-    - [Suite 4: Distributional & Censored Leaf Families](../suites/distributional-leaves.md) for full mathematical derivations.
-    - [Suite 9: Survival & Competing Risks Trees](../suites/survival-trees.md) for right-censored time-to-event outcomes.
+!!! tip "Related guides"
+    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full mathematical derivations.
+    - [Survival & Competing Risks Trees](survival-trees.md) for right-censored time-to-event outcomes.

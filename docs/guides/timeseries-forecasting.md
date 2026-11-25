@@ -1,5 +1,4 @@
-# Time Series Feature Engineering & Additive Forecasting (Suite 7)
-
+# Time Series Feature Engineering & Additive Forecasting
 In enterprise demand planning and energy load forecasting, models face secular growth trends, intra-week cycles, and calendar shocks.
 
 Standard flat decision trees fail out-of-sample on trending series because constant-leaf partitions cannot extrapolate beyond the maximum target value seen during training.

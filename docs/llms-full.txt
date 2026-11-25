@@ -189,8 +189,8 @@ dot_code = model_tree.to_dot()
 ## Next Steps
 
 - Explore the **[Practical Modeling Pathways](guides/index.md)** for end-to-end classification, survival, and uplift workflows.
-- Study **[Dynamic Leaf Retraining](suites/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
-- Review **[Distributional Leaves](suites/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
+- Study **[Dynamic Leaf Retraining](guides/hierarchical-retrain.md)** for fast warm-start leaf adaptation.
+- Review **[Distributional Leaves](guides/distributional-leaves.md)** for Tobit, Tweedie, and Gamma modeling.
 - Inspect the **[API Reference](reference/model.md)** for all parameters and methods.
 
 ---
@@ -305,7 +305,7 @@ This showcase provides an empirical benchmark across four distinct regression re
 All benchmarks run from a single reproducible script with zero `scikit-learn` dependency:
 
 ```bash
-uv run python -u examples/regression_methods_showcase.py
+uv run python -u examples/guides/regression_methods_showcase.py
 ```
 
 ```mermaid
@@ -509,10 +509,10 @@ huber_tree.fit(X_train, y_train)
 pred_huber = huber_tree.predict(X_test)
 ```
 
-!!! tip "Related Suites and Technical Derivations"
-    - [Suite 4: Distributional & Censored Leaf Families](../suites/distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
-    - [Suite 10: Solvers, Optimizers & Real-Data Tuning](../suites/solver-benchmarks.md) for proximal gradient and coordinate descent solver convergence profiles.
-    - [Suite 1: Core Tree Architecture & Growth Knobs](../suites/core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
+!!! tip "Related guides"
+    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full likelihood derivations on Tweedie and Tobit models.
+    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for proximal gradient and coordinate descent solver convergence profiles.
+    - [Core Tree Architecture & Growth Knobs](core-tree-architecture.md) for details on tree topology, depth, and pruning controls.
 
 
 ---
@@ -659,9 +659,9 @@ $$\hat{\boldsymbol{\beta}}_\text{leaf}^* = \gamma \hat{\boldsymbol{\beta}}_\text
 
 Setting `shrinkage=10.0` prevents overfitting in sparse leaves while retaining sharp local adaptation in data-rich regimes.
 
-!!! tip "Related Suites and Benchmarks"
+!!! tip "Related guides"
     - [Comprehensive Regression Showcase](regression-methods-showcase.md) for 4-study comparisons with Huber, NNLS, GAM, and GLMs.
-    - [Suite 1: Core Tree Architecture](../suites/core-tree-architecture.md) for split optimization proofs.
+    - [Core Tree Architecture](core-tree-architecture.md) for split optimization proofs.
 
 
 ---
@@ -844,9 +844,9 @@ volatility_tree.fit(X, returns.tolist(), col_names=["volatility_driver"])
 print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["threshold"])
 ```
 
-!!! tip "Related Suites"
-    - [Suite 4: Distributional & Censored Leaf Families](../suites/distributional-leaves.md) for full mathematical derivations.
-    - [Suite 9: Survival & Competing Risks Trees](../suites/survival-trees.md) for right-censored time-to-event outcomes.
+!!! tip "Related guides"
+    - [Distributional & Censored Leaf Families](distributional-leaves.md) for full mathematical derivations.
+    - [Survival & Competing Risks Trees](survival-trees.md) for right-censored time-to-event outcomes.
 
 
 ---
@@ -855,7 +855,7 @@ print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["thr
 
 # Check treatment-effect recovery with known synthetic truth
 
-Use simulation to check numerical effect recovery. The [Hillstrom pathway](../guides/uplift.md) shows how to evaluate a real randomized policy when individual effects are unknown.
+Use simulation to check numerical effect recovery. The [Hillstrom pathway](uplift.md) shows how to evaluate a real randomized policy when individual effects are unknown.
 
 ![Expected net outcome of three policies in the controlled randomized simulation](../assets/guides/uplift-evaluation.svg)
 
@@ -865,7 +865,7 @@ $$\tau(x) = E[Y | X=x, W=1] - E[Y | X=x, W=0]$$
 `ModelTree` provides native Rust-accelerated **Causal Trees** that split directly on treatment effect divergence without external meta-learners or propensity weighting loops.
 
 Script:
-- [`examples/causal_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/examples/causal_benchmark.py) (`python3 examples/causal_benchmark.py`)
+- [`benchmarks/suites/causal_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/causal_benchmark.py) (`python3 benchmarks/suites/causal_benchmark.py`)
 
 ```text
 ======================================================================
@@ -986,7 +986,7 @@ tree.fit(X, (durations, events))
 ```
 
 Executable research script:
-- [`examples/survival/causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/survival/causal_survival_honest.py)
+- [`examples/guides/survival_causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py)
 
 
 ---
@@ -1194,7 +1194,7 @@ In application code, always use the unified facades rather than lower-level inte
 | **`ComponentModel`** | `"pca"`, `"fa"`, `"nmf"`, `"ica"` | `fit`, `transform`, `inverse_transform` | Factor rotations, Promax/Varimax simple structure, and matrix factorization. |
 
 !!! tip "Related Reference Guides"
-    - [Suite 8: Unsupervised Trees & Density Partitioning](../suites/unsupervised-trees.md) for full algorithmic formulations.
+    - [Unsupervised Trees & Density Partitioning](unsupervised-trees.md) for full algorithmic formulations.
     - [API Reference: Anomaly Trees](../reference/api/anomaly.md) and [API Reference: Clustering Trees](../reference/api/cluster.md).
 
 
@@ -1329,9 +1329,9 @@ for s in tree.splits():
     print(f"  Split: Feature '{s['col']}' <= {s['threshold']:.3f}")
 ```
 
-!!! tip "Related Suites and Documents"
-    - [Suite 2: Structural Constraints & Honesty](../suites/constraints-and-honesty.md) for mathematical proofs of monotone projection.
-    - [Suite 1: Core Tree Architecture](../suites/core-tree-architecture.md) for allocator-free growth benchmarks.
+!!! tip "Related guides"
+    - [Structural Constraints & Honesty](constraints-and-honesty.md) for mathematical proofs of monotone projection.
+    - [Core Tree Architecture](core-tree-architecture.md) for allocator-free growth benchmarks.
 
 
 ---
@@ -1528,8 +1528,8 @@ print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
 print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
 ```
 
-!!! tip "Related Suites"
-    - [Suite 10: Solvers, Optimizers & Real-Data Tuning](../suites/solver-benchmarks.md) for full convergence benchmark tables.
+!!! tip "Related guides"
+    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for full convergence benchmark tables.
 
 
 ---
@@ -1545,14 +1545,14 @@ Principal Component Analysis (PCA) decomposes high-dimensional feature spaces in
 Run the educational example and benchmark suite directly:
 
 ```sh
-uv run python examples/pca_rotations_educational.py
-uv run python examples/suites/component_benchmarks.py
+uv run python examples/guides/pca_rotations_educational.py
+uv run python benchmarks/suites/component_benchmarks.py
 ```
 
 Executable Reference Scripts:
-- [`examples/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
-- [`examples/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/component_benchmarks.py) — Suite 10: Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
-- [`docs/examples/component-benchmarks.md`](https://github.com/jkapila/mltreelib/blob/main/docs/examples/component-benchmarks.md) — Comprehensive documentation for Suite 10 component benchmarks.
+- [`examples/guides/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
+- [`benchmarks/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py) — Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
+- [Components and rotations](components-and-rotations.md) — component benchmarks and rotation checks.
 
 ---
 

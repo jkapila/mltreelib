@@ -1,5 +1,5 @@
 ---
-title: "Suite 11: Component Analysis, Matrix Factorizations & R-Aligned Rotations"
+title: "Component Analysis, Matrix Factorizations & R-Aligned Rotations"
 description: "Unified benchmark of PCA, ZCA whitening, R-aligned Orthomax and Promax factor rotations, NMF solvers, and subspace reconstruction anomaly detection in mltreelib."
 keywords:
   - principal component analysis
@@ -11,7 +11,7 @@ keywords:
   - reconstruction anomaly detection
 ---
 
-# Suite 11: Component Analysis, Matrix Factorizations & R-Aligned Rotations
+# Component Analysis, Matrix Factorizations & R-Aligned Rotations
 
 Benchmark pure-Rust linear decompositions, covariance whitening transforms, R-aligned factor rotations, Non-Negative Matrix Factorization (NMF) solvers, and out-of-subspace anomaly detection in `mltreelib-core`.
 

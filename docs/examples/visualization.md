@@ -1,3 +1,11 @@
-# Visualization
+---
+moved_to: guides/visualization.md
+hide:
+  - navigation
+  - toc
+---
 
-The visualization guide moved to [Visualize data, model behavior and decisions](../guides/visualization.md).
+<meta http-equiv="refresh" content="0; url=../guides/visualization/">
+<meta name="robots" content="noindex">
+
+This page moved to [guides/visualization](../guides/visualization.md).

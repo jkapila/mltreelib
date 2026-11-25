@@ -1,5 +1,5 @@
 ---
-title: "Suite 10: Solvers, Optimizers & Real-Data Tuning"
+title: "Solvers, Optimizers & Real-Data Tuning"
 description: "Unified benchmark of numerical and evolutionary leaf solvers, standalone weighted GLM fitting, bounded black-box optimization, and real-data tree tuning in mltreelib."
 keywords:
   - decision tree leaf solver
@@ -13,7 +13,7 @@ keywords:
   - black-box optimization
 ---
 
-# Suite 10: Solvers, Optimizers & Real-Data Tuning
+# Solvers, Optimizers & Real-Data Tuning
 
 Benchmark numerical, quasi-Newton, and continuous evolutionary leaf solvers, standalone GLM fits, and bounded black-box optimizers implemented natively in `mltreelib-core`.
 

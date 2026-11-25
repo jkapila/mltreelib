@@ -1,5 +1,4 @@
-# Hierarchical Leaf Retrain & Micro-Model Routing (Suite 5)
-
+# Hierarchical Leaf Retrain & Micro-Model Routing
 Tree partitions carve heterogeneous feature spaces into homogeneous sub-populations. While standard model trees fit models using the same features and targets at split and leaf time, complex empirical settings require **hierarchical model routing**:
 
 1. A **macro-tree** splits on aggregated or cohort-level features (e.g. city, make, model year, fleet tier) to segment cohorts.

@@ -1,5 +1,5 @@
 ---
-title: "Suite 1: Core Tree Architecture & Growth Knobs"
+title: "Core Tree Architecture & Growth Knobs"
 description: "Two-control decoupling between tree topology and leaf solvers, 0D distributional profiles, and Chow test structural gating in mltreelib."
 keywords:
   - model tree architecture
@@ -10,7 +10,7 @@ keywords:
   - tree growth knobs
 ---
 
-# Suite 1: Core Tree Architecture, Two-Control Decoupling & Growth Knobs
+# Core Tree Architecture, Two-Control Decoupling & Growth Knobs
 
 This benchmark unifies the architectural mechanics of `mltreelib`: decoupling between greedy tree topology growth and terminal leaf models, 0D distributional profiles across partitioned leaves, and hypothesis-driven structural break gating via the Chow test.
 

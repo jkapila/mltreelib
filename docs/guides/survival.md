@@ -155,4 +155,4 @@ print("Cause 1 IBS:", report["cause_ibs"][1])
 
 ## Next steps and references
 
-[Survival trees](../suites/survival-trees.md) · [Kaplan and Meier (1958)](https://doi.org/10.1080/01621459.1958.10501452) · [Aalen (1978)](https://doi.org/10.1214/aos/1176344247) · [Gray (1988)](https://doi.org/10.1214/aos/1176350951)
+[Survival trees](survival-trees.md) · [Kaplan and Meier (1958)](https://doi.org/10.1080/01621459.1958.10501452) · [Aalen (1978)](https://doi.org/10.1214/aos/1176344247) · [Gray (1988)](https://doi.org/10.1214/aos/1176350951)

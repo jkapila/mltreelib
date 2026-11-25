@@ -264,7 +264,7 @@ name, and returns the best point, the best objective, the evaluation count,
 and the termination status. Methods include `random_search`, `latin_hypercube`,
 `lbfgs_b`, `bfgs`, `nonlinear_cg`, `nelder_mead`, `powell`, `simulated_annealing`,
 `cobyla`, `basin_hopping`, `cmaes`, `shade`, `nes`, and `ga`.
-See the [generic optimizer guide](docs/examples/generic-optimizer.md).
+See the [generic optimizer guide](docs/guides/optimization-and-tuning.md).
 
 ```python
 # Fit global OLS regression with full R-style statistical tables

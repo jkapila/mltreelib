@@ -130,5 +130,5 @@ print("Smoothed k-NN Neighbor Adjusted Predictions:", [round(v, 2) for v in y_sm
 ```
 
 !!! tip "Related Reference Guides"
-    - [Suite 5: Dynamic Leaf Retraining & Stumps](../suites/hierarchical-retrain.md).
-    - [Model Review Checklist](../guides/serving-contract.md) for enterprise deployment.
+    - [Dynamic Leaf Retraining & Stumps](hierarchical-retrain.md).
+    - [Model Review Checklist](serving-contract.md) for enterprise deployment.

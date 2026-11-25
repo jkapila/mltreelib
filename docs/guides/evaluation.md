@@ -69,4 +69,4 @@ Split importance summarizes gain used by the fitted tree. It is not a causal eff
 
 The current metrics guide catalogs many report functions, but it does not provide a complete task-by-task evaluation workflow. Survival, uplift, clustering and anomaly examples still need validated task-specific evaluation and uncertainty examples. Check the API before assuming that a recommended metric is implemented by this package.
 
-[Metrics and plots](../examples/metrics-plots.md) · [Metrics reference](../reference/metrics.md) · [Model pathways](index.md)
+[Metrics and plots](metrics-plots.md) · [Metrics reference](../reference/metrics.md) · [Model pathways](index.md)

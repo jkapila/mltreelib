@@ -1,5 +1,5 @@
 ---
-title: "Suite 6: Exotic Statistical, Metric & Fair Splitting Criteria"
+title: "Exotic Statistical, Metric & Fair Splitting Criteria"
 description: "Unified benchmark of 12 exotic splitting criteria in mltreelib: MOB, CTree, Energy Distance, MMD, Wasserstein Optimal Transport, Demographic Parity, Equalized Odds, Hellinger, MaxStat, SPORF, ExtraTrees, and EBM FAST interactions."
 keywords:
   - decision tree splitting criteria
@@ -14,7 +14,7 @@ keywords:
   - fast interaction tree
 ---
 
-# Suite 6: Exotic Statistical, Metric & Fair Splitting Criteria (Spec 12 Suite)
+# Exotic Statistical, Metric & Fair Splitting Criteria (Spec 12 Suite)
 
 This guide demonstrates `mltreelib`'s exotic statistical hypothesis testing, optimal transport, and metric splitting criteria.
 

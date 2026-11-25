@@ -1,5 +1,4 @@
-# Unsupervised Trees: Clustering & Anomaly Triage (Suite 8)
-
+# Unsupervised Trees: Clustering & Anomaly Triage
 Unsupervised machine learning faces a common dilemma: distance-based algorithms (like k-means and DBSCAN) do not provide human-readable assignment rules, while standard isolation forests produce coordinate-axis ghost artifacts in high dimensions.
 
 `mltreelib` implements two specialized unsupervised tree architectures in pure Rust:

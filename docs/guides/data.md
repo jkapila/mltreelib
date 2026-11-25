@@ -66,10 +66,10 @@ The example requires matplotlib to render the charts. Graphviz is optional for r
 
 Use native categorical inputs for `ModelTree`. Use an encoder when the downstream estimator requires it. Target-based encoders need leakage-safe training representations and an independently fitted evaluation pipeline. Missing-value behavior varies by operation. Test missing predictors, targets and unknown categories for the exact estimator before deployment.
 
-- [Missing routing](../examples/missing-routing.md) explains `ModelTree` routing.
-- [Categorical encoders](../examples/categorical-encoders.md) explains training leakage.
-- [Data processing](../examples/data-processing.md) shows typed ingestion, summaries and time features.
-- [Time series forecasting](../suites/timeseries-forecasting.md) shows prior-day features and a time split.
+- [Missing routing](data-matrix-and-routing.md) explains `ModelTree` routing.
+- [Categorical encoders](data-matrix-and-routing.md) explains training leakage.
+- [Data processing](data-matrix-and-routing.md) shows typed ingestion, summaries and time features.
+- [Time series forecasting](timeseries-forecasting.md) shows prior-day features and a time split.
 - [Data API](../reference/data.md) catalogs builders, encoders and transforms.
 
 ## What remains

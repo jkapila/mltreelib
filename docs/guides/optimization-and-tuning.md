@@ -188,5 +188,5 @@ print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
 print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
 ```
 
-!!! tip "Related Suites"
-    - [Suite 10: Solvers, Optimizers & Real-Data Tuning](../suites/solver-benchmarks.md) for full convergence benchmark tables.
+!!! tip "Related guides"
+    - [Solvers, Optimizers & Real-Data Tuning](solvers-and-optimizers.md) for full convergence benchmark tables.

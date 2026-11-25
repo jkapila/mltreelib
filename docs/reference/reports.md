@@ -35,7 +35,7 @@ y_pred)` return **one report per group**, as a dict keyed by the group
 label — the format [ModelTree's group API](model.md) consumes.
 
 Real values for every field on real data: the
-[Metrics & plots showcase](../examples/metrics-plots.md) and the
+[Metrics & plots showcase](../guides/metrics-plots.md) and the
 [Metrics page](metrics.md) example.
 
 [Full generated listing](api/) · next: [Visualization](../guides/visualization.md)

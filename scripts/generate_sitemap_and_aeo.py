@@ -48,9 +48,7 @@ def determine_priority_and_freq(rel_url: str) -> tuple[str, str]:
         return "1.0", "weekly"
     if rel_url.startswith(("/quickstart", "/installation")):
         return "0.9", "monthly"
-    if rel_url.startswith(("/suites", "/blog")):
-        return "0.8", "weekly"
-    if rel_url.startswith("/examples"):
+    if rel_url.startswith(("/guides", "/blog")):
         return "0.8", "weekly"
     if rel_url.startswith("/benchmarks"):
         return "0.8", "weekly"
@@ -76,6 +74,8 @@ def generate_sitemaps(site_dir: Path, docs_dir: Path) -> list[dict[str, str]]:
     # Collect from site_dir
     html_files = sorted(site_dir.rglob("index.html"))
     for html_file in html_files:
+        if 'name="robots" content="noindex"' in html_file.read_text(encoding="utf-8", errors="ignore"):
+            continue
         rel = html_file.relative_to(site_dir)
         if rel.as_posix() == "index.html":
             rel_url = "/"
@@ -136,26 +136,26 @@ def generate_llms_txt(site_dir: Path, docs_dir: Path) -> None:
 
 - [Quickstart]({BASE_URL}/quickstart/): Fast installation, basic model tree fitting, and prediction workflows.
 - [Installation]({BASE_URL}/installation/): Installing via pip/uv with prebuilt wheels or building from source with Cargo.
-- [Tree Architecture & Growth Knobs]({BASE_URL}/examples/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
-- [Data Ingestion & Routing]({BASE_URL}/examples/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
-- [Metrics, Diagnostics & Calibration]({BASE_URL}/examples/metrics-plots/): Gini, ROC/PR curves, Brier calibration, and Population Stability Index (PSI).
+- [Tree Architecture & Growth Knobs]({BASE_URL}/guides/tree-architecture-and-knobs/): Two-control decoupling, monotone constraints, and honesty fractions.
+- [Data Ingestion & Routing]({BASE_URL}/guides/data-matrix-and-routing/): Polars/Arrow ingestion, zero-imputation missing routing, and categorical encoders.
+- [Metrics, Diagnostics & Calibration]({BASE_URL}/guides/metrics-plots/): Gini, ROC/PR curves, Brier calibration, and Population Stability Index (PSI).
 
 ## Regression & Continuous Modeling
 
-- [Comprehensive Regression Showcase]({BASE_URL}/examples/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
-- [Piecewise Linear Trees & Cubist Rules]({BASE_URL}/examples/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
-- [Distributional & Censored Trees]({BASE_URL}/examples/distributional-and-censored-trees/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
+- [Comprehensive Regression Showcase]({BASE_URL}/guides/regression-methods-showcase/): 4-study empirical benchmark across physical, heavy-tailed, high-volume, and bounded tabular datasets.
+- [Piecewise Linear Trees & Cubist Rules]({BASE_URL}/guides/piecewise-linear-and-cubist/): Quinlan M5 model trees, committee rule sets, and k-NN local smoothing.
+- [Distributional & Censored Trees]({BASE_URL}/guides/distributional-and-censored-trees/): Tweedie compound Poisson, Tobit censored splits, and heteroskedastic volatility trees.
 
 ## Causal & Unsupervised Learning
 
-- [Causal Uplift Modeling]({BASE_URL}/examples/causal-uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
-- [Unsupervised Clustering & Anomalies]({BASE_URL}/examples/unsupervised-clustering-and-anomalies/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
-- [PCA, Factor Analysis & Rotations]({BASE_URL}/examples/pca-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
+- [Causal Uplift Modeling]({BASE_URL}/guides/causal-uplift/): Honest causal trees, Athey-Imbens splitting, and Qini evaluation curves.
+- [Unsupervised Clustering & Anomalies]({BASE_URL}/guides/unsupervised-clustering-and-anomalies/): AnomalyModel (EIF, DET, HST, RCT) and ClusterModel (CLTree, HDBSCAN, PCT, URF).
+- [PCA, Factor Analysis & Rotations]({BASE_URL}/guides/pca-rotations/): ComponentModel decomposing continuous features with Varimax and Promax rotations.
 
 ## Optimization & Solvers
 
-- [Solvers & Hyperparameter Tuning]({BASE_URL}/examples/optimization-and-tuning/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
-- [Model Inspection & Rules]({BASE_URL}/examples/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
+- [Solvers & Hyperparameter Tuning]({BASE_URL}/guides/optimization-and-tuning/): 14 standalone optimization solvers, black-box optimizers, CMA-ES, Nelder-Mead, L-BFGS, and AskTell interface.
+- [Model Inspection & Rules]({BASE_URL}/guides/model-inspection-and-rules/): Quinlan rule extraction, DOT graph visualization, and explainable decision stumps.
 
 ## API Reference
 
@@ -166,9 +166,9 @@ def generate_llms_txt(site_dir: Path, docs_dir: Path) -> None:
 - [ComponentModel]({BASE_URL}/reference/api/components/): Continuous decomposition and factor rotation facade.
 - [Solvers]({BASE_URL}/reference/api/solvers/): Standalone optimization algorithms.
 
-## Benchmark Suites
+## How it works
 
-- [Benchmark Suites Overview]({BASE_URL}/suites/): 11 mathematical benchmark suites evaluating speed, accuracy, and failure modes.
+- [Guides overview]({BASE_URL}/guides/): task guides, how each mechanism works, and worked examples.
 - [TabArena Datasets]({BASE_URL}/benchmarks/datasets/): 51 tabular benchmark datasets from OpenML suite 457.
 - [Elo Ratings]({BASE_URL}/benchmarks/elo/): Head-to-head Elo leaderboards against LightGBM, CatBoost, and XGBoost.
 """
@@ -191,14 +191,14 @@ def generate_llms_full_txt(site_dir: Path, docs_dir: Path) -> None:
     key_files = [
         docs_dir / "quickstart.md",
         docs_dir / "installation.md",
-        docs_dir / "examples/regression-methods-showcase.md",
-        docs_dir / "examples/piecewise-linear-and-cubist.md",
-        docs_dir / "examples/distributional-and-censored-trees.md",
-        docs_dir / "examples/causal-uplift.md",
-        docs_dir / "examples/unsupervised-clustering-and-anomalies.md",
-        docs_dir / "examples/tree-architecture-and-knobs.md",
-        docs_dir / "examples/optimization-and-tuning.md",
-        docs_dir / "examples/pca-rotations.md",
+        docs_dir / "guides/regression-methods-showcase.md",
+        docs_dir / "guides/piecewise-linear-and-cubist.md",
+        docs_dir / "guides/distributional-and-censored-trees.md",
+        docs_dir / "guides/causal-uplift.md",
+        docs_dir / "guides/unsupervised-clustering-and-anomalies.md",
+        docs_dir / "guides/tree-architecture-and-knobs.md",
+        docs_dir / "guides/optimization-and-tuning.md",
+        docs_dir / "guides/pca-rotations.md",
     ]
 
     for f in key_files:

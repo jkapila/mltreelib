@@ -5,8 +5,6 @@ site_description = "Tree-based machine learning with a Rust core"
 repo_url = "https://github.com/jkapila/mltreelib"
 repo_name = "jkapila/mltreelib"
 exclude_docs = """
-agents/*
-examples/visualization.md
 reference/plots.md
 """
 
@@ -26,40 +24,47 @@ nav = [
   { "Installation" = "installation.md" },
   { "Quickstart" = "quickstart.md" },
   { "Releases" = "https://github.com/jkapila/mltreelib/releases" },
-  { "Suites" = [
-    { "Overview" = "suites/index.md" },
-    { "Suite 1: Core Architecture & Growth Knobs" = "suites/core-tree-architecture.md" },
-    { "Suite 2: Structural Constraints & Honesty" = "suites/constraints-and-honesty.md" },
-    { "Suite 3: Native Missing Data Routing" = "suites/missing-data-routing.md" },
-    { "Suite 4: Distributional & Censored Leaves" = "suites/distributional-leaves.md" },
-    { "Suite 5: Dynamic Leaf Retraining" = "suites/hierarchical-retrain.md" },
-    { "Suite 6: Statistical & Metric Splitting" = "suites/statistical-and-metric-splitting.md" },
-    { "Suite 7: Time Series Forecasting" = "suites/timeseries-forecasting.md" },
-    { "Suite 8: Unsupervised Trees" = "suites/unsupervised-trees.md" },
-    { "Suite 9: Survival & Competing Risks Trees" = "suites/survival-trees.md" },
-    { "Suite 10: Solvers, Optimizers & Real-Data Tuning" = "suites/solver-benchmarks.md" },
-    { "Suite 11: Component & Factor Analysis" = "suites/component-benchmarks.md" },
-  ] },
-  { "Examples" = [
-    { "Overview" = "examples/index.md" },
-    { "Data & Metrics" = [
-      { "Data Ingestion & Missing Routing" = "examples/data-matrix-and-routing.md" },
-      { "Metrics, Diagnostics & Calibration" = "examples/metrics-plots.md" },
-      { "PCA Rotations & Simple Structure" = "examples/pca-rotations.md" },
+  { "Guides" = [
+    { "Overview" = "guides/index.md" },
+    { "Get started" = [
+      { "Prepare data" = "guides/data.md" },
+      { "Regression" = "guides/regression.md" },
+      { "Classification" = "guides/classification.md" },
+      { "Survival" = "guides/survival.md" },
+      { "Uplift" = "guides/uplift.md" },
+      { "Clustering" = "guides/clustering.md" },
+      { "Anomaly detection" = "guides/anomaly.md" },
+      { "Evaluate and monitor" = "guides/evaluation.md" },
+      { "Visualization" = "guides/visualization.md" },
+      { "Serving contract" = "guides/serving-contract.md" },
+      { "Extend a model tree" = "guides/advanced-modeling.md" },
+      { "Get the real datasets" = "guides/real-data.md" },
     ] },
-    { "Regression & Continuous Models" = [
-      { "Comprehensive Regression Showcase" = "examples/regression-methods-showcase.md" },
-      { "Piecewise Linear Trees & Cubist Rules" = "examples/piecewise-linear-and-cubist.md" },
-      { "Distributional & Censored Trees" = "examples/distributional-and-censored-trees.md" },
+    { "How it works" = [
+      { "Tree architecture and growth knobs" = "guides/core-tree-architecture.md" },
+      { "Constraints and honesty" = "guides/constraints-and-honesty.md" },
+      { "Native missing-data routing" = "guides/missing-data-routing.md" },
+      { "Distributional and censored leaves" = "guides/distributional-leaves.md" },
+      { "Leaf retraining and micro-models" = "guides/hierarchical-retrain.md" },
+      { "Statistical and metric splitting" = "guides/statistical-and-metric-splitting.md" },
+      { "Time series forecasting" = "guides/timeseries-forecasting.md" },
+      { "Unsupervised trees" = "guides/unsupervised-trees.md" },
+      { "Survival and competing risks" = "guides/survival-trees.md" },
+      { "Solvers and optimizers" = "guides/solvers-and-optimizers.md" },
+      { "Components and rotations" = "guides/components-and-rotations.md" },
     ] },
-    { "Causal & Unsupervised" = [
-      { "Causal Uplift & Treatment Effects" = "examples/causal-uplift.md" },
-      { "Unsupervised Clustering & Anomalies" = "examples/unsupervised-clustering-and-anomalies.md" },
-    ] },
-    { "Architecture, Inspection & Tuning" = [
-      { "Tree Architecture, Growth Knobs & Constraints" = "examples/tree-architecture-and-knobs.md" },
-      { "Model Inspection, Rules & Stumps" = "examples/model-inspection-and-rules.md" },
-      { "Generic Solvers & Hyperparameter Tuning" = "examples/optimization-and-tuning.md" },
+    { "Worked examples" = [
+      { "Data ingestion and missing routing" = "guides/data-matrix-and-routing.md" },
+      { "Metrics, diagnostics and calibration" = "guides/metrics-plots.md" },
+      { "PCA rotations" = "guides/pca-rotations.md" },
+      { "Regression methods showcase" = "guides/regression-methods-showcase.md" },
+      { "Piecewise linear trees and Cubist rules" = "guides/piecewise-linear-and-cubist.md" },
+      { "Distributional and censored trees" = "guides/distributional-and-censored-trees.md" },
+      { "Causal uplift and treatment effects" = "guides/causal-uplift.md" },
+      { "Clustering and anomalies" = "guides/unsupervised-clustering-and-anomalies.md" },
+      { "Architecture, knobs and constraints" = "guides/tree-architecture-and-knobs.md" },
+      { "Inspection, rules and stumps" = "guides/model-inspection-and-rules.md" },
+      { "Solvers and tuning" = "guides/optimization-and-tuning.md" },
     ] },
   ] },
   { "Blog" = [

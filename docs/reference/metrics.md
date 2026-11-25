@@ -162,4 +162,4 @@ The classification report carries `accuracy`, `macro_precision/recall/f1`,
 `explained_variance` and the `deciles` error profile; the grouped version
 returns one such report **per group** (dict keyed by group). Full output
 shapes on real data: the
-[Metrics & plots showcase](../examples/metrics-plots.md).
+[Metrics & plots showcase](../guides/metrics-plots.md).

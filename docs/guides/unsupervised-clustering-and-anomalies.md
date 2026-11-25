@@ -199,5 +199,5 @@ In application code, always use the unified facades rather than lower-level inte
 | **`ComponentModel`** | `"pca"`, `"fa"`, `"nmf"`, `"ica"` | `fit`, `transform`, `inverse_transform` | Factor rotations, Promax/Varimax simple structure, and matrix factorization. |
 
 !!! tip "Related Reference Guides"
-    - [Suite 8: Unsupervised Trees & Density Partitioning](../suites/unsupervised-trees.md) for full algorithmic formulations.
+    - [Unsupervised Trees & Density Partitioning](unsupervised-trees.md) for full algorithmic formulations.
     - [API Reference: Anomaly Trees](../reference/api/anomaly.md) and [API Reference: Clustering Trees](../reference/api/cluster.md).

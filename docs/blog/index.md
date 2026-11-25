@@ -84,14 +84,14 @@ In-depth investigations into tree architecture, regulatory compliance, industria
 | How do I audit a classifier and choose an operating threshold? | [Decision trees for credit scoring](why-credit-scoring-needs-glass-box-trees.md) | Give Me Some Credit |
 | Does an uplift model improve targeting without waking sleeping dogs? | [Causal trees for uplift modeling](uplift-modeling-with-causal-trees.md) | Hillstrom randomized trial (42,693 analyzed; 64,000 raw) |
 | Can a tree score industrial telemetry with missing sensor values without imputation? | [Decision trees and missing sensor data](zero-imputation-predictive-maintenance.md) | Scania APS Failure |
-| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](../examples/quinlan-m5-cubist-rust.md) | UCI concrete strength |
-| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](../examples/distributional-trees-tweedie-tobit.md) | Miami home sales |
-| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](../examples/piecewise-linear-model-trees-vs-gbdt.md) | Diamonds |
+| How do Quinlan's M5 and Cubist rule sets translate to high-speed Rust? | [Cubist-style model trees](../guides/piecewise-linear-and-cubist.md) | UCI concrete strength |
+| What changes when I use Tweedie and Tobit distributional split criteria? | [Distributional tree splits](../guides/distributional-and-censored-trees.md) | Miami home sales |
+| When do piecewise linear leaves outperform gradient boosted trees? | [Regression trees with linear leaves](../guides/piecewise-linear-and-cubist.md) | Diamonds |
 
 ---
 
 ## Next Steps
 
 - For procedural recipes and execution workflows, see the **[Practical Modeling Pathways](../guides/index.md)**.
-- For focused operation scripts, browse the **[Example Library](../examples/index.md)**.
+- For focused operation scripts, browse the **[Example Library](../guides/index.md)**.
 - For complete parameter definitions and methods, inspect the **[API Reference](../reference/model.md)**.

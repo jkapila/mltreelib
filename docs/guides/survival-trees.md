@@ -1,8 +1,8 @@
-# Suite 9: Survival & Competing Risks Trees
+# Survival & Competing Risks Trees
 
 This suite implements non-parametric Survival Trees and Competing Risks Trees in pure Rust (`mltreelib-core`) with thin Python bindings (`mltreelib`). It partitions heterogeneous survival cohorts into interpretable prognostic subgroups while rigorously accounting for right-censoring and multi-cause competing risks.
 
-![Diagnostic curves for Suite 9: Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
+![Diagnostic curves for Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
 
 Companion executable script:
 - [`benchmarks/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/survival_and_competing_risks.py) (`uv run python benchmarks/suites/survival_and_competing_risks.py`)

@@ -64,13 +64,13 @@ uv run python examples/guides/real_tree_studies.py wine  # after downloading Win
 | install it | [Installation](installation.md) |
 | check the current release | [v0.4.15 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.15) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
-| run 11 benchmark suites | [Benchmark Suites](suites/index.md) |
+| understand how a feature works | [How it works](guides/index.md) |
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |
 | solve a real problem | [Real datasets and worked studies](guides/real-data.md) |
-| change one part of a model | [Example library](examples/index.md) |
-| wrangle data & encodings | [Examples — Data Processing](examples/data-processing.md) |
-| know every knob | [Examples — Model building & predictions](examples/model-building.md) |
-| read the numbers | [Examples — Inspection](examples/inspection.md) |
+| change one part of a model | [Example library](guides/index.md) |
+| wrangle data & encodings | [Examples — Data Processing](guides/data-matrix-and-routing.md) |
+| know every knob | [Examples — Model building & predictions](guides/tree-architecture-and-knobs.md) |
+| read the numbers | [Examples — Inspection](guides/model-inspection-and-rules.md) |
 | draw the tree | [Visualization](guides/visualization.md) |
 | see how it compares | [Overall Elo Arena](benchmarks/elo_overall.md) |
 | read technical deep dives & blogs | [Blog & Technical Insights](blog/index.md) |

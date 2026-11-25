@@ -8,7 +8,7 @@ flowchart TD
     
     Target -- "Continuous Numeric" --> Dist{"Is the target heavy-tailed, censored, or non-normal?"}
     Dist -- "Standard Gaussian / Linear" --> G_Reg["Regression Pathway\n(Piecewise Linear ModelTree)"]
-    Dist -- "Heavy-tailed / Zero-inflated / Censored" --> G_Dist["Distributional Leaves Suite\n(Gamma, Poisson, Tweedie, Tobit)"]
+    Dist -- "Heavy-tailed / Zero-inflated / Censored" --> G_Dist["Distributional Leaves\n(Gamma, Poisson, Tweedie, Tobit)"]
     
     Target -- "Binary / Multi-Class Categorical" --> G_Cla["Classification Pathway\n(Glass-Box Credit Distress & Review Queue)"]
     
@@ -53,7 +53,12 @@ flowchart TD
 ## How to use the documentation
 
 1. **Run one pathway.** Get its dataset and follow the analysis from split through evaluation.
-2. **Change one part.** The [example library](../examples/index.md) covers missing routing, alternative leaves, calibration diagnostics, retraining and other focused variations.
+2. **Change one part.** The [example library](index.md) covers missing routing, alternative leaves, calibration diagnostics, retraining and other focused variations.
 3. **Review the decision.** Use the [evaluation guide](evaluation.md), [visualization catalog](visualization.md) and [serving contract](serving-contract.md).
 
 The [dataset setup page](real-data.md) lists the downloads. Synthetic checks sit after the practical workflows. They make known effects and missing-data behavior easier to test.
+
+## Go deeper
+
+- **How it works**: [tree architecture](core-tree-architecture.md), [constraints and honesty](constraints-and-honesty.md), [missing-data routing](missing-data-routing.md), [distributional leaves](distributional-leaves.md), [splitting criteria](statistical-and-metric-splitting.md), [solvers](solvers-and-optimizers.md).
+- **Worked examples**: [regression methods](regression-methods-showcase.md), [piecewise linear and Cubist](piecewise-linear-and-cubist.md), [causal uplift](causal-uplift.md), [model inspection](model-inspection-and-rules.md).

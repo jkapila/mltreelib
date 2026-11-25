@@ -13,8 +13,8 @@ uv run python benchmarks/suites/component_benchmarks.py
 
 Executable Reference Scripts:
 - [`examples/guides/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
-- [`benchmarks/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py) — Suite 10: Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
-- [`docs/examples/component-benchmarks.md`](https://github.com/jkapila/mltreelib/blob/main/docs/examples/component-benchmarks.md) — Comprehensive documentation for Suite 10 component benchmarks.
+- [`benchmarks/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py) — Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
+- [Components and rotations](components-and-rotations.md) — component benchmarks and rotation checks.
 
 ---
 
