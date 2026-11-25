@@ -60,6 +60,7 @@ We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/4222
 | **GBDT (LightGBM)** | 0D Constant Sum | 100 Trees (Depth 4) | $742 | Hundreds of orthogonal step boundaries |
 | **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes; beats GBDT with 1/12th complexity** |
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -96,6 +97,11 @@ rmse = Metrics().regression(price[test_idx].tolist(), pred)["rmse"]
 print(f"Piecewise Linear ModelTree Test RMSE: ${rmse:.2f}")
 ```
 
+<!-- output -->
+```text
+Piecewise Linear ModelTree Test RMSE: $155.99
+```
+
 ---
 
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
@@ -108,6 +114,7 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 
 ### Inspecting Extracted Rules and Leaf Equations
 
+<!-- run -->
 ```python
 # Extract white-box rules directly from the fitted tree
 ruleset = tree.extract_rules()
@@ -118,14 +125,33 @@ for r in ruleset.rules:
     print(f"    THEN Leaf #{r.leaf_id} prediction = {r.prediction:.2f}")
 ```
 
+<!-- output -->
 ```text
-RULE #1 (n=382, coverage=46.4%):
-  WHEN Age <= 28.00 AND Cement <= 380.00
-  THEN y = -14.25 + 0.08*Cement + 0.06*BlastFurnaceSlag + 0.28*Age - 0.12*Water
-
-RULE #2 (n=195, coverage=23.7%):
-  WHEN Age > 28.00 AND Water <= 180.00
-  THEN y = +18.42 + 0.12*Cement + 0.15*Superplasticizer + 0.14*Age - 0.05*FineAggregate
+Extracted 8 Transparent Rules:
+  RULE #1 (Cover: 326 samples, Confidence: 0.95):
+    IF carat <= 1.0420
+    THEN Leaf #0 prediction = -115.74
+  RULE #2 (Cover: 205 samples, Confidence: 0.95):
+    IF carat > 1.0420 AND carat <= 1.4930
+    THEN Leaf #1 prediction = 1425.82
+  RULE #3 (Cover: 192 samples, Confidence: 0.95):
+    IF carat > 1.4930 AND carat <= 1.9260
+    THEN Leaf #2 prediction = 3037.00
+  RULE #4 (Cover: 168 samples, Confidence: 0.95):
+    IF carat > 2.5740 AND carat <= 2.9060
+    THEN Leaf #5 prediction = 8269.63
+  RULE #5 (Cover: 166 samples, Confidence: 0.95):
+    IF carat > 1.9260 AND carat <= 2.2530
+    THEN Leaf #3 prediction = 4787.94
+  RULE #6 (Cover: 154 samples, Confidence: 0.95):
+    IF carat > 2.9060 AND carat <= 3.2260
+    THEN Leaf #6 prediction = 10416.46
+  RULE #7 (Cover: 150 samples, Confidence: 0.95):
+    IF carat > 2.2530 AND carat <= 2.5740
+    THEN Leaf #4 prediction = 6525.48
+  RULE #8 (Cover: 139 samples, Confidence: 0.95):
+    IF carat > 3.2260
+    THEN Leaf #7 prediction = 12297.76
 ```
 
 ---

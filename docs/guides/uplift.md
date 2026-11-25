@@ -43,11 +43,27 @@ flowchart TD
 Run this Python block from the repository root. `group_value` comes from the example script.
 
 ```python
+from math import sqrt
 from random import Random
 
 import pandas as pd
 from mltreelib import ModelTree
-from examples.real_survival_uplift import group_value
+
+def group_value(y, w, selected):
+    """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
+    a = [v for v, t, s in zip(y, w, selected) if s and t == 1]
+    b = [v for v, t, s in zip(y, w, selected) if s and t == 0]
+    n = sum(selected)
+    if not n:
+        return 0.0, 0, 0, 0, None
+    if len(a) < 2 or len(b) < 2:
+        raise ValueError("Selected group requires at least two observations per arm")
+    diff, q = sum(a) / len(a) - sum(b) / len(b), n / len(y)
+    def var(v):
+        m = sum(v) / len(v)
+        return sum((z - m) ** 2 for z in v) / (len(v) - 1)
+    se = q * sqrt(var(a) / len(a) + var(b) / len(b))
+    return q * diff, n, len(a), len(b), (q * diff - 1.96 * se, q * diff + 1.96 * se)
 
 df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]

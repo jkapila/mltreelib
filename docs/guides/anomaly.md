@@ -41,6 +41,7 @@ Standard Isolation Forests construct trees by sampling orthogonal, axis-aligned 
 
 You can evaluate on industrial telemetry using `load_dataset("APSFailure")` or the UCI Statlog Shuttle benchmark:
 
+<!-- run -->
 ```python
 from mltreelib import Metrics, load_dataset
 from mltreelib import AnomalyModel
@@ -78,6 +79,14 @@ print(f"Recall at Budget   : {hits / max(1, total_anomalies):.4f}")
 
 metrics = Metrics()
 print(f"ROC-AUC            : {metrics.roc_curve(y_test, scores)['auc']:.4f}")
+```
+
+<!-- output -->
+```text
+Review Budget Size : 150 records (Top 5%)
+Precision at Budget: 0.1867
+Recall at Budget   : 0.4590
+ROC-AUC            : 0.8154
 ```
 
 `kind="binary"` returns labels from the fitted threshold, and `kind="score"` returns the same scores as `score_samples()`. The extended isolation tree and its aliases also expose `kind="path_length"`.

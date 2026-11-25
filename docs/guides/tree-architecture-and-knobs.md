@@ -85,6 +85,7 @@ In regulated domains such as insurance rating and credit underwriting, legal and
 
 ![Monotone Constraints Comparison: Unconstrained Overfitting vs Monotonic Curves](../assets/constraints_monotone_comparison.png)
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -123,6 +124,13 @@ print("Monotone & Honest Tree Fit Successfully.")
 print(f"Total Leaves: {len(tree.leaves())}")
 for s in tree.splits():
     print(f"  Split: Feature '{s['col']}' <= {s['threshold']:.3f}")
+```
+
+<!-- output -->
+```text
+Monotone & Honest Tree Fit Successfully.
+Total Leaves: 2
+  Split: Feature 'revolving_utilization' <= 0.577
 ```
 
 !!! tip "Related guides"

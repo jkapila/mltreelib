@@ -23,6 +23,7 @@ The script needs matplotlib and writes SVG files to `docs/assets/guides/`. It us
 
 This complete example plots a small held-out regression result. The plotting layer is optional; `Metrics` returns numeric reports without matplotlib.
 
+<!-- run -->
 ```python
 import matplotlib.pyplot as plt
 from mltreelib import Metrics, plots
@@ -34,6 +35,11 @@ fig, ax = plt.subplots()
 plots.plot_residuals(actual, predicted, ax=ax)
 fig.tight_layout()
 plt.close(fig)
+```
+
+<!-- output -->
+```text
+MAE: 0.2749999999999999
 ```
 
 ![Regression residuals](../assets/guides/data-residuals.svg)

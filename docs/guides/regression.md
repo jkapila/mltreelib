@@ -10,6 +10,7 @@ The input includes numeric measurements such as carat and raw labels for cut, co
 
 ## 2. Fit and compare
 
+<!-- run -->
 ```python
 from statistics import mean
 
@@ -37,6 +38,15 @@ for leaf in ("mean", "linear"):
     predictions = tree.predict(x_test)
     print(leaf, metrics.regression(y_test, predictions)["rmse"])
     print(tree.splits()[:1], tree.leaves()[0])
+```
+
+<!-- output -->
+```text
+baseline 3997.909177541611
+mean 1712.2427217715297
+[{'col': 'carat', 'threshold': 0.87, 'missing_left': True, 'gain': 12621939723.095982}] {'id': 0, 'node_id': 0, 'cols': [], 'coef': [], 'na_coef': [], 'intercept': None, 'response_constant': 1429.890843104411, 'n': 3582, 'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331, 'stats': {'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331}, 'quantiles': [565.4020833333334, 729.5107790859337, 1089.1532531984144, 1980.0605097649789, 2763.0413519430763]}
+linear 1367.3485664664854
+[{'col': 'carat', 'threshold': 0.87, 'missing_left': True, 'gain': 12621939723.095982}] {'id': 0, 'node_id': 0, 'cols': ['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z'], 'coef': [5910.566159277382, -27.432000634949066, 12.716280090919211, -1.5433009189100604, -20.656956810987097, -18.763771275611948, -455.40156014726284, 440.60100215221235, -496.57381645128595], 'na_coef': [], 'intercept': 2548.6775050468987, 'response_constant': 1429.890843104411, 'n': 3582, 'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331, 'stats': {'mean': 1429.890843104411, 'std': 883.4964342201023, 'var': 780565.9492796354, 'median': 1089.1532531984144, 'mad': 489.1532531984144, 'iqr': 1250.5497306790453, 'min': 357.0, 'max': 6004.0, 'skew': 1.051485120451727, 'kurtosis': 0.4694739630033098, 'prob': 1.0, 'odds': 999998.9999712444, 'log_odds': 13.815509557935018, 'majority_class': 1, 'entropy': 0.0, 'gini': 0.0, 'zero_fraction': 0.0, 'dispersion': 545.8919840237331}, 'quantiles': [565.4020833333334, 729.5107790859337, 1089.1532531984144, 1980.0605097649789, 2763.0413519430763]}
 ```
 
 Run the [complete study](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) to regenerate the chart.

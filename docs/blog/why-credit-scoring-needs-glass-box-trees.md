@@ -81,6 +81,7 @@ We evaluate on the full 150,000 labeled borrower records from [Give Me Some Cred
 
 Traditional credit risk models discard incomplete cases or inject heuristic median imputations that distort non-linear relationships. `mltreelib.ModelTree` evaluates surrogate split directions directly in pure Rust: missing values follow the optimal deviance-reducing branch, maintaining exact population representation.
 
+<!-- run -->
 ```python
 import pandas as pd
 from mltreelib import Metrics, ModelTree
@@ -115,10 +116,23 @@ tree.fit(X, y, col_names=features)
 
 Fitting `ModelTree` with `max_depth=3` partitions the 150,000 borrowers into exactly 8 auditable risk cohorts. Calling `tree.extract_rules()` exposes every split condition verbatim:
 
+<!-- run -->
 ```python
 rules = tree.extract_rules()
 for r in rules.rules:
     print(f"Leaf {r.leaf_id} (n={r.cover}): IF {' AND '.join(r.conditions)} -> P(Distress) = {r.prediction:.4f}")
+```
+
+<!-- output -->
+```text
+Leaf 0 (n=95265): IF RevolvingUtilizationOfUnsecuredLines <= 0.4930 AND NumberOfTime30-59DaysPastDueNotWorse <= 0.0000 AND NumberOfTimes90DaysLate <= 0.0000 -> P(Distress) = 0.0161
+Leaf 2 (n=26764): IF RevolvingUtilizationOfUnsecuredLines > 0.4930 AND NumberOfTime30-59DaysPastDueNotWorse <= 0.0000 AND NumberOfTimes90DaysLate <= 0.0000 -> P(Distress) = 0.0815
+Leaf 1 (n=10925): IF RevolvingUtilizationOfUnsecuredLines <= 0.4930 AND NumberOfTime30-59DaysPastDueNotWorse > 0.0000 AND NumberOfTimes90DaysLate <= 0.0000 -> P(Distress) = 0.0794
+Leaf 3 (n=8708): IF RevolvingUtilizationOfUnsecuredLines > 0.4930 AND NumberOfTime30-59DaysPastDueNotWorse > 0.0000 AND NumberOfTimes90DaysLate <= 0.0000 -> P(Distress) = 0.2262
+Leaf 5 (n=3566): IF RevolvingUtilizationOfUnsecuredLines > 0.4950 AND NumberOfTimes90DaysLate > 0.0000 AND NumberOfTimes90DaysLate <= 1.0000 -> P(Distress) = 0.3974
+Leaf 7 (n=1881): IF NumberOfTime30-59DaysPastDueNotWorse > 0.0000 AND NumberOfTimes90DaysLate > 1.0000 -> P(Distress) = 0.6007
+Leaf 4 (n=1677): IF RevolvingUtilizationOfUnsecuredLines <= 0.4950 AND NumberOfTimes90DaysLate > 0.0000 AND NumberOfTimes90DaysLate <= 1.0000 -> P(Distress) = 0.2075
+Leaf 6 (n=1214): IF NumberOfTime30-59DaysPastDueNotWorse <= 0.0000 AND NumberOfTimes90DaysLate > 1.0000 -> P(Distress) = 0.4753
 ```
 
 ```
@@ -184,6 +198,7 @@ Leaf 7 (n= 1,254):
 
 On a single held-out evaluation split (100k train, 25k validation, 25k test; Seed 42), we evaluate the trade-off between review capacity and misclassification loss.
 
+<!-- run -->
 ```python
 def evaluate_cost(y_true, y_prob, threshold, c_fp=1.0, c_fn=5.0):
     fn = sum(1 for yt, yp in zip(y_true, y_prob) if yt == 1 and yp < threshold)
@@ -201,6 +216,11 @@ cutoff_candidates = [0.02, 0.05, 0.08, 0.09, 0.10, 0.12, 0.15, 0.167, 0.20, 0.25
 best_cutoff = min(cutoff_candidates, key=lambda c: evaluate_cost(y_val, p_val, c))
 test_cost = evaluate_cost(y_te, p_te, best_cutoff)
 print(f"Optimal validation cutoff: {best_cutoff:.3f} | Test expected cost: ${test_cost:.4f} / applicant")
+```
+
+<!-- output -->
+```text
+Optimal validation cutoff: 0.090 | Test expected cost: $0.2326 / applicant
 ```
 
 The validation optimizer selects **$\tau^* = 0.090$**:

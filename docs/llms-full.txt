@@ -597,6 +597,7 @@ We evaluate on 6,000 diamond sales ([OpenML 42225](https://www.openml.org/d/4222
 | **GBDT (LightGBM)** | 0D Constant Sum | 100 Trees (Depth 4) | $742 | Hundreds of orthogonal step boundaries |
 | **`ModelTree` (mltreelib)** | **1D Linear OLS** | **Depth 3 (8 leaves)** | **$695** | **Smooth continuous planes; beats GBDT with 1/12th complexity** |
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -633,6 +634,11 @@ rmse = Metrics().regression(price[test_idx].tolist(), pred)["rmse"]
 print(f"Piecewise Linear ModelTree Test RMSE: ${rmse:.2f}")
 ```
 
+<!-- output -->
+```text
+Piecewise Linear ModelTree Test RMSE: $155.99
+```
+
 ---
 
 ## 2. Quinlan M5 & Cubist Rule Extraction (Concrete Compressive Strength)
@@ -645,6 +651,7 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 
 ### Inspecting Extracted Rules and Leaf Equations
 
+<!-- run -->
 ```python
 # Extract white-box rules directly from the fitted tree
 ruleset = tree.extract_rules()
@@ -655,14 +662,33 @@ for r in ruleset.rules:
     print(f"    THEN Leaf #{r.leaf_id} prediction = {r.prediction:.2f}")
 ```
 
+<!-- output -->
 ```text
-RULE #1 (n=382, coverage=46.4%):
-  WHEN Age <= 28.00 AND Cement <= 380.00
-  THEN y = -14.25 + 0.08*Cement + 0.06*BlastFurnaceSlag + 0.28*Age - 0.12*Water
-
-RULE #2 (n=195, coverage=23.7%):
-  WHEN Age > 28.00 AND Water <= 180.00
-  THEN y = +18.42 + 0.12*Cement + 0.15*Superplasticizer + 0.14*Age - 0.05*FineAggregate
+Extracted 8 Transparent Rules:
+  RULE #1 (Cover: 326 samples, Confidence: 0.95):
+    IF carat <= 1.0420
+    THEN Leaf #0 prediction = -115.74
+  RULE #2 (Cover: 205 samples, Confidence: 0.95):
+    IF carat > 1.0420 AND carat <= 1.4930
+    THEN Leaf #1 prediction = 1425.82
+  RULE #3 (Cover: 192 samples, Confidence: 0.95):
+    IF carat > 1.4930 AND carat <= 1.9260
+    THEN Leaf #2 prediction = 3037.00
+  RULE #4 (Cover: 168 samples, Confidence: 0.95):
+    IF carat > 2.5740 AND carat <= 2.9060
+    THEN Leaf #5 prediction = 8269.63
+  RULE #5 (Cover: 166 samples, Confidence: 0.95):
+    IF carat > 1.9260 AND carat <= 2.2530
+    THEN Leaf #3 prediction = 4787.94
+  RULE #6 (Cover: 154 samples, Confidence: 0.95):
+    IF carat > 2.9060 AND carat <= 3.2260
+    THEN Leaf #6 prediction = 10416.46
+  RULE #7 (Cover: 150 samples, Confidence: 0.95):
+    IF carat > 2.2530 AND carat <= 2.5740
+    THEN Leaf #4 prediction = 6525.48
+  RULE #8 (Cover: 139 samples, Confidence: 0.95):
+    IF carat > 3.2260
+    THEN Leaf #7 prediction = 12297.76
 ```
 
 ---
@@ -876,6 +902,7 @@ $$d(y, \mu) = 2 \left( \frac{y^{2-p}}{(1-p)(2-p)} - \frac{y \mu^{1-p}}{1-p} + \f
 
 #### Complete Tweedie Quasi-Deviance Example
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -915,6 +942,13 @@ print(f"Mean Observed Claim: ${y_claims.mean():.2f} | Mean Predicted: ${np.mean(
 print("Top Tree Split:", tweedie_tree.splits()[0])
 ```
 
+<!-- output -->
+```text
+Zero-Claim Prevalence: 89.1%
+Mean Observed Claim: $329.66 | Mean Predicted: $329.66
+Top Tree Split: {'col': 'vehicle_age', 'threshold': 11.611, 'missing_left': True, 'gain': 884.137993982089}
+```
+
 ---
 
 ### 2. Tobit Regression Leaves: Eliminating Attenuation Bias
@@ -927,6 +961,7 @@ $$\ln L = \sum_{y_i = c} \ln \left[ 1 - \Phi\left(\frac{\mathbf{x}_i^\top \bolds
 
 #### Synthetic Attenuation Correction Proof
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree
@@ -960,6 +995,12 @@ print(f"Censored Sample Fraction: {(observed_hours == 0).mean():.1%}")
 print(f"Sample Latent Prediction Range: [{min(pred_latent):.2f}, {max(pred_latent):.2f}]")
 ```
 
+<!-- output -->
+```text
+Censored Sample Fraction: 0.5%
+Sample Latent Prediction Range: [6.80, 63.92]
+```
+
 ---
 
 ### 3. Heteroscedastic Splitting: Detecting Risk & Volatility Breaks
@@ -970,6 +1011,7 @@ The heteroscedastic split criterion evaluates Gaussian negative log-likelihood d
 
 $$\text{Gain}_\text{Hetero} = W_P \ln \hat{\sigma}_P^2 - \left[ W_L \ln \hat{\sigma}_L^2 + W_R \ln \hat{\sigma}_R^2 \right]$$
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree
@@ -993,6 +1035,11 @@ volatility_tree = ModelTree(
 volatility_tree.fit(X, returns.tolist(), col_names=["volatility_driver"])
 
 print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["threshold"])
+```
+
+<!-- output -->
+```text
+Discovered Volatility Split Threshold: 52.922
 ```
 
 !!! tip "Related guides"
@@ -1048,11 +1095,27 @@ flowchart TD
 Run this Python block from the repository root. `group_value` comes from the example script.
 
 ```python
+from math import sqrt
 from random import Random
 
 import pandas as pd
 from mltreelib import ModelTree
-from examples.real_survival_uplift import group_value
+
+def group_value(y, w, selected):
+    """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
+    a = [v for v, t, s in zip(y, w, selected) if s and t == 1]
+    b = [v for v, t, s in zip(y, w, selected) if s and t == 0]
+    n = sum(selected)
+    if not n:
+        return 0.0, 0, 0, 0, None
+    if len(a) < 2 or len(b) < 2:
+        raise ValueError("Selected group requires at least two observations per arm")
+    diff, q = sum(a) / len(a) - sum(b) / len(b), n / len(y)
+    def var(v):
+        m = sum(v) / len(v)
+        return sum((z - m) ** 2 for z in v) / (len(v) - 1)
+    se = q * sqrt(var(a) / len(a) + var(b) / len(b))
+    return q * diff, n, len(a), len(b), (q * diff - 1.96 * se, q * diff + 1.96 * se)
 
 df = pd.read_csv("datasets/external/real_eval/hillstrom.csv")
 df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
@@ -1674,6 +1737,7 @@ In regulated domains such as insurance rating and credit underwriting, legal and
 
 ![Monotone Constraints Comparison: Unconstrained Overfitting vs Monotonic Curves](../assets/constraints_monotone_comparison.png)
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -1712,6 +1776,13 @@ print("Monotone & Honest Tree Fit Successfully.")
 print(f"Total Leaves: {len(tree.leaves())}")
 for s in tree.splits():
     print(f"  Split: Feature '{s['col']}' <= {s['threshold']:.3f}")
+```
+
+<!-- output -->
+```text
+Monotone & Honest Tree Fit Successfully.
+Total Leaves: 2
+  Split: Feature 'revolving_utilization' <= 0.577
 ```
 
 !!! tip "Related guides"
@@ -1916,6 +1987,7 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 `mltreelib.solvers.optimize` minimizes arbitrary bounded scalar objectives through one unified contract:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import optimize
 
@@ -1927,6 +1999,11 @@ res = optimize(
     max_evaluations=200,
 )
 print(f"Status: {res.status}, Best objective: {res.best_value:.6f}")
+```
+
+<!-- output -->
+```text
+Status: evaluation_limit, Best objective: 0.562600
 ```
 
 ### Standard Mathematical Landscapes Benchmark
@@ -2114,6 +2191,7 @@ print(f"  Minimum Objective Loss: {optimizer.best_value:.4e}")
 
 Rather than manually guessing `max_depth` and `min_rows`, `mltreelib` wraps tree cross-validation directly inside the numerical optimizer:
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -2166,6 +2244,13 @@ best_l2 = 10.0 ** hpo_res.best_x[2]
 print("HPO Search Results:")
 print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
 print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
+```
+
+<!-- output -->
+```text
+HPO Search Results:
+  Best Validation RMSE: 0.5174
+  Optimal Configuration: max_depth=5, min_rows=23, l2=4.9770e-03
 ```
 
 
@@ -2488,6 +2573,7 @@ where $\mathbf{\Lambda} = \mathbf{V}^* = \mathbf{V} \mathbf{T}$ is the rotated l
 - **Parsimax ($\gamma = \frac{p (k - 1)}{p + k - 2}$)**: Weight adjusted for the variable-to-factor ratio, maximizing overall factor parsimony.
 - **Biquartimax ($\gamma = 0.5$)**: Fixed equal weighting between row and column simplicity criteria.
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ComponentModel
@@ -2524,6 +2610,15 @@ print(f"{'Test':12} | {'Factor 1 (Verbal)':18} | {'Factor 2 (Math)':18}")
 print("-" * 54)
 for name, row in zip(feature_names, loadings):
     print(f"{name:12} | {row[0]:+18.3f} | {row[1]:+18.3f}")
+```
+
+<!-- output -->
+```text
+Varimax Rotated Factor Loadings (Simple Structure):
+Test         | Factor 1 (Verbal)  | Factor 2 (Math)   
+------------------------------------------------------
+Reading      |             +0.172 |             +0.170
+Vocab        |             +0.571 |             +0.563
 ```
 
 ---

@@ -313,6 +313,7 @@ where $\mathbf{\Lambda} = \mathbf{V}^* = \mathbf{V} \mathbf{T}$ is the rotated l
 - **Parsimax ($\gamma = \frac{p (k - 1)}{p + k - 2}$)**: Weight adjusted for the variable-to-factor ratio, maximizing overall factor parsimony.
 - **Biquartimax ($\gamma = 0.5$)**: Fixed equal weighting between row and column simplicity criteria.
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ComponentModel
@@ -349,6 +350,15 @@ print(f"{'Test':12} | {'Factor 1 (Verbal)':18} | {'Factor 2 (Math)':18}")
 print("-" * 54)
 for name, row in zip(feature_names, loadings):
     print(f"{name:12} | {row[0]:+18.3f} | {row[1]:+18.3f}")
+```
+
+<!-- output -->
+```text
+Varimax Rotated Factor Loadings (Simple Structure):
+Test         | Factor 1 (Verbal)  | Factor 2 (Math)   
+------------------------------------------------------
+Reading      |             +0.172 |             +0.170
+Vocab        |             +0.571 |             +0.563
 ```
 
 ---

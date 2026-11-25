@@ -87,6 +87,7 @@ For continuous pricing, demand forecasting, and risk models:
 
 ## 4. Code Example: Computing the Full Metrics Suite
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import Metrics, plots
@@ -130,6 +131,16 @@ plots.plot_calibration(y_true, y_prob_champ, ax=ax1)
 plots.plot_double_lift(y_true, y_prob_chal, y_prob_champ, ax=ax2)
 plt.tight_layout()
 plt.show()
+```
+
+<!-- output -->
+```text
+Champion Model Performance:
+  ROC-AUC: 0.7700
+  Average Precision (PR-AUC): 0.4528
+  Brier Reliability Score: 0.1196
+  Kolmogorov-Smirnov (KS): 0.4392 (Score @ KS cutoff = 0.175)
+  Population Stability Index (PSI): 0.0273 (Stable)
 ```
 
 !!! tip "Related Guides"

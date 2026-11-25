@@ -12,6 +12,7 @@ PCT splits to reduce the variation of numeric features inside its leaves. The me
 
 Run this from the repository root. The second split supports a refit check. Assign the review records with both models before comparing them.
 
+<!-- run -->
 ```python
 import pandas as pd
 from mltreelib import ClusterModel
@@ -31,6 +32,23 @@ review["segment"] = tree.predict(design(review), kind="cluster")
 print(review.groupby("segment")[features].median().round(3))
 print(review["segment"].value_counts().sort_index())
 print(tree.rules())
+```
+
+<!-- output -->
+```text
+         residual_sugar  volatile_acidity  alcohol  chlorides
+segment                                                      
+0                   2.1             0.260     10.9      0.042
+1                   2.2             0.580     10.0      0.077
+2                  12.0             0.265      9.3      0.049
+3                   9.7             0.280     11.0      0.038
+segment
+0    715
+1    303
+2    350
+3    129
+Name: count, dtype: int64
+[{'cluster_id': 0, 'rule': 'residual_sugar <= 0.3250 AND volatile_acidity <= 0.5334', 'prototype': [-0.5633571796980814, -0.45032130960253103, 0.35595950436800566, -0.19283988480404657], 'size': 1225}, {'cluster_id': 1, 'rule': 'residual_sugar <= 0.3250 AND volatile_acidity > 0.5334', 'prototype': [-0.6175285877862888, 1.5861935962778964, -0.045033699961352924, 0.7751047008432439], 'size': 511}, {'cluster_id': 2, 'rule': 'residual_sugar > 0.3250 AND alcohol <= -0.1944', 'prototype': [1.4487425379517769, -0.3488113958827904, -0.9831008544389213, -0.1253780190834037], 'size': 550}, {'cluster_id': 3, 'rule': 'residual_sugar > 0.3250 AND alcohol > -0.1944', 'prototype': [0.9759871851189981, -0.3133413817727514, 0.5965761578077295, -0.42472772313116014], 'size': 214}]
 ```
 
 `labels_` stores the training assignments and `n_clusters_` gives the number of assigned clusters. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.

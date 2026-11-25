@@ -190,6 +190,7 @@ $$d(y, \mu) = 2 \left( \frac{y^{2-p}}{(1-p)(2-p)} - \frac{y \mu^{1-p}}{1-p} + \f
 
 #### Complete Tweedie Quasi-Deviance Example
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -229,6 +230,13 @@ print(f"Mean Observed Claim: ${y_claims.mean():.2f} | Mean Predicted: ${np.mean(
 print("Top Tree Split:", tweedie_tree.splits()[0])
 ```
 
+<!-- output -->
+```text
+Zero-Claim Prevalence: 89.1%
+Mean Observed Claim: $329.66 | Mean Predicted: $329.66
+Top Tree Split: {'col': 'vehicle_age', 'threshold': 11.611, 'missing_left': True, 'gain': 884.137993982089}
+```
+
 ---
 
 ### 2. Tobit Regression Leaves: Eliminating Attenuation Bias
@@ -241,6 +249,7 @@ $$\ln L = \sum_{y_i = c} \ln \left[ 1 - \Phi\left(\frac{\mathbf{x}_i^\top \bolds
 
 #### Synthetic Attenuation Correction Proof
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree
@@ -274,6 +283,12 @@ print(f"Censored Sample Fraction: {(observed_hours == 0).mean():.1%}")
 print(f"Sample Latent Prediction Range: [{min(pred_latent):.2f}, {max(pred_latent):.2f}]")
 ```
 
+<!-- output -->
+```text
+Censored Sample Fraction: 0.5%
+Sample Latent Prediction Range: [6.80, 63.92]
+```
+
 ---
 
 ### 3. Heteroscedastic Splitting: Detecting Risk & Volatility Breaks
@@ -284,6 +299,7 @@ The heteroscedastic split criterion evaluates Gaussian negative log-likelihood d
 
 $$\text{Gain}_\text{Hetero} = W_P \ln \hat{\sigma}_P^2 - \left[ W_L \ln \hat{\sigma}_L^2 + W_R \ln \hat{\sigma}_R^2 \right]$$
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree
@@ -307,6 +323,11 @@ volatility_tree = ModelTree(
 volatility_tree.fit(X, returns.tolist(), col_names=["volatility_driver"])
 
 print("Discovered Volatility Split Threshold:", volatility_tree.splits()[0]["threshold"])
+```
+
+<!-- output -->
+```text
+Discovered Volatility Split Threshold: 52.922
 ```
 
 !!! tip "Related guides"

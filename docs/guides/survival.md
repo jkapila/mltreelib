@@ -46,11 +46,36 @@ flowchart TD
 Run this Python block from the repository root. The evaluation helpers are part of the example script.
 
 ```python
+from bisect import bisect_left, bisect_right
+from collections import Counter
 from random import Random
 
 import pandas as pd
 from mltreelib import ModelTree
-from examples.real_survival_uplift import brier, censor_km
+
+def censor_km(times, events):
+    """Censoring survival G(t), estimated from training observations."""
+    counts = Counter(times)
+    censored = Counter(t for t, event in zip(times, events) if not event)
+    at_risk, steps, probs, g = len(times), [], [], 1.0
+    for t in sorted(counts):
+        g *= 1 - censored[t] / at_risk
+        steps.append(t); probs.append(g); at_risk -= counts[t]
+    def g_at(t, left=False):
+        i = (bisect_left if left else bisect_right)(steps, t) - 1
+        return 1.0 if i < 0 else probs[i]
+    return g_at
+
+def brier(times, events, predictions, horizon, censor):
+    """IPCW Brier score at one horizon."""
+    g_h = censor(horizon)
+    total = 0.0
+    for t, e, pred in zip(times, events, predictions):
+        if t <= horizon and e:
+            total += pred ** 2 / censor(t, left=True)
+        elif t > horizon:
+            total += (1 - pred) ** 2 / g_h
+    return total / len(times)
 
 df = pd.read_csv("datasets/external/real_eval/flchain.csv")
 features = ["age", "sex", "kappa", "lambda", "creatinine"]

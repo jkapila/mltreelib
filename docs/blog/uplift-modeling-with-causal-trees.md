@@ -93,6 +93,7 @@ We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing 
 - **Predictors**: 7 customer history metrics including recency, historical spend (`history`), past mens/womens merchandise purchases, newbie indicator, zip code tier, and shopping channel.
 - **Population ATE**: Sending the Women's E-Mail increases overall visit rate from 10.6% to 15.1% (+4.52 percentage points).
 
+<!-- run -->
 ```python
 import numpy as np
 import pandas as pd
@@ -155,10 +156,16 @@ Discovered Causal Splits (3 split nodes, 4 leaves):
 1. **Prior Women's Shoppers with High Spend (Leaf 3)**: Customers with prior women's merchandise purchases (`womens > 0`) and historical spend over $338.47 achieve the highest uplift: **+8.81% incremental visits** (nearly double the population average).
 2. **Non-Women's Shoppers (Leaf 0)**: Customers with no prior women's merchandise purchases exhibit lower incremental response (+1.9%), representing low-return ad spend.
 
+<!-- run -->
 ```python
 metrics = Metrics()
 res = metrics.uplift(y_test, w_test, tree.predict(x_test, kind="uplift"))
 print(f"Honest Tree Qini: {res['qini_coef']:.2f} | AUUC: {res['auuc']:.2f}")
+```
+
+<!-- output -->
+```text
+Honest Tree Qini: 41.63 | AUUC: 269.97
 ```
 
 Single-seed evaluation on test customers:

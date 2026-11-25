@@ -86,6 +86,7 @@ Rather than imposing parametric Gaussian assumptions that fail on intermittent r
 2. **Per-Leaf $t$-Digest Quantiles**: During training, each leaf maintains its own streaming $t$-digest of target values. Because each leaf has an independent digest, the predicted spread varies dynamically by SKU and by input features $X$ (heteroscedastic dispersion). A single global residual digest would incorrectly force the same error variance across all market regimes.
 3. **Full Conditional Quantile Curve**: Two prediction interval bounds (such as 5% and 95%) are not enough to evaluate arbitrary critical fractiles $\tau_k \in (0, 1)$. `ModelTree.quantile(X, tau)` exposes the complete inverse CDF curve $F_k^{-1}(\tau)$ at any quantile level $\tau \in [0.001, 0.999]$.
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree
@@ -127,6 +128,11 @@ q_unconstrained = tree.quantile(X_test, tau)
 # 3. Non-parametric prediction interval for visualization
 intervals = tree.predict_interval(X_test, coverage=0.90)  # [(q_05, q_95), ...]
 print(f"Mean forecast: {y_mean[0]:.1f} | Tau=0.88 quantile: {q_unconstrained[0]:.1f} | 90% Interval: [{intervals[0][0]:.1f}, {intervals[0][1]:.1f}]")
+```
+
+<!-- output -->
+```text
+Mean forecast: 96.3 | Tau=0.88 quantile: 125.5 | 90% Interval: [68.3, 135.3]
 ```
 
 Across 50 simulated retail SKUs (spanning Fast Movers, Medium Movers, and High-Margin Specialty items), `ModelTree` traces distinct demand volatility regimes:
@@ -185,6 +191,7 @@ $$
 
 This decouples the 50-variable coupled optimization into a fast 2-variable root search over $(\lambda, \mu) \ge 0$, solved via nested alternating bisection without a separate feasibility check:
 
+<!-- run -->
 ```python
 def solve_joint_dual(s_vec, h_vec, vol_vec, cost_vec, V_max, B_max, models, x_test_t):
     """

@@ -15,6 +15,7 @@ Start with a [regression or classification pathway](index.md). Then choose the c
 
 Tobit is a model for a latent response observed only above a censoring boundary. Structural zeros, truncation and missing outcomes are different problems. Its interpretation depends on the assumed latent model and censoring mechanism.
 
+<!-- run -->
 ```python
 from random import Random
 from mltreelib import ModelTree
@@ -28,10 +29,16 @@ model.fit(x[:120], y[:120], col_names=["signal"])
 print("Latent predictions:", model.predict(x[120:])[:3])
 ```
 
+<!-- output -->
+```text
+Latent predictions: [2.1580410607837752, -1.7836864164002812, -1.2136598847652085]
+```
+
 The response above is the fitted latent expectation, so negative values are possible even though observations are censored at zero. Evaluate the desired observed outcome separately. Correct censoring assumptions do not guarantee an unbiased result on every dataset. See [Tobin (1958)](https://doi.org/10.2307/1907382).
 
 ## Constrain shape and interactions
 
+<!-- run -->
 ```python
 from mltreelib import ModelTree
 
@@ -42,10 +49,16 @@ model.fit(x, y, col_names=["volume"])
 print("Predictions:", model.predict([[0.0], [10.0], [20.0], [30.0]]))
 ```
 
+<!-- output -->
+```text
+Predictions: [0.5, 0.5, 2.5, 2.5]
+```
+
 A positive constraint encodes a domain requirement. Check predictions on meaningful grids and held-out data. A check on the healthcare example found two decreases with linear leaves when age increased. The same check found no decreases with mean leaves. This is a tracked behavior gap; a finite grid does not prove monotonicity elsewhere. Do not assume local coefficient signs guarantee global monotonicity. Interaction constraints restrict paths and should also be checked with `split_paths()`.
 
 ## Retrain leaves with fixed partitions
 
+<!-- run -->
 ```python
 from mltreelib import LeafControl, ModelTree
 
@@ -57,6 +70,12 @@ before = model.splits()
 model.retrain(x, [v + 1 for v in y], control=LeafControl(leaf="mean"))
 print("Splits preserved:", before == model.splits())
 print("Updated prediction:", model.predict([[5.0]]))
+```
+
+<!-- output -->
+```text
+Splits preserved: True
+Updated prediction: [1.5]
 ```
 
 This example mutates the model. Use appropriate independent data for evaluation and check that each leaf has sufficient new observations. Fixed partitions can become stale when the population changes. See the [hierarchical retraining guide](hierarchical-retrain.md) for alternative feature sets and routing.

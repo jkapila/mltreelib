@@ -48,8 +48,8 @@ flowchart LR
 Standard decision trees force users to impute missing entries (mean, median, mode) or drop rows entirely. Mean imputation distorts correlation structures and destroys predictive signal in missingness itself.
 
 `mltreelib.ModelTree` handles missing values natively during tree growth:
-1. **Learned Missing Direction (`missing_dir="learned"`)**: Evaluates whether routing missing rows to the left child or the right child minimizes post-split deviance, picking the optimal direction.
-2. **Surrogate Splits (`missing_dir="surrogate"`)**: When a primary split feature is missing at prediction time, the tree evaluates an ordered ranking of backup surrogate features that best mimic the primary split partition.
+1. **Learned Missing Direction (`missing_left` on each split)**: Evaluates whether routing missing rows to the left child or the right child minimizes post-split deviance, picking the optimal direction. Reported per split by `tree.splits()`.
+2. **Surrogate Splits (`maxsurrogate=N`)**: When a primary split feature is missing at prediction time, the tree evaluates an ordered ranking of backup surrogate features that best mimic the primary split partition.
 
 ![APS Failure Benchmark: Native Missing Routing vs Imputation](../assets/missing_routing_aps.png)
 
@@ -86,7 +86,7 @@ tree = ModelTree(
     leaf="linear",
     max_depth=3,
     min_rows=30,
-    missing_dir="learned",  # Deviance-optimal routing for missing rows
+    maxsurrogate=2,  # Backup splits for rows whose primary feature is missing
 )
 tree.fit(X, y.tolist(), col_names=feature_names)
 
@@ -128,7 +128,7 @@ encoded_features = target_enc.transform(merchants)
 print("Smoothed Target Encodings:", [round(v, 3) for v in encoded_features])
 
 # 2. Ordered Target Encoding (Leakage-Free Training)
-cb_enc = CatBoostEncoder(smoothing=5.0, seed=2026)
+cb_enc = CatBoostEncoder(prior=5.0, permutations=4, seed=2026)
 ordered_features = cb_enc.fit_transform(merchants, labels)
 print("Ordered CatBoost Encodings:", [round(v, 3) for v in ordered_features])
 ```
@@ -141,6 +141,7 @@ At the Rust core level, datasets are ingested into a typed frame. The engine aut
 
 ![Realized Variance Share Decomposition](../assets/variance_shares.png)
 
+<!-- run -->
 ```python
 from mltreelib import summarize
 
@@ -153,6 +154,13 @@ columns = {
 for name, values in columns.items():
     s = summarize(values)
     print(f"{name:10} | missing: {s['n_missing']} | mean: {s['mean']:.2f} | std: {s['std']:.2f}")
+```
+
+<!-- output -->
+```text
+cement     | missing: 0 | mean: 470.83 | std: 97.82
+water      | missing: 0 | mean: 184.00 | std: 31.11
+age        | missing: 0 | mean: 108.67 | std: 114.08
 ```
 
 !!! tip "Related guides"

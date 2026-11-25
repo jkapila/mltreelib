@@ -10,6 +10,7 @@ Use observed values as supplied. In the sample, monthly income and number of dep
 
 ## 2. Fit and choose a threshold
 
+<!-- run -->
 ```python
 import pandas as pd
 from mltreelib import Metrics, ModelTree
@@ -41,6 +42,11 @@ threshold = min([.02, .05, .10, .20, .40, 1.01], key=cost)
 scores = tree.predict_proba(x_test)
 alerts = [int(score >= threshold) for score in scores]
 print(Metrics().classification(y_test, alerts)["confusion"])
+```
+
+<!-- output -->
+```text
+[[1759.0, 86.0], [82.0, 73.0]]
 ```
 
 The costs are illustrative. A missed event costs five units and a false alert costs one. A threshold above 1 represents no alerts. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) also compares probability error with the training event rate.

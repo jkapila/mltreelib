@@ -34,6 +34,7 @@ flowchart LR
 
 `ModelTree` accepts categorical labels and missing predictors without a separate encoder or imputation step. Declare the feature types and preserve the same column order at prediction time.
 
+<!-- run -->
 ```python
 from mltreelib import ModelTree
 
@@ -44,6 +45,12 @@ model.fit(x, y, dtypes=["categorical", "numeric"],
           col_names=["region", "amount"])
 print(model.predict([["north", None], ["south", None]]))
 print(model.splits())
+```
+
+<!-- output -->
+```text
+[1.5, 9.5]
+[{'col': 'region', 'threshold': 0.0, 'missing_left': True, 'gain': 640.0}]
 ```
 
 Use a separate encoder only when another downstream workflow needs it. If you use one, fit it on training data only.

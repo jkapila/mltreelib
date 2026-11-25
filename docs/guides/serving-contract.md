@@ -42,6 +42,7 @@ sequenceDiagram
 
 The following example checks names before converting a record to the fitted order. It passes category labels and missing values directly to the tree.
 
+<!-- run -->
 ```python
 from mltreelib import ModelTree
 
@@ -59,12 +60,18 @@ row = [record[name] for name in names]
 print("Prediction:", model.predict([row])[0])
 ```
 
+<!-- output -->
+```text
+Prediction: 1.5
+```
+
 Check types, units, ranges and batch sizes at the application boundary as well. The short example checks field names only. It does not provide a complete serving validator.
 
 ## Persist a fitted model
 
 `ModelTree.save()` writes a versioned UTF-8 JSON file. `ModelTree.load()` restores the fitted tree, including the state used for inference.
 
+<!-- run -->
 ```python
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -79,6 +86,7 @@ with TemporaryDirectory() as directory:
 
 Use `model.to_json()` and `ModelTree.from_json(text)` for JSON strings. Use `model.to_bytes()` and `ModelTree.from_bytes(data)` when the transport requires bytes. The bytes contain the same JSON encoded in UTF-8. Standard Python pickle uses the same model state.
 
+<!-- run -->
 ```python
 import pickle
 

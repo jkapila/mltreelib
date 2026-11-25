@@ -48,6 +48,7 @@ flowchart TD
 
 ## 1. Graphviz DOT Export and Rule Extraction
 
+<!-- run -->
 ```python
 import numpy as np
 from pathlib import Path
@@ -86,6 +87,25 @@ for r in ruleset.rules:
     print(f"    THEN Leaf #{r.leaf_id} prediction = {r.prediction:.2f}")
 ```
 
+<!-- output -->
+```text
+Exported Graphviz DOT string (length: 817 chars)
+
+Extracted 4 Global Decision Rules:
+  RULE #1 (Cover: 243 samples, Confidence: 0.95):
+    IF Cement > 341.9010 AND Age <= 28.0000
+    THEN Leaf #1 prediction = 11.64
+  RULE #2 (Cover: 202 samples, Confidence: 0.95):
+    IF Cement <= 341.9010 AND Age <= 28.0000
+    THEN Leaf #0 prediction = 0.09
+  RULE #3 (Cover: 93 samples, Confidence: 0.95):
+    IF Cement <= 369.0130 AND Age > 28.0000
+    THEN Leaf #2 prediction = 26.86
+  RULE #4 (Cover: 62 samples, Confidence: 0.95):
+    IF Cement > 369.0130 AND Age > 28.0000
+    THEN Leaf #3 prediction = 39.23
+```
+
 ### Production Deployment Checklist
 1. **Inputs Contract**: Record exact column names, data types, and unit scales.
 2. **Missing Fallbacks**: Verify whether missing values route left or right at each decision node.
@@ -104,6 +124,7 @@ On industrial sensor benchmarks, fitting a single split on the primary operation
 
 ![Stump Distributional Leaves Comparison](../assets/stump_distributional_leaves.png)
 
+<!-- run -->
 ```python
 # Depth-1 explainable stump with OLS linear leaves
 stump = ModelTree(
@@ -117,16 +138,27 @@ split = stump.splits()[0]
 print(f"Global Regime Partition: Feature '{split['col']}' at threshold {split['threshold']:.2f}")
 ```
 
+<!-- output -->
+```text
+Global Regime Partition: Feature 'Age' at threshold 28.00
+```
+
 ---
 
 ## 3. Cubist-Style k-NN Leaf Neighbor Adjustments
 
 When moving across split boundaries, predictions from pure decision trees can exhibit sharp discontinuities. `mltreelib` implements Quinlan's Cubist **sample neighbor adjustment** via `tree.predict_adjusted(X)`:
 
+<!-- run -->
 ```python
 # Predict with Cubist-style k-NN sample neighbor smoothing
 y_smooth_pred = tree.predict_adjusted(X[:5])
 print("Smoothed k-NN Neighbor Adjusted Predictions:", [round(v, 2) for v in y_smooth_pred])
+```
+
+<!-- output -->
+```text
+Smoothed k-NN Neighbor Adjusted Predictions: [19.74, 3.83, 10.12, 6.66, 0.11]
 ```
 
 !!! tip "Related Reference Guides"

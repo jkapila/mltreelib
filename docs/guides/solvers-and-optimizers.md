@@ -191,6 +191,7 @@ We benchmark all seven solvers on the **Yeh (1998) Concrete Compressive Strength
 
 `mltreelib.solvers.optimize` minimizes arbitrary bounded scalar objectives through one unified contract:
 
+<!-- run -->
 ```python
 from mltreelib.solvers import optimize
 
@@ -202,6 +203,11 @@ res = optimize(
     max_evaluations=200,
 )
 print(f"Status: {res.status}, Best objective: {res.best_value:.6f}")
+```
+
+<!-- output -->
+```text
+Status: evaluation_limit, Best objective: 0.562600
 ```
 
 ### Standard Mathematical Landscapes Benchmark
@@ -389,6 +395,7 @@ print(f"  Minimum Objective Loss: {optimizer.best_value:.4e}")
 
 Rather than manually guessing `max_depth` and `min_rows`, `mltreelib` wraps tree cross-validation directly inside the numerical optimizer:
 
+<!-- run -->
 ```python
 import numpy as np
 from mltreelib import ModelTree, Metrics
@@ -441,4 +448,11 @@ best_l2 = 10.0 ** hpo_res.best_x[2]
 print("HPO Search Results:")
 print(f"  Best Validation RMSE: {hpo_res.best_value:.4f}")
 print(f"  Optimal Configuration: max_depth={best_depth}, min_rows={best_min_rows}, l2={best_l2:.4e}")
+```
+
+<!-- output -->
+```text
+HPO Search Results:
+  Best Validation RMSE: 0.5174
+  Optimal Configuration: max_depth=5, min_rows=23, l2=4.9770e-03
 ```
