@@ -1,6 +1,6 @@
 # Visualize data, model behavior and decisions
 
-Use charts to answer a question at each step. The plots below come from the same reproducible [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/data_metrics_pathway.py). It uses synthetic mixed data, raw category labels and missing numeric inputs.
+Use charts to answer a question at each step. The plots below come from the same reproducible [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/guides/data_metrics_pathway.py). It uses synthetic mixed data, raw category labels and missing numeric inputs.
 
 | Question | View | How to use it |
 |---|---|---|
@@ -14,7 +14,7 @@ Use charts to answer a question at each step. The plots below come from the same
 ## Reproduce the charts
 
 ```bash
-uv run python examples/data_metrics_pathway.py
+uv run python examples/guides/data_metrics_pathway.py
 ```
 
 The script needs matplotlib and writes SVG files to `docs/assets/guides/`. It uses the existing `mltreelib.plots` functions for model diagnostics. Install the project plotting extra for those dependencies. To render the DOT tree, install the Graphviz `dot` executable. The numerical metrics and tree DOT representation do not require Graphviz.
@@ -83,7 +83,7 @@ The public `mltreelib.plots` module exposes the functions below. `y_true` is the
 
 A calibration plot is a diagnostic. It does not fit a probability calibrator or change model predictions. Fitted post-hoc calibration is on the roadmap.
 
-The chart functions accept an optional Matplotlib `ax`; `plot_decomposition` uses `axes` for its panels. When using your own axes, use the axes you supplied rather than relying on a return value. See [`examples/metrics_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/metrics_showcase.py) for calls and chart generation. The [evaluation pathway](evaluation.md) explains how to choose a threshold and interpret held-out results.
+The chart functions accept an optional Matplotlib `ax`; `plot_decomposition` uses `axes` for its panels. When using your own axes, use the axes you supplied rather than relying on a return value. See [`examples/guides/metrics_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/metrics_showcase.py) for calls and chart generation. The [evaluation pathway](evaluation.md) explains how to choose a threshold and interpret held-out results.
 
 ![ROC example](../assets/plots/roc.png)
 ![Lift example](../assets/plots/lift.png)

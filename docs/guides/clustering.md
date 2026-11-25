@@ -33,10 +33,10 @@ print(review["segment"].value_counts().sort_index())
 print(tree.rules())
 ```
 
-`labels_` stores the training assignments and `n_clusters_` gives the number of assigned clusters. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.
+`labels_` stores the training assignments and `n_clusters_` gives the number of assigned clusters. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.
 
 ```bash
-uv run python examples/real_tree_studies.py wine
+uv run python examples/guides/real_tree_studies.py wine
 ```
 
 ![Held-out wine assignments in sugar and acidity space, alongside four segment profiles](../assets/guides/real-wine-clustering.svg)
@@ -83,7 +83,7 @@ For density and proximity methods, check scaling, distance choice and the meanin
 
 ## 5. Run the controlled stability example
 
-The [synthetic clustering workflow](https://github.com/jkapila/mltreelib/blob/main/examples/clustering_workflow.py) lets you change the overlap between known generating groups. It uses 1,000 independent review rows and illustrates how a tree can split a single generating group into several leaves.
+The [synthetic clustering workflow](https://github.com/jkapila/mltreelib/blob/main/examples/guides/clustering_workflow.py) lets you change the overlap between known generating groups. It uses 1,000 independent review rows and illustrates how a tree can split a single generating group into several leaves.
 
 ![Controlled clustering refit on a synthetic review set](../assets/guides/clustering-workflow.svg)
 

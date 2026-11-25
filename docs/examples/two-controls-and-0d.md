@@ -22,10 +22,10 @@
 5. **Interaction Groups with Column Names**:
    - Restrict root-to-leaf paths using semantic column names (e.g. `interaction_groups=[["age", "income"], ["city_tier"]]`).
 
-Run the [full example](https://github.com/jkapila/mltreelib/blob/main/examples/two_controls_and_0d_showcase.py).
+Run the [full example](https://github.com/jkapila/mltreelib/blob/main/examples/guides/two_controls_and_0d_showcase.py).
 
 ```bash
-uv run python examples/two_controls_and_0d_showcase.py
+uv run python examples/guides/two_controls_and_0d_showcase.py
 ```
 
 ---

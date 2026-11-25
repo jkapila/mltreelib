@@ -48,6 +48,6 @@ Spec 10 delivered non-parametric right-censored survival trees (Kaplan-Meier, Ne
 4. **Step 4**: Implement `gain="pseudo_value"`, `gain="rmst"`, and `gain="aft_deviance"` in `crates/mltreelib-core/src/criteria.rs` and `split.rs`.
 5. **Step 5**: Implement `d_calibration`, `ici`, `one_calibration`, and competing risks calibration metrics in `crates/mltreelib-core/src/metrics.rs` and Python bindings.
 6. **Step 6**: Wire PyO3 bindings in `crates/mltreelib-py/src/lib.rs`.
-7. **Step 7**: Build experimental Causal Survival example in `examples/survival/causal_survival_honest.py`.
+7. **Step 7**: Build experimental Causal Survival example in `examples/guides/survival_causal_survival_honest.py`.
 8. **Step 8**: Comprehensive test suite in `tests/test_frontier_survival.py`.
 9. **Step 9**: Update documentation and build verification.

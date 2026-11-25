@@ -5,7 +5,7 @@ This suite implements non-parametric Survival Trees and Competing Risks Trees in
 ![Diagnostic curves for Suite 9: Survival and Competing Risks](../assets/suite9_survival_competing_risks.png)
 
 Companion executable script:
-- [`examples/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/survival_and_competing_risks.py) (`uv run python examples/suites/survival_and_competing_risks.py`)
+- [`benchmarks/suites/survival_and_competing_risks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/survival_and_competing_risks.py) (`uv run python benchmarks/suites/survival_and_competing_risks.py`)
 
 ---
 
@@ -110,7 +110,7 @@ tree = ModelTree(max_depth=3, min_rows=20, gain="pseudo_value")
 
 ### Comparative Benchmark on Benchmark Cohort ($N=800$)
 
-From `examples/suites/survival_and_competing_risks.py`:
+From `benchmarks/suites/survival_and_competing_risks.py`:
 
 ```text
 Cohort Size: 800 records

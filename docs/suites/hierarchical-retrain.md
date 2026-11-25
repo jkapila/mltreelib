@@ -6,7 +6,7 @@ Tree partitions carve heterogeneous feature spaces into homogeneous sub-populati
 2. A **retrain pass** updates leaf nodes on granular telemetry (e.g. mileage, sensor readings, localized pricing) using specialized estimators (Linear Ridge, Robust Huber, Quantile, or GLM) on the frozen topology.
 3. In production, routing observations down a frozen tree structure and refitting terminal leaves achieves **millisecond retraining latency** (~2.2 ms on 1,030 rows across 1,000 iterations, 10x–20x faster than re-partitioning from scratch).
 
-Script: [`examples/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/stump_leaf_retrain.py) (`uv run python examples/suites/stump_leaf_retrain.py`).
+Script: [`benchmarks/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/stump_leaf_retrain.py) (`uv run python benchmarks/suites/stump_leaf_retrain.py`).
 
 ---
 
@@ -68,7 +68,7 @@ Fitting $\tau \in \{0.10, 0.50, 0.90\}$ on frozen cohorts constructs empirical p
 
 ## 2. Empirical Benchmark: Yeh (1998) Concrete Retrain Laboratory
 
-We evaluate the speed and resilience of leaf retraining on Yeh (1998) Concrete Compressive Strength using [`examples/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/stump_leaf_retrain.py).
+We evaluate the speed and resilience of leaf retraining on Yeh (1998) Concrete Compressive Strength using [`benchmarks/suites/stump_leaf_retrain.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/stump_leaf_retrain.py).
 
 ```text
 ==============================================================================

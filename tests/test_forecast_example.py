@@ -3,7 +3,7 @@
 from pathlib import Path
 from runpy import run_path
 
-past_sales_mean = run_path(str(Path(__file__).parents[1] / "examples/timeseries_forecasting.py"))["past_sales_mean"]
+past_sales_mean = run_path(str(Path(__file__).parents[1] / "examples/guides/timeseries_forecasting.py"))["past_sales_mean"]
 
 
 def test_forecast_window_excludes_current_day():

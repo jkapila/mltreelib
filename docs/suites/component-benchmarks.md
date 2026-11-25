@@ -18,7 +18,7 @@ Benchmark pure-Rust linear decompositions, covariance whitening transforms, R-al
 Run suite from repository root after building release extension:
 
 ```bash
-uv run python examples/suites/component_benchmarks.py
+uv run python benchmarks/suites/component_benchmarks.py
 ```
 
 ---

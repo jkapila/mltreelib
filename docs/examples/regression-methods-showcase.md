@@ -19,7 +19,7 @@ This showcase provides an empirical benchmark across four distinct regression re
 All benchmarks run from a single reproducible script with zero `scikit-learn` dependency:
 
 ```bash
-uv run python -u examples/regression_methods_showcase.py
+uv run python -u examples/guides/regression_methods_showcase.py
 ```
 
 ```mermaid

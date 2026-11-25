@@ -1,6 +1,6 @@
 """Generate docs/reference/api/*.md from the live mltreelib API.
 
-Forwards to examples/gen_api_doc.py (which generates per-class pages served by nav).
+Forwards to scripts/docs/gen_api_doc.py (which generates per-class pages served by nav).
 """
 
 from __future__ import annotations

@@ -6,10 +6,10 @@ Use baseline measurements to estimate survival at one, three and five years. The
 
 The `survival` package's [FLCHAIN cohort](https://cran.r-project.org/web/packages/survival/survival.pdf) contains 7,874 people and right-censored follow-up. `futime` is follow-up in days and `death=1` records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude `chapter`, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 952 of the 5,500 training records and 398 of the 2,374 test records; values enter the tree without imputation.
 
-Download [FLCHAIN CSV from Rdatasets](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) to `datasets/external/real_eval/flchain.csv`. The checked file SHA-256 is `a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563`. Run the shared [real-data evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/real_survival_uplift.py).
+Download [FLCHAIN CSV from Rdatasets](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) to `datasets/external/real_eval/flchain.csv`. The checked file SHA-256 is `a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563`. Run the shared [real-data evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_survival_uplift.py).
 
 ```bash
-uv run python examples/real_survival_uplift.py survival
+uv run python examples/guides/real_survival_uplift.py survival
 ```
 
 ## 2. Fit leaf survival curves
@@ -99,10 +99,10 @@ The example uses a seeded random split and estimates the marginal censoring dist
 
 ## 4. Controlled check with synthetic truth
 
-The [survival and uplift evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/survival_uplift_evaluation.py) simulates 5,000 people. It fits 3,000 and evaluates 2,000 independent records, including 1,391 observed events and 609 censored observations. A global survival model provides the baseline.
+The [survival and uplift evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_uplift_evaluation.py) simulates 5,000 people. It fits 3,000 and evaluates 2,000 independent records, including 1,391 observed events and 609 censored observations. A global survival model provides the baseline.
 
 ```bash
-uv run python examples/survival_uplift_evaluation.py
+uv run python examples/guides/survival_uplift_evaluation.py
 ```
 
 | Horizon | Tree IPCW Brier | Global baseline IPCW Brier |

@@ -28,7 +28,7 @@ For the full TabArena collection, see the [dataset manifest](https://github.com/
 Use [OpenML 46911](https://www.openml.org/d/46911) at `datasets/Bank_Customer_Churn.parquet` to compare three interfaces on the same mixed feature schema. The script fits a churn classifier, a cluster tree and an anomaly tree. Only the classifier uses churn labels.
 
 ```bash
-uv run python examples/real_data_workflow.py
+uv run python examples/guides/real_data_workflow.py
 ```
 
 ![Held-out churn precision–recall and probability diagnostic](../assets/guides/real-data-churn.svg)

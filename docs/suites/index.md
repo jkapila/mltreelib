@@ -16,13 +16,13 @@ The 11 benchmark suites test and demonstrate the core capabilities of `mltreelib
 Execute all 11 suites end-to-end via the top-level suite orchestrator:
 
 ```bash
-uv run python examples/suites/run_all.py
+uv run python benchmarks/suites/run_all.py
 ```
 
 Or run an individual suite script directly:
 
 ```bash
-uv run python examples/suites/core_tree_architecture.py
+uv run python benchmarks/suites/core_tree_architecture.py
 ```
 
 ---

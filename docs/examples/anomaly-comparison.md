@@ -8,7 +8,7 @@ The [Shuttle anomaly pathway](../guides/anomaly.md) makes a 5% review queue. Thi
 Use the Shuttle files and fit block in the pathway. The extended script reproduces the same score and budget curve directly.
 
 ```bash
-uv run python examples/anomaly_shuttle_evaluation.py
+uv run python examples/guides/anomaly_shuttle_evaluation.py
 ```
 
 ## Score a batch once

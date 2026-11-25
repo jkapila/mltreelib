@@ -4,7 +4,7 @@ Standard regression trees assume homoscedastic Gaussian errors: $Y \sim \mathcal
 
 `mltreelib` implements native Rust-level Generalized Linear Model (GLM) and maximum likelihood leaves: **Probit**, **Gamma**, **Poisson**, **Tweedie**, and **Tobit (Censored Normal)**.
 
-Script: [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py) (`uv run python examples/suites/distributional_leaf_benchmarks.py`).
+Script: [`benchmarks/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/distributional_leaf_benchmarks.py) (`uv run python benchmarks/suites/distributional_leaf_benchmarks.py`).
 
 ---
 
@@ -71,7 +71,7 @@ The solver applies Newton-Raphson with the inverse Mills ratio $\lambda(\alpha) 
 
 ## 2. Empirical Benchmark Suite Results
 
-We evaluate all four families on canonical domain benchmarks using [`examples/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/distributional_leaf_benchmarks.py).
+We evaluate all four families on canonical domain benchmarks using [`benchmarks/suites/distributional_leaf_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/distributional_leaf_benchmarks.py).
 
 ### A. Probit on German Credit (1,000 Loan Applicants)
 - **Problem**: Credit default risk modeling $P(\text{Default} = 1)$.

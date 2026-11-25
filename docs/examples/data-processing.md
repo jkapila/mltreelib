@@ -8,8 +8,8 @@ The data & feature layer, one script at a time: ingest and missingness, the
 and the drop-and-warn NA behavior.
 
 ```bash
-uv run python examples/data_layer_demo.py              # default: churn
-uv run python examples/data_layer_demo.py diamonds wine_quality
+uv run python examples/guides/data_layer_demo.py              # default: churn
+uv run python examples/guides/data_layer_demo.py diamonds wine_quality
 ```
 
 One script, real data, every detail printed. Below is the **full output of the

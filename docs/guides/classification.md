@@ -43,10 +43,10 @@ alerts = [int(score >= threshold) for score in scores]
 print(Metrics().classification(y_test, alerts)["confusion"])
 ```
 
-The costs are illustrative. A missed event costs five units and a false alert costs one. A threshold above 1 represents no alerts. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) also compares probability error with the training event rate.
+The costs are illustrative. A missed event costs five units and a false alert costs one. A threshold above 1 represents no alerts. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) also compares probability error with the training event rate.
 
 ```bash
-uv run python examples/real_tree_studies.py credit
+uv run python examples/guides/real_tree_studies.py credit
 ```
 
 ![Credit distress test precision–recall and probability calibration](../assets/guides/real-credit.svg)

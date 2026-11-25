@@ -18,10 +18,10 @@ Standard survival models force a difficult compromise: parametric Cox proportion
 
 By decoupling **ID-level cohort segregation** from **leaf-level survival estimation** via `mltreelib`'s in-place `tree.retrain()` mechanism, two-stage hierarchical survival trees deliver unbiased risk stratification, non-proportional hazard handling, and complete white-box explainability for enterprise customer telemetry.
 
-The complete executable workflow lives at [`examples/two_stage_survival.py`](https://github.com/jkapila/mltreelib/blob/main/examples/two_stage_survival.py):
+The complete executable workflow lives at [`examples/guides/two_stage_survival.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/two_stage_survival.py):
 
 ```bash
-uv run python examples/two_stage_survival.py
+uv run python examples/guides/two_stage_survival.py
 ```
 
 ---

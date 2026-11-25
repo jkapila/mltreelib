@@ -12,7 +12,7 @@
 2. **Interaction constraints** (`interaction_groups=[[...], [...]]`): restricts trees from mixing split variables across specified feature groups along any root-to-leaf path. Supports column names as well as column indices.
 3. **Column Weights** (`col_weights=[...]`): scales candidate split gains by feature importance and biases feature subsampling during `col_sample`.
 
-Script: [`examples/constraints_check.py`](https://github.com/jkapila/mltreelib/blob/main/examples/constraints_check.py) (`uv run python examples/constraints_check.py`).
+Script: [`benchmarks/suites/constraints_check.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/constraints_check.py) (`uv run python benchmarks/suites/constraints_check.py`).
 
 ## Output
 

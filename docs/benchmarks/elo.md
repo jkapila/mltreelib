@@ -58,5 +58,5 @@ Run this from the repository root to rebuild all three pages from these saved
 inputs.
 
 ```bash
-uv run --no-sync python examples/benchmarks/elo/elo_table.py
+uv run --no-sync python benchmarks/arena/elo_table.py
 ```

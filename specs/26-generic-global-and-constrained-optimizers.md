@@ -413,7 +413,7 @@ After the generic seam works, adapt the GLM path:
 
 ### Decision 16: Benchmark Program
 
-One canonical benchmark entry point, `examples/benchmark_optimizers.py`, with a documented command. It covers:
+One canonical benchmark entry point, `benchmarks/speed/benchmark_optimizers.py`, with a documented command. It covers:
 
 1. Analytic regression with an exact normal-equation oracle.
 2. Synthetic optimization functions: sphere, rotated ellipsoid, Rosenbrock, Rastrigin, and a multimodal function with a known global minimum.
@@ -597,7 +597,7 @@ Gate: `cargo test` and full `uv run pytest tests/ -q` pass. No existing leaf fit
 
 ### Phase 10 — Benchmark and Documentation
 
-1. Write `examples/benchmark_optimizers.py` with the canonical command, JSON output, and Markdown summary.
+1. Write `benchmarks/speed/benchmark_optimizers.py` with the canonical command, JSON output, and Markdown summary.
 2. Add analytic, synthetic, constrained, statistical, and tree-native objective sets.
 3. Include BFGS, nonlinear CG, Nelder-Mead, and Powell in the local-solver comparison block alongside L-BFGS-B.
 4. Add the examples listed in Decision 19.
@@ -655,5 +655,5 @@ Gate: benchmark runs end to end and writes both artifacts. Documentation matches
 - Phase 1 leaf decoupling changes `LeafControl::validate_solver`. Current behavior rejects any non-`Linear` leaf when a solver is set. Decoupled behavior accepts the pairing, resolves it through the capability lookup, and reports the outcome in diagnostics. This is a deliberate behavior change and needs its own release note.
 - `specs/21-standalone-solvers-and-benchmarks.md` proposes PSO, DE, and NSGA-II. Those remain in Spec 21's wave structure. This spec's global methods are complementary, not replacements, and must each beat Random Search under equal evaluation budgets before public exposure.
 - Current source wins where older notes conflict. `solver/lbfgs.rs` already implements L-BFGS, `solver/ccd.rs` implements coordinate descent, and `solver/evolutionary.rs` implements four population methods.
-- Existing uncommitted work already adds `solver/dense.rs`, the standalone PyO3 binding in `crates/mltreelib-py/src/solvers.rs`, the Python `fit` surface in `python/mltreelib/solvers.py`, and `examples/benchmark_standalone_solvers.py`. Phase 0 extends that surface. It does not rewrite it.
+- Existing uncommitted work already adds `solver/dense.rs`, the standalone PyO3 binding in `crates/mltreelib-py/src/solvers.rs`, the Python `fit` surface in `python/mltreelib/solvers.py`, and `benchmarks/speed/benchmark_standalone_solvers.py`. Phase 0 extends that surface. It does not rewrite it.
 - One multi-core job at a time. Rayon-backed solvers and benchmark suites must not run concurrently with other multi-core fits.

@@ -6,7 +6,7 @@ Standard flat decision trees fail out-of-sample on trending series because const
 
 `mltreelib` implements a zero-allocation, pure Rust feature engineering engine—providing ISO calendar extraction, entity-grouped calendar day lags, windowed rolling statistics, and additive trend decomposition—coupled with piecewise-linear model trees that extrapolate trends out-of-time.
 
-Script: [`examples/suites/timeseries_additive_forecasting.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/timeseries_additive_forecasting.py) (`uv run python examples/suites/timeseries_additive_forecasting.py`).
+Script: [`benchmarks/suites/timeseries_additive_forecasting.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/timeseries_additive_forecasting.py) (`uv run python benchmarks/suites/timeseries_additive_forecasting.py`).
 
 ---
 

@@ -102,7 +102,7 @@ The optimizations will be implemented and validated sequentially against TabAren
 - [x] **Phase 3D: Conditional Surrogate Search**:
   - Guarded surrogate scanning: only scan surrogate features when the primary split feature has active missing values in the node (`rows.iter().any(|&r| cols[sp.col][r].is_none())`).
 - [x] **Benchmark Validation Suite**:
-  - Established `examples/bench_optimizations.py` tracking fit time, memory, and accuracy on `houses`, `bank-marketing`, and `credit-g` in `benchmarks/optimization_tracker.csv`.
+  - Established `benchmarks/speed/bench_optimizations.py` tracking fit time, memory, and accuracy on `houses`, `bank-marketing`, and `credit-g` in `benchmarks/optimization_tracker.csv`.
 
 ## Testing Decisions
 

@@ -15,7 +15,7 @@ keywords:
 This benchmark unifies the architectural mechanics of `mltreelib`: decoupling between greedy tree topology growth and terminal leaf models, 0D distributional profiles across partitioned leaves, and hypothesis-driven structural break gating via the Chow test.
 
 Companion executable script:
-- [`examples/suites/core_tree_architecture.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/core_tree_architecture.py) (`uv run python examples/suites/core_tree_architecture.py`)
+- [`benchmarks/suites/core_tree_architecture.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/core_tree_architecture.py) (`uv run python benchmarks/suites/core_tree_architecture.py`)
 
 ---
 

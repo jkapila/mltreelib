@@ -4,12 +4,12 @@
 # Hyperparameter search (Optuna)
 
 The full `ModelTree` growth surface is a search space — and Optuna is the
-wheel we borrow for it. `examples/hpo_optuna.py` tunes depth, leaf size,
+wheel we borrow for it. `examples/guides/hpo_optuna.py` tunes depth, leaf size,
 ridge, leaf kind, criterion, the split grid, categorical search, the
 imbalance knobs and pruning on a seeded TPE study:
 
 ```bash
-uv run --with pandas --with optuna python examples/hpo_optuna.py 40
+uv run --with pandas --with optuna python examples/guides/hpo_optuna.py 40
 ```
 
 The objective is plain — fit, score, return RMSE. Every suggestion maps
@@ -59,7 +59,7 @@ small imbalance penalty — cost pruning and balance tuning, chosen by the
 search rather than by hand.
 
 **The winner prints in the exact `SETTINGS` dict shape the Elo rounds
-record** — paste it into `examples/elo_round.py` to score a tuned flavor on
+record** — paste it into `benchmarks/arena/elo_round.py` to score a tuned flavor on
 the full field. That is the intended loop: search per-dataset, then let the
 round measure what the settings are actually worth across 18 datasets
 ([ELO](../benchmarks/elo.md) — *Running a round*).

@@ -20,7 +20,7 @@ Benchmark numerical, quasi-Newton, and continuous evolutionary leaf solvers, sta
 Run suite from repository root after building release extension:
 
 ```bash
-uv run python examples/suites/solver_benchmarks.py
+uv run python benchmarks/suites/solver_benchmarks.py
 ```
 
 ---

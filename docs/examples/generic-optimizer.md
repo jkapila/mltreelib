@@ -262,12 +262,12 @@ target, size, and license.
 
 ## Tuning on real data
 
-`examples/optimize_generic.py` tunes `ModelTree` hyperparameters on a local
+`examples/guides/optimize_generic.py` tunes `ModelTree` hyperparameters on a local
 benchmark dataset and reports the holdout RMSE against a default tree. Both
 methods receive the same evaluation budget.
 
 ```sh
-uv run python examples/optimize_generic.py --dataset airfoil_self_noise --budget 30
+uv run python examples/guides/optimize_generic.py --dataset airfoil_self_noise --budget 30
 ```
 
 ```json
@@ -302,7 +302,7 @@ not available locally.
 ## Canonical benchmark
 
 ```sh
-uv run python examples/benchmark_optimizers.py --budget 200 --offline --output-dir /tmp/mltreelib-optimizers
+uv run python benchmarks/speed/benchmark_optimizers.py --budget 200 --offline --output-dir /tmp/mltreelib-optimizers
 ```
 
 The runner writes JSON records and a Markdown summary. It covers analytic

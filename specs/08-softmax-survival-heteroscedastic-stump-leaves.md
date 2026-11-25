@@ -143,7 +143,7 @@ The new leaf families must integrate seamlessly with `leaf_samples(x, id_col=...
 
 ### Prior Art
 - Existing distributional tests in `tests/test_model_tree_raw.py` and `crates/mltreelib-core/tests/model_tree.rs`.
-- Practical showcase script structure in `examples/distributional_leaf_benchmarks.py`.
+- Practical showcase script structure in `benchmarks/suites/distributional_leaf_benchmarks.py`.
 
 ## Out of Scope
 

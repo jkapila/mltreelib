@@ -55,7 +55,7 @@ plotting = [
     "pygraphviz>=1.11",
     "seaborn>=0.13",
 ]
-# Hyperparameter search: the Optuna wheel (examples/hpo_optuna.py).
+# Hyperparameter search: the Optuna wheel (examples/guides/hpo_optuna.py).
 tuning = [
     "optuna>=3.0",
 ]
@@ -87,6 +87,6 @@ python-source = "python"
 features = ["extension-module"]
 include = [
     { path = "examples/quickstart.py", format = "sdist" },
-    { path = "examples/suites/*.py", format = "sdist" },
+    { path = "benchmarks/suites/*.py", format = "sdist" },
     { path = "skills/mltreelib/**/*", format = "sdist" },
 ]

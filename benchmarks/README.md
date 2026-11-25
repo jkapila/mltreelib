@@ -10,7 +10,7 @@ All runs enforce a strict **300s process-group timeout** (hard kill via `SIGKILL
 
 ### Run Full Regression Suite (18 Datasets, 34 Models)
 ```bash
-bash examples/elo_run_resume.sh
+bash benchmarks/arena/elo_run_resume.sh
 ```
 Or directly via Python orchestrator:
 ```bash
@@ -19,12 +19,12 @@ uv run \
   --with lightgbm --with catboost --with ctboost --with chimeraboost \
   --with interpret --with scikit-learn --with statsmodels \
   --with mars-earth --with trust-free --with forust --with perpetual \
-  python examples/elo_score_all.py --task reg
+  python benchmarks/arena/elo_score_all.py --task reg
 ```
 
 ### Run Full Classification Suite (24 Datasets, 28 Models)
 ```bash
-bash examples/elo_run_cla.sh
+bash benchmarks/arena/elo_run_cla.sh
 ```
 Or directly:
 ```bash
@@ -33,14 +33,14 @@ uv run \
   --with lightgbm --with catboost --with ctboost --with chimeraboost \
   --with interpret --with scikit-learn --with statsmodels \
   --with mars-earth --with trust-free --with forust --with perpetual \
-  python examples/elo_score_all.py --task cla
+  python benchmarks/arena/elo_score_all.py --task cla
 ```
 *(Note: ModelTree classification is currently undergoing internal development and will be attached to the classification board once complete.)*
 
 ### View Live Elo Leaderboards
 ```bash
-uv run python examples/elo_report.py        # Regression Elo ratings
-uv run python examples/elo_report_cla.py    # Classification Elo ratings
+uv run python benchmarks/arena/elo_report.py        # Regression Elo ratings
+uv run python benchmarks/arena/elo_report_cla.py    # Classification Elo ratings
 ```
 
 ---
@@ -108,7 +108,7 @@ In the output CSVs (`benchmarks/elo_scores.csv` and `benchmarks/elo_cla_scores.c
 
 ### How to Add a New ModelTree Variant to the Elo Board
 
-Edit [`examples/elo_models_reg.py`](file:///mnt/d/Programs/mltreelib/examples/elo_models_reg.py) or [`examples/elo_models_cla.py`](file:///mnt/d/Programs/mltreelib/examples/elo_models_cla.py):
+Edit [`benchmarks/arena/elo_models_reg.py`](file:///mnt/d/Programs/mltreelib/benchmarks/arena/elo_models_reg.py) or [`benchmarks/arena/elo_models_cla.py`](file:///mnt/d/Programs/mltreelib/benchmarks/arena/elo_models_cla.py):
 
 ```python
 # In make_models():

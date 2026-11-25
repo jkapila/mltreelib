@@ -7,7 +7,7 @@ A single decision stump (`max_depth=1`) splits feature space into two transparen
 
 With `tree.retrain(...)`, leaf models can be refitted across families (`linear`, `huber`, `quantile`, `binomial`, `poisson`) on frozen partitions in milliseconds (~2.2 ms on 1,000 rows across 1,000 runs), completely decoupling split finding from leaf estimation.
 
-Script: [`examples/practical_stump_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/practical_stump_showcase.py).
+Script: [`examples/guides/practical_stump_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/practical_stump_showcase.py).
 
 ---
 

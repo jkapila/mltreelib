@@ -5,7 +5,7 @@
 
 `ModelTree` supports sample-splitting honesty to reduce reuse of outcomes for split selection and leaf estimation, as well as observation weights for cost-sensitive learning and survey sampling.
 
-Script: [`examples/honesty_weights.py`](https://github.com/jkapila/mltreelib/blob/main/examples/honesty_weights.py) (`uv run python examples/honesty_weights.py`).
+Script: [`examples/guides/honesty_weights.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/honesty_weights.py) (`uv run python examples/guides/honesty_weights.py`).
 
 ## Output
 

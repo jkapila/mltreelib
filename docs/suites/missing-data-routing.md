@@ -2,7 +2,7 @@
 
 This guide details `mltreelib`'s first-class handling of missing tabular data (`None` and `NaN`), evaluating learned missing split directions and surrogate splits on industrial telemetry without synthetic imputation.
 
-Script: [`examples/suites/missing_routing_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/missing_routing_benchmark.py) (`uv run python examples/suites/missing_routing_benchmark.py`).
+Script: [`benchmarks/suites/missing_routing_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/missing_routing_benchmark.py) (`uv run python benchmarks/suites/missing_routing_benchmark.py`).
 
 ---
 

@@ -5,7 +5,7 @@
 
 Tour of categorical encoders in `mltreelib` evaluated on real churn data (5,000 rows, 4 categorical columns).
 
-Script: [`examples/encoding_demo.py`](https://github.com/jkapila/mltreelib/blob/main/examples/encoding_demo.py) (`uv run --with pandas python examples/encoding_demo.py`).
+Script: [`examples/guides/encoding_demo.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/encoding_demo.py) (`uv run --with pandas python examples/guides/encoding_demo.py`).
 
 ```text
 ==============================================================================

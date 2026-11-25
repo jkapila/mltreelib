@@ -7,7 +7,7 @@ Every parameter and nuance the tree handles, on one big, tedious dataset —
 the bundled diamonds parquet (53,940 rows, mixed numeric/categorical, missing
 cells) — with deeper trees than the quickstart.
 
-Script: [`examples/model_building.py`](https://github.com/jkapila/mltreelib/blob/main/examples/model_building.py).
+Script: [`examples/guides/model_building.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/model_building.py).
 Fits use the **shipped defaults** (linear leaves + small ridge — closed-form
 fast). Regularization gets its own dedicated example later.
 
@@ -97,7 +97,7 @@ squared error. Predictions stay on the response scale — `predict_proba`
 returns `P(class 1)`, and `cdf(x, value)` returns the fitted distribution's
 `P(Y <= value)` (distinct from the empirical `quantile`).
 
-Script: [`examples/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/leaf_family.py).
+Script: [`examples/guides/leaf_family.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/leaf_family.py).
 
 ```text
 binomial P(1): [0.25, 0.75]

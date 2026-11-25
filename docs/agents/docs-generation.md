@@ -43,7 +43,7 @@ signatures).
 
 | Command | Output | Used by the site? |
 |---|---|---|
-| `uv run python examples/gen_api_doc.py` | `docs/reference/api/{index,data,model-tree,metrics,encoders,features}.md` | **YES** — this is what `mkdocs.yml` nav serves |
+| `uv run python scripts/docs/gen_api_doc.py` | `docs/reference/api/{index,data,model-tree,metrics,encoders,features}.md` | **YES** — this is what `zensical.toml` nav serves |
 | `uv run python scripts/gen_api_docs.py` | `docs/reference/api.md` (single file) | **NO** — not in the nav, not in `llmstxt` |
 
 **The collision:** `docs/reference/api.md` and `docs/reference/api/index.md`
@@ -63,7 +63,7 @@ regenerating the single-file reference and committing it alongside
 **Recommended resolution (pick one, record it in the README/AGENTS):**
 - **Consolidate on the per-class pages** — stop generating/committing
   `docs/reference/api.md`, and update `AGENTS.md` to name
-  `examples/gen_api_doc.py` as the API-regen command. Simplest; the site
+  `scripts/docs/gen_api_doc.py` as the API-regen command. Simplest; the site
   already serves these.
 - **Or move the single file out of `docs/`** (e.g. `references/api.md`) if a
   monolithic offline/llms reference is genuinely wanted, so it no longer
@@ -74,7 +74,7 @@ regenerating the single-file reference and committing it alongside
 1. **Rebuild the extension** so docstrings are current:
    `uv run maturin develop`.
 2. **Regenerate the per-class API pages** (the ones the site serves):
-   `uv run python examples/gen_api_doc.py`.
+   `uv run python scripts/docs/gen_api_doc.py`.
    Do **not** also run `scripts/gen_api_docs.py` unless the collision above
    has been resolved — it will break the build.
 3. **Update the relevant guide** under `docs/reference/*.md` (e.g. a new
@@ -84,7 +84,7 @@ regenerating the single-file reference and committing it alongside
 4. **Regenerate `docs/reference/api.md`** only if the repo has chosen to keep
    it (see collision note) — and never commit it beside `docs/reference/api/`.
 5. **Build the site** and confirm it passes: `uv run zensical build`.
-6. If you added a **new example page**, wire it into `mkdocs.yml` twice:
+6. If you added a **new example page**, wire it into `zensical.toml` twice:
    the `nav:` list **and** the `llmstxt:` `sections: Documentation:` list.
 
 ## Adding a new example guide
@@ -94,7 +94,7 @@ regenerating the single-file reference and committing it alongside
 - Run it and capture the **real** output.
 - Write `docs/examples/<name>.md` with the output pasted in as a ` ```text `
   block, plus prose explaining what it shows.
-- Add the page to `mkdocs.yml` `nav:` and the `llmstxt:` list.
+- Add the page to `zensical.toml` `nav:` and the `llmstxt:` list.
 - `uv run zensical build` to verify.
 
 ## Rules that do not bend
@@ -114,7 +114,7 @@ regenerating the single-file reference and committing it alongside
 
 ```sh
 uv run maturin develop                     # rebuild extension (current docstrings)
-uv run python examples/gen_api_doc.py      # regen site API pages (docs/reference/api/)
+uv run python scripts/docs/gen_api_doc.py      # regen site API pages (docs/reference/api/)
 uv run python scripts/gen_api_docs.py      # regen single-file api.md (collides — see above)
 uv run python examples/<name>.py           # run an example, capture real output
 uv run zensical build                      # build + validate docs site

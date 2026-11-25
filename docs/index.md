@@ -56,7 +56,7 @@ flowchart TD
 ```bash
 uv sync                                          # venv + Rust extension (maturin)
 uv run python examples/quickstart.py             # fit, print, visualize (34.3% RMSE reduction on Concrete)
-uv run python examples/real_tree_studies.py wine  # after downloading Wine Quality
+uv run python examples/guides/real_tree_studies.py wine  # after downloading Wine Quality
 ```
 
 | I want to… | go to |

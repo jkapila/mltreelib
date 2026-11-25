@@ -6,7 +6,7 @@ Unsupervised machine learning faces a common dilemma: distance-based algorithms 
 1. **Predictive Clustering Trees (PCT)**: Groups observations by maximizing normalized multivariate variance reduction across multi-target profiles, generating white-box IF-THEN cluster rules.
 2. **Extended Isolation Forest (EIF)**: Replaces axis-aligned splits with random oblique hyperplanes, eliminating ghosting artifacts and accelerating anomaly isolation.
 
-Script: [`examples/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/unsupervised_trees.py) (`uv run python examples/suites/unsupervised_trees.py`).
+Script: [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py) (`uv run python benchmarks/suites/unsupervised_trees.py`).
 
 ---
 
@@ -72,7 +72,7 @@ where $h(\mathbf{x})$ is the observed isolation tree depth, and $c(n) = 2 \ln(n 
 
 ## 2. Empirical Benchmark Results
 
-We evaluate both algorithms using [`examples/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/unsupervised_trees.py).
+We evaluate both algorithms using [`benchmarks/suites/unsupervised_trees.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/unsupervised_trees.py).
 
 ### A. PCT Clustering on Wine Quality (1,500 Samples, 6 Chemical Dimensions)
 - **Problem**: Group wines by multi-target chemical similarity (`fixed_acidity`, `volatile_acidity`, `citric_acid`, `residual_sugar`, `chlorides`, `alcohol`).

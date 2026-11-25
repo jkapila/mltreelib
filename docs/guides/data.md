@@ -50,14 +50,14 @@ Use a separate encoder only when another downstream workflow needs it. If you us
 
 ## Inspect before fitting
 
-The [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/data_metrics_pathway.py) creates a synthetic mixed dataset and splits it into training, validation and test rows. It counts missing values on the training rows before fitting. It passes the original categorical labels and missing numeric entries directly to both models.
+The [data and metrics example](https://github.com/jkapila/mltreelib/blob/main/examples/guides/data_metrics_pathway.py) creates a synthetic mixed dataset and splits it into training, validation and test rows. It counts missing values on the training rows before fitting. It passes the original categorical labels and missing numeric entries directly to both models.
 
 ![Missing values by feature in the synthetic training set](../assets/guides/data-missingness.svg)
 
 For the fixed seed, 239 of 2,000 training rows have a missing `volume`. The chart shows where to investigate collection and data quality. It does not imply that those values need imputation. Also check missingness by source, group and time when those fields are available.
 
 ```bash
-uv run python examples/data_metrics_pathway.py
+uv run python examples/guides/data_metrics_pathway.py
 ```
 
 The example requires matplotlib to render the charts. Graphviz is optional for rendering the tree. The package plotting extra installs the chart dependencies; Graphviz also requires its system executable.

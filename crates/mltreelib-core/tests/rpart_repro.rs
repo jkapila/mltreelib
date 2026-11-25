@@ -1,7 +1,7 @@
 //! Reproduction of R's `rpart` on the canonical mtcars regression task —
 //! the "is the tree even built right?" sanity check.
 //!
-//! Ground truth: live rpart 4.1.23 via `examples/rpart_repro.R`, run with
+//! Ground truth: live rpart 4.1.23 via `benchmarks/suites/rpart_repro.R`, run with
 //! growth-only controls (`cp = 0, minsplit = 4, minbucket = 2`) so the
 //! comparison is pure CART growth — no pruning (that is a later weighing
 //! criterion in our plan). With `LeafKind::Mean` our split criterion

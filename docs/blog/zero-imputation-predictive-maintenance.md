@@ -21,10 +21,10 @@ Faced with missing telemetry, standard machine learning pipelines force an unpal
 
 By learning **native missing split directions** directly in pure Rust, `mltreelib.ModelTree` consumes raw un-imputed sensor readings, routes missing telemetry to the optimal deviance-reducing branch, and cuts fleet breakdown costs by **89.1%** under the official 50:1 Scania Industrial Cost metric.
 
-The complete reproducible benchmark script lives at [`examples/predictive_maintenance.py`](https://github.com/jkapila/mltreelib/blob/main/examples/predictive_maintenance.py):
+The complete reproducible benchmark script lives at [`examples/guides/predictive_maintenance.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/predictive_maintenance.py):
 
 ```bash
-uv run python examples/predictive_maintenance.py
+uv run python examples/guides/predictive_maintenance.py
 ```
 
 ---
@@ -195,7 +195,7 @@ Deploying automated predictive maintenance systems in live fleet operations requ
 Run the standalone executable script from the repository root:
 
 ```bash
-uv run python examples/predictive_maintenance.py
+uv run python examples/guides/predictive_maintenance.py
 ```
 
 The script trains models on the 76,000-truck Scania fleet dataset, logs all single-seed routing rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to `docs/assets/`.

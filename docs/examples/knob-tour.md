@@ -5,7 +5,7 @@
 
 Every growth knob on `ModelTree` with real, deterministic output.
 
-Script: [`examples/knob_tour.py`](https://github.com/jkapila/mltreelib/blob/main/examples/knob_tour.py) (`uv run --with pandas --with pyarrow python examples/knob_tour.py`).
+Script: [`examples/guides/knob_tour.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/knob_tour.py) (`uv run --with pandas --with pyarrow python examples/guides/knob_tour.py`).
 
 ```text
 == leaf kinds (skewed target with one outlier) ==

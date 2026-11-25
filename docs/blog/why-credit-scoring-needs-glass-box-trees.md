@@ -21,10 +21,10 @@ Standard credit scorecards force manual weight-of-evidence binning, while opaque
 
 By formulating credit triage directly as an **asymmetric misclassification loss minimization** problem, a shallow glass-box decision tree (`max_depth=3` to `4`) provides transparent auditable decision rules, handles missing income natively, enforces domain monotonicity, and cuts expected underwriter losses by **32.7%** over industry baselines.
 
-The complete reproducible benchmark script lives at [`examples/credit_scoring.py`](https://github.com/jkapila/mltreelib/blob/main/examples/credit_scoring.py):
+The complete reproducible benchmark script lives at [`examples/guides/credit_scoring.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/credit_scoring.py):
 
 ```bash
-uv run python examples/credit_scoring.py
+uv run python examples/guides/credit_scoring.py
 ```
 
 ---
@@ -262,7 +262,7 @@ While shallow model trees offer transparent credit decisions, real-world deploym
 Run the standalone executable script from the repository root:
 
 ```bash
-uv run python examples/credit_scoring.py
+uv run python examples/guides/credit_scoring.py
 ```
 
 The script trains models on the 150,000-row Give Me Some Credit dataset, logs all single-seed rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to `docs/assets/`.

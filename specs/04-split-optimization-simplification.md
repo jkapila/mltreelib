@@ -61,7 +61,7 @@ The primary test seam is the existing core integration test suite (`crates/mltre
 
 ### Prior Art
 - Existing leaf kind tests (`leaf="mean"`, `leaf="linear"`, `leaf="huber"`).
-- Existing knob tour tests (`examples/knob_tour.py`).
+- Existing knob tour tests (`examples/guides/knob_tour.py`).
 - Existing rpart-parity test fixtures (`crates/mltreelib-core/tests/rpart_repro.rs`).
 
 ## Out of Scope

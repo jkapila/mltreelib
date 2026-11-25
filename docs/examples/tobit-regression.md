@@ -8,7 +8,7 @@ Tobit models a latent response censored at a known boundary. A natural lower bou
 `ModelTree` provides native **Tobit regression leaves** (`leaf_family="tobit"`) fitted via iterative reweighted least squares (IRLS / EM) inside tree partitions.
 
 Script:
-- [`examples/tobit_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/examples/tobit_benchmark.py) (`python3 examples/tobit_benchmark.py`)
+- [`benchmarks/suites/tobit_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/tobit_benchmark.py) (`python3 benchmarks/suites/tobit_benchmark.py`)
 
 ```text
 ======================================================================

@@ -86,7 +86,7 @@ Build a high-performance survival and competing risks tree system in `mltreelib-
 - **Python / PyO3 Shell (`crates/mltreelib-py`, `python/mltreelib`)**:
   - Unified prediction dispatcher: `predict(X, kind="survival", times=...)`, `predict(X, kind="hazard", times=...)`, `predict(X, kind="cif", times=..., cause=...)`, `predict(X, kind="risk")`, `predict(X, kind="response")`.
   - Metrics binding: `Metrics().competing_risks(...)` and top-level `competing_risks_report(...)` accepting dicts `{cause: cif_matrix}` or ndarray-like structures.
-  - Integration script: `examples/competing_risks_pbc.py` generating `docs/assets/competing_risks_cif_curves.png`.
+  - Integration script: `examples/guides/survival_competing_risks_pbc.py` generating `docs/assets/competing_risks_cif_curves.png`.
 - **Verification**:
   - All 92 Rust tests passing (`cargo test`).
   - All 205 Python tests passing (`uv run pytest tests/ -q`).

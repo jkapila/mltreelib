@@ -3,7 +3,7 @@ from math import isclose
 from pathlib import Path
 from runpy import run_path
 
-example = run_path(str(Path(__file__).parents[1] / "examples/real_survival_uplift.py"))
+example = run_path(str(Path(__file__).parents[1] / "examples/guides/real_survival_uplift.py"))
 
 
 def test_censoring_km_and_brier_ties():

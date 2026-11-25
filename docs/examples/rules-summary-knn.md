@@ -8,7 +8,7 @@ Three classical capabilities modernizing Quinlan's C5.0 and Cubist lineage in Ru
 2. **C5.0 Rule-Set Extraction**: Transforming decision paths into standalone IF-THEN rules with interval simplification and Quinlan's pessimistic binomial error pruning ($CF=0.25$).
 3. **Cubist $k$-NN Sample Neighbor Adjustments**: Adjusting terminal leaf predictions at inference time using distance-weighted training residuals.
 
-Script: [`examples/rules_summary_knn_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/rules_summary_knn_showcase.py).
+Script: [`examples/guides/rules_summary_knn_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/rules_summary_knn_showcase.py).
 
 ---
 
@@ -130,7 +130,7 @@ On datasets with non-linear or localized effects:
 
 Beyond post-hoc inference adjustments, `mltreelib` implements native **Leaf-KNN models** where each partitioned terminal node fits a localized, metric-weighted $k$-NN regressor or classifier directly inside the tree structure (`leaf="knn"` or `leaf="dwknn"`).
 
-Script: [`examples/knn_leaf_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/knn_leaf_showcase.py).
+Script: [`examples/guides/knn_leaf_showcase.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/knn_leaf_showcase.py).
 
 ### Weighting Variants
 

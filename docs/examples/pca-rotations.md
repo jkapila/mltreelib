@@ -7,13 +7,13 @@ Principal Component Analysis (PCA) decomposes high-dimensional feature spaces in
 Run the educational example and benchmark suite directly:
 
 ```sh
-uv run python examples/pca_rotations_educational.py
-uv run python examples/suites/component_benchmarks.py
+uv run python examples/guides/pca_rotations_educational.py
+uv run python benchmarks/suites/component_benchmarks.py
 ```
 
 Executable Reference Scripts:
-- [`examples/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
-- [`examples/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/component_benchmarks.py) — Suite 10: Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
+- [`examples/guides/pca_rotations_educational.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/pca_rotations_educational.py) — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
+- [`benchmarks/suites/component_benchmarks.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py) — Suite 10: Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).
 - [`docs/examples/component-benchmarks.md`](https://github.com/jkapila/mltreelib/blob/main/docs/examples/component-benchmarks.md) — Comprehensive documentation for Suite 10 component benchmarks.
 
 ---

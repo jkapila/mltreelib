@@ -9,7 +9,7 @@ The [Hillstrom email experiment](https://www.tensorflow.org/datasets/catalog/hil
 The publisher's original download endpoint failed HTTPS certificate validation in our environment. We used this [public mirror](https://raw.githubusercontent.com/AdityaDabrase/ab-testing-email-marketing/main/data/raw/hillstrom.csv), SHA-256 `0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece`. The mirror matches published row and arm counts; independent byte equivalence with the original is not established. Save the CSV as `datasets/external/real_eval/hillstrom.csv`. It is excluded from Git.
 
 ```bash
-uv run python examples/real_survival_uplift.py uplift
+uv run python examples/guides/real_survival_uplift.py uplift
 ```
 
 ## 2. Fit a causal tree and choose an email policy
@@ -99,10 +99,10 @@ The chosen policy treats everyone. This run therefore supplies **no evidence tha
 
 ## 4. Controlled check with synthetic truth
 
-The [survival and uplift evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/survival_uplift_evaluation.py) simulates a randomized trial. It uses 3,000 training, 1,000 validation and 2,000 independent test observations. It selects a threshold on validation data and evaluates the fixed policy on test data. The example assigns a treatment cost of 0.5 outcome units per treated person.
+The [survival and uplift evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_uplift_evaluation.py) simulates a randomized trial. It uses 3,000 training, 1,000 validation and 2,000 independent test observations. It selects a threshold on validation data and evaluates the fixed policy on test data. The example assigns a treatment cost of 0.5 outcome units per treated person.
 
 ```bash
-uv run python examples/survival_uplift_evaluation.py
+uv run python examples/guides/survival_uplift_evaluation.py
 ```
 
 | Test policy | Selected | Treated / control among selected | Estimated net outcome per person |

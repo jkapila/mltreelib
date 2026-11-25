@@ -10,7 +10,7 @@ In `mltreelib`, missing data is a first-class citizen. `ModelTree` supports miss
 2. **Surrogate splits (`maxsurrogate=N`)**: when a split feature is missing at prediction time, the highest-agreement surrogate split directs the sample.
 3. **NA indicator coefficients in linear leaves**: linear leaves estimate dedicated indicator coefficients for missing predictors so within-leaf regressions remain valid.
 
-Script: [`examples/missing_routing.py`](https://github.com/jkapila/mltreelib/blob/main/examples/missing_routing.py) (`uv run python examples/missing_routing.py`).
+Script: [`examples/guides/missing_routing.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/missing_routing.py) (`uv run python examples/guides/missing_routing.py`).
 
 ## Output
 

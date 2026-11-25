@@ -21,7 +21,7 @@ This guide demonstrates `mltreelib`'s exotic statistical hypothesis testing, opt
 To enable direct head-to-head comparison and verifiable properties, **all criteria are evaluated on the exact same dataset for the exact same task** (Credit Portfolio Risk Valuation). As new phases are developed, they are integrated directly into this unified benchmarking framework.
 
 Companion executable script:
-- [`examples/suites/statistical_and_metric_splitting.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/statistical_and_metric_splitting.py) (`uv run python examples/suites/statistical_and_metric_splitting.py`)
+- [`benchmarks/suites/statistical_and_metric_splitting.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/statistical_and_metric_splitting.py) (`uv run python benchmarks/suites/statistical_and_metric_splitting.py`)
 
 ---
 
@@ -422,7 +422,7 @@ Note:  Screens all 15 pairs in O(P²); reduces test MSE by 33.1% over purely add
 
 ## Unified Comparison Summary
 
-Running the standalone suite via `uv run python examples/suites/statistical_and_metric_splitting.py`:
+Running the standalone suite via `uv run python benchmarks/suites/statistical_and_metric_splitting.py`:
 
 ```text
 ==============================================================================================

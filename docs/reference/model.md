@@ -127,7 +127,7 @@ Pair with `gain="deviance"` so split search maximizes deviance reduction under t
   - **Column weights**: `col_weights` scales candidate split gains ($gain \times W_j$) and weights random feature subset sampling during `col_sample`.
 
 Both are validated against reference implementations in
-`examples/constraints_check.py` (R `gbm`'s `var.monotone`, LightGBM's
+`benchmarks/suites/constraints_check.py` (R `gbm`'s `var.monotone`, LightGBM's
 `interaction_constraints`).
 
 ## Inspection via text output

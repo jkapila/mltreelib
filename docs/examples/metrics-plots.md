@@ -44,7 +44,7 @@ flowchart LR
 Every chart in `mltreelib.plots` operates on native Matplotlib `Axes`, allowing multi-metric dashboards in a single figure:
 
 ```bash
-uv run python examples/metrics_showcase.py
+uv run python examples/guides/metrics_showcase.py
 ```
 
 ![Evaluation Metrics Multi-Panel Diagnostic Surface](../assets/metrics_panels.png)

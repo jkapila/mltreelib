@@ -3,7 +3,7 @@ from math import isclose
 from pathlib import Path
 from runpy import run_path
 
-example = run_path(str(Path(__file__).parents[1] / "examples/survival_uplift_evaluation.py"))
+example = run_path(str(Path(__file__).parents[1] / "examples/guides/survival_uplift_evaluation.py"))
 ipcw_brier = example["ipcw_brier"]
 policy_value = example["policy_value"]
 

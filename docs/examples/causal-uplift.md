@@ -10,7 +10,7 @@ $$\tau(x) = E[Y | X=x, W=1] - E[Y | X=x, W=0]$$
 `ModelTree` provides native Rust-accelerated **Causal Trees** that split directly on treatment effect divergence without external meta-learners or propensity weighting loops.
 
 Script:
-- [`examples/causal_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/examples/causal_benchmark.py) (`python3 examples/causal_benchmark.py`)
+- [`benchmarks/suites/causal_benchmark.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/causal_benchmark.py) (`python3 benchmarks/suites/causal_benchmark.py`)
 
 ```text
 ======================================================================
@@ -131,4 +131,4 @@ tree.fit(X, (durations, events))
 ```
 
 Executable research script:
-- [`examples/survival/causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/survival/causal_survival_honest.py)
+- [`examples/guides/survival_causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py)

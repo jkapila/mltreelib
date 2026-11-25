@@ -102,13 +102,13 @@ Reference scale (different protocol): TabArena best overall Kumo-Tabular
 1955; best tree-based LightGBM tuned+ens 1411.
 
 The board is the yardstick: every default change, leaf variant, and forest
-feature moves these numbers, and `examples/default_search.py` bakes the
+feature moves these numbers, and `benchmarks/suites/default_search.py` bakes the
 winning defaults against the lmtree/cubist/rpart bars.
 
 ## Why this page exists
 
 Benchmarks should be about models, not plumbing. The Elo arena
-(`examples/elo_prepare.py` → `elo_score_r.R` / `elo_score_python.py` /
+(`benchmarks/arena/elo_prepare.py` → `elo_score_r.R` / `elo_score_python.py` /
 `elo_score_rust.py` → `elo_report.py`, one scores file) exists so the field
 can be re-run incrementally — but assembling it highlighted how much incidental
 complexity the alternatives impose. That complexity is our documentation.

@@ -58,7 +58,7 @@ Use the diagram to read the structure. [Check boundary routing](../guides/servin
 Record the feature name, input unit, threshold, missing direction, leaf support and final prediction. Use the exported representation to review a few rows on both sides of each boundary. If you extract a separate rule set, compare its predictions with the tree and check how overlapping and unmatched rules behave.
 
 ```bash
-uv run python examples/real_tree_studies.py concrete
+uv run python examples/guides/real_tree_studies.py concrete
 ```
 
 !!! tip "Deep-Dive Benchmark Suites"

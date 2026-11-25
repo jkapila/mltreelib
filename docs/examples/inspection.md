@@ -6,7 +6,7 @@
 Metrics reports and every structural view of a fitted tree — the numbers
 behind the model. Same big diamonds dataset as the model-building example.
 
-Script: [`examples/inspection.py`](https://github.com/jkapila/mltreelib/blob/main/examples/inspection.py).
+Script: [`examples/guides/inspection.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/inspection.py).
 
 ## Metrics reports
 

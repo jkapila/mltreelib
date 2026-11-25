@@ -39,10 +39,10 @@ for leaf in ("mean", "linear"):
     print(tree.splits()[:1], tree.leaves()[0])
 ```
 
-Run the [complete study](https://github.com/jkapila/mltreelib/blob/main/examples/real_tree_studies.py) to regenerate the chart.
+Run the [complete study](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) to regenerate the chart.
 
 ```bash
-uv run python examples/real_tree_studies.py diamonds
+uv run python examples/guides/real_tree_studies.py diamonds
 ```
 
 ![Test RMSE and errors across observed diamond prices for mean and linear leaves](../assets/guides/real-diamonds-leaves.svg)
@@ -63,10 +63,10 @@ Use `splits()` to review named feature conditions and `leaves()` to inspect supp
 
 ## 4. Repeat the comparison with missing inputs
 
-The [regression comparison](https://github.com/jkapila/mltreelib/blob/main/examples/regression_real_and_synthetic.py) first generates 5,000 records with raw category labels and 15% missing numeric inputs. It fits four `ModelTree` configurations on 3,000 rows, selects one using 1,000 validation rows, then checks it on 1,000 separate test rows. The test set contains 169 missing numeric values. No imputation or categorical encoder is applied.
+The [regression comparison](https://github.com/jkapila/mltreelib/blob/main/examples/guides/regression_real_and_synthetic.py) first generates 5,000 records with raw category labels and 15% missing numeric inputs. It fits four `ModelTree` configurations on 3,000 rows, selects one using 1,000 validation rows, then checks it on 1,000 separate test rows. The test set contains 169 missing numeric values. No imputation or categorical encoder is applied.
 
 ```bash
-uv run python examples/regression_real_and_synthetic.py
+uv run python examples/guides/regression_real_and_synthetic.py
 ```
 
 | Synthetic configuration | Validation RMSE |

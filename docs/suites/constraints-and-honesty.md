@@ -2,7 +2,7 @@
 
 This guide details domain-informed structural constraints—dual monotonicity and variable interaction group isolation—coupled with Generalized Random Forest (GRF)-style honest sample-split estimation.
 
-Script: [`examples/suites/constraints_and_honesty.py`](https://github.com/jkapila/mltreelib/blob/main/examples/suites/constraints_and_honesty.py) (`uv run python examples/suites/constraints_and_honesty.py`).
+Script: [`benchmarks/suites/constraints_and_honesty.py`](https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/constraints_and_honesty.py) (`uv run python benchmarks/suites/constraints_and_honesty.py`).
 
 ---
 

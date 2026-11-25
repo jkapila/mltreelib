@@ -47,9 +47,9 @@ cargo test                                 # Rust tests (crates/mltreelib-core/t
 uv run maturin develop --release           # rebuild the extension with release optimizations
 uv run pytest tests/ -q                    # Python behavior tests
 uv run python <script.py>                  # run scripts/benchmarks via the venv Python
-uv run python -u examples/elo_score_all.py # run unbuffered Elo arena benchmarks
+uv run python -u benchmarks/arena/elo_score_all.py # run unbuffered Elo arena benchmarks
 uv run zensical build                      # docs site (docs/ -> site/)
-uv run python examples/gen_api_doc.py      # regenerate docs/reference/api/*.md after API changes
+uv run python scripts/docs/gen_api_doc.py      # regenerate docs/reference/api/*.md after API changes
 uv run python scripts/bump_version.py <version> # synchronize version across all 10 project files
 uv run python scripts/prepare_release.py refs/tags/v<version> # verify all release files match
 ```
@@ -167,7 +167,7 @@ non-native reader will parse.
   jobs.
 - **Logging (future work).** Overall stdlib `logging` across scorers and
   examples is still owed; the pattern is established in
-  `examples/elo_round.py` (`setup_logging()`: `FileHandler` +
+  `benchmarks/arena/elo_round.py` (`setup_logging()`: `FileHandler` +
   `StreamHandler`, timestamped `INFO`). Elo runs use it already — extend the
   same shape rather than inventing new print-to-file plumbing.
 - **Codex is a standing buddy.** Use the `codex` CLI freely — ask it for

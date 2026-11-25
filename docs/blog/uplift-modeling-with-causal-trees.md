@@ -24,10 +24,10 @@ $$\tau(\mathbf{x}) = \mathbb{E}[Y(1) - Y(0) \mid \mathbf{X} = \mathbf{x}]$$
 
 By using honest causal decision trees in pure Rust, we discover natural behavioral segments whose incremental visit rate exceeds 8.8%, while avoiding wasted spend on unpersuadable cohorts.
 
-The full reproducible script lives at [`examples/causal_uplift.py`](https://github.com/jkapila/mltreelib/blob/main/examples/causal_uplift.py):
+The full reproducible script lives at [`examples/guides/causal_uplift.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/causal_uplift.py):
 
 ```bash
-uv run python examples/causal_uplift.py
+uv run python examples/guides/causal_uplift.py
 ```
 
 ---
@@ -215,7 +215,7 @@ When deploying causal uplift models to enterprise marketing pipelines, several d
 Run the standalone executable script from the repository root:
 
 ```bash
-uv run python examples/causal_uplift.py
+uv run python examples/guides/causal_uplift.py
 ```
 
 The script trains models on the 42,693 customer records from the Hillstrom trial, logs all single-seed rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to `docs/assets/`.

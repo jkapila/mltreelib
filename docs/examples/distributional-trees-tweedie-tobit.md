@@ -71,7 +71,7 @@ Both models use mean leaves, so their scores are point estimates. A specialized 
 A zero claim, a reading floored by a sensor and an event censored by study end represent different observations. Clarify the observation process before choosing a loss. A Tobit claim depends on its latent distribution assumptions. A survival claim depends on follow-up and censoring assumptions.
 
 ```bash
-uv run python examples/real_tree_studies.py housing
+uv run python examples/guides/real_tree_studies.py housing
 ```
 
 !!! tip "Deep-Dive Benchmark Suites"

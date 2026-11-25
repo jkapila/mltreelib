@@ -67,7 +67,7 @@ Check support before reading a coefficient. A local carat coefficient describes 
 This experiment compares two leaf types at the same depth and support setting. A comparison with gradient boosting needs the same data split, tuning budget and metrics. Include train time, inference time and failed runs if those matter. Use validation to choose the configuration. A cheaper model can be useful if its residuals are acceptable where the business acts.
 
 ```bash
-uv run python examples/real_tree_studies.py diamonds
+uv run python examples/guides/real_tree_studies.py diamonds
 ```
 
 !!! tip "Deep-Dive Benchmark Suites"
