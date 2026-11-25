@@ -58,6 +58,25 @@ flowchart TD
 
 The [dataset setup page](real-data.md) lists the downloads. Synthetic checks sit after the practical workflows. They make known effects and missing-data behavior easier to test.
 
+## Reading order
+
+Each guide stands alone, but this order builds on itself: prepare data, fit for your outcome type, then evaluate, inspect and ship.
+
+1. [Prepare data](data.md): inspect missing values and choose the preparation before fitting.
+2. [Regression](regression.md): fit and compare trees for a numeric target.
+3. [Classification](classification.md): the same workflow for a binary or multiclass target, with a decision threshold.
+4. [Survival](survival.md): time-to-event outcomes with censoring and competing risks.
+5. [Uplift](uplift.md): randomized experiments and who to treat.
+6. [Clustering](clustering.md): find segments without a target.
+7. [Anomaly detection](anomaly.md): rank rows for review without a target.
+8. [Evaluate and monitor](evaluation.md): held-out evaluation and calibration for a finished model.
+9. [Metrics, diagnostics and calibration](metrics-plots.md): the diagnostic plots and metrics in detail.
+10. [Inspect a model: rules and stumps](model-inspection-and-rules.md): read a model as rules.
+11. [Visualization](visualization.md): draw the tree and explain one row.
+12. [Serving contract](serving-contract.md): record the prediction contract, save, load and check before release.
+13. [Extend a model tree](advanced-modeling.md): censored outcomes, constraints, leaf retraining and tuning.
+14. [Get the real datasets](real-data.md): where the example data comes from.
+
 ## How this site is organized
 
 | You want to | Go to |
