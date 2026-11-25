@@ -94,3 +94,39 @@ Ordered by what unblocks the most work and what the local benchmark says is wort
 - Spec 27 Phases 2 to 7 deliver the leaf models that Spec 28's `linear_forest` and `committee` kinds, and Spec 29's stages, build on.
 - Spec 31 Phase 2 benchmarks the families from Specs 28, 29, 30, and 32, so it lands after them.
 - Spec 29 needs the monotone and missing-value work from Spec 27's leaf models to clear the `perpetual (Rust)` bar.
+
+
+---
+
+## Looking Forward
+
+The specs above describe a library that is strong on **core** (trees, leaves, ensembles). The long-term shape is three areas, with one consistent surface across all of them:
+
+- **Data**: loading, splitting, profiling, validation, feature tools. Missing values are never imputed or recoded by data helpers.
+- **Core**: trees first (split, grow, prune, leaf), then ensembles.
+- **Metrics**: evaluation, calibration, fairness, and drift monitoring, so that a business question like "why did this model drift or fail?" has an answer.
+
+Guiding rules: no scikit-learn dependency, a shrinking dependency set (build inside when possible), and early-stage honesty: APIs may change, so new features start as an issue.
+
+### Gaps against that shape (from a read of specs 01 to 34)
+
+| Capability | Status | Notes |
+| :--- | :--- | :--- |
+| Drift monitoring (PSI, CSI, KS, data and prediction drift, decay, retrain triggers) | **Not specified** | Primitives exist: a stability index (PSI/CSI) and score-KS separation in the metrics layer. No spec owns a drift API. |
+| Data area: profiling, validation, splits, pipelines | **Not specified** (splits and helpers are in Spec 34) | `summarize`, `winnow`, `DatasetBuilder`, encoders and time features exist without an owning spec. |
+| Save, load, versioning | **Partly** (Spec 20) | Versioned JSON, bytes, file and pickle exist. Only the tree has a runnable docs example. Model cards and a version registry are not specified. |
+| Statsmodels-style summaries | **Partly** (Specs 24, 25) | Reports and per-leaf tables exist. No spec for a unified summary across tasks. |
+| Calibration reports | **Partly** (Spec 19, 25, 30) | D-calibration and one-calibration exist. No cross-task calibration report. |
+| Fairness reports | **Partly** (Spec 12) | A fairness criterion exists. No cross-model report. |
+| Model comparison API | **Partly** (Specs 01, 31) | The arena compares models. No user-facing compare call. |
+| Missing data in unsupervised models | **Open gap** (Spec 22) | Some clustering engines still coerce `None` to 0.0, which conflicts with the first-class missing-data rule. |
+| CLI, interactive reports, other-language bindings | **Not specified** | Plots are static; R support is a source package only. |
+| Table input at the model boundary (pandas, Arrow, Polars-style) | **In Spec 33** | A pandas frame currently fails in `fit`. |
+
+### Housekeeping noted during the audit
+
+- Status headers of Specs 25 and 26 say proposed while this index says completed.
+- Spec 03 lists probit, tobit and tweedie as remaining, but the code has them.
+- Spec 20's header says some unsupervised snapshots remain open, but they are implemented.
+- Specs 21 and 26 both describe the generic bounded optimizer seam; 11 and 27 overlap on overdispersed and bounded outcomes; 20 and 25 both specify snapshot round-trip. Add cross-references.
+- Spec 34 is partly landed (on-demand datasets with checksums exist), but its header says proposed.

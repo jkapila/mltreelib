@@ -51,6 +51,8 @@ The user's view: `ModelTree()` does one documented thing, every option in the re
 26. As an upgrading user, I want a changelog entry listing every default that changed and its old value, so that I can pin the old behaviour.
 27. As an upgrading user, I want a way to request the previous defaults by name, so that old results stay reproducible.
 28. As a maintainer, I want documentation snippets to use only options that the live constructor accepts, so that the docs build can fail on a bad example.
+29. As a user, I want to pass a pandas or Arrow table straight to `fit`, `predict` and the other task models, with missing values in any form, so that I never hand-convert NaN to `None` before the model sees the data.
+30. As a maintainer, I want that table input handled by duck typing at the model's input boundary, so that no pandas, Arrow or scikit-learn import is needed to run the library.
 
 ## Implementation Decisions
 
@@ -65,6 +67,8 @@ The user's view: `ModelTree()` does one documented thing, every option in the re
 - **Undocumented parameters.** Each of the thirty missing parameters is documented, or deleted if it has no users.
 - **Better defaults, search design.** The search covers the knobs that matter for a single tree: depth, minimum rows, pruning strength, leaf type, ridge penalty, split precision, and the split-evaluation mode. Datasets are divided into a search group and a confirmation group with no dataset in both; datasets that appear in more than one benchmark suite under different identifiers are assigned to the same group by name, shape and checksum. The objective is the average normalized score or rank against the same reference models used by the benchmark, with a fit-time penalty so a slow configuration cannot win by a small margin. The search uses cross-validation inside each dataset and a fixed seed. Regression and classification may receive different defaults. A size-dependent default (for example, minimum rows as a function of row count) is considered as an alternative to a single constant.
 - **Acceptance of new defaults.** A new default is adopted only if it improves the confirmation group by more than the benchmark's confidence interval, does not lose on the search group, and does not slow the fit time beyond a stated factor. The previous defaults remain reachable by name.
+- **Input boundary.** The model accepts a column-oriented table from common sources (pandas, Arrow, Polars-style objects, dict of columns, NumPy, nested lists) without importing those libraries: detection is by behaviour, not by type. Missing values in any form (NaN, None, null, NA) are accepted as they are and routed natively. Today a pandas frame passed to `fit` raises `Can't extract str to Vec`, which is why snippets convert by hand. Missing data is never imputed or recoded by the library's data helpers; only the model's own handling (surrogate splits, learned missing direction) treats it.
+- **Dependency policy.** No scikit-learn dependency, ever; the sklearn-shaped API is a convention only. The package aims to shrink its dependency set. Anything that can be built inside the library is built inside it.
 - **Documentation contract.** Every parameter named in a guide must be accepted by the live constructor. The runnable-snippet gate already in the docs build is the enforcement mechanism for snippets; a separate check covers inline parameter names and option values.
 
 ## Testing Decisions
@@ -87,6 +91,41 @@ The documentation pass printed results that look like library defects or undocum
 5. **Survival calibration failure.** D-calibration rejected the documented synthetic competing-risks cohort (p near zero). Check whether the cohort or the estimator is at fault, and say so on the page either way.
 6. **Oblique splits not chosen.** The oblique-split example picked an axis-aligned split. Check that oblique candidates are generated and that the example data is one where an oblique split should win.
 7. **Documented capabilities that do not exist.** Subspace-reconstruction anomaly scoring and a PCA method on the anomaly model are described in a guide but not implemented. Either implement them or remove the claims.
+
+## Documentation Stabilisation Backlog
+
+Items left after the first pass of the documentation audit. They are worked one at a time, each checked by a person before the next, so that the site is stable before anything new is added. Rule for every item: what a page shows must be what the code prints with the same data and seed.
+
+**A. Figures that embed old numbers or timings (regenerate from the real run, or remove):**
+- Solver benchmark Pareto and optimization trajectory figures.
+- Evaluation page figures: residuals, precision-recall, calibration, confusion, tree, importance.
+- Regression real-versus-synthetic figure and the real diamonds leaves figure.
+- Time-series decomposition figure.
+- Constraints monotone-comparison figure.
+- Core growth-knob grid figure.
+- Variance-shares figure on the data-routing page.
+- The missing-routing APS figure was removed from its page; decide whether to regenerate it.
+- Rule: every figure is produced by a script that is named on the page and rerun when its numbers change.
+
+**B. Page sections that still cannot run top to bottom:**
+- Leaf retraining page: its only code block has no setup and prints nothing; its timing tables are unverified.
+- Regression-methods benchmark page: the quantile-crossing block has no producer for its inputs; the full suite block is slow; the tables with fit times are unverified.
+- Survival-trees page: the real-data narratives and the benchmark table are not reproduced by any block; the DOT export block writes files and is not opted in.
+- Solvers page: the real-data tuning table with a wall-time column is not reproduced.
+- Components page: the rotation, whitening and NMF tables and the cognitive-battery text are hand-written; the subspace anomaly block needs capabilities that do not exist.
+- Distributional-leaves page: the usage block lacks setup; the real-dataset claims are unverified.
+- Survival and uplift guides: any block that still depends on an earlier block's names.
+
+**C. Prose that was only checked for running, not for claims:**
+- Guides: data, visualization, model inspection, serving contract, advanced modeling, classification, clustering, anomaly.
+- Each hand-written number or claim is either tied to printed output or removed.
+
+**D. Benchmark pages:**
+- The Elo pages still show the old sequential ratings and the old rank headline. They switch to the order-independent rating with intervals and the baseline anchor in one step, together with any new entrants, so the published numbers change once.
+- The "Why mltreelib" page is rewritten in the maintainer's own words about why the project exists.
+
+**E. Generated files:**
+- Regenerate the model-readable index files and the sitemap after every docs change, and fail the build if they are stale.
 
 ## Out of Scope
 

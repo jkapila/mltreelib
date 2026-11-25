@@ -76,6 +76,37 @@ The user's view: `load_dataset` can fetch any suite dataset by name, the surviva
 - Results pages are covered by the existing runnable-snippet gate in the documentation build, so a page whose printed output differs from a rerun fails the check.
 - Prior art: the existing dataset registry tests, the survival and causal tests in the model test suite, and the documentation snippet runner.
 
+## Data Preparation Helpers
+
+The documentation audit found that the same small data-preparation steps are written out by hand in many snippets: about 36 manual split indexings (`int(n * 0.8)` and slices), about 27 pandas conversions of missing values to `None`, and about 9 list comprehensions that rebuild a feature matrix from a dict of columns. There is no train, validation and test split helper anywhere in the package. Hand-written versions differ slightly between pages, which makes results harder to reproduce and the snippets longer than the idea they teach.
+
+**User stories**
+
+31. As a user, I want one call that splits a dataset into train, validation and test sets with a seed, so that I do not write index arithmetic.
+32. As a user, I want splits that can be stratified on the target or on a treatment flag, so that every fold contains both arms and every class.
+33. As a user, I want splits that respect a group column (patient, eye, subject, store), so that related rows never leak across sets.
+34. As a user, I want an ordered split by time, so that forecasting and temporal checks do not shuffle the future into training.
+35. As a user, I want the same split from the same seed on every machine, so that documented numbers can be reproduced.
+36. As a user, I want to take a loaded dataset and get the feature matrix, target and column names in one call, so that I do not rebuild them with a comprehension.
+37. As a user, I want missing values to stay exactly as they are in every data helper, so that the model sees the real missingness pattern and nothing is imputed, dropped or recoded behind my back.
+38. As a user, I want survival datasets returned as duration, event and features, and uplift datasets as treatment, outcome and features, so that I do not index columns by hand.
+39. As a user, I want repeated and cross-validated splits from the same helper, so that the arena and the guides share one splitting rule.
+40. As a maintainer, I want every documented snippet to use these helpers, so that a change in splitting behaviour is made in one place.
+
+**Implementation decisions**
+
+- The helpers live in the dataset module (the data layer that already loads, caches and describes datasets), not in the model classes. The model stays free of any data-splitting dependency.
+- The split helper accepts a loaded dataset, a plain dict of columns, or array-like inputs, and returns the same kinds of objects it was given. It supports a seed, fractions or counts, stratification on a named column, grouping on a named column, and a time-ordered mode. It never shuffles in the ordered mode.
+- Missing values are an integral part of the data. No helper imputes, drops, normalises or recodes them; they pass through unchanged. Accepting missing values in any representation (NaN, None, null, Arrow or pandas missing) is the model's job at its input boundary, together with surrogate-based routing, and is specified in Spec 33.
+- Survival and uplift loaders return the normalised schema from this spec, with helper accessors for the time and event columns or the treatment and outcome columns.
+- The benchmark arena adopts the same splitting helper so that documented splits and arena splits are the same rule.
+- The helpers add no dependency on scikit-learn or any other third-party package. Anything that can be built inside the library is built inside it; the package aims to reduce its dependencies, not add to them.
+
+**Testing decisions**
+
+- Test behaviour: sizes add up, a stratified split preserves class and arm proportions within a stated tolerance, grouped splits never share a group across sets, ordered splits are strictly ordered in time, the same seed gives identical indices, and missing values are untouched by every helper (counts and positions are identical before and after).
+- Prior art: the existing dataset and encoder tests, and the existing snippet gate, which will fail if a page still uses a hand-written split after the helper exists.
+
 ## Out of Scope
 
 - Observational causal inference methods and any claim of causal effect from observational data.
