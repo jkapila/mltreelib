@@ -23,6 +23,7 @@ Update the page that already teaches the topic. Add a page only when none fits, 
 - Code is runnable. Mark it with `<!-- run -->` above the fence; `uv run python scripts/docs/run_snippets.py` runs the blocks of a page in order in one session and writes the real output into the output block that follows. Never type output by hand. `--check` fails when an output is stale.
 - Use real datasets through `load_dataset` or `dataset_path` (fetched on demand, never bundled), or seeded synthetic data when the point is a known truth. No repo-relative paths, no untracked files.
 - Snippets use the umbrella API, the data helpers (splits, accessors) instead of hand-rolled index arithmetic and list comprehensions, and no timing prints.
+- **Explain every snippet for a reader who is new to the topic.** Before the code, say in plain words what it does and why (for example "this fits a causal tree: it splits where the email effect differs most between groups, then estimates the effect in each leaf"). After the output, say what to look at in it. Define each term the first time it appears. Keep helper code out of the guide: if a snippet needs a long hand-written helper, that helper belongs in the library, and the guide calls it.
 - Prose and tables quote only numbers that the output shows. When prose and output disagree, fix the prose.
 - Figures are produced by a script named on the page and regenerated when the numbers change.
 
