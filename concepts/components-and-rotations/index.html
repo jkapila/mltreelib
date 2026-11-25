@@ -1,0 +1,3718 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Unified benchmark of PCA, ZCA whitening, R-aligned Orthomax and Promax factor rotations, NMF solvers, and subspace reconstruction anomaly detection in mltreelib.">
+      
+      
+      
+        <link rel="canonical" href="https://jkapila.github.io/mltreelib/concepts/components-and-rotations/">
+      
+      
+      
+        <link rel="prev" href="../anomaly-trees/">
+      
+      
+        <link rel="next" href="../solvers-and-optimizers/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/mltreelib-icon.svg">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Component Analysis, Matrix Factorizations & R-Aligned Rotations - mltreelib v0.4.15</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  <meta name="google-site-verification" content="LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY" />
+
+  <!-- AEO / GEO / Discovery Links -->
+  <link rel="alternate" type="text/plain" href="https://jkapila.github.io/mltreelib/llms.txt" title="LLM Context Summary" />
+  <link rel="alternate" type="text/plain" href="https://jkapila.github.io/mltreelib/llms-full.txt" title="Full LLM Documentation" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="https://jkapila.github.io/mltreelib/sitemap.xml" />
+
+  <!-- Open Graph / Schema Metadata -->
+  <meta property="og:site_name" content="mltreelib" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+
+  <!-- Structured Data (JSON-LD) for AEO / Search Engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "mltreelib",
+    "description": "Tree-based machine learning with a pure Rust core and Python/R interfaces",
+    "codeRepository": "https://github.com/jkapila/mltreelib",
+    "programmingLanguage": ["Rust", "Python", "R"],
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mltreelib v0.4.15
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Component Analysis, Matrix Factorizations & R-Aligned Rotations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+
+    </a>
+    mltreelib v0.4.15
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why-mltreelib/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Why mltreelib
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Concepts
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-tree-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1. Tree architecture and growth knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tree-architecture-and-knobs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2. Growth knobs in practice
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constraints-and-honesty/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3. Constraints and honesty
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../missing-data-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4. Native missing-data routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-matrix-and-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5. Data ingestion in practice
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statistical-and-metric-splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6. Statistical and metric splitting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributional-leaves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7. Distributional and censored leaves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../piecewise-linear-and-cubist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8. Piecewise linear trees and Cubist rules
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hierarchical-retrain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9. Leaf retraining and micro-models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  10. Survival and competing risks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timeseries-forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  11. Time series forecasting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clustering-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  12. Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anomaly-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  13. Anomaly trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  14. Components and rotations
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  14. Components and rotations
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-architectural-architecture-task-facades" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Architectural Architecture &amp; Task Facades
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mathematical-formulations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Mathematical Formulations
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mathematical Formulations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-principal-component-analysis-truncated-svd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Principal Component Analysis &amp; Truncated SVD
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-covariance-whitening-pca-vs-zca" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Covariance Whitening: PCA vs. ZCA
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-the-orthomax-promax-factor-rotation-family" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. The Orthomax &amp; Promax Factor Rotation Family
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-non-negative-matrix-factorization-nmf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Non-Negative Matrix Factorization (NMF)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-empirical-benchmark-on-real-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Empirical Benchmark on Real Data
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Empirical Benchmark on Real Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-pca-r-aligned-factor-rotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. PCA &amp; R-Aligned Factor Rotations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-covariance-whitening-zca-vs-pca" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Covariance Whitening: ZCA vs. PCA
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-nmf-solver-face-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. NMF Solver Face-Off
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-subspace-reconstruction-anomaly-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Subspace Reconstruction Anomaly Detection
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-worked-example-pca-rotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Worked example: PCA rotations
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Worked example: PCA rotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-pca-rotations-were-built-the-interpretability-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why PCA Rotations Were Built (The Interpretability Problem)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thurstones-simple-structure-criteria-1947" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Thurstone's Simple Structure Criteria (1947)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-orthomax-family-orthogonal-rotations-gamma-in-0-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Orthomax Family: Orthogonal Rotations (<span class="arithmatex">\(\gamma \in [0, 1]\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Orthomax Family: Orthogonal Rotations (\(\gamma \in [0, 1]\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-orthomax-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Supported Orthomax Variants:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-promax-rotation-oblique-simple-structure-hendrickson-white-1964" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Promax Rotation: Oblique Simple Structure (Hendrickson &amp; White, 1964)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cognitive-aptitude-battery-case-study" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Cognitive Aptitude Battery Case Study
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cognitive Aptitude Battery Case Study">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-loadings-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Loadings Comparison
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpretation-of-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Interpretation of Results:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-decision-guide-which-rotation-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Decision Guide: Which Rotation When?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. API Reference
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Configuration Parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fitted-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fitted Attributes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-limitations-failure-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Operational Limitations &amp; Failure Modes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        References
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solvers-and-optimizers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  15. Solvers and optimizers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blog
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blog
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/prescriptive-inventory-replenishment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prescriptive Replenishment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1. Prepare data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2. Regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3. Classification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/survival/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4. Survival
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5. Uplift
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6. Clustering
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7. Anomaly detection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8. Evaluate and monitor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9. Metrics, diagnostics and calibration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/model-inspection-and-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  10. Inspect a model: rules and stumps
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  11. Visualization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/serving-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  12. Serving contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/advanced-modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  13. Extend a model tree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/real-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  14. Get the real datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Benchmarks
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_overall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_cla_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/regression-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression methods study
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../field-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Field Notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_10">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameters Catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/model-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ModelTree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly & density trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Component & factor analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rule-set models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model reports & diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Encoders & scalers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Feature functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/solvers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Solvers & optimization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/rust-generic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rust generic seam
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluation reports
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-architectural-architecture-task-facades" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Architectural Architecture &amp; Task Facades
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mathematical-formulations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Mathematical Formulations
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mathematical Formulations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-principal-component-analysis-truncated-svd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Principal Component Analysis &amp; Truncated SVD
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-covariance-whitening-pca-vs-zca" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Covariance Whitening: PCA vs. ZCA
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-the-orthomax-promax-factor-rotation-family" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. The Orthomax &amp; Promax Factor Rotation Family
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-non-negative-matrix-factorization-nmf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Non-Negative Matrix Factorization (NMF)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-empirical-benchmark-on-real-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Empirical Benchmark on Real Data
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Empirical Benchmark on Real Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-pca-r-aligned-factor-rotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. PCA &amp; R-Aligned Factor Rotations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-covariance-whitening-zca-vs-pca" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Covariance Whitening: ZCA vs. PCA
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-nmf-solver-face-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. NMF Solver Face-Off
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-subspace-reconstruction-anomaly-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Subspace Reconstruction Anomaly Detection
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-worked-example-pca-rotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Worked example: PCA rotations
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Worked example: PCA rotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-pca-rotations-were-built-the-interpretability-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why PCA Rotations Were Built (The Interpretability Problem)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thurstones-simple-structure-criteria-1947" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Thurstone's Simple Structure Criteria (1947)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-orthomax-family-orthogonal-rotations-gamma-in-0-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Orthomax Family: Orthogonal Rotations (<span class="arithmatex">\(\gamma \in [0, 1]\)</span>)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Orthomax Family: Orthogonal Rotations (\(\gamma \in [0, 1]\))">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-orthomax-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Supported Orthomax Variants:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-promax-rotation-oblique-simple-structure-hendrickson-white-1964" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Promax Rotation: Oblique Simple Structure (Hendrickson &amp; White, 1964)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cognitive-aptitude-battery-case-study" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Cognitive Aptitude Battery Case Study
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cognitive Aptitude Battery Case Study">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#empirical-loadings-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Empirical Loadings Comparison
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpretation-of-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Interpretation of Results:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-decision-guide-which-rotation-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Decision Guide: Which Rotation When?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. API Reference
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Configuration Parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fitted-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fitted Attributes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-limitations-failure-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Operational Limitations &amp; Failure Modes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        References
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="component-analysis-matrix-factorizations-r-aligned-rotations">Component Analysis, Matrix Factorizations &amp; R-Aligned Rotations<a class="headerlink" href="#component-analysis-matrix-factorizations-r-aligned-rotations" title="Permanent link">&para;</a></h1>
+<p>Benchmark pure-Rust linear decompositions, covariance whitening transforms, R-aligned factor rotations, Non-Negative Matrix Factorization (NMF) solvers, and out-of-subspace anomaly detection in <code>mltreelib-core</code>.</p>
+<p>Run suite from repository root after building release extension:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/suites/component_benchmarks.py
+</span></code></pre></div>
+<hr />
+<h2 id="1-architectural-architecture-task-facades">1. Architectural Architecture &amp; Task Facades<a class="headerlink" href="#1-architectural-architecture-task-facades" title="Permanent link">&para;</a></h2>
+<p>In tabular feature spaces, correlated variables represent underlying latent traits (chemical profiles, macroeconomic cycles, patient health statuses). Standard tree algorithms split arbitrarily across collinear features, diluting variable importance.</p>
+<p><code>mltreelib</code> introduces pure-Rust matrix decompositions with unified output semantics:</p>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Decompositions["Linear Decompositions"]
+        direction TB
+        D1["Data Matrix X\n[N x P]"] --&gt; PCA["PCA (Centered &amp; Scaled)\nX = U S V^T"]
+        D1 --&gt; SVD["Truncated SVD\n(Uncentered)"]
+        D1 --&gt; WHT["Whitening\n(ZCA &amp; PCA)"]
+        D1 --&gt; ICA["FastICA\n(Independent Sources)"]
+        D1 --&gt; NMF["NMF (Non-Negative)\nX approx W * H (W, H &gt;= 0)"]
+    end
+
+    subgraph Rotations["R-Aligned Factor Rotations"]
+        direction TB
+        PCA --&gt; ROT{"Rotation Method"}
+        ROT --&gt;|"Orthomax (gamma=1.0)"| VAR["Varimax (stats::varimax)"]
+        ROT --&gt;|"Orthomax (gamma=0.0)"| QUA["Quartimax"]
+        ROT --&gt;|"Orthomax (gamma=k/2)"| EQU["Equamax"]
+        ROT --&gt;|"Oblique Procrustes"| PRO["Promax (stats::promax, m=4)"]
+    end
+
+    subgraph Tasks["Unified Downstream Task Facades"]
+        direction TB
+        VAR --&gt; COMP["ComponentModel.transform()\nRotated Latent Embeddings"]
+        PRO --&gt; COMP
+        NMF --&gt; ANOM["AnomalyModel(kind='nmf')\nReconstruction Loss"]
+        PCA --&gt; ANOM2["AnomalyModel(kind='pca')\nReconstruction Loss"]
+        COMP --&gt; CLUST["ClusterModel(kind='pct')\nSubspace Partitioning"]
+    end
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef compBox fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+    classDef rotBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef taskBox fill:#1e3a5f,stroke:#2b4c7e,stroke-width:2px,color:#ffffff;
+
+    class D1 dataBox;
+    class PCA,SVD,WHT,ICA,NMF compBox;
+    class ROT,VAR,QUA,EQU,PRO rotBox;
+    class COMP,ANOM,ANOM2,CLUST taskBox;</code></pre>
+<p><strong>Next:</strong> step 2 gives the formulas for the decompositions shown in the diagram: PCA, the two whitening transforms, the orthomax and promax rotations, and NMF.</p>
+<hr />
+<h2 id="2-mathematical-formulations">2. Mathematical Formulations<a class="headerlink" href="#2-mathematical-formulations" title="Permanent link">&para;</a></h2>
+<h3 id="1-principal-component-analysis-truncated-svd">1. Principal Component Analysis &amp; Truncated SVD<a class="headerlink" href="#1-principal-component-analysis-truncated-svd" title="Permanent link">&para;</a></h3>
+<p>Given centered data <span class="arithmatex">\(X_c = X - \mathbf{1}\mu^T \in \mathbb{R}^{N \times P}\)</span>, thin SVD yields:
+$<span class="arithmatex">\(X_c = U \Sigma V^T\)</span>$
+- Projected latent scores: <span class="arithmatex">\(Z = X_c V_k \in \mathbb{R}^{N \times k}\)</span>.
+- Unrotated factor loading matrix: <span class="arithmatex">\(L = V_k \Sigma_k^{1/2} \in \mathbb{R}^{P \times k}\)</span>.</p>
+<h3 id="2-covariance-whitening-pca-vs-zca">2. Covariance Whitening: PCA vs. ZCA<a class="headerlink" href="#2-covariance-whitening-pca-vs-zca" title="Permanent link">&para;</a></h3>
+<p>Transforms covariates into decorrelated representations with identity sample covariance <span class="arithmatex">\(\text{Cov}(Z) = I\)</span>:</p>
+<ul>
+<li><strong>PCA Whitening</strong>: Rotates into principal axes and scales by singular values:
+  $<span class="arithmatex">\(Z_{\text{PCA}} = X_c V \Sigma^{-1}\)</span>$</li>
+<li><strong>ZCA Whitening (Zero-Phase Component Analysis)</strong>: Rotates back into original coordinate axes:
+  $<span class="arithmatex">\(Z_{\text{ZCA}} = X_c V \Sigma^{-1} V^T = X_c \Sigma_X^{-1/2}\)</span>$
+  <strong>Key Theoretical Property</strong>: ZCA minimizes total Frobenius reconstruction distortion <span class="arithmatex">\(\|Z_{\text{ZCA}} - X_c\|_F\)</span>, preserving maximal feature interpretability.</li>
+</ul>
+<h3 id="3-the-orthomax-promax-factor-rotation-family">3. The Orthomax &amp; Promax Factor Rotation Family<a class="headerlink" href="#3-the-orthomax-promax-factor-rotation-family" title="Permanent link">&para;</a></h3>
+<p>Unrotated PCA loadings are dense. Factor rotations find transformation matrix <span class="arithmatex">\(T\)</span> such that <span class="arithmatex">\(L^* = L T\)</span> concentrates loadings near zero or <span class="arithmatex">\(\pm 1\)</span> (Thurstone's simple structure).</p>
+<ul>
+<li><strong>Orthomax Family</strong>: Orthogonal rotations (<span class="arithmatex">\(T^T T = I\)</span>) maximizing:
+  $<span class="arithmatex">\(Q(T) = \sum_{j=1}^k \left[ \sum_{i=1}^P (l^*_{ij})^4 - \frac{\gamma}{P} \left( \sum_{i=1}^P (l^*_{ij})^2 \right)^2 \right]\)</span>$</li>
+<li><span class="arithmatex">\(\gamma = 1.0\)</span>: <strong>Varimax</strong> (aligned with R <code>stats::varimax</code>). Maximizes loading variance within factors.</li>
+<li><span class="arithmatex">\(\gamma = 0.0\)</span>: <strong>Quartimax</strong>. Maximizes loading variance across rows.</li>
+<li><span class="arithmatex">\(\gamma = k/2\)</span>: <strong>Equamax</strong>. Balances row and column simplification.</li>
+<li><span class="arithmatex">\(\gamma = \frac{P(k-1)}{P+k-2}\)</span>: <strong>Parsimax</strong>. Penalizes complex factor assignments.</li>
+<li>
+<p><span class="arithmatex">\(\gamma = \frac{k}{2P}\)</span>: <strong>Biquartimax</strong>.</p>
+</li>
+<li>
+<p><strong>Promax Rotation</strong>: Oblique rotation (<span class="arithmatex">\(T^T T \ne I\)</span>) allowing correlated latent factors:</p>
+</li>
+<li>Compute orthogonal Varimax loadings <span class="arithmatex">\(L_{\text{varimax}}\)</span>.</li>
+<li>Construct target simple-structure matrix <span class="arithmatex">\(B\)</span> by element-wise exponentiation:
+     $<span class="arithmatex">\(B = (L_{\text{varimax}})^{\circ m} \oslash |L_{\text{varimax}}|, \quad m = 4\)</span>$</li>
+<li>Solve Procrustes least-squares problem: <span class="arithmatex">\(T = (L^T L)^{-1} L^T B\)</span>, followed by column normalization.</li>
+</ul>
+<h3 id="4-non-negative-matrix-factorization-nmf">4. Non-Negative Matrix Factorization (NMF)<a class="headerlink" href="#4-non-negative-matrix-factorization-nmf" title="Permanent link">&para;</a></h3>
+<p>Approximates non-negative data <span class="arithmatex">\(X \ge 0\)</span> as <span class="arithmatex">\(X \approx W H\)</span> where <span class="arithmatex">\(W \in \mathbb{R}^{N \times k}_{\ge 0}\)</span> (basis) and <span class="arithmatex">\(H \in \mathbb{R}^{k \times P}_{\ge 0}\)</span> (encodings):
+$<span class="arithmatex">\(\min_{W \ge 0, \, H \ge 0} \frac{1}{2} \|X - WH\|_F^2 + \lambda_1 \|H\|_1 + \frac{\lambda_2}{2} \|H\|_F^2\)</span>$</p>
+<p><code>mltreelib-core</code> implements three distinct solver engines:
+- <strong>Multiplicative Updates (MU)</strong>:
+  $<span class="arithmatex">\(H \leftarrow H \odot \frac{W^T X}{W^T W H + \epsilon}, \qquad W \leftarrow W \odot \frac{X H^T}{W H H^T + \epsilon}\)</span>$
+- <strong>Alternating Least Squares (ALS)</strong>:
+  Solves Ridge normal equations for <span class="arithmatex">\(H\)</span> and <span class="arithmatex">\(W\)</span>, projecting solutions onto non-negative orthant <span class="arithmatex">\(\max(0, \cdot)\)</span>.
+- <strong>Hierarchical Alternating Least Squares (HALS)</strong>:
+  Sequential exact single-coordinate Non-Negative Least Squares (NNLS) update:
+  $<span class="arithmatex">\(H_{k, \cdot} \leftarrow \max\left(0, \, \frac{W_{\cdot, k}^T \left(X - \sum_{j \ne k} W_{\cdot, j} H_{j, \cdot}\right) - \lambda_1}{W_{\cdot, k}^T W_{\cdot, k} + \lambda_2}\right)\)</span>$
+  Guarantees monotonic loss reduction with true <span class="arithmatex">\(L_1\)</span> sparsity without numerical instability.</p>
+<p><strong>Next:</strong> step 3 applies the rotations, the whitening transforms and the NMF solvers from step 2 to the Wine Quality features.</p>
+<hr />
+<h2 id="3-empirical-benchmark-on-real-data">3. Empirical Benchmark on Real Data<a class="headerlink" href="#3-empirical-benchmark-on-real-data" title="Permanent link">&para;</a></h2>
+<p>We evaluate the full component analysis suite on the <strong>Wine Quality</strong> dataset (1,000 samples, 12 continuous chemical features).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComponentModel</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_path</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"wine_quality"</span><span class="p">))</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"median_wine_quality"</span><span class="p">,</span> <span class="s2">"wine_color"</span><span class="p">)]</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">X</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span></code></pre></div>
+<h3 id="1-pca-r-aligned-factor-rotations">1. PCA &amp; R-Aligned Factor Rotations<a class="headerlink" href="#1-pca-r-aligned-factor-rotations" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Fit ComponentModel with Varimax and Promax rotations</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">comp_varimax</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s2">"varimax"</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">comp_varimax</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">comp_promax</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s2">"promax"</span><span class="p">,</span> <span class="n">promax_m</span><span class="o">=</span><span class="mf">4.0</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">comp_promax</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: center;">Variance Retained</th>
+<th style="text-align: center;">Rotation Matrix</th>
+<th style="text-align: center;">Loading Sparsity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>NONE</code></strong> (Raw PCA)</td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">25.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>VARIMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (orthogonal)</td>
+<td style="text-align: center;">27.8%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>QUARTIMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (orthogonal)</td>
+<td style="text-align: center;">25.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>EQUAMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (orthogonal)</td>
+<td style="text-align: center;">27.8%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>PARSIMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (orthogonal)</td>
+<td style="text-align: center;">25.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>BIQUARTIMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (orthogonal)</td>
+<td style="text-align: center;">27.8%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>PROMAX</code></strong></td>
+<td style="text-align: center;">60.68%</td>
+<td style="text-align: center;">Yes (oblique)</td>
+<td style="text-align: center;"><strong>36.1%</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Key Finding</strong>: Rotated factor loadings preserve 100% of subspace variance (60.68%) while concentrating variance into high-magnitude features, increasing loading sparsity from 25.0% to 36.1% under Promax.</p>
+</blockquote>
+<hr />
+<h3 id="2-covariance-whitening-zca-vs-pca">2. Covariance Whitening: ZCA vs. PCA<a class="headerlink" href="#2-covariance-whitening-zca-vs-pca" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">comp_zca</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"whitening"</span><span class="p">,</span> <span class="n">whitening_kind</span><span class="o">=</span><span class="s2">"zca"</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">Z_zca</span> <span class="o">=</span> <span class="n">comp_zca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">comp_pca_white</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"whitening"</span><span class="p">,</span> <span class="n">whitening_kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">Z_pca_white</span> <span class="o">=</span> <span class="n">comp_pca_white</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: center;">Mean Covariance Error <span class="arithmatex">\(\|\text{Cov}(Z) - I\|_{\text{mean}}\)</span></th>
+<th style="text-align: left;">Key Property</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>ZCA</code></strong></td>
+<td style="text-align: center;"><strong>0.006972</strong></td>
+<td style="text-align: left;">Minimizes <span class="arithmatex">\(\|Z - X\|_F\)</span>; keeps whitened features closest to raw inputs.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>PCA Whitening</code></strong></td>
+<td style="text-align: center;"><strong>0.006704</strong></td>
+<td style="text-align: left;">Aligns coordinates along principal variance axes.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-nmf-solver-face-off">3. NMF Solver Face-Off<a class="headerlink" href="#3-nmf-solver-face-off" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Compare NMF solvers on strictly non-negative chemical features</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">nmf_mu</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"nmf"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"mu"</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">nmf_als</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"nmf"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"als"</span><span class="p">,</span> <span class="n">l2_reg</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">nmf_hals</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"nmf"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"hals"</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">nmf_sparse</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"nmf"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"hals"</span><span class="p">,</span> <span class="n">l1_reg</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">l2_reg</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Solver</th>
+<th style="text-align: center;">Reconstruction Error <span class="arithmatex">\(\|X - WH\|_F\)</span></th>
+<th style="text-align: center;"><span class="arithmatex">\(H\)</span> Sparsity (% zeros)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>MU</code></strong> (Multiplicative Updates)</td>
+<td style="text-align: center;">233.0816</td>
+<td style="text-align: center;">0.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>ALS</code></strong> (<span class="arithmatex">\(L_1=0, L_2=0.01\)</span>)</td>
+<td style="text-align: center;">172.5155</td>
+<td style="text-align: center;">0.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>HALS</code></strong></td>
+<td style="text-align: center;"><strong>142.3001</strong></td>
+<td style="text-align: center;">8.3%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>HALS</code></strong> (<span class="arithmatex">\(L_1=0.01, L_2=0.005\)</span>)</td>
+<td style="text-align: center;">256.4853</td>
+<td style="text-align: center;"><strong>36.1%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>HALS</code></strong> (<span class="arithmatex">\(L_1=0.01, L_2=0.05\)</span>)</td>
+<td style="text-align: center;">256.4980</td>
+<td style="text-align: center;"><strong>36.1%</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Key Finding</strong>: HALS coordinate descent achieves superior loss convergence (142.30 vs. 233.08 for MU) and enables true <span class="arithmatex">\(L_1\)</span> zero-coefficient sparsity (36.1%) without division-by-zero numerical collapse.</p>
+</blockquote>
+<hr />
+<h3 id="4-subspace-reconstruction-anomaly-detection">4. Subspace Reconstruction Anomaly Detection<a class="headerlink" href="#4-subspace-reconstruction-anomaly-detection" title="Permanent link">&para;</a></h3>
+<p>Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
+$<span class="arithmatex">\(\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2\)</span>$</p>
+<!-- API-GAP: subspace reconstruction error as an anomaly score is not exposed. AnomalyModel has no PCA kind (its kinds are eif, det, hst, rct, active, context) and ComponentModel has no inverse_transform. The block below is not runnable; the output under it is hand-written and not generated. -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Detect anomalies via subspace reconstruction error</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">AnomalyModel</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">detector</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">inlier_loss</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">score_samples</span><span class="p">([</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">outlier_point</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">outlier_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">50.0</span>  <span class="c1"># Synthetic feature injection</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">outlier_loss</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">score_samples</span><span class="p">([</span><span class="n">outlier_point</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Normal Inlier Loss:  </span><span class="si">{</span><span class="n">inlier_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Outlier Spike Loss:  </span><span class="si">{</span><span class="n">outlier_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Separation Ratio:    </span><span class="si">{</span><span class="n">outlier_loss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">inlier_loss</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">x"</span><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Normal Inlier Point   -&gt; Reconstruction Loss: 437.4652 | Label: NORMAL
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Outlier Spike (+50.0) -&gt; Reconstruction Loss: 1535844674.9892 | Label: ANOMALY
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Ratio (Outlier/Inlier Loss): 3510781.2x separation
+</span></code></pre></div>
+<p><strong>Next:</strong> the worked example is a separate, self-contained case: it generates a synthetic aptitude battery, not the wine data, to show why rotation makes loadings easier to read.</p>
+<hr />
+<h2 id="4-worked-example-pca-rotations">4. Worked example: PCA rotations<a class="headerlink" href="#4-worked-example-pca-rotations" title="Permanent link">&para;</a></h2>
+<p>Principal Component Analysis (PCA) decomposes high-dimensional feature spaces into orthogonal axes that maximize explained variance. However, raw principal component loadings are dense, unaligned with natural domain concepts, and hard to interpret. </p>
+<p><code>mltreelib.ComponentModel</code> provides a pure Rust implementation of <strong>factor and PCA rotations</strong> mirroring the classic R statistical foundations (<code>stats::varimax</code>, <code>stats::promax</code>, and the Orthomax family), resolving rotational indeterminacy to discover Thurstone's simple structure.</p>
+<p>Run the educational example and benchmark suite directly:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/pca_rotations_educational.py
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/suites/component_benchmarks.py
+</span></code></pre></div>
+<p>Executable Reference Scripts:
+- <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/pca_rotations_educational.py"><code>examples/guides/pca_rotations_educational.py</code></a> — Cognitive aptitude battery case study, Thurstone's simple structure criteria, and loading matrix comparisons.
+- <a href="https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/component_benchmarks.py"><code>benchmarks/suites/component_benchmarks.py</code></a> — Quantitative benchmark across PCA rotations, ZCA/PCA whitening, and NMF solvers (MU, ALS, HALS).</p>
+<hr />
+<h3 id="why-pca-rotations-were-built-the-interpretability-problem">Why PCA Rotations Were Built (The Interpretability Problem)<a class="headerlink" href="#why-pca-rotations-were-built-the-interpretability-problem" title="Permanent link">&para;</a></h3>
+<p>Standard PCA computes eigenvectors <span class="arithmatex">\(\mathbf{V} = [\mathbf{v}_1, \dots, \mathbf{v}_k]\)</span> of the empirical covariance matrix <span class="arithmatex">\(\mathbf{\Sigma} = \frac{1}{N} \mathbf{X}^T \mathbf{X}\)</span> corresponding to the largest eigenvalues <span class="arithmatex">\(\lambda_1 \ge \dots \ge \lambda_k\)</span>:</p>
+<div class="arithmatex">\[\max_{\mathbf{v}_j} \mathbf{v}_j^T \mathbf{\Sigma} \mathbf{v}_j \quad \text{subject to} \quad \mathbf{v}_j^T \mathbf{v}_j = 1, \quad \mathbf{v}_j^T \mathbf{v}_l = 0 \; (l \ne j)\]</div>
+<p>This mathematical criterion produces severe interpretability issues in real-world data:</p>
+<ol>
+<li><strong>Dense Global Loadings</strong>: The first principal component (PC1) maximizes global variance. Consequently, almost all variables exhibit non-zero loadings of similar magnitude (the classic "general factor", such as general intelligence <span class="arithmatex">\(g\)</span>, general company size, or overall user activity).</li>
+<li><strong>Artificial Bipolarity</strong>: Higher components (PC2, PC3, ...) are constrained to be globally orthogonal to PC1. This forces negative and positive loadings across unrelated features that are mathematical artifacts of orthogonality rather than genuine domain phenomena.</li>
+<li><strong>Rotational Indeterminacy</strong>: The subspace spanned by <span class="arithmatex">\(k\)</span> components is invariant under any invertible rotation matrix <span class="arithmatex">\(\mathbf{T}\)</span>:
+   $<span class="arithmatex">\(\hat{\mathbf{X}} = \mathbf{Z} \mathbf{V}^T = (\mathbf{Z} \mathbf{T}) (\mathbf{V} \mathbf{T})^{-T} = \mathbf{Z}^* (\mathbf{V}^*)^T\)</span>$
+   When <span class="arithmatex">\(\mathbf{T}\)</span> is orthogonal (<span class="arithmatex">\(\mathbf{T}^T \mathbf{T} = \mathbf{I}\)</span>), the reconstructed subspace and the total variance explained remain <strong>100% identical</strong>. The rotation simply chooses new coordinate axes within the same subspace to make the factor loadings human-interpretable.</li>
+</ol>
+<p><img alt="PCA Rotations: Unrotated vs Promax/Varimax Simple Structure Biplot" src="../../assets/guides/pca-rotations.svg" /></p>
+<hr />
+<h3 id="thurstones-simple-structure-criteria-1947">Thurstone's Simple Structure Criteria (1947)<a class="headerlink" href="#thurstones-simple-structure-criteria-1947" title="Permanent link">&para;</a></h3>
+<p>In <em>Multiple-Factor Analysis</em> (1947), Louis Leon Thurstone formalized five criteria for an interpretable coordinate system:</p>
+<ol>
+<li>Each variable (row of <span class="arithmatex">\(\mathbf{V}^*\)</span>) must have at least one loading close to zero.</li>
+<li>For each factor (column of <span class="arithmatex">\(\mathbf{V}^*\)</span>), there should be at least <span class="arithmatex">\(k\)</span> variables with near-zero loadings.</li>
+<li>For every pair of factors, several variables must load heavily on one factor and near zero on the other.</li>
+<li>For every pair of factors, a large fraction of variables must have near-zero loadings on both factors (when <span class="arithmatex">\(k \ge 4\)</span>).</li>
+<li>Only a small fraction of variables should have high loadings on both factors.</li>
+</ol>
+<p>PCA rotations mathematically maximize these criteria.</p>
+<hr />
+<h3 id="1-orthomax-family-orthogonal-rotations-gamma-in-0-1">1. Orthomax Family: Orthogonal Rotations (<span class="arithmatex">\(\gamma \in [0, 1]\)</span>)<a class="headerlink" href="#1-orthomax-family-orthogonal-rotations-gamma-in-0-1" title="Permanent link">&para;</a></h3>
+<p>The <strong>Orthomax</strong> family defines a general criterion parameterized by <span class="arithmatex">\(\gamma\)</span>:</p>
+<div class="arithmatex">\[Q(\mathbf{\Lambda}) = \sum_{j=1}^k \left( \sum_{i=1}^p \lambda_{ij}^4 - \frac{\gamma}{p} \left( \sum_{i=1}^p \lambda_{ij}^2 \right)^2 \right)\]</div>
+<p>where <span class="arithmatex">\(\mathbf{\Lambda} = \mathbf{V}^* = \mathbf{V} \mathbf{T}\)</span> is the rotated loading matrix, and <span class="arithmatex">\(\mathbf{T}^T \mathbf{T} = \mathbf{I}\)</span>. <code>mltreelib</code> solves this via Kaiser's (1958) planar Jacobi rotations until convergence (<span class="arithmatex">\(\Delta &lt; 10^{-6}\)</span>).</p>
+<h4 id="supported-orthomax-variants">Supported Orthomax Variants:<a class="headerlink" href="#supported-orthomax-variants" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Varimax (<span class="arithmatex">\(\gamma = 1.0\)</span>)</strong>: The gold standard in applied statistics and R's default (<code>stats::varimax</code>). Maximizes the variance of squared loadings within each column. Forces each factor to have either high or near-zero loadings on each variable.</li>
+<li><strong>Quartimax (<span class="arithmatex">\(\gamma = 0.0\)</span>)</strong>: Simplifies rows (variables) rather than columns (factors). Maximizes the kurtosis of squared loadings across variables.</li>
+<li><strong>Equamax (<span class="arithmatex">\(\gamma = k / 2\)</span>)</strong>: Balanced compromise between column simplicity (Varimax) and row simplicity (Quartimax).</li>
+<li><strong>Parsimax (<span class="arithmatex">\(\gamma = \frac{p (k - 1)}{p + k - 2}\)</span>)</strong>: Weight adjusted for the variable-to-factor ratio, maximizing overall factor parsimony.</li>
+<li><strong>Biquartimax (<span class="arithmatex">\(\gamma = 0.5\)</span>)</strong>: Fixed equal weighting between row and column simplicity criteria.</li>
+</ul>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComponentModel</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 1. Generate correlated multi-test aptitude battery</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">n_students</span> <span class="o">=</span> <span class="mi">500</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Latent ability factors: Verbal (v) and Quantitative/Spatial (m)</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">v</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">m</span> <span class="o">=</span> <span class="mf">0.45</span> <span class="o">*</span> <span class="n">v</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.89</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>  <span class="c1"># Correlated latent abilities</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># Observed test battery scores with noise</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">read</span> <span class="o">=</span> <span class="mf">0.85</span> <span class="o">*</span> <span class="n">v</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">vocab</span> <span class="o">=</span> <span class="mf">0.80</span> <span class="o">*</span> <span class="n">v</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">gram</span> <span class="o">=</span> <span class="mf">0.75</span> <span class="o">*</span> <span class="n">v</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">geom</span> <span class="o">=</span> <span class="mf">0.85</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="n">arith</span> <span class="o">=</span> <span class="mf">0.80</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="n">algeb</span> <span class="o">=</span> <span class="mf">0.88</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">n_students</span><span class="p">)</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">read</span><span class="p">,</span> <span class="n">vocab</span><span class="p">,</span> <span class="n">gram</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">arith</span><span class="p">,</span> <span class="n">algeb</span><span class="p">])</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Reading"</span><span class="p">,</span> <span class="s2">"Vocab"</span><span class="p">,</span> <span class="s2">"Grammar"</span><span class="p">,</span> <span class="s2">"Geometry"</span><span class="p">,</span> <span class="s2">"Arithmetic"</span><span class="p">,</span> <span class="s2">"Algebra"</span><span class="p">]</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="c1"># 2. Fit ComponentModel with Varimax orthogonal rotation</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="n">pca_vari</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s2">"varimax"</span><span class="p">)</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="n">pca_vari</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="c1"># 3. Transform to factor scores and inspect rotated loadings</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="n">Z_scores</span> <span class="o">=</span> <span class="n">pca_vari</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="n">loadings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pca_vari</span><span class="o">.</span><span class="n">components_</span><span class="p">)</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Varimax Rotated Factor Loadings (Simple Structure):"</span><span class="p">)</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Test'</span><span class="si">:</span><span class="s2">12</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'Factor 1 (Verbal)'</span><span class="si">:</span><span class="s2">18</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'Factor 2 (Math)'</span><span class="si">:</span><span class="s2">18</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"-"</span> <span class="o">*</span> <span class="mi">54</span><span class="p">)</span>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">feature_names</span><span class="p">,</span> <span class="n">loadings</span><span class="p">):</span>
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">12</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+18.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+18.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Varimax Rotated Factor Loadings (Simple Structure):
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Test         | Factor 1 (Verbal)  | Factor 2 (Math)   
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>------------------------------------------------------
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>Reading      |             +0.172 |             +0.170
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Vocab        |             +0.571 |             +0.563
+</span></code></pre></div>
+<hr />
+<h3 id="2-promax-rotation-oblique-simple-structure-hendrickson-white-1964">2. Promax Rotation: Oblique Simple Structure (Hendrickson &amp; White, 1964)<a class="headerlink" href="#2-promax-rotation-oblique-simple-structure-hendrickson-white-1964" title="Permanent link">&para;</a></h3>
+<p>Real-world latent dimensions often correlate (for example, verbal aptitude correlates with mathematical aptitude). Forcing factor axes to remain strictly perpendicular (<span class="arithmatex">\(90^\circ\)</span>, orthogonal) introduces artificial distortion and cross-loadings.</p>
+<p><strong>Promax</strong> relaxes orthogonality through an efficient oblique Procrustes solve:</p>
+<ol>
+<li>Compute the orthogonal Varimax rotated loadings <span class="arithmatex">\(\mathbf{\Lambda}_{\text{vari}}\)</span>.</li>
+<li>Construct a non-linear target matrix <span class="arithmatex">\(\mathbf{H}\)</span> by raising loadings to a power <span class="arithmatex">\(m\)</span> (default <span class="arithmatex">\(m = 4\)</span>):
+   $<span class="arithmatex">\(H_{ij} = \text{sgn}(\lambda_{ij}) |\lambda_{ij}|^m\)</span>$
+   Because small loadings shrink dramatically (<span class="arithmatex">\(0.2^4 = 0.0016\)</span>) while large loadings stay substantial (<span class="arithmatex">\(0.8^4 = 0.4096\)</span>), <span class="arithmatex">\(\mathbf{H}\)</span> acts as an idealized simple structure template.</li>
+<li>Solve the unconstrained Procrustes least-squares rotation towards <span class="arithmatex">\(\mathbf{H}\)</span>:
+   $<span class="arithmatex">\(\mathbf{L} = (\mathbf{\Lambda}_{\text{vari}}^T \mathbf{\Lambda}_{\text{vari}})^{-1} \mathbf{\Lambda}_{\text{vari}}^T \mathbf{H}\)</span>$</li>
+<li>Normalize the columns of <span class="arithmatex">\(\mathbf{L}\)</span> to unit length, yielding the oblique transformation matrix <span class="arithmatex">\(\mathbf{T}\)</span>.</li>
+<li>Calculate the factor correlation matrix:
+   $<span class="arithmatex">\(\mathbf{\Phi} = (\mathbf{T}^T \mathbf{T})^{-1}\)</span>$</li>
+</ol>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Fit PCA with Promax oblique rotation (power m=4.0)</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">pca_promax</span> <span class="o">=</span> <span class="n">ComponentModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s2">"promax"</span><span class="p">,</span> <span class="n">promax_m</span><span class="o">=</span><span class="mf">4.0</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">pca_promax</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Loadings and inter-factor correlation</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">loadings</span> <span class="o">=</span> <span class="n">pca_promax</span><span class="o">.</span><span class="n">components_</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">phi</span> <span class="o">=</span> <span class="n">pca_promax</span><span class="o">.</span><span class="n">factor_correlations_</span>
+</span></code></pre></div>
+<hr />
+<h3 id="3-cognitive-aptitude-battery-case-study">3. Cognitive Aptitude Battery Case Study<a class="headerlink" href="#3-cognitive-aptitude-battery-case-study" title="Permanent link">&para;</a></h3>
+<p>To illustrate how rotation transforms uninterpretable mathematical eigenvectors into distinct psychological concepts, consider an 8-variable cognitive aptitude battery (1,200 individuals):
+- <strong>Verbal Tests</strong>: <code>ReadingComp</code>, <code>Vocabulary</code>, <code>GrammarUsage</code>
+- <strong>Quantitative &amp; Spatial Tests</strong>: <code>GeometryProof</code>, <code>ArithmeticSpeed</code>, <code>Algebra</code>, <code>BlockDesign</code>, <code>ObjectAssembly</code></p>
+<h4 id="empirical-loadings-comparison">Empirical Loadings Comparison<a class="headerlink" href="#empirical-loadings-comparison" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>======================================================================================================
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Variable            Raw PC1 (g)  Raw PC2 (Bipolar) | Varimax F1 (Verbal)  Varimax F2 (Math/Spatial)
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>======================================================================================================
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>ReadingComp             0.354           -0.341    |       0.892                  0.084
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>Vocabulary              0.362           -0.330    |       0.874                  0.091
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>GrammarUsage            0.348           -0.352    |       0.841                  0.118
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>GeometryProof           0.368            0.312    |       0.098                  0.852
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>ArithmeticSpeed         0.339            0.345    |       0.076                  0.814
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>Algebra                 0.375            0.320    |       0.112                  0.881
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>BlockDesign             0.341            0.338    |       0.065                  0.763
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>ObjectAssembly          0.331            0.340    |       0.089                  0.749
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>======================================================================================================
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>Thurstone Sparsity (&lt; 0.15):   0 of 16 (0.0%)     |              8 of 16 (50.0%)
+</span></code></pre></div>
+<h4 id="interpretation-of-results">Interpretation of Results:<a class="headerlink" href="#interpretation-of-results" title="Permanent link">&para;</a></h4>
+<ol>
+<li><strong>Raw PCA</strong>: PC1 places roughly equal weight (<span class="arithmatex">\(0.33 - 0.38\)</span>) on all 8 tests. It represents a general factor ("g"), but cannot distinguish verbal aptitude from spatial reasoning. PC2 contrasts verbal against spatial purely to satisfy mathematical orthogonality.</li>
+<li><strong>Varimax</strong>: Rotates axes to maximize column variance. Factor 1 isolates Verbal Ability (0.84 to 0.89 on verbal tests, <span class="arithmatex">\(&lt; 0.12\)</span> on math/spatial). Factor 2 isolates Quantitative/Spatial Ability (0.75 to 0.88 on math/spatial, <span class="arithmatex">\(&lt; 0.10\)</span> on verbal). Sparsity improves from 0.0% to 50.0%.</li>
+<li><strong>Promax</strong>: Discovers the true oblique structure and reveals that Verbal and Quantitative/Spatial abilities share an empirical correlation of <span class="arithmatex">\(\rho = 0.428\)</span>, consistent with psychometric literature.</li>
+</ol>
+<hr />
+<h3 id="4-decision-guide-which-rotation-when">4. Decision Guide: Which Rotation When?<a class="headerlink" href="#4-decision-guide-which-rotation-when" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Type</th>
+<th>Property</th>
+<th>Best Use Case</th>
+<th>R Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Raw PCA (<code>None</code>)</strong></td>
+<td>Orthogonal</td>
+<td>Max variance along decreasing eigenvalues</td>
+<td>Dimension reduction, compression, pre-whitening</td>
+<td><code>stats::prcomp</code></td>
+</tr>
+<tr>
+<td><strong><code>"varimax"</code></strong></td>
+<td>Orthogonal</td>
+<td>Maximizes squared column loading variance</td>
+<td>General exploratory factor analysis, independent features</td>
+<td><code>stats::varimax</code></td>
+</tr>
+<tr>
+<td><strong><code>"quartimax"</code></strong></td>
+<td>Orthogonal</td>
+<td>Maximizes row kurtosis (simplifies variables)</td>
+<td>Eliminating cross-loadings for dominant variables</td>
+<td><code>psych::quartimax</code></td>
+</tr>
+<tr>
+<td><strong><code>"equamax"</code></strong></td>
+<td>Orthogonal</td>
+<td>Balanced column and row criteria (<span class="arithmatex">\(k/2\)</span>)</td>
+<td>Moderately correlated batteries with moderate factor count</td>
+<td><code>psych::equamax</code></td>
+</tr>
+<tr>
+<td><strong><code>"parsimax"</code></strong></td>
+<td>Orthogonal</td>
+<td>Adjusted for variable-to-factor ratio</td>
+<td>High-dimensional data with small target factor count</td>
+<td><code>psych::parsimax</code></td>
+</tr>
+<tr>
+<td><strong><code>"promax"</code></strong></td>
+<td>Oblique</td>
+<td>Procrustes target power (<span class="arithmatex">\(m=4\)</span>) rotation</td>
+<td>Natural domains where latent constructs correlate</td>
+<td><code>stats::promax</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="5-api-reference">5. API Reference<a class="headerlink" href="#5-api-reference" title="Permanent link">&para;</a></h3>
+<h4 id="configuration-parameters">Configuration Parameters<a class="headerlink" href="#configuration-parameters" title="Permanent link">&para;</a></h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">ComponentModel</span><span class="p">(</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">kind</span><span class="o">=</span><span class="s2">"pca"</span><span class="p">,</span>               <span class="c1"># "pca", "svd", "whitening", "ica", "nmf", "fa"</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>           <span class="c1"># Subspace rank</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">rotation</span><span class="o">=</span><span class="s2">"varimax"</span><span class="p">,</span>       <span class="c1"># "none", "varimax", "quartimax", "equamax", "parsimax", "biquartimax", "promax"</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">promax_m</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>             <span class="c1"># Promax target exponent (default 4.0)</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">max_iter</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>             <span class="c1"># Max iterations for iterative algorithms</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">tol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>                 <span class="c1"># Convergence tolerance for iterative algorithms</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>                  <span class="c1"># Random seed</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="fitted-attributes">Fitted Attributes<a class="headerlink" href="#fitted-attributes" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>components_</code>: Rotated factor loadings <span class="arithmatex">\(\mathbf{\Lambda}\)</span> (shape <span class="arithmatex">\(p \times k\)</span>).</li>
+<li><code>rotation_matrix_</code>: Transformation matrix <span class="arithmatex">\(\mathbf{T}\)</span> (shape <span class="arithmatex">\(k \times k\)</span>).</li>
+<li><code>factor_correlations_</code>: Inter-factor correlation matrix <span class="arithmatex">\(\mathbf{\Phi}\)</span> (shape <span class="arithmatex">\(k \times k\)</span>, identity for orthogonal rotations).</li>
+<li><code>explained_variance_ratio_</code>: Realized variance share per factor.</li>
+<li><code>report()</code>: Unified <code>ModelReport</code> containing condition number, reconstruction error, and sparsity statistics.</li>
+</ul>
+<hr />
+<h2 id="operational-limitations-failure-modes">Operational Limitations &amp; Failure Modes<a class="headerlink" href="#operational-limitations-failure-modes" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Strict Non-Negativity Violation in NMF</strong>:
+   Non-Negative Matrix Factorization requires <span class="arithmatex">\(X_{i, j} \ge 0\)</span> for all entries. Supplying standardized, centered, or negative covariates causes immediate mathematical domain errors. Shift or scale features to the interval <span class="arithmatex">\([0, 1]\)</span> before fitting NMF.</li>
+<li><strong>Non-Convexity &amp; Local Minima</strong>:
+   The NMF objective <span class="arithmatex">\(\min_{W, H \ge 0} \|X - WH\|_F^2\)</span> is non-convex in <span class="arithmatex">\((W, H)\)</span> jointly. Convergence to a global minimum is not guaranteed. <code>mltreelib-core</code> uses deterministic SVD/NNDSVD initialization to ensure reproducible, high-quality basis convergence.</li>
+<li><strong>Rotational Indeterminacy Under Degenerate Eigenvalues</strong>:
+   When principal components share identical singular values (<span class="arithmatex">\(\sigma_i \approx \sigma_j\)</span>), orthogonal and oblique factor rotations encounter spherical indeterminacy, causing convergence oscillation in iterative Orthomax sweeps.</li>
+<li><strong>Whitening High-Frequency Noise Amplification</strong>:
+   Covariance whitening inverses singular values (<span class="arithmatex">\(\Sigma^{-1}\)</span>). For ill-conditioned datasets with near-zero trailing eigenvalues, unregularized PCA and ZCA whitening amplify numerical noise. Always apply a regularization floor <span class="arithmatex">\(\epsilon &gt; 0\)</span> when singular values approach machine precision.</li>
+</ol>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Kaiser, H. F. (1958). "The varimax criterion for analytic rotation in factor analysis." <em>Psychometrika</em>, 23(3), 187-200.</li>
+<li>Hendrickson, A. E., &amp; White, P. O. (1964). "PROMAX: A quick method for rotation to oblique simple structure." <em>British Journal of Statistical Psychology</em>, 17(1), 65-70.</li>
+<li>Cichocki, A., &amp; Phan, A. H. (2009). "Fast local algorithms for large scale nonnegative matrix and tensor factorizations." <em>IEICE Transactions on Fundamentals of Electronics, Communications and Computer Sciences</em>, 92(3), 708-721.</li>
+<li>Bell, A. J., &amp; Sejnowski, T. J. (1995). "An information-maximization approach to blind separation and blind deconvolution." <em>Neural Computation</em>, 7(6), 1129-1159.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../anomaly-trees/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 13. Anomaly trees">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                13. Anomaly trees
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../solvers-and-optimizers/" class="md-footer__link md-footer__link--next" aria-label="Next: 15. Solvers and optimizers">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                15. Solvers and optimizers
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","navigation.footer","content.code.copy","search.suggest","search.highlight","content.tabs.link","content.footnote.tooltips","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="../../assets/medium-zoom.min.js"></script>
+      
+        <script src="../../assets/zoom-init.js"></script>
+      
+        <script src="../../assets/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

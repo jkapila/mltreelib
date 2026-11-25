@@ -1,0 +1,3845 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Unified benchmark of numerical and evolutionary leaf solvers, standalone weighted GLM fitting, bounded black-box optimization, and real-data tree tuning in mltreelib.">
+      
+      
+      
+        <link rel="canonical" href="https://jkapila.github.io/mltreelib/concepts/solvers-and-optimizers/">
+      
+      
+      
+        <link rel="prev" href="../components-and-rotations/">
+      
+      
+        <link rel="next" href="../../blog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/mltreelib-icon.svg">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Solvers, Optimizers & Real-Data Tuning - mltreelib v0.4.15</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  <meta name="google-site-verification" content="LCgS95ZWOY6LRvj9dPu6KyL4JyDeQ2yL9tf53rq2jgY" />
+
+  <!-- AEO / GEO / Discovery Links -->
+  <link rel="alternate" type="text/plain" href="https://jkapila.github.io/mltreelib/llms.txt" title="LLM Context Summary" />
+  <link rel="alternate" type="text/plain" href="https://jkapila.github.io/mltreelib/llms-full.txt" title="Full LLM Documentation" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="https://jkapila.github.io/mltreelib/sitemap.xml" />
+
+  <!-- Open Graph / Schema Metadata -->
+  <meta property="og:site_name" content="mltreelib" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+
+  <!-- Structured Data (JSON-LD) for AEO / Search Engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "mltreelib",
+    "description": "Tree-based machine learning with a pure Rust core and Python/R interfaces",
+    "codeRepository": "https://github.com/jkapila/mltreelib",
+    "programmingLanguage": ["Rust", "Python", "R"],
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mltreelib v0.4.15
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Solvers, Optimizers & Real-Data Tuning
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+      
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+
+    </a>
+    mltreelib v0.4.15
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jkapila/mltreelib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jkapila/mltreelib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why-mltreelib/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Why mltreelib
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Concepts
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-tree-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1. Tree architecture and growth knobs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tree-architecture-and-knobs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2. Growth knobs in practice
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constraints-and-honesty/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3. Constraints and honesty
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../missing-data-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4. Native missing-data routing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-matrix-and-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5. Data ingestion in practice
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statistical-and-metric-splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6. Statistical and metric splitting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributional-leaves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7. Distributional and censored leaves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../piecewise-linear-and-cubist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8. Piecewise linear trees and Cubist rules
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hierarchical-retrain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9. Leaf retraining and micro-models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  10. Survival and competing risks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../timeseries-forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  11. Time series forecasting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clustering-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  12. Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anomaly-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  13. Anomaly trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components-and-rotations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  14. Components and rotations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  15. Solvers and optimizers
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  15. Solvers and optimizers
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-architectural-decoupling-tree-partitions-vs-leaf-solvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Architectural Decoupling: Tree Partitions vs. Leaf Solvers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mathematical-formulations-of-the-seven-solvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Mathematical Formulations of the Seven Solvers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mathematical Formulations of the Seven Solvers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-analytical-cholesky-leaf_solverirls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Analytical Cholesky (<code>leaf_solver="irls"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-quasi-newton-l-bfgs-leaf_solverlbfgs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Quasi-Newton L-BFGS (<code>leaf_solver="lbfgs"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cyclic-coordinate-descent-leaf_solverccd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Cyclic Coordinate Descent (<code>leaf_solver="ccd"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-success-history-adaptive-differential-evolution-leaf_solvershade" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Success-History Adaptive Differential Evolution (<code>leaf_solver="shade"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-covariance-matrix-adaptation-leaf_solvercmaes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Covariance Matrix Adaptation (<code>leaf_solver="cmaes"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-real-coded-genetic-algorithm-leaf_solverga" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Real-Coded Genetic Algorithm (<code>leaf_solver="ga"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-separable-natural-evolution-strategies-leaf_solvernes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Separable Natural Evolution Strategies (<code>leaf_solver="nes"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-empirical-benchmark-on-real-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Empirical Benchmark on Real Data
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Empirical Benchmark on Real Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-on-concrete-strength-8020-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results on Concrete Strength (80/20 split)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-latency-vs-accuracy-pareto-diagnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Latency vs. Accuracy Pareto Diagnostic
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Latency vs. Accuracy Pareto Diagnostic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key Observations:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-generic-bounded-optimization-real-data-hyperparameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Generic Bounded Optimization &amp; Real-Data Hyperparameter Tuning
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Generic Bounded Optimization &amp; Real-Data Hyperparameter Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-mathematical-landscapes-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Standard Mathematical Landscapes Benchmark
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-data-modeltree-hyperparameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Real-Data ModelTree Hyperparameter Tuning
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-production-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Production Recommendations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-worked-example-generic-solvers-and-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Worked example: generic solvers and tuning
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Worked example: generic solvers and tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-solver-architecture-the-14-supported-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Solver Architecture: The 14 Supported Algorithms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-standalone-numerical-optimization-one-shot-ask-tell-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Standalone Numerical Optimization: One-Shot &amp; Ask-Tell Interface
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Standalone Numerical Optimization: One-Shot &amp; Ask-Tell Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-a-one-shot-minimization-optimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Method A: One-Shot Minimization (<code>optimize</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-b-asynchronous-population-search-asktell" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Method B: Asynchronous Population Search (<code>AskTell</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-automated-tree-hyperparameter-optimization-hpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Automated Tree Hyperparameter Optimization (HPO)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-limitations-numerical-failure-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Operational Limitations &amp; Numerical Failure Modes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        References
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blog
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blog
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/prescriptive-inventory-replenishment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prescriptive Replenishment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/segregate-first-two-stage-survival-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Two-Stage Survival Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/why-credit-scoring-needs-glass-box-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Credit Scoring and Trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/uplift-modeling-with-causal-trees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Causal Uplift Modeling
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/zero-imputation-predictive-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Zero-Imputation Maintenance
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1. Prepare data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2. Regression
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3. Classification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/survival/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4. Survival
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/uplift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5. Uplift
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6. Clustering
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7. Anomaly detection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8. Evaluate and monitor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/metrics-plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9. Metrics, diagnostics and calibration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/model-inspection-and-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  10. Inspect a model: rules and stumps
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  11. Visualization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/serving-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  12. Serving contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/advanced-modeling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  13. Extend a model tree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/real-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  14. Get the real datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Benchmarks
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_overall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overall Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/elo_cla_board/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Classification Arena
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/regression-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Regression methods study
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../field-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Field Notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_10">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameters Catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/model-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ModelTree
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Clustering trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/anomaly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Anomaly & density trees
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Component & factor analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rule-set models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model reports & diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Encoders & scalers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Feature functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/solvers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Solvers & optimization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/rust-generic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rust generic seam
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics guide
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluation reports
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-architectural-decoupling-tree-partitions-vs-leaf-solvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Architectural Decoupling: Tree Partitions vs. Leaf Solvers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mathematical-formulations-of-the-seven-solvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Mathematical Formulations of the Seven Solvers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mathematical Formulations of the Seven Solvers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-analytical-cholesky-leaf_solverirls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Analytical Cholesky (<code>leaf_solver="irls"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-quasi-newton-l-bfgs-leaf_solverlbfgs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Quasi-Newton L-BFGS (<code>leaf_solver="lbfgs"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cyclic-coordinate-descent-leaf_solverccd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Cyclic Coordinate Descent (<code>leaf_solver="ccd"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-success-history-adaptive-differential-evolution-leaf_solvershade" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Success-History Adaptive Differential Evolution (<code>leaf_solver="shade"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-covariance-matrix-adaptation-leaf_solvercmaes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Covariance Matrix Adaptation (<code>leaf_solver="cmaes"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-real-coded-genetic-algorithm-leaf_solverga" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Real-Coded Genetic Algorithm (<code>leaf_solver="ga"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-separable-natural-evolution-strategies-leaf_solvernes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Separable Natural Evolution Strategies (<code>leaf_solver="nes"</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-empirical-benchmark-on-real-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Empirical Benchmark on Real Data
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Empirical Benchmark on Real Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-results-on-concrete-strength-8020-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benchmark Results on Concrete Strength (80/20 split)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-latency-vs-accuracy-pareto-diagnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Latency vs. Accuracy Pareto Diagnostic
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Latency vs. Accuracy Pareto Diagnostic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key Observations:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-generic-bounded-optimization-real-data-hyperparameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Generic Bounded Optimization &amp; Real-Data Hyperparameter Tuning
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Generic Bounded Optimization &amp; Real-Data Hyperparameter Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-mathematical-landscapes-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Standard Mathematical Landscapes Benchmark
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-data-modeltree-hyperparameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Real-Data ModelTree Hyperparameter Tuning
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-production-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Production Recommendations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-worked-example-generic-solvers-and-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Worked example: generic solvers and tuning
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Worked example: generic solvers and tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-solver-architecture-the-14-supported-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Solver Architecture: The 14 Supported Algorithms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-standalone-numerical-optimization-one-shot-ask-tell-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Standalone Numerical Optimization: One-Shot &amp; Ask-Tell Interface
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Standalone Numerical Optimization: One-Shot &amp; Ask-Tell Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-a-one-shot-minimization-optimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Method A: One-Shot Minimization (<code>optimize</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-b-asynchronous-population-search-asktell" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Method B: Asynchronous Population Search (<code>AskTell</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-automated-tree-hyperparameter-optimization-hpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Automated Tree Hyperparameter Optimization (HPO)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-limitations-numerical-failure-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Operational Limitations &amp; Numerical Failure Modes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        References
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="solvers-optimizers-real-data-tuning">Solvers, Optimizers &amp; Real-Data Tuning<a class="headerlink" href="#solvers-optimizers-real-data-tuning" title="Permanent link">&para;</a></h1>
+<p>Benchmark numerical, quasi-Newton, and continuous evolutionary leaf solvers, standalone GLM fits, and bounded black-box optimizers implemented natively in <code>mltreelib-core</code>.</p>
+<p>Run suite from repository root after building release extension:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/suites/solver_benchmarks.py
+</span></code></pre></div>
+<hr />
+<h2 id="1-architectural-decoupling-tree-partitions-vs-leaf-solvers">1. Architectural Decoupling: Tree Partitions vs. Leaf Solvers<a class="headerlink" href="#1-architectural-decoupling-tree-partitions-vs-leaf-solvers" title="Permanent link">&para;</a></h2>
+<p>In standard model trees, evaluating complex optimization problems at every candidate split threshold incurs prohibitive computational cost (<span class="arithmatex">\(O(K \cdot N \cdot P^2)\)</span>). <code>ModelTree</code> solves this through <strong>two-control decoupling</strong>:</p>
+<ol>
+<li><strong>Tree Search</strong>: Fast scalar heuristics (Variance reduction, Chow test, Log-rank) discover spatial partition boundaries.</li>
+<li><strong>Leaf Optimization</strong>: Once terminal regions are established, the compatible optimizer selected with <code>LeafControl(solver=...)</code> fits each local model.</li>
+</ol>
+<p>All seven choices apply to Gaussian linear leaves. Supported non-Gaussian linear GLMs use IRLS or L-BFGS.</p>
+<pre class="mermaid"><code>flowchart LR
+    Data["Candidate Data in Leaf Node\n[X, y]"] --&gt; Fam{"Is the loss smooth\nand convex?"}
+
+    Fam -- "Yes: Gaussian / Ridge" --&gt; S1["irls (Cholesky / faer)\nExact closed-form solution"]
+    Fam -- "Yes: Smooth GLM / Tobit" --&gt; S2["lbfgs (Quasi-Newton)\nArmijo line-search"]
+    Fam -- "L1 Elastic Net Sparsity" --&gt; S3["ccd (Coordinate Descent)\nExact zero-coefficients"]
+    Fam -- "No: Non-Convex / Multi-Modal / Glitchy" --&gt; S4{"Derivative-Free\nEvolutionary Family"}
+
+    S4 --&gt; E1["shade: Adaptive Differential Evolution\nNear-optimal"]
+    S4 --&gt; E2["cmaes: Covariance Matrix Adaptation\nIll-conditioned"]
+    S4 --&gt; E3["ga: Real-Coded Genetic Algorithm\nGlobal exploration"]
+    S4 --&gt; E4["nes: Natural Evolution Strategies\nGradient estimation"]
+
+    classDef dataBox fill:#1e293b,stroke:#475569,stroke-width:2px,color:#ffffff;
+    classDef gateBox fill:#b45309,stroke:#d97706,stroke-width:2px,color:#ffffff;
+    classDef gradBox fill:#065f46,stroke:#059669,stroke-width:2px,color:#ffffff;
+    classDef evoBox fill:#4338ca,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+
+    class Data dataBox;
+    class Fam,S4 gateBox;
+    class S1,S2,S3 gradBox;
+    class E1,E2,E3,E4 evoBox;</code></pre>
+<p><strong>Next:</strong> step 2 gives the formula for each of the seven <code>leaf_solver</code> options that step 1 describes.</p>
+<hr />
+<h2 id="2-mathematical-formulations-of-the-seven-solvers">2. Mathematical Formulations of the Seven Solvers<a class="headerlink" href="#2-mathematical-formulations-of-the-seven-solvers" title="Permanent link">&para;</a></h2>
+<h3 id="1-analytical-cholesky-leaf_solverirls">1. Analytical Cholesky (<code>leaf_solver="irls"</code>)<a class="headerlink" href="#1-analytical-cholesky-leaf_solverirls" title="Permanent link">&para;</a></h3>
+<p>For continuous Gaussian targets with Ridge <span class="arithmatex">\(L_2\)</span> regularization:
+$<span class="arithmatex">\(\min_{\beta} \frac{1}{2N} \|y - X\beta\|_2^2 + \frac{\lambda_2}{2} \|\beta\|_2^2\)</span>$</p>
+<p>The gradient vanishes at the exact normal equations:
+$<span class="arithmatex">\((X^T X + N \lambda_2 I) \beta^* = X^T y\)</span>$</p>
+<p><code>mltreelib-core</code> computes the lower-triangular Cholesky factor <span class="arithmatex">\(L L^T = (X^T X + N \lambda_2 I)\)</span> via <code>faer</code>, followed by forward and backward substitution. Latency is <span class="arithmatex">\(O(P^3)\)</span> where <span class="arithmatex">\(P\)</span> is feature count.</p>
+<h3 id="2-quasi-newton-l-bfgs-leaf_solverlbfgs">2. Quasi-Newton L-BFGS (<code>leaf_solver="lbfgs"</code>)<a class="headerlink" href="#2-quasi-newton-l-bfgs-leaf_solverlbfgs" title="Permanent link">&para;</a></h3>
+<p>For smooth non-linear likelihoods (GLM families, Tobit censored regression), L-BFGS updates search direction <span class="arithmatex">\(d_k = -H_k \nabla f(\beta_k)\)</span> using two-loop recursion on past <span class="arithmatex">\(m=5\)</span> vector pairs:
+$<span class="arithmatex">\(s_k = \beta_{k+1} - \beta_k, \qquad y_k = \nabla f(\beta_{k+1}) - \nabla f(\beta_k)\)</span>$</p>
+<p>Step length <span class="arithmatex">\(\alpha_k\)</span> satisfies the Armijo condition:
+$<span class="arithmatex">\(f(\beta_k + \alpha_k d_k) \le f(\beta_k) + c_1 \alpha_k \nabla f(\beta_k)^T d_k\)</span>$</p>
+<h3 id="3-cyclic-coordinate-descent-leaf_solverccd">3. Cyclic Coordinate Descent (<code>leaf_solver="ccd"</code>)<a class="headerlink" href="#3-cyclic-coordinate-descent-leaf_solverccd" title="Permanent link">&para;</a></h3>
+<p>Minimizes the non-smooth Elastic Net objective:
+$<span class="arithmatex">\(\min_{\beta} \frac{1}{2N} \|y - X\beta\|_2^2 + \lambda_1 \|\beta\|_1 + \frac{\lambda_2}{2} \|\beta\|_2^2\)</span>$</p>
+<p>Updates each coordinate <span class="arithmatex">\(\beta_j\)</span> sequentially using soft-thresholding operator <span class="arithmatex">\(\mathcal{S}(z, \gamma) = \text{sign}(z)\max(|z| - \gamma, 0)\)</span>:
+$<span class="arithmatex">\(\beta_j \leftarrow \frac{\mathcal{S}\left( \frac{1}{N} X_j^T (y - \sum_{k \ne j} X_k \beta_k), \, \lambda_1 \right)}{\frac{1}{N} X_j^T X_j + \lambda_2}\)</span>$
+Produces exact zero coefficients for irrelevant features inside terminal leaves.</p>
+<h3 id="4-success-history-adaptive-differential-evolution-leaf_solvershade">4. Success-History Adaptive Differential Evolution (<code>leaf_solver="shade"</code>)<a class="headerlink" href="#4-success-history-adaptive-differential-evolution-leaf_solvershade" title="Permanent link">&para;</a></h3>
+<p>Derivative-free continuous optimization. Generates mutant vectors using the current-to-<span class="arithmatex">\(p\text{best}/1\)</span> strategy:
+$<span class="arithmatex">\(v_{i} = x_i + F_i (x_{\text{pbest}} - x_i) + F_i (x_{r_1} - \tilde{x}_{r_2})\)</span>$
+where <span class="arithmatex">\(\tilde{x}_{r_2}\)</span> is sampled from the union of current population <span class="arithmatex">\(P\)</span> and external archive <span class="arithmatex">\(A\)</span>. Adaptation memories <span class="arithmatex">\(M_F\)</span> and <span class="arithmatex">\(M_{CR}\)</span> dynamically tune mutation factor <span class="arithmatex">\(F_i\)</span> and crossover probability <span class="arithmatex">\(CR_i\)</span> based on successful fitness gains across generations.</p>
+<h3 id="5-covariance-matrix-adaptation-leaf_solvercmaes">5. Covariance Matrix Adaptation (<code>leaf_solver="cmaes"</code>)<a class="headerlink" href="#5-covariance-matrix-adaptation-leaf_solvercmaes" title="Permanent link">&para;</a></h3>
+<p>Samples candidate parameter vectors <span class="arithmatex">\(x_i \sim \mathcal{N}(m^{(g)}, (\sigma^{(g)})^2 C^{(g)})\)</span>. Adapts the covariance matrix <span class="arithmatex">\(C\)</span> without computing gradients or Hessians:
+$<span class="arithmatex">\(C^{(g+1)} = (1 - c_1 - c_\mu) C^{(g)} + c_1 p_c^{(g+1)} (p_c^{(g+1)})^T + c_\mu \sum_{i=1}^\mu w_i y_{i:\lambda} y_{i:\lambda}^T\)</span>$
+Learns second-order dependency landscape, enabling convergence on highly correlated parameter spaces.</p>
+<h3 id="6-real-coded-genetic-algorithm-leaf_solverga">6. Real-Coded Genetic Algorithm (<code>leaf_solver="ga"</code>)<a class="headerlink" href="#6-real-coded-genetic-algorithm-leaf_solverga" title="Permanent link">&para;</a></h3>
+<p>Evolves a continuous chromosome population using Simulated Binary Crossover (SBX) with distribution index <span class="arithmatex">\(\eta_c\)</span> and polynomial mutation with index <span class="arithmatex">\(\eta_m\)</span>:
+$<span class="arithmatex">\(\beta_{1, 2} = \frac{1}{2} \left[ (1 \mp \gamma) x_1 + (1 \pm \gamma) x_2 \right]\)</span>$
+Provides broad global exploration of non-convex and multi-modal leaf loss functions.</p>
+<h3 id="7-separable-natural-evolution-strategies-leaf_solvernes">7. Separable Natural Evolution Strategies (<code>leaf_solver="nes"</code>)<a class="headerlink" href="#7-separable-natural-evolution-strategies-leaf_solvernes" title="Permanent link">&para;</a></h3>
+<p>Updates parameter distribution parameters <span class="arithmatex">\(\theta = (\mu, \sigma)\)</span> along estimated natural gradient directions:
+$<span class="arithmatex">\(\nabla_\mu J = \sum_{k=1}^\lambda w_k z_k, \qquad \nabla_\sigma J = \sum_{k=1}^\lambda w_k (z_k^2 - 1)\)</span>$
+Provides fast derivative-free updates along coordinate-aligned search directions.</p>
+<p><strong>Next:</strong> step 3 runs all seven solvers on the same Concrete split, so the formulas from step 2 can be compared on test RMSE and R².</p>
+<hr />
+<h2 id="3-empirical-benchmark-on-real-data">3. Empirical Benchmark on Real Data<a class="headerlink" href="#3-empirical-benchmark-on-real-data" title="Permanent link">&para;</a></h2>
+<p>We benchmark all seven solvers on the <strong>Yeh (1998) Concrete Compressive Strength</strong> dataset (1,030 rows, 8 features; 80% train / 20% test).</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Exact Cholesky (<code>irls</code>)</label><label for="__tabbed_1_2">Quasi-Newton (<code>lbfgs</code>)</label><label for="__tabbed_1_3">Adaptive Evolutionary (<code>shade</code>)</label><label for="__tabbed_1_4">Coordinate Descent (<code>ccd</code>)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Analytical closed-form normal equations</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="s2">"irls"</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Quasi-Newton L-BFGS with two-loop recursion</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="s2">"lbfgs"</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Success-history based adaptive differential evolution (derivative-free)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="s2">"shade"</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Cyclic coordinate descent with soft thresholding for L1 sparsity</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="s2">"ccd"</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="benchmark-results-on-concrete-strength-8020-split">Benchmark Results on Concrete Strength (80/20 split)<a class="headerlink" href="#benchmark-results-on-concrete-strength-8020-split" title="Permanent link">&para;</a></h3>
+<p>The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and <span class="arithmatex">\(R^2\)</span> only. Wall-clock timings are machine-dependent, so this page does not quote them.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_path</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"concrete_compressive_strength"</span><span class="p">))</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"ConcreteCompressiveStrength"</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">features</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">cut</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">x_train</span><span class="p">,</span> <span class="n">x_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">cut</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cut</span><span class="p">:]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">cut</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cut</span><span class="p">:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"irls"</span><span class="p">,</span> <span class="s2">"lbfgs"</span><span class="p">,</span> <span class="s2">"shade"</span><span class="p">,</span> <span class="s2">"ga"</span><span class="p">,</span> <span class="s2">"cmaes"</span><span class="p">,</span> <span class="s2">"nes"</span><span class="p">,</span> <span class="s2">"ccd"</span><span class="p">):</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"l1"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span> <span class="k">if</span> <span class="n">solver</span> <span class="o">==</span> <span class="s2">"ccd"</span> <span class="k">else</span> <span class="p">{}</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">)</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">))</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"depth=</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">solver</span><span class="si">:</span><span class="s2">6s</span><span class="si">}</span><span class="s2"> rmse=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> r2=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>depth=0 irls   rmse=10.321 r2=0.679
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>depth=0 lbfgs  rmse=10.323 r2=0.679
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>depth=0 shade  rmse=10.317 r2=0.679
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>depth=0 ga     rmse=10.811 r2=0.648
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>depth=0 cmaes  rmse=12.402 r2=0.537
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>depth=0 nes    rmse=12.974 r2=0.493
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>depth=0 ccd    rmse=10.321 r2=0.679
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>depth=2 irls   rmse=6.855 r2=0.858
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>depth=2 lbfgs  rmse=7.174 r2=0.845
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>depth=2 shade  rmse=7.175 r2=0.845
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>depth=2 ga     rmse=7.971 r2=0.809
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>depth=2 cmaes  rmse=10.291 r2=0.681
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>depth=2 nes    rmse=12.013 r2=0.565
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>depth=2 ccd    rmse=6.858 r2=0.858
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Solver</th>
+<th style="text-align: left;">Family</th>
+<th style="text-align: center;">RMSE (MPa), depth 0</th>
+<th style="text-align: center;"><span class="arithmatex">\(R^2\)</span>, depth 0</th>
+<th style="text-align: center;">RMSE (MPa), depth 2</th>
+<th style="text-align: center;"><span class="arithmatex">\(R^2\)</span>, depth 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>irls</code></strong></td>
+<td style="text-align: left;">Analytical Cholesky</td>
+<td style="text-align: center;">10.321</td>
+<td style="text-align: center;">0.679</td>
+<td style="text-align: center;">6.855</td>
+<td style="text-align: center;">0.858</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>lbfgs</code></strong></td>
+<td style="text-align: left;">Quasi-Newton</td>
+<td style="text-align: center;">10.323</td>
+<td style="text-align: center;">0.679</td>
+<td style="text-align: center;">7.174</td>
+<td style="text-align: center;">0.845</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>shade</code></strong></td>
+<td style="text-align: left;">Continuous DE</td>
+<td style="text-align: center;">10.317</td>
+<td style="text-align: center;">0.679</td>
+<td style="text-align: center;">7.175</td>
+<td style="text-align: center;">0.845</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>ga</code></strong></td>
+<td style="text-align: left;">Genetic Algorithm</td>
+<td style="text-align: center;">10.811</td>
+<td style="text-align: center;">0.648</td>
+<td style="text-align: center;">7.971</td>
+<td style="text-align: center;">0.809</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>cmaes</code></strong></td>
+<td style="text-align: left;">Evolutionary Covariance</td>
+<td style="text-align: center;">12.402</td>
+<td style="text-align: center;">0.537</td>
+<td style="text-align: center;">10.291</td>
+<td style="text-align: center;">0.681</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>nes</code></strong></td>
+<td style="text-align: left;">Natural Gradient</td>
+<td style="text-align: center;">12.974</td>
+<td style="text-align: center;">0.493</td>
+<td style="text-align: center;">12.013</td>
+<td style="text-align: center;">0.565</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>ccd</code></strong></td>
+<td style="text-align: left;">Cyclic Coordinate Descent</td>
+<td style="text-align: center;">10.321</td>
+<td style="text-align: center;">0.679</td>
+<td style="text-align: center;">6.858</td>
+<td style="text-align: center;">0.858</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Next:</strong> step 4 reads the RMSE and R² values from step 3 to point out which solvers land close together and which trail.</p>
+<hr />
+<h2 id="4-latency-vs-accuracy-pareto-diagnostic">4. Latency vs. Accuracy Pareto Diagnostic<a class="headerlink" href="#4-latency-vs-accuracy-pareto-diagnostic" title="Permanent link">&para;</a></h2>
+<p><img alt="Pareto Frontier of mltreelib Leaf Solvers" src="../../assets/solver_benchmark_pareto.png" /></p>
+<h3 id="key-observations">Key Observations:<a class="headerlink" href="#key-observations" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Global linear fit (<code>max_depth=0</code>)</strong>:
+   <code>irls</code>, <code>lbfgs</code>, <code>shade</code> and <code>ccd</code> land within 0.01 MPa of each other (10.317 to 10.323). <code>ga</code> is at 10.811, <code>cmaes</code> at 12.402 and <code>nes</code> at 12.974.</li>
+<li><strong>Shallow tree (<code>max_depth=2</code>)</strong>:
+   <code>irls</code> (6.855 MPa) and <code>ccd</code> (6.858 MPa) give the lowest test RMSE here. <code>lbfgs</code> and <code>shade</code> are at about 7.17 MPa, <code>ga</code> at 7.971 MPa. <code>cmaes</code> and <code>nes</code> are the weakest.</li>
+<li><strong>Gradient-free SHADE</strong>:
+   On this split <code>shade</code> needs no gradients and matches <code>lbfgs</code> at both depths. At depth 0 it is slightly below <code>irls</code> (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.</li>
+</ol>
+<p><strong>Next:</strong> step 5 leaves the leaf fits and applies a search to any bounded scalar objective through <code>optimize</code>, including <code>ModelTree</code> hyperparameters.</p>
+<hr />
+<h2 id="5-generic-bounded-optimization-real-data-hyperparameter-tuning">5. Generic Bounded Optimization &amp; Real-Data Hyperparameter Tuning<a class="headerlink" href="#5-generic-bounded-optimization-real-data-hyperparameter-tuning" title="Permanent link">&para;</a></h2>
+<p><code>mltreelib.solvers.optimize</code> minimizes arbitrary bounded scalar objectives through one unified contract:</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Black-box bounded minimization</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Rosenbrock</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)],</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">"lbfgs_b"</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, Best objective: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Status: evaluation_limit, Best objective: 0.562600
+</span></code></pre></div>
+<h3 id="standard-mathematical-landscapes-benchmark">Standard Mathematical Landscapes Benchmark<a class="headerlink" href="#standard-mathematical-landscapes-benchmark" title="Permanent link">&para;</a></h3>
+<p>The block below runs each method on the sphere (5 dimensions) and the Rosenbrock function (2 dimensions). Its output gives evaluation counts, best values and status. Timings are omitted because they vary by machine.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">sphere</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="p">)</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">rosenbrock</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">cases</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="p">(</span><span class="s2">"Sphere (D=5)"</span><span class="p">,</span> <span class="n">sphere</span><span class="p">,</span> <span class="p">[(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>     <span class="p">[(</span><span class="s2">"lbfgs_b"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"nelder_mead"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"cmaes"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"shade"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"random_search"</span><span class="p">,</span> <span class="mi">64</span><span class="p">)]),</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="p">(</span><span class="s2">"Rosenbrock (D=2)"</span><span class="p">,</span> <span class="n">rosenbrock</span><span class="p">,</span> <span class="p">[(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>     <span class="p">[(</span><span class="s2">"nelder_mead"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"cmaes"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"shade"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"lbfgs_b"</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="s2">"random_search"</span><span class="p">,</span> <span class="mi">64</span><span class="p">)]),</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="p">]</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">methods</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">:</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">budget</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>        <span class="n">res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">max_evaluations</span><span class="o">=</span><span class="n">budget</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">evaluations</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Sphere (D=5) | lbfgs_b | 11 | 0.000000 | converged
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>Sphere (D=5) | nelder_mead | 150 | 0.000000 | evaluation_limit
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>Sphere (D=5) | cmaes | 150 | 0.000000 | evaluation_limit
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>Sphere (D=5) | shade | 150 | 0.000000 | evaluation_limit
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>Sphere (D=5) | random_search | 64 | 11.796410 | converged
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>Rosenbrock (D=2) | nelder_mead | 150 | 0.000000 | evaluation_limit
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>Rosenbrock (D=2) | cmaes | 150 | 0.089766 | evaluation_limit
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>Rosenbrock (D=2) | shade | 150 | 0.412864 | evaluation_limit
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>Rosenbrock (D=2) | lbfgs_b | 150 | 0.610721 | evaluation_limit
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>Rosenbrock (D=2) | random_search | 64 | 1.177699 | converged
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Problem</th>
+<th style="text-align: left;">Method</th>
+<th style="text-align: center;">Evaluations</th>
+<th style="text-align: center;">Best Value</th>
+<th style="text-align: left;">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Sphere (<span class="arithmatex">\(D=5\)</span>)</strong></td>
+<td style="text-align: left;"><code>lbfgs_b</code></td>
+<td style="text-align: center;">11</td>
+<td style="text-align: center;"><strong>0.000000</strong></td>
+<td style="text-align: left;">converged</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>nelder_mead</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;"><strong>0.000000</strong></td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>cmaes</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;"><strong>0.000000</strong></td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>shade</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;"><strong>0.000000</strong></td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>random_search</code></td>
+<td style="text-align: center;">64</td>
+<td style="text-align: center;">11.796410</td>
+<td style="text-align: left;">converged</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Rosenbrock (<span class="arithmatex">\(D=2\)</span>)</strong></td>
+<td style="text-align: left;"><code>nelder_mead</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;"><strong>0.000000</strong></td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>cmaes</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;">0.089766</td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>shade</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;">0.412864</td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>lbfgs_b</code></td>
+<td style="text-align: center;">150</td>
+<td style="text-align: center;">0.610721</td>
+<td style="text-align: left;">evaluation_limit</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>random_search</code></td>
+<td style="text-align: center;">64</td>
+<td style="text-align: center;">1.177699</td>
+<td style="text-align: left;">converged</td>
+</tr>
+</tbody>
+</table>
+<h3 id="real-data-modeltree-hyperparameter-tuning">Real-Data ModelTree Hyperparameter Tuning<a class="headerlink" href="#real-data-modeltree-hyperparameter-tuning" title="Permanent link">&para;</a></h3>
+<p>Optimizing <code>ModelTree</code> hyperparameters (tree depth, minimum leaf rows, L2 penalty) directly on held-out tabular validation loss (Airfoil Self-Noise):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: center;">Evaluations</th>
+<th style="text-align: center;">Held-out RMSE (Airfoil)</th>
+<th style="text-align: center;">Wall Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>random_search</code></strong></td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">3.26 dB</td>
+<td style="text-align: center;">0.26 s</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>latin_hypercube</code></strong></td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">3.28 dB</td>
+<td style="text-align: center;">0.25 s</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>nelder_mead</code></strong></td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;"><strong>2.65 dB</strong></td>
+<td style="text-align: center;">0.44 s</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>powell</code></strong></td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">2.77 dB</td>
+<td style="text-align: center;">0.39 s</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>simulated_annealing</code></strong></td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">2.92 dB</td>
+<td style="text-align: center;">0.45 s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Next:</strong> step 6 returns to the leaf solvers, which step 5 does not change, and turns the step 3 and step 4 results into selection rules.</p>
+<hr />
+<h2 id="6-production-recommendations">6. Production Recommendations<a class="headerlink" href="#6-production-recommendations" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">When to Select Each Solver</p>
+<ul>
+<li><strong>Use <code>irls</code></strong> for standard linear ridge regression (<code>leaf="linear"</code>) on Gaussian continuous targets. It uses Rust's <code>faer</code> dense Cholesky solver with minimal overhead.</li>
+<li><strong>Use <code>lbfgs</code></strong> for GLMs (<code>leaf_family="binomial"</code>, <code>"poisson"</code>, <code>"gamma"</code>, <code>"tweedie"</code>, <code>"tobit"</code>).</li>
+<li><strong>Use <code>ccd</code></strong> when sparse leaves are mandatory (<span class="arithmatex">\(L_1 &gt; 0\)</span>) to eliminate irrelevant features inside leaf equations.</li>
+<li><strong>Use <code>shade</code></strong> when fitting custom non-smooth losses, quantile objectives with heavy outliers, or discontinuous simulation simulators.</li>
+</ul>
+</div>
+<p><strong>Next:</strong> the worked example covers the generic optimizer suite behind <code>optimize</code>, and its tree HPO example reuses that call from step 5.</p>
+<hr />
+<h2 id="7-worked-example-generic-solvers-and-tuning">7. Worked example: generic solvers and tuning<a class="headerlink" href="#7-worked-example-generic-solvers-and-tuning" title="Permanent link">&para;</a></h2>
+<p>Modern machine learning packages outsource numerical optimization to external heavyweight dependencies (SciPy, NLopt, Pagmo). When running in high-throughput production environments, cross-language FFI overhead and divergent solver interfaces introduce latency and unpredictability.</p>
+<p><code>mltreelib</code> embeds a <strong>complete, pure-Rust global and bounded optimizer suite</strong> (<code>mltreelib-core::solver::generic</code>) providing 14 distinct numerical algorithms unified under one consistent contract.</p>
+<pre class="mermaid"><code>flowchart TD
+    A["Optimization Task: Black-Box Loss or Tree HPO"] --&gt; B{"Problem Structure &amp; Differentiability"}
+
+    B -- "Smooth &amp; Gradient Available" --&gt; C["L-BFGS-B / BFGS / Nonlinear-CG\nQuasi-Newton Hessian Approximation"]
+    B -- "Non-Smooth / Discontinuous" --&gt; D["Nelder-Mead Simplex / Powell\nDirect Search Direction Sets"]
+    B -- "Highly Multimodal / Many Local Minima" --&gt; E["SHADE / CMA-ES / Simulated Annealing\nAdaptive Evolutionary Population Swarms"]
+    B -- "Fast Parameter Exploration" --&gt; F["Latin Hypercube / Sobol Sequences\nUniform Space-Filling Designs"]
+
+    C --&gt; G["Bounded Optimum Vector θ*\nSubject to Low &lt;= θ &lt;= High"]
+    D --&gt; G
+    E --&gt; G
+    F --&gt; G
+
+    classDef blueBox fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef greenBox fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#ffffff;
+    classDef grayBox fill:#334155,stroke:#64748b,stroke-width:2px,color:#ffffff;
+
+    class A,B grayBox;
+    class C,D,E,F blueBox;
+    class G greenBox;</code></pre>
+<p><img alt="Convergence Trajectories Across Solvers and HPO Parameter Surfaces" src="../../assets/guides/optimization-trajectory.svg" /></p>
+<hr />
+<h3 id="1-solver-architecture-the-14-supported-algorithms">1. Solver Architecture: The 14 Supported Algorithms<a class="headerlink" href="#1-solver-architecture-the-14-supported-algorithms" title="Permanent link">&para;</a></h3>
+<p>All algorithms conform to the <code>OptimizerKind</code> enum with explicit box bounds <span class="arithmatex">\(\boldsymbol{l} \le \boldsymbol{\theta} \le \boldsymbol{u}\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Algorithm</th>
+<th style="text-align: left;">Method Family</th>
+<th style="text-align: center;">Order</th>
+<th style="text-align: left;">Strengths &amp; Best Use Cases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong><code>LbfgsB</code></strong></td>
+<td style="text-align: left;">Quasi-Newton</td>
+<td style="text-align: center;">1<sup>st</sup> (Gradient)</td>
+<td style="text-align: left;">Smooth, continuous functions with box bounds. Fastest convergence per eval.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>NelderMead</code></strong></td>
+<td style="text-align: left;">Simplex Direct Search</td>
+<td style="text-align: center;">0<sup>th</sup> (Black-box)</td>
+<td style="text-align: left;">Robust heuristic default for noisy, low-dimensional objective functions (<span class="arithmatex">\(D \le 10\)</span>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>Powell</code></strong></td>
+<td style="text-align: left;">Direction Set Search</td>
+<td style="text-align: center;">0<sup>th</sup> (Black-box)</td>
+<td style="text-align: left;">Conjugate direction exploration without derivative requirements.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>CmaEs</code></strong></td>
+<td style="text-align: left;">Covariance Matrix Adaptation</td>
+<td style="text-align: center;">0<sup>th</sup> (Stochastic)</td>
+<td style="text-align: left;">Ill-conditioned, non-separable continuous manifolds (<span class="arithmatex">\(D \le 30\)</span>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>Shade</code></strong></td>
+<td style="text-align: left;">Success-History Adaptive DE</td>
+<td style="text-align: center;">0<sup>th</sup> (Population)</td>
+<td style="text-align: left;">Severe multimodality; state-of-the-art global search in CEC benchmarks.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>SimulatedAnnealing</code></strong></td>
+<td style="text-align: left;">Markov Chain Monte Carlo</td>
+<td style="text-align: center;">0<sup>th</sup> (Stochastic)</td>
+<td style="text-align: left;">Escapes narrow local minima via Metropolis acceptance criteria.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>Cobyla</code></strong></td>
+<td style="text-align: left;">Linear Approximations</td>
+<td style="text-align: center;">0<sup>th</sup> (Constrained)</td>
+<td style="text-align: left;">Supports non-linear inequality constraints <span class="arithmatex">\(g_i(\boldsymbol{\theta}) \le 0\)</span>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong><code>LatinHypercube</code></strong></td>
+<td style="text-align: left;">Space-Filling Design</td>
+<td style="text-align: center;">0<sup>th</sup> (Sampling)</td>
+<td style="text-align: left;">Optimal exploratory coverage for initial hyperparameter sweeps.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Solver Pareto Frontier: Wall-Clock Speed vs Objective Accuracy" src="../../assets/solver_benchmark_pareto.png" /></p>
+<hr />
+<h3 id="2-standalone-numerical-optimization-one-shot-ask-tell-interface">2. Standalone Numerical Optimization: One-Shot &amp; Ask-Tell Interface<a class="headerlink" href="#2-standalone-numerical-optimization-one-shot-ask-tell-interface" title="Permanent link">&para;</a></h3>
+<h4 id="method-a-one-shot-minimization-optimize">Method A: One-Shot Minimization (<code>optimize</code>)<a class="headerlink" href="#method-a-one-shot-minimization-optimize" title="Permanent link">&para;</a></h4>
+<p>Minimizing the classic 2D Rosenbrock function (<span class="arithmatex">\(f(x, y) = (1 - x)^2 + 100(y - x^2)^2\)</span>) inside bounds <span class="arithmatex">\([-5, 5] \times [-5, 5]\)</span>:</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># Objective function to minimize</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">rosenbrock</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">bounds</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)]</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Solve using Nelder-Mead simplex search</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">rosenbrock</span><span class="p">,</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="n">start</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">"nelder_mead"</span><span class="p">,</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="p">)</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> | Total Evaluations: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">evaluations</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Optimal Parameters: x* = </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, y* = </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (Loss = </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Status: converged | Total Evaluations: 206
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Optimal Parameters: x* = 1.0000, y* = 1.0000 (Loss = 2.65e-18)
+</span></code></pre></div>
+<hr />
+<h4 id="method-b-asynchronous-population-search-asktell">Method B: Asynchronous Population Search (<code>AskTell</code>)<a class="headerlink" href="#method-b-asynchronous-population-search-asktell" title="Permanent link">&para;</a></h4>
+<p>For expensive simulation models, distributed workers, or hardware-in-the-loop tuning, <code>mltreelib</code> provides the decoupled <strong>Ask-Tell</strong> paradigm:</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AskTell</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1"># Initialize evolutionary CMA-ES optimizer with box bounds</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">optimizer</span> <span class="o">=</span> <span class="n">AskTell</span><span class="p">(</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="s2">"cma_es"</span><span class="p">,</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)],</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">,</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">)</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="c1"># Active optimization loop</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="k">while</span> <span class="ow">not</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">should_stop</span><span class="p">:</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    <span class="c1"># 1. Ask optimizer for the next candidate parameter vectors to evaluate</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    <span class="n">candidates</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="c1"># 2. Evaluate objective loss across candidates (can run in parallel across CPU/GPU)</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>    <span class="n">fitness_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">rosenbrock</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span> <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">]</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    <span class="c1"># 3. Tell optimizer the evaluated losses to update internal covariance state</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>    <span class="n">optimizer</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">fitness_scores</span><span class="p">)</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"AskTell Optimization Complete:"</span><span class="p">)</span>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Evaluations: </span><span class="si">{</span><span class="n">optimizer</span><span class="o">.</span><span class="n">evaluations</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Best Solution: x* = </span><span class="si">{</span><span class="n">optimizer</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, y* = </span><span class="si">{</span><span class="n">optimizer</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Minimum Objective Loss: </span><span class="si">{</span><span class="n">optimizer</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.4e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>AskTell Optimization Complete:
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>  Evaluations: 120
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  Best Solution: x* = 1.1018, y* = 1.1581
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>  Minimum Objective Loss: 3.2271e-01
+</span></code></pre></div>
+<hr />
+<h3 id="3-automated-tree-hyperparameter-optimization-hpo">3. Automated Tree Hyperparameter Optimization (HPO)<a class="headerlink" href="#3-automated-tree-hyperparameter-optimization-hpo" title="Permanent link">&para;</a></h3>
+<p>Rather than manually guessing <code>max_depth</code> and <code>min_rows</code>, <code>mltreelib</code> wraps tree cross-validation directly inside the numerical optimizer:</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># 1. Generate synthetic non-linear response surface</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">n_train</span><span class="p">,</span> <span class="n">n_val</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">300</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="n">X_train</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_train</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">y_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">n_train</span><span class="p">)</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">X_val</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_val</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">y_val</span> <span class="o">=</span> <span class="n">X_val</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X_val</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">n_val</span><span class="p">)</span>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="c1"># 2. Objective function: Validation RMSE of ModelTree given continuous hyperparameters</span>
+</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_tree_hpo</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>    <span class="n">depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>    <span class="n">min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>    <span class="n">l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Log-scale exploration for regularization</span>
+</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>
+</span><span id="__span-15-23"><a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-15-24"><a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>        <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
+</span><span id="__span-15-25"><a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>        <span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
+</span><span id="__span-15-26"><a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a>        <span class="n">min_rows</span><span class="o">=</span><span class="n">min_rows</span><span class="p">,</span>
+</span><span id="__span-15-27"><a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>        <span class="n">l2</span><span class="o">=</span><span class="n">l2</span><span class="p">,</span>
+</span><span id="__span-15-28"><a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>    <span class="p">)</span>
+</span><span id="__span-15-29"><a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>    <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+</span><span id="__span-15-30"><a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>    <span class="n">pred_val</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">)</span>
+</span><span id="__span-15-31"><a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>    <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_val</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">pred_val</span><span class="p">)[</span><span class="s2">"rmse"</span><span class="p">]</span>
+</span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>
+</span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="c1"># Search bounds: depth in [1, 6], min_rows in [10, 60], log10(l2) in [-4, 1]</span>
+</span><span id="__span-15-34"><a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="n">bounds</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span>
+</span><span id="__span-15-35"><a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>
+</span><span id="__span-15-36"><a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="c1"># 3. Optimize hyperparameters via Powell direction-set search</span>
+</span><span id="__span-15-37"><a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="n">hpo_res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span>
+</span><span id="__span-15-38"><a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>    <span class="n">evaluate_tree_hpo</span><span class="p">,</span>
+</span><span id="__span-15-39"><a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a>    <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+</span><span id="__span-15-40"><a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>    <span class="n">start</span><span class="o">=</span><span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">],</span>
+</span><span id="__span-15-41"><a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">"powell"</span><span class="p">,</span>
+</span><span id="__span-15-42"><a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+</span><span id="__span-15-43"><a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="p">)</span>
+</span><span id="__span-15-44"><a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a>
+</span><span id="__span-15-45"><a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="n">best_depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-15-46"><a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a><span class="n">best_min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</span><span id="__span-15-47"><a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="n">best_l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</span><span id="__span-15-48"><a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a>
+</span><span id="__span-15-49"><a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"HPO Search Results:"</span><span class="p">)</span>
+</span><span id="__span-15-50"><a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Best Validation RMSE: </span><span class="si">{</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-15-51"><a id="__codelineno-15-51" name="__codelineno-15-51" href="#__codelineno-15-51"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Optimal Configuration: max_depth=</span><span class="si">{</span><span class="n">best_depth</span><span class="si">}</span><span class="s2">, min_rows=</span><span class="si">{</span><span class="n">best_min_rows</span><span class="si">}</span><span class="s2">, l2=</span><span class="si">{</span><span class="n">best_l2</span><span class="si">:</span><span class="s2">.4e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>HPO Search Results:
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  Best Validation RMSE: 0.5174
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>  Optimal Configuration: max_depth=5, min_rows=23, l2=4.9770e-03
+</span></code></pre></div>
+<hr />
+<h2 id="operational-limitations-numerical-failure-modes">Operational Limitations &amp; Numerical Failure Modes<a class="headerlink" href="#operational-limitations-numerical-failure-modes" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Unstandardized Covariate Scaling</strong>:
+   Derivative-free evolutionary algorithms (<code>cmaes</code>, <code>nes</code>) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement <span class="arithmatex">\(500 \, \text{kg/m}^3\)</span> vs. Water <span class="arithmatex">\(0.18 \, \text{kg/m}^3\)</span>), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split <code>nes</code> reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.</li>
+<li><strong>Coordinate Descent Collinearity Stagnation</strong>:
+   When features exhibit high pairwise correlation (<span class="arithmatex">\(r &gt; 0.95\)</span>), cyclic coordinate descent (<code>ccd</code>) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without <span class="arithmatex">\(L_1\)</span> sparsity requirements, <code>irls</code> or <code>lbfgs</code> converges orders of magnitude faster.</li>
+<li><strong>Non-Convex Local Minima &amp; Stochastic Reproducibility</strong>:
+   Evolutionary solvers (<code>shade</code>, <code>ga</code>, <code>cmaes</code>) are stochastic algorithms. While seed pinning (<code>seed=42</code>) ensures deterministic reproduction, objective trajectories vary across runs without guaranteed zero-gradient first-order optimality certificates.</li>
+<li><strong>Box Bounds vs. Coupled Constraints in <code>optimize</code></strong>:
+   The <code>lbfgs_b</code> bounded optimizer supports box constraints <span class="arithmatex">\(l_i \le x_i \le u_i\)</span>. For coupled joint budget or volume constraints <span class="arithmatex">\(\sum_i a_i x_i \le B\)</span>, use dual multiplier bisection or <code>scipy.optimize.minimize(method="SLSQP")</code>.</li>
+</ol>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Nocedal, J., &amp; Wright, S. J. (2006). <em>Numerical Optimization</em>. Springer.</li>
+<li>Tanabe, R., &amp; Fukunaga, A. S. (2014). "Improving the search performance of SHADE using linear population size reduction." <em>IEEE CEC</em>, 1658-1665.</li>
+<li>Hansen, N. (2016). "The CMA evolution strategy: A tutorial." <em>arXiv preprint arXiv:1604.00772</em>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../components-and-rotations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 14. Components and rotations">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                14. Components and rotations
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../blog/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Overview
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tracking","navigation.top","navigation.footer","content.code.copy","search.suggest","search.highlight","content.tabs.link","content.footnote.tooltips","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="../../assets/medium-zoom.min.js"></script>
+      
+        <script src="../../assets/zoom-init.js"></script>
+      
+        <script src="../../assets/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

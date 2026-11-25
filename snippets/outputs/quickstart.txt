@@ -1,0 +1,32 @@
+Loaded Concrete Compressive Strength: 1030 rows, 8 features.
+Train rows: 824, Test rows: 206
+
+=== Model Performance on Test Set ===
+Standard Decision Tree (CART)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+mltreelib ModelTree (Linear)   : RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
+--> Error reduction with linear leaves: 34.3%
+
+=== Fitted ModelTree Structure (rpart-style) ===
+n= 824 
+
+node), split, n, deviance, yval
+      * denotes terminal node
+
+ 1) root 824 228333.917 35.46173  
+   2) Age <= 14 263 38269.292 22.98684  
+     4) Cement <= 350 190 14043.474 18.46968  
+       8) Age <= 7 143 6493.479 15.44493 *
+       9) Age > 7 47 2261.042 27.67263 *
+     5) Cement > 350 73 10258.391 34.74381  
+      10) Water <= 178 48 5059.180 39.25437 *
+      11) Water > 178 25 2347.636 26.08354 *
+   3) Age > 14 561 129948.081 41.31003  
+     6) Cement <= 350 430 68793.496 36.74539  
+      12) Cement <= 164.6 101 8521.781 26.09900 *
+      13) Cement > 164.6 329 45309.403 40.01374 *
+     7) Cement > 350 131 22786.202 56.29321  
+      14) Water <= 181.1 76 6496.752 63.46522 *
+      15) Water > 181.1 55 6978.299 46.38280 *
+
+Saved DOT representation to: docs/assets/quickstart_tree.dot
+Generated comparison figure: docs/assets/quickstart_tree_vs_flat.png
