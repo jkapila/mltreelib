@@ -11,6 +11,7 @@ from mltreelib._core import CLTree as _CLTree
 from mltreelib._core import PredictiveClusteringTree as _PCT
 from mltreelib._core import UnsupervisedRandomForest as _URF
 from mltreelib._model_inputs import _numeric_rows
+from mltreelib._tables import to_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 from mltreelib.report import ModelReport, build_report
 
@@ -184,6 +185,9 @@ class ClusterModel(_UnsupervisedSnapshot):
         during split search and prediction. HDBSCAN uses jointly observed
         coordinates and treats rows with too few comparable neighbors as noise.
         """
+        x, _names = to_rows(x)
+        if col_names is None and _names is not None:
+            col_names = _names
         if len(x) == 0:
             raise ValueError("ClusterTree requires at least one training row.")
         k = self.kind
@@ -263,6 +267,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         """Predict cluster labels or URF distances from each query to each training row."""
         if not self._fitted:
             raise ValueError("ClusterTree is not fitted yet.")
+        x = to_rows(x)[0]
 
         k = self.kind
         valid = (

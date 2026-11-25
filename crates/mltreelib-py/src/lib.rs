@@ -7,6 +7,32 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
 
+/// A table argument: a list of rows (or NumPy array), or anything that
+/// `mltreelib._tables.to_rows` understands by duck typing (dict of columns,
+/// pandas or Polars-style data frame, Arrow table). No third-party package is
+/// imported; missing values are passed through for the model to route.
+struct Table<'py> {
+    rows: Vec<Vec<Option<Bound<'py, PyAny>>>>,
+    names: Option<Vec<String>>,
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for Table<'py> {
+    type Error = PyErr;
+
+    fn extract(obj: Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        if let Ok(rows) = obj.extract::<Vec<Vec<Option<Bound<'py, PyAny>>>>>() {
+            return Ok(Table { rows, names: None });
+        }
+        let py = obj.py();
+        let out = py
+            .import("mltreelib._tables")?
+            .getattr("to_rows")?
+            .call1((obj.to_owned(),))?;
+        let (rows, names): (Vec<Vec<Option<Bound<'py, PyAny>>>>, Option<Vec<String>>) = out.extract()?;
+        Ok(Table { rows, names })
+    }
+}
+
 mod calibration;
 mod component;
 mod solvers;
@@ -4370,7 +4396,7 @@ impl PyModelTree {
     #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
     fn fit(
         &mut self,
-        mut x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         y: Bound<'_, PyAny>,
         w: Option<Vec<f64>>,
         mut dtypes: Option<Vec<String>>,
@@ -4396,6 +4422,10 @@ impl PyModelTree {
         extratrees: Option<bool>,
         ebm_fast: Option<bool>,
     ) -> PyResult<()> {
+        let (mut x, table_names) = (x.rows, x.names);
+        if col_names.is_none() {
+            col_names = table_names;
+        }
         if let Some(fm) = fairness_metric {
             self.params.fairness_metric = match fm.to_lowercase().as_str() {
                 "equalized_odds" | "equalizedodds" | "eo" => mltreelib_core::model_tree::FairnessMetric::EqualizedOdds,
@@ -4639,7 +4669,7 @@ impl PyModelTree {
     ))]
     fn retrain<'py>(
         slf: &Bound<'py, PyModelTree>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         y: Bound<'_, PyAny>,
         control: Option<Bound<'py, PyAny>>,
         w: Option<Vec<f64>>,
@@ -4658,6 +4688,7 @@ impl PyModelTree {
         event: Option<Vec<f64>>,
         n_classes: Option<usize>,
     ) -> PyResult<Py<PyModelTree>> {
+        let (x, _table_names) = (x.rows, x.names);
         let is_external = match mode.unwrap_or("internal") {
             "internal" | "update" => false,
             "external" | "expose" | "new" => true,
@@ -4780,9 +4811,10 @@ impl PyModelTree {
     /// Returns: one quantile per row (NaN when a leaf's digest was dropped).
     fn quantile(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         tau: f64,
     ) -> PyResult<Vec<f64>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.quantile(&x, tau))
     }
@@ -4862,7 +4894,7 @@ impl PyModelTree {
     fn predict<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         kind: Option<&str>,
         times: Option<Vec<f64>>,
         neighbors: Option<usize>,
@@ -4871,6 +4903,7 @@ impl PyModelTree {
         alpha: Option<f64>,
         threshold: f64,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         match kind.unwrap_or("response") {
@@ -5098,8 +5131,9 @@ impl PyModelTree {
     fn predict_vector<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         let vecs = t.predict_vector(&x).ok_or_else(|| PyValueError::new_err("ModelTree has no vector predictions (was not fitted on vector targets)"))?;
@@ -5110,9 +5144,10 @@ impl PyModelTree {
     fn predict_proba<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Py<PyAny>> {
-        self.predict(py, x, Some("proba"), None, None, None, None, None, 0.5)
+        let (x, _table_names) = (x.rows, x.names);
+        self.predict(py, Table { rows: x, names: None }, Some("proba"), None, None, None, None, None, 0.5)
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -5127,9 +5162,10 @@ impl PyModelTree {
     #[pyo3(signature = (x, threshold = 0.5))]
     fn predict_label(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         threshold: f64,
     ) -> PyResult<Vec<usize>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.predict_label(&x, threshold).map_err(PyValueError::new_err)
     }
@@ -5139,9 +5175,10 @@ impl PyModelTree {
     fn predict_adjusted<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         neighbors: usize,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         let preds = t.predict_adjusted(&x, neighbors);
@@ -5193,9 +5230,10 @@ impl PyModelTree {
     #[pyo3(signature = (x, coverage = 0.90))]
     fn predict_interval(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         coverage: f64,
     ) -> PyResult<Vec<(f64, f64)>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.predict_interval(&x, coverage).map_err(PyValueError::new_err)
     }
@@ -5212,9 +5250,10 @@ impl PyModelTree {
     /// Raises: ValueError for Gaussian leaves or an invalid threshold.
     fn cdf(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         value: f64,
     ) -> PyResult<Vec<f64>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.cdf(&x, value).map_err(PyValueError::new_err)
     }
@@ -5365,8 +5404,9 @@ impl PyModelTree {
     #[pyo3(signature = (x))]
     fn apply(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Vec<usize>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.apply(&x))
     }
@@ -5385,10 +5425,11 @@ impl PyModelTree {
     fn leaf_samples(
         &mut self,
         py: Python<'_>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         id_col: Option<Bound<'_, PyAny>>,
         col_names: Option<Vec<String>>,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let t = self.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
         let n_rows = x.len();
 

@@ -13,6 +13,7 @@ from mltreelib._core import ExtendedIsolationTree as _EIF
 from mltreelib._core import HalfSpaceTree as _HST
 from mltreelib._core import RandomCutTree as _RCT
 from mltreelib._model_inputs import _numeric_cell, _numeric_rows
+from mltreelib._tables import to_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 from mltreelib.components import ComponentModel
 from mltreelib.report import ModelReport, build_report
@@ -187,6 +188,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         Accepts native Python lists. None and NaN cells stay missing. In context
         sequences, each missing symbol breaks the transition history.
         """
+        x = to_rows(x)[0]
         if len(x) == 0:
             raise ValueError("AnomalyTree requires at least one training row.")
         k = self.kind
@@ -270,6 +272,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         """
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
+        x = to_rows(x)[0]
 
         k = self.kind
         if k in ("eif", "isolation", "extended_isolation"):
@@ -318,6 +321,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         """
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
+        x = to_rows(x)[0]
         if self.kind in ("context", "sequence"):
             raise ValueError(
                 "Use surprise_score(context, symbol) or conditional_prob(context, symbol) "
