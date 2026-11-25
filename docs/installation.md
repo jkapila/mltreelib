@@ -2,6 +2,11 @@
 
 Install mltreelib as a Python wheel with a Rust core. Model fitting and inference require no additional Python packages.
 
+!!! warning "Early development"
+    mltreelib is at an early stage. APIs may change or break between releases.
+    For any new feature, please [raise an issue first](https://github.com/jkapila/mltreelib/issues)
+    so we can discuss scope before code is written.
+
 ## From PyPI
 
 ```bash

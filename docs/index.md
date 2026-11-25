@@ -13,9 +13,14 @@ ground truth, and a tree learner that handles categoricals and missing values
 natively — with rpart-faithful printing, SVG diagrams, and LightGBM-style
 monotone & interaction constraints.
 
+!!! warning "Early development"
+    mltreelib is at an early stage. APIs may change or break between releases.
+    For any new feature, please [raise an issue first](https://github.com/jkapila/mltreelib/issues)
+    so we can discuss scope before code is written.
+
 - Rust core (`mltreelib-core`), thin Python shell (PyO3)
 - Scikit-learn-shaped API — without the scikit-learn dependency
-- NA **and NaN** handled end-to-end: missing in → missing out; imputation opt-in
+- NA **and NaN** handled end-to-end: missing in → missing out; the library never imputes and trees route missing values with surrogate splits
 - 51 TabArena-v0.1 benchmark datasets on board, plus a generator whose knobs
   control how much signal lives in group and hierarchy structure
 
