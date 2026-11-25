@@ -107,6 +107,43 @@ The documentation audit found that the same small data-preparation steps are wri
 - Test behaviour: sizes add up, a stratified split preserves class and arm proportions within a stated tolerance, grouped splits never share a group across sets, ordered splits are strictly ordered in time, the same seed gives identical indices, and missing values are untouched by every helper (counts and positions are identical before and after).
 - Prior art: the existing dataset and encoder tests, and the existing snippet gate, which will fail if a page still uses a hand-written split after the helper exists.
 
+## Data Helper API Contract (release scope: P1 and P2)
+
+All helpers live in the data module (`mltreelib.data`), are pure Python with the standard library only (the package has zero runtime dependencies), and take a dict of columns (as returned by `load_dataset`) or any table the model input boundary accepts. They never modify their inputs and never alter missing values. "Missing" means `None` or NaN; infinities are counted separately as `n_inf` and ignored by statistics. Any helper that must exclude rows to compute a statistic reports how many rows it used.
+
+**Profiling**
+- `describe(columns)`: one entry per column, like a data-frame describe but aware of missing values. Counts: rows, missing, percent missing, infinities, distinct. Numeric statistics are computed for every column whose observed values are numbers: mean, standard deviation, min, max, chosen percentiles (including quartiles), IQR, MAD, coefficient of variation, trimmed mean and trimmed standard deviation (default trim 10% per end), skewness, excess kurtosis, outlier count and percent by the Tukey rule, and counts of zero, negative and positive values. Categorical columns report the mode and top levels with counts. A `kind` hint (numeric, categorical, or ordinal candidate) is reported, never enforced; the user can override it per column, including marking a column ordinal. Integer columns with fewer than six distinct values are reported as ordinal candidates, because they are often category codes or ordered ratings (such as a 1 to 5 scale), and an ordered level is useful for monotone constraints. A flag chooses whether infinities are also counted as missing (default: reported separately, ignored by statistics).
+- `missing_profile(columns)`: per-column missing counts and percents, per-row missing counts, number of complete rows, missing-pattern counts (which set of columns is missing together, with row counts), and a co-missing count matrix.
+- `missing_vs_target(columns, y)`: per column, the target mean when the column is missing versus observed, with both counts; rows whose target is missing are counted and left out of the means.
+- `infer_types(columns)`: kind and number of levels per column, using the same rule as the dataset builder.
+- `near_zero_variance(columns)`: columns flagged by the caret rule (frequency ratio of the two most common values and percent unique), computed on observed values.
+- `constant_columns(columns)`, `duplicate_rows(columns)` (groups of row indices), `duplicate_columns(columns)` (groups of names). Missing compares equal to missing.
+- `class_balance(y)`: counts, proportions, imbalance ratio, missing count.
+- `outlier_flags(values, method, k)`: a list of True, False or None (None for missing). IQR and MAD methods. Flags only; nothing is removed.
+- `schema_capture(columns)` and `schema_validate(columns, schema)`: per-column kind, levels or range, and missing count; validation returns a list of violations and treats missing as allowed unless asked otherwise.
+
+**Splitting** (all return index lists only; deterministic for a given seed on every platform)
+- `train_test_split(n, test_size, seed, stratify, groups, time_order)` and a three-way variant for validation.
+- `kfold(n, k, seed, stratify, groups, time_order)`: stratified and grouped folds; with a time order, expanding-window folds.
+- `take(columns, indices)`: subset a dict of columns by row indices.
+
+**Association and screening**
+- `correlation_matrix(columns, method)`: Pearson or Spearman on pairwise-complete rows, with the pair counts; `correlation_filter(result, cutoff)`: columns to drop by the greedy caret rule.
+- `cramers_v_matrix(columns)`: bias-corrected Cramer's V with chi-square p-values for categorical columns.
+- `vif(columns)`: variance inflation factors on complete cases, with the number of rows used.
+- `leakage_hints(columns, y)`: single-feature predictive score per column, flagged above a threshold. Flags only.
+
+**Binning and information value**
+- `binner(values, ...)`: numeric binning by quantile or equal width with a minimum observations per bin; returns edges, labels, counts and a bin index per row, with missing rows getting `None`.
+- `iv_bins(values, y, ...)`: bins for a binary target with events, non-events, weight of evidence and information value per bin, a separate missing bin that is never dropped, and prior smoothing for zero cells (reported, not dropped). Optional monotone constraint on the event rate, enforced by merging adjacent bins (pool-adjacent-violators), and bounds on the number of bins and the minimum bin fraction. `iv_levels(values, y)` does the same for categorical columns.
+
+**Scaling and transforms** (fit, transform and inverse transform; missing passes through unchanged)
+- log1p, power, mean-difference, median-difference, Box-Cox and Yeo-Johnson (lambda fitted on observed values), alongside the existing scalers.
+
+**Not included in this release (later):** drift, variable-voting and variable-clustering selectors, stratified sampling, class weights, mutual information, Kendall tau.
+
+**Existing dataset-builder options.** The opt-in drop and impute policies stay, with "allow" (no treatment) as the default; new helpers do not copy that pattern.
+
 ## Out of Scope
 
 - Observational causal inference methods and any claim of causal effect from observational data.
