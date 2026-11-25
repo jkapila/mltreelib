@@ -1,0 +1,35 @@
+{
+  "method": "Bradley-Terry MLE (Newton, pseudo-regularized); two-level cluster bootstrap",
+  "seed": 7,
+  "B": 200,
+  "anchor": "KNN",
+  "anchor_elo": 1000.0,
+  "date": "2026-11-25T14:25:49+00:00",
+  "git_commit": "8aea345",
+  "boards": {
+    "regression": {
+      "n_datasets": 18,
+      "n_rounds": 18,
+      "n_battles": 12077,
+      "n_models": 42
+    },
+    "classification": {
+      "n_datasets": 38,
+      "n_rounds": 38,
+      "n_battles": 12322,
+      "n_models": 33
+    },
+    "classification_logloss": {
+      "n_datasets": 38,
+      "n_rounds": 38,
+      "n_battles": 12322,
+      "n_models": 33
+    },
+    "overall": {
+      "n_datasets": 56,
+      "n_rounds": 56,
+      "n_battles": 24399,
+      "n_models": 48
+    }
+  }
+}
