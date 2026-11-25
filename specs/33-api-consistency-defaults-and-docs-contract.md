@@ -76,6 +76,18 @@ The user's view: `ModelTree()` does one documented thing, every option in the re
 - Default selection is tested by a reproducibility test: the search with a fixed seed on a fixed small dataset group returns the same configuration.
 - Prior art: the existing parameter-validation tests, the runnable-snippet tests in the docs build, and the default-search benchmark harness.
 
+## Audit Findings To Verify
+
+The documentation pass printed results that look like library defects or undocumented gaps. They came from automated page runs and have not been confirmed by a person. Each one is a verify-first item: reproduce, decide whether it is a bug or correct behaviour, then fix the code or the docs.
+
+1. **Non-deterministic gate statistics.** The full root-split printout for the MOB and ctree significance gates differed in the last digits between identical runs on a categorical column. Same data and seed must give bit-identical output, so this is either a hidden source of randomness or an unordered iteration in the Rust core.
+2. **Target encoder range.** The CatBoost-style encoder returned values between about 2.3 and 3.3 for a 0/1 target. Check whether the encoding is meant to be on the target scale, and whether the prior or permutation handling is wrong.
+3. **Monotone constraint had no effect.** A monotone constraint on one feature produced exactly the same RMSE as the unconstrained tree on the documented example. Confirm that the constraint is applied, or choose an example where it binds, and add a test that fails when a constraint is ignored.
+4. **Unassigned points in density clustering.** CLTree left 232 of 980 points unassigned when only 80 were uniform noise. Check the noise handling and the documented expectation.
+5. **Survival calibration failure.** D-calibration rejected the documented synthetic competing-risks cohort (p near zero). Check whether the cohort or the estimator is at fault, and say so on the page either way.
+6. **Oblique splits not chosen.** The oblique-split example picked an axis-aligned split. Check that oblique candidates are generated and that the example data is one where an oblique split should win.
+7. **Documented capabilities that do not exist.** Subspace-reconstruction anomaly scoring and a PCA method on the anomaly model are described in a guide but not implemented. Either implement them or remove the claims.
+
 ## Out of Scope
 
 - Multiway splits.

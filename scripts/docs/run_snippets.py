@@ -18,11 +18,13 @@ Convention
 """
 
 import argparse
+import atexit
 import contextlib
 import io
 import os
 import tempfile
 import re
+import shutil
 import sys
 import textwrap
 from pathlib import Path
@@ -104,6 +106,7 @@ def main(argv=None):
     # never land in the repo; repo-relative reads must use absolute paths or the dataset API.
     pages = [Path(p).resolve() for p in args.paths] or default_pages()
     scratch = tempfile.mkdtemp(prefix="docsnip-")
+    atexit.register(shutil.rmtree, scratch, ignore_errors=True)
     os.chdir(scratch)
     bad = False
     for page in pages:
