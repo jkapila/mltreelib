@@ -40,9 +40,9 @@ This directory tracks the architectural specifications, research blueprints, and
 | **30** | [`30-model-meta-estimators.md`](30-model-meta-estimators.md) | **Proposed** | — | `ModelMeta`, the meta-estimator family: voting, averaging, and stacking over heterogeneous named members, with out-of-fold meta-features, a shared cross-validation generator, and leakage-aware defaults. Family sibling of Specs 28 and 29. |
 | **31** | [`31-ensemble-family-selection-guide.md`](31-ensemble-family-selection-guide.md) | **Proposed** | — | Cross-cutting decision framework for choosing between forest, boost, meta, and Bayesian estimators: hard constraints, data regime, cost model, and a documented default, grounded in the local 56-dataset Elo arena. Governs Specs 28, 29, 30, and 32. |
 | **32** | [`32-bayesian-tree-ensembles.md`](32-bayesian-tree-ensembles.md) | **Proposed** | — | `ModelBayes`, the Bayesian family: BART's tree, leaf, and error-variance priors adopted as growth-criterion configuration first, then a Metropolis-Hastings posterior sampler and credible-interval products under the experimental namespace. Family sibling of Specs 28, 29, and 30. |
-| **33** | [`33-api-consistency-defaults-and-docs-contract.md`](33-api-consistency-defaults-and-docs-contract.md) | **Proposed** | — | One source of truth for `ModelTree` defaults, split/grow/prune/leaf knob model, fixes for documented-but-rejected options, scale-free pruning, and data-driven defaults confirmed on held-out datasets. |
-| **34** | [`34-survival-and-uplift-real-data-suite.md`](34-survival-and-uplift-real-data-suite.md) | **Proposed** | — | Curated real survival, competing-risks and uplift datasets fetched on demand with pinned checksums and licence notes; one normalised schema; reproducible results pages with uncertainty. |
-| **35** | [`35-simple-object-interfaces-and-family-summaries.md`](35-simple-object-interfaces-and-family-summaries.md) | **Partly landed** (A, B shipped) | — | Class-first `Dataset` and `MetricsReport`; models accept a dataset; one summary shape per family (GLM, Tobit, quantile, Huber, MARS, k-NN, survival, cluster, anomaly); causal linear leaf. |
+| **33** | [`33-api-consistency-defaults-and-docs-contract.md`](33-api-consistency-defaults-and-docs-contract.md) | **Partly landed** | — | One source of truth for `ModelTree` defaults, split/grow/prune/leaf knob model, fixes for documented-but-rejected options, scale-free pruning, and data-driven defaults confirmed on held-out datasets. |
+| **34** | [`34-survival-and-uplift-real-data-suite.md`](34-survival-and-uplift-real-data-suite.md) | **Partly landed** | — | Curated real survival, competing-risks and uplift datasets fetched on demand with pinned checksums and licence notes; one normalised schema; reproducible results pages with uncertainty. |
+| **35** | [`35-simple-object-interfaces-and-family-summaries.md`](35-simple-object-interfaces-and-family-summaries.md) | **Partly landed** (A, B and the input-boundary fixes shipped; C and D open) | — | Class-first `Dataset` and `MetricsReport`; models accept a dataset; one summary shape per family (GLM, Tobit, quantile, Huber, MARS, k-NN, survival, cluster, anomaly); causal linear leaf. |
 
 ---
 
@@ -131,6 +131,20 @@ Guiding rules: no scikit-learn dependency, a shrinking dependency set (build ins
 - Spec 20's header says some unsupervised snapshots remain open, but they are implemented.
 - Specs 21 and 26 both describe the generic bounded optimizer seam; 11 and 27 overlap on overdispersed and bounded outcomes; 20 and 25 both specify snapshot round-trip. Add cross-references.
 - Spec 34 is partly landed (on-demand datasets with checksums exist), but its header says proposed.
+
+
+### Candidates for the next release (added 2026-11-26)
+
+Beyond issues 24 to 26 and `Dataset` on the cluster, anomaly and component models. Ranked by reliability payoff, then capability.
+
+1. **Missing data in unsupervised models** (gap under Spec 22): some clustering engines coerce `None` to 0.0. Check every engine and route natively or raise.
+2. **Save, load and a model card for every model** (Spec 20 follow-up): round-trip tests per family, a runnable guide, a small card (schema, defaults, version).
+3. **Calibration, fairness and model-compare as `MetricsReport` tasks** (Specs 12, 19, 25).
+4. **Drift monitoring** (no spec yet): a `drift` task in `MetricsReport` on the existing PSI/CSI and KS primitives.
+5. **Spec 31 selection guide, phase 1** (docs only).
+6. **Spec header housekeeping** (25, 26, 03, 20, 27, 34 status lines).
+7. **Keyword catch-all audit**: `**params` accepts unknown keywords (`AnomalyModel(method="pca")` is silently accepted). Unknown keywords should raise.
+8. For the release after: **Spec 28 `ModelForest`**, the largest measured win, after Spec 27 phase 1.
 
 ### Research ideas (not scheduled)
 
