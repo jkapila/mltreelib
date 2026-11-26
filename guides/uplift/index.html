@@ -28,7 +28,7 @@
     
     
       
-        <title>5. Uplift - mltreelib v0.4.15</title>
+        <title>5. Uplift - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -1452,6 +1452,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-customer-ids-group-columns-and-leaf-membership" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Customer IDs, Group Columns, and Leaf Membership
+      </span>
+    </span>
+  </a>
   
 </li>
         
@@ -2725,6 +2736,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#6-customer-ids-group-columns-and-leaf-membership" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Customer IDs, Group Columns, and Leaf Membership
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2792,64 +2814,159 @@
     class TreeStructure,FixedNodes treeBox;
     class LeafEstimator leafBox;
     class UnbiasedModel causalBox;</code></pre>
-<p>Run this Python block from the repository root. <code>group_value</code> comes from the example script.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">sqrt</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">dataset_path</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">group_value</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">selected</span><span class="p">):</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="sd">"""Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">selected</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">and</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">selected</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">and</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">n</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">n</span><span class="p">:</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Selected group requires at least two observations per arm"</span><span class="p">)</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">diff</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">n</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">var</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="n">m</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">z</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">se</span> <span class="o">=</span> <span class="n">q</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">var</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">var</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="k">return</span> <span class="n">q</span> <span class="o">*</span> <span class="n">diff</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="p">(</span><span class="n">q</span> <span class="o">*</span> <span class="n">diff</span> <span class="o">-</span> <span class="mf">1.96</span> <span class="o">*</span> <span class="n">se</span><span class="p">,</span> <span class="n">q</span> <span class="o">*</span> <span class="n">diff</span> <span class="o">+</span> <span class="mf">1.96</span> <span class="o">*</span> <span class="n">se</span><span class="p">)</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"hillstrom_email"</span><span class="p">))</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">"Womens E-Mail"</span><span class="p">,</span> <span class="s2">"No E-Mail"</span><span class="p">])]</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"recency"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"mens"</span><span class="p">,</span> <span class="s2">"womens"</span><span class="p">,</span> <span class="s2">"newbie"</span><span class="p">,</span> <span class="s2">"zip_code"</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">]</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"numeric"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"categorical"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)))</span>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="n">Random</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">.6</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="mf">.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
-</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">inputs</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
-</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="n">part</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
-</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">part</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)]</span>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">visit</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">segment</span> <span class="o">==</span> <span class="s2">"Womens E-Mail"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
-</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">w_train</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[:</span><span class="n">a</span><span class="p">])</span>
-</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">,</span> <span class="n">w_val</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">a</span><span class="p">:</span><span class="n">b</span><span class="p">])</span>
-</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">w_test</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">b</span><span class="p">:])</span>
-</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
-</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>                 <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span> <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">w_train</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">types</span><span class="p">)</span>
-</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>
-</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="n">val_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
-</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="k">def</span><span class="w"> </span><span class="nf">value_at</span><span class="p">(</span><span class="n">threshold</span><span class="p">):</span>
-</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>    <span class="k">return</span> <span class="n">group_value</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">w_val</span><span class="p">,</span> <span class="p">[</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span> <span class="k">for</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">val_scores</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>
-</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="n">threshold</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">val_scores</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">val_scores</span><span class="p">))],</span> <span class="n">key</span><span class="o">=</span><span class="n">value_at</span><span class="p">)</span>
-</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="n">test_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
-</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="k">for</span> <span class="n">selected</span> <span class="ow">in</span> <span class="p">([</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span> <span class="k">for</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">test_scores</span><span class="p">],</span>
-</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>                 <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_test</span><span class="p">),</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_test</span><span class="p">)):</span>
-</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">group_value</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">w_test</span><span class="p">,</span> <span class="n">selected</span><span class="p">))</span>
+<p>This snippet loads the Hillstrom CSV, wraps it in a <code>Dataset</code> with <code>outcome="visit"</code> and <code>treatment="treat"</code>, and makes a stratified 60% / 20% / 20% split (<code>train</code>, <code>val</code>, <code>test</code>). It fits an honest causal tree at <code>max_depth=4</code> (<code>min_rows=250</code>, <code>prune="none"</code>, <code>honesty=True</code>, <code>seed=42</code>). Note that <strong>the causal leaf is always a difference of means (<span class="arithmatex">\(\bar{Y}_1 - \bar{Y}_0\)</span>) whatever the <code>leaf</code> setting</strong> (<code>leaf="linear"</code> produces the same leaf estimates under <code>gain="causal"</code>). It then calls <code>uplift_threshold</code> on <code>val</code> to pick the score cutoff and prints <code>MetricsReport("uplift", ...)</code> on <code>test</code>.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">,</span> <span class="n">uplift_threshold</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"hillstrom_email"</span><span class="p">))</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">"Womens E-Mail"</span><span class="p">,</span> <span class="s2">"No E-Mail"</span><span class="p">])]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">df</span><span class="p">[</span><span class="s2">"treat"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Womens E-Mail"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"recency"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"mens"</span><span class="p">,</span> <span class="s2">"womens"</span><span class="p">,</span> <span class="s2">"newbie"</span><span class="p">,</span> <span class="s2">"zip_code"</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="o">*</span><span class="n">features</span><span class="p">,</span> <span class="s2">"treat"</span><span class="p">,</span> <span class="s2">"visit"</span><span class="p">]},</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">outcome</span><span class="o">=</span><span class="s2">"visit"</span><span class="p">,</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">treatment</span><span class="o">=</span><span class="s2">"treat"</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">features</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"hillstrom_women"</span><span class="p">,</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">)</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">val_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rows: train </span><span class="si">{</span><span class="n">train</span><span class="o">.</span><span class="n">n_rows</span><span class="si">}</span><span class="s2">, validation </span><span class="si">{</span><span class="n">val</span><span class="o">.</span><span class="n">n_rows</span><span class="si">}</span><span class="s2">, test </span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">n_rows</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span> <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">val_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="n">threshold</span> <span class="o">=</span> <span class="n">uplift_threshold</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span> <span class="n">val_scores</span><span class="p">)</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="n">test_scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>    <span class="s2">"uplift"</span><span class="p">,</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="n">y_true</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="n">treatment</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="n">tau_pred</span><span class="o">=</span><span class="n">test_scores</span><span class="p">,</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>    <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="p">)</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="nb">print</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.</p>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Rows: train 25615, validation 8539, test 8539
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Metrics report: uplift
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>======================
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Inputs
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>------
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  threshold  -0.01564
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Rows per argument (n_missing = None/NaN):
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  argument      n  n_missing
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  y_true     8539          0
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  treatment  8539          0
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  tau_pred   8539          0
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>Overview
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>--------
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>  n_total                 8539
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  n_treated               4278
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  n_control               4261
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>  ate                  0.05314
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>  qini_coef              37.54
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>  qini_norm            0.07497
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>  auuc                   299.9
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>  top_decile_uplift    0.06752
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>  top_quintile_uplift  0.07457
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>Qini curve points:
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  population_fraction     qini
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>                    0        0
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>            0.0001171        0
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>            0.0002342        0
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>            0.0003513        0
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>            0.0004684        0
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>            0.0005855        0
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>            0.0007027     -0.2
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>            0.0008198     -0.4
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>            0.0009369  -0.3333
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>             0.001054     -0.5
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>             0.001171  -0.4286
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>             0.001288   -0.375
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>             0.001405  -0.3333
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>             0.001522     -0.3
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>              0.00164  -0.2727
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>             0.001757  -0.3636
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>             0.001874  -0.4545
+</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>             0.001991  -0.4167
+</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>             0.002108      0.5
+</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>             0.002225   0.5385
+</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>  ... 8515 rows omitted; full table in .tables['qini_curve']
+</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>               0.9995    226.3
+</span><span id="__span-2-51"><a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>               0.9996    226.4
+</span><span id="__span-2-52"><a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>               0.9998    226.3
+</span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>               0.9999    227.2
+</span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>                    1    227.3
+</span><span id="__span-2-55"><a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>
+</span><span id="__span-2-56"><a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>Cumulative gain points:
+</span><span id="__span-2-57"><a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>  population_fraction    gain
+</span><span id="__span-2-58"><a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>                    0       0
+</span><span id="__span-2-59"><a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>            0.0001171       0
+</span><span id="__span-2-60"><a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a>            0.0002342       0
+</span><span id="__span-2-61"><a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a>            0.0003513       0
+</span><span id="__span-2-62"><a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>            0.0004684      -1
+</span><span id="__span-2-63"><a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>            0.0005855      -1
+</span><span id="__span-2-64"><a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>            0.0007027    -1.2
+</span><span id="__span-2-65"><a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a>            0.0008198    -1.4
+</span><span id="__span-2-66"><a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a>            0.0009369  -1.333
+</span><span id="__span-2-67"><a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a>             0.001054    -1.5
+</span><span id="__span-2-68"><a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>             0.001171  -1.429
+</span><span id="__span-2-69"><a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>             0.001288  -1.375
+</span><span id="__span-2-70"><a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a>             0.001405  -1.333
+</span><span id="__span-2-71"><a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a>             0.001522    -1.3
+</span><span id="__span-2-72"><a id="__codelineno-2-72" name="__codelineno-2-72" href="#__codelineno-2-72"></a>              0.00164  -1.273
+</span><span id="__span-2-73"><a id="__codelineno-2-73" name="__codelineno-2-73" href="#__codelineno-2-73"></a>             0.001757  -1.364
+</span><span id="__span-2-74"><a id="__codelineno-2-74" name="__codelineno-2-74" href="#__codelineno-2-74"></a>             0.001874  -1.455
+</span><span id="__span-2-75"><a id="__codelineno-2-75" name="__codelineno-2-75" href="#__codelineno-2-75"></a>             0.001991  -1.417
+</span><span id="__span-2-76"><a id="__codelineno-2-76" name="__codelineno-2-76" href="#__codelineno-2-76"></a>             0.002108     1.5
+</span><span id="__span-2-77"><a id="__codelineno-2-77" name="__codelineno-2-77" href="#__codelineno-2-77"></a>             0.002225   1.705
+</span><span id="__span-2-78"><a id="__codelineno-2-78" name="__codelineno-2-78" href="#__codelineno-2-78"></a>  ... 8515 rows omitted; full table in .tables['cumulative_gain']
+</span><span id="__span-2-79"><a id="__codelineno-2-79" name="__codelineno-2-79" href="#__codelineno-2-79"></a>               0.9995   451.7
+</span><span id="__span-2-80"><a id="__codelineno-2-80" name="__codelineno-2-80" href="#__codelineno-2-80"></a>               0.9996     452
+</span><span id="__span-2-81"><a id="__codelineno-2-81" name="__codelineno-2-81" href="#__codelineno-2-81"></a>               0.9998   451.7
+</span><span id="__span-2-82"><a id="__codelineno-2-82" name="__codelineno-2-82" href="#__codelineno-2-82"></a>               0.9999   453.5
+</span><span id="__span-2-83"><a id="__codelineno-2-83" name="__codelineno-2-83" href="#__codelineno-2-83"></a>                    1   453.7
+</span><span id="__span-2-84"><a id="__codelineno-2-84" name="__codelineno-2-84" href="#__codelineno-2-84"></a>
+</span><span id="__span-2-85"><a id="__codelineno-2-85" name="__codelineno-2-85" href="#__codelineno-2-85"></a>Policy
+</span><span id="__span-2-86"><a id="__codelineno-2-86" name="__codelineno-2-86" href="#__codelineno-2-86"></a>------
+</span><span id="__span-2-87"><a id="__codelineno-2-87" name="__codelineno-2-87" href="#__codelineno-2-87"></a>  threshold  -0.01564
+</span><span id="__span-2-88"><a id="__codelineno-2-88" name="__codelineno-2-88" href="#__codelineno-2-88"></a>
+</span><span id="__span-2-89"><a id="__codelineno-2-89" name="__codelineno-2-89" href="#__codelineno-2-89"></a>Policy comparison (selected: tau_pred &gt; threshold; 95% normal CI):
+</span><span id="__span-2-90"><a id="__codelineno-2-90" name="__codelineno-2-90" href="#__codelineno-2-90"></a>  policy      n_selected  n_treated  n_control    value   ci_low  ci_high
+</span><span id="__span-2-91"><a id="__codelineno-2-91" name="__codelineno-2-91" href="#__codelineno-2-91"></a>  selected          8296       4158       4138  0.05281  0.03901  0.06662
+</span><span id="__span-2-92"><a id="__codelineno-2-92" name="__codelineno-2-92" href="#__codelineno-2-92"></a>  treat_all         8539       4278       4261  0.05314  0.03914  0.06714
+</span><span id="__span-2-93"><a id="__codelineno-2-93" name="__codelineno-2-93" href="#__codelineno-2-93"></a>  treat_none           0          0          0        0      n/a      n/a
+</span><span id="__span-2-94"><a id="__codelineno-2-94" name="__codelineno-2-94" href="#__codelineno-2-94"></a>
+</span><span id="__span-2-95"><a id="__codelineno-2-95" name="__codelineno-2-95" href="#__codelineno-2-95"></a>Uplift by decile
+</span><span id="__span-2-96"><a id="__codelineno-2-96" name="__codelineno-2-96" href="#__codelineno-2-96"></a>----------------
+</span><span id="__span-2-97"><a id="__codelineno-2-97" name="__codelineno-2-97" href="#__codelineno-2-97"></a>Uplift by predicted-effect decile (decile 1 = highest):
+</span><span id="__span-2-98"><a id="__codelineno-2-98" name="__codelineno-2-98" href="#__codelineno-2-98"></a>  decile    n  n_treated  n_control  mean_tau_pred  mean_treated  mean_control    uplift
+</span><span id="__span-2-99"><a id="__codelineno-2-99" name="__codelineno-2-99" href="#__codelineno-2-99"></a>       1  853        431        422         0.1124        0.1508       0.08294   0.06787
+</span><span id="__span-2-100"><a id="__codelineno-2-100" name="__codelineno-2-100" href="#__codelineno-2-100"></a>       2  854        445        409        0.08946        0.1551       0.07335   0.08171
+</span><span id="__span-2-101"><a id="__codelineno-2-101" name="__codelineno-2-101" href="#__codelineno-2-101"></a>       3  854        412        442        0.08023        0.1772       0.09502   0.08216
+</span><span id="__span-2-102"><a id="__codelineno-2-102" name="__codelineno-2-102" href="#__codelineno-2-102"></a>       4  854        441        413        0.06509        0.2177        0.1114    0.1063
+</span><span id="__span-2-103"><a id="__codelineno-2-103" name="__codelineno-2-103" href="#__codelineno-2-103"></a>       5  854        426        428        0.06228        0.2136        0.1121    0.1015
+</span><span id="__span-2-104"><a id="__codelineno-2-104" name="__codelineno-2-104" href="#__codelineno-2-104"></a>       6  854        424        430        0.03101        0.1061       0.08837   0.01776
+</span><span id="__span-2-105"><a id="__codelineno-2-105" name="__codelineno-2-105" href="#__codelineno-2-105"></a>       7  854        439        415        0.02068        0.1162       0.08193   0.03425
+</span><span id="__span-2-106"><a id="__codelineno-2-106" name="__codelineno-2-106" href="#__codelineno-2-106"></a>       8  854        417        437        0.01189        0.1007       0.08924   0.01147
+</span><span id="__span-2-107"><a id="__codelineno-2-107" name="__codelineno-2-107" href="#__codelineno-2-107"></a>       9  854        424        430       0.007747        0.1651        0.1256   0.03951
+</span><span id="__span-2-108"><a id="__codelineno-2-108" name="__codelineno-2-108" href="#__codelineno-2-108"></a>      10  854        419        435      -0.003709        0.1146        0.1264  -0.01188
+</span></code></pre></div>
+<p><strong>What to read in the output:</strong> <code>MetricsReport("uplift", ...)</code> reports four sections. <code>Overview</code> gives the overall ATE, Qini coefficient, normalized Qini, AUUC, top-decile uplift, and top-quintile uplift. <code>Policy</code> compares the validation-selected cutoff (<code>tau_pred &gt; threshold</code>) against <code>treat_all</code> and <code>treat_none</code> by multiplying the treated-minus-control difference in the selected group by the selected population fraction, with approximate 95% normal confidence intervals. <code>Uplift by decile</code> ranks customers from highest predicted effect (decile 1) to lowest (decile 10) and shows the observed treated and control visit rates in each decile. If treatment has a cost, pass <code>cost=...</code> to both <code>uplift_threshold</code> and <code>MetricsReport</code>.</p>
 <p><strong>Next:</strong> report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.</p>
 <h2 id="3-interpret-the-held-out-results">3. Interpret the held-out results<a class="headerlink" href="#3-interpret-the-held-out-results" title="Permanent link">&para;</a></h2>
-<p>The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree ranks customers. Validation selects the policy threshold, and the randomized test set estimates incremental visits. This example assumes zero treatment cost because campaign costs are not in the data.</p>
+<p>The stratified seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree at depth 4 ranks customers. <code>uplift_threshold</code> selects the policy threshold (<code>-0.01564</code>) on validation data, and <code>MetricsReport</code> estimates incremental visits on the randomized test set. This example assumes zero treatment cost because campaign costs are not in the data.</p>
 <table>
 <thead>
 <tr>
@@ -2863,33 +2980,33 @@
 <tbody>
 <tr>
 <td>Validation-selected policy</td>
-<td style="text-align: right;">8,539</td>
-<td style="text-align: right;">4,270 / 4,269</td>
-<td style="text-align: right;">0.04517</td>
-<td style="text-align: right;">0.03108 to 0.05927</td>
+<td style="text-align: right;">8,296</td>
+<td style="text-align: right;">4,158 / 4,138</td>
+<td style="text-align: right;">0.05281</td>
+<td style="text-align: right;">0.03901 to 0.06662</td>
 </tr>
 <tr>
 <td>Treat all</td>
 <td style="text-align: right;">8,539</td>
-<td style="text-align: right;">4,270 / 4,269</td>
-<td style="text-align: right;">0.04517</td>
-<td style="text-align: right;">0.03108 to 0.05927</td>
+<td style="text-align: right;">4,278 / 4,261</td>
+<td style="text-align: right;">0.05314</td>
+<td style="text-align: right;">0.03914 to 0.06714</td>
 </tr>
 <tr>
 <td>Treat none</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">—</td>
+<td style="text-align: right;">0 / 0</td>
 <td style="text-align: right;">0</td>
 <td style="text-align: right;">—</td>
 </tr>
 </tbody>
 </table>
 <p><img alt="Hillstrom randomized held-out policy comparison" src="../../assets/guides/real-uplift.svg" /></p>
-<p>The chosen policy treats everyone. This run therefore supplies <strong>no evidence that targeting improves on treat-all</strong>. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.</p>
+<p>The validation-selected policy emails 8,296 of the 8,539 test customers. It yields 0.05281 incremental visits per eligible customer (95% CI 0.03901 to 0.06662), compared with 0.05314 (95% CI 0.03914 to 0.06714) for treat-all. With overlapping confidence intervals and a lower point estimate, this run supplies <strong>no evidence that targeting improves on treat-all</strong> at zero treatment cost. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.</p>
 <p><strong>Next:</strong> check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.</p>
 <h2 id="4-controlled-check-with-synthetic-truth">4. Controlled check with synthetic truth<a class="headerlink" href="#4-controlled-check-with-synthetic-truth" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_uplift_evaluation.py">survival and uplift evaluation script</a> simulates a randomized trial. It uses 3,000 training, 1,000 validation and 2,000 independent test observations. It selects a threshold on validation data and evaluates the fixed policy on test data. The example assigns a treatment cost of 0.5 outcome units per treated person.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/survival_uplift_evaluation.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/survival_uplift_evaluation.py
 </span></code></pre></div>
 <table>
 <thead>
@@ -2923,7 +3040,7 @@
 </table>
 <p><img alt="Held-out randomized policy comparison" src="../../assets/guides/uplift-evaluation.svg" /></p>
 <p>Within the selected subgroup, the script compares observed treated and control outcomes. It subtracts the cost and multiplies by the selected fraction to report value per person in the whole test population. The selected policy's approximate 95% interval is [0.6438, 0.7706]. It uses a normal approximation conditional on the selected fraction; it does not include model-selection uncertainty. Randomized assignment and independent test data support this comparison. Check arm counts and use a suitable uncertainty method for the actual design.</p>
-<p>Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. These calculations are example code, not a claim that the package already exposes uplift evaluation metrics.</p>
+<p>Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. For real-world evaluation, <code>MetricsReport("uplift", ...)</code> and <code>uplift_threshold(...)</code> provide the policy table and decile breakdown directly.</p>
 <p><strong>Next:</strong> the worked example also uses a simulation with a known effect, to check numerical effect recovery, which real Hillstrom outcomes cannot provide.</p>
 <hr />
 <h2 id="5-worked-example-recovering-a-known-treatment-effect">5. Worked example: recovering a known treatment effect<a class="headerlink" href="#5-worked-example-recovering-a-known-treatment-effect" title="Permanent link">&para;</a></h2>
@@ -2934,36 +3051,36 @@ $<span class="arithmatex">\(\tau(x) = E[Y | X=x, W=1] - E[Y | X=x, W=0]\)</span>
 <p><code>ModelTree</code> provides native Rust-accelerated <strong>Causal Trees</strong> that split directly on treatment effect divergence without external meta-learners or propensity weighting loops.</p>
 <p>Script:
 - <a href="https://github.com/jkapila/mltreelib/blob/main/benchmarks/suites/causal_benchmark.py"><code>benchmarks/suites/causal_benchmark.py</code></a> (<code>python3 benchmarks/suites/causal_benchmark.py</code>)</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>======================================================================
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>1. CAUSAL TREE ON NIE &amp; WAGER (2021) / CAUSALML SETUP B
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>======================================================================
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Dataset Size: N_train=2000, N_test=1000, P=6 features
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Causal Tree: Leaves=10, Max Depth=4
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>True Average Treatment Effect (ATE):     0.8177
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Estimated Average Treatment Effect (ATE):0.8030
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>ATE Absolute Error:                      0.0147
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>PEHE (Heterogeneity Precision):          0.5848
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9.
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>======================================================================
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>2. STRUCTURAL CATE STEP RECOVERY &amp; SLEEPING DOG IDENTIFICATION
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>======================================================================
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>Left regime (x0 &lt; 0) - True tau = +10.0 | Estimated tau = +10.0095
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>Right regime (x0 &gt;= 0) - True tau = -5.0 | Estimated tau = -5.1823
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9.
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>  [Pass] Successfully differentiated persuasive units (+10.0) from sleeping dogs (-5.0).
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>======================================================================
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>1. CAUSAL TREE ON NIE &amp; WAGER (2021) / CAUSALML SETUP B
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>======================================================================
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>Dataset Size: N_train=2000, N_test=1000, P=6 features
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>Causal Tree: Leaves=10, Max Depth=4
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>True Average Treatment Effect (ATE):     0.8177
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>Estimated Average Treatment Effect (ATE):0.8030
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>ATE Absolute Error:                      0.0147
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>PEHE (Heterogeneity Precision):          0.5848
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9.
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>======================================================================
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>2. STRUCTURAL CATE STEP RECOVERY &amp; SLEEPING DOG IDENTIFICATION
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>======================================================================
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>Left regime (x0 &lt; 0) - True tau = +10.0 | Estimated tau = +10.0095
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>Right regime (x0 &gt;= 0) - True tau = -5.0 | Estimated tau = -5.1823
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>  [Pass] Exact Leaf Arithmetic Assertion: All leaf CATEs match raw group differences within 1e-9.
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>  [Pass] Successfully differentiated persuasive units (+10.0) from sleeping dogs (-5.0).
 </span></code></pre></div>
 <hr />
 <h3 id="1-the-tuple-target-contract">1. The Tuple Target Contract<a class="headerlink" href="#1-the-tuple-target-contract" title="Permanent link">&para;</a></h3>
 <p>Causal inference requires both the observed response <span class="arithmatex">\(Y_i\)</span> and the binary treatment indicator <span class="arithmatex">\(W_i \in \{0, 1\}\)</span>. Rather than bloating the covariate space <span class="arithmatex">\(X\)</span>, <code>ModelTree</code> accepts target tuples:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># X: predictive covariates only</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># y: 2-tuple (outcomes, treatments)</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">y_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="n">outcomes</span><span class="p">,</span> <span class="n">treatments</span><span class="p">)</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_tuple</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># X: predictive covariates only</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># y: 2-tuple (outcomes, treatments)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">y_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="n">outcomes</span><span class="p">,</span> <span class="n">treatments</span><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_tuple</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h3 id="2-o1-causal-splitting-criterion">2. <span class="arithmatex">\(O(1)\)</span> Causal Splitting Criterion<a class="headerlink" href="#2-o1-causal-splitting-criterion" title="Permanent link">&para;</a></h3>
@@ -2981,11 +3098,11 @@ This permits a treated-minus-control sample difference in each child. It does no
 <hr />
 <h3 id="3-unified-uplift-predictions">3. Unified Uplift Predictions<a class="headerlink" href="#3-unified-uplift-predictions" title="Permanent link">&para;</a></h3>
 <p>Predictions remain unified through <code>predict(X, kind=...)</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Predict Individual Treatment Effect (CATE / Uplift)</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">cate_preds</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>  <span class="c1"># or kind="cate"</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Predict baseline response</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">baseline_preds</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"response"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Predict Individual Treatment Effect (CATE / Uplift)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">cate_preds</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"uplift"</span><span class="p">)</span>  <span class="c1"># or kind="cate"</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Predict baseline response</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">baseline_preds</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"response"</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h3 id="4-benchmark-numerical-validation">4. Benchmark &amp; Numerical Validation<a class="headerlink" href="#4-benchmark-numerical-validation" title="Permanent link">&para;</a></h3>
@@ -3008,22 +3125,44 @@ $<span class="arithmatex">\(\tau_{\text{RMST}}(x) = \mathbb{E}[\text{RMST}(1) - 
 - <strong>Structure Set <span class="arithmatex">\(S^{\text{tr}}\)</span></strong>: Used exclusively to place partition boundaries (e.g. maximizing <span class="arithmatex">\(\Delta \text{RMST}\)</span> or pseudo-value variance reduction).
 - <strong>Estimation Set <span class="arithmatex">\(S^{\text{est}}\)</span></strong>: Independent holdout used to fit leaf survival curves and estimate CATE.</p>
 <p>This honest decoupling removes optimistic selection bias in survival trees:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Honest Causal Survival Tree</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"pseudo_value"</span><span class="p">,</span>     <span class="c1"># or "rmst"</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">honesty_fraction</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">)</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="n">events</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Honest Causal Survival Tree</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"pseudo_value"</span><span class="p">,</span>     <span class="c1"># or "rmst"</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">honesty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">honesty_fraction</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">)</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="n">events</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Executable research script:
 - <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py"><code>examples/guides/survival_causal_survival_honest.py</code></a></p>
+<hr />
+<h3 id="6-customer-ids-group-columns-and-leaf-membership">6. Customer IDs, Group Columns, and Leaf Membership<a class="headerlink" href="#6-customer-ids-group-columns-and-leaf-membership" title="Permanent link">&para;</a></h3>
+<p>Pass <code>id_col</code> or <code>group_col</code> to <code>fit</code> (or set <code>group=</code> on <code>Dataset</code> for grouped splits) so identifiers are excluded from splitting (<code>train_ids=False</code>, <code>train_groups=False</code> by default). After fitting, <code>tree.leaf_samples(x, id_col=...)</code> maps each terminal leaf back to the customer IDs assigned to it.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="p">[</span><span class="s2">"c1"</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c2"</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c3"</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c4"</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="p">[</span><span class="s2">"c5"</span><span class="p">,</span> <span class="mf">22.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c6"</span><span class="p">,</span> <span class="mf">28.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c7"</span><span class="p">,</span> <span class="mf">48.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"c8"</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">11.0</span><span class="p">,</span> <span class="mf">11.5</span><span class="p">,</span> <span class="mf">9.5</span><span class="p">,</span> <span class="mf">21.0</span><span class="p">,</span> <span class="mf">10.5</span><span class="p">]</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">arm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"causal"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">arm</span><span class="p">),</span> <span class="n">id_col</span><span class="o">=</span><span class="s2">"customer_id"</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">])</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Split columns:"</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s2">"col"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">()])</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Leaf samples:"</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">leaf_samples</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="s2">"customer_id"</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">]))</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Split columns: ['age']
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Leaf samples: {0: ['c1', 'c2', 'c5', 'c6'], 1: ['c3', 'c4', 'c7', 'c8']}
+</span></code></pre></div>
 <h2 id="next-steps-and-references">Next steps and references<a class="headerlink" href="#next-steps-and-references" title="Permanent link">&para;</a></h2>
 <p><a href="https://www.pnas.org/doi/10.1073/pnas.1510489113">Athey and Imbens (2016)</a></p>
 

@@ -28,7 +28,7 @@
     
     
       
-        <title>6. Clustering - mltreelib v0.4.15</title>
+        <title>6. Clustering - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2593,39 +2593,60 @@
 <p>Run this from the repository root. The second split supports a refit check. Assign the review records with both models before comparing them.</p>
 <!-- run -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClusterModel</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_path</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"wine_quality"</span><span class="p">))</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClusterModel</span><span class="p">,</span> <span class="n">dataset_path</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"wine_quality"</span><span class="p">))</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"residual_sugar"</span><span class="p">,</span> <span class="s2">"volatile_acidity"</span><span class="p">,</span> <span class="s2">"alcohol"</span><span class="p">,</span> <span class="s2">"chlorides"</span><span class="p">]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">train</span><span class="p">,</span> <span class="n">review</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">2500</span><span class="p">],</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">5000</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">center</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">scale</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">design</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">return</span> <span class="p">((</span><span class="n">frame</span><span class="p">[</span><span class="n">features</span><span class="p">]</span> <span class="o">-</span> <span class="n">center</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ClusterModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pct"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">train</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">review</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">review</span><span class="p">),</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cluster"</span><span class="p">)</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"segment"</span><span class="p">)[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">review</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">sort_index</span><span class="p">())</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">rules</span><span class="p">())</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">"list"</span><span class="p">),</span> <span class="n">features</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"wine_quality"</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Seeded split: 2,500 train, 2,500 refit check (middle split), remaining rows review</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">train_ds</span><span class="p">,</span> <span class="n">val_ds</span><span class="p">,</span> <span class="n">review_ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">val_size</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">n_rows</span> <span class="o">-</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">train_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">f</span><span class="p">:</span> <span class="n">train_ds</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">})</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">val_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">f</span><span class="p">:</span> <span class="n">val_ds</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">})</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">review</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">f</span><span class="p">:</span> <span class="n">review_ds</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">})</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">center</span> <span class="o">=</span> <span class="n">train_df</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">scale</span> <span class="o">=</span> <span class="n">train_df</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">design</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">return</span> <span class="p">((</span><span class="n">frame</span><span class="p">[</span><span class="n">features</span><span class="p">]</span> <span class="o">-</span> <span class="n">center</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ClusterModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pct"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">train_df</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">review</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">review</span><span class="p">),</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cluster"</span><span class="p">)</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="nb">print</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"segment"</span><span class="p">)[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="nb">print</span><span class="p">(</span><span class="n">review</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">sort_index</span><span class="p">())</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1"># Refit at depth 2 on the middle split, then compare the review assignments by pairwise Jaccard</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">refit</span> <span class="o">=</span> <span class="n">ClusterModel</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"pct"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">refit</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">val_df</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">first</span> <span class="o">=</span> <span class="n">review</span><span class="p">[</span><span class="s2">"segment"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">second</span> <span class="o">=</span> <span class="n">refit</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">design</span><span class="p">(</span><span class="n">review</span><span class="p">),</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cluster"</span><span class="p">)</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">both</span> <span class="o">=</span> <span class="n">either</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">first</span><span class="p">)):</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">first</span><span class="p">)):</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="n">same_first</span><span class="p">,</span> <span class="n">same_second</span> <span class="o">=</span> <span class="n">first</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">first</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">second</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">second</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>        <span class="n">both</span> <span class="o">+=</span> <span class="n">same_first</span> <span class="ow">and</span> <span class="n">same_second</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        <span class="n">either</span> <span class="o">+=</span> <span class="n">same_first</span> <span class="ow">or</span> <span class="n">same_second</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pairwise Jaccard after refit: </span><span class="si">{</span><span class="n">both</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">either</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="nb">print</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">rules</span><span class="p">())</span>
 </span></code></pre></div>
 <!-- output -->
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>         residual_sugar  volatile_acidity  alcohol  chlorides
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>segment                                                      
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>0                   2.1             0.260     10.9      0.042
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>1                   2.2             0.580     10.0      0.077
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>2                  12.0             0.265      9.3      0.049
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>3                   9.7             0.280     11.0      0.038
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>0                   2.0              0.26     11.0      0.041
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>1                   2.2              0.49      9.8      0.081
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>2                  12.0              0.26      9.3      0.047
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>3                   9.2              0.29     11.0      0.038
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>segment
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>0    715
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>1    303
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>2    350
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>3    129
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>0    671
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>1    376
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>2    339
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>3    111
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>Name: count, dtype: int64
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>[{'cluster_id': 0, 'rule': 'residual_sugar &lt;= 0.3250 AND volatile_acidity &lt;= 0.5334', 'prototype': [-0.5633571796980814, -0.45032130960253103, 0.35595950436800566, -0.19283988480404657], 'size': 1225}, {'cluster_id': 1, 'rule': 'residual_sugar &lt;= 0.3250 AND volatile_acidity &gt; 0.5334', 'prototype': [-0.6175285877862888, 1.5861935962778964, -0.045033699961352924, 0.7751047008432439], 'size': 511}, {'cluster_id': 2, 'rule': 'residual_sugar &gt; 0.3250 AND alcohol &lt;= -0.1944', 'prototype': [1.4487425379517769, -0.3488113958827904, -0.9831008544389213, -0.1253780190834037], 'size': 550}, {'cluster_id': 3, 'rule': 'residual_sugar &gt; 0.3250 AND alcohol &gt; -0.1944', 'prototype': [0.9759871851189981, -0.3133413817727514, 0.5965761578077295, -0.42472772313116014], 'size': 214}]
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Pairwise Jaccard after refit: 0.858
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>[{'cluster_id': 0, 'rule': 'residual_sugar &lt;= 0.3162 AND chlorides &lt;= 0.1151', 'prototype': [-0.5298608388963876, -0.33901691024812336, 0.4817291756224511, -0.4334330762280131], 'size': 1134}, {'cluster_id': 1, 'rule': 'residual_sugar &lt;= 0.3162 AND chlorides &gt; 0.1151', 'prototype': [-0.6147134546221794, 0.9982630406935705, -0.21269204365655098, 1.0569811477673698], 'size': 613}, {'cluster_id': 2, 'rule': 'residual_sugar &gt; 0.3162 AND alcohol &lt;= -0.1255', 'prototype': [1.4028201489335133, -0.31369157555757365, -0.9910952377644764, -0.11698902770202284], 'size': 551}, {'cluster_id': 3, 'rule': 'residual_sugar &gt; 0.3162 AND alcohol &gt; -0.1255', 'prototype': [1.0135031531165115, -0.2705247999582201, 0.6445188792763954, -0.45522465779711985], 'size': 202}]
 </span></code></pre></div>
 <p><code>labels_</code> stores the training assignments and <code>n_clusters_</code> gives the number of assigned clusters. The <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py">full script</a> refits on the other 2,500 wines and draws the figure.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/real_tree_studies.py<span class="w"> </span>wine
@@ -2646,35 +2667,35 @@
 <tbody>
 <tr>
 <td>0</td>
-<td style="text-align: right;">715</td>
-<td style="text-align: right;">2.1</td>
-<td style="text-align: right;">0.260</td>
-<td style="text-align: right;">10.9</td>
+<td style="text-align: right;">671</td>
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: right;">11.0</td>
 </tr>
 <tr>
 <td>1</td>
-<td style="text-align: right;">303</td>
+<td style="text-align: right;">376</td>
 <td style="text-align: right;">2.2</td>
-<td style="text-align: right;">0.580</td>
-<td style="text-align: right;">10.0</td>
+<td style="text-align: right;">0.49</td>
+<td style="text-align: right;">9.8</td>
 </tr>
 <tr>
 <td>2</td>
-<td style="text-align: right;">350</td>
+<td style="text-align: right;">339</td>
 <td style="text-align: right;">12.0</td>
-<td style="text-align: right;">0.265</td>
+<td style="text-align: right;">0.26</td>
 <td style="text-align: right;">9.3</td>
 </tr>
 <tr>
 <td>3</td>
-<td style="text-align: right;">129</td>
-<td style="text-align: right;">9.7</td>
-<td style="text-align: right;">0.280</td>
+<td style="text-align: right;">111</td>
+<td style="text-align: right;">9.2</td>
+<td style="text-align: right;">0.29</td>
 <td style="text-align: right;">11.0</td>
 </tr>
 </tbody>
 </table>
-<p>The two lower-sugar groups differ on acidity. The higher-sugar groups differ on alcohol. Pairwise Jaccard agreement on the 1,497 review wines was <strong>0.841</strong> after refitting at depth two on the second training sample. This is one check with a shared training scale.</p>
+<p>The two lower-sugar groups differ on acidity. The higher-sugar groups differ on alcohol. Pairwise Jaccard agreement on the 1,497 review wines was <strong>0.858</strong> after refitting at depth two on the second training sample. This is one check with a shared training scale.</p>
 <p>A scatter plot only shows two of the four input features. Use the profile panel to see how the segments differ across the full feature list. It displays each segment's median in units of the training standard deviation. For a rule review, convert a standardized threshold back to lab units using <code>threshold * scale + center</code>.</p>
 <p>Report pairwise Jaccard agreement after refitting. It counts pairs assigned together in both fits as a fraction of pairs assigned together in either fit. It avoids matching arbitrary leaf IDs and excludes the usually large number of pairs separated by both fits. This tests the stability of one partition with fixed scaling. Before using the groups operationally, repeat with independent batches and compare against a simpler lab rule.</p>
 <p><strong>Next:</strong> compare the other engines behind <code>ClusterModel</code>, because the profiles and stability check in step 3 describe only the PCT segmentation.</p>

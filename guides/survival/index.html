@@ -28,7 +28,7 @@
     
     
       
-        <title>4. Survival - mltreelib v0.4.15</title>
+        <title>4. Survival - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -1332,6 +1332,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         5. Competing risks and multi-cause endpoints
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subject-ids-and-grouped-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Subject IDs and grouped observations
       </span>
     </span>
   </a>
@@ -2541,6 +2552,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#subject-ids-and-grouped-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Subject IDs and grouped observations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps-and-references" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2574,7 +2596,7 @@
 <h1 id="survival-trees-in-python-flchain-mortality-follow-up">Survival trees in Python: FLCHAIN mortality follow-up<a class="headerlink" href="#survival-trees-in-python-flchain-mortality-follow-up" title="Permanent link">&para;</a></h1>
 <p>Use baseline measurements to estimate survival at one, three and five years. The event is death. If follow-up ends first, the row is right-censored.</p>
 <h2 id="1-get-the-data-and-define-the-evaluation">1. Get the data and define the evaluation<a class="headerlink" href="#1-get-the-data-and-define-the-evaluation" title="Permanent link">&para;</a></h2>
-<p>The <code>survival</code> package's <a href="https://cran.r-project.org/web/packages/survival/survival.pdf">FLCHAIN cohort</a> contains 7,874 people and right-censored follow-up. <code>futime</code> is follow-up in days and <code>death=1</code> records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude <code>chapter</code>, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 952 of the 5,500 training records and 398 of the 2,374 test records; values enter the tree without imputation.</p>
+<p>The <code>survival</code> package's <a href="https://cran.r-project.org/web/packages/survival/survival.pdf">FLCHAIN cohort</a> contains 7,874 people and right-censored follow-up. <code>futime</code> is follow-up in days and <code>death=1</code> records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude <code>chapter</code>, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 943 of the 5,500 training records and 407 of the 2,374 test records; values enter the tree without imputation.</p>
 <p>The snippet below gets the file with <code>dataset_path("flchain_rdatasets")</code>. It downloads the <a href="https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv">FLCHAIN CSV from Rdatasets</a> on first use, caches it under <code>~/.cache/mltreelib/datasets/</code> (or <code>MLTREELIB_DATA_DIR</code>) and checks SHA-256 <code>a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563</code>. Run the shared <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_survival_uplift.py">real-data evaluation script</a>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/real_survival_uplift.py<span class="w"> </span>survival
 </span></code></pre></div>
@@ -2605,13 +2627,14 @@
     class Censored censBox;
     class LogRank splitBox;
     class KM leafBox;</code></pre>
-<p>Run this Python block from the repository root. The evaluation helpers are part of the example script.</p>
+<p>Run this Python block from the repository root. The evaluation helpers are defined in the block.</p>
+<!-- run -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">bisect</span><span class="w"> </span><span class="kn">import</span> <span class="n">bisect_left</span><span class="p">,</span> <span class="n">bisect_right</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">dataset_path</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">dataset_path</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">censor_km</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="sd">"""Censoring survival G(t), estimated from training observations."""</span>
@@ -2639,31 +2662,59 @@
 </span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
 </span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"flchain_rdatasets"</span><span class="p">))</span>
 </span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"sex"</span><span class="p">,</span> <span class="s2">"kappa"</span><span class="p">,</span> <span class="s2">"lambda"</span><span class="p">,</span> <span class="s2">"creatinine"</span><span class="p">]</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"numeric"</span><span class="p">,</span> <span class="s2">"categorical"</span><span class="p">,</span> <span class="s2">"numeric"</span><span class="p">,</span> <span class="s2">"numeric"</span><span class="p">,</span> <span class="s2">"numeric"</span><span class="p">]</span>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)))</span>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="n">Random</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
-</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>
-</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">inputs</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
-</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="n">part</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
-</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>    <span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span>
-</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">part</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)]</span>
-</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">futime</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">part</span><span class="o">.</span><span class="n">death</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>
-</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="n">x_train</span><span class="p">,</span> <span class="n">t_train</span><span class="p">,</span> <span class="n">e_train</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[:</span><span class="mi">5500</span><span class="p">])</span>
-</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="n">x_test</span><span class="p">,</span> <span class="n">t_test</span><span class="p">,</span> <span class="n">e_test</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">5500</span><span class="p">:])</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="o">*</span><span class="n">features</span><span class="p">,</span> <span class="s2">"futime"</span><span class="p">,</span> <span class="s2">"death"</span><span class="p">]},</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">time</span><span class="o">=</span><span class="s2">"futime"</span><span class="p">,</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="n">event</span><span class="o">=</span><span class="s2">"death"</span><span class="p">,</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>    <span class="n">features</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"flchain"</span><span class="p">,</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="p">)</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="c1"># Seeded split: 5,500 rows train, the remaining rows test</span>
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">test_size</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">n_rows</span> <span class="o">-</span> <span class="mi">5500</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="n">t_train</span><span class="p">,</span> <span class="n">e_train</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">train</span><span class="o">.</span><span class="n">event</span>
+</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="n">t_test</span><span class="p">,</span> <span class="n">e_test</span> <span class="o">=</span> <span class="n">test</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">event</span>
 </span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="n">grid</span> <span class="o">=</span> <span class="p">[</span><span class="mf">365.0</span><span class="p">,</span> <span class="mf">1095.0</span><span class="p">,</span> <span class="mf">1825.0</span><span class="p">]</span>
 </span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="n">censor</span> <span class="o">=</span> <span class="n">censor_km</span><span class="p">(</span><span class="n">t_train</span><span class="p">,</span> <span class="n">e_train</span><span class="p">)</span>
-</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>
-</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
-</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
-</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>                     <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
-</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>    <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="p">(</span><span class="n">t_train</span><span class="p">,</span> <span class="n">e_train</span><span class="p">),</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">types</span><span class="p">)</span>
-</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    <span class="n">curves</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
-</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"depth"</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="s2">"first survival curve"</span><span class="p">,</span> <span class="n">curves</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">horizon</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">grid</span><span class="p">):</span>
-</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">brier</span><span class="p">(</span><span class="n">t_test</span><span class="p">,</span> <span class="n">e_test</span><span class="p">,</span> <span class="p">[</span><span class="n">curve</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">curve</span> <span class="ow">in</span> <span class="n">curves</span><span class="p">],</span>
-</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>                             <span class="n">horizon</span><span class="p">,</span> <span class="n">censor</span><span class="p">))</span>
-</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">()[:</span><span class="mi">1</span><span class="p">])</span>
+</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Test rows </span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">n_rows</span><span class="si">}</span><span class="s2">: deaths </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">e_test</span><span class="p">)</span><span class="si">}</span><span class="s2">, censored </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">e_test</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">e_test</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="k">for</span> <span class="n">horizon</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">:</span>
+</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Horizon </span><span class="si">{</span><span class="n">horizon</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">: test at risk </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">t</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">horizon</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">t_test</span><span class="p">)</span><span class="si">}</span><span class="s2">, censoring survival </span><span class="si">{</span><span class="n">censor</span><span class="p">(</span><span class="n">horizon</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="n">miss_train</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">missing</span><span class="p">()[</span><span class="s2">"per_column"</span><span class="p">][</span><span class="s2">"creatinine"</span><span class="p">][</span><span class="s2">"n_missing"</span><span class="p">]</span>
+</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="n">miss_test</span> <span class="o">=</span> <span class="n">test</span><span class="o">.</span><span class="n">missing</span><span class="p">()[</span><span class="s2">"per_column"</span><span class="p">][</span><span class="s2">"creatinine"</span><span class="p">][</span><span class="s2">"n_missing"</span><span class="p">]</span>
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Creatinine missing: </span><span class="si">{</span><span class="n">miss_train</span><span class="si">}</span><span class="s2"> training rows, </span><span class="si">{</span><span class="n">miss_test</span><span class="si">}</span><span class="s2"> test rows"</span><span class="p">)</span>
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf_family</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>                     <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>    <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>    <span class="n">curves</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>    <span class="n">risk</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"risk"</span><span class="p">)</span>
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>    <span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span>
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>        <span class="s2">"survival"</span><span class="p">,</span> <span class="n">durations</span><span class="o">=</span><span class="n">t_test</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">e_test</span><span class="p">,</span> <span class="n">risk</span><span class="o">=</span><span class="n">risk</span><span class="p">,</span>
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>        <span class="n">surv_curves</span><span class="o">=</span><span class="n">curves</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>    <span class="p">)</span>
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"depth"</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="s2">"first survival curve"</span><span class="p">,</span> <span class="n">curves</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"harrell_c"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">rep</span><span class="p">[</span><span class="s2">"harrell_c"</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">horizon</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">grid</span><span class="p">):</span>
+</span><span id="__span-1-67"><a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">brier</span><span class="p">(</span><span class="n">t_test</span><span class="p">,</span> <span class="n">e_test</span><span class="p">,</span> <span class="p">[</span><span class="n">curve</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">curve</span> <span class="ow">in</span> <span class="n">curves</span><span class="p">],</span>
+</span><span id="__span-1-68"><a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>                             <span class="n">horizon</span><span class="p">,</span> <span class="n">censor</span><span class="p">))</span>
+</span><span id="__span-1-69"><a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">()[:</span><span class="mi">1</span><span class="p">])</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Test rows 2374: deaths 636, censored 1738
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Horizon 365: test at risk 2288, censoring survival 0.9920
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Horizon 1095: test at risk 2179, censoring survival 0.9813
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Horizon 1825: test at risk 2064, censoring survival 0.9713
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Creatinine missing: 943 training rows, 407 test rows
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>depth 0 first survival curve [0.964214236229244, 0.9186622130736849, 0.8760250322642885] harrell_c 0.5
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>365.0 0.029162166996877254
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>1095.0 0.06471126332180974
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>1825.0 0.10007346001380353
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>[]
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>depth 2 first survival curve [0.7161803713527852, 0.44129424875964646, 0.29187356453050306] harrell_c 0.6298
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>365.0 0.027422331820290472
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>1095.0 0.05658412808997147
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>1825.0 0.08055176917287096
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>[{'col': 'kappa', 'threshold': 1.82, 'missing_left': True, 'gain': 342113400.42157936}]
 </span></code></pre></div>
 <p>The depth-zero tree estimates one Kaplan–Meier curve for everyone. The deeper tree assigns a separate curve to each leaf. Inspect early and late horizons separately because each has a different set of known outcomes.</p>
 <p><strong>Next:</strong> compare the tree with the global baseline at one, three and five years, using the held-out Brier scores printed in step 2.</p>
@@ -2681,34 +2732,34 @@
 <tbody>
 <tr>
 <td style="text-align: right;">365</td>
-<td style="text-align: right;">2,270</td>
-<td style="text-align: right;">0.9930</td>
-<td style="text-align: right;">0.0329</td>
-<td style="text-align: right;">0.0343</td>
+<td style="text-align: right;">2,288</td>
+<td style="text-align: right;">0.9920</td>
+<td style="text-align: right;">0.0274</td>
+<td style="text-align: right;">0.0292</td>
 </tr>
 <tr>
 <td style="text-align: right;">1,095</td>
-<td style="text-align: right;">2,144</td>
-<td style="text-align: right;">0.9834</td>
-<td style="text-align: right;">0.0671</td>
-<td style="text-align: right;">0.0731</td>
+<td style="text-align: right;">2,179</td>
+<td style="text-align: right;">0.9813</td>
+<td style="text-align: right;">0.0566</td>
+<td style="text-align: right;">0.0647</td>
 </tr>
 <tr>
 <td style="text-align: right;">1,825</td>
-<td style="text-align: right;">2,043</td>
-<td style="text-align: right;">0.9737</td>
-<td style="text-align: right;">0.0884</td>
-<td style="text-align: right;">0.1026</td>
+<td style="text-align: right;">2,064</td>
+<td style="text-align: right;">0.9713</td>
+<td style="text-align: right;">0.0806</td>
+<td style="text-align: right;">0.1001</td>
 </tr>
 </tbody>
 </table>
 <p><img alt="FLCHAIN held-out Brier scores and example leaf survival curves" src="../../assets/guides/real-survival.svg" /></p>
-<p>The right panel shows two held-out feature rows routed through the training tree. They were selected by their predicted five-year survival, without using their outcomes. Their five-year predictions are 0.321 and 0.948. These are leaf estimates. The left panel measures error across all 2,374 test rows, which include 644 recorded deaths and 1,730 censored observations over the available follow-up.</p>
+<p>The right panel shows two held-out feature rows routed through the training tree. They were selected by their predicted five-year survival, without using their outcomes. These are leaf estimates. The left panel measures error across all 2,374 test rows, which include 636 recorded deaths and 1,738 censored observations over the available follow-up.</p>
 <p>The example uses a seeded random split and estimates the marginal censoring distribution from training data only. A marginal censoring model assumes censoring is independent of the outcome in the relevant population. This observational cohort and one split do not establish clinical usefulness. Check conditional censoring, calibration, discrimination and uncertainty with the intended deployment population before interpreting the comparison.</p>
 <p><strong>Next:</strong> repeat the Brier comparison on synthetic data where the true survival probability is known, because real individual survival probabilities are not observed.</p>
 <h2 id="4-controlled-check-with-synthetic-truth">4. Controlled check with synthetic truth<a class="headerlink" href="#4-controlled-check-with-synthetic-truth" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_uplift_evaluation.py">survival and uplift evaluation script</a> simulates 5,000 people. It fits 3,000 and evaluates 2,000 independent records, including 1,391 observed events and 609 censored observations. A global survival model provides the baseline.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/survival_uplift_evaluation.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/survival_uplift_evaluation.py
 </span></code></pre></div>
 <table>
 <thead>
@@ -2746,30 +2797,48 @@
 - <strong>Split Criterion</strong>: Gray's subdistribution log-rank test (<code>gain="gray", target_cause=j</code>) maintaining subjects who experienced competing events in the risk set.
 - <strong>Leaf Estimators</strong>: Aalen-Johansen multi-state estimator guaranteeing the probability simplex identity: <span class="arithmatex">\(\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) = 1.0\)</span>.
 - <strong>Unified Prediction API</strong>: <code>tree.predict(X, kind="cif", times=times, cause=1)</code> and <code>tree.predict(X, kind="risk")</code>.
-- <strong>Validation</strong>: <code>Metrics().competing_risks(...)</code> computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier score matrices.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">target_cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="p">(</span><span class="n">durations_train</span><span class="p">,</span> <span class="n">events_train</span><span class="p">))</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Evaluate Aalen-Johansen CIF at specified horizons</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">]</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">cif_cause1</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">cif_cause2</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">surv</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"survival"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Compute full IPCW competing risks performance report</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">report</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">competing_risks</span><span class="p">(</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">durations</span><span class="o">=</span><span class="n">durations_test</span><span class="p">,</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="n">events</span><span class="o">=</span><span class="n">events_test</span><span class="p">,</span>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="n">cif_curves</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">cif_cause1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">cif_cause2</span><span class="p">},</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="p">)</span>
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 Harrell C:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_c_indices"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 Uno IPCW C:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_uno_c_indices"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Cause 1 IBS:"</span><span class="p">,</span> <span class="n">report</span><span class="p">[</span><span class="s2">"cause_ibs"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+- <strong>Validation</strong>: <code>MetricsReport("competing_risks", ...)</code> computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier scores.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">target_cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="p">(</span><span class="n">durations_train</span><span class="p">,</span> <span class="n">events_train</span><span class="p">))</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Evaluate Aalen-Johansen CIF at specified horizons</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">cif_cause1</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">cif_cause2</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cif"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># Compute full IPCW competing risks performance report</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="s2">"competing_risks"</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">durations</span><span class="o">=</span><span class="n">durations_test</span><span class="p">,</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">events</span><span class="o">=</span><span class="n">events_test</span><span class="p">,</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="n">cif_curves</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">cif_cause1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">cif_cause2</span><span class="p">},</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="p">)</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="subject-ids-and-grouped-observations">Subject IDs and grouped observations<a class="headerlink" href="#subject-ids-and-grouped-observations" title="Permanent link">&para;</a></h2>
+<p>When a clinical dataset carries a subject identifier or clinic group (<code>id_col</code> or <code>group_col</code>), pass it to <code>fit</code> so the tree never splits on an identifier (<code>train_ids=False</code>, <code>train_groups=False</code> by default). You can still pass the full table to <code>leaf_samples(x, id_col=...)</code> to list which subjects fall into each leaf, or set <code>train_ids=True</code> / <code>train_groups=True</code> only when you intend the model to split on them.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="p">[</span><span class="s2">"p1"</span><span class="p">,</span> <span class="mf">62.0</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p2"</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p3"</span><span class="p">,</span> <span class="mf">71.0</span><span class="p">,</span> <span class="mf">2.1</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p4"</span><span class="p">,</span> <span class="mf">49.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="p">[</span><span class="s2">"p5"</span><span class="p">,</span> <span class="mf">66.0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p6"</span><span class="p">,</span> <span class="mf">58.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p7"</span><span class="p">,</span> <span class="mf">74.0</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">],</span> <span class="p">[</span><span class="s2">"p8"</span><span class="p">,</span> <span class="mf">52.0</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">]</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">durations</span> <span class="o">=</span> <span class="p">[</span><span class="mf">120.0</span><span class="p">,</span> <span class="mf">310.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="mf">400.0</span><span class="p">,</span> <span class="mf">150.0</span><span class="p">,</span> <span class="mf">290.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">,</span> <span class="mf">350.0</span><span class="p">]</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="s2">"logrank"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="n">events</span><span class="p">),</span> <span class="n">id_col</span><span class="o">=</span><span class="s2">"patient_id"</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"patient_id"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"biomarker"</span><span class="p">])</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Split columns:"</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s2">"col"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">()])</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Leaf samples:"</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">leaf_samples</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="s2">"patient_id"</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"patient_id"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"biomarker"</span><span class="p">]))</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Split columns: ['age']
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Leaf samples: {0: ['p2', 'p4', 'p6', 'p8'], 1: ['p1', 'p3', 'p5', 'p7']}
 </span></code></pre></div>
 <h2 id="next-steps-and-references">Next steps and references<a class="headerlink" href="#next-steps-and-references" title="Permanent link">&para;</a></h2>
 <p><a href="../../concepts/survival-trees/">Survival trees</a> · <a href="https://doi.org/10.1080/01621459.1958.10501452">Kaplan and Meier (1958)</a> · <a href="https://doi.org/10.1214/aos/1176344247">Aalen (1978)</a> · <a href="https://doi.org/10.1214/aos/1176350951">Gray (1988)</a></p>

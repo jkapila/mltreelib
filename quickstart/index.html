@@ -28,7 +28,7 @@
     
     
       
-        <title>Quickstart - mltreelib v0.4.15</title>
+        <title>Quickstart - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="./.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2607,114 +2607,63 @@
 <summary>Dataset Provenance: Concrete Compressive Strength</summary>
 <p>Collected by Prof. I-Cheng Yeh (1998) at Chung-Hua University<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Features 1,030 lab mixtures quantifying how 7 cementitious ingredient ratios (cement, slag, fly ash, water, superplasticizer, coarse aggregate, fine aggregate) and curing age interact nonlinearly to determine compressive yield stress (MPa).</p>
 </details>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">ModelTree (Linear Ridge)</label></div>
+<p>This example loads the concrete strength dataset into a <code>Dataset</code>, splits it into an 80% training set and a 20% holdout set in row order, fits a <code>ModelTree</code> with linear ridge leaves at depth 4, and prints <code>MetricsReport</code>. Compare the linear-leaf tab with the constant-mean baseline tab.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">ModelTree (Linear Ridge)</label><label for="__tabbed_1_2">ModelTree(leaf='mean') Baseline</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">load_dataset</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># 1. Load benchmark dataset (1,030 mixtures, 8 features)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">data</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"concrete_compressive_strength"</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"ConcreteCompressiveStrength"</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">target</span><span class="p">]</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">n_rows</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"n_rows"</span><span class="p">]</span>
+<p><!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 1. Load benchmark dataset (1,030 mixtures, 8 features)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">"concrete_compressive_strength"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"ConcreteCompressiveStrength"</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">][</span><span class="n">c</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">feature_names</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rows</span><span class="p">)]</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">][</span><span class="n">target</span><span class="p">]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># 80/20 split with no shuffling: first 80% of rows train, last 20% test</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># 80/20 train/test split</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">split_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n_rows</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">)</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">]</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:]</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=4)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">model_tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">model_tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">pred_mt</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=3)</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">model_tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">model_tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">)</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">pred_mt</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="c1"># Measure holdout metrics</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">m_mt</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_mt</span><span class="p">)</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ModelTree (Linear): RMSE = </span><span class="si">{</span><span class="n">m_mt</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">m_mt</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">m_mt</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
-</span></code></pre></div>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Measure holdout metrics</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"regression"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">pred_mt</span><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ModelTree (Linear): RMSE = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
+</span></code></pre></div></p>
+<p><!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ModelTree (Linear): RMSE = 6.70 MPa, R2 = 0.841, MAE = 4.83 MPa
+</span></code></pre></div></p>
 </div>
-</div>
-</div>
-<div class="admonition example">
-<p class="admonition-title">Output of <code>examples/quickstart.py</code></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Loaded Concrete Compressive Strength: 1030 rows, 8 features.
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Train rows: 824, Test rows: 206
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>=== Model Performance on Test Set ===
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Standard Decision Tree (CART)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>mltreelib ModelTree (Linear)   : RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>--&gt; Error reduction with linear leaves: 34.3%
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>=== Fitted ModelTree Structure (rpart-style) ===
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>n= 824 
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>node), split, n, deviance, yval
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      * denotes terminal node
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a> 1) root 824 228333.917 35.46173  
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>   2) Age &lt;= 14 263 38269.292 22.98684  
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>     4) Cement &lt;= 350 190 14043.474 18.46968  
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>       8) Age &lt;= 7 143 6493.479 15.44493 *
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>       9) Age &gt; 7 47 2261.042 27.67263 *
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>     5) Cement &gt; 350 73 10258.391 34.74381  
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      10) Water &lt;= 178 48 5059.180 39.25437 *
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      11) Water &gt; 178 25 2347.636 26.08354 *
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>   3) Age &gt; 14 561 129948.081 41.31003  
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>     6) Cement &lt;= 350 430 68793.496 36.74539  
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      12) Cement &lt;= 164.6 101 8521.781 26.09900 *
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      13) Cement &gt; 164.6 329 45309.403 40.01374 *
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>     7) Cement &gt; 350 131 22786.202 56.29321  
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      14) Water &lt;= 181.1 76 6496.752 63.46522 *
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      15) Water &gt; 181.1 55 6978.299 46.38280 *
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>Saved DOT representation to: docs/assets/quickstart_tree.dot
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>Generated comparison figure: docs/assets/quickstart_tree_vs_flat.png
-</span></code></pre></div>
-</div>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">ModelTree(leaf='mean') Baseline</label></div>
-<div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">load_dataset</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">data</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"concrete_compressive_strength"</span><span class="p">)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"ConcreteCompressiveStrength"</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">target</span><span class="p">]</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">n_rows</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"n_rows"</span><span class="p">]</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">][</span><span class="n">c</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">feature_names</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rows</span><span class="p">)]</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">][</span><span class="n">target</span><span class="p">]</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">split_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n_rows</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">)</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span><span class="n">split_idx</span><span class="p">]</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="n">split_idx</span><span class="p">:]</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1"># Fit piecewise-constant CART decision tree (leaf="mean", depth=3)</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">cart</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">cart</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">)</span>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">pred_cart</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="n">m_cart</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_cart</span><span class="p">)</span>
-</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ModelTree (Mean)  : RMSE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">m_cart</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
-</span></code></pre></div>
+<p><!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">"concrete_compressive_strength"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"ConcreteCompressiveStrength"</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># Fit piecewise-constant CART decision tree (leaf="mean", depth=4)</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">cart</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">cart</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">pred_cart</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"regression"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">pred_cart</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ModelTree (Mean)  : RMSE = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa, R2 = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, MAE = </span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MPa"</span><span class="p">)</span>
+</span></code></pre></div></p>
+<p><!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ModelTree (Mean)  : RMSE = 10.16 MPa, R2 = 0.635, MAE = 7.50 MPa
+</span></code></pre></div></p>
 </div>
 </div>
 </div>
+<p><strong>What to read in the output:</strong> on the same 824-row train and 206-row test split at depth 4, linear ridge leaves reduce test RMSE and MAE substantially compared with constant-mean leaves.</p>
 <hr />
 <h2 id="3-empirical-results-performance-comparison">3. Empirical Results &amp; Performance Comparison<a class="headerlink" href="#3-empirical-results-performance-comparison" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Loaded Concrete Compressive Strength: 1030 rows, 8 features.
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Train rows: 824, Test rows: 206
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>=== Model Performance on Test Set ===
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>ModelTree (leaf="mean", d=3)    : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>sklearn DecisionTreeRegressor   : RMSE = 10.92 MPa, R2 = 0.579, MAE = 8.36 MPa
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>mltreelib ModelTree (Linear)    : RMSE =  7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>--&gt; Error reduction with linear leaves: 34.3%
-</span></code></pre></div>
+<p>The two tabs above print the holdout metrics for the same 824-row train and 206-row test split. The tree has 16 leaves at depth 4, which gives local linear leaves enough room to model the nonlinear cement interactions while keeping the tree compact.</p>
 <table>
 <thead>
 <tr>
@@ -2730,30 +2679,22 @@
 <tr>
 <td><strong><code>ModelTree(leaf="mean")</code></strong></td>
 <td>Constant Mean</td>
-<td style="text-align: center;">3</td>
-<td style="text-align: center;">11.09</td>
-<td style="text-align: center;">0.566</td>
-<td style="text-align: center;">8.47</td>
-</tr>
-<tr>
-<td><strong><code>sklearn.tree.DecisionTreeRegressor</code></strong></td>
-<td>Constant Mean</td>
-<td style="text-align: center;">3</td>
-<td style="text-align: center;">10.92</td>
-<td style="text-align: center;">0.579</td>
-<td style="text-align: center;">8.36</td>
+<td style="text-align: center;">4</td>
+<td style="text-align: center;">10.16</td>
+<td style="text-align: center;">0.635</td>
+<td style="text-align: center;">7.50</td>
 </tr>
 <tr>
 <td><strong><code>mltreelib</code> ModelTree (Linear)</strong></td>
 <td>Regularized Linear Ridge</td>
-<td style="text-align: center;">3</td>
-<td style="text-align: center;"><strong>7.28</strong></td>
-<td style="text-align: center;"><strong>0.813</strong></td>
-<td style="text-align: center;"><strong>5.07</strong></td>
+<td style="text-align: center;">4</td>
+<td style="text-align: center;"><strong>6.70</strong></td>
+<td style="text-align: center;"><strong>0.841</strong></td>
+<td style="text-align: center;"><strong>4.83</strong></td>
 </tr>
 </tbody>
 </table>
-<p>With identical tree topology (depth 3, 8 leaves), <code>ModelTree</code> with linear leaves achieves a <strong>34.3% error reduction</strong> over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.</p>
+<p>With identical tree topology (depth 4, 16 leaves), <code>ModelTree</code> with linear leaves achieves a <strong>34.1% RMSE reduction</strong> over constant-leaf CART baselines, raising explained variance from 63.5% to 84.1%.</p>
 <p><img alt="Quickstart ModelTree vs CART Step Function" src="../assets/quickstart_tree_vs_flat.png" /></p>
 <ul>
 <li><strong>Left Panel (Parity Plot)</strong>: Predictions from <code>ModelTree(leaf="linear")</code> cluster tightly along the 1:1 diagonal, whereas constant-mean trees are constrained to horizontal bands corresponding to leaf averages.</li>
@@ -2761,30 +2702,48 @@
 </ul>
 <hr />
 <h2 id="4-transparent-tree-structure-inspection">4. Transparent Tree Structure &amp; Inspection<a class="headerlink" href="#4-transparent-tree-structure-inspection" title="Permanent link">&para;</a></h2>
-<p><code>ModelTree</code> prints in <code>rpart</code>-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>n= 824 
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>node), split, n, deviance, yval
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>      * denotes terminal node
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a> 1) root 824 228333.917 35.46173  
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>   2) Age &lt;= 14 263 38269.292 22.98684  
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>     4) Cement &lt;= 350 190 14043.474 18.46968  
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>       8) Age &lt;= 7 143 6493.479 15.44493 *
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>       9) Age &gt; 7 47 2261.042 27.67263 *
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>     5) Cement &gt; 350 73 10258.391 34.74381  
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>      10) Water &lt;= 178 48 5059.180 39.25437 *
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>      11) Water &gt; 178 25 2347.636 26.08354 *
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>   3) Age &gt; 14 561 129948.081 41.31003  
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>     6) Cement &lt;= 350 430 68793.496 36.74539  
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>      12) Cement &lt;= 164.6 101 8521.781 26.09900 *
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>      13) Cement &gt; 164.6 329 45309.403 40.01374 *
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>     7) Cement &gt; 350 131 22786.202 56.29321  
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>      14) Water &lt;= 181.1 76 6496.752 63.46522 *
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>      15) Water &gt; 181.1 55 6978.299 46.38280 *
+<p><code>ModelTree</code> prints in <code>rpart</code>-compatible notation with exact node numbering, split criteria, sample support, deviance, and fitted constants. The fitted linear-leaf tree from section 2 prints as:</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">model_tree</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>n= 824 
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>node), split, n, deviance, yval
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>      * denotes terminal node
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a> 1) root 824 228333.9167 35.46173  
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>   2) Age &lt;= 14 263 38269.2920 22.98684  
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>     4) Cement &lt;= 350 190 14043.4743 18.46968  
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>       8) Age &lt;= 7 143 6493.4788 15.44493  
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        16) Cement &lt;= 255 90 2307.7737 12.94604 *
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        17) Cement &gt; 255 53 2669.3540 19.68835 *
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>       9) Age &gt; 7 47 2261.0419 27.67263  
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        18) Superplasticizer &lt;= 7.77 22 317.8392 22.95673 *
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        19) Superplasticizer &gt; 7.77 25 1023.3672 31.82263 *
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>     5) Cement &gt; 350 73 10258.3911 34.74381  
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>      10) Water &lt;= 178 48 5059.1796 39.25437  
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>        20) Age &lt;= 3 23 701.6009 31.67076 *
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        21) Age &gt; 3 25 1817.8845 46.23130 *
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>      11) Water &gt; 178 25 2347.6360 26.08354 *
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>   3) Age &gt; 14 561 129948.0812 41.31003  
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>     6) Cement &lt;= 350 430 68793.4962 36.74539  
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>      12) Cement &lt;= 164.6 101 8521.7805 26.09900  
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>        24) BlastFurnaceSlag &lt;= 115 26 301.5159 14.75293 *
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>        25) BlastFurnaceSlag &gt; 115 75 3712.8816 30.03231 *
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>      13) Cement &gt; 164.6 329 45309.4025 40.01374  
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>        26) Water &lt;= 175.5 112 15888.7132 47.44224 *
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>        27) Water &gt; 175.5 217 20050.3174 36.17967 *
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>     7) Cement &gt; 350 131 22786.2018 56.29321  
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>      14) Water &lt;= 181.1 76 6496.7515 63.46522  
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>        28) Superplasticizer &lt;= 11.6 40 2939.7627 67.95466 *
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>        29) Superplasticizer &gt; 11.6 36 1855.0050 58.47695 *
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>      15) Water &gt; 181.1 55 6978.2990 46.38280  
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>        30) Cement &lt;= 436 34 2937.2636 41.83485 *
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>        31) Cement &gt; 436 21 2199.1837 53.74616 *
 </span></code></pre></div>
 <p>Export directly to Graphviz DOT for vector diagrams:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">dot_code</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">to_dot</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">dot_code</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">to_dot</span><span class="p">()</span>
 </span></code></pre></div>
 <p><img alt="Fitted Quickstart ModelTree Topology" src="../assets/quickstart_tree.svg" /></p>
 <hr />

@@ -28,7 +28,7 @@
     
     
       
-        <title>ModelTree - mltreelib v0.4.15</title>
+        <title>ModelTree - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2041,6 +2041,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#modeltreecore_defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ModelTree.core_defaults
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modeltreeextract_rules" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2956,6 +2967,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#modeltreecore_defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ModelTree.core_defaults
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modeltreeextract_rules" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3406,9 +3428,6 @@
 <h2 id="modeltree">ModelTree<a class="headerlink" href="#modeltree" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelTree</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">growth_control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
-leaves, NA-aware (learned split directions + NA-indicator leaf terms).
-Task: regression, binary probability estimation, or count modeling.</p>
 <h3 id="modeltreeapply">ModelTree.apply<a class="headerlink" href="#modeltreeapply" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 </span></code></pre></div>
@@ -3438,21 +3457,25 @@ this uses the fitted family, not the empirical target t-digest.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Return all hyperparameter values as a dict.</p>
+<h3 id="modeltreecore_defaults">ModelTree.core_defaults<a class="headerlink" href="#modeltreecore_defaults" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">core_defaults</span><span class="p">()</span>
+</span></code></pre></div>
+<p>Defaults of the Rust core parameter struct (for parity checks with the constructor).</p>
 <h3 id="modeltreeextract_rules">ModelTree.extract_rules<a class="headerlink" href="#modeltreeextract_rules" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">extract_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cf</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">extract_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cf</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Extract a C5.0-style rule set from this fitted tree.</p>
 <h3 id="modeltreefast_interactions">ModelTree.fast_interactions<a class="headerlink" href="#modeltreefast_interactions" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">fast_interactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">fast_interactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Returns list of detected pairwise feature interactions from EBM FAST screening.</p>
 <h3 id="modeltreefeature_importance">ModelTree.feature_importance<a class="headerlink" href="#modeltreefeature_importance" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">feature_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'gain'</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">feature_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'gain'</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Feature importance — supports <code>"gain"</code> (default, rpart split gain share),
 <code>"shapley"</code> (mean absolute TreeSHAP over rows), or <code>"permutation"</code> (score degradation).</p>
 <h3 id="modeltreefit">ModelTree.fit<a class="headerlink" href="#modeltreefit" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fairness_penalty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">protected_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">protected_attribute</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fairness_metric</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sporf_d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sporf_projections</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extratrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ebm_fast</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fairness_penalty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">protected_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">protected_attribute</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fairness_metric</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sporf_d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sporf_projections</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extratrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ebm_fast</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Fit the tree on row-major data using the selected leaf family.</p>
 <p>Args:
@@ -3469,15 +3492,15 @@ this uses the fitted family, not the empirical target t-digest.</p>
        partitions levels, no encoding).</p>
 <p>Returns: nothing; the fitted tree replaces the inner model.</p>
 <h3 id="modeltreefrom_bytes">ModelTree.from_bytes<a class="headerlink" href="#modeltreefrom_bytes" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">from_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">from_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Restore a fitted model from UTF-8 JSON bytes.</p>
 <h3 id="modeltreefrom_json">ModelTree.from_json<a class="headerlink" href="#modeltreefrom_json" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">from_json</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">from_json</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Restore a fitted model from versioned JSON.</p>
 <h3 id="modeltreeleaf_samples">ModelTree.leaf_samples<a class="headerlink" href="#modeltreeleaf_samples" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">leaf_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">leaf_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">id_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Return row indices or entity IDs grouped by leaf ID: {leaf_id: [indices_or_ids]}.</p>
 <p>Args:
@@ -3488,15 +3511,15 @@ this uses the fitted family, not the empirical target t-digest.</p>
     col_names: optional data column names when x has different layout than training data.</p>
 <p>Returns: dict mapping integer leaf_id to a list of row indices or entity IDs.</p>
 <h3 id="modeltreeleaf_stats">ModelTree.leaf_stats<a class="headerlink" href="#modeltreeleaf_stats" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">leaf_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">leaf_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Return the list of 0D stats dictionaries for all leaves.</p>
 <h3 id="modeltreeleaf_summary">ModelTree.leaf_summary<a class="headerlink" href="#modeltreeleaf_summary" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">leaf_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">leaf_id</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">leaf_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">leaf_id</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Format a leaf's regression model as an R summary(lm) / Python statsmodels table.</p>
 <h3 id="modeltreeleaves">ModelTree.leaves<a class="headerlink" href="#modeltreeleaves" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Fitted leaf models with their empirical target distribution stats.</p>
 <p>Args: none.</p>
@@ -3508,22 +3531,22 @@ Linear <code>coef</code>, <code>na_coef</code>, and <code>intercept</code> use t
 Constant leaves have no link-scale coefficient vector: <code>intercept</code>
 is <code>None</code>, while <code>response_constant</code> is the response-scale constant.</p>
 <h3 id="modeltreeload">ModelTree.load<a class="headerlink" href="#modeltreeload" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Load a fitted model from a UTF-8 JSON file.</p>
 <h3 id="modeltreen_leaves">ModelTree.n_leaves<a class="headerlink" href="#modeltreen_leaves" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">n_leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">n_leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Number of leaves.</p>
 <p>Args: none.</p>
 <p>Returns: leaf count.</p>
 <h3 id="modeltreepermutation_importance">ModelTree.permutation_importance<a class="headerlink" href="#modeltreepermutation_importance" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">permutation_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">'rmse'</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">permutation_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">'rmse'</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Permutation feature importance: per-column validation loss degradation
 when the column is shuffled across rows.</p>
 <h3 id="modeltreepredict">ModelTree.predict<a class="headerlink" href="#modeltreepredict" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">'response'</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neighbors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">'response'</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neighbors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cause</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Predict with flexible output kinds:
 kind="response" (default): expected value / class / median survival time.
@@ -3535,11 +3558,11 @@ kind="cif": F_c(t) cumulative incidence function for cause over times grid.
 kind="risk": predicted risk score (higher score = shorter expected survival / higher risk).
 kind="leaf_id": integer leaf ID per row.</p>
 <h3 id="modeltreepredict_adjusted">ModelTree.predict_adjusted<a class="headerlink" href="#modeltreepredict_adjusted" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">predict_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">neighbors</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">predict_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">neighbors</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Predict with Cubist-style k-NN sample neighbor adjustment.</p>
 <h3 id="modeltreepredict_interval">ModelTree.predict_interval<a class="headerlink" href="#modeltreepredict_interval" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">predict_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">predict_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">coverage</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Empirical prediction interval <code>(lower, upper)</code> per row at the requested coverage.</p>
 <p>Args:
@@ -3547,7 +3570,7 @@ kind="leaf_id": integer leaf ID per row.</p>
     coverage: coverage probability in (0, 1) (default 0.90 for a 90% interval).</p>
 <p>Returns: list of <code>(lower, upper)</code> tuples.</p>
 <h3 id="modeltreepredict_label">ModelTree.predict_label<a class="headerlink" href="#modeltreepredict_label" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">predict_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">predict_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Hard binary class labels (0 or 1), one label per input row.</p>
 <p>Args:
@@ -3556,22 +3579,22 @@ kind="leaf_id": integer leaf ID per row.</p>
 <p>Returns: one integer label (0 or 1) per row.</p>
 <p>Raises: ValueError unless the fitted leaf family is binomial.</p>
 <h3 id="modeltreepredict_proba">ModelTree.predict_proba<a class="headerlink" href="#modeltreepredict_proba" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Predict class probabilities (convenience alias for <code>predict(x, kind="proba")</code>).</p>
 <h3 id="modeltreepredict_vector">ModelTree.predict_vector<a class="headerlink" href="#modeltreepredict_vector" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">predict_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">predict_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Predict multi-dimensional vector targets for row-major <code>x</code> (when trained on vector targets).</p>
 <h3 id="modeltreeprofile">ModelTree.profile<a class="headerlink" href="#modeltreeprofile" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Per-level timing profile (group/sort, scan, leaf fit).</p>
 <p>Args: none.</p>
 <p>Returns: one dict per depth level with <code>depth</code>, <code>nodes</code>, <code>rows</code>,
 <code>cols</code>, <code>candidates</code>, <code>group_ns</code>, <code>scan_ns</code>, <code>leaf_ns</code>.</p>
 <h3 id="modeltreequantile">ModelTree.quantile<a class="headerlink" href="#modeltreequantile" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Empirical conditional target quantiles from the leaves' t-digests:
 any tau in [0, 1] after fitting. These are not quantiles of the fitted
@@ -3581,7 +3604,7 @@ binomial/Poisson distribution; use cdf for that distribution's CDF.</p>
     tau: quantile level.</p>
 <p>Returns: one quantile per row (NaN when a leaf's digest was dropped).</p>
 <h3 id="modeltreeretrain">ModelTree.retrain<a class="headerlink" href="#modeltreeretrain" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">retrain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'internal'</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retrain_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">retrain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">control</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'internal'</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retrain_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">huber_delta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Retrain all leaf models on new or existing data without altering tree topology or splits.</p>
 <p>Args:
@@ -3602,26 +3625,26 @@ binomial/Poisson distribution; use cdf for that distribution's CDF.</p>
     tau: optional quantile tau when leaf is "quantile" (default 0.5).</p>
 <p>Returns: updated ModelTree (self for internal mode, or new ModelTree for external mode).</p>
 <h3 id="modeltreeroot_split">ModelTree.root_split<a class="headerlink" href="#modeltreeroot_split" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">root_split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">root_split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Root node split, if the tree split at the root.</p>
 <h3 id="modeltreesave">ModelTree.save<a class="headerlink" href="#modeltreesave" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Save the fitted model to a UTF-8 JSON file.</p>
 <h3 id="modeltreeshapley">ModelTree.shapley<a class="headerlink" href="#modeltreeshapley" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="n">shapley</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">shapley</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Exact TreeSHAP feature attributions for a single row prediction:
 efficiency invariant: <code>base_value + \sum values == prediction</code>.</p>
 <h3 id="modeltreesplit_diagnostics">ModelTree.split_diagnostics<a class="headerlink" href="#modeltreesplit_diagnostics" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">split_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">split_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Statistical split diagnostics per node (MOB / Chow / CTree hypothesis tests).
 Returns a list of dicts with test name, statistic, p-value, alpha,
 passed flag, and per-variable test results.</p>
 <h3 id="modeltreesplit_paths">ModelTree.split_paths<a class="headerlink" href="#modeltreesplit_paths" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">split_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">split_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Split columns along each root-to-leaf path.</p>
 <p>Args: none.</p>
@@ -3629,52 +3652,52 @@ passed flag, and per-variable test results.</p>
 columns on that path) — the introspection behind interaction-group
 checking.</p>
 <h3 id="modeltreesplits">ModelTree.splits<a class="headerlink" href="#modeltreesplits" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">splits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">splits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Learned splits.</p>
 <p>Args: none.</p>
 <p>Returns: one dict per split with <code>col</code>, <code>threshold</code>, <code>missing_left</code>,
 <code>gain</code> (goodness of split).</p>
 <h3 id="modeltreesummary">ModelTree.summary<a class="headerlink" href="#modeltreesummary" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Print comprehensive summary of all leaf models across the tree.</p>
 <h3 id="modeltreeto_bytes">ModelTree.to_bytes<a class="headerlink" href="#modeltreeto_bytes" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Serialize the fitted model as UTF-8 JSON bytes.</p>
 <h3 id="modeltreeto_dot">ModelTree.to_dot<a class="headerlink" href="#modeltreeto_dot" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="n">to_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="n">to_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Graphviz DOT for the tree (render with pygraphviz/graphviz — layout is
 graphviz's job):
 <code>pgv.AGraph(string=model.to_dot()).draw("tree.svg", prog="dot")</code>.</p>
 <h3 id="modeltreeto_json">ModelTree.to_json<a class="headerlink" href="#modeltreeto_json" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="n">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Serialize the fitted model as versioned JSON.</p>
 <h3 id="modeltreetraining_log">ModelTree.training_log<a class="headerlink" href="#modeltreetraining_log" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">training_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="n">training_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The training log (populated when <code>verbose &gt; 0</code>): scan config, per
 depth/per node candidate counts, precision grid, timings.</p>
 <p>Args: none.</p>
 <p>Returns: log lines.</p>
 <h2 id="growthcontrol">GrowthControl<a class="headerlink" href="#growthcontrol" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">GrowthControl</span><span class="p">(</span><span class="o">**</span><span class="n">options</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">GrowthControl</span><span class="p">(</span><span class="o">**</span><span class="n">options</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Options for splitting, stopping, pruning, and routing a model tree.</p>
 <p>Omitted options inherit the ModelTree defaults.</p>
 <h3 id="growthcontrolconfig">GrowthControl.config<a class="headerlink" href="#growthcontrolconfig" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="n">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Return the explicitly configured growth options.</p>
 <h2 id="leafcontrol">LeafControl<a class="headerlink" href="#leafcontrol" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LeafControl</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="s1">'all'</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_degree</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mars_terms</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mars_penalty</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tweedie_p</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">tobit_threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">knn_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">knn_k_validity</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">knn_variant</span><span class="o">=</span><span class="s1">'uniform'</span><span class="p">,</span> <span class="n">knn_metric</span><span class="o">=</span><span class="s1">'euclidean'</span><span class="p">,</span> <span class="n">knn_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">knn_p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">treatments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shrinkage</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_classes</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">leaf_na_policy</span><span class="o">=</span><span class="s1">'drop_fallback'</span><span class="p">,</span> <span class="n">aft_dist</span><span class="o">=</span><span class="s1">'weibull'</span><span class="p">,</span> <span class="n">cure_fraction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_knots</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LeafControl</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="s1">'all'</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">huber_delta</span><span class="o">=</span><span class="mf">1.345</span><span class="p">,</span> <span class="n">expectile_tau</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">non_negative</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">non_negative_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nb_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta_phi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_l2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_degree</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mars_terms</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mars_penalty</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tweedie_p</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">tobit_threshold</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">knn_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">knn_k_validity</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">knn_variant</span><span class="o">=</span><span class="s1">'uniform'</span><span class="p">,</span> <span class="n">knn_metric</span><span class="o">=</span><span class="s1">'euclidean'</span><span class="p">,</span> <span class="n">knn_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">knn_p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">treatments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shrinkage</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_classes</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">leaf_na_policy</span><span class="o">=</span><span class="s1">'drop_fallback'</span><span class="p">,</span> <span class="n">aft_dist</span><span class="o">=</span><span class="s1">'weibull'</span><span class="p">,</span> <span class="n">cure_fraction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spline_knots</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Parameter controls for fitting leaf models independently of tree topology.</p>
 <h3 id="leafcontrolwith_params">LeafControl.with_params<a class="headerlink" href="#leafcontrolwith_params" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="n">with_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_degree</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_terms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_penalty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tweedie_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tobit_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">with_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_digest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leaf_monotone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_degree</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_terms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mars_penalty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tweedie_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tobit_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
 

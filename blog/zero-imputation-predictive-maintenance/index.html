@@ -28,7 +28,7 @@
     
     
       
-        <title>Zero-Imputation Predictive Maintenance: Native Missing-Value Decision Trees on 76,000 Scania Trucks - mltreelib v0.4.15</title>
+        <title>Zero-Imputation Predictive Maintenance: Native Missing-Value Decision Trees on 76,000 Scania Trucks - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2695,28 +2695,31 @@
 - <strong>Sensor Dimension</strong>: 170 anonymized operational sensor attributes (<code>aa_000</code> to <code>ee_009</code>).
 - <strong>Missing Telemetry</strong>: <strong>1,078,695 missing cells</strong> (8.35% of all telemetry data).</p>
 <p>In heavy machinery, missing sensor values are rarely missing-at-random. A sensor channel reads <code>NaN</code> when line pressure drops below sensor power thresholds, when high vibration disconnects harness wiring, or during severe bus resets. Treating missingness as an explicit routing direction captures failure risk directly:</p>
+<!-- run -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_path</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">dataset_path</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"APSFailure"</span><span class="p">))</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"AirPressureSystemFailure"</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">target</span><span class="p">]</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"pos"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Raw telemetry ingestion: NaN values converted to Python None</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)]</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Train native missing-routing tree in pure Rust</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"binomial"</span><span class="p">,</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"deviance"</span><span class="p">,</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="p">)</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">features</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">"list"</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">"pos"</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">]]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Raw telemetry: NaN stays NaN; the tree routes missing values itself</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"APSFailure"</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Seeded split: 50,000 train, 13,000 validation, 13,000 test trucks (seed 42)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">train</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">val_size</span><span class="o">=</span><span class="mi">13000</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mi">13000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># Train native missing-routing tree in pure Rust</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"binomial"</span><span class="p">,</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">gain</span><span class="o">=</span><span class="s2">"deviance"</span><span class="p">,</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 </span></code></pre></div>
 <p>At every candidate split on feature <span class="arithmatex">\(j\)</span>, <code>mltreelib</code> evaluates two split routing hypotheses in parallel:
 1. Non-missing samples split by threshold <span class="arithmatex">\(x_{ij} \le \theta\)</span>, with all missing records routed to the left branch (<code>missing_left = true</code>).
@@ -2725,21 +2728,33 @@
 <hr />
 <h2 id="3-discovered-native-split-routes">3. Discovered Native Split Routes<a class="headerlink" href="#3-discovered-native-split-routes" title="Permanent link">&para;</a></h2>
 <p>Fitting <code>ModelTree</code> with <code>max_depth=4</code> on 50,000 training trucks uncovers clear split conditions and learned missing-value routes:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Discovered Native Routing Splits:
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  - Split: cs_004 &lt;= 510,732.00 | Missing routed: Left  (Gain = 57.89)
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  - Split: ag_002 &lt;=  25,538.00 | Missing routed: Right (Gain = 117.68)
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  - Split: bx_000 &lt;= 7,867,694.00 | Missing routed: Left  (Gain = 360.14)
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  - Split: ay_005 &lt;= 923,732.00 | Missing routed: Left  (Gain = 257.83)
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  - Split: ay_008 &lt;= 19,423,926.00 | Missing routed: Right (Gain = 57.71)
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">splits</span><span class="p">():</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">routed</span> <span class="o">=</span> <span class="s2">"Left"</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">"missing_left"</span><span class="p">]</span> <span class="k">else</span> <span class="s2">"Right"</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Split: </span><span class="si">{</span><span class="n">s</span><span class="p">[</span><span class="s1">'col'</span><span class="p">]</span><span class="si">}</span><span class="s2"> &lt;= </span><span class="si">{</span><span class="n">s</span><span class="p">[</span><span class="s1">'threshold'</span><span class="p">]</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> | Missing routed: </span><span class="si">{</span><span class="n">routed</span><span class="si">}</span><span class="s2"> (Gain = </span><span class="si">{</span><span class="n">s</span><span class="p">[</span><span class="s1">'gain'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Split: bc_000 &lt;= 1,228.00 | Missing routed: Left (Gain = 10.33)
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Split: az_000 &lt;= 8,106.00 | Missing routed: Left (Gain = 31.55)
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Split: cn_002 &lt;= 23,118.00 | Missing routed: Right (Gain = 44.68)
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Split: bh_000 &lt;= 146,656.00 | Missing routed: Right (Gain = 61.29)
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Split: ag_002 &lt;= 22,446.00 | Missing routed: Left (Gain = 178.85)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>Split: cc_000 &lt;= 7,133,298.00 | Missing routed: Left (Gain = 478.95)
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Split: ee_005 &lt;= 3,337,490.00 | Missing routed: Left (Gain = 72.63)
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>Split: ay_005 &lt;= 923,732.00 | Missing routed: Left (Gain = 109.05)
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>Split: aq_000 &lt;= 3,612,606.00 | Missing routed: Right (Gain = 276.57)
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>Split: ee_005 &lt;= 3,428,806.00 | Missing routed: Left (Gain = 44.63)
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>Split: ag_001 &lt;= 4,406.00 | Missing routed: Left (Gain = 501.41)
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>Split: ck_000 &lt;= 2,699,134.08 | Missing routed: Left (Gain = 4210.94)
 </span></code></pre></div>
 <p><img alt="Fitted Native Missing-Routing Decision Tree Diagram" src="../../assets/predictive_maintenance_tree.svg" /></p>
-<p>Notice that on <code>ag_002</code> and <code>ay_008</code>, missing telemetry is routed to the <strong>right branch</strong> (the high-risk branch), because sensor disconnects correlate heavily with severe electrical and pneumatic failure. An imputation pipeline replacing those missing cells with median values would have pushed those trucks into the safe left branch, causing fatal missed breakdowns.</p>
+<p>Notice that the learned missing direction differs between splits. On <code>cn_002</code>, <code>bh_000</code> and <code>aq_000</code>, missing telemetry is routed to the <strong>right branch</strong>. On <code>ag_002</code> it is routed left. The direction is learned from the training trucks, not set by hand.</p>
 <hr />
 <h2 id="4-single-seed-inspection-diagnostics-seed-42">4. Single-Seed Inspection Diagnostics (Seed 42)<a class="headerlink" href="#4-single-seed-inspection-diagnostics-seed-42" title="Permanent link">&para;</a></h2>
 <p>We evaluate on an independent held-out split (50,000 train, 13,000 validation, 13,000 test trucks; Seed 42).</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Validation threshold search minimizing 10*FP + 500*FN</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">opt_cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">threshold_grid</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">compute_cost</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">test_results</span> <span class="o">=</span> <span class="n">compute_scania_cost</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">p_test</span><span class="p">,</span> <span class="n">opt_cutoff</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Validation threshold search minimizing 10*FP + 500*FN</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">opt_cutoff</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">threshold_grid</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">compute_cost</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">test_results</span> <span class="o">=</span> <span class="n">compute_scania_cost</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">p_test</span><span class="p">,</span> <span class="n">opt_cutoff</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The validation optimizer chooses <strong><span class="arithmatex">\(\tau^* = 0.012\)</span></strong> (closely matching the theoretical Bayes cutoff <span class="arithmatex">\(\tau^* \approx 0.0196\)</span>):
 - <strong>Total Fleet Cost</strong>: <strong>$14,040</strong> on 13,000 test trucks.
@@ -2815,7 +2830,7 @@
 <hr />
 <h2 id="reproduce-the-full-pipeline">Reproduce the Full Pipeline<a class="headerlink" href="#reproduce-the-full-pipeline" title="Permanent link">&para;</a></h2>
 <p>Run the standalone executable script from the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/predictive_maintenance.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/predictive_maintenance.py
 </span></code></pre></div>
 <p>The script trains models on the 76,000-truck Scania fleet dataset, logs all single-seed routing rules and diagnostics, executes the 20-seed benchmark, and compiles high-resolution SVGs to <code>docs/assets/</code>.</p>
 

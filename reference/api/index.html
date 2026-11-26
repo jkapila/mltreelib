@@ -28,7 +28,7 @@
     
     
       
-        <title>Overview - mltreelib v0.4.15</title>
+        <title>Overview - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2397,10 +2397,6 @@ regenerated from the built module, so this never drifts from the
 code. Narrative guides with verified examples:
 <a href="../data/">Data</a> · <a href="../model/">Model</a> · <a href="../metrics/">Metrics</a> ·
 <a href="../reports/">Reports</a> · <a href="../../guides/visualization/">Visualization</a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Scikit-Learn Compatibility</p>
-<p>Classes in <code>mltreelib</code> (such as <code>ModelTree</code>) implement standard <code>fit</code>, <code>predict</code>, and <code>predict_proba</code> method signatures, but do <strong>not</strong> inherit from <code>sklearn.base.BaseEstimator</code> and are not fully scikit-learn compatible (<code>clone</code> and <code>check_estimator</code> are not supported).</p>
-</div>
 <table>
 <thead>
 <tr>
@@ -2412,8 +2408,8 @@ code. Narrative guides with verified examples:
 <tbody>
 <tr>
 <td><a href="data/">Data</a></td>
-<td>DatasetBuilder</td>
-<td>generate, load_dataset, list_datasets, summarize, winnow</td>
+<td>DatasetBuilder, Dataset, FeatureTransformer, GroupedFeatureTransformer</td>
+<td>generate, load_dataset, list_datasets, summarize, winnow, bin_edges, binner, boxcox_lambda, class_balance, constant_columns, correlation_filter, correlation_matrix, cramers_v_matrix, describe, duplicate_columns, duplicate_rows, infer_types, information_value_table, iv_bins, iv_levels, kfold, leakage_hints, log1p, missing_profile, missing_vs_target, near_zero_variance, outlier_flags, repeated_kfold, schema_capture, schema_validate, select_rows, survival_xy, take, train_test_split, train_val_test_split, uplift_xy, vif, xy, yeojohnson_lambda</td>
 </tr>
 <tr>
 <td><a href="model-tree/">ModelTree</a></td>
@@ -2437,12 +2433,12 @@ code. Narrative guides with verified examples:
 </tr>
 <tr>
 <td><a href="cluster/">Clustering trees</a></td>
-<td>ClusterModel, ClusterResult, ClusterModel, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest</td>
+<td>ClusterModel, ClusterResult, TrieKNN, PredictiveClusteringTree, CLTree, HDBSCAN, UnsupervisedRandomForest</td>
 <td>—</td>
 </tr>
 <tr>
 <td><a href="anomaly/">Anomaly &amp; density trees</a></td>
-<td>AnomalyModel, AnomalyResult, AnomalyModel, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree</td>
+<td>AnomalyModel, AnomalyResult, GritBot, DensityEstimationTree, ExtendedIsolationTree, HalfSpaceTree, RandomCutTree, ActiveAnomalyTree, ContextAnomalyTree</td>
 <td>—</td>
 </tr>
 <tr>

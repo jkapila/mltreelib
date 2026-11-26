@@ -28,7 +28,7 @@
     
     
       
-        <title>8. Evaluate and monitor - mltreelib v0.4.15</title>
+        <title>8. Evaluate and monitor - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -2619,9 +2619,10 @@
 <p>Calibration compares predicted probabilities with observed event frequencies in bins. Small bins make the plot unstable. The 1,000 test rows come from a synthetic distribution; the plot alone does not establish calibration in production.</p>
 <p>Use <code>IsotonicCalibrator</code> to fit a monotone mapping for binary event probabilities.
 Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows. On this seeded sample the calibrated test Brier score is 0.1933, against 0.1946 for the raw probabilities: a small difference on 1,000 rows.</p>
+<p>This snippet simulates a 4,000-row binary dataset, fits a binomial-logit tree on 2,000 rows, fits an <code>IsotonicCalibrator</code> on 1,000 validation rows, and compares raw vs calibrated Brier scores on the 1,000 test rows using <code>MetricsReport</code>.</p>
 <!-- run -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsotonicCalibrator</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
@@ -2640,12 +2641,14 @@ Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores
 </span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">calibrator</span> <span class="o">=</span> <span class="n">IsotonicCalibrator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
 </span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">calibrated</span> <span class="o">=</span> <span class="n">calibrator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="nb">print</span><span class="p">(</span><span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">raw</span><span class="p">),</span> <span class="n">metrics</span><span class="o">.</span><span class="n">brier_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">calibrated</span><span class="p">))</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">raw_rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"classification"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">y_test</span><span class="p">,</span> <span class="n">proba</span><span class="o">=</span><span class="n">raw</span><span class="p">)</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">cal_rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"classification"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">y_test</span><span class="p">,</span> <span class="n">proba</span><span class="o">=</span><span class="n">calibrated</span><span class="p">)</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nb">print</span><span class="p">(</span><span class="n">raw_rep</span><span class="p">[</span><span class="s2">"brier"</span><span class="p">],</span> <span class="n">cal_rep</span><span class="p">[</span><span class="s2">"brier"</span><span class="p">])</span>
 </span></code></pre></div>
 <!-- output -->
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>0.19456565411850799 0.1932642638524234
 </span></code></pre></div>
+<p><strong>What to read in the output:</strong> the two printed numbers are the held-out Brier scores before and after isotonic calibration; lower is better.</p>
 <p><img alt="Held-out confusion matrix" src="../../assets/guides/data-confusion.svg" /></p>
 <p>The confusion matrix describes decisions at one chosen threshold. Change the cost assumptions or capacity and repeat threshold selection on validation data. Keep the test set independent of that selection.</p>
 <h3 id="inspect-the-tree">Inspect the tree<a class="headerlink" href="#inspect-the-tree" title="Permanent link">&para;</a></h3>

@@ -28,7 +28,7 @@
     
     
       
-        <title>1. Prepare data - mltreelib v0.4.15</title>
+        <title>1. Prepare data - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -1203,10 +1203,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-example-native-categories-and-missing-predictors" class="md-nav__link">
+  <a href="#1-describe-each-column" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. Example: native categories and missing predictors
+        1. Describe each column
       </span>
     </span>
   </a>
@@ -1214,10 +1214,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-inspect-before-fitting" class="md-nav__link">
+  <a href="#2-check-missingness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. Inspect before fitting
+        2. Check missingness
       </span>
     </span>
   </a>
@@ -1225,13 +1225,85 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-choose-the-preparation" class="md-nav__link">
+  <a href="#3-run-quality-checks" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        3. Choose the preparation
+        3. Run quality checks
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-measure-associations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Measure associations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-split-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Split rows
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-bin-a-numeric-column-and-measure-information-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Bin a numeric column and measure information value
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-transform-numeric-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Transform numeric columns
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-hand-the-frame-to-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        8. Hand the frame to the model
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Hand the frame to the model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choose-the-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choose the preparation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2464,10 +2536,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-example-native-categories-and-missing-predictors" class="md-nav__link">
+  <a href="#1-describe-each-column" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. Example: native categories and missing predictors
+        1. Describe each column
       </span>
     </span>
   </a>
@@ -2475,10 +2547,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-inspect-before-fitting" class="md-nav__link">
+  <a href="#2-check-missingness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. Inspect before fitting
+        2. Check missingness
       </span>
     </span>
   </a>
@@ -2486,13 +2558,85 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-choose-the-preparation" class="md-nav__link">
+  <a href="#3-run-quality-checks" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        3. Choose the preparation
+        3. Run quality checks
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-measure-associations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Measure associations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-split-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Split rows
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-bin-a-numeric-column-and-measure-information-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Bin a numeric column and measure information value
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-transform-numeric-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Transform numeric columns
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-hand-the-frame-to-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        8. Hand the frame to the model
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Hand the frame to the model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choose-the-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choose the preparation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2528,7 +2672,8 @@
 
 
 <h1 id="prepare-data-for-modeling">Prepare data for modeling<a class="headerlink" href="#prepare-data-for-modeling" title="Permanent link">&para;</a></h1>
-<p><strong>Path:</strong> Define the prediction time → Split rows → Inspect types and missingness → Fit transformations on training data → Apply the same schema to new data.</p>
+<p><strong>Path:</strong> Define the prediction time → Describe the columns → Check missingness → Run quality checks → Measure associations → Split rows → Bin and transform on training rows → Hand the frame to the model → Apply the same schema to new data.</p>
+<p>This guide follows one real dataset from raw columns to a model input. It covers the data helpers in <code>mltreelib.data</code>. It does not cover categorical encoders or time-series features; see the links in step 8.</p>
 <table>
 <thead>
 <tr>
@@ -2559,7 +2704,337 @@
 </tr>
 </tbody>
 </table>
-<h2 id="1-example-native-categories-and-missing-predictors">1. Example: native categories and missing predictors<a class="headerlink" href="#1-example-native-categories-and-missing-predictors" title="Permanent link">&para;</a></h2>
+<p>The example is the Give Me Some Credit table (<code>GiveMeSomeCredit</code>, 150,000 rows). The target <code>FinancialDistressNextTwoYears</code> says whether a borrower was in financial distress within two years. Each feature is assumed to be known when the lending decision is made; confirm that with the data owner before a real deployment. Two columns, <code>MonthlyIncome</code> and <code>NumberOfDependents</code>, have missing values. Every helper below keeps them as they are.</p>
+<h2 id="1-describe-each-column">1. Describe each column<a class="headerlink" href="#1-describe-each-column" title="Permanent link">&para;</a></h2>
+<p><code>describe</code> gives one row per column: its kind, how much is missing, the summary statistics, and outlier counts. Its statistics skip missing and infinite values and never fill them.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe</span><span class="p">,</span> <span class="n">infer_types</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">d</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"GiveMeSomeCredit"</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">cols</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"FinancialDistressNextTwoYears"</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">"Yes"</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">]]</span>  <span class="c1"># hand recode: helpers never recode</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">infer_types</span><span class="p">(</span><span class="n">cols</span><span class="p">)[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">rows</span> <span class="o">=</span> <span class="n">describe</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">kinds</span><span class="o">=</span><span class="p">{</span><span class="n">target</span><span class="p">:</span> <span class="s2">"categorical"</span><span class="p">})</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'column'</span><span class="si">:</span><span class="s2">&lt;40</span><span class="si">}{</span><span class="s1">'kind'</span><span class="si">:</span><span class="s2">&lt;14</span><span class="si">}{</span><span class="s1">'missing'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}{</span><span class="s1">'mean'</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}{</span><span class="s1">'trim_mean'</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}{</span><span class="s1">'mad'</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}{</span><span class="s1">'iqr_out'</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;40</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;14</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'n_missing'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'mean'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'trimmed_mean'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'mad'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10.3f</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'n_outliers_iqr'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>{'kind': 'ordinal_candidate', 'n_levels': 2, 'ordinal_candidate': True}
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>column                                  kind           missing        mean   trim_mean       mad  iqr_out
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>FinancialDistressNextTwoYears           categorical          0       0.067       0.000     0.000    10026
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>RevolvingUtilizationOfUnsecuredLines    numeric              0       6.048       0.274     0.148      763
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>age                                     numeric              0      52.295      51.969    11.000       46
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>NumberOfTime30-59DaysPastDueNotWorse    categorical          0       0.421       0.075     0.000    23982
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>DebtRatio                               numeric              0     353.005      51.655     0.246    31311
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>MonthlyIncome                           numeric          29731    6670.221    5787.565  2317.000     4879
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>NumberOfOpenCreditLinesAndLoans         numeric              0       8.453       7.963     3.000     3980
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>NumberOfTimes90DaysLate                 categorical          0       0.266       0.000     0.000     8338
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>NumberRealEstateLoansOrLines            numeric              0       1.018       0.877     1.000      793
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>NumberOfTime60-89DaysPastDueNotWorse    categorical          0       0.240       0.000     0.000     7604
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>NumberOfDependents                      categorical       3924       0.757       0.538     0.000    13336
+</span></code></pre></div>
+<p>Read the table this way:</p>
+<ul>
+<li><code>kind</code> is a hint, not a type check. An integer column with fewer than six distinct values is <code>ordinal_candidate</code>: a category code or a 1-to-5 rating. The first line of the output shows the target with that hint, because its two codes are integers. Passing <code>kinds={target: "categorical"}</code> overrides the hint, and the table row then reports <code>kind_source="user"</code>. Ordered levels suit monotone constraints, so decide which columns are ordinal on purpose.</li>
+<li><code>trimmed_mean</code> removes the top and bottom 10% by default (<code>trim=0.1</code>), so it is less affected by extreme values than <code>mean</code>. The gap is large here: <code>RevolvingUtilizationOfUnsecuredLines</code> has a mean of 6.048 but a trimmed mean of 0.274, and <code>MonthlyIncome</code> has 6,670 against 5,788.</li>
+<li><code>mad</code> (median absolute deviation from the median, unscaled) is a robust spread. Compare it with the standard deviation to see whether a column is heavy-tailed.</li>
+<li><code>n_outliers_iqr</code> counts values outside the Tukey fences. It describes them; nothing is removed. Read it with care for sparse columns: when the middle half is constant, the IQR is zero and every non-zero value counts as an outlier. The target (10,026 ones) and the delinquency counts show this, so their counts carry no meaning.</li>
+<li>Pass <code>inf_as_missing=True</code> to count infinite values as missing in <code>n_missing</code> and <code>pct_missing</code>. The statistics ignore infinities either way.</li>
+</ul>
+<p><strong>Next:</strong> the missingness step counts where the missing values are and checks whether they relate to the target, because a column with many gaps may carry a signal of its own.</p>
+<h2 id="2-check-missingness">2. Check missingness<a class="headerlink" href="#2-check-missingness" title="Permanent link">&para;</a></h2>
+<p><code>missing_profile</code> counts missing values per column and per row, groups rows by which columns they miss together, and gives a co-missing matrix. <code>missing_vs_target</code> compares the mean of the target when a column is missing with its mean when the column is observed.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">missing_profile</span><span class="p">,</span> <span class="n">missing_vs_target</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">mp</span> <span class="o">=</span> <span class="n">missing_profile</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"complete rows:"</span><span class="p">,</span> <span class="n">mp</span><span class="p">[</span><span class="s2">"n_complete_rows"</span><span class="p">],</span> <span class="s2">"of"</span><span class="p">,</span> <span class="n">mp</span><span class="p">[</span><span class="s2">"n_rows"</span><span class="p">])</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">mp</span><span class="p">[</span><span class="s2">"patterns"</span><span class="p">]:</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">]:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">"missing together:"</span><span class="p">,</span> <span class="n">p</span><span class="p">[</span><span class="s2">"columns"</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s2">"count"</span><span class="p">])</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">names</span> <span class="o">=</span> <span class="n">mp</span><span class="p">[</span><span class="s2">"co_missing"</span><span class="p">][</span><span class="s2">"names"</span><span class="p">]</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"MonthlyIncome"</span><span class="p">),</span> <span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"NumberOfDependents"</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"rows missing both:"</span><span class="p">,</span> <span class="n">mp</span><span class="p">[</span><span class="s2">"co_missing"</span><span class="p">][</span><span class="s2">"matrix"</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">mv</span> <span class="o">=</span> <span class="n">missing_vs_target</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"MonthlyIncome"</span><span class="p">,</span> <span class="s2">"NumberOfDependents"</span><span class="p">]:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">r</span> <span class="o">=</span> <span class="n">mv</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="s2">"n_missing"</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">"y_mean_when_missing"</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">"y_mean_when_observed"</span><span class="p">])</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>complete rows: 120269 of 150000
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>missing together: ('MonthlyIncome',) 25807
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>missing together: ('MonthlyIncome', 'NumberOfDependents') 3924
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>rows missing both: 3924
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>MonthlyIncome 29731 0.05613669234132723 0.06948590243537403
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>NumberOfDependents 3924 0.04561671763506626 0.0674101152824557
+</span></code></pre></div>
+<p>Two findings. First, the gaps overlap. 25,807 rows miss only <code>MonthlyIncome</code>, and 3,924 rows miss both columns. No row misses <code>NumberOfDependents</code> alone, so every missing dependents count also lacks income. The two gaps probably come from one source. 120,269 of the 150,000 rows are complete.</p>
+<p>Second, the gaps relate to the target. The mean target is 0.0561 where income is missing and 0.0695 where it is observed; for dependents, 0.0456 against 0.0674. The rate differs, so the gap carries information, and the question for the data owner is why the field is blank.</p>
+<p>Neither helper imputes or drops a row. The missing rows stay in every later step of this guide: the tree routes them natively in step 8, and any other model needs its own explicit choice. Check the same pattern by source, group and time when those fields exist.</p>
+<p><strong>Next:</strong> the quality checks look for columns and rows that add no information or that will break a later step, such as constant columns, duplicates and a target with too few cases of one class.</p>
+<h2 id="3-run-quality-checks">3. Run quality checks<a class="headerlink" href="#3-run-quality-checks" title="Permanent link">&para;</a></h2>
+<p>These checks flag problems and change nothing. <code>class_balance</code> reports the target's share of each class. <code>constant_columns</code> and <code>near_zero_variance</code> find columns that barely vary. <code>duplicate_rows</code> groups identical rows. <code>outlier_flags</code> marks values outside the IQR fences for one column. <code>schema_capture</code> records each column's kind, range and levels, and <code>schema_validate</code> checks a later batch against that record.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">class_balance</span><span class="p">,</span> <span class="n">constant_columns</span><span class="p">,</span> <span class="n">duplicate_rows</span><span class="p">,</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>                            <span class="n">near_zero_variance</span><span class="p">,</span> <span class="n">outlier_flags</span><span class="p">,</span> <span class="n">schema_capture</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>                            <span class="n">schema_validate</span><span class="p">,</span> <span class="n">take</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"constant:"</span><span class="p">,</span> <span class="n">constant_columns</span><span class="p">(</span><span class="n">cols</span><span class="p">))</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"near zero variance:"</span><span class="p">,</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">near_zero_variance</span><span class="p">(</span><span class="n">cols</span><span class="p">)])</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">groups</span> <span class="o">=</span> <span class="n">duplicate_rows</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"duplicate groups:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">),</span> <span class="s2">"rows in groups:"</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">))</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"target balance:"</span><span class="p">,</span> <span class="n">class_balance</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">]))</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">flags</span> <span class="o">=</span> <span class="n">outlier_flags</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="s2">"MonthlyIncome"</span><span class="p">])</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"MonthlyIncome flagged:"</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">f</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">),</span> <span class="s2">"missing:"</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">f</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">))</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">schema_capture</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">take</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>  <span class="c1"># a copy: the original columns are not changed</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">batch</span><span class="p">[</span><span class="s2">"age"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"schema problems:"</span><span class="p">,</span> <span class="n">schema_validate</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">schema</span><span class="p">))</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>constant: []
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>near zero variance: ['NumberOfTimes90DaysLate', 'NumberOfTime60-89DaysPastDueNotWorse']
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>duplicate groups: 351 rows in groups: 960
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>target balance: {'counts': {0: 139974, 1: 10026}, 'proportions': {0: 0.93316, 1: 0.06684}, 'imbalance_ratio': 13.961101137043686, 'n_missing': 0, 'n': 150000}
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>MonthlyIncome flagged: 4879 missing: 29731
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>schema problems: [{'column': 'age', 'problem': 'out_of_range', 'detail': '1 value(s) outside [0.0, 109.0], e.g. 200.0'}]
+</span></code></pre></div>
+<p>Read the results with the data in mind:</p>
+<ul>
+<li><code>near_zero_variance</code> flags <code>NumberOfTimes90DaysLate</code> and <code>NumberOfTime60-89DaysPastDueNotWorse</code> because most of their values are 0. Both are among the strongest columns in step 6, so the flag marks a sparse column, not a useless one. Do not drop a column on this flag alone.</li>
+<li>351 duplicate groups hold 960 rows. Two borrowers can share every recorded value. Decide with the data owner whether a duplicate is a repeated record or a real match, and only then remove rows.</li>
+<li>The target has 139,974 zeros and 10,026 ones, an imbalance ratio of 13.96. A model that always predicts 0 would be right 93.3% of the time, so judge models on the rare class. Step 8 reports AUC for that reason.</li>
+<li>4,879 incomes lie outside the IQR fences. Each flag is a value to inspect, not to delete: some high incomes are real and some are entry errors. The 29,731 missing incomes are not flagged; they stay <code>None</code>.</li>
+<li><code>schema_validate</code> reports the one changed age as <code>out_of_range</code>: 200.0 is outside the captured range [0.0, 109.0]. Missing values pass unless <code>allow_missing=False</code>. Run it on every new batch before scoring.</li>
+</ul>
+<p><strong>Next:</strong> the association step looks at pairs of columns. Strong correlation or association between features costs accuracy and interpretability, and a feature that is almost the target can be a leak.</p>
+<h2 id="4-measure-associations">4. Measure associations<a class="headerlink" href="#4-measure-associations" title="Permanent link">&para;</a></h2>
+<p><code>correlation_matrix</code> gives pairwise correlation, using only the rows where both values are observed, and <code>correlation_filter</code> applies the greedy rule that drops columns until no remaining pair is above a cutoff. <code>cramers_v_matrix</code> gives the same kind of pairwise table for categorical columns. <code>vif</code> gives the variance inflation factor of each numeric column on complete rows. <code>leakage_hints</code> scores each feature alone against the target and flags high scores; it removes nothing.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">correlation_filter</span><span class="p">,</span> <span class="n">correlation_matrix</span><span class="p">,</span> <span class="n">cramers_v_matrix</span><span class="p">,</span> <span class="n">leakage_hints</span><span class="p">,</span> <span class="n">vif</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cols</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">target</span><span class="p">}</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">corr</span> <span class="o">=</span> <span class="n">correlation_matrix</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"spearman"</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">flt</span> <span class="o">=</span> <span class="n">correlation_filter</span><span class="p">(</span><span class="n">corr</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"correlation drop:"</span><span class="p">,</span> <span class="n">flt</span><span class="p">[</span><span class="s2">"drop"</span><span class="p">])</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">names</span> <span class="o">=</span> <span class="n">corr</span><span class="p">[</span><span class="s2">"names"</span><span class="p">]</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">abs</span><span class="p">(</span><span class="n">corr</span><span class="p">[</span><span class="s2">"matrix"</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]),</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">names</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">))</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>         <span class="k">if</span> <span class="n">corr</span><span class="p">[</span><span class="s2">"matrix"</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">top</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"largest pair:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">top</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span> <span class="n">top</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">top</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cramers_v_matrix</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"categorical columns:"</span><span class="p">,</span> <span class="n">cv</span><span class="p">[</span><span class="s2">"names"</span><span class="p">])</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cv</span><span class="p">[</span><span class="s2">"names"</span><span class="p">],</span> <span class="n">cv</span><span class="p">[</span><span class="s2">"matrix"</span><span class="p">]):</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&lt;40</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">row</span><span class="p">])</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="n">out</span> <span class="o">=</span> <span class="n">vif</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"VIF rows used:"</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="s2">"n_used"</span><span class="p">],</span> <span class="s2">"excluded:"</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="s2">"n_excluded"</span><span class="p">])</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">"vif"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="n">hints</span> <span class="o">=</span> <span class="n">leakage_hints</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="nb">print</span><span class="p">([(</span><span class="n">h</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s2">"score"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">round</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s2">"score"</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span> <span class="n">h</span><span class="p">[</span><span class="s2">"flagged"</span><span class="p">])</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hints</span><span class="p">])</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>correlation drop: []
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>largest pair: 0.473 NumberOfOpenCreditLinesAndLoans NumberRealEstateLoansOrLines
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>categorical columns: ['FinancialDistressNextTwoYears', 'NumberOfTime30-59DaysPastDueNotWorse', 'NumberOfTimes90DaysLate', 'NumberOfTime60-89DaysPastDueNotWorse', 'NumberOfDependents']
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>FinancialDistressNextTwoYears            [1.0, 0.289, 0.356, 0.289, 0.047]
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>NumberOfTime30-59DaysPastDueNotWorse     [0.289, 1.0, 0.372, 0.42, 0.021]
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>NumberOfTimes90DaysLate                  [0.356, 0.372, 1.0, 0.423, 0.011]
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>NumberOfTime60-89DaysPastDueNotWorse     [0.289, 0.42, 0.423, 1.0, 0.011]
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>NumberOfDependents                       [0.047, 0.021, 0.011, 0.011, 1.0]
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>VIF rows used: 120269 excluded: 29731
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>{'RevolvingUtilizationOfUnsecuredLines': 1.0, 'age': 1.09, 'NumberOfTime30-59DaysPastDueNotWorse': 26.77, 'DebtRatio': 1.0, 'MonthlyIncome': 1.02, 'NumberOfOpenCreditLinesAndLoans': 1.28, 'NumberOfTimes90DaysLate': 49.21, 'NumberRealEstateLoansOrLines': 1.25, 'NumberOfTime60-89DaysPastDueNotWorse': 60.64, 'NumberOfDependents': 1.07}
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>[('RevolvingUtilizationOfUnsecuredLines', 0.778, False), ('age', 0.635, False), ('NumberOfTime30-59DaysPastDueNotWorse', 0.69, False), ('DebtRatio', 0.524, False), ('MonthlyIncome', 0.576, False), ('NumberOfOpenCreditLinesAndLoans', 0.545, False), ('NumberOfTimes90DaysLate', 0.657, False), ('NumberRealEstateLoansOrLines', 0.537, False), ('NumberOfTime60-89DaysPastDueNotWorse', 0.622, False), ('NumberOfDependents', 0.547, False)]
+</span></code></pre></div>
+<p>What to read here:</p>
+<ul>
+<li><code>correlation_matrix</code> uses Spearman ranks here, which are robust to the long right tails of the income and debt columns. It skips non-numeric columns and reports the rows used for each pair in <code>n_pairs</code>.</li>
+<li><code>correlation_filter</code> drops the column with the larger mean absolute correlation to the others, and ties drop the later column. At cutoff 0.9 it drops nothing: the largest pair is open credit lines against real-estate loans, at 0.473. A pairwise rule can miss collinearity among several columns, which VIF catches.</li>
+<li><code>cramers_v_matrix</code> treats integer columns with at most 20 distinct values as categorical, and it reports a bias-corrected V and a chi-square p-value for each pair. The target has V of 0.289 with the 30-59 day count, 0.356 with the 90-day count and 0.289 with the 60-89 day count, and 0.047 with dependents. The three delinquency counts also associate with each other at 0.37 to 0.42.</li>
+<li>VIF uses 120,269 complete rows and excludes the 29,731 rows with missing income. The three delinquency counts have VIF of 26.77, 49.21 and 60.64; every other numeric column is between 1.0 and 1.3. Those three move together, so decide which of them to keep before reading any coefficient that uses all three. VIF is also expensive: each numeric column needs its own regression on all the others, so the cost grows quickly as columns are added. Screen the columns first, then compute VIF on the shortlist.</li>
+<li><code>leakage_hints</code> scores each feature alone against the target and flags scores at or above the threshold (0.95 here). Nothing is flagged; the highest score is 0.778 for <code>RevolvingUtilizationOfUnsecuredLines</code>. A flag is a question for the data owner: does this column exist at the prediction time? It is not a verdict.</li>
+</ul>
+<p><strong>Next:</strong> the split step fixes which rows train the model and which evaluate it. Every association and screening result above used all rows for description; from here on, only training rows should inform choices that the model will use.</p>
+<h2 id="5-split-rows">5. Split rows<a class="headerlink" href="#5-split-rows" title="Permanent link">&para;</a></h2>
+<p><code>train_test_split</code> returns index lists. Pass <code>stratify</code> to keep the class share the same in both sides, <code>groups</code> to keep all rows of a group on one side, or <code>time_order</code> to put the latest rows in the test set. <code>kfold</code> does the same for cross-validation. <code>take</code> subsets a dict of columns and <code>select_rows</code> subsets an <code>xy</code> result, both by row index and neither changes a missing value.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">kfold</span><span class="p">,</span> <span class="n">select_rows</span><span class="p">,</span> <span class="n">take</span><span class="p">,</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">xy</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">train_idx</span><span class="p">,</span> <span class="n">test_idx</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">train_cols</span><span class="p">,</span> <span class="n">test_cols</span> <span class="o">=</span> <span class="n">take</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">train_idx</span><span class="p">),</span> <span class="n">take</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">test_idx</span><span class="p">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"stratified sizes:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_idx</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_idx</span><span class="p">))</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"target share train:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">class_balance</span><span class="p">(</span><span class="n">train_cols</span><span class="p">[</span><span class="n">target</span><span class="p">])[</span><span class="s2">"proportions"</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>      <span class="s2">"test:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">class_balance</span><span class="p">(</span><span class="n">test_cols</span><span class="p">[</span><span class="n">target</span><span class="p">])[</span><span class="s2">"proportions"</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1"># Grouped: the dataset has no household id, so NumberOfDependents stands in to show the mode.</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">g_train</span><span class="p">,</span> <span class="n">g_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="s2">"NumberOfDependents"</span><span class="p">])</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">shared</span> <span class="o">=</span> <span class="p">{</span><span class="n">cols</span><span class="p">[</span><span class="s2">"NumberOfDependents"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">g_train</span><span class="p">}</span> <span class="o">&amp;</span> <span class="p">{</span><span class="n">cols</span><span class="p">[</span><span class="s2">"NumberOfDependents"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">g_test</span><span class="p">}</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"groups shared between sides:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">shared</span><span class="p">))</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># Time-ordered: the dataset has no date column, so row order stands in for time.</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">t_train</span><span class="p">,</span> <span class="n">t_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">time_order</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)))</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"time-ordered test starts at row:"</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">t_test</span><span class="p">),</span> <span class="s2">"of"</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="n">folds</span> <span class="o">=</span> <span class="n">kfold</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"fold test sizes:"</span><span class="p">,</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">folds</span><span class="p">])</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="n">frame</span> <span class="o">=</span> <span class="n">xy</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="n">tr</span><span class="p">,</span> <span class="n">te</span> <span class="o">=</span> <span class="n">select_rows</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">train_idx</span><span class="p">),</span> <span class="n">select_rows</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">test_idx</span><span class="p">)</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">missing_cells</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s2">"x"</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">)</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"missing feature cells, whole table:"</span><span class="p">,</span> <span class="n">missing_cells</span><span class="p">(</span><span class="n">frame</span><span class="p">))</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"missing feature cells, train plus test:"</span><span class="p">,</span> <span class="n">missing_cells</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">+</span> <span class="n">missing_cells</span><span class="p">(</span><span class="n">te</span><span class="p">))</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"train rows:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]),</span> <span class="s2">"test rows:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">te</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]),</span> <span class="s2">"names:"</span><span class="p">,</span> <span class="n">tr</span><span class="p">[</span><span class="s2">"names"</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>stratified sizes: 120000 30000
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>target share train: 0.0668 test: 0.0668
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>groups shared between sides: 0
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>time-ordered test starts at row: 120000 of 150000
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>fold test sizes: [30000, 30000, 30000, 30000, 30000]
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>missing feature cells, whole table: 33655
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>missing feature cells, train plus test: 33655
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>train rows: 120000 test rows: 30000 names: ['RevolvingUtilizationOfUnsecuredLines', 'age', 'NumberOfTime30-59DaysPastDueNotWorse']
+</span></code></pre></div>
+<p>Notes on the split:</p>
+<ul>
+<li>The stratified split gives each class its exact share, within one row. Both sides show a target share of 0.0668, the share of the whole table.</li>
+<li>A group is never split across the two sides: no group is shared here. Missing group labels form their own group. This dataset has no household or customer id, so <code>NumberOfDependents</code> is used only to show the mode. Use a real id in practice.</li>
+<li><code>time_order</code> makes the test set the last rows, with no shuffling. Use a real event date in practice; the row order here is not a claim about when the rows were recorded.</li>
+<li><code>kfold</code> with <code>stratify</code> gives five test folds of 30,000 rows each. <code>kfold</code> with <code>time_order</code> instead expands the training window fold by fold.</li>
+<li>No split drops a row, and <code>take</code> and <code>select_rows</code> do not change a value. Both sides together hold 33,655 missing feature cells, the same as the whole table. The split moved the gaps and changed none.</li>
+</ul>
+<p><strong>Next:</strong> the binning step measures how strongly each numeric column separates the two outcomes. It must use training rows only, because a bin edge or an information value fitted on the test rows would leak the answer into the model.</p>
+<h2 id="6-bin-a-numeric-column-and-measure-information-value">6. Bin a numeric column and measure information value<a class="headerlink" href="#6-bin-a-numeric-column-and-measure-information-value" title="Permanent link">&para;</a></h2>
+<p><code>iv_bins</code> cuts a numeric column into ordered bins, merges them to respect a monotone trend, and reports the information value (IV). <code>binner</code> gives the bin assignment for each row. <code>iv_levels</code> does the same for a categorical column, and <code>information_value_table</code> runs the screen over every column.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">binner</span><span class="p">,</span> <span class="n">information_value_table</span><span class="p">,</span> <span class="n">iv_bins</span><span class="p">,</span> <span class="n">iv_levels</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">y_tr</span> <span class="o">=</span> <span class="n">train_cols</span><span class="p">[</span><span class="n">target</span><span class="p">]</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">util</span> <span class="o">=</span> <span class="n">train_cols</span><span class="p">[</span><span class="s2">"RevolvingUtilizationOfUnsecuredLines"</span><span class="p">]</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">r</span> <span class="o">=</span> <span class="n">iv_bins</span><span class="p">(</span><span class="n">util</span><span class="p">,</span> <span class="n">y_tr</span><span class="p">,</span> <span class="n">n_bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">monotone</span><span class="o">=</span><span class="s2">"increasing"</span><span class="p">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"IV:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"iv"</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> <span class="s2">"trend:"</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="s2">"trend"</span><span class="p">],</span> <span class="s2">"ordered bins:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"bins"</span><span class="p">]))</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">b</span> <span class="o">=</span> <span class="n">binner</span><span class="p">(</span><span class="n">util</span><span class="p">,</span> <span class="n">n_bins</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"bin counts:"</span><span class="p">,</span> <span class="n">b</span><span class="p">[</span><span class="s2">"counts"</span><span class="p">],</span> <span class="s2">"missing:"</span><span class="p">,</span> <span class="n">b</span><span class="p">[</span><span class="s2">"n_missing"</span><span class="p">])</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"levels IV:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">iv_levels</span><span class="p">(</span><span class="n">train_cols</span><span class="p">[</span><span class="s2">"NumberOfDependents"</span><span class="p">],</span> <span class="n">y_tr</span><span class="p">)[</span><span class="s2">"iv"</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">features_tr</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">train_cols</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">target</span><span class="p">}</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">information_value_table</span><span class="p">(</span><span class="n">features_tr</span><span class="p">,</span> <span class="n">y_tr</span><span class="p">,</span> <span class="n">n_bins</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;40</span><span class="si">}{</span><span class="nb">round</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">'iv'</span><span class="p">],</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'strength'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>IV: 1.0998 trend: increasing ordered bins: 8
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>bin counts: [12000, 12000, 12000, 12000, 12000, 12000, 12000, 12000, 12000, 12000] missing: 0
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>levels IV: 0.0366
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>RevolvingUtilizationOfUnsecuredLines      1.1212  suspicious
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>NumberOfTimes90DaysLate                   0.8271  suspicious
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>NumberOfTime30-59DaysPastDueNotWorse      0.7458  suspicious
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>NumberOfTime60-89DaysPastDueNotWorse      0.5779  suspicious
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>age                                       0.2598  medium
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>DebtRatio                                 0.0801  weak
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>MonthlyIncome                             0.0738  weak
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>NumberOfOpenCreditLinesAndLoans           0.0613  weak
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>NumberRealEstateLoansOrLines              0.0545  weak
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>NumberOfDependents                        0.0352  weak
+</span></code></pre></div>
+<p>The greedy merge above is fast but not guaranteed optimal. <code>optimize="dp"</code> finds the best set of cut points under the same constraints with an exact dynamic programme over fine pre-bins. It also takes a trend (<code>"increasing"</code>, <code>"decreasing"</code>, <code>"peak"</code>, <code>"valley"</code> or <code>"auto"</code>), a minimum bin share, a maximum number of bins, and <code>special_values</code> that get their own bins outside the trend.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">exact</span> <span class="o">=</span> <span class="n">iv_bins</span><span class="p">(</span><span class="n">util</span><span class="p">,</span> <span class="n">y_tr</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="s2">"dp"</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">max_bins</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">min_bin_frac</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"greedy IV:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"iv"</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> <span class="s2">"| dp IV:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">exact</span><span class="p">[</span><span class="s2">"iv"</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"dp trend:"</span><span class="p">,</span> <span class="n">exact</span><span class="p">[</span><span class="s2">"trend"</span><span class="p">],</span> <span class="s2">"bins:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">exact</span><span class="p">[</span><span class="s2">"bins"</span><span class="p">]),</span> <span class="s2">"relaxed:"</span><span class="p">,</span> <span class="n">exact</span><span class="p">[</span><span class="s2">"constraint_relaxed"</span><span class="p">])</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">for</span> <span class="n">b_</span> <span class="ow">in</span> <span class="n">exact</span><span class="p">[</span><span class="s2">"bins"</span><span class="p">]:</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">b_</span><span class="p">[</span><span class="s1">'lo'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">b_</span><span class="p">[</span><span class="s1">'hi'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">]  n=</span><span class="si">{</span><span class="n">b_</span><span class="p">[</span><span class="s1">'n'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2">  event rate=</span><span class="si">{</span><span class="n">b_</span><span class="p">[</span><span class="s1">'event_rate'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  woe=</span><span class="si">{</span><span class="n">b_</span><span class="p">[</span><span class="s1">'woe'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>greedy IV: 1.0998 | dp IV: 1.114
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>dp trend: increasing bins: 8 relaxed: False
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>(-inf, 0.064]  n= 43200  event rate=0.017  woe=-1.396
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>(0.064, 0.137]  n= 14400  event rate=0.021  woe=-1.183
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>(0.137, 0.218]  n=  9600  event rate=0.031  woe=-0.814
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>(0.218, 0.301]  n=  7200  event rate=0.039  woe=-0.577
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>(0.301, 0.490]  n= 12000  event rate=0.059  woe=-0.142
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>(0.490, 0.698]  n=  9600  event rate=0.096  woe=+0.392
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>(0.698, 0.881]  n=  7200  event rate=0.145  woe=+0.860
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>(0.881, inf]  n= 16800  event rate=0.222  woe=+1.379
+</span></code></pre></div>
+<p>What to read here:</p>
+<ul>
+<li><code>iv_bins</code> with <code>monotone="increasing"</code> cuts the 120,000 training rows into ten quantile bins of 12,000 rows each, merges them to eight ordered bins, and reports an IV of 1.0998. The event rate is forced to rise with the bin order. Without the argument the table below gives 1.1212 for the same column, because it applies no trend.</li>
+<li>The exact mode reaches an IV of 1.114 against 1.0998 for the greedy merge on the same column: a small gain, and it is guaranteed to be the best split under these constraints. It keeps eight bins, the event rate rises from 0.017 in the lowest bin to 0.222 in the highest, and <code>constraint_relaxed</code> is <code>False</code>, so every constraint was met.</li>
+<li>The table reads the strength labels as a rule of thumb: below 0.02 useless, below 0.1 weak, below 0.3 medium, below 0.5 strong, and above that suspicious. Four columns are above 0.5: utilization (1.1212), the 90-day count (0.8271), the 30-59 day count (0.7458) and the 60-89 day count (0.5779). Those are past-delinquency measures. A value this high is a reason to check leakage (step 4) and to confirm with the data owner that the history exists at the prediction time. <code>age</code> is medium at 0.2598, and the other five are weak.</li>
+<li><code>NumberOfDependents</code> gives 0.0366 from <code>iv_levels</code>, which treats each value as its own level, and 0.0352 in the table, which bins the numeric column. The two methods differ by design.</li>
+<li><code>binner</code> counts every row. Missing values get no bin and are counted in <code>n_missing</code>; they are never merged into a neighbouring bin. This column has no missing values, so its count is 0.</li>
+<li>Choose bins and trend on training rows. The test rows stay out of this step.</li>
+</ul>
+<p><strong>Next:</strong> the transform step fits scalings on training rows and applies them to both sides. Scalings and bin edges belong to the training data, so they travel with the model.</p>
+<h2 id="7-transform-numeric-columns">7. Transform numeric columns<a class="headerlink" href="#7-transform-numeric-columns" title="Permanent link">&para;</a></h2>
+<p><code>FeatureTransformer</code> fits one transform on the observed values of a column and applies it, with an exact inverse. The kinds are <code>log1p</code>, <code>boxcox</code>, <code>yeojohnson</code>, <code>mean_diff</code> and <code>median_diff</code>. A missing value passes through every kind unchanged. <code>log1p</code> needs no fit, so it is also available as a plain function. Box-Cox needs strictly positive values, so the snippet adds 1 to <code>MonthlyIncome</code> first; Yeo-Johnson accepts zero and negative values directly.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureTransformer</span><span class="p">,</span> <span class="n">log1p</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">inc</span> <span class="o">=</span> <span class="n">train_cols</span><span class="p">[</span><span class="s2">"MonthlyIncome"</span><span class="p">]</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">shifted</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">v</span> <span class="o">+</span> <span class="mf">1.0</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">inc</span><span class="p">]</span>  <span class="c1"># Box-Cox needs x &gt; 0</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">round_trip_ok</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">):</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="n">missing_kept</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">before</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="n">b</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">after</span><span class="p">]</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="k">return</span> <span class="n">missing_kept</span> <span class="ow">and</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"log1p first values:"</span><span class="p">,</span> <span class="n">log1p</span><span class="p">(</span><span class="n">inc</span><span class="p">[:</span><span class="mi">3</span><span class="p">]))</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"boxcox"</span><span class="p">,</span> <span class="n">shifted</span><span class="p">),</span> <span class="p">(</span><span class="s2">"yeojohnson"</span><span class="p">,</span> <span class="n">inc</span><span class="p">),</span> <span class="p">(</span><span class="s2">"mean_diff"</span><span class="p">,</span> <span class="n">inc</span><span class="p">),</span> <span class="p">(</span><span class="s2">"median_diff"</span><span class="p">,</span> <span class="n">inc</span><span class="p">)]:</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>    <span class="n">t</span> <span class="o">=</span> <span class="n">FeatureTransformer</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">kind</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> params=</span><span class="si">{</span><span class="w"> </span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="w"> </span><span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">t</span><span class="o">.</span><span class="n">params_</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span><span class="w"> </span><span class="si">}</span><span class="s2"> "</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>          <span class="sa">f</span><span class="s2">"round trip ok=</span><span class="si">{</span><span class="n">round_trip_ok</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">z</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>log1p first values: [9.222466551774023, 8.955577146281511, None]
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>boxcox       params={'lambda': 0.3407} round trip ok=True
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>yeojohnson   params={'lambda': 0.3407} round trip ok=True
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>mean_diff    params={'mean': 6690.3986} round trip ok=True
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>median_diff  params={'median': 5400.0} round trip ok=True
+</span></code></pre></div>
+<p>What to read here:</p>
+<ul>
+<li><code>params_</code> is what the fit learned: a lambda for the power transforms, a centre for the difference transforms. Fit it on the training column and reuse it on new data.</li>
+<li><code>log1p</code> keeps the missing value: the first three training incomes give 9.2225, 8.9556 and a missing value.</li>
+<li><code>boxcox</code> and <code>yeojohnson</code> both fit a lambda of 0.3407. For non-negative values, Yeo-Johnson equals Box-Cox of <code>x + 1</code>, so the two fits on this column must agree. The match is a consistency check, not a coincidence.</li>
+<li>The difference transforms centre the column on the training mean (6690.3986) or median (5400.0). They move the centre only, not the shape.</li>
+<li>Every round trip returns the original values, and the missing values sit in the same places. The check uses a tolerance of 1e-6, not exact equality.</li>
+<li>Box-Cox and log transforms have a domain. A value outside it raises <code>ValueError</code> and names the first bad row; it is not silently replaced. That is why the snippet shifts the income before Box-Cox.</li>
+</ul>
+<p><strong>Next:</strong> the hand-off step fits the tree on the untransformed frame from step 5. A tree separates rows by thresholds on the order of values, so a monotone transform such as a log does not change which rows a split separates. The transforms in this step matter for models that use distances or linear coefficients.</p>
+<h2 id="8-hand-the-frame-to-the-model">8. Hand the frame to the model<a class="headerlink" href="#8-hand-the-frame-to-the-model" title="Permanent link">&para;</a></h2>
+<p><code>xy</code> turns the columns into the feature rows, the target, the feature names and the dtypes that a model needs. Step 5 already built the training and test frames with <code>select_rows</code>, so this step passes them straight to the tree. Keep <code>dtypes</code> and <code>names</code> with the rows so that the column order at prediction time is the one the tree saw.</p>
+<!-- run -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span> <span class="n">leaf_family</span><span class="o">=</span><span class="s2">"binomial"</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="s2">"deviance"</span><span class="p">,</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>                 <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tr</span><span class="p">[</span><span class="s2">"x"</span><span class="p">],</span> <span class="n">tr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">],</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">tr</span><span class="p">[</span><span class="s2">"dtypes"</span><span class="p">],</span> <span class="n">col_names</span><span class="o">=</span><span class="n">tr</span><span class="p">[</span><span class="s2">"names"</span><span class="p">])</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">scores</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">te</span><span class="p">[</span><span class="s2">"x"</span><span class="p">])</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">rep</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"classification"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">te</span><span class="p">[</span><span class="s2">"y"</span><span class="p">],</span> <span class="n">proba</span><span class="o">=</span><span class="n">scores</span><span class="p">)</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"test AUC:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">rep</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"test log loss:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">rep</span><span class="p">[</span><span class="s2">"logloss"</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+</span></code></pre></div>
+<!-- output -->
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>test AUC: 0.8194
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>test log loss: 0.1887
+</span></code></pre></div>
+<p>On the 30,000 test rows the tree reaches an AUC of 0.8194 and a log loss of 0.1887. The fit used the frame as it came out of step 5, with the 33,655 missing feature cells still in place. The tree routes them natively, so no imputation step is needed before this call. If a comparison model needs imputation, that step is a deliberate choice that belongs to that comparison, not to this frame.</p>
+<h3 id="choose-the-preparation">Choose the preparation<a class="headerlink" href="#choose-the-preparation" title="Permanent link">&para;</a></h3>
+<p>Models take categorical labels and missing predictors natively. The diagram shows the path from raw rows to the tree; the snippet below uses a categorical column with missing values and no separate encoder.</p>
 <pre class="mermaid"><code>flowchart LR
     A["Raw Data Matrix\n(Python Lists / Dicts / Parquet)"] --&gt; B["DatasetBuilder\n(NA Policy: Keep None &amp; NaN)"]
     B --&gt; C["Typed Frame &amp; Schema\n(n_category Cardinality Check)"]
@@ -2577,43 +3052,31 @@
     class C frameBox;
     class D mapBox;
     class E engineBox;</code></pre>
-<p><code>ModelTree</code> accepts categorical labels and missing predictors without a separate encoder or imputation step. Declare the feature types and preserve the same column order at prediction time.</p>
 <!-- run -->
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"north"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"north"</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">10</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="p">[</span><span class="s2">"categorical"</span><span class="p">,</span> <span class="s2">"numeric"</span><span class="p">],</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>          <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"region"</span><span class="p">,</span> <span class="s2">"amount"</span><span class="p">])</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">([[</span><span class="s2">"north"</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]))</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">splits</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"north"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"north"</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">10</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="p">[</span><span class="s2">"categorical"</span><span class="p">,</span> <span class="s2">"numeric"</span><span class="p">],</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>          <span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"region"</span><span class="p">,</span> <span class="s2">"amount"</span><span class="p">])</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">([[</span><span class="s2">"north"</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">[</span><span class="s2">"south"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]))</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">splits</span><span class="p">())</span>
 </span></code></pre></div>
 <!-- output -->
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[1.5, 9.5]
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>[{'col': 'region', 'threshold': 0.0, 'missing_left': True, 'gain': 640.0}]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>[1.5, 9.5]
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>[{'col': 'region', 'threshold': 0.0, 'missing_left': True, 'gain': 640.0}]
 </span></code></pre></div>
-<p>Use a separate encoder only when another downstream workflow needs it. If you use one, fit it on training data only.</p>
-<p><strong>Next:</strong> the inspection step checks where missing values occur in a training set, because missing predictors pass into the tree unchanged and their frequency matters before fitting.</p>
-<h2 id="2-inspect-before-fitting">2. Inspect before fitting<a class="headerlink" href="#2-inspect-before-fitting" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://github.com/jkapila/mltreelib/blob/main/examples/guides/data_metrics_pathway.py">data and metrics example</a> creates a synthetic mixed dataset and splits it into training, validation and test rows. It counts missing values on the training rows before fitting. It passes the original categorical labels and missing numeric entries directly to both models.</p>
-<p><img alt="Missing values by feature in the synthetic training set" src="../../assets/guides/data-missingness.svg" /></p>
-<p>For the fixed seed, 239 of 2,000 training rows have a missing <code>volume</code>. The chart shows where to investigate collection and data quality. It does not imply that those values need imputation. Also check missingness by source, group and time when those fields are available.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/guides/data_metrics_pathway.py
-</span></code></pre></div>
-<p>The example requires matplotlib to render the charts. Graphviz is optional for rendering the tree. The package plotting extra installs the chart dependencies; Graphviz also requires its system executable.</p>
-<p><strong>Next:</strong> the preparation choice uses the missingness findings from step 2 to decide whether the downstream estimator needs a separate encoder.</p>
-<h2 id="3-choose-the-preparation">3. Choose the preparation<a class="headerlink" href="#3-choose-the-preparation" title="Permanent link">&para;</a></h2>
-<p>Use native categorical inputs for <code>ModelTree</code>. Use an encoder when the downstream estimator requires it. Target-based encoders need leakage-safe training representations and an independently fitted evaluation pipeline. Missing-value behavior varies by operation. Test missing predictors, targets and unknown categories for the exact estimator before deployment.</p>
+<p>Use native categorical inputs for <code>ModelTree</code>. Use a separate encoder only when the downstream estimator or another workflow requires it, and fit it on training data only. Target-based encoders need leakage-safe training representations and an independently fitted evaluation pipeline. Missing-value behavior varies by operation. Test missing predictors, targets and unknown categories for the exact estimator before deployment.</p>
 <ul>
 <li><a href="../../concepts/data-matrix-and-routing/">Missing routing</a> explains <code>ModelTree</code> routing.</li>
 <li><a href="../../concepts/data-matrix-and-routing/">Categorical encoders</a> explains training leakage.</li>
 <li><a href="../../concepts/data-matrix-and-routing/">Data processing</a> shows typed ingestion, summaries and time features.</li>
 <li><a href="../../concepts/timeseries-forecasting/">Time series forecasting</a> shows prior-day features and a time split.</li>
-<li><a href="../../reference/data/">Data API</a> catalogs builders, encoders and transforms.</li>
+<li><a href="../../reference/data/">Data API</a> catalogs builders, encoders, transforms and the <code>mltreelib.data</code> helpers.</li>
 </ul>
 <h2 id="what-remains">What remains<a class="headerlink" href="#what-remains" title="Permanent link">&para;</a></h2>
-<p>The existing references do not yet give a checked missing and unseen-value matrix for every model and encoder. They also need a single end-to-end example that carries a fitted schema through deployment. In a checked two-category example, an unseen category routed differently from a missing value. This conflicts with the stated unseen-as-missing contract and is recorded as a product gap for investigation. A checked <code>IndexMapper</code> maps an unseen label to missing. In a separate check, <code>OneHotEncoder</code> mapped missing and unseen labels to all-zero vectors, <code>CountEncoder</code> mapped them to missing and zero respectively, and <code>TargetEncoder</code> mapped them to missing and the fitted prior.</p>
+<p>The existing references do not yet give a checked missing and unseen-value matrix for every model and encoder. They also need a single end-to-end example that carries a fitted schema through deployment. The schema helpers in step 3 capture and validate a schema, but this guide stops before scoring a new batch with a fitted model. In a checked two-category example, an unseen category routed differently from a missing value. This conflicts with the stated unseen-as-missing contract and is recorded as a product gap for investigation. A checked <code>IndexMapper</code> maps an unseen label to missing. In a separate check, <code>OneHotEncoder</code> mapped missing and unseen labels to all-zero vectors, <code>CountEncoder</code> mapped them to missing and zero respectively, and <code>TargetEncoder</code> mapped them to missing and the fitted prior.</p>
 
 
 

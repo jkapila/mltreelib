@@ -28,7 +28,7 @@
     
     
       
-        <title>Solvers, Optimizers & Real-Data Tuning - mltreelib v0.4.15</title>
+        <title>Solvers, Optimizers & Real-Data Tuning - mltreelib v0.4.16</title>
       
     
     
@@ -124,9 +124,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mltreelib v0.4.15" class="md-header__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-header__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            mltreelib v0.4.15
+            mltreelib v0.4.16
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -234,12 +234,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mltreelib v0.4.15" class="md-nav__button md-logo" aria-label="mltreelib v0.4.15" data-md-component="logo">
+    <a href="../.." title="mltreelib v0.4.16" class="md-nav__button md-logo" aria-label="mltreelib v0.4.16" data-md-component="logo">
       
-  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.15">
+  <img src="../../assets/mltreelib-icon.svg" alt="mltreelib v0.4.16">
 
     </a>
-    mltreelib v0.4.15
+    mltreelib v0.4.16
   </label>
   
     <div class="md-nav__source">
@@ -3173,43 +3173,40 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 </div>
 </div>
 <h3 id="benchmark-results-on-concrete-strength-8020-split">Benchmark Results on Concrete Strength (80/20 split)<a class="headerlink" href="#benchmark-results-on-concrete-strength-8020-split" title="Permanent link">&para;</a></h3>
-<p>The block below fits each solver on the same shuffled 80% of the Concrete data and scores the other 20%. It prints test RMSE and <span class="arithmatex">\(R^2\)</span> only. Wall-clock timings are machine-dependent, so this page does not quote them.</p>
+<p>The block below fits each solver on the same seeded 80/20 split of the Concrete data (seed 2026) and scores the held-out 20%. It prints test RMSE and <span class="arithmatex">\(R^2\)</span> only. Wall-clock timings are machine-dependent, so this page does not quote them.</p>
 <!-- run -->
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span><span class="p">,</span> <span class="n">ModelTree</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_path</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">(</span><span class="s2">"concrete_compressive_strength"</span><span class="p">))</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">target</span> <span class="o">=</span> <span class="s2">"ConcreteCompressiveStrength"</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">features</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">cut</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">x_train</span><span class="p">,</span> <span class="n">x_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">cut</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="n">features</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cut</span><span class="p">:]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">cut</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cut</span><span class="p">:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"irls"</span><span class="p">,</span> <span class="s2">"lbfgs"</span><span class="p">,</span> <span class="s2">"shade"</span><span class="p">,</span> <span class="s2">"ga"</span><span class="p">,</span> <span class="s2">"cmaes"</span><span class="p">,</span> <span class="s2">"nes"</span><span class="p">,</span> <span class="s2">"ccd"</span><span class="p">):</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"l1"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span> <span class="k">if</span> <span class="n">solver</span> <span class="o">==</span> <span class="s2">"ccd"</span> <span class="k">else</span> <span class="p">{}</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">)</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">))</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"depth=</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">solver</span><span class="si">:</span><span class="s2">6s</span><span class="si">}</span><span class="s2"> rmse=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> r2=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="s2">"concrete_compressive_strength"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"ConcreteCompressiveStrength"</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Seeded 80/20 split: the helper shuffles with seed 2026, so file order does not matter</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2026</span><span class="p">)</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"irls"</span><span class="p">,</span> <span class="s2">"lbfgs"</span><span class="p">,</span> <span class="s2">"shade"</span><span class="p">,</span> <span class="s2">"ga"</span><span class="p">,</span> <span class="s2">"cmaes"</span><span class="p">,</span> <span class="s2">"nes"</span><span class="p">,</span> <span class="s2">"ccd"</span><span class="p">):</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"l1"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span> <span class="k">if</span> <span class="n">solver</span> <span class="o">==</span> <span class="s2">"ccd"</span> <span class="k">else</span> <span class="p">{}</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">leaf_solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">)</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"regression"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"depth=</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">solver</span><span class="si">:</span><span class="s2">6s</span><span class="si">}</span><span class="s2"> rmse=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'rmse'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> r2=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'r2'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- output -->
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>depth=0 irls   rmse=10.321 r2=0.679
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>depth=0 lbfgs  rmse=10.323 r2=0.679
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>depth=0 shade  rmse=10.317 r2=0.679
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>depth=0 ga     rmse=10.811 r2=0.648
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>depth=0 cmaes  rmse=12.402 r2=0.537
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>depth=0 nes    rmse=12.974 r2=0.493
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>depth=0 ccd    rmse=10.321 r2=0.679
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>depth=2 irls   rmse=6.855 r2=0.858
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>depth=2 lbfgs  rmse=7.174 r2=0.845
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>depth=2 shade  rmse=7.175 r2=0.845
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>depth=2 ga     rmse=7.971 r2=0.809
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>depth=2 cmaes  rmse=10.291 r2=0.681
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>depth=2 nes    rmse=12.013 r2=0.565
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>depth=2 ccd    rmse=6.858 r2=0.858
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>depth=0 irls   rmse=10.745 r2=0.563
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>depth=0 lbfgs  rmse=10.757 r2=0.562
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>depth=0 shade  rmse=10.765 r2=0.561
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>depth=0 ga     rmse=11.205 r2=0.524
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>depth=0 cmaes  rmse=12.336 r2=0.424
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>depth=0 nes    rmse=12.008 r2=0.454
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>depth=0 ccd    rmse=10.746 r2=0.563
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>depth=2 irls   rmse=6.770 r2=0.826
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>depth=2 lbfgs  rmse=7.055 r2=0.811
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>depth=2 shade  rmse=7.045 r2=0.812
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>depth=2 ga     rmse=8.319 r2=0.738
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>depth=2 cmaes  rmse=9.464 r2=0.661
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>depth=2 nes    rmse=12.333 r2=0.424
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>depth=2 ccd    rmse=6.761 r2=0.827
 </span></code></pre></div>
 <table>
 <thead>
@@ -3226,58 +3223,58 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 <tr>
 <td style="text-align: left;"><strong><code>irls</code></strong></td>
 <td style="text-align: left;">Analytical Cholesky</td>
-<td style="text-align: center;">10.321</td>
-<td style="text-align: center;">0.679</td>
-<td style="text-align: center;">6.855</td>
-<td style="text-align: center;">0.858</td>
+<td style="text-align: center;">10.745</td>
+<td style="text-align: center;">0.563</td>
+<td style="text-align: center;">6.770</td>
+<td style="text-align: center;">0.826</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>lbfgs</code></strong></td>
 <td style="text-align: left;">Quasi-Newton</td>
-<td style="text-align: center;">10.323</td>
-<td style="text-align: center;">0.679</td>
-<td style="text-align: center;">7.174</td>
-<td style="text-align: center;">0.845</td>
+<td style="text-align: center;">10.757</td>
+<td style="text-align: center;">0.562</td>
+<td style="text-align: center;">7.055</td>
+<td style="text-align: center;">0.811</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>shade</code></strong></td>
 <td style="text-align: left;">Continuous DE</td>
-<td style="text-align: center;">10.317</td>
-<td style="text-align: center;">0.679</td>
-<td style="text-align: center;">7.175</td>
-<td style="text-align: center;">0.845</td>
+<td style="text-align: center;">10.765</td>
+<td style="text-align: center;">0.561</td>
+<td style="text-align: center;">7.045</td>
+<td style="text-align: center;">0.812</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>ga</code></strong></td>
 <td style="text-align: left;">Genetic Algorithm</td>
-<td style="text-align: center;">10.811</td>
-<td style="text-align: center;">0.648</td>
-<td style="text-align: center;">7.971</td>
-<td style="text-align: center;">0.809</td>
+<td style="text-align: center;">11.205</td>
+<td style="text-align: center;">0.524</td>
+<td style="text-align: center;">8.319</td>
+<td style="text-align: center;">0.738</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>cmaes</code></strong></td>
 <td style="text-align: left;">Evolutionary Covariance</td>
-<td style="text-align: center;">12.402</td>
-<td style="text-align: center;">0.537</td>
-<td style="text-align: center;">10.291</td>
-<td style="text-align: center;">0.681</td>
+<td style="text-align: center;">12.336</td>
+<td style="text-align: center;">0.424</td>
+<td style="text-align: center;">9.464</td>
+<td style="text-align: center;">0.661</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>nes</code></strong></td>
 <td style="text-align: left;">Natural Gradient</td>
-<td style="text-align: center;">12.974</td>
-<td style="text-align: center;">0.493</td>
-<td style="text-align: center;">12.013</td>
-<td style="text-align: center;">0.565</td>
+<td style="text-align: center;">12.008</td>
+<td style="text-align: center;">0.454</td>
+<td style="text-align: center;">12.333</td>
+<td style="text-align: center;">0.424</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong><code>ccd</code></strong></td>
 <td style="text-align: left;">Cyclic Coordinate Descent</td>
-<td style="text-align: center;">10.321</td>
-<td style="text-align: center;">0.679</td>
-<td style="text-align: center;">6.858</td>
-<td style="text-align: center;">0.858</td>
+<td style="text-align: center;">10.746</td>
+<td style="text-align: center;">0.563</td>
+<td style="text-align: center;">6.761</td>
+<td style="text-align: center;">0.827</td>
 </tr>
 </tbody>
 </table>
@@ -3288,11 +3285,11 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 <h3 id="key-observations">Key Observations:<a class="headerlink" href="#key-observations" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Global linear fit (<code>max_depth=0</code>)</strong>:
-   <code>irls</code>, <code>lbfgs</code>, <code>shade</code> and <code>ccd</code> land within 0.01 MPa of each other (10.317 to 10.323). <code>ga</code> is at 10.811, <code>cmaes</code> at 12.402 and <code>nes</code> at 12.974.</li>
+   <code>irls</code>, <code>lbfgs</code>, <code>shade</code> and <code>ccd</code> land within 0.02 MPa of each other (10.745 to 10.765). <code>ga</code> is at 11.205, <code>nes</code> at 12.008 and <code>cmaes</code> at 12.336.</li>
 <li><strong>Shallow tree (<code>max_depth=2</code>)</strong>:
-   <code>irls</code> (6.855 MPa) and <code>ccd</code> (6.858 MPa) give the lowest test RMSE here. <code>lbfgs</code> and <code>shade</code> are at about 7.17 MPa, <code>ga</code> at 7.971 MPa. <code>cmaes</code> and <code>nes</code> are the weakest.</li>
+   <code>ccd</code> (6.761 MPa) and <code>irls</code> (6.770 MPa) give the lowest test RMSE here. <code>lbfgs</code> and <code>shade</code> are at about 7.05 MPa, <code>ga</code> at 8.319 MPa. <code>cmaes</code> and <code>nes</code> are the weakest.</li>
 <li><strong>Gradient-free SHADE</strong>:
-   On this split <code>shade</code> needs no gradients and matches <code>lbfgs</code> at both depths. At depth 0 it is slightly below <code>irls</code> (10.317 vs 10.321 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.</li>
+   On this split <code>shade</code> needs no gradients and stays within 0.01 MPa of <code>lbfgs</code> at both depths. At depth 0 it is slightly above <code>irls</code> (10.765 vs 10.745 MPa). Derivative-free solvers can be useful for non-differentiable penalties, but this table does not show a speed comparison.</li>
 </ol>
 <p><strong>Next:</strong> step 5 leaves the leaf fits and applies a search to any bounded scalar objective through <code>optimize</code>, including <code>ModelTree</code> hyperparameters.</p>
 <hr />
@@ -3646,7 +3643,7 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 <p>Rather than manually guessing <code>max_depth</code> and <code>min_rows</code>, <code>mltreelib</code> wraps tree cross-validation directly inside the numerical optimizer:</p>
 <!-- run -->
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelTree</span><span class="p">,</span> <span class="n">Metrics</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsReport</span><span class="p">,</span> <span class="n">ModelTree</span>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mltreelib.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># 1. Generate synthetic non-linear response surface</span>
@@ -3659,43 +3656,41 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 </span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">X_val</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_val</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 </span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">y_val</span> <span class="o">=</span> <span class="n">X_val</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X_val</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">n_val</span><span class="p">)</span>
 </span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>
-</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">()</span>
-</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>
-</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="c1"># 2. Objective function: Validation RMSE of ModelTree given continuous hyperparameters</span>
-</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_tree_hpo</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
-</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>    <span class="n">depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>    <span class="n">min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>    <span class="n">l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Log-scale exploration for regularization</span>
-</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>
-</span><span id="__span-15-23"><a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
-</span><span id="__span-15-24"><a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>        <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
-</span><span id="__span-15-25"><a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>        <span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
-</span><span id="__span-15-26"><a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a>        <span class="n">min_rows</span><span class="o">=</span><span class="n">min_rows</span><span class="p">,</span>
-</span><span id="__span-15-27"><a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>        <span class="n">l2</span><span class="o">=</span><span class="n">l2</span><span class="p">,</span>
-</span><span id="__span-15-28"><a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>    <span class="p">)</span>
-</span><span id="__span-15-29"><a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>    <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
-</span><span id="__span-15-30"><a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>    <span class="n">pred_val</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">)</span>
-</span><span id="__span-15-31"><a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>    <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">y_val</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">pred_val</span><span class="p">)[</span><span class="s2">"rmse"</span><span class="p">]</span>
-</span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>
-</span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="c1"># Search bounds: depth in [1, 6], min_rows in [10, 60], log10(l2) in [-4, 1]</span>
-</span><span id="__span-15-34"><a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="n">bounds</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span>
-</span><span id="__span-15-35"><a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>
-</span><span id="__span-15-36"><a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="c1"># 3. Optimize hyperparameters via Powell direction-set search</span>
-</span><span id="__span-15-37"><a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="n">hpo_res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span>
-</span><span id="__span-15-38"><a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>    <span class="n">evaluate_tree_hpo</span><span class="p">,</span>
-</span><span id="__span-15-39"><a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a>    <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
-</span><span id="__span-15-40"><a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>    <span class="n">start</span><span class="o">=</span><span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">],</span>
-</span><span id="__span-15-41"><a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">"powell"</span><span class="p">,</span>
-</span><span id="__span-15-42"><a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-</span><span id="__span-15-43"><a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="p">)</span>
-</span><span id="__span-15-44"><a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a>
-</span><span id="__span-15-45"><a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="n">best_depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-</span><span id="__span-15-46"><a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a><span class="n">best_min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-</span><span id="__span-15-47"><a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="n">best_l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-</span><span id="__span-15-48"><a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a>
-</span><span id="__span-15-49"><a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"HPO Search Results:"</span><span class="p">)</span>
-</span><span id="__span-15-50"><a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Best Validation RMSE: </span><span class="si">{</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-15-51"><a id="__codelineno-15-51" name="__codelineno-15-51" href="#__codelineno-15-51"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Optimal Configuration: max_depth=</span><span class="si">{</span><span class="n">best_depth</span><span class="si">}</span><span class="s2">, min_rows=</span><span class="si">{</span><span class="n">best_min_rows</span><span class="si">}</span><span class="s2">, l2=</span><span class="si">{</span><span class="n">best_l2</span><span class="si">:</span><span class="s2">.4e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="c1"># 2. Objective function: Validation RMSE of ModelTree given continuous hyperparameters</span>
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_tree_hpo</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="n">depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="n">min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>    <span class="n">l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Log-scale exploration for regularization</span>
+</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>
+</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">ModelTree</span><span class="p">(</span>
+</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>        <span class="n">leaf</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
+</span><span id="__span-15-23"><a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>        <span class="n">max_depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
+</span><span id="__span-15-24"><a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>        <span class="n">min_rows</span><span class="o">=</span><span class="n">min_rows</span><span class="p">,</span>
+</span><span id="__span-15-25"><a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>        <span class="n">l2</span><span class="o">=</span><span class="n">l2</span><span class="p">,</span>
+</span><span id="__span-15-26"><a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a>    <span class="p">)</span>
+</span><span id="__span-15-27"><a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>    <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+</span><span id="__span-15-28"><a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>    <span class="n">pred_val</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">)</span>
+</span><span id="__span-15-29"><a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>    <span class="k">return</span> <span class="n">MetricsReport</span><span class="p">(</span><span class="s2">"regression"</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">y_val</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">pred_val</span><span class="p">)[</span><span class="s2">"rmse"</span><span class="p">]</span>
+</span><span id="__span-15-30"><a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>
+</span><span id="__span-15-31"><a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="c1"># Search bounds: depth in [1, 6], min_rows in [10, 60], log10(l2) in [-4, 1]</span>
+</span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="n">bounds</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span>
+</span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>
+</span><span id="__span-15-34"><a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="c1"># 3. Optimize hyperparameters via Powell direction-set search</span>
+</span><span id="__span-15-35"><a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a><span class="n">hpo_res</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">(</span>
+</span><span id="__span-15-36"><a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a>    <span class="n">evaluate_tree_hpo</span><span class="p">,</span>
+</span><span id="__span-15-37"><a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a>    <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+</span><span id="__span-15-38"><a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>    <span class="n">start</span><span class="o">=</span><span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">],</span>
+</span><span id="__span-15-39"><a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">"powell"</span><span class="p">,</span>
+</span><span id="__span-15-40"><a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>    <span class="n">max_evaluations</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+</span><span id="__span-15-41"><a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="p">)</span>
+</span><span id="__span-15-42"><a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a>
+</span><span id="__span-15-43"><a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="n">best_depth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-15-44"><a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a><span class="n">best_min_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</span><span id="__span-15-45"><a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="n">best_l2</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">hpo_res</span><span class="o">.</span><span class="n">best_x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</span><span id="__span-15-46"><a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a>
+</span><span id="__span-15-47"><a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"HPO Search Results:"</span><span class="p">)</span>
+</span><span id="__span-15-48"><a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Best Validation RMSE: </span><span class="si">{</span><span class="n">hpo_res</span><span class="o">.</span><span class="n">best_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-15-49"><a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Optimal Configuration: max_depth=</span><span class="si">{</span><span class="n">best_depth</span><span class="si">}</span><span class="s2">, min_rows=</span><span class="si">{</span><span class="n">best_min_rows</span><span class="si">}</span><span class="s2">, l2=</span><span class="si">{</span><span class="n">best_l2</span><span class="si">:</span><span class="s2">.4e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- output -->
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>HPO Search Results:
@@ -3706,7 +3701,7 @@ Provides fast derivative-free updates along coordinate-aligned search directions
 <h2 id="operational-limitations-numerical-failure-modes">Operational Limitations &amp; Numerical Failure Modes<a class="headerlink" href="#operational-limitations-numerical-failure-modes" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Unstandardized Covariate Scaling</strong>:
-   Derivative-free evolutionary algorithms (<code>cmaes</code>, <code>nes</code>) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement <span class="arithmatex">\(500 \, \text{kg/m}^3\)</span> vs. Water <span class="arithmatex">\(0.18 \, \text{kg/m}^3\)</span>), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split <code>nes</code> reached RMSE 12.974 MPa at depth 0, the weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.</li>
+   Derivative-free evolutionary algorithms (<code>cmaes</code>, <code>nes</code>) sample isotropic search perturbations. If covariates differ by orders of magnitude (e.g., Cement <span class="arithmatex">\(500 \, \text{kg/m}^3\)</span> vs. Water <span class="arithmatex">\(0.18 \, \text{kg/m}^3\)</span>), initial spherical covariance updates degenerate, yielding sub-optimal convergence (on this split <code>nes</code> reached RMSE 12.008 MPa at depth 0, the second-weakest solver in the table above). Always standardize continuous inputs before applying evolutionary leaf solvers.</li>
 <li><strong>Coordinate Descent Collinearity Stagnation</strong>:
    When features exhibit high pairwise correlation (<span class="arithmatex">\(r &gt; 0.95\)</span>), cyclic coordinate descent (<code>ccd</code>) undergoes zig-zagging oscillations, requiring many coordinate sweeps to achieve convergence. For dense collinear problems without <span class="arithmatex">\(L_1\)</span> sparsity requirements, <code>irls</code> or <code>lbfgs</code> converges orders of magnitude faster.</li>
 <li><strong>Non-Convex Local Minima &amp; Stochastic Reproducibility</strong>:
