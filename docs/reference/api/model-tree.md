@@ -10,10 +10,6 @@ The model tree: typed fit, split-search knobs, quantiles, training log. Guide: [
 class ModelTree(*args, growth_control=None, leaf_control=None, **kwargs)
 ```
 
-Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
-leaves, NA-aware (learned split directions + NA-indicator leaf terms).
-Task: regression, binary probability estimation, or count modeling.
-
 ### ModelTree.apply
 
 ```python
@@ -66,6 +62,14 @@ config(self, /)
 
 Return all hyperparameter values as a dict.
 
+### ModelTree.core_defaults
+
+```python
+core_defaults()
+```
+
+Defaults of the Rust core parameter struct (for parity checks with the constructor).
+
 ### ModelTree.extract_rules
 
 ```python
@@ -94,7 +98,7 @@ Feature importance — supports `"gain"` (default, rpart split gain share),
 ### ModelTree.fit
 
 ```python
-fit(self, /, x, y, w=None, dtypes=None, control=None, id_col=None, group_col=None, col_names=None, event=None, treatment=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None, train_groups=None, train_ids=None, fairness_penalty=None, protected_col=None, protected_attribute=None, fairness_metric=None, sporf_d=None, sporf_projections=None, extratrees=None, ebm_fast=None)
+fit(self, /, x, y=None, w=None, dtypes=None, control=None, id_col=None, group_col=None, col_names=None, event=None, treatment=None, n_classes=None, sample_weight=None, row_weights=None, col_weights=None, feature_weights=None, train_groups=None, train_ids=None, fairness_penalty=None, protected_col=None, protected_attribute=None, fairness_metric=None, sporf_d=None, sporf_projections=None, extratrees=None, ebm_fast=None)
 ```
 
 Fit the tree on row-major data using the selected leaf family.
@@ -312,7 +316,7 @@ Returns: one quantile per row (NaN when a leaf's digest was dropped).
 ### ModelTree.retrain
 
 ```python
-retrain(self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, event=None, n_classes=None)
+retrain(self, /, x, y, control=None, w=None, mode='internal', leaf_features=None, retrain_cols=None, col_names=None, leaf=None, leaf_family=None, leaf_cols=None, l1=None, l2=None, leaf_digest=None, tau=None, huber_delta=None, event=None, n_classes=None)
 ```
 
 Retrain all leaf models on new or existing data without altering tree topology or splits.
@@ -466,7 +470,7 @@ Return the explicitly configured growth options.
 ## LeafControl
 
 ```python
-class LeafControl(leaf='linear', leaf_family=None, leaf_solver=None, leaf_cols='all', l1=0.0, l2=0.001, leaf_digest=True, tau=0.5, leaf_features=None, leaf_monotone=None, monotone=None, mars_degree=1, mars_terms=10, mars_penalty=2.0, tweedie_p=1.5, tobit_threshold=0.0, knn_k=5, knn_k_validity=5, knn_variant='uniform', knn_metric='euclidean', knn_gamma=None, knn_p=2.0, events=None, treatments=None, n_classes=None, shrinkage=0.0, max_classes=256, leaf_na_policy='drop_fallback', aft_dist='weibull', cure_fraction=None, spline_knots=3, *, family=None, solver=None)
+class LeafControl(leaf='linear', leaf_family=None, leaf_solver=None, leaf_cols='all', l1=0.0, l2=0.5, leaf_digest=True, tau=0.5, huber_delta=1.345, expectile_tau=0.5, non_negative=False, non_negative_intercept=False, nb_alpha=None, beta_phi=None, group_l2=0.0, groups=None, leaf_features=None, leaf_monotone=None, monotone=None, mars_degree=1, mars_terms=10, mars_penalty=2.0, tweedie_p=1.5, tobit_threshold=0.0, knn_k=5, knn_k_validity=5, knn_variant='uniform', knn_metric='euclidean', knn_gamma=None, knn_p=2.0, events=None, treatments=None, n_classes=None, shrinkage=0.0, max_classes=256, leaf_na_policy='drop_fallback', aft_dist='weibull', cure_fraction=None, spline_knots=3, *, family=None, solver=None)
 ```
 
 Parameter controls for fitting leaf models independently of tree topology.

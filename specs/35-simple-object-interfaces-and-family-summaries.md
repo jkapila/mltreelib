@@ -102,7 +102,7 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 25 | `ClusterModel` and `AnomalyModel` report and summary | open (part C) |
 | 26 | Causal linear leaf; `leaf="linear"` equals `leaf="mean"` under the causal gain | open (part D) |
 | 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
-| 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | open (bug); output reverted, default values edited by hand in `cluster.md`, `rules.md`, `anomaly.md` |
+| 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | fixed (removed `ClusterTree`/`AnomalyTree` from `gen_api_doc.py` + `models`/`cluster`/`anomaly` return annotations; added `tests/test_api_docs.py` and regenerated `docs/reference/api/`) |
 | 29 | Sanity pass: umbrella-class defaults differed; `MetricsReport` had no strict missing-value mode | fixed in `1bb4ae7`: per-family defaults (see Decisions), `on_missing="drop" \| "error"`; `tests/test_sanity_basics.py` added |
 
 **Open work in order:**

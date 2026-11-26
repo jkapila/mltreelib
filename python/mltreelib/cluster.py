@@ -178,7 +178,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         col_names: Sequence[str] | None = None,
         dtypes: Sequence[str] | None = None,
         target_names: Sequence[str] | None = None,
-    ) -> ClusterTree:
+    ) -> ClusterModel:
         """Fit on x, with optional PCT targets y.
 
         None and NaN cells stay missing. CLTree and URF route them to the left

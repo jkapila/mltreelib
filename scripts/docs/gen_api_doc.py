@@ -101,7 +101,7 @@ PAGES = [
         ],
         (
             "Grouped/trended/windowed transforms, lags and calendar parts. Guide: "
-            "[Data processing](../../examples/data-processing.md)."
+            "[Data processing](../../concepts/data-matrix-and-routing.md)."
         ),
     ),
     (
@@ -110,7 +110,6 @@ PAGES = [
         [
             "ClusterModel",
             "ClusterResult",
-            "ClusterTree",
             "TrieKNN",
             "PredictiveClusteringTree",
             "CLTree",
@@ -119,7 +118,7 @@ PAGES = [
         ],
         [],
         (
-            "Unified clustering models and mixed-type search: ClusterModel, ClusterTree, "
+            "Unified clustering models and mixed-type search: ClusterModel, "
             "TrieKNN, PCT (CLUS), CLTree, HDBSCAN Condensed Tree, and Unsupervised Random Forest (URF)."
         ),
     ),
@@ -129,7 +128,6 @@ PAGES = [
         [
             "AnomalyModel",
             "AnomalyResult",
-            "AnomalyTree",
             "GritBot",
             "DensityEstimationTree",
             "ExtendedIsolationTree",
@@ -194,7 +192,7 @@ SUBMODULE_PAGES = [
         ["fit", "optimize"],
         (
             "Standalone weighted fitting and the generic bounded optimizer. "
-            "Guide: [Generic optimizer](../../examples/generic-optimizer.md)."
+            "Guide: [Generic optimizer](../../concepts/solvers-and-optimizers.md)."
         ),
     ),
 ]
@@ -251,7 +249,7 @@ RUST_PAGE = "rust-generic.md"
 RUST_BLURB = (
     "The Rust core owns the shared optimization seam. Python callers reach it "
     "through `mltreelib.solvers.optimize`. Guide: "
-    "[Generic optimizer](../../examples/generic-optimizer.md)."
+    "[Generic optimizer](../../concepts/solvers-and-optimizers.md)."
 )
 
 

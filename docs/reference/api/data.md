@@ -1339,6 +1339,310 @@ Raises:
     ValueError: inconsistent column lengths, duplicate names, invalid
         policy usage (e.g. "drop" removing every row).
 
+## Dataset
+
+```python
+class Dataset(columns: 'Any', target: 'str | None' = None, *, features: 'Sequence[str] | str | None' = None, exclude: 'Sequence[str] | str' = (), event: 'str | None' = None, time: 'str | None' = None, treatment: 'str | None' = None, outcome: 'str | None' = None, groups: 'str | None' = None, weights: 'str | None' = None, name: 'str | None' = None) -> 'None'
+```
+
+Columns plus their roles, with the data helpers as methods.
+
+Args:
+    columns: A dict of column name to list, a ``load_dataset`` result, or
+        any table ``mltreelib.data._common.as_columns`` accepts (for example
+        a data frame).
+    target: Name of the target column for supervised tasks.
+    features: Explicit feature names, in the order wanted. Role columns
+        cannot be features.
+    exclude: Column names to leave out of the default features.
+    event: Survival event column.
+    time: Survival follow-up time column.
+    treatment: Uplift treatment column.
+    outcome: Uplift outcome column. It is the target, so it cannot be
+        combined with a different ``target``.
+    groups: Column of group ids, for example for grouped splits.
+    weights: Column of per-row sample weights.
+    name: Optional label. A ``load_dataset`` result supplies its own name.
+
+Raises:
+    KeyError: If a role or ``exclude`` names a column that does not exist.
+        The message names the column.
+    ValueError: If a feature is also a role, one column is used for two
+        roles, ``target`` and ``outcome`` differ, or the columns have
+        different lengths.
+
+Example:
+    >>> ds = Dataset({"age": [30, 40], "t": [5.0, 9.0], "died": [1, 0]},
+    ...              time="t", event="died")
+    >>> ds.names
+    ['age']
+
+### Dataset.associations
+
+```python
+associations(self) -> 'dict[str, Any]'
+```
+
+Association checks on the features (plus leakage hints when there is a target).
+
+Returns:
+    A dict with ``correlation_matrix``, ``cramers_v_matrix``, ``vif`` and
+    ``leakage_hints`` (None without a target).
+
+### Dataset.checks
+
+```python
+checks(self) -> 'dict[str, Any]'
+```
+
+Feature-level checks, computed on the features only.
+
+Returns:
+    A dict with ``constant_columns``, ``near_zero_variance``,
+    ``duplicate_rows`` (``n_groups``, ``n_extra_rows`` = rows that repeat
+    an earlier row, and ``groups`` of row indices) and ``class_balance``
+    (None unless the target is categorical or has exactly two values).
+
+### Dataset.describe
+
+```python
+describe(self, **kwargs: 'Any') -> 'list[dict[str, Any]]'
+```
+
+Per-column statistics: ``profile.describe`` on every column.
+
+### Dataset.fit_args
+
+```python
+fit_args(self) -> 'dict[str, Any]'
+```
+
+Keyword arguments for ``ModelTree.fit``: ``model.fit(**ds.fit_args())``.
+
+``y`` is the time column when a time role is set (survival; ``event=`` is
+then passed too), otherwise the target. ``treatment=`` and
+``sample_weight=`` are passed when those roles are set. Feature rows,
+``col_names`` and ``dtypes`` always are.
+
+Raises:
+    ValueError: If there is neither a target nor a time role.
+
+### Dataset.iv
+
+```python
+iv(self, **kwargs: 'Any') -> 'list[dict[str, Any]]'
+```
+
+Information value per feature. The target must be binary.
+
+The event level is the larger of the two target values, as in
+``binning._event_flags`` (for strings, the alphabetically larger one).
+
+### Dataset.kfold
+
+```python
+kfold(self, k: 'int' = 5, seed: 'int' = 0, stratify: 'bool | str | Sequence[str] | None' = None, groups: 'str | Sequence[str] | None' = None, time: 'bool | str | None' = None) -> 'list[tuple[Dataset, Dataset]]'
+```
+
+``k`` (train, test) pairs. Arguments as in :meth:`split`.
+
+Every row is in exactly one test fold. With ``time``, the folds form an
+expanding window: block 0 is never tested.
+
+### Dataset.load
+
+```python
+load(name: 'str', target: 'str | None' = None, *, auto_download: 'bool' = True, **roles: 'Any') -> 'Dataset'
+```
+
+Load a benchmark dataset with ``load_dataset`` and attach roles.
+
+Args:
+    name: Dataset name, as ``mltreelib.datasets.load_dataset`` takes it.
+    target: Target column, as in the constructor.
+    auto_download: Passed to ``load_dataset``.
+    **roles: Any other constructor argument (``time``, ``event``,
+        ``treatment``, ``outcome``, ``features``, ``exclude``, ...).
+
+Returns:
+    A new ``Dataset``.
+
+Raises:
+    ValueError: If the dataset is unknown or not available locally.
+    ImportError: If ``pyarrow`` is missing.
+
+### Dataset.missing
+
+```python
+missing(self, **kwargs: 'Any') -> 'dict[str, Any]'
+```
+
+Missingness by column, row and pattern: ``profile.missing_profile``.
+
+### Dataset.missing_vs_target
+
+```python
+missing_vs_target(self, **kwargs: 'Any') -> 'dict[str, dict[str, Any]]'
+```
+
+Target mean when each feature is missing or observed (needs a target).
+
+### Dataset.predict_args
+
+```python
+predict_args(self) -> 'dict[str, Any]'
+```
+
+Keyword arguments for ``ModelTree.predict``: ``model.predict(**ds.predict_args())``.
+
+### Dataset.schema
+
+```python
+schema(self) -> 'dict[str, Any]'
+```
+
+Schema of every column, for later validation: ``profile.schema_capture``.
+
+### Dataset.split
+
+```python
+split(self, test_size: 'float' = 0.2, seed: 'int' = 0, stratify: 'bool | str | Sequence[str] | None' = None, groups: 'str | Sequence[str] | None' = None, time: 'bool | str | None' = None, val_size: 'float | None' = None) -> 'tuple[Dataset, Dataset] | tuple[Dataset, Dataset, Dataset]'
+```
+
+Split into train and test, or train, validation and test.
+
+Args:
+    test_size: Fraction in (0, 1), or an int count of test rows.
+    seed: Seed for the shuffle. The same seed gives the same split.
+    stratify: ``True`` stratifies on the first of these roles that is set:
+        ``treatment`` (uplift), then ``event`` (survival), then ``target``.
+        A column name, or a list of names, stratifies on those columns.
+        ``True`` raises if the chosen column is numeric with more than 20
+        distinct values, since every value would be a class of one.
+    groups: A column name, or a list of names, whose groups never split.
+        Not taken from the ``groups`` role automatically.
+    time: A column name (rows ordered by it, latest rows go to test) or
+        ``True`` (row order). No shuffling. Cannot combine with stratify
+        or groups.
+    val_size: If given, a validation set is also cut from the rows left
+        after the test split (a fraction of all rows).
+
+Returns:
+    ``(train, test)``, or ``(train, val, test)`` when ``val_size`` is given.
+    Rows are never dropped or changed; missing values stay missing.
+
+Raises:
+    ValueError: For an invalid mode (see the helpers), a continuous column
+        under ``stratify=True``, or no role to stratify on.
+    KeyError: If a named column does not exist.
+
+### Dataset.summary
+
+```python
+summary(self) -> 'str'
+```
+
+Aligned text table of ``describe()``.
+
+Numeric columns show the mean, std, min, median and max. Categorical
+columns show the distinct count and the mode. The other cells are blank.
+
+### Dataset.take
+
+```python
+take(self, indices: 'Sequence[int]') -> 'Dataset'
+```
+
+New dataset with these rows, in the order given. Repeats are allowed.
+
+### Dataset.columns
+
+```python
+@columns
+```
+
+Every column, as fresh lists (roles and features alike).
+
+### Dataset.dtypes
+
+```python
+@dtypes
+```
+
+``"numeric"`` or ``"categorical"`` per feature, in ``names`` order.
+
+### Dataset.event
+
+```python
+@event
+```
+
+Survival event codes, passed through unchanged, or None.
+
+### Dataset.groups
+
+```python
+@groups
+```
+
+Group ids, or None.
+
+### Dataset.n_rows
+
+```python
+@n_rows
+```
+
+Number of rows.
+
+### Dataset.names
+
+```python
+@names
+```
+
+Feature names, in order.
+
+### Dataset.time
+
+```python
+@time
+```
+
+Survival time values, or None.
+
+### Dataset.treatment
+
+```python
+@treatment
+```
+
+Uplift treatment codes, passed through unchanged, or None.
+
+### Dataset.weights
+
+```python
+@weights
+```
+
+Sample weights, or None.
+
+### Dataset.x
+
+```python
+@x
+```
+
+Feature rows: one new list per row, missing values kept.
+
+### Dataset.y
+
+```python
+@y
+```
+
+Target values, or None without a target role.
+
 ## FeatureTransformer
 
 ```python

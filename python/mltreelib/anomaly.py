@@ -182,7 +182,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         x: Sequence[Sequence[Any]],
         col_names: Sequence[str] | None = None,
         dtypes: Sequence[str] | None = None,
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Fit the anomaly model on training data.
 
         Accepts native Python lists. None and NaN cells stay missing. In context
@@ -385,7 +385,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
 
     def update_feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Update model weights based on expert feedback (for Active anomaly tree)."""
         if not hasattr(self._inner, "update_feedback"):
             raise ValueError(
@@ -399,7 +399,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
 
     def feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Alias for update_feedback."""
         return self.update_feedback(point, is_anomaly, eta)
 
