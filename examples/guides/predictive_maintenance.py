@@ -44,10 +44,9 @@ def compute_scania_cost(y_true, y_prob, threshold, cost_fp=10.0, cost_fn=500.0):
     fnr = fn / max(1, fn + tp) * 100.0
     fpr = fp / max(1, fp + tn) * 100.0
 
-    m = Metrics()
-    brier = m.brier_score(y_true, y_prob)
-    roc_res = m.roc_curve(y_true, y_prob)
-    pr_res = m.pr_curve(y_true, y_prob)
+    from mltreelib import MetricsReport
+
+    rep = MetricsReport("classification", y_true=y_true, proba=y_prob)
 
     return {
         "cost": total_cost,
@@ -58,9 +57,9 @@ def compute_scania_cost(y_true, y_prob, threshold, cost_fp=10.0, cost_fn=500.0):
         "queue_rate": queue_rate,
         "fnr": fnr,
         "fpr": fpr,
-        "auc": roc_res["auc"],
-        "ap": pr_res["average_precision"],
-        "brier": brier,
+        "auc": rep["auc"],
+        "ap": rep["average_precision"],
+        "brier": rep["brier"],
     }
 
 

@@ -11,7 +11,7 @@ from math import exp
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mltreelib import AnomalyTree, ClusterTree, Metrics, ModelTree
+from mltreelib import AnomalyModel, ClusterModel, MetricsReport, ModelTree
 
 OUT = Path("docs/assets/guides")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -24,7 +24,7 @@ def regression():
     model = ModelTree(leaf="linear", max_depth=2, min_rows=20)
     model.fit(x[:2000], y[:2000], col_names=["volume"])
     pred = model.predict(x[2000:])
-    report = Metrics().regression(y[2000:], pred)
+    report = MetricsReport("regression", y_true=y[2000:], y_pred=pred)
     print("regression held-out RMSE:", round(report["rmse"], 3))
     print("regression splits:", model.splits())
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -43,8 +43,8 @@ def classification():
     model.fit(x[:2000], y[:2000], col_names=["risk_signal"])
     scores = model.predict_proba(x[2000:])
     labels = [int(p >= .5) for p in scores]
-    report = Metrics().classification([int(v) for v in y[2000:]], labels)
-    print("classification held-out confusion:", report["confusion"])
+    report = MetricsReport("classification", y_true=[int(v) for v in y[2000:]], y_pred=labels)
+    print("classification held-out confusion:", report.tables["confusion"])
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.scatter([r[0] for r in x[2000:]], scores, c=y[2000:], cmap="coolwarm", s=18, alpha=.7)
     ax.axhline(.5, color="black", linestyle="--", label="example threshold")
@@ -55,7 +55,7 @@ def classification():
 def clustering():
     rng = Random(43)
     x = [[rng.gauss(center, .4), rng.gauss(center, .4)] for center in (-2, 2) for _ in range(1000)]
-    model = ClusterTree(kind="pct", max_depth=2, min_rows=10)
+    model = ClusterModel(kind="pct", max_depth=2, min_rows=10)
     model.fit(x, col_names=["measure_a", "measure_b"])
     labels = model.predict(x)
     print("clustering labels:", sorted(set(labels)))

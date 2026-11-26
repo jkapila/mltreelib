@@ -13,7 +13,7 @@ import subprocess
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mltreelib import Metrics, ModelTree, plots
+from mltreelib import MetricsReport, ModelTree, plots
 
 OUT = Path("docs/assets/guides")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,6 @@ for _ in range(4000):
 
 names, types = ["region", "volume"], ["categorical", "numeric"]
 x_train, x_val, x_test = rows[:2000], rows[2000:3000], rows[3000:]
-metrics = Metrics()
 
 # Missingness counts are shown before fitting; no value is filled or encoded.
 missing = [sum(row[j] is None for row in x_train) for j in range(len(names))]
@@ -45,8 +44,8 @@ reg.fit(x_train, reg_y[:2000], dtypes=types, col_names=names)
 reg_pred = reg.predict(x_test)
 reg_base = [sum(reg_y[:2000]) / 2000] * len(x_test)
 print("regression test MAE model/baseline:",
-      round(metrics.regression(reg_y[3000:], reg_pred)["mae"], 3),
-      round(metrics.regression(reg_y[3000:], reg_base)["mae"], 3))
+      round(MetricsReport("regression", y_true=reg_y[3000:], y_pred=reg_pred)["mae"], 3),
+      round(MetricsReport("regression", y_true=reg_y[3000:], y_pred=reg_base)["mae"], 3))
 fig, ax = plt.subplots(figsize=(5.6, 4))
 plots.plot_residuals(reg_y[3000:], reg_pred, ax=ax)
 ax.set_title("Regression: test residuals")

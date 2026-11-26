@@ -104,6 +104,8 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
 | 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | fixed (removed `ClusterTree`/`AnomalyTree` from `gen_api_doc.py` + `models`/`cluster`/`anomaly` return annotations; added `tests/test_api_docs.py` and regenerated `docs/reference/api/`) |
 | 29 | Sanity pass: umbrella-class defaults differed; `MetricsReport` had no strict missing-value mode | fixed in `1bb4ae7`: per-family defaults (see Decisions), `on_missing="drop" \| "error"`; `tests/test_sanity_basics.py` added |
+| 30 | polars `DataFrame` and pyarrow `Table` rejected as X (Rust tries the sequence path first; the Python fallback is never reached; the existing test uses fakes) | open (bug, verified) |
+| 31 | `predict` accepts a different column count than `fit` (3 vs 4 columns returns wrong predictions silently; extra columns ignored); `y` with None or NaN drops rows silently in `fit` | open (bug, verified; policy for `y` needs a decision) |
 
 **Open work in order:**
 1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.

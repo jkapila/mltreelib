@@ -6,8 +6,8 @@ Same big diamonds dataset as the model-building example.
 """
 
 import pandas as pd
-from mltreelib import Metrics, ModelTree, OneHotEncoder
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import MetricsReport, ModelTree, OneHotEncoder
+from mltreelib.data import Dataset
 
 df = pd.read_parquet("datasets/diamonds.parquet")
 y = df["price"].astype(float).tolist()
@@ -21,23 +21,21 @@ for col in x.select_dtypes(include="category").columns:
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
-d = xy(x.assign(price=y), "price")  # missing cells stay missing (NaN), nothing is converted
-X, names = d["x"], d["names"]
+ds = Dataset(x.assign(price=y).to_dict("list"), target="price")  # missing cells stay missing (NaN)
 
 # Deterministic 80/20 split, no shuffling: first 80% of rows train, last 20% test.
-tr, te = train_test_split(len(X), test_size=0.2, time_order=list(range(len(X))))
-train, test = select_rows(d, tr), select_rows(d, te)
+train, test = ds.split(test_size=0.2, time=True)
 model = ModelTree(max_depth=8, min_rows=50)
-model.fit(train["x"], train["y"])
-pred = model.predict(test["x"])
+model.fit(train)
+pred = model.predict(test)
 
 # --- metrics reports ----------------------------------------------------
-reg = Metrics().regression(test["y"], pred)
+reg = MetricsReport("regression", y_true=test.y, y_pred=pred)
 print("regression report (test set):")
 for k in ("n", "rmse", "mae", "mad", "r2", "bias", "max_error", "explained_variance"):
     print(f"  {k:<20} {reg[k]:.3f}")
 print("  decile calibration (first 3):")
-for d in reg["deciles"][:3]:
+for d in reg.tables["error_deciles"][:3]:
     print(
         f"    decile {d['decile']}: n={d['n']}  mean_error={d['mean_error']:.1f}  mae={d['mae']:.1f}"
     )

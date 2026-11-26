@@ -9,8 +9,8 @@ and the numbers are clean - regularization gets its own dedicated example.
 """
 
 import pandas as pd
-from mltreelib import Metrics, ModelTree, OneHotEncoder, winnow
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import MetricsReport, ModelTree, OneHotEncoder, winnow
+from mltreelib.data import Dataset
 
 df = pd.read_parquet("datasets/diamonds.parquet")
 y = df["price"].astype(float).tolist()
@@ -24,14 +24,13 @@ for col in x.select_dtypes(include="category").columns:  # categoricals -> dummi
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
-d = xy(x.assign(price=y), "price")  # missing cells stay missing (NaN), nothing is converted
-X, names = d["x"], d["names"]
-print(f"diamonds: {len(X)} rows x {len(names)} cols (deeper trees below)")
+ds = Dataset(x.assign(price=y).to_dict("list"), target="price")  # missing cells stay missing (NaN)
+names = ds.names
+print(f"diamonds: {ds.n_rows} rows x {len(names)} cols (deeper trees below)")
 
 # Deterministic 80/20 split, no shuffling: first 80% of rows train, last 20% test.
-tr, te = train_test_split(len(X), test_size=0.2, time_order=list(range(len(X))))
-train, test = select_rows(d, tr), select_rows(d, te)
-xtr, ytr, xte, yte = train["x"], train["y"], test["x"], test["y"]
+train, test = ds.split(test_size=0.2, time=True)
+xtr, ytr, xte, yte = train.x, train.y, test.x, test.y
 
 # Fits use the SHIPPED DEFAULTS (linear leaves + small ridge, closed-form
 # fast). Regularization gets its own dedicated example; the one thing to know
@@ -41,7 +40,7 @@ xtr, ytr, xte, yte = train["x"], train["y"], test["x"], test["y"]
 def show(label, model, w=None):
     model.fit(xtr, ytr, w)
     pred = model.predict(xte)
-    m = Metrics().regression(yte, pred)
+    m = MetricsReport("regression", y_true=yte, y_pred=pred)
     print(
         f"{label:<38} rmse={m['rmse']:>10.1f}  r2={m['r2']:>11.3f}  leaves={model.n_leaves():>4}"
     )

@@ -17,8 +17,7 @@ Run:
 import time
 
 from mltreelib import LeafControl, ModelTree
-from mltreelib.data import xy
-from mltreelib.datasets import load_dataset
+from mltreelib.data import Dataset
 
 
 def format_cubist_rules(tree, col_names):
@@ -59,11 +58,12 @@ def format_cubist_rules(tree, col_names):
 
 def main():
     print("Loading Healthcare Insurance Expenses dataset...")
-    d = load_dataset("healthcare_insurance_expenses")
     cols = ["age", "bmi", "children", "smoker"]
-    n_rows = len(d["columns"]["charges"])
-    dx = xy(d, "charges", features=cols)
-    x, y, dtypes = dx["x"], dx["y"], dx["dtypes"]
+    ds = Dataset.load(
+        "healthcare_insurance_expenses", target="charges", features=cols
+    )
+    n_rows = ds.n_rows
+    x, y, dtypes = ds.x, ds.y, ds.dtypes
 
     # 1. Fit base decision stump (max_depth=1)
     t0 = time.perf_counter()

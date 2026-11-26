@@ -22,7 +22,7 @@ import time
 import optuna
 import pandas as pd
 from mltreelib import ModelTree
-from mltreelib.data import take, train_test_split, xy
+from mltreelib.data import Dataset
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -90,16 +90,9 @@ def load(name, ycol):
         "categorical" if str(df[c].dtype) in ("object", "category") else "numeric"
         for c in xcols
     ]
-    d = xy(df, ycol, features=xcols)  # raw cells as-is, missing cells stay missing
-    y = df[ycol].astype(float).tolist()
-    tr, te = train_test_split(len(y), test_size=0.2, seed=42)  # seeded 80/20 shuffle
-    return (
-        take(d["x"], tr),
-        take(y, tr),
-        take(d["x"], te),
-        take(y, te),
-        dtypes,
-    )
+    ds = Dataset(df.to_dict("list"), target=ycol, features=xcols)
+    tr, te = ds.split(test_size=0.2, seed=42)  # seeded 80/20 shuffle
+    return tr.x, tr.y, te.x, te.y, dtypes
 
 
 def run_study(label, xtr, ytr, xte, yte, dtypes, param):
