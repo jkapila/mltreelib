@@ -227,3 +227,47 @@ def test_metrics_report_competing_risks():
     assert rep["causes"] == 2
     assert rep["cause_1_ibs"] >= 0.0
     assert "per_cause" in rep.tables
+
+    # Issue #34: NaN/None in durations must drop incomplete rows cleanly (no hang or panic)
+    dur_na = [math.nan] + dur
+    ev_na = [1] + ev
+    c1_na = [[0.2, 0.4]] + cif1
+    c2_na = [[0.1, 0.2]] + cif2
+    rep_na = MetricsReport(
+        "competing_risks",
+        durations=dur_na,
+        events=ev_na,
+        cif_curves={1: c1_na, 2: c2_na},
+        times=times,
+    )
+    assert rep_na["causes"] == 2
+    with pytest.raises(ValueError, match="on_missing"):
+        MetricsReport(
+            "competing_risks",
+            durations=dur_na,
+            events=ev_na,
+            cif_curves={1: c1_na, 2: c2_na},
+            times=times,
+            on_missing="error",
+        )
+
+
+def test_group_col_and_leaf_samples_validation():  # issues #35, #36b, #36c
+    d = _data()
+    with pytest.raises(ValueError, match="group_col"):
+        ModelTree(max_depth=2, min_rows=10).fit(
+            d["x"], d["regression"], group_col="zzz", col_names=["a", "b"]
+        )
+    with pytest.raises(ValueError, match="group_col"):
+        ModelTree(max_depth=2, min_rows=10).fit(d["x"], d["regression"], group_col=7)
+    with pytest.raises(ValueError, match="group_col"):
+        ModelTree(max_depth=2, min_rows=10).fit(d["x"], d["regression"], group_col="g")
+
+    with pytest.raises(ValueError, match="dtypes="):
+        ModelTree(max_depth=2, min_rows=10).fit([["a", 1.0], ["b", 2.0]], [1.0, 2.0])
+
+    x_with_id = [[float(i), row[0], row[1]] for i, row in enumerate(d["x"])]
+    m = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+    m.fit(x_with_id, d["regression"], id_col=0, col_names=["id", "a", "b"])
+    with pytest.raises(ValueError, match="without the id column"):
+        m.leaf_samples(d["x"], id_col=0)

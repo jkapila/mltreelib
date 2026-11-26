@@ -387,15 +387,15 @@ What to read here:
 
 <!-- run -->
 ```python
-from mltreelib import Metrics, ModelTree
+from mltreelib import MetricsReport, ModelTree
 
 tree = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance",
                  max_depth=3, min_rows=100, prune="none")
 tree.fit(tr["x"], tr["y"], dtypes=tr["dtypes"], col_names=tr["names"])
 scores = tree.predict_proba(te["x"])
-roc = Metrics().roc_curve(te["y"], scores)
-print("test AUC:", round(roc["auc"], 4))
-print("test log loss:", round(Metrics().log_loss(te["y"], scores), 4))
+rep = MetricsReport("classification", y_true=te["y"], proba=scores)
+print("test AUC:", round(rep["auc"], 4))
+print("test log loss:", round(rep["logloss"], 4))
 ```
 
 <!-- output -->

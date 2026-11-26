@@ -1743,10 +1743,38 @@ pub fn competing_risks_report(
     risk_scores: Option<&[Vec<f64>]>,
     times: Option<&[f64]>,
 ) -> Result<CompetingRisksReport, String> {
-    let n = durations.len();
-    if n == 0 || events.len() != n {
+    let raw_n = durations.len();
+    if raw_n == 0 || events.len() != raw_n {
         return Err("durations and events must have the same non-zero length".to_string());
     }
+
+    let keep: Vec<usize> = (0..raw_n)
+        .filter(|&i| {
+            let dur_ok = durations[i].is_finite() && events[i].is_finite();
+            let cif_ok = cif_curves
+                .and_then(|c| c.get(i))
+                .is_none_or(|row| row.iter().all(|curve| curve.iter().all(|v| v.is_finite())));
+            let risk_ok = risk_scores
+                .and_then(|r| r.get(i))
+                .is_none_or(|row| row.iter().all(|v| v.is_finite()));
+            dur_ok && cif_ok && risk_ok
+        })
+        .collect();
+    if keep.is_empty() {
+        return Err("competing risks evaluation requires at least one complete observation".to_string());
+    }
+    let durations_buf: Vec<f64> = keep.iter().map(|&i| durations[i]).collect();
+    let events_buf: Vec<f64> = keep.iter().map(|&i| events[i]).collect();
+    let cif_buf: Option<Vec<Vec<Vec<f64>>>> =
+        cif_curves.map(|c| keep.iter().map(|&i| c[i].clone()).collect());
+    let risk_buf: Option<Vec<Vec<f64>>> =
+        risk_scores.map(|r| keep.iter().map(|&i| r[i].clone()).collect());
+
+    let durations: &[f64] = &durations_buf;
+    let events: &[f64] = &events_buf;
+    let cif_curves: Option<&[Vec<Vec<f64>>]> = cif_buf.as_deref();
+    let risk_scores: Option<&[Vec<f64>]> = risk_buf.as_deref();
+    let n = durations.len();
 
     let mut causes: Vec<usize> = Vec::new();
     for &e in events {

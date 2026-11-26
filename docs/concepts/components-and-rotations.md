@@ -212,7 +212,8 @@ nmf_sparse = ComponentModel(kind="nmf", n_components=3, solver="hals", l1_reg=0.
 Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
 $$\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2$$
 
-<!-- API-GAP: subspace reconstruction error as an anomaly score is not exposed. AnomalyModel has no PCA kind (its kinds are eif, det, hst, rct, active, context) and ComponentModel has no inverse_transform. The block below is not runnable; the output under it is hand-written and not generated. -->
+> [!NOTE]
+> **API gap (not yet runnable):** subspace reconstruction error as an anomaly score is not yet exposed on `AnomalyModel` (its kinds are `eif`, `det`, `hst`, `rct`, `active`, `context`) and `ComponentModel` does not yet expose `inverse_transform`. The block below illustrates the intended formula only; output values are illustrative.
 ```python
 # Detect anomalies via subspace reconstruction error
 detector = AnomalyModel(method="pca", n_components=3)

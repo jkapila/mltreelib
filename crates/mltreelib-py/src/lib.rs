@@ -3835,7 +3835,7 @@ fn coerce_rows(
                             }
                             None => {
                                 return Err(PyValueError::new_err(format!(
-                                    "column {j}: string value in a numeric column"
+                                    "column {j}: string value in a numeric column (pass dtypes=[...] with 'categorical' for string columns)"
                                 )))
                             }
                         }
@@ -4709,6 +4709,13 @@ impl PyModelTree {
             }
         };
 
+        if let Some(pc) = self.params.protected_col {
+            if pc >= n_raw_cols {
+                return Err(PyValueError::new_err(format!(
+                    "protected_col index {pc} out of range for {n_raw_cols} columns"
+                )));
+            }
+        }
         if self.params.protected_col.is_none() {
             if let Some(ref pa) = protected_attribute {
                 let idx = resolve_col("protected_attribute", pa, col_names.as_deref())?;
@@ -4716,15 +4723,15 @@ impl PyModelTree {
             }
         }
 
-        if !self.params.train_ids {
-            if let Some(ref id_spec) = id_col {
-                let idx = resolve_col("id_col", id_spec, col_names.as_deref())?;
+        if let Some(ref id_spec) = id_col {
+            let idx = resolve_col("id_col", id_spec, col_names.as_deref())?;
+            if !self.params.train_ids {
                 drop_indices.insert(idx);
             }
         }
-        if !self.params.train_groups {
-            if let Some(ref grp_spec) = group_col {
-                let idx = resolve_col("group_col", grp_spec, col_names.as_deref())?;
+        if let Some(ref grp_spec) = group_col {
+            let idx = resolve_col("group_col", grp_spec, col_names.as_deref())?;
+            if !self.params.train_groups {
                 drop_indices.insert(idx);
             }
         }
@@ -5800,6 +5807,15 @@ impl PyModelTree {
                     }
                     Some(extracted)
                 } else if let Ok(idx) = id_obj.extract::<usize>() {
+                    if !x.is_empty()
+                        && x[0].len() == expected_cols
+                        && effective_col_names.is_none()
+                        && !self.dropped_indices.is_empty()
+                    {
+                        return Err(PyValueError::new_err(format!(
+                            "x has {expected_cols} feature columns without the id column; pass the full table or pass id_col as a list of IDs"
+                        )));
+                    }
                     drop_id_idx = Some(idx);
                     let mut extracted = Vec::with_capacity(n_rows);
                     for row in &x {

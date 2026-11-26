@@ -194,3 +194,17 @@ def test_normalised_survival_and_uplift_loaders(isolated_dirs, monkeypatch):
     assert up["assignment"] == up["treatment"]
     assert len(up["receipt"]) == 2
     assert "comply" not in up["features"] and "work1" not in up["features"]
+
+
+def test_flchain_cache_alias_resolves(isolated_dirs, monkeypatch):  # issue #36a
+    pytest.importorskip("pyarrow")
+    _, cache_dir = isolated_dirs
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    (cache_dir / "flchain_rdatasets.csv").write_text(
+        "rownames,age,sex,sample.yr,kappa,lambda,flc.grp,creatinine,mgus,futime,death,chapter\n"
+        "1,70,M,1996,1.1,0.9,5,1.0,0,1000,1,Circulatory\n"
+    )
+    _no_network(monkeypatch)
+    surv = datasets.load_survival_dataset("flchain")
+    assert surv["n_rows"] == 1
+    assert "chapter" not in surv["features"]

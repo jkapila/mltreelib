@@ -139,9 +139,9 @@ Severity: **high** = silent wrong answer or a documented input type that does no
 | 33d | low | Classification with string labels (`y=["a","b",...]`) raises `TypeError: y must be a list of floats`. Not yet confirmed as by design. | Decide: support string labels (keep the label map and return the labels from `predict`) or say to encode them. If by design, the message says so. |
 
 Order of work: 30, 31a, 31b, 32a, 32b (together, one boundary-validation change in the Python layer or `Table` extractor), then 32c, then 33. Each fix needs a regression test that fails before the fix; add the cases to `tests/test_sanity_basics.py`.
-| 34 | `competing_risks` killed or panics on a None/NaN duration | open, high (see verification register) |
-| 35 | `group_col` not validated (unknown name, bad index, no names) | open, high |
-| 36 | Small findings: flchain cache alias, string-dtype hint, `leaf_samples` id without names, two doc mismatches, one-shot `Metrics()` left, ruff scope | open, low |
+| 34 | `competing_risks` killed or panics on a None/NaN duration | fixed (incomplete rows filtered before sorting/KM in `competing_risks_report`) |
+| 35 | `group_col` not validated (unknown name, bad index, no names) | fixed (unconditional `resolve_col` for `group_col`, `id_col`, `protected_attribute` + bounds check on `protected_col`) |
+| 36 | Small findings: flchain cache alias, string-dtype hint, `leaf_samples` id without names, two doc mismatches, one-shot `Metrics()` left, ruff scope | fixed ((a)–(f) resolved: `flchain` alias + cache SHA-256 check, `dtypes=` hint, `leaf_samples` guard, doc/snippet fixes; (g) ruff stays scoped to `python/mltreelib/`) |
 
 **Open work in order:**
 1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.

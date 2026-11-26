@@ -229,6 +229,24 @@ def download_dataset(name: str, target_dir: Path | None = None) -> Path:
     suffix = ".csv" if isinstance(target_spec, str) and target_spec.endswith(".csv") else ".parquet"
     out_path = out_dir / f"{name}{suffix}"
     if out_path.exists():
+        expected = DATASET_SHA256.get(name)
+        if expected is not None:
+            actual = _sha256(out_path)
+            if actual != expected:
+                allow_mismatch = os.environ.get(
+                    "MLTREELIB_ALLOW_CHECKSUM_MISMATCH", ""
+                ).strip().lower() in {"1", "true", "yes"}
+                if allow_mismatch:
+                    warnings.warn(
+                        f"sha256 mismatch for cached '{name}': expected {expected}, got {actual}; "
+                        "continuing because MLTREELIB_ALLOW_CHECKSUM_MISMATCH is set.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                else:
+                    raise RuntimeError(
+                        f"cached dataset '{name}' failed sha256 verification: expected {expected}, got {actual}"
+                    )
         return out_path
 
     if is_offline():
@@ -277,10 +295,12 @@ def download_dataset(name: str, target_dir: Path | None = None) -> Path:
 
 
 def _find_file(name: str, directory: Path) -> Path | None:
-    for suffix in _SUFFIXES:
-        candidate = directory / f"{name}{suffix}"
-        if candidate.exists():
-            return candidate
+    aliases = (name, "flchain_rdatasets") if name == "flchain" else ((name, "flchain") if name == "flchain_rdatasets" else (name,))
+    for candidate_name in aliases:
+        for suffix in _SUFFIXES:
+            candidate = directory / f"{candidate_name}{suffix}"
+            if candidate.exists():
+                return candidate
     return None
 
 
