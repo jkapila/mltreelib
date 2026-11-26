@@ -4,6 +4,19 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+## v0.4.16
+
+### Summary
+
+- Added `Dataset` (`mltreelib.data`) with role tracking, profiling, splitting, and direct `ModelTree.fit(ds)` / `ModelTree.predict(ds)` hand-off.
+- Added `MetricsReport` (`regression`, `classification`, `time_series`, `survival`, `competing_risks`, `uplift`) with `on_missing="drop" | "error"`, uplift policy table, `uplift_threshold`, and uplift-by-decile reporting.
+- Added `mltreelib.data` helpers for profiling, association screening, exact-DP binning/IV, scaling, and deterministic splits without altering missing values.
+- Hardened model input boundary: native `polars.DataFrame` and `pyarrow.Table` support as `X`, `ModelTree.predict(..., on_missing_columns="warn" | "error" | "allow")`, `ModelTree.fit(..., y_missing="warn" | "error")`, strict `id_col`/`group_col`/`protected_attribute` resolution, and clearer errors for 1-D inputs, unequal column lengths, and unencoded string class labels.
+- Fixed NaN handling in `Metrics` (including `competing_risks` total-order / loop fixes) and removed `MetricsReport` missing-value refusals.
+- Repaired survival/uplift dataset registry entries (`flchain`, `pbc`, `mgus2`, `gbsg2`, `veteran`, `colon`, `rott2`, `nsw`, `jobs_ii`, `hillstrom_email`), added `load_survival_dataset` / `load_uplift_dataset`, SHA-256 verification, and `MLTREELIB_OFFLINE=1` mode.
+- Removed the `cvx` optional dependency from the package (`tests/cvx_reference.py` is test-only); moved `pygraphviz` to the `docs` group only.
+- Scale-free `cp` cost-complexity pruning (`prune="cp", cp=0.01`), deterministic categorical gate statistics, and byte-identical model serialization (no timings stored).
+
 ### Defaults and metrics
 
 - Per-family defaults: `ClusterModel`, `RuleModel` and `AnomalyModel` use `min_rows=20` (was 5, 5, 10); `AnomalyModel` uses `max_depth=10` (was unset, with a per-kind fallback). `ModelTree` is unchanged (6, 15, 0.5).
