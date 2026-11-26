@@ -19,7 +19,7 @@ Plus standard knobs independent of growth and leaf: seeds, sample sizes and weig
 
 ## Defaults
 
-- **One set of defaults on every surface** (Rust core, Python constructor, controls). Changing a default means changing all of them and the parity test. Defaults are a behaviour change: list them in the changelog.
+- **One set of defaults per model family on every surface** (Rust core, Python constructor, controls). Families may differ: `ModelTree` 6 / 15 / 0.5; `ClusterModel` and `RuleModel` `min_rows` 20; `AnomalyModel` `max_depth` 10, `min_rows` 20. `tests/test_sanity_basics.py` holds the table; say so in the docs where a family differs. Changing a default means changing all of them and the parity test. Defaults are a behaviour change: list them in the changelog.
 - The reference table of defaults is generated from the live constructor, not typed by hand.
 
 ## Missing data
