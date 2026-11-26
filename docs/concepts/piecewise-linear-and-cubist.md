@@ -65,8 +65,8 @@ The runnable block under the table is a different, synthetic setup: one 2,000-ro
 <!-- run -->
 ```python
 import numpy as np
-from mltreelib import ModelTree, Metrics
-from mltreelib.data import train_test_split
+from mltreelib import MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
 # 1. Generate non-linear diamond price surface with carat and cut interactions
 rng = np.random.default_rng(2026)
@@ -79,11 +79,13 @@ table = rng.uniform(53.0, 62.0, n_samples)
 # Price surface with non-linear exponential carat scaling
 price = 1500.0 * (carat ** 1.8) - 15.0 * depth + rng.normal(0, 150.0, n_samples)
 
-X = np.column_stack([carat, depth, table])
-feature_names = ["carat", "depth", "table"]
+ds = Dataset(
+    {"carat": carat.tolist(), "depth": depth.tolist(), "table": table.tolist(), "price": price.tolist()},
+    target="price",
+)
 
 # First 1,500 rows train, last 500 test (the rows are i.i.d., so file order is immaterial)
-train_idx, test_idx = train_test_split(n_samples, test_size=500, time_order=list(range(n_samples)))
+train, test = ds.split(test_size=500, time=True)
 
 # 2. Train shallow ModelTree with piecewise linear leaves
 tree = ModelTree(
@@ -93,10 +95,10 @@ tree = ModelTree(
     l2=1e-3,
     shrinkage=5.0,  # Hierarchical leaf shrinkage
 )
-tree.fit(X[train_idx], price[train_idx].tolist(), col_names=feature_names)
-pred = tree.predict(X[test_idx])
+tree.fit(train)
+pred = tree.predict(test)
 
-rmse = Metrics().regression(price[test_idx].tolist(), pred)["rmse"]
+rmse = MetricsReport("regression", y_true=test.y, y_pred=pred)["rmse"]
 print(f"Piecewise Linear ModelTree Test RMSE: ${rmse:.2f}")
 ```
 
@@ -121,19 +123,16 @@ On industrial concrete mixtures ([OpenML 4353](https://www.openml.org/d/4353)), 
 
 <!-- run -->
 ```python
-import pandas as pd
 from mltreelib import ModelTree
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
-target = "ConcreteCompressiveStrength"
-d = xy(df.to_dict("list"), target)
+ds = Dataset.load(
+    "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+)
 # Seeded shuffle, then keep 800 rows for training (the test part is dropped)
-train_idx, _ = train_test_split(len(df), test_size=len(df) - 800, seed=2026)
-train = select_rows(d, train_idx)
+train, _ = ds.split(test_size=ds.n_rows - 800, seed=2026)
 concrete_tree = ModelTree(leaf="linear", max_depth=3, min_rows=40)
-concrete_tree.fit(train["x"], train["y"], col_names=d["names"])
+concrete_tree.fit(train)
 
 # Extract white-box rules directly from the fitted tree
 ruleset = concrete_tree.extract_rules()

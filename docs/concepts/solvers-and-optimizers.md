@@ -163,27 +163,21 @@ The block below fits each solver on the same seeded 80/20 split of the Concrete 
 
 <!-- run -->
 ```python
-import pandas as pd
-from mltreelib import Metrics, ModelTree
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("concrete_compressive_strength"))
-target = "ConcreteCompressiveStrength"
-d = xy(df.to_dict("list"), target)
+ds = Dataset.load(
+    "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+)
 # Seeded 80/20 split: the helper shuffles with seed 2026, so file order does not matter
-train_idx, test_idx = train_test_split(len(df), test_size=0.2, seed=2026)
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-x_train, y_train = train["x"], train["y"]
-x_test, y_test = test["x"], test["y"]
+train, test = ds.split(test_size=0.2, seed=2026)
 
-metrics = Metrics()
 for depth in (0, 2):
     for solver in ("irls", "lbfgs", "shade", "ga", "cmaes", "nes", "ccd"):
         extra = {"l1": 0.1} if solver == "ccd" else {}
         tree = ModelTree(max_depth=depth, leaf="linear", leaf_solver=solver, l2=0.01, seed=42, **extra)
-        tree.fit(x_train, y_train)
-        result = metrics.regression(y_test, tree.predict(x_test))
+        tree.fit(train)
+        result = MetricsReport("regression", y_true=test.y, y_pred=tree.predict(test))
         print(f"depth={depth} {solver:6s} rmse={result['rmse']:.3f} r2={result['r2']:.3f}")
 ```
 
@@ -479,7 +473,7 @@ Rather than manually guessing `max_depth` and `min_rows`, `mltreelib` wraps tree
 <!-- run -->
 ```python
 import numpy as np
-from mltreelib import ModelTree, Metrics
+from mltreelib import MetricsReport, ModelTree
 from mltreelib.solvers import optimize
 
 # 1. Generate synthetic non-linear response surface
@@ -491,8 +485,6 @@ y_train = X_train[:, 0] * 1.5 + np.sin(X_train[:, 1] * 2.0) + rng.normal(0, 0.2,
 
 X_val = rng.uniform(-3.0, 3.0, size=(n_val, 4))
 y_val = X_val[:, 0] * 1.5 + np.sin(X_val[:, 1] * 2.0) + rng.normal(0, 0.2, n_val)
-
-metrics = Metrics()
 
 # 2. Objective function: Validation RMSE of ModelTree given continuous hyperparameters
 def evaluate_tree_hpo(params):
@@ -508,7 +500,7 @@ def evaluate_tree_hpo(params):
     )
     tree.fit(X_train, y_train.tolist())
     pred_val = tree.predict(X_val)
-    return metrics.regression(y_val.tolist(), pred_val)["rmse"]
+    return MetricsReport("regression", y_true=y_val.tolist(), y_pred=pred_val)["rmse"]
 
 # Search bounds: depth in [1, 6], min_rows in [10, 60], log10(l2) in [-4, 1]
 bounds = [(1.0, 6.0), (10.0, 60.0), (-4.0, 1.0)]

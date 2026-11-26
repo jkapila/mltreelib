@@ -109,24 +109,21 @@ We evaluate on the standard actuarial dataset: **Healthcare Insurance Expenses**
 
 <!-- run -->
 ```python
-from mltreelib import Metrics, ModelTree, load_dataset
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
 # 1. Load domain benchmark dataset
-data = load_dataset("healthcare_insurance_expenses")
 features = ["age", "bmi", "children"]
-n_rows = data["n_rows"]
-d = xy(data, "charges", features=features)
+ds = Dataset.load(
+    "healthcare_insurance_expenses", target="charges", features=features
+)
 
 # 80/20 split with no shuffling: first 80% of rows train, last 20% test
-train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-X_train, y_train = train["x"], train["y"]
-X_test, y_test = test["x"], test["y"]
+train, test = ds.split(test_size=0.2, time=True)
 
 # 2. Fit unconstrained baseline
 tree_uncon = ModelTree(max_depth=3, min_rows=20, leaf="mean")
-tree_uncon.fit(X_train, y_train, col_names=features)
+tree_uncon.fit(train)
 
 # 3. Fit monotone-constrained tree (+1 on age: charges must not decrease with age)
 tree_mono = ModelTree(
@@ -135,7 +132,7 @@ tree_mono = ModelTree(
     leaf="mean",
     tree_monotone=[1, 0, 0],
 )
-tree_mono.fit(X_train, y_train, col_names=features)
+tree_mono.fit(train)
 
 # 4. Fit interaction-constrained tree (isolate 'children' from ['age', 'bmi'])
 tree_inter = ModelTree(
@@ -143,7 +140,7 @@ tree_inter = ModelTree(
     min_rows=20,
     interaction_groups=[["age", "bmi"], ["children"]],
 )
-tree_inter.fit(X_train, y_train, col_names=features)
+tree_inter.fit(train)
 
 # 5. Fit honest sample-split tree (50% structure, 50% estimation)
 tree_honest = ModelTree(
@@ -153,12 +150,11 @@ tree_honest = ModelTree(
     honesty_fraction=0.5,
     seed=42,
 )
-tree_honest.fit(X_train, y_train, col_names=features)
+tree_honest.fit(train)
 
-metrics = Metrics()
 for name, fitted in [("unconstrained", tree_uncon), ("monotone (age)", tree_mono),
                      ("interaction groups", tree_inter), ("honest", tree_honest)]:
-    rmse = metrics.regression(y_test, fitted.predict(X_test))["rmse"]
+    rmse = MetricsReport("regression", y_true=test.y, y_pred=fitted.predict(test))["rmse"]
     print(f"{name:18s} test RMSE = {rmse:.2f}")
 ```
 

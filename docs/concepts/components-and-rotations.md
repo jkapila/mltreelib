@@ -131,13 +131,16 @@ We evaluate the full component analysis suite on the **Wine Quality** dataset (1
 
 ```python
 import pandas as pd
-from mltreelib import ComponentModel
+from mltreelib import ComponentModel, dataset_path
+from mltreelib.data import Dataset
 
-# Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
-from mltreelib import dataset_path
-from mltreelib.data import xy
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
-X = xy(df.to_dict("list"), "median_wine_quality", exclude=["wine_color"])["x"]
+ds = Dataset(
+    df.to_dict("list"),
+    target="median_wine_quality",
+    exclude=["wine_color"],
+)
+X = ds.x
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations

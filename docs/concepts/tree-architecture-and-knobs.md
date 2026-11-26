@@ -64,17 +64,16 @@ The defaults above come from the live constructor. Pruning is bottom-up with one
 
 <!-- run -->
 ```python
-from mltreelib import ModelTree, load_dataset
-from mltreelib.data import xy
+from mltreelib import ModelTree
+from mltreelib.data import Dataset
 
-data = load_dataset("concrete_compressive_strength")
-target = "ConcreteCompressiveStrength"
-d = xy(data, target)
-X, y, names = d["x"], d["y"], d["names"]
+ds = Dataset.load(
+    "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+)
 
 for cp in (None, 0.001, 0.01, 0.05):
     tree = ModelTree(leaf="mean", max_depth=6, min_rows=15, prune="cp", cp=cp)
-    tree.fit(X, y, col_names=names)
+    tree.fit(ds)
     print(f"cp={cp}: {tree.n_leaves()} leaves")
 ```
 

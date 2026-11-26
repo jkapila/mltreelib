@@ -81,20 +81,14 @@ We evaluate the architecture on the standard civil engineering benchmark: Yeh (1
 
 <!-- run -->
 ```python
-from mltreelib import ModelTree, LeafControl, Metrics, load_dataset
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import LeafControl, MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
 # 1. Load benchmark dataset and split 80/20 without shuffling
-data = load_dataset("concrete_compressive_strength")
-target = "ConcreteCompressiveStrength"
-d = xy(data, target)
-feature_names = d["names"]
-n_rows = data["n_rows"]
-
-train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-X_train, y_train = train["x"], train["y"]
-X_test, y_test = test["x"], test["y"]
+ds = Dataset.load(
+    "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+)
+train, test = ds.split(test_size=0.2, time=True)
 
 # 2. Configure LeafControl independently of tree topology
 leaf_ctrl = LeafControl(
@@ -111,12 +105,12 @@ model = ModelTree(
     prune="none",
     control=leaf_ctrl,
 )
-model.fit(X_train, y_train, col_names=feature_names)
+model.fit(train)
 
 # 4. Measure holdout performance
-preds = model.predict(X_test)
-m = Metrics().regression(y_test, preds)
-print(f"ModelTree Linear Leaves: RMSE = {m['rmse']:.2f} MPa, R2 = {m['r2']:.3f}, MAE = {m['mae']:.2f} MPa")
+preds = model.predict(test)
+rep = MetricsReport("regression", y_true=test.y, y_pred=preds)
+print(f"ModelTree Linear Leaves: RMSE = {rep['rmse']:.2f} MPa, R2 = {rep['r2']:.3f}, MAE = {rep['mae']:.2f} MPa")
 ```
 
 <!-- output -->
@@ -135,12 +129,12 @@ ModelTree Linear Leaves: RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
 # 3. Compare CART (mean leaves) and ModelTree (linear leaves) at depths 1 to 5
 for depth in range(1, 6):
     cart = ModelTree(leaf="mean", max_depth=depth, min_rows=20)
-    cart.fit(X_train, y_train, col_names=feature_names)
-    cart_m = Metrics().regression(y_test, cart.predict(X_test))
+    cart.fit(train)
+    cart_m = MetricsReport("regression", y_true=test.y, y_pred=cart.predict(test))
 
     mt = ModelTree(leaf="linear", max_depth=depth, min_rows=20, l2=1e-3)
-    mt.fit(X_train, y_train, col_names=feature_names)
-    mt_m = Metrics().regression(y_test, mt.predict(X_test))
+    mt.fit(train)
+    mt_m = MetricsReport("regression", y_true=test.y, y_pred=mt.predict(test))
 
     change = (mt_m["rmse"] - cart_m["rmse"]) / cart_m["rmse"] * 100
     print(f"Depth {depth} -> CART RMSE {cart_m['rmse']:.2f} MPa (R2 {cart_m['r2']:.3f}) | "
