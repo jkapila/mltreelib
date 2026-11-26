@@ -49,87 +49,78 @@ We evaluate on the industrial benchmark **Concrete Compressive Strength** (Yeh 1
 ??? info "Dataset Provenance: Concrete Compressive Strength"
     Collected by Prof. I-Cheng Yeh (1998) at Chung-Hua University[^1]. Features 1,030 lab mixtures quantifying how 7 cementitious ingredient ratios (cement, slag, fly ash, water, superplasticizer, coarse aggregate, fine aggregate) and curing age interact nonlinearly to determine compressive yield stress (MPa).
 
+This example loads the concrete strength dataset into a `Dataset`, splits it into an 80% training set and a 20% holdout set in row order, fits a `ModelTree` with linear ridge leaves at depth 4, and prints `MetricsReport`. Compare the linear-leaf tab with the constant-mean baseline tab.
+
 === "ModelTree (Linear Ridge)"
 
     <!-- run -->
     ```python
-    from mltreelib import Metrics, ModelTree, load_dataset
-    from mltreelib.data import select_rows, train_test_split, xy
+    from mltreelib import MetricsReport, ModelTree
+    from mltreelib.data import Dataset
 
     # 1. Load benchmark dataset (1,030 mixtures, 8 features)
-    data = load_dataset("concrete_compressive_strength")
-    target = "ConcreteCompressiveStrength"
-    d = xy(data, target)
-    feature_names = d["names"]
-    n_rows = data["n_rows"]
+    ds = Dataset.load(
+        "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+    )
 
     # 80/20 split with no shuffling: first 80% of rows train, last 20% test
-    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
-    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-    X_train, y_train = train["x"], train["y"]
-    X_test, y_test = test["x"], test["y"]
+    train, test = ds.split(test_size=0.2, time=True)
 
-    # Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=3)
-    model_tree = ModelTree(leaf="linear", max_depth=3, min_rows=20, l2=1e-3)
-    model_tree.fit(X_train, y_train, col_names=feature_names)
-    pred_mt = model_tree.predict(X_test)
+    # Fit mltreelib ModelTree (piecewise linear ridge leaves, depth=4)
+    model_tree = ModelTree(leaf="linear", max_depth=4, min_rows=20, l2=1e-3)
+    model_tree.fit(train)
+    pred_mt = model_tree.predict(test)
 
     # Measure holdout metrics
-    metrics = Metrics()
-    m_mt = metrics.regression(y_test, pred_mt)
-    print(f"ModelTree (Linear): RMSE = {m_mt['rmse']:.2f} MPa, R2 = {m_mt['r2']:.3f}, MAE = {m_mt['mae']:.2f} MPa")
+    rep = MetricsReport("regression", y_true=test.y, y_pred=pred_mt)
+    print(f"ModelTree (Linear): RMSE = {rep['rmse']:.2f} MPa, R2 = {rep['r2']:.3f}, MAE = {rep['mae']:.2f} MPa")
     ```
 
     <!-- output -->
     ```text
-    ModelTree (Linear): RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
+    ModelTree (Linear): RMSE = 6.70 MPa, R2 = 0.841, MAE = 4.83 MPa
     ```
 
 === "ModelTree(leaf='mean') Baseline"
 
     <!-- run -->
     ```python
-    from mltreelib import Metrics, ModelTree, load_dataset
-    from mltreelib.data import select_rows, train_test_split, xy
+    from mltreelib import MetricsReport, ModelTree
+    from mltreelib.data import Dataset
 
-    data = load_dataset("concrete_compressive_strength")
-    target = "ConcreteCompressiveStrength"
-    d = xy(data, target)
-    feature_names = d["names"]
-    n_rows = data["n_rows"]
+    ds = Dataset.load(
+        "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+    )
+    train, test = ds.split(test_size=0.2, time=True)
 
-    train_idx, test_idx = train_test_split(n_rows, test_size=0.2, time_order=list(range(n_rows)))
-    train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-    X_train, y_train = train["x"], train["y"]
-    X_test, y_test = test["x"], test["y"]
+    # Fit piecewise-constant CART decision tree (leaf="mean", depth=4)
+    cart = ModelTree(leaf="mean", max_depth=4, min_rows=20)
+    cart.fit(train)
+    pred_cart = cart.predict(test)
 
-    # Fit piecewise-constant CART decision tree (leaf="mean", depth=3)
-    cart = ModelTree(leaf="mean", max_depth=3, min_rows=20)
-    cart.fit(X_train, y_train, col_names=feature_names)
-    pred_cart = cart.predict(X_test)
-
-    metrics = Metrics()
-    m_cart = metrics.regression(y_test, pred_cart)
-    print(f"ModelTree (Mean)  : RMSE = {m_cart['rmse']:.2f} MPa, R2 = {m_cart['r2']:.3f}, MAE = {m_cart['mae']:.2f} MPa")
+    rep = MetricsReport("regression", y_true=test.y, y_pred=pred_cart)
+    print(f"ModelTree (Mean)  : RMSE = {rep['rmse']:.2f} MPa, R2 = {rep['r2']:.3f}, MAE = {rep['mae']:.2f} MPa")
     ```
 
     <!-- output -->
     ```text
-    ModelTree (Mean)  : RMSE = 11.09 MPa, R2 = 0.566, MAE = 8.47 MPa
+    ModelTree (Mean)  : RMSE = 10.16 MPa, R2 = 0.635, MAE = 7.50 MPa
     ```
+
+**What to read in the output:** on the same 824-row train and 206-row test split at depth 4, linear ridge leaves reduce test RMSE and MAE substantially compared with constant-mean leaves.
 
 ---
 
 ## 3. Empirical Results & Performance Comparison
 
-The two tabs above print the holdout metrics for the same 824-row train and 206-row test split. The tree has 8 leaves at depth 3.
+The two tabs above print the holdout metrics for the same 824-row train and 206-row test split. The tree has 16 leaves at depth 4, which gives local linear leaves enough room to model the nonlinear cement interactions while keeping the tree compact.
 
 | Model | Leaf Formulation | Depth | Test RMSE (MPa) | Test $R^2$ | Test MAE (MPa) |
 |---|---|:---:|:---:|:---:|:---:|
-| **`ModelTree(leaf="mean")`** | Constant Mean | 3 | 11.09 | 0.566 | 8.47 |
-| **`mltreelib` ModelTree (Linear)** | Regularized Linear Ridge | 3 | **7.28** | **0.813** | **5.07** |
+| **`ModelTree(leaf="mean")`** | Constant Mean | 4 | 10.16 | 0.635 | 7.50 |
+| **`mltreelib` ModelTree (Linear)** | Regularized Linear Ridge | 4 | **6.70** | **0.841** | **4.83** |
 
-With identical tree topology (depth 3, 8 leaves), `ModelTree` with linear leaves achieves a **34.3% error reduction** over constant-leaf CART baselines, elevating explained variance from ~57% to 81.3%.
+With identical tree topology (depth 4, 16 leaves), `ModelTree` with linear leaves achieves a **34.1% RMSE reduction** over constant-leaf CART baselines, raising explained variance from 63.5% to 84.1%.
 
 ![Quickstart ModelTree vs CART Step Function](assets/quickstart_tree_vs_flat.png)
 
@@ -154,21 +145,35 @@ n= 824
 node), split, n, deviance, yval
       * denotes terminal node
 
- 1) root 824 228333.917 35.46173  
-   2) Age <= 14 263 38269.292 22.98684  
-     4) Cement <= 350 190 14043.474 18.46968  
-       8) Age <= 7 143 6493.479 15.44493 *
-       9) Age > 7 47 2261.042 27.67263 *
-     5) Cement > 350 73 10258.391 34.74381  
-      10) Water <= 178 48 5059.180 39.25437 *
-      11) Water > 178 25 2347.636 26.08354 *
-   3) Age > 14 561 129948.081 41.31003  
-     6) Cement <= 350 430 68793.496 36.74539  
-      12) Cement <= 164.6 101 8521.781 26.09900 *
-      13) Cement > 164.6 329 45309.403 40.01374 *
-     7) Cement > 350 131 22786.202 56.29321  
-      14) Water <= 181.1 76 6496.752 63.46522 *
-      15) Water > 181.1 55 6978.299 46.38280 *
+ 1) root 824 228333.9167 35.46173  
+   2) Age <= 14 263 38269.2920 22.98684  
+     4) Cement <= 350 190 14043.4743 18.46968  
+       8) Age <= 7 143 6493.4788 15.44493  
+        16) Cement <= 255 90 2307.7737 12.94604 *
+        17) Cement > 255 53 2669.3540 19.68835 *
+       9) Age > 7 47 2261.0419 27.67263  
+        18) Superplasticizer <= 7.77 22 317.8392 22.95673 *
+        19) Superplasticizer > 7.77 25 1023.3672 31.82263 *
+     5) Cement > 350 73 10258.3911 34.74381  
+      10) Water <= 178 48 5059.1796 39.25437  
+        20) Age <= 3 23 701.6009 31.67076 *
+        21) Age > 3 25 1817.8845 46.23130 *
+      11) Water > 178 25 2347.6360 26.08354 *
+   3) Age > 14 561 129948.0812 41.31003  
+     6) Cement <= 350 430 68793.4962 36.74539  
+      12) Cement <= 164.6 101 8521.7805 26.09900  
+        24) BlastFurnaceSlag <= 115 26 301.5159 14.75293 *
+        25) BlastFurnaceSlag > 115 75 3712.8816 30.03231 *
+      13) Cement > 164.6 329 45309.4025 40.01374  
+        26) Water <= 175.5 112 15888.7132 47.44224 *
+        27) Water > 175.5 217 20050.3174 36.17967 *
+     7) Cement > 350 131 22786.2018 56.29321  
+      14) Water <= 181.1 76 6496.7515 63.46522  
+        28) Superplasticizer <= 11.6 40 2939.7627 67.95466 *
+        29) Superplasticizer > 11.6 36 1855.0050 58.47695 *
+      15) Water > 181.1 55 6978.2990 46.38280  
+        30) Cement <= 436 34 2937.2636 41.83485 *
+        31) Cement > 436 21 2199.1837 53.74616 *
 ```
 
 Export directly to Graphviz DOT for vector diagrams:

@@ -43,26 +43,26 @@ Standard Isolation Forests construct trees by sampling orthogonal, axis-aligned 
 
 You can evaluate on industrial telemetry using `load_dataset("APSFailure")` or the UCI Statlog Shuttle benchmark:
 
+This snippet loads the first 10,000 rows of `APSFailure` into a `Dataset`, splits them in row order into 7,000 training and 3,000 test rows, fits an `AnomalyModel` (`kind="eif"`, `max_depth=10`) on the normal training rows, and evaluates the top 5% review budget and ROC-AUC with `MetricsReport`.
+
 <!-- run -->
 ```python
-from mltreelib import Metrics, load_dataset
-from mltreelib import AnomalyModel
-from mltreelib.data import select_rows, train_test_split, xy
+from mltreelib import AnomalyModel, MetricsReport
+from mltreelib.data import Dataset
 
-# 1. Load industrial sensor telemetry
-data = load_dataset("APSFailure")
-target = "AirPressureSystemFailure"
+# 1. Load industrial sensor telemetry (first 10,000 rows in file order)
 features = ["aa_000", "ab_000", "ac_000", "ad_000", "ae_000", "af_000"]
+ds_full = Dataset.load(
+    "APSFailure", target="AirPressureSystemFailure", features=features
+)
 n_sample = 10000
+ds, _ = ds_full.split(test_size=ds_full.n_rows - n_sample, time=True)
+train, test = ds.split(test_size=3000, time=True)
 
-# First 10,000 rows in file order: 7,000 train, then 3,000 test (no shuffling)
-d = select_rows(xy(data, target, features=features), range(n_sample))
-train_idx, test_idx = train_test_split(n_sample, test_size=3000, time_order=list(range(n_sample)))
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-y_train = [1 if v in ("pos", "1", 1) else 0 for v in train["y"]]
-y_test = [1 if v in ("pos", "1", 1) else 0 for v in test["y"]]
-X_train = [x for x, label in zip(train["x"], y_train) if label == 0]  # Fit reference on normal operating states
-X_test = test["x"]
+y_train = [1 if v in ("pos", "1", 1) else 0 for v in train.y]
+y_test = [1 if v in ("pos", "1", 1) else 0 for v in test.y]
+X_train = [x for x, label in zip(train.x, y_train) if label == 0]  # Fit reference on normal operating states
+X_test = test.x
 
 # 2. Fit Extended Isolation Forest (oblique cuts, depth=10)
 tree = AnomalyModel(kind="eif", max_depth=10, extension_level=1, seed=42)
@@ -81,8 +81,11 @@ print(f"Review Budget Size : {budget} records (Top 5%)")
 print(f"Precision at Budget: {hits / budget:.4f}")
 print(f"Recall at Budget   : {hits / max(1, total_anomalies):.4f}")
 
-metrics = Metrics()
-print(f"ROC-AUC            : {metrics.roc_curve(y_test, scores)['auc']:.4f}")
+cutoff = scores[order[budget - 1]]
+y_pred = [1 if s >= cutoff else 0 for s in scores]
+probs = [1.0 / (1.0 + 2.718281828 ** (-s)) for s in scores]
+rep = MetricsReport("classification", y_true=y_test, y_pred=y_pred, proba=probs)
+print(f"ROC-AUC            : {rep['auc']:.4f}")
 ```
 
 <!-- output -->
@@ -92,6 +95,8 @@ Precision at Budget: 0.1867
 Recall at Budget   : 0.4590
 ROC-AUC            : 0.8154
 ```
+
+**What to read in the output:** precision and recall at the top-5% review budget measure how many true failures land in the 150 highest-scoring rows, and `ROC-AUC` summarizes ranking across all 3,000 test rows.
 
 `kind="binary"` returns labels from the fitted threshold, and `kind="score"` returns the same scores as `score_samples()`. The extended isolation tree and its aliases also expose `kind="path_length"`.
 

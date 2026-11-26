@@ -53,8 +53,8 @@ from bisect import bisect_left, bisect_right
 from collections import Counter
 
 import pandas as pd
-from mltreelib import ModelTree, dataset_path
-from mltreelib.data import missing_profile, select_rows, survival_xy, take, train_test_split
+from mltreelib import MetricsReport, ModelTree, dataset_path
+from mltreelib.data import Dataset
 
 def censor_km(times, events):
     """Censoring survival G(t), estimated from training observations."""
@@ -82,29 +82,38 @@ def brier(times, events, predictions, horizon, censor):
 
 df = pd.read_csv(dataset_path("flchain_rdatasets"))
 features = ["age", "sex", "kappa", "lambda", "creatinine"]
-cols = df.to_dict("list")
-d = survival_xy(cols, "futime", "death", features=features)
+ds = Dataset(
+    {k: df[k].tolist() for k in [*features, "futime", "death"]},
+    time="futime",
+    event="death",
+    features=features,
+    name="flchain",
+)
 
 # Seeded split: 5,500 rows train, the remaining rows test
-train_idx, test_idx = train_test_split(len(df), test_size=len(df) - 5500, seed=2026)
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-x_train, t_train, e_train = train["x"], train["time"], train["event"]
-x_test, t_test, e_test = test["x"], test["time"], test["event"]
+train, test = ds.split(test_size=ds.n_rows - 5500, seed=2026)
+t_train, e_train = train.time, train.event
+t_test, e_test = test.time, test.event
 grid = [365.0, 1095.0, 1825.0]
 censor = censor_km(t_train, e_train)
-print(f"Test rows {len(x_test)}: deaths {sum(e_test)}, censored {len(e_test) - sum(e_test)}")
+print(f"Test rows {test.n_rows}: deaths {sum(e_test)}, censored {len(e_test) - sum(e_test)}")
 for horizon in grid:
     print(f"Horizon {horizon:.0f}: test at risk {sum(t > horizon for t in t_test)}, censoring survival {censor(horizon):.4f}")
-miss_train = missing_profile(take(cols, train_idx))["per_column"]["creatinine"]["n_missing"]
-miss_test = missing_profile(take(cols, test_idx))["per_column"]["creatinine"]["n_missing"]
+miss_train = train.missing()["per_column"]["creatinine"]["n_missing"]
+miss_test = test.missing()["per_column"]["creatinine"]["n_missing"]
 print(f"Creatinine missing: {miss_train} training rows, {miss_test} test rows")
 
 for depth in (0, 2):
     tree = ModelTree(leaf_family="survival", max_depth=depth,
                      min_rows=100, prune="none")
-    tree.fit(x_train, (t_train, e_train), col_names=features, dtypes=d["dtypes"])
-    curves = tree.predict(x_test, kind="survival", times=grid)
-    print("depth", depth, "first survival curve", curves[0])
+    tree.fit(train)
+    curves = tree.predict(test, kind="survival", times=grid)
+    risk = tree.predict(test, kind="risk")
+    rep = MetricsReport(
+        "survival", durations=t_test, events=e_test, risk=risk,
+        surv_curves=curves, times=grid,
+    )
+    print("depth", depth, "first survival curve", curves[0], "harrell_c", round(rep["harrell_c"], 4))
     for j, horizon in enumerate(grid):
         print(horizon, brier(t_test, e_test, [curve[j] for curve in curves],
                              horizon, censor))
@@ -118,12 +127,12 @@ Horizon 365: test at risk 2288, censoring survival 0.9920
 Horizon 1095: test at risk 2179, censoring survival 0.9813
 Horizon 1825: test at risk 2064, censoring survival 0.9713
 Creatinine missing: 943 training rows, 407 test rows
-depth 0 first survival curve [0.964214236229244, 0.9186622130736849, 0.8760250322642885]
+depth 0 first survival curve [0.964214236229244, 0.9186622130736849, 0.8760250322642885] harrell_c 0.5
 365.0 0.029162166996877254
 1095.0 0.06471126332180974
 1825.0 0.10007346001380353
 []
-depth 2 first survival curve [0.7161803713527852, 0.44129424875964646, 0.29187356453050306]
+depth 2 first survival curve [0.7161803713527852, 0.44129424875964646, 0.29187356453050306] harrell_c 0.6298
 365.0 0.027422331820290472
 1095.0 0.05658412808997147
 1825.0 0.08055176917287096

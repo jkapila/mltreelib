@@ -12,64 +12,68 @@ Use observed values as supplied. In the sample, monthly income and number of dep
 
 ## 2. Fit and choose a threshold
 
+This snippet loads a seeded 12,000-row sample of `GiveMeSomeCredit` into a `Dataset`, splits it into 8,000 training, 2,000 validation, and 2,000 test rows, fits a binomial-logit tree, picks a cost-minimizing threshold on validation probabilities, and scores the test set with `MetricsReport`.
+
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import Metrics, ModelTree
-from mltreelib.data import missing_profile, select_rows, take, train_test_split, train_val_test_split, xy
+from mltreelib import MetricsReport, ModelTree, dataset_path
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("GiveMeSomeCredit"))
 target = "FinancialDistressNextTwoYears"
+cols = df.to_dict("list")
+cols[target] = [1 if v == "Yes" else 0 for v in cols[target]]
 
-# Seeded 12,000-row subset, then seeded 8,000 train / 2,000 validation / 2,000 test
-sub, _ = train_test_split(len(df), test_size=len(df) - 12000, seed=2026)
-sample = take(df.to_dict("list"), sub)
-d = xy(sample, target)
-train_idx, val_idx, test_idx = train_val_test_split(12000, val_size=2000, test_size=2000, seed=2026)
+ds = Dataset(cols, target=target, name="GiveMeSomeCredit")
+sub, _ = ds.split(test_size=ds.n_rows - 12000, seed=2026)
+train, val, test = sub.split(val_size=2000, test_size=2000, seed=2026)
 
-def part(idx):
-    rows = select_rows(d, idx)
-    return rows["x"], [1 if v == "Yes" else 0 for v in rows["y"]]
+tree = ModelTree(
+    leaf="mean", leaf_family="binomial", gain="deviance",
+    max_depth=3, min_rows=100, prune="none",
+)
+tree.fit(train)
 
-x_train, y_train = part(train_idx)
-x_val, y_val = part(val_idx)
-x_test, y_test = part(test_idx)
-
-tree = ModelTree(leaf="mean", leaf_family="binomial", gain="deviance",
-                 max_depth=3, min_rows=100, prune="none")
-tree.fit(x_train, y_train, col_names=d["names"], dtypes=d["dtypes"])
-
-val_scores = tree.predict_proba(x_val)
+val_scores = tree.predict_proba(val)
 def cost(threshold):
-    return sum(5 if y and p < threshold else 1 if not y and p >= threshold else 0
-               for y, p in zip(y_val, val_scores))
+    return sum(
+        5 if y and p < threshold else 1 if not y and p >= threshold else 0
+        for y, p in zip(val.y, val_scores)
+    )
 
 threshold = min([.02, .05, .10, .20, .40, 1.01], key=cost)
-scores = tree.predict_proba(x_test)
+scores = tree.predict_proba(test)
 alerts = [int(score >= threshold) for score in scores]
 
-metrics = Metrics()
-prevalence = sum(y_test) / len(y_test)
+rep = MetricsReport("classification", y_true=test.y, y_pred=alerts, proba=scores)
+base = MetricsReport(
+    "classification",
+    y_true=test.y,
+    y_pred=[0] * test.n_rows,
+    proba=[sum(train.y) / train.n_rows] * test.n_rows,
+)
+prevalence = sum(test.y) / test.n_rows
 print(f"Validation threshold: {threshold:.2f}; flagged test rows: {sum(alerts)} of {len(alerts)}")
-print(metrics.classification(y_test, alerts)["confusion"])
-print(f"Average precision: {metrics.pr_curve(y_test, scores)['average_precision']:.4f} (test prevalence {prevalence:.4f})")
-train_rate = sum(y_train) / len(y_train)
-print(f"Brier score: {metrics.brier_score(y_test, scores):.4f} (constant training rate {metrics.brier_score(y_test, [train_rate] * len(y_test)):.4f})")
+print(rep.tables["confusion"])
+print(f"Average precision: {rep['average_precision']:.4f} (test prevalence {prevalence:.4f})")
+print(f"Brier score: {rep['brier']:.4f} (constant training rate {base['brier']:.4f})")
 print(f"Root split: {tree.root_split()['col']}; split columns: {[s['col'] for s in tree.splits()]}")
-miss = missing_profile(take(sample, train_idx))["per_column"]
+miss = train.missing()["per_column"]
 print(f"Training missing: MonthlyIncome {miss['MonthlyIncome']['n_missing']}, NumberOfDependents {miss['NumberOfDependents']['n_missing']}")
 ```
 
 <!-- output -->
 ```text
 Validation threshold: 0.10; flagged test rows: 200 of 2000
-[[1727.0, 138.0], [73.0, 62.0]]
+[{'actual': 0, 'pred 0': 1727, 'pred 1': 138}, {'actual': 1, 'pred 0': 73, 'pred 1': 62}]
 Average precision: 0.2647 (test prevalence 0.0675)
 Brier score: 0.0542 (constant training rate 0.0629)
 Root split: RevolvingUtilizationOfUnsecuredLines; split columns: ['RevolvingUtilizationOfUnsecuredLines', 'NumberOfTime60-89DaysPastDueNotWorse', 'NumberOfTime30-59DaysPastDueNotWorse', 'RevolvingUtilizationOfUnsecuredLines', 'NumberOfTimes90DaysLate', 'RevolvingUtilizationOfUnsecuredLines']
 Training missing: MonthlyIncome 1578, NumberOfDependents 205
 ```
+
+**What to read in the output:** check the validation-chosen threshold, the confusion matrix at that cutoff, average precision against the test prevalence baseline, and Brier score against the constant training-rate baseline. Missing values in `MonthlyIncome` and `NumberOfDependents` stay intact and are routed natively by the tree.
 
 The costs are illustrative. A missed event costs five units and a false alert costs one. A threshold above 1 represents no alerts. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) also compares probability error with the training event rate.
 

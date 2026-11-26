@@ -96,7 +96,7 @@ For continuous pricing, demand forecasting, and risk models:
 <!-- run -->
 ```python
 import numpy as np
-from mltreelib import Metrics, plots
+from mltreelib import Metrics, MetricsReport, plots
 import matplotlib.pyplot as plt
 
 # 1. Generate realistic credit default probabilities and observed labels
@@ -112,20 +112,16 @@ y_prob_champ = np.clip(true_risk + rng.normal(0, 0.08, n_cases), 0.001, 0.999).t
 y_prob_chal = np.clip(true_risk + rng.normal(0, 0.15, n_cases), 0.001, 0.999).tolist()
 
 # 2. Compute Discrimination and Calibration Metrics
-metrics = Metrics()
-
-roc = metrics.roc_curve(y_true, y_prob_champ)
-pr = metrics.pr_curve(y_true, y_prob_champ)
-brier = metrics.brier_score(y_true, y_prob_champ)
-ks_res = metrics.ks_statistic(y_true, y_prob_champ)
+rep = MetricsReport("classification", y_true=y_true, proba=y_prob_champ)
 
 print("Champion Model Performance:")
-print(f"  ROC-AUC: {roc['auc']:.4f}")
-print(f"  Average Precision (PR-AUC): {pr['average_precision']:.4f}")
-print(f"  Brier Reliability Score: {brier:.4f}")
-print(f"  Kolmogorov-Smirnov (KS): {ks_res['ks']:.4f} (Score @ KS cutoff = {ks_res['score_at_ks']:.3f})")
+print(f"  ROC-AUC: {rep['auc']:.4f}")
+print(f"  Average Precision (PR-AUC): {rep['average_precision']:.4f}")
+print(f"  Brier Reliability Score: {rep['brier']:.4f}")
+print(f"  Kolmogorov-Smirnov (KS): {rep['ks']:.4f} (Score @ KS cutoff = {rep['score_at_ks']:.3f})")
 
 # 3. Population Stability Index (PSI) Drift Check against subsequent test cohort
+metrics = Metrics()
 y_prob_subsequent = np.clip(true_risk * 1.15 + rng.normal(0, 0.08, n_cases), 0.001, 0.999).tolist()
 psi_res = metrics.stability_index(y_prob_champ, y_prob_subsequent, 10)
 psi_val = psi_res["psi"]

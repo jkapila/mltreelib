@@ -17,30 +17,34 @@ Run this from the repository root. The second split supports a refit check. Assi
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import ClusterModel
-from mltreelib.data import train_val_test_split
+from mltreelib import ClusterModel, dataset_path
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("wine_quality"))
 features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
+ds = Dataset(df[features].to_dict("list"), features=features, name="wine_quality")
 # Seeded split: 2,500 train, 2,500 refit check (middle split), remaining rows review
-train_idx, val_idx, review_idx = train_val_test_split(len(df), val_size=2500, test_size=len(df) - 5000, seed=2026)
-train, review = df.iloc[train_idx], df.iloc[review_idx].copy()
-center = train[features].mean()
-scale = train[features].std()
+train_ds, val_ds, review_ds = ds.split(
+    val_size=2500, test_size=ds.n_rows - 5000, seed=2026
+)
+train_df = pd.DataFrame({f: train_ds.columns[f] for f in features})
+val_df = pd.DataFrame({f: val_ds.columns[f] for f in features})
+review = pd.DataFrame({f: review_ds.columns[f] for f in features})
+center = train_df.mean()
+scale = train_df.std()
 
 def design(frame):
     return ((frame[features] - center) / scale).to_numpy().tolist()
 
 tree = ClusterModel(kind="pct", max_depth=2, min_rows=150)
-tree.fit(design(train), col_names=features)
+tree.fit(design(train_df), col_names=features)
 review["segment"] = tree.predict(design(review), kind="cluster")
 print(review.groupby("segment")[features].median().round(3))
 print(review["segment"].value_counts().sort_index())
 
 # Refit at depth 2 on the middle split, then compare the review assignments by pairwise Jaccard
 refit = ClusterModel(kind="pct", max_depth=2, min_rows=150)
-refit.fit(design(df.iloc[val_idx]), col_names=features)
+refit.fit(design(val_df), col_names=features)
 first = review["segment"].tolist()
 second = refit.predict(design(review), kind="cluster")
 both = either = 0
