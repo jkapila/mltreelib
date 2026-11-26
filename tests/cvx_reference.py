@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from mltreelib.solvers import prune_ensemble, solve_optimal_tree
-
 
 def solve_sparse_rules_cvx(
     rule_matrix: Sequence[Sequence[float]],
@@ -123,17 +121,15 @@ def solve_knapsack_pruning_cvx(
     loss = cp.norm1(residual) / float(n)
 
     problem = cp.Problem(cp.Minimize(loss), constraints)
-    try:
-        if solver is not None:
-            problem.solve(solver=solver)
-        elif "HIGHS" in cp.installed_solvers():
-            problem.solve(solver="HIGHS")
-        else:
-            problem.solve()
-    except cp.SolverError:
-        # Fallback to native Caruana forward stepwise pruning
-        native_res = prune_ensemble(predictions_matrix, y, max_trees=max_trees)
-        return native_res.selected_indices, native_res.weights
+    if solver is not None:
+        problem.solve(solver=solver)
+    elif "HIGHS" in cp.installed_solvers():
+        problem.solve(solver="HIGHS")
+    else:
+        problem.solve()
+
+    if z.value is None or w.value is None:
+        raise RuntimeError(f"CVXPY knapsack pruning failed with status {problem.status!r}")
 
     chosen_indices = [j for j in range(m) if z.value[j] > 0.5]
     chosen_weights = [float(w.value[j]) for j in chosen_indices]
@@ -168,7 +164,7 @@ def solve_oct_mip_cvx(
     try:
         import importlib
 
-        _cp = importlib.import_module("cvxpy")
+        cp = importlib.import_module("cvxpy")
         import numpy as np
     except ImportError as err:
         raise ImportError(
@@ -177,30 +173,74 @@ def solve_oct_mip_cvx(
             "or use native mltreelib.solvers.solve_optimal_tree."
         ) from err
 
-    # For fast exact decision stump MIP verification
-    # Finds optimal feature split and threshold
     X_arr = np.asarray(x, dtype=float)
-    _n, p = X_arr.shape
+    y_arr = np.asarray(y, dtype=float)
+    n, p = X_arr.shape
 
-    # Native solve_optimal_tree is always available and provably optimal
-    res = solve_optimal_tree(x, y, task=task, max_depth=1)
-    if res.n_splits == 0:
-        return 0, 0.0, float(res.predict([[0.0] * p])[0]), float(res.predict([[0.0] * p])[0])
+    x_min = float(np.min(X_arr))
+    x_max = float(np.max(X_arr))
+    m_x = max(abs(x_min), abs(x_max)) * 2.0 + 2.0
 
-    # Extract split from tree JSON or test prediction
-    # Left: predict on sample with min feature value
-    # Right: predict on sample with max feature value
-    left_sample = [[float(np.min(X_arr[:, j])) for j in range(p)]]
-    right_sample = [[float(np.max(X_arr[:, j])) for j in range(p)]]
-    left_val = float(res.predict(left_sample)[0])
-    right_val = float(res.predict(right_sample)[0])
+    # Smallest positive gap between adjacent feature values so strict '>' is exact.
+    min_gap = 1.0
+    for j in range(p):
+        uniq = np.unique(X_arr[:, j])
+        if len(uniq) > 1:
+            diffs = np.diff(uniq)
+            pos = diffs[diffs > 0]
+            if len(pos) > 0:
+                min_gap = min(min_gap, float(np.min(pos)))
+    eps = 0.25 * min_gap
 
-    # Feature and threshold from optimal search
-    # Find which feature separated the two
-    import json
-    tree_data = json.loads(res.to_json())
-    root_node = tree_data["nodes"][0]
-    best_feat = int(root_node["feature"])
-    best_thresh = float(root_node["threshold"])
+    d = cp.Variable(p, boolean=True)
+    b = cp.Variable()
+    z = cp.Variable(n, boolean=True)  # z[i] == 1 -> left (<= b), z[i] == 0 -> right (> b)
+    pred = cp.Variable(n)
 
-    return best_feat, best_thresh, left_val, right_val
+    x_proj = X_arr @ d
+    constraints = [
+        cp.sum(d) == 1,
+        b >= x_min - 1.0,
+        b <= x_max + 1.0,
+        x_proj <= b + m_x * (1 - z),
+        x_proj >= b + eps - m_x * z,
+    ]
+
+    if task == "classification":
+        c_left = cp.Variable(boolean=True)
+        c_right = cp.Variable(boolean=True)
+        constraints += [
+            pred >= c_left - (1 - z),
+            pred <= c_left + (1 - z),
+            pred >= c_right - z,
+            pred <= c_right + z,
+        ]
+        err = cp.Variable(n, nonneg=True)
+        constraints += [err >= y_arr - pred, err >= pred - y_arr]
+        objective = cp.Minimize(cp.sum(err))
+    else:
+        m_y = float(np.max(np.abs(y_arr))) * 2.0 + 2.0
+        c_left = cp.Variable()
+        c_right = cp.Variable()
+        constraints += [
+            pred >= c_left - m_y * (1 - z),
+            pred <= c_left + m_y * (1 - z),
+            pred >= c_right - m_y * z,
+            pred <= c_right + m_y * z,
+        ]
+        objective = cp.Minimize(cp.sum(cp.abs(y_arr - pred)))
+
+    problem = cp.Problem(objective, constraints)
+    if solver is not None:
+        problem.solve(solver=solver)
+    elif "HIGHS" in cp.installed_solvers():
+        problem.solve(solver="HIGHS")
+    else:
+        problem.solve()
+
+    if d.value is None or b.value is None or c_left.value is None or c_right.value is None:
+        raise RuntimeError(f"CVXPY OCT stump MIP failed with status {problem.status!r}")
+
+    best_feat = int(np.argmax(d.value))
+    best_thresh = float(b.value)
+    return best_feat, best_thresh, float(c_left.value), float(c_right.value)
