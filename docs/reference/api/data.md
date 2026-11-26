@@ -58,7 +58,7 @@ Load one dataset as ``name``/``columns``/``dtypes``/``n_rows``/``n_cols``.
 list_datasets() -> 'list[str]'
 ```
 
-Names of currently available local datasets (parquet stems in repo or cache).
+Names of currently available local datasets (parquet or csv stems in repo or cache).
 
 ## summarize
 

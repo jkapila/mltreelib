@@ -204,7 +204,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
             dts = list(dtypes) if dtypes is not None else None
             self._inner.fit(x, col_names=cnames, dtypes=dts)
         elif k in ("context", "sequence"):
-            self._inner.fit([[None if value != value else value for value in row] for row in x])
+            self._inner.fit([[None if _is_nan(value) else value for value in row] for row in x])
         elif k in ("pca", "nmf"):
             self._component_model.fit(x)
         else:
@@ -365,7 +365,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
             )
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
-        if symbol is None or symbol != symbol:
+        if symbol is None or _is_nan(symbol):
             return None
         return self._inner.surprise_score(_observed_suffix(context), symbol)
 
@@ -379,7 +379,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
             )
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
-        if symbol is None or symbol != symbol:
+        if symbol is None or _is_nan(symbol):
             return None
         return self._inner.conditional_prob(_observed_suffix(context), symbol)
 
@@ -447,10 +447,14 @@ class AnomalyTree(AnomalyModel):
     _snapshot_format = "mltreelib.anomaly_tree"
 
 
+def _is_nan(value: Any) -> bool:
+    return isinstance(value, float) and math.isnan(value)
+
+
 def _observed_suffix(context: Sequence[int | float | None]) -> list[int | float]:
     observed = []
     for value in context:
-        if value is None or value != value:
+        if value is None or _is_nan(value):
             observed.clear()
         else:
             observed.append(value)
