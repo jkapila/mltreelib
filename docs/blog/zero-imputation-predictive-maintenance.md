@@ -82,19 +82,18 @@ In heavy machinery, missing sensor values are rarely missing-at-random. A sensor
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import ModelTree
+from mltreelib import ModelTree, dataset_path
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
-from mltreelib.data import select_rows, train_val_test_split, xy
 df = pd.read_parquet(dataset_path("APSFailure"))
 target = "AirPressureSystemFailure"
+cols = df.to_dict("list")
+cols[target] = [1 if v == "pos" else 0 for v in cols[target]]
 # Raw telemetry: NaN stays NaN; the tree routes missing values itself
-d = xy(df.to_dict("list"), target)
+ds = Dataset(cols, target=target, name="APSFailure")
 
 # Seeded split: 50,000 train, 13,000 validation, 13,000 test trucks (seed 42)
-train_idx, _, _ = train_val_test_split(len(df), val_size=13000, test_size=13000, seed=42)
-train = select_rows(d, train_idx)
-y_train = [1 if v == "pos" else 0 for v in train["y"]]
+train, _, _ = ds.split(val_size=13000, test_size=13000, seed=42)
 
 # Train native missing-routing tree in pure Rust
 tree = ModelTree(
@@ -105,7 +104,7 @@ tree = ModelTree(
     min_rows=100,
     prune="none",
 )
-tree.fit(train["x"], y_train, col_names=d["names"], dtypes=d["dtypes"])
+tree.fit(train)
 ```
 
 At every candidate split on feature $j$, `mltreelib` evaluates two split routing hypotheses in parallel:

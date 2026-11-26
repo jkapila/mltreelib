@@ -122,37 +122,32 @@ We test this architecture on the real **Bank Customer Churn** benchmark (OpenML 
 <!-- run -->
 ```python
 import pyarrow.parquet as pq
-from mltreelib import ModelTree, Metrics
-from mltreelib.data import select_rows, survival_xy, train_test_split
+from mltreelib import ModelTree, dataset_path
+from mltreelib.data import Dataset
 
 # 1. Load benchmark dataset
-from mltreelib import dataset_path
 table = pq.read_table(dataset_path("Bank_Customer_Churn"))
-df = table.to_pydict()
-n = len(df["churn"])
+cols = table.to_pydict()
+# Event coding is this page's choice: churn labels map to 1.0, everything else to 0.0
+cols["churn"] = [1.0 if str(v).lower() in ("1", "yes", "true") else 0.0 for v in cols["churn"]]
 
 feature_cols = ["credit_score", "age", "balance", "products_number", "estimated_salary"]
-d = survival_xy(df, "tenure", "churn", features=feature_cols)
-# Event coding is this page's choice: churn labels map to 1.0, everything else to 0.0
-d["event"] = [1.0 if str(v).lower() in ("1", "yes", "true") else 0.0 for v in d["event"]]
+ds = Dataset(cols, time="tenure", event="churn", features=feature_cols)
 
 # 70/30 split in file order (no shuffling): first 70% train, last 30% test
-train_idx, test_idx = train_test_split(n, test_size=0.3, time_order=list(range(n)))
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-X_train, t_train, e_train = train["x"], train["time"], train["event"]
-X_test, t_test, e_test = test["x"], test["time"], test["event"]
+train, test = ds.split(test_size=0.3, time=True)
 
 # Stage 1: Cohort Segmentation Tree (depth=2, 4 cohorts)
 tree = ModelTree(max_depth=2, min_rows=50)
-tree.fit(X_train, e_train, col_names=feature_cols)
+tree.fit(train.x, train.event, col_names=feature_cols)
 
 # Stage 2: In-place leaf retraining with non-parametric Kaplan-Meier curves
-tree.retrain(X_train, (t_train, e_train), leaf_family="survival")
+tree.retrain(train.x, (train.time, train.event), leaf_family="survival")
 
 # Stage 3: Low-latency inference on held-out customers
 tenure_grid = [1.0, 3.0, 5.0, 8.0, 10.0]
-surv_curves = tree.predict(X_test, kind="survival", times=tenure_grid)
-risk_scores = tree.predict(X_test, kind="risk")
+surv_curves = tree.predict(test, kind="survival", times=tenure_grid)
+risk_scores = tree.predict(test, kind="risk")
 ```
 
 ---

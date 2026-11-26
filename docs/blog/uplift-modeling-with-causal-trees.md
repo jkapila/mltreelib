@@ -96,26 +96,24 @@ We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing 
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import Metrics, ModelTree, dataset_path
-from mltreelib.data import select_rows, train_val_test_split, uplift_xy
+from mltreelib import MetricsReport, ModelTree, dataset_path
+from mltreelib.data import Dataset
 
 # Load Hillstrom dataset (downloaded on first use) and filter for Women's E-Mail vs Control
 df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df["segment"].isin(["Womens E-Mail", "No E-Mail"])].reset_index(drop=True)
+df["treat"] = (df["segment"] == "Womens E-Mail").astype(int)
 
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
-d = uplift_xy(df.to_dict("list"), "segment", "visit", features=features)
+ds = Dataset(
+    {k: df[k].tolist() for k in [*features, "treat", "visit"]},
+    outcome="visit",
+    treatment="treat",
+    features=features,
+)
 
 # Seeded 60% train, 20% validation, 20% test split (seed 42)
-train_idx, _, test_idx = train_val_test_split(len(df), val_size=0.2, test_size=0.2, seed=42)
-train, test = select_rows(d, train_idx), select_rows(d, test_idx)
-x_train, x_test = train["x"], test["x"]
-y_train, y_test = train["outcome"], test["outcome"]
-
-def arms(rows):
-    return [1 if s == "Womens E-Mail" else 0 for s in rows["treatment"]]
-
-w_train, w_test = arms(train), arms(test)
+train, _, test = ds.split(val_size=0.2, test_size=0.2, seed=42)
 
 # Fit honest causal tree with max_depth=2
 tree = ModelTree(
@@ -127,7 +125,7 @@ tree = ModelTree(
     honesty=True,
     seed=42,
 )
-tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=d["dtypes"])
+tree.fit(train)
 ```
 
 ---
@@ -156,10 +154,9 @@ Root split: womens <= 0.00; leaves: 4
 ```python
 from collections import Counter
 
-metrics = Metrics()
-preds = tree.predict(x_test, kind="uplift")
-res = metrics.uplift(y_test, w_test, preds)
-print(f"Honest Tree Qini: {res['qini_coef']:.2f} | AUUC: {res['auuc']:.2f} | Top quintile uplift: {res['top_quintile_uplift']:.2%}")
+preds = tree.predict(test, kind="uplift")
+rep = MetricsReport("uplift", y_true=test.y, treatment=test.treatment, tau_pred=preds)
+print(f"Honest Tree Qini: {rep['qini_coef']:.2f} | AUUC: {rep['auuc']:.2f} | Top quintile uplift: {rep['top_quintile_uplift']:.2%}")
 for value, n in sorted(Counter(round(v, 4) for v in preds).items()):
     print(f"Predicted uplift {value:+.2%} for {n} test customers")
 ```
