@@ -42,88 +42,177 @@ flowchart TD
     class UnbiasedModel causalBox;
 ```
 
-Run this Python block from the repository root. `group_value` is defined in the block.
+This snippet loads the Hillstrom CSV, wraps it in a `Dataset` with `outcome="visit"` and `treatment="treat"`, and makes a stratified 60% / 20% / 20% split (`train`, `val`, `test`). It fits an honest causal tree at `max_depth=4` (`min_rows=250`, `prune="none"`, `honesty=True`, `seed=42`). Note that **the causal leaf is always a difference of means ($\bar{Y}_1 - \bar{Y}_0$) whatever the `leaf` setting** (`leaf="linear"` produces the same leaf estimates under `gain="causal"`). It then calls `uplift_threshold` on `val` to pick the score cutoff and prints `MetricsReport("uplift", ...)` on `test`.
 
 <!-- run -->
 ```python
-from math import sqrt
-
 import pandas as pd
-from mltreelib import ModelTree, dataset_path
-from mltreelib.data import select_rows, train_val_test_split, uplift_xy
-
-def group_value(y, w, selected):
-    """Incremental value of the selected group: (value, n, n_treated, n_control, 95% CI)."""
-    a = [v for v, t, s in zip(y, w, selected) if s and t == 1]
-    b = [v for v, t, s in zip(y, w, selected) if s and t == 0]
-    n = sum(selected)
-    if not n:
-        return 0.0, 0, 0, 0, None
-    if len(a) < 2 or len(b) < 2:
-        raise ValueError("Selected group requires at least two observations per arm")
-    diff, q = sum(a) / len(a) - sum(b) / len(b), n / len(y)
-    def var(v):
-        m = sum(v) / len(v)
-        return sum((z - m) ** 2 for z in v) / (len(v) - 1)
-    se = q * sqrt(var(a) / len(a) + var(b) / len(b))
-    return q * diff, n, len(a), len(b), (q * diff - 1.96 * se, q * diff + 1.96 * se)
+from mltreelib import MetricsReport, ModelTree, dataset_path, uplift_threshold
+from mltreelib.data import Dataset
 
 df = pd.read_csv(dataset_path("hillstrom_email"))
-df = df[df.segment.isin(["Womens E-Mail", "No E-Mail"])]
+df = df[df["segment"].isin(["Womens E-Mail", "No E-Mail"])].copy()
+df["treat"] = (df["segment"] == "Womens E-Mail").astype(int)
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
-d = uplift_xy(df.to_dict("list"), "segment", "visit", features=features)
 
-# Seeded 60% train / 20% validation / 20% test split
-train_idx, val_idx, test_idx = train_val_test_split(len(df), val_size=0.2, test_size=0.2, seed=2026)
+ds = Dataset(
+    {k: df[k].tolist() for k in [*features, "treat", "visit"]},
+    outcome="visit",
+    treatment="treat",
+    features=features,
+    name="hillstrom_women",
+)
+train, val, test = ds.split(val_size=0.2, test_size=0.2, stratify=True, seed=2026)
+print(f"Rows: train {train.n_rows}, validation {val.n_rows}, test {test.n_rows}")
 
-def inputs(idx):
-    rows = select_rows(d, idx)
-    return rows["x"], rows["outcome"], [1 if s == "Womens E-Mail" else 0 for s in rows["treatment"]]
+tree = ModelTree(
+    gain="causal", leaf="mean", max_depth=4, min_rows=250,
+    prune="none", honesty=True, seed=42,
+)
+tree.fit(train)
 
-x_train, y_train, w_train = inputs(train_idx)
-x_val, y_val, w_val = inputs(val_idx)
-x_test, y_test, w_test = inputs(test_idx)
-print(f"Rows: train {len(x_train)}, validation {len(x_val)}, test {len(x_test)}")
-tree = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250,
-                 prune="none", honesty=True, seed=42)
-tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=d["dtypes"])
-
-val_scores = tree.predict(x_val, kind="uplift")
-def value_at(threshold):
-    return group_value(y_val, w_val, [score > threshold for score in val_scores])[0]
-
-threshold = max([min(val_scores) - 1, *sorted(set(val_scores))], key=value_at)
-test_scores = tree.predict(x_test, kind="uplift")
-for selected in ([score > threshold for score in test_scores],
-                 [True] * len(y_test), [False] * len(y_test)):
-    print(group_value(y_test, w_test, selected))
+val_scores = tree.predict(val, kind="uplift")
+threshold = uplift_threshold(val.y, val.treatment, val_scores)
+test_scores = tree.predict(test, kind="uplift")
+rep = MetricsReport(
+    "uplift",
+    y_true=test.y,
+    treatment=test.treatment,
+    tau_pred=test_scores,
+    threshold=threshold,
+)
+print(rep)
 ```
 
 <!-- output -->
 ```text
 Rows: train 25615, validation 8539, test 8539
-(0.03713903371682102, 4711, 2388, 2323, (0.026102043930241136, 0.0481760235034009))
-(0.044668736821524516, 8539, 4263, 4276, (0.030347650544788125, 0.05898982309826091))
-(0.0, 0, 0, 0, None)
+Metrics report: uplift
+======================
+
+Inputs
+------
+  threshold  -0.01564
+
+Rows per argument (n_missing = None/NaN):
+  argument      n  n_missing
+  y_true     8539          0
+  treatment  8539          0
+  tau_pred   8539          0
+
+Overview
+--------
+  n_total                 8539
+  n_treated               4278
+  n_control               4261
+  ate                  0.05314
+  qini_coef              37.54
+  qini_norm            0.07497
+  auuc                   299.9
+  top_decile_uplift    0.06752
+  top_quintile_uplift  0.07457
+
+Qini curve points:
+  population_fraction     qini
+                    0        0
+            0.0001171        0
+            0.0002342        0
+            0.0003513        0
+            0.0004684        0
+            0.0005855        0
+            0.0007027     -0.2
+            0.0008198     -0.4
+            0.0009369  -0.3333
+             0.001054     -0.5
+             0.001171  -0.4286
+             0.001288   -0.375
+             0.001405  -0.3333
+             0.001522     -0.3
+              0.00164  -0.2727
+             0.001757  -0.3636
+             0.001874  -0.4545
+             0.001991  -0.4167
+             0.002108      0.5
+             0.002225   0.5385
+  ... 8515 rows omitted; full table in .tables['qini_curve']
+               0.9995    226.3
+               0.9996    226.4
+               0.9998    226.3
+               0.9999    227.2
+                    1    227.3
+
+Cumulative gain points:
+  population_fraction    gain
+                    0       0
+            0.0001171       0
+            0.0002342       0
+            0.0003513       0
+            0.0004684      -1
+            0.0005855      -1
+            0.0007027    -1.2
+            0.0008198    -1.4
+            0.0009369  -1.333
+             0.001054    -1.5
+             0.001171  -1.429
+             0.001288  -1.375
+             0.001405  -1.333
+             0.001522    -1.3
+              0.00164  -1.273
+             0.001757  -1.364
+             0.001874  -1.455
+             0.001991  -1.417
+             0.002108     1.5
+             0.002225   1.705
+  ... 8515 rows omitted; full table in .tables['cumulative_gain']
+               0.9995   451.7
+               0.9996     452
+               0.9998   451.7
+               0.9999   453.5
+                    1   453.7
+
+Policy
+------
+  threshold  -0.01564
+
+Policy comparison (selected: tau_pred > threshold; 95% normal CI):
+  policy      n_selected  n_treated  n_control    value   ci_low  ci_high
+  selected          8296       4158       4138  0.05281  0.03901  0.06662
+  treat_all         8539       4278       4261  0.05314  0.03914  0.06714
+  treat_none           0          0          0        0      n/a      n/a
+
+Uplift by decile
+----------------
+Uplift by predicted-effect decile (decile 1 = highest):
+  decile    n  n_treated  n_control  mean_tau_pred  mean_treated  mean_control    uplift
+       1  853        431        422         0.1124        0.1508       0.08294   0.06787
+       2  854        445        409        0.08946        0.1551       0.07335   0.08171
+       3  854        412        442        0.08023        0.1772       0.09502   0.08216
+       4  854        441        413        0.06509        0.2177        0.1114    0.1063
+       5  854        426        428        0.06228        0.2136        0.1121    0.1015
+       6  854        424        430        0.03101        0.1061       0.08837   0.01776
+       7  854        439        415        0.02068        0.1162       0.08193   0.03425
+       8  854        417        437        0.01189        0.1007       0.08924   0.01147
+       9  854        424        430       0.007747        0.1651        0.1256   0.03951
+      10  854        419        435      -0.003709        0.1146        0.1264  -0.01188
 ```
 
-The helper estimates the visit-rate difference between treatment and control among selected customers. It multiplies that difference by the selected fraction. The result measures incremental visits per eligible customer. Check arm support in each candidate group. If the treatment has a cost, use net value in threshold selection and reporting.
+**What to read in the output:** `MetricsReport("uplift", ...)` reports four sections. `Overview` gives the overall ATE, Qini coefficient, normalized Qini, AUUC, top-decile uplift, and top-quintile uplift. `Policy` compares the validation-selected cutoff (`tau_pred > threshold`) against `treat_all` and `treat_none` by multiplying the treated-minus-control difference in the selected group by the selected population fraction, with approximate 95% normal confidence intervals. `Uplift by decile` ranks customers from highest predicted effect (decile 1) to lowest (decile 10) and shows the observed treated and control visit rates in each decile. If treatment has a cost, pass `cost=...` to both `uplift_threshold` and `MetricsReport`.
 
 **Next:** report the held-out policy values for the threshold chosen in step 2, next to treat-all and treat-none.
 
 ## 3. Interpret the held-out results
 
-The seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree ranks customers. Validation selects the policy threshold, and the randomized test set estimates incremental visits. This example assumes zero treatment cost because campaign costs are not in the data.
+The stratified seeded split contains 25,615 training, 8,539 validation and 8,539 test rows. An honest causal tree at depth 4 ranks customers. `uplift_threshold` selects the policy threshold (`-0.01564`) on validation data, and `MetricsReport` estimates incremental visits on the randomized test set. This example assumes zero treatment cost because campaign costs are not in the data.
 
 | Test policy | Selected | Treated / control | Incremental visits per eligible customer | Approximate 95% interval |
 |---|---:|---:|---:|---:|
-| Validation-selected policy | 4,711 | 2,388 / 2,323 | 0.03714 | 0.02610 to 0.04818 |
-| Treat all | 8,539 | 4,263 / 4,276 | 0.04467 | 0.03035 to 0.05899 |
-| Treat none | 0 | — | 0 | — |
+| Validation-selected policy | 8,296 | 4,158 / 4,138 | 0.05281 | 0.03901 to 0.06662 |
+| Treat all | 8,539 | 4,278 / 4,261 | 0.05314 | 0.03914 to 0.06714 |
+| Treat none | 0 | 0 / 0 | 0 | — |
 
 ![Hillstrom randomized held-out policy comparison](../assets/guides/real-uplift.svg)
 
-The validation-selected policy emails 4,711 of the 8,539 test customers. It yields 0.03714 incremental visits per eligible customer, below 0.04467 for treat-all. This run therefore supplies **no evidence that targeting improves on treat-all**. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
+The validation-selected policy emails 8,296 of the 8,539 test customers. It yields 0.05281 incremental visits per eligible customer (95% CI 0.03901 to 0.06662), compared with 0.05314 (95% CI 0.03914 to 0.06714) for treat-all. With overlapping confidence intervals and a lower point estimate, this run supplies **no evidence that targeting improves on treat-all** at zero treatment cost. The interval is a normal approximation conditional on the selected population and excludes model-selection uncertainty. The data is from a historical campaign; repeat evaluation in a new experiment, include costs and use the outcome the business actually values before applying a policy.
 
 **Next:** check the same kind of policy comparison on a simulated trial, because the Hillstrom data cannot show both potential outcomes for each customer.
 
@@ -145,7 +234,7 @@ uv run python examples/guides/survival_uplift_evaluation.py
 
 Within the selected subgroup, the script compares observed treated and control outcomes. It subtracts the cost and multiplies by the selected fraction to report value per person in the whole test population. The selected policy's approximate 95% interval is [0.6438, 0.7706]. It uses a normal approximation conditional on the selected fraction; it does not include model-selection uncertainty. Randomized assignment and independent test data support this comparison. Check arm counts and use a suitable uncertainty method for the actual design.
 
-Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. These calculations are example code, not a claim that the package already exposes uplift evaluation metrics.
+Synthetic truth is available here: the selected policy's true net value is 0.7252 per person and PEHE is 0.2347. Real records do not reveal both potential outcomes, so individual-effect error and PEHE cannot be calculated directly from ordinary real-world outcomes. For real-world evaluation, `MetricsReport("uplift", ...)` and `uplift_threshold(...)` provide the policy table and decile breakdown directly.
 
 **Next:** the worked example also uses a simulation with a known effect, to check numerical effect recovery, which real Hillstrom outcomes cannot provide.
 
