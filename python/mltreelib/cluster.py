@@ -46,7 +46,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         Target cluster count (required for URF, auto-detected in HDBSCAN / CLTree).
     max_depth : int, default=6
         Maximum tree depth for divisive clustering trees.
-    min_rows : int, default=5
+    min_rows : int, default=20
         Minimum leaf samples / cluster size.
     metric : str, default="euclidean"
         Distance metric (for HDBSCAN: ``"euclidean"``, ``"manhattan"``, ``"chebyshev"``).
@@ -86,7 +86,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         kind: str = "pct",
         n_clusters: int | None = None,
         max_depth: int = 6,
-        min_rows: int = 5,
+        min_rows: int = 20,
         metric: str = "euclidean",
         seed: int = 42,
         *,

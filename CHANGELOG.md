@@ -4,6 +4,12 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 
 ## Unreleased
 
+### Defaults and metrics
+
+- Per-family defaults: `ClusterModel`, `RuleModel` and `AnomalyModel` use `min_rows=20` (was 5, 5, 10); `AnomalyModel` uses `max_depth=10` (was unset, with a per-kind fallback). `ModelTree` is unchanged (6, 15, 0.5).
+- `MetricsReport(..., on_missing="drop" | "error")`: `"drop"` (default) scores complete rows and shows the missing counts; `"error"` raises when any input has a missing value.
+- New `tests/test_sanity_basics.py`: a small cross-task matrix (inputs, missing values, edge sizes, determinism, save/load, defaults, metrics).
+
 ## v0.4.15
 
 ### Spec 27 regression methods expansion

@@ -7,7 +7,7 @@ Unified anomaly detection: AnomalyModel (tree-based and PCA/NMF reconstruction e
 ## AnomalyModel
 
 ```python
-class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
+class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = 10, min_rows: 'int' = 20, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
 ```
 
 Unified Tree and Component-Based Anomaly Detector.
@@ -26,9 +26,9 @@ Parameters
 ----------
 kind : str, default="eif"
     Anomaly tree engine to use: ``"eif"``, ``"det"``, ``"hst"``, ``"rct"``, ``"active"``, or ``"context"``.
-max_depth : int, optional
+max_depth : int, default=10
     Maximum tree depth.
-min_rows : int, default=10
+min_rows : int, default=20
     Minimum leaf samples.
 contamination : float, default=0.05
     Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
@@ -225,7 +225,7 @@ Fitted anomaly detection output.
 ## AnomalyModel
 
 ```python
-class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
+class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = 10, min_rows: 'int' = 20, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
 ```
 
 Backward-compatible alias for AnomalyModel.

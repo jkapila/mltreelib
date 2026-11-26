@@ -48,9 +48,9 @@ class AnomalyModel(_UnsupervisedSnapshot):
     ----------
     kind : str, default="eif"
         Anomaly tree engine to use: ``"eif"``, ``"det"``, ``"hst"``, ``"rct"``, ``"active"``, or ``"context"``.
-    max_depth : int, optional
+    max_depth : int, default=10
         Maximum tree depth.
-    min_rows : int, default=10
+    min_rows : int, default=20
         Minimum leaf samples.
     contamination : float, default=0.05
         Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
@@ -83,8 +83,8 @@ class AnomalyModel(_UnsupervisedSnapshot):
     def __init__(
         self,
         kind: str = "eif",
-        max_depth: int | None = None,
-        min_rows: int = 10,
+        max_depth: int | None = 10,
+        min_rows: int = 20,
         contamination: float = 0.05,
         seed: int = 42,
         *,

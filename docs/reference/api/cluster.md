@@ -7,7 +7,7 @@ Unified clustering models and mixed-type search: ClusterModel, ClusterModel, Tri
 ## ClusterModel
 
 ```python
-class ClusterModel(kind: 'str' = 'pct', n_clusters: 'int | None' = None, max_depth: 'int' = 6, min_rows: 'int' = 5, metric: 'str' = 'euclidean', seed: 'int' = 42, *, min_samples_split: 'int | None' = None, min_variance_reduction: 'float' = 0.0001, target_weights: 'Sequence[float] | None' = None, min_density: 'float' = 0.6, min_samples: 'int | None' = None, cluster_selection_epsilon: 'float' = 0.0, max_cluster_size: 'int | None' = None, cluster_selection_method: 'str' = 'eom', allow_single_cluster: 'bool' = False, n_trees: 'int' = 50, max_features: 'int | None' = None, linkage: 'str' = 'average', **params: 'Any')
+class ClusterModel(kind: 'str' = 'pct', n_clusters: 'int | None' = None, max_depth: 'int' = 6, min_rows: 'int' = 20, metric: 'str' = 'euclidean', seed: 'int' = 42, *, min_samples_split: 'int | None' = None, min_variance_reduction: 'float' = 0.0001, target_weights: 'Sequence[float] | None' = None, min_density: 'float' = 0.6, min_samples: 'int | None' = None, cluster_selection_epsilon: 'float' = 0.0, max_cluster_size: 'int | None' = None, cluster_selection_method: 'str' = 'eom', allow_single_cluster: 'bool' = False, n_trees: 'int' = 50, max_features: 'int | None' = None, linkage: 'str' = 'average', **params: 'Any')
 ```
 
 Unified Tree-Based Clustering Model.
@@ -27,7 +27,7 @@ n_clusters : int, optional
     Target cluster count (required for URF, auto-detected in HDBSCAN / CLTree).
 max_depth : int, default=6
     Maximum tree depth for divisive clustering trees.
-min_rows : int, default=5
+min_rows : int, default=20
     Minimum leaf samples / cluster size.
 metric : str, default="euclidean"
     Distance metric (for HDBSCAN: ``"euclidean"``, ``"manhattan"``, ``"chebyshev"``).
@@ -201,7 +201,7 @@ Fitted clustering output.
 ## ClusterModel
 
 ```python
-class ClusterModel(kind: 'str' = 'pct', n_clusters: 'int | None' = None, max_depth: 'int' = 6, min_rows: 'int' = 5, metric: 'str' = 'euclidean', seed: 'int' = 42, *, min_samples_split: 'int | None' = None, min_variance_reduction: 'float' = 0.0001, target_weights: 'Sequence[float] | None' = None, min_density: 'float' = 0.6, min_samples: 'int | None' = None, cluster_selection_epsilon: 'float' = 0.0, max_cluster_size: 'int | None' = None, cluster_selection_method: 'str' = 'eom', allow_single_cluster: 'bool' = False, n_trees: 'int' = 50, max_features: 'int | None' = None, linkage: 'str' = 'average', **params: 'Any')
+class ClusterModel(kind: 'str' = 'pct', n_clusters: 'int | None' = None, max_depth: 'int' = 6, min_rows: 'int' = 20, metric: 'str' = 'euclidean', seed: 'int' = 42, *, min_samples_split: 'int | None' = None, min_variance_reduction: 'float' = 0.0001, target_weights: 'Sequence[float] | None' = None, min_density: 'float' = 0.6, min_samples: 'int | None' = None, cluster_selection_epsilon: 'float' = 0.0, max_cluster_size: 'int | None' = None, cluster_selection_method: 'str' = 'eom', allow_single_cluster: 'bool' = False, n_trees: 'int' = 50, max_features: 'int | None' = None, linkage: 'str' = 'average', **params: 'Any')
 ```
 
 Backward-compatible alias for ClusterModel.

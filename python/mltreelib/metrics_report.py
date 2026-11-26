@@ -455,7 +455,9 @@ class MetricsReport:
 
     Missing values (None or NaN) are never imputed or recoded. Every task counts
     missing entries in the ``inputs`` table and scores the complete rows inside
-    ``Metrics``.
+    ``Metrics``. ``on_missing="drop"`` (the default) does that and shows the
+    counts; ``on_missing="error"`` raises instead, for a strict check that the
+    predictions are complete.
 
     Attributes:
         task: The task name, lower-cased.
@@ -472,11 +474,24 @@ class MetricsReport:
     """
 
     def __init__(
-        self, task: str, y_true: Any = None, y_pred: Any = None, **inputs: Any
+        self,
+        task: str,
+        y_true: Any = None,
+        y_pred: Any = None,
+        *,
+        on_missing: str = "drop",
+        **inputs: Any,
     ) -> None:
+        if on_missing not in ("drop", "error"):
+            raise ValueError(f"on_missing must be 'drop' or 'error', got {on_missing!r}")
         self.task = _task_key(task)
         args: dict[str, Any] = {"y_true": y_true, "y_pred": y_pred, **inputs}
         cols = _prepare(self.task, args)
+        bad = [r["argument"] for r in cols["input_rows"] if r["n_missing"]]
+        if on_missing == "error" and bad:
+            raise ValueError(
+                f"{self.task} report: missing values in {', '.join(bad)} and on_missing='error'"
+            )
         self._metrics = _Metrics()
         self._notes: list[str] = []
         self._sections: list[dict[str, Any]] = []
@@ -1127,7 +1142,12 @@ def uplift_threshold(
 
 
 def metrics_report(
-    task: str, y_true: Any = None, y_pred: Any = None, **inputs: Any
+    task: str,
+    y_true: Any = None,
+    y_pred: Any = None,
+    *,
+    on_missing: str = "drop",
+    **inputs: Any,
 ) -> MetricsReport:
     """Build a :class:`MetricsReport`; a thin alias of ``MetricsReport(...)``.
 
@@ -1135,4 +1155,4 @@ def metrics_report(
         >>> metrics_report("regression", y_true=[1.0, 2.0], y_pred=[1.0, 2.0])["rmse"]
         0.0
     """
-    return MetricsReport(task, y_true, y_pred, **inputs)
+    return MetricsReport(task, y_true, y_pred, on_missing=on_missing, **inputs)

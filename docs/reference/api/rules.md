@@ -7,7 +7,7 @@ Quinlan C4.5 / C5.0 rule extraction, condition interval simplification, and pess
 ## RuleModel
 
 ```python
-class RuleModel(kind: 'str' = 'c50', *, max_depth: 'int' = 6, min_rows: 'int' = 5, prune: 'bool' = True, cf: 'float' = 0.25) -> 'None'
+class RuleModel(kind: 'str' = 'c50', *, max_depth: 'int' = 6, min_rows: 'int' = 20, prune: 'bool' = True, cf: 'float' = 0.25) -> 'None'
 ```
 
 Unified Rule-Set Extraction and Pruning Model.
@@ -21,7 +21,7 @@ kind : str, default="c50"
     Rule mining family: ``"c50"``, ``"c45"``, or ``"tree"``.
 max_depth : int, default=6
     Maximum tree depth for the underlying decision tree.
-min_rows : int, default=5
+min_rows : int, default=20
     Minimum leaf samples per rule.
 prune : bool, default=True
     Whether to greedily prune rule preconditions using pessimistic error bounds.
