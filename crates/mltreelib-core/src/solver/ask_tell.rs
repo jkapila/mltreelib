@@ -34,6 +34,7 @@ pub enum AskTellKind {
 }
 
 impl AskTellKind {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_ascii_lowercase().replace('-', "_").as_str() {
             "cmaes" | "cma_es" => Some(Self::CmaEs),
@@ -1126,7 +1127,7 @@ impl AskTell {
                         }
                     }
                 }
-                if self.iterations > 0 && self.iterations % st.migration_interval == 0 {
+                if self.iterations > 0 && self.iterations.is_multiple_of(st.migration_interval) {
                     let best_per_island: Vec<Option<Vec<f64>>> = st
                         .islands
                         .iter()
@@ -1335,7 +1336,7 @@ impl AskTell {
                     let fronts = non_dominated_sort(&all_objs);
                     st.pareto_front = fronts[0].iter().map(|&idx| all_solutions[idx].clone()).collect();
                 }
-                if self.iterations > 0 && self.iterations % st.migration_interval == 0 {
+                if self.iterations > 0 && self.iterations.is_multiple_of(st.migration_interval) {
                     let best_per_island: Vec<Option<Vec<f64>>> = st
                         .islands
                         .iter()
@@ -1492,11 +1493,10 @@ impl AskTell {
                     st.parent_pop[replace_idx] = cand.to_vec();
                 }
             }
-            InternalState::Island(st) => {
-                if !st.islands.is_empty() {
+            InternalState::Island(st)
+                if !st.islands.is_empty() => {
                     st.islands[0].inject_candidate(cand);
                 }
-            }
             _ => {}
         }
     }

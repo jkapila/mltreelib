@@ -117,8 +117,8 @@ impl GlmFamily {
                 let t1 = y * m.powf(1.0 - p_val) / (1.0 - p_val);
                 let t2 = m.powf(2.0 - p_val) / (2.0 - p_val);
                 let y0 = if y > 0.0 {
-                    let y1 = y.powf(2.0 - p_val) / ((1.0 - p_val) * (2.0 - p_val));
-                    y1
+                    
+                    y.powf(2.0 - p_val) / ((1.0 - p_val) * (2.0 - p_val))
                 } else {
                     0.0
                 };

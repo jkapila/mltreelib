@@ -11,7 +11,7 @@ from random import Random
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mltreelib import AnomalyTree, Metrics, plots
+from mltreelib import AnomalyModel, MetricsReport, plots
 
 base = Path("datasets/external/shuttle")
 def load(path):
@@ -25,7 +25,7 @@ rng = Random(42)
 rng.shuffle(normal)
 reference = normal[:5000]
 truth = [int(label != 1) for label in test_y]
-model = AnomalyTree(kind="eif", max_depth=10, extension_level=1, seed=42)
+model = AnomalyModel(kind="eif", max_depth=10, extension_level=1, seed=42)
 model.fit(reference, col_names=[f"sensor_{i+1}" for i in range(9)])
 scores = model.score_samples(test_x)
 budget = round(.05 * len(test_x))
@@ -40,7 +40,8 @@ budgets = [round(fraction * len(test_x)) for fraction in (.01, .05, .10)]
 for k in budgets:
     print("queue size, precision, recall:", k, round(hits[k - 1] / k, 4),
           round(hits[k - 1] / sum(truth), 4))
-print("test average precision:", round(Metrics().pr_curve(truth, scores)["average_precision"], 4))
+probs = [1.0 / (1.0 + 2.718281828 ** (-s)) for s in scores]
+print("test average precision:", round(MetricsReport("classification", y_true=truth, proba=probs)["average_precision"], 4))
 
 out = Path("docs/assets/guides"); out.mkdir(parents=True, exist_ok=True)
 fig, (ax, queue_ax) = plt.subplots(1, 2, figsize=(10, 4))

@@ -67,7 +67,7 @@ uv run python examples/guides/real_tree_studies.py wine  # after downloading Win
 | I want to… | go to |
 |---|---|
 | install it | [Installation](installation.md) |
-| check the current release | [v0.4.15 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.15) |
+| check the current release | [v0.4.16 release notes](https://github.com/jkapila/mltreelib/releases/tag/v0.4.16) |
 | see it work in 30 seconds | [Quickstart](quickstart.md) |
 | understand how a feature works | [How it works](guides/index.md) |
 | choose a modeling task | [Practical modeling pathways](guides/index.md) |

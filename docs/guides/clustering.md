@@ -17,23 +17,43 @@ Run this from the repository root. The second split supports a refit check. Assi
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import ClusterModel
+from mltreelib import ClusterModel, dataset_path
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
-df = pd.read_parquet(dataset_path("wine_quality")).sample(frac=1, random_state=2026)
+df = pd.read_parquet(dataset_path("wine_quality"))
 features = ["residual_sugar", "volatile_acidity", "alcohol", "chlorides"]
-train, review = df.iloc[:2500], df.iloc[5000:].copy()
-center = train[features].mean()
-scale = train[features].std()
+ds = Dataset(df[features].to_dict("list"), features=features, name="wine_quality")
+# Seeded split: 2,500 train, 2,500 refit check (middle split), remaining rows review
+train_ds, val_ds, review_ds = ds.split(
+    val_size=2500, test_size=ds.n_rows - 5000, seed=2026
+)
+train_df = pd.DataFrame({f: train_ds.columns[f] for f in features})
+val_df = pd.DataFrame({f: val_ds.columns[f] for f in features})
+review = pd.DataFrame({f: review_ds.columns[f] for f in features})
+center = train_df.mean()
+scale = train_df.std()
 
 def design(frame):
     return ((frame[features] - center) / scale).to_numpy().tolist()
 
 tree = ClusterModel(kind="pct", max_depth=2, min_rows=150)
-tree.fit(design(train), col_names=features)
+tree.fit(design(train_df), col_names=features)
 review["segment"] = tree.predict(design(review), kind="cluster")
 print(review.groupby("segment")[features].median().round(3))
 print(review["segment"].value_counts().sort_index())
+
+# Refit at depth 2 on the middle split, then compare the review assignments by pairwise Jaccard
+refit = ClusterModel(kind="pct", max_depth=2, min_rows=150)
+refit.fit(design(val_df), col_names=features)
+first = review["segment"].tolist()
+second = refit.predict(design(review), kind="cluster")
+both = either = 0
+for i in range(len(first)):
+    for j in range(i + 1, len(first)):
+        same_first, same_second = first[i] == first[j], second[i] == second[j]
+        both += same_first and same_second
+        either += same_first or same_second
+print(f"Pairwise Jaccard after refit: {both / either:.3f}")
 print(tree.rules())
 ```
 
@@ -41,17 +61,18 @@ print(tree.rules())
 ```text
          residual_sugar  volatile_acidity  alcohol  chlorides
 segment                                                      
-0                   2.1             0.260     10.9      0.042
-1                   2.2             0.580     10.0      0.077
-2                  12.0             0.265      9.3      0.049
-3                   9.7             0.280     11.0      0.038
+0                   2.0              0.26     11.0      0.041
+1                   2.2              0.49      9.8      0.081
+2                  12.0              0.26      9.3      0.047
+3                   9.2              0.29     11.0      0.038
 segment
-0    715
-1    303
-2    350
-3    129
+0    671
+1    376
+2    339
+3    111
 Name: count, dtype: int64
-[{'cluster_id': 0, 'rule': 'residual_sugar <= 0.3250 AND volatile_acidity <= 0.5334', 'prototype': [-0.5633571796980814, -0.45032130960253103, 0.35595950436800566, -0.19283988480404657], 'size': 1225}, {'cluster_id': 1, 'rule': 'residual_sugar <= 0.3250 AND volatile_acidity > 0.5334', 'prototype': [-0.6175285877862888, 1.5861935962778964, -0.045033699961352924, 0.7751047008432439], 'size': 511}, {'cluster_id': 2, 'rule': 'residual_sugar > 0.3250 AND alcohol <= -0.1944', 'prototype': [1.4487425379517769, -0.3488113958827904, -0.9831008544389213, -0.1253780190834037], 'size': 550}, {'cluster_id': 3, 'rule': 'residual_sugar > 0.3250 AND alcohol > -0.1944', 'prototype': [0.9759871851189981, -0.3133413817727514, 0.5965761578077295, -0.42472772313116014], 'size': 214}]
+Pairwise Jaccard after refit: 0.858
+[{'cluster_id': 0, 'rule': 'residual_sugar <= 0.3162 AND chlorides <= 0.1151', 'prototype': [-0.5298608388963876, -0.33901691024812336, 0.4817291756224511, -0.4334330762280131], 'size': 1134}, {'cluster_id': 1, 'rule': 'residual_sugar <= 0.3162 AND chlorides > 0.1151', 'prototype': [-0.6147134546221794, 0.9982630406935705, -0.21269204365655098, 1.0569811477673698], 'size': 613}, {'cluster_id': 2, 'rule': 'residual_sugar > 0.3162 AND alcohol <= -0.1255', 'prototype': [1.4028201489335133, -0.31369157555757365, -0.9910952377644764, -0.11698902770202284], 'size': 551}, {'cluster_id': 3, 'rule': 'residual_sugar > 0.3162 AND alcohol > -0.1255', 'prototype': [1.0135031531165115, -0.2705247999582201, 0.6445188792763954, -0.45522465779711985], 'size': 202}]
 ```
 
 `labels_` stores the training assignments and `n_clusters_` gives the number of assigned clusters. The [full script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_tree_studies.py) refits on the other 2,500 wines and draws the figure.
@@ -68,12 +89,12 @@ uv run python examples/guides/real_tree_studies.py wine
 
 | Leaf | Review rows | Median residual sugar (g/L) | Median volatile acidity (g/L) | Median alcohol (%) |
 |---|---:|---:|---:|---:|
-| 0 | 715 | 2.1 | 0.260 | 10.9 |
-| 1 | 303 | 2.2 | 0.580 | 10.0 |
-| 2 | 350 | 12.0 | 0.265 | 9.3 |
-| 3 | 129 | 9.7 | 0.280 | 11.0 |
+| 0 | 671 | 2.0 | 0.26 | 11.0 |
+| 1 | 376 | 2.2 | 0.49 | 9.8 |
+| 2 | 339 | 12.0 | 0.26 | 9.3 |
+| 3 | 111 | 9.2 | 0.29 | 11.0 |
 
-The two lower-sugar groups differ on acidity. The higher-sugar groups differ on alcohol. Pairwise Jaccard agreement on the 1,497 review wines was **0.841** after refitting at depth two on the second training sample. This is one check with a shared training scale.
+The two lower-sugar groups differ on acidity. The higher-sugar groups differ on alcohol. Pairwise Jaccard agreement on the 1,497 review wines was **0.858** after refitting at depth two on the second training sample. This is one check with a shared training scale.
 
 A scatter plot only shows two of the four input features. Use the profile panel to see how the segments differ across the full feature list. It displays each segment's median in units of the training standard deviation. For a rule review, convert a standardized threshold back to lab units using `threshold * scale + center`.
 

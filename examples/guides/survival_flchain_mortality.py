@@ -80,19 +80,22 @@ def run_flchain_survival():
     base_curves = base.predict(x_test, kind="survival", times=eval_horizons)
     risk_scores = model.predict(x_test, kind="risk")
 
-    metrics = Metrics()
-    report_tree = metrics.survival(
+    from mltreelib import MetricsReport
+
+    report_tree = MetricsReport(
+        "survival",
         durations=t_test,
         events=e_test,
-        risk_scores=risk_scores,
+        risk=risk_scores,
         surv_curves=pred_curves,
         times=eval_horizons,
     )
 
-    report_base = metrics.survival(
+    report_base = MetricsReport(
+        "survival",
         durations=t_test,
         events=e_test,
-        risk_scores=[0.0] * len(t_test),
+        risk=[0.0] * len(t_test),
         surv_curves=base_curves,
         times=eval_horizons,
     )

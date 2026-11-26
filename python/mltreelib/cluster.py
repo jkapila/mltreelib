@@ -11,6 +11,7 @@ from mltreelib._core import CLTree as _CLTree
 from mltreelib._core import PredictiveClusteringTree as _PCT
 from mltreelib._core import UnsupervisedRandomForest as _URF
 from mltreelib._model_inputs import _numeric_rows
+from mltreelib._tables import to_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 from mltreelib.report import ModelReport, build_report
 
@@ -45,7 +46,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         Target cluster count (required for URF, auto-detected in HDBSCAN / CLTree).
     max_depth : int, default=6
         Maximum tree depth for divisive clustering trees.
-    min_rows : int, default=5
+    min_rows : int, default=20
         Minimum leaf samples / cluster size.
     metric : str, default="euclidean"
         Distance metric (for HDBSCAN: ``"euclidean"``, ``"manhattan"``, ``"chebyshev"``).
@@ -85,7 +86,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         kind: str = "pct",
         n_clusters: int | None = None,
         max_depth: int = 6,
-        min_rows: int = 5,
+        min_rows: int = 20,
         metric: str = "euclidean",
         seed: int = 42,
         *,
@@ -177,13 +178,16 @@ class ClusterModel(_UnsupervisedSnapshot):
         col_names: Sequence[str] | None = None,
         dtypes: Sequence[str] | None = None,
         target_names: Sequence[str] | None = None,
-    ) -> ClusterTree:
+    ) -> ClusterModel:
         """Fit on x, with optional PCT targets y.
 
         None and NaN cells stay missing. CLTree and URF route them to the left
         during split search and prediction. HDBSCAN uses jointly observed
         coordinates and treats rows with too few comparable neighbors as noise.
         """
+        x, _names = to_rows(x)
+        if col_names is None and _names is not None:
+            col_names = _names
         if len(x) == 0:
             raise ValueError("ClusterTree requires at least one training row.")
         k = self.kind
@@ -263,6 +267,7 @@ class ClusterModel(_UnsupervisedSnapshot):
         """Predict cluster labels or URF distances from each query to each training row."""
         if not self._fitted:
             raise ValueError("ClusterTree is not fitted yet.")
+        x = to_rows(x)[0]
 
         k = self.kind
         valid = (

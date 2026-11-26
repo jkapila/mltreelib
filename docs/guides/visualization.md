@@ -23,16 +23,17 @@ The script needs matplotlib and writes SVG files to `docs/assets/guides/`. It us
 
 ## 2. Use the plotting API
 
-This complete example plots a small held-out regression result. The plotting layer is optional; `Metrics` returns numeric reports without matplotlib.
+This complete example plots a small held-out regression result. The plotting layer is optional; `MetricsReport` returns numeric reports without matplotlib.
 
 <!-- run -->
 ```python
 import matplotlib.pyplot as plt
-from mltreelib import Metrics, plots
+from mltreelib import MetricsReport, plots
 
 actual = [1.0, 2.0, 3.0, 4.0]
 predicted = [1.2, 1.8, 3.4, 3.7]
-print("MAE:", Metrics().regression(actual, predicted)["mae"])
+rep = MetricsReport("regression", y_true=actual, y_pred=predicted)
+print("MAE:", rep["mae"])
 fig, ax = plt.subplots()
 plots.plot_residuals(actual, predicted, ax=ax)
 fig.tight_layout()
@@ -43,6 +44,8 @@ plt.close(fig)
 ```text
 MAE: 0.2749999999999999
 ```
+
+**What to read in the output:** `MAE` is the mean absolute error across the four observations (`0.275`), matching the residual bars in the figure.
 
 ![Regression residuals](../assets/guides/data-residuals.svg)
 

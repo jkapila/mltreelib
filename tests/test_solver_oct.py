@@ -1,5 +1,6 @@
 import pytest
-from mltreelib.solvers import solve_optimal_tree, solve_oct_mip_cvx
+from cvx_reference import solve_oct_mip_cvx
+from mltreelib.solvers import solve_optimal_tree
 
 
 def test_solve_optimal_tree_stump_classification():
@@ -58,23 +59,12 @@ def test_solve_optimal_tree_regression():
         assert abs(p - actual) < 1e-4
 
 
-def test_solve_oct_mip_cvx_or_importerror():
-    try:
-        import cvxpy  # noqa: F401
-
-        has_cvxpy = True
-    except ImportError:
-        has_cvxpy = False
-
+def test_solve_oct_mip_cvx_matches_the_exact_stump():
+    pytest.importorskip("cvxpy")
     x = [[1.0], [2.0], [8.0], [9.0]]
     y = [0.0, 0.0, 1.0, 1.0]
-
-    if has_cvxpy:
-        feat, thresh, left_val, right_val = solve_oct_mip_cvx(x, y, task="classification")
-        assert feat == 0
-        assert 2.0 <= thresh <= 8.0
-        assert left_val == 0.0
-        assert right_val == 1.0
-    else:
-        with pytest.raises(ImportError, match="cvxpy is required"):
-            solve_oct_mip_cvx(x, y)
+    feat, thresh, left_val, right_val = solve_oct_mip_cvx(x, y, task="classification")
+    assert feat == 0
+    assert 2.0 <= thresh <= 8.0
+    assert left_val == 0.0
+    assert right_val == 1.0

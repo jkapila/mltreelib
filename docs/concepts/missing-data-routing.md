@@ -94,24 +94,25 @@ We evaluate native routing against standard mean imputation on the **Scania APS 
 
 <!-- run -->
 ```python
-from mltreelib import Metrics, ModelTree, load_dataset
+from mltreelib import MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
-# 1. Load Scania truck telemetry benchmark
-data = load_dataset("APSFailure")
-target = "AirPressureSystemFailure"
+# 1. Load Scania truck telemetry benchmark (first 10,000 rows in file order)
 features = [
     "aa_000", "ab_000", "ac_000", "ad_000", "ae_000", "af_000",
     "ag_000", "ag_001", "ag_002", "ag_003", "ag_004", "ag_005"
 ]
-n_sample = 12000
+ds_full = Dataset.load(
+    "APSFailure", target="AirPressureSystemFailure", features=features
+)
+ds_12k, _ = ds_full.split(test_size=ds_full.n_rows - 12000, time=True)
+pct_missing = ds_12k.missing()["per_column"]["ab_000"]["pct_missing"]
+print(f"ab_000 missing in first 12,000 rows: {pct_missing:.1f}%")
 
-y_raw = data["columns"][target][:n_sample]
-y = [1 if v in ("pos", "1", 1) else 0 for v in y_raw]
-X = [[data["columns"][c][i] for c in features] for i in range(n_sample)]
-
-split = 8000
-X_train, y_train = X[:split], y[:split]
-X_test, y_test = X[split:10000], y[split:10000]
+ds, _ = ds_full.split(test_size=ds_full.n_rows - 10000, time=True)
+train, test = ds.split(test_size=2000, time=True)
+y_train = [1 if v in ("pos", "1", 1) else 0 for v in train.y]
+y_test = [1 if v in ("pos", "1", 1) else 0 for v in test.y]
 
 # 2. Fit ModelTree with Native Missing Routing and 2 Surrogates per node
 tree_native = ModelTree(
@@ -122,19 +123,18 @@ tree_native = ModelTree(
     leaf_family="binomial",
     gain="deviance",
 )
-tree_native.fit(X_train, y_train, col_names=features)
+tree_native.fit(train.x, y_train, col_names=features, dtypes=train.dtypes)
 
 # 3. Evaluate on held-out test telemetry
-probs = tree_native.predict_proba(X_test)
-metrics = Metrics()
-pr = metrics.pr_curve(y_test, probs)
-roc = metrics.roc_curve(y_test, probs)
+probs = tree_native.predict_proba(test)
+rep = MetricsReport("classification", y_true=y_test, proba=probs)
 
-print(f"Native Routing -> Average Precision: {pr['average_precision']:.4f}, ROC-AUC: {roc['auc']:.4f}")
+print(f"Native Routing -> Average Precision: {rep['average_precision']:.4f}, ROC-AUC: {rep['auc']:.4f}")
 ```
 
 <!-- output -->
 ```text
+ab_000 missing in first 12,000 rows: 77.4%
 Native Routing -> Average Precision: 0.4916, ROC-AUC: 0.9524
 ```
 

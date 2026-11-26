@@ -40,7 +40,7 @@ class RuleModel:
         Rule mining family: ``"c50"``, ``"c45"``, or ``"tree"``.
     max_depth : int, default=6
         Maximum tree depth for the underlying decision tree.
-    min_rows : int, default=5
+    min_rows : int, default=20
         Minimum leaf samples per rule.
     prune : bool, default=True
         Whether to greedily prune rule preconditions using pessimistic error bounds.
@@ -55,7 +55,7 @@ class RuleModel:
         kind: str = "c50",
         *,
         max_depth: int = 6,
-        min_rows: int = 5,
+        min_rows: int = 20,
         prune: bool = True,
         cf: float = 0.25,
     ) -> None:

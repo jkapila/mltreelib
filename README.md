@@ -50,11 +50,11 @@ See the [changelog](CHANGELOG.md) for release history and the [release guide](RE
 
 ### R ModelTree
 
-From a v0.4.15 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
+From a v0.4.16 checkout, use R, a C compiler, and Cargo to build and install the source package. The source package includes the Rust core. Cargo needs access to its dependencies.
 
 ```sh
 r/build-r-package.sh dist
-R CMD INSTALL dist/mltreelib_0.4.15.tar.gz
+R CMD INSTALL dist/mltreelib_0.4.16.tar.gz
 Rscript --vanilla r/airquality_model_tree.R
 ```
 
@@ -118,7 +118,7 @@ Full walkthrough, tree printout and comparison with a constant-leaf tree: [Quick
 | Rules and inspection | `RuleModel`, `ModelTree.extract_rules()` | [Rules and stumps](https://jkapila.github.io/mltreelib/guides/model-inspection-and-rules/) |
 | Forecasting features | `lag_by_days`, `windowed_transform` | [Time series](https://jkapila.github.io/mltreelib/concepts/timeseries-forecasting/) |
 | Solvers and optimizers | `mltreelib.solvers.fit`, `mltreelib.solvers.optimize` | [Solvers](https://jkapila.github.io/mltreelib/concepts/solvers-and-optimizers/) |
-| Data preparation and synthetic data | `load_dataset`, `generate`, encoders | [Prepare data](https://jkapila.github.io/mltreelib/guides/data/) |
+| Data preparation and synthetic data | `load_dataset`, `generate`, `mltreelib.data` (`describe`, `missing_profile`, `train_test_split`, `xy`, `iv_bins`), encoders | [Prepare data](https://jkapila.github.io/mltreelib/guides/data/) |
 | Metrics and diagnostics | `Metrics` | [Evaluate](https://jkapila.github.io/mltreelib/guides/evaluation/) |
 
 Notes:

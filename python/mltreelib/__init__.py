@@ -70,6 +70,7 @@ from mltreelib._core import (
     winnow,
 )
 from mltreelib.components import ComponentModel, ComponentResult
+from mltreelib.metrics_report import MetricsReport, uplift_threshold
 from mltreelib.models import (
     AnomalyModel,
     AnomalyResult,
@@ -86,14 +87,25 @@ from mltreelib.report import ModelReport
 
 if TYPE_CHECKING:
     from mltreelib import plots
-    from mltreelib.datasets import dataset_path, list_datasets, load_dataset
+    from mltreelib.datasets import (
+        dataset_metadata,
+        dataset_path,
+        list_datasets,
+        load_dataset,
+        load_survival_dataset,
+        load_uplift_dataset,
+    )
 
 # Lazy-loaded attributes for optional dataset and plotting extras
 _LAZY_EXPORTS: dict[str, tuple[str, str | None]] = {
     "list_datasets": ("mltreelib.datasets", "list_datasets"),
     "load_dataset": ("mltreelib.datasets", "load_dataset"),
+    "load_survival_dataset": ("mltreelib.datasets", "load_survival_dataset"),
+    "load_uplift_dataset": ("mltreelib.datasets", "load_uplift_dataset"),
+    "dataset_metadata": ("mltreelib.datasets", "dataset_metadata"),
     "dataset_path": ("mltreelib.datasets", "dataset_path"),
     "plots": ("mltreelib.plots", None),
+    "data": ("mltreelib.data", None),
 }
 
 
@@ -144,6 +156,7 @@ __all__ = [
     "MEstimatorEncoder",
     "MarsRegressor",
     "Metrics",
+    "MetricsReport",
     "ModelReport",
     "ModelTree",
     "OneHotEncoder",
@@ -165,6 +178,8 @@ __all__ = [
     "competing_risks_calibration",
     "competing_risks_report",
     "d_calibration",
+    "data",
+    "dataset_metadata",
     "dataset_path",
     "decomposed_transform",
     "detect_quantile_crossings",
@@ -178,11 +193,14 @@ __all__ = [
     "lag_by_days",
     "list_datasets",
     "load_dataset",
+    "load_survival_dataset",
+    "load_uplift_dataset",
     "one_calibration",
     "plots",
     "summarize",
     "trended_transform",
+    "uplift_threshold",
     "windowed_transform",
     "winnow",
 ]
-__version__ = "0.4.15"
+__version__ = "0.4.16"

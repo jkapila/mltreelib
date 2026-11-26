@@ -335,3 +335,95 @@ fn grouped_regression_matches_ungrouped() {
     assert_eq!(g[1].1.mae, 2.0);
     assert!(grouped_regression_report(&keys[..1], &t, &p).is_err());
 }
+
+#[test]
+fn nan_inputs_drop_incomplete_rows_and_never_hang_or_recode() {
+    use mltreelib_core::metrics::{
+        calibration_bins, classification_scores, decile_table, gain_curve,
+        integrated_calibration_index, ks_statistic, survival_report, time_series_report,
+        uplift_report, weighted_kappa,
+    };
+
+    let y = [0.0, 1.0, 0.0, 1.0];
+    let s = [0.1, 0.9, 0.2, 0.8];
+    let y_nan = [0.0, f64::NAN, 1.0, 0.0, 1.0];
+    let s_nan = [0.1, 0.5, 0.9, f64::NAN, 0.8];
+
+    // Ranking/calibration curves must not hang on NaN scores or recode NaN y as 0.
+    // Note: row 1 has y=NaN, row 3 has s=NaN -> remaining pairs are (0,0.1), (1,0.9), (1,0.8).
+    let y_clean = [0.0, 1.0, 1.0];
+    let s_clean = [0.1, 0.9, 0.8];
+    assert_eq!(roc_curve(&y_nan, &s_nan).unwrap().1, roc_curve(&y_clean, &s_clean).unwrap().1);
+    assert_eq!(pr_curve(&y_nan, &s_nan).unwrap().1, pr_curve(&y_clean, &s_clean).unwrap().1);
+    assert_eq!(gain_curve(&y_nan, &s_nan).unwrap(), gain_curve(&y_clean, &s_clean).unwrap());
+    assert_eq!(ks_statistic(&y_nan, &s_nan).unwrap().ks, ks_statistic(&y_clean, &s_clean).unwrap().ks);
+    assert_eq!(
+        calibration_bins(&y_nan, &s_nan, 5).unwrap().len(),
+        calibration_bins(&y_clean, &s_clean, 5).unwrap().len()
+    );
+    assert_eq!(
+        decile_table(&y_nan, &s_nan, 3).unwrap().len(),
+        decile_table(&y_clean, &s_clean, 3).unwrap().len()
+    );
+    assert_eq!(log_loss(&y_nan, &s_nan).unwrap(), log_loss(&y_clean, &s_clean).unwrap());
+    assert_eq!(brier_score(&y_nan, &s_nan).unwrap(), brier_score(&y_clean, &s_clean).unwrap());
+    assert_eq!(hinge_loss(&y_nan, &s_nan).unwrap(), hinge_loss(&y_clean, &s_clean).unwrap());
+
+    // classification_scores and weighted_kappa must not panic on NaN.
+    let cs = classification_scores(&[0.0, f64::NAN, 1.0, 1.0], &[0.0, 1.0, 1.0, 0.0]).unwrap();
+    assert_eq!(cs.n, 3);
+    assert!(weighted_kappa(&[0.0, f64::NAN, 1.0, 1.0], &[0.0, 1.0, 1.0, 0.0], "linear").is_ok());
+
+    // uplift_report must not recode NaN treatment as control or propagate NaN.
+    let up = uplift_report(
+        &[1.0, f64::NAN, 0.0, 1.0, 0.0],
+        &[1.0, 1.0, f64::NAN, 0.0, 1.0],
+        &[0.5, 0.2, 0.3, 0.1, f64::NAN],
+    )
+    .unwrap();
+    assert_eq!(up.n_total, 2);
+    assert_eq!(up.n_treated, 1);
+    assert_eq!(up.n_control, 1);
+    assert!((up.ate - 0.0).abs() < 1e-12);
+
+    // survival_report must not hang on NaN duration or recode NaN event.
+    let sr = survival_report(
+        &[5.0, f64::NAN, 8.0, 3.0],
+        &[1.0, 1.0, f64::NAN, 0.0],
+        &[0.8, 0.5, 0.3, 0.2],
+        None,
+        None,
+    )
+    .unwrap();
+    assert_eq!(sr.n_samples, 2);
+    assert_eq!(sr.n_events, 1);
+
+    // time_series_report must drop NaN pairs and produce finite metrics.
+    let ts = time_series_report(
+        &[1.0, f64::NAN, 3.0, 4.0],
+        &[1.0, 2.0, 2.0, 4.0],
+        Some(&[1.0, f64::NAN, 2.0, 3.0]),
+        Some(1),
+        Some(&[0.5, 0.5, 0.5, 0.5]),
+    )
+    .unwrap();
+    assert_eq!(ts.n_periods, 3);
+    assert!(ts.mae.is_finite() && ts.rmse.is_finite() && ts.crps.unwrap().is_finite());
+
+    // integrated_calibration_index must not panic on NaN.
+    let ici = integrated_calibration_index(
+        &[5.0, f64::NAN, 8.0, 3.0],
+        &[1.0, 1.0, 0.0, 1.0],
+        &[0.4, 0.5, 0.7, 0.2],
+        4.0,
+    )
+    .unwrap();
+    assert!(ici.ici.is_finite());
+
+    // All-NaN inputs return Err instead of panicking or hanging.
+    assert!(roc_curve(&[f64::NAN], &[0.5]).is_err());
+    assert!(uplift_report(&[f64::NAN], &[1.0], &[0.5]).is_err());
+    assert!(survival_report(&[f64::NAN], &[1.0], &[0.5], None, None).is_err());
+    assert!(time_series_report(&[f64::NAN], &[1.0], None, None, None).is_err());
+    let _ = (y, s);
+}

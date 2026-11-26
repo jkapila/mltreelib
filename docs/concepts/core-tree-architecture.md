@@ -81,20 +81,14 @@ We evaluate the architecture on the standard civil engineering benchmark: Yeh (1
 
 <!-- run -->
 ```python
-from mltreelib import ModelTree, LeafControl, Metrics, load_dataset
+from mltreelib import LeafControl, MetricsReport, ModelTree
+from mltreelib.data import Dataset
 
-# 1. Load benchmark dataset
-data = load_dataset("concrete_compressive_strength")
-target = "ConcreteCompressiveStrength"
-feature_names = [col for col in data["columns"].keys() if col != target]
-n_rows = data["n_rows"]
-
-X = [[data["columns"][c][i] for c in feature_names] for i in range(n_rows)]
-y = data["columns"][target]
-
-split_idx = int(n_rows * 0.8)
-X_train, y_train = X[:split_idx], y[:split_idx]
-X_test, y_test = X[split_idx:], y[split_idx:]
+# 1. Load benchmark dataset and split 80/20 without shuffling
+ds = Dataset.load(
+    "concrete_compressive_strength", target="ConcreteCompressiveStrength"
+)
+train, test = ds.split(test_size=0.2, time=True)
 
 # 2. Configure LeafControl independently of tree topology
 leaf_ctrl = LeafControl(
@@ -111,12 +105,12 @@ model = ModelTree(
     prune="none",
     control=leaf_ctrl,
 )
-model.fit(X_train, y_train, col_names=feature_names)
+model.fit(train)
 
 # 4. Measure holdout performance
-preds = model.predict(X_test)
-m = Metrics().regression(y_test, preds)
-print(f"ModelTree Linear Leaves: RMSE = {m['rmse']:.2f} MPa, R2 = {m['r2']:.3f}, MAE = {m['mae']:.2f} MPa")
+preds = model.predict(test)
+rep = MetricsReport("regression", y_true=test.y, y_pred=preds)
+print(f"ModelTree Linear Leaves: RMSE = {rep['rmse']:.2f} MPa, R2 = {rep['r2']:.3f}, MAE = {rep['mae']:.2f} MPa")
 ```
 
 <!-- output -->
@@ -130,23 +124,38 @@ ModelTree Linear Leaves: RMSE = 7.28 MPa, R2 = 0.813, MAE = 5.07 MPa
 
 ## 3. Empirical Results & Growth Knob Grid
 
-```text
-Loaded Concrete Compressive Strength: 1030 rows, 8 features.
-Train samples: 824, Test samples: 206
+<!-- run -->
+```python
+# 3. Compare CART (mean leaves) and ModelTree (linear leaves) at depths 1 to 5
+for depth in range(1, 6):
+    cart = ModelTree(leaf="mean", max_depth=depth, min_rows=20)
+    cart.fit(train)
+    cart_m = MetricsReport("regression", y_true=test.y, y_pred=cart.predict(test))
 
-=== Model Performance across Depths ===
-Depth 1 -> CART RMSE: 15.24 MPa | ModelTree RMSE: 7.63 MPa (2 leaves)
-Depth 2 -> CART RMSE: 12.54 MPa | ModelTree RMSE: 7.18 MPa (4 leaves)
-Depth 3 -> CART RMSE: 11.09 MPa | ModelTree RMSE: 7.28 MPa (8 leaves)
-Depth 4 -> CART RMSE: 10.16 MPa | ModelTree RMSE: 6.70 MPa (15 leaves)
-Depth 5 -> CART RMSE: 9.53 MPa  | ModelTree RMSE: 6.25 MPa (21 leaves)
+    mt = ModelTree(leaf="linear", max_depth=depth, min_rows=20, l2=1e-3)
+    mt.fit(train)
+    mt_m = MetricsReport("regression", y_true=test.y, y_pred=mt.predict(test))
+
+    change = (mt_m["rmse"] - cart_m["rmse"]) / cart_m["rmse"] * 100
+    print(f"Depth {depth} -> CART RMSE {cart_m['rmse']:.2f} MPa (R2 {cart_m['r2']:.3f}) | "
+          f"ModelTree RMSE {mt_m['rmse']:.2f} MPa (R2 {mt_m['r2']:.3f}, {len(mt.leaves())} leaves) | "
+          f"change {change:+.1f}%")
+```
+
+<!-- output -->
+```text
+Depth 1 -> CART RMSE 15.24 MPa (R2 0.180) | ModelTree RMSE 7.63 MPa (R2 0.794, 2 leaves) | change -49.9%
+Depth 2 -> CART RMSE 12.54 MPa (R2 0.444) | ModelTree RMSE 7.18 MPa (R2 0.818, 4 leaves) | change -42.7%
+Depth 3 -> CART RMSE 11.09 MPa (R2 0.566) | ModelTree RMSE 7.28 MPa (R2 0.813, 8 leaves) | change -34.3%
+Depth 4 -> CART RMSE 10.16 MPa (R2 0.635) | ModelTree RMSE 6.70 MPa (R2 0.841, 15 leaves) | change -34.1%
+Depth 5 -> CART RMSE 9.53 MPa (R2 0.679) | ModelTree RMSE 6.25 MPa (R2 0.862, 21 leaves) | change -34.4%
 ```
 
 | Tree Depth | CART Holdout RMSE (MPa) | ModelTree Holdout RMSE (MPa) | Error Reduction (%) | Active Leaves |
 | :---: | :---: | :---: | :---: | :---: |
 | **Depth 1** | 15.24 MPa | **7.63 MPa** | **-49.9%** | 2 |
 | **Depth 2** | 12.54 MPa | **7.18 MPa** | **-42.7%** | 4 |
-| **Depth 3** | 11.09 MPa | **7.28 MPa** | **-34.4%** | 8 |
+| **Depth 3** | 11.09 MPa | **7.28 MPa** | **-34.3%** | 8 |
 | **Depth 4** | 10.16 MPa | **6.70 MPa** | **-34.1%** | 15 |
 | **Depth 5** | 9.53 MPa | **6.25 MPa** | **-34.4%** | 21 |
 
@@ -154,7 +163,7 @@ Depth 5 -> CART RMSE: 9.53 MPa  | ModelTree RMSE: 6.25 MPa (21 leaves)
 
 ### Key Quantitative Findings
 
-1. **Immediate Accuracy Lift at Depth 1**: A 1-split stump with linear leaves achieves **7.63 MPa RMSE**, which is 25% lower error than a depth-4 CART tree (10.16 MPa) and 50% lower error than a depth-1 CART stump (15.24 MPa).
+1. **Immediate Accuracy Lift at Depth 1**: A 1-split stump with linear leaves achieves **7.63 MPa RMSE**, against 10.16 MPa for a depth-4 CART tree and 15.24 MPa for a depth-1 CART stump.
 2. **Variance Reduction**: At depth 3, `ModelTree` achieves **7.28 MPa RMSE** and $R^2 = 0.813$, capturing 81.3% of the variance compared to CART's 56.6%.
 3. **Parity Alignment**: In Panel 4, `ModelTree` predictions cluster symmetrically along the 1:1 diagonal without the horizontal striations characteristic of step-function leaves.
 

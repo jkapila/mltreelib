@@ -19,6 +19,29 @@ Design docs and research live in `references/` (start with
 `references/research/jkapila-methods-map.md`,
 `references/research/dataset-component-design.md`).
 
+## Purpose and principles
+
+mltreelib is a one-stop, end-to-end library for building models the right way, from the maintainer's 15+ years of practice. One consistent surface across regression, classification, survival, uplift, clustering, anomaly detection, components and forecasting; metrics and summaries in the same place. The single tree is built as far as it will go (split, grow, prune, leaf) because it is the model you can explain to the business; the leaf is a knob so that divide and conquer replaces one global regression that would not work. Planned areas: data, core and metrics (including drift monitoring). Early development: APIs may change; new features start as an issue.
+
+Completeness and reliability of the existing surface come before new capability. Every leaf family must have a summary table.
+
+Hard rules: **no scikit-learn dependency, ever**; shrink the dependency set and build inside the package when possible; **missing values are never imputed, dropped or recoded by data helpers** (only the model handles them); defaults are identical on every surface; results are reproducible to about 12 significant digits on the same platform.
+
+**Resuming work?** Read the latest dated handoff in `references/research/` (currently [2026-11-26-session-handoff.md](references/research/2026-11-26-session-handoff.md)) for branch state, open issues and the ordered next steps.
+
+## Contributor guides (read before changing anything)
+
+| Topic | Read |
+|---|---|
+| What "done" means (code, tests, existing docs and examples, real output) | [contributing/definition-of-done.md](contributing/definition-of-done.md) |
+| Issues, branches, commits | [contributing/workflow.md](contributing/workflow.md) |
+| Writing specs | [contributing/specs.md](contributing/specs.md) |
+| Writing tests | [contributing/testing.md](contributing/testing.md) |
+| Docs, guides and examples | [contributing/examples-and-docs.md](contributing/examples-and-docs.md) |
+| API conventions and defaults | [contributing/api-conventions.md](contributing/api-conventions.md) |
+| Releases | [contributing/releases.md](contributing/releases.md), [RELEASING.md](RELEASING.md) |
+| Briefing and reviewing agents, task observer | [contributing/agents.md](contributing/agents.md) |
+
 ## Layout
 
 - `crates/mltreelib-core/` — pure Rust: `frame` (typed columns/dataset), `schema`
@@ -145,20 +168,22 @@ non-native reader will parse.
 
 ## Rules
 
-- **No scikit-learn dependency** (the API shape `fit`/`transform`/`predict` is
-  fine, importing sklearn is not). Otherwise be pragmatic — established core
-  packages over hand-rolling: `pyarrow` for parquet in the Python layer;
-  arrow-rs (`arrow`/`parquet`) or Polars in Rust when frames/IO grow beyond the
-  in-house `frame` module. Keep `mltreelib-core` dependency-lean, but do not
-  reinvent wheels.
+- **No scikit-learn dependency, ever** (the API shape `fit`/`transform`/`predict`
+  is a convention; importing sklearn is not allowed). The Python package has zero
+  runtime dependencies; optional extras (`pyarrow` for parquet, plotting,
+  hyperparameter search) are lazy imports that fail with a clear message. Aim to
+  shrink the dependency set: if something can be built inside the package, build
+  it inside. In Rust keep `mltreelib-core` dependency-lean.
 - **Rust core is the source of truth.** Python/R are thin shells. Semantics and
   algorithms live in `mltreelib-core` and are tested there first.
-- **Missing data is first-class.** `None` **and NaN** = missing (NaN is
-  normalized at ingestion); missing in → missing out, never panic. `summarize`
-  reports `n_missing` by default; imputation is opt-in (`NaPolicy::Impute`),
-  never implicit; time-series transforms drop incomplete rows and the Python
-  layer raises a `UserWarning` with the count. Unseen categorical levels map to
-  missing. Degenerate scalings produce missing, not inf.
+- **Missing data is first-class.** `None` **and NaN** = missing; infinities and
+  the pandas NA/NaT singletons are treated as missing at the model input boundary.
+  Missing in → missing out, never panic. **Data helpers never impute, drop,
+  recode or reorder**: they count, flag or pass through. Imputation and dropping
+  exist only as explicit opt-in policies (default "allow"). Legacy exception: the
+  time-series transforms drop incomplete rows with a `UserWarning` and are to be
+  revisited. Unseen categorical levels map to missing. Degenerate scalings
+  produce missing, not inf.
 - **Deterministic**: generators/transformations take explicit seeds; no wall-clock
   or unordered iteration in outputs.
 - **One multi-core job at a time.** Never run several multi-core algorithms
@@ -190,8 +215,9 @@ non-native reader will parse.
 - **Research compounds.** Every research finding, survey or external analysis
   is saved to `references/research/` as a dated, cited markdown note (companion to the
   chat answer, never instead of it). New session? Check `references/research/` first.
-- **Roadmap lives in README.md** ("Roadmap / TODO"). Update its checkboxes when
-  items land; add future work there rather than building speculative features.
+- **The roadmap lives in `specs/README.md`** ("Looking Forward" and the status
+  index); the README carries a short outlook. Update status when items land; add
+  future work as a spec or an issue rather than building speculative features.
   Currently parked for later on purpose:
   featuretools-style automated features (keep the tool surface in one package).
 
@@ -215,19 +241,24 @@ structure follow the rules above regardless.
 
 ## Task Observer Protocol
 
-- Apply this protocol when the Task Observer skill and its local workspace are installed.
-- **Workspace**: `$HOME/.claude`.
-- **Query open observations at session start**:
+The Task Observer skill is how this project and its agents improve themselves. Follow [contributing/agents.md](contributing/agents.md).
+
+- **Session start (first tool batch):** invoke the `task-observer` skill and run its scan. Workspace: `$HOME/.claude`.
   ```sh
-  find "$HOME/.claude/skill-observations/observation-log" -maxdepth 1 -name '*.md'
+  bash "$HOME/.claude/skills/task-observer/scripts/session-start-scan.sh" "$HOME/.claude"
   ```
-- **Record new observations**:
+- **Log observations** (corrections from the maintainer, a rule broken, a workaround after a failure, an unresolved defect) without interrupting the task:
   ```sh
-  bash "$HOME/.agents/skills/task-observer/scripts/new-observation.sh" <slug> "$HOME/.claude"
+  bash "$HOME/.claude/skills/task-observer/scripts/new-observation.sh" --body <file> <slug> "$HOME/.claude"
   ```
-- **End-of-turn backstop**: After completing each task, report a one-line summary from the observation log (logged record IDs/titles, or "none logged and why").
+- **Subagents** do not write to the log; they report findings to the primary assistant, who logs them.
+- **End of each task:** report one line from the log (ids and titles logged, or "none logged" and why).
 
 ## MCP Tools: code-review-graph
 
 - Use `code-review-graph` MCP tools (`detect_changes_tool`, `get_impact_radius_tool`, `query_graph_tool`) to narrow scope before scanning files.
 - Always verify exact source code and behavior tests before making non-trivial changes; source code wins over graph output.
+
+## Definition of done
+
+A change is done only when code, tests, and the existing docs and examples that show it agree with real output. Update existing pages instead of adding parallel ones. See [contributing/definition-of-done.md](contributing/definition-of-done.md).

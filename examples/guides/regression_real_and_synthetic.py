@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
-from mltreelib import Metrics, ModelTree, plots
+from mltreelib import MetricsReport, ModelTree, plots
 
 rng = Random(77)
 x, y = [], []
@@ -23,18 +23,17 @@ for _ in range(5000):
     y.append(3 + 2 * volume + (4 if category == "south" else 0) + rng.gauss(0, 1.5))
 
 names, dtypes = ["region", "volume"], ["categorical", "numeric"]
-metrics = Metrics()
 choices = [("mean", 2), ("mean", 4), ("linear", 2), ("linear", 4)]
 results = []
 for leaf, depth in choices:
     model = ModelTree(leaf=leaf, max_depth=depth, min_rows=30)
     model.fit(x[:3000], y[:3000], col_names=names, dtypes=dtypes)
-    rmse = metrics.regression(y[3000:4000], model.predict(x[3000:4000]))["rmse"]
+    rmse = MetricsReport("regression", y_true=y[3000:4000], y_pred=model.predict(x[3000:4000]))["rmse"]
     results.append((rmse, leaf, depth, model))
     print("synthetic validation", leaf, depth, "RMSE", round(rmse, 3))
 _, leaf, depth, best = min(results, key=lambda row: row[0])
-test = metrics.regression(y[4000:], best.predict(x[4000:]))
-baseline = metrics.regression(y[4000:], [sum(y[:3000]) / 3000] * 1000)
+test = MetricsReport("regression", y_true=y[4000:], y_pred=best.predict(x[4000:]))
+baseline = MetricsReport("regression", y_true=y[4000:], y_pred=[sum(y[:3000]) / 3000] * 1000)
 print("synthetic selected:", leaf, depth)
 print("synthetic test RMSE model/baseline:", round(test["rmse"], 3), round(baseline["rmse"], 3))
 print("synthetic test missing predictors:", sum(row[1] is None for row in x[4000:]))
@@ -55,8 +54,8 @@ ytr, yte = [[real_y[i] for i in ids] for ids in (tr, te)]
 real = ModelTree(leaf=leaf, max_depth=depth, min_rows=30)
 real.fit(xtr, ytr, col_names=features, dtypes=types)
 pred = real.predict(xte)
-report = metrics.regression(yte, pred)
-base = metrics.regression(yte, [sum(ytr) / len(ytr)] * len(yte))
+report = MetricsReport("regression", y_true=yte, y_pred=pred)
+base = MetricsReport("regression", y_true=yte, y_pred=[sum(ytr) / len(ytr)] * len(yte))
 print("real rows train/test:", len(tr), len(te))
 print("real missing in training:", dict(zip(features, [sum(row[j] is None for row in xtr) for j in range(len(features))])))
 print("real test RMSE model/baseline:", round(report["rmse"], 3), round(base["rmse"], 3))

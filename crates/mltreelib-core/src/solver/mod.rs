@@ -186,7 +186,7 @@ pub fn fit_model<D: DesignMatrix>(
     let has_groups = options
         .groups
         .as_ref()
-        .map_or(false, |g| !g.is_empty())
+        .is_some_and(|g| !g.is_empty())
         || options.group_l2 > 0.0;
 
     let (beta, summary) = if is_gaussian {

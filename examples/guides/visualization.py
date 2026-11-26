@@ -4,13 +4,14 @@ Layout and rendering belong to graphviz (pygraphviz wraps the same `dot`
 engine the `dot` binary uses) - we only emit DOT. Figures land in
 docs/assets/ for the documentation pages.
 
-    uv run --with pandas --with pygraphviz --with matplotlib python examples/guides/visualization.py
+    uv run --with pygraphviz python examples/guides/visualization.py
 """
 
 from pathlib import Path
 
 import pandas as pd
-from mltreelib import Metrics, ModelTree, OneHotEncoder
+from mltreelib import MetricsReport, ModelTree, OneHotEncoder
+from mltreelib.data import Dataset
 
 ASSETS = Path("docs/assets")
 ASSETS.mkdir(exist_ok=True)
@@ -27,14 +28,15 @@ for col in x.select_dtypes(include="category").columns:
     x = x.drop(columns=[col])
     for level, values in dummies.items():
         x[f"{col}_{level}"] = values
-X = [[None if pd.isna(v) else float(v) for v in row] for row in x.values.tolist()]
-names = list(x.columns)
-n_tr = int(0.8 * len(X))
+ds = Dataset(x.assign(**{"scaled-sound-pressure": y}).to_dict("list"), target="scaled-sound-pressure")  # NaN stays missing
+
+# Deterministic 80/20 split, no shuffling: first 80% of rows train, last 20% test.
+train, test = ds.split(test_size=0.2, time=True)
 
 # depth 3 on purpose: the diagram must read at a glance, not score
 model = ModelTree(max_depth=3, min_rows=30)
-model.fit(X[:n_tr], y[:n_tr], col_names=names)
-pred = model.predict(X[n_tr:])
+model.fit(train)
+pred = model.predict(test)
 
 # --- tree diagram via graphviz -----------------------------------------
 import pygraphviz as pgv
@@ -62,15 +64,15 @@ try:
     mplots._style_axis(axes[1])
     sample = list(range(0, len(pred), max(1, len(pred) // 2000)))
     axes[0].scatter(
-        [y[n_tr + i] for i in sample],
+        [test.y[i] for i in sample],
         [pred[i] for i in sample],
         s=14,
         alpha=0.55,
         color=mplots.PALETTE["primary"],
         zorder=3,
     )
-    lo = min(min(pred), min(y[n_tr:]))
-    hi = max(max(pred), max(y[n_tr:]))
+    lo = min(min(pred), min(test.y))
+    hi = max(max(pred), max(test.y))
     axes[0].plot(
         [lo, hi], [lo, hi], color=mplots.PALETTE["accent"], lw=1.2, ls="--", zorder=2
     )
@@ -78,7 +80,7 @@ try:
     axes[0].set_ylabel("Predicted Value")
     axes[0].set_title("Airfoil: Predicted vs. Actual (Test)")
 
-    resid = [p - t for p, t in zip(pred, y[n_tr:])]
+    resid = [p - t for p, t in zip(pred, test.y)]
     axes[1].scatter(
         [pred[i] for i in sample],
         [resid[i] for i in sample],
@@ -102,7 +104,7 @@ try:
     plt.close(ax.figure)
     print(f"feature importance: {ASSETS / 'airfoil_importance.png'}")
 
-    bd = model.break_down(X[n_tr])
+    bd = model.break_down(test.x[0])
     ax = mplots.plot_breakdown(bd)
     ax.figure.tight_layout()
     ax.figure.savefig(ASSETS / "airfoil_breakdown.png", dpi=110)
@@ -114,4 +116,4 @@ except ImportError:
         "(uv run --with matplotlib python examples/guides/visualization.py)"
     )
 
-print(f"test rmse: {Metrics().regression(y[n_tr:], pred)['rmse']:.1f}")
+print(f"test rmse: {MetricsReport('regression', y_true=test.y, y_pred=pred)['rmse']:.1f}")

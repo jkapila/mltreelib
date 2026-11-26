@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 from mltreelib import ClusterModel
+from mltreelib.data import xy
 
 
 def crosstab_sparsity(
@@ -173,7 +174,9 @@ def main():
         "installment_rate_percent",
         "age_years",
     ]
-    data_num = df[numeric_cols].values.tolist()
+    from mltreelib.data import Dataset
+
+    data_num = Dataset(df.to_dict("list"), features=numeric_cols).x
 
     # Normalize numeric features for distance algorithms
     means = [np.mean(df[col]) for col in numeric_cols]

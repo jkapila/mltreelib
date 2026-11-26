@@ -10,14 +10,14 @@ Tunes:
 7. Honesty & Estimation: honesty, honesty_fraction
 
 Usage:
-    uv run --with pandas --with optuna python examples/guides/hpo_optuna.py [n_trials]
+    uv run --with optuna python examples/guides/hpo_optuna.py [n_trials]
 """
 
 import sys
 import math
 import optuna
 import pandas as pd
-from mltreelib import Metrics, ModelTree
+from mltreelib import MetricsReport, ModelTree
 
 df = pd.read_parquet("datasets/airfoil_self_noise.parquet")
 y = df["scaled-sound-pressure"].astype(float).tolist()
@@ -144,7 +144,7 @@ def objective(trial: optuna.Trial) -> float:
         m = ModelTree(**params)
         m.fit(xtr, ytr, dtypes=dtypes)
         preds = m.predict(xte)
-        rmse = Metrics().regression(yte, preds)["rmse"]
+        rmse = MetricsReport("regression", y_true=yte, y_pred=preds)["rmse"]
         if math.isnan(rmse) or math.isinf(rmse):
             return 9999.0
         return rmse

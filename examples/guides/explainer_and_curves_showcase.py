@@ -132,19 +132,17 @@ def main():
         print(f"{feat:<20} | {g:<12.4f} | {s:<12.4f} | {p:<20.4f}")
 
     # 6. Evaluation Curves on Real Test Set
-    test_scores = tree.predict_proba(X_test)
-    metrics = Metrics()
+    from mltreelib import MetricsReport
 
-    roc_res = metrics.roc_curve(y_test, test_scores)
-    pr_res = metrics.pr_curve(y_test, test_scores)
-    ks_res = metrics.ks_statistic(y_test, test_scores)
+    test_scores = tree.predict_proba(X_test)
+    rep = MetricsReport("classification", y_true=y_test, proba=test_scores)
 
     print("-" * 50)
     print("Test Set Metrics:")
-    print(f"  ROC AUC            : {roc_res['auc']:.4f}")
-    print(f"  Average Precision  : {pr_res['average_precision']:.4f}")
+    print(f"  ROC AUC            : {rep['auc']:.4f}")
+    print(f"  Average Precision  : {rep['average_precision']:.4f}")
     print(
-        f"  KS Statistic       : {ks_res['ks']:.4f} (at threshold {ks_res['score_at_ks']:.4f})"
+        f"  KS Statistic       : {rep['ks']:.4f} (at threshold {rep['score_at_ks']:.4f})"
     )
 
     # 7. Render 6-Panel Cohesive Visual Dashboard

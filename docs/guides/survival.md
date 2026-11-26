@@ -4,7 +4,7 @@ Use baseline measurements to estimate survival at one, three and five years. The
 
 ## 1. Get the data and define the evaluation
 
-The `survival` package's [FLCHAIN cohort](https://cran.r-project.org/web/packages/survival/survival.pdf) contains 7,874 people and right-censored follow-up. `futime` is follow-up in days and `death=1` records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude `chapter`, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 952 of the 5,500 training records and 398 of the 2,374 test records; values enter the tree without imputation.
+The `survival` package's [FLCHAIN cohort](https://cran.r-project.org/web/packages/survival/survival.pdf) contains 7,874 people and right-censored follow-up. `futime` is follow-up in days and `death=1` records a death. We use age, sex, kappa, lambda and creatinine as predictors. We exclude `chapter`, which describes cause of death and is unavailable at prediction time. Creatinine is missing for 943 of the 5,500 training records and 407 of the 2,374 test records; values enter the tree without imputation.
 
 The snippet below gets the file with `dataset_path("flchain_rdatasets")`. It downloads the [FLCHAIN CSV from Rdatasets](https://vincentarelbundock.github.io/Rdatasets/csv/survival/flchain.csv) on first use, caches it under `~/.cache/mltreelib/datasets/` (or `MLTREELIB_DATA_DIR`) and checks SHA-256 `a96bcc58addb4c127e5012c5974aec8c7daf66123ddb104f309a78f158daa563`. Run the shared [real-data evaluation script](https://github.com/jkapila/mltreelib/blob/main/examples/guides/real_survival_uplift.py).
 
@@ -45,15 +45,16 @@ flowchart TD
     class KM leafBox;
 ```
 
-Run this Python block from the repository root. The evaluation helpers are part of the example script.
+Run this Python block from the repository root. The evaluation helpers are defined in the block.
 
+<!-- run -->
 ```python
 from bisect import bisect_left, bisect_right
 from collections import Counter
-from random import Random
 
 import pandas as pd
-from mltreelib import ModelTree, dataset_path
+from mltreelib import MetricsReport, ModelTree, dataset_path
+from mltreelib.data import Dataset
 
 def censor_km(times, events):
     """Censoring survival G(t), estimated from training observations."""
@@ -81,31 +82,61 @@ def brier(times, events, predictions, horizon, censor):
 
 df = pd.read_csv(dataset_path("flchain_rdatasets"))
 features = ["age", "sex", "kappa", "lambda", "creatinine"]
-types = ["numeric", "categorical", "numeric", "numeric", "numeric"]
-ids = list(range(len(df)))
-Random(2026).shuffle(ids)
+ds = Dataset(
+    {k: df[k].tolist() for k in [*features, "futime", "death"]},
+    time="futime",
+    event="death",
+    features=features,
+    name="flchain",
+)
 
-def inputs(indices):
-    part = df.iloc[indices]
-    x = [[None if pd.isna(v) else v for v in row]
-         for row in part[features].itertuples(index=False, name=None)]
-    return x, part.futime.astype(float).tolist(), part.death.astype(float).tolist()
-
-x_train, t_train, e_train = inputs(ids[:5500])
-x_test, t_test, e_test = inputs(ids[5500:])
+# Seeded split: 5,500 rows train, the remaining rows test
+train, test = ds.split(test_size=ds.n_rows - 5500, seed=2026)
+t_train, e_train = train.time, train.event
+t_test, e_test = test.time, test.event
 grid = [365.0, 1095.0, 1825.0]
 censor = censor_km(t_train, e_train)
+print(f"Test rows {test.n_rows}: deaths {sum(e_test)}, censored {len(e_test) - sum(e_test)}")
+for horizon in grid:
+    print(f"Horizon {horizon:.0f}: test at risk {sum(t > horizon for t in t_test)}, censoring survival {censor(horizon):.4f}")
+miss_train = train.missing()["per_column"]["creatinine"]["n_missing"]
+miss_test = test.missing()["per_column"]["creatinine"]["n_missing"]
+print(f"Creatinine missing: {miss_train} training rows, {miss_test} test rows")
 
 for depth in (0, 2):
     tree = ModelTree(leaf_family="survival", max_depth=depth,
                      min_rows=100, prune="none")
-    tree.fit(x_train, (t_train, e_train), col_names=features, dtypes=types)
-    curves = tree.predict(x_test, kind="survival", times=grid)
-    print("depth", depth, "first survival curve", curves[0])
+    tree.fit(train)
+    curves = tree.predict(test, kind="survival", times=grid)
+    risk = tree.predict(test, kind="risk")
+    rep = MetricsReport(
+        "survival", durations=t_test, events=e_test, risk=risk,
+        surv_curves=curves, times=grid,
+    )
+    print("depth", depth, "first survival curve", curves[0], "harrell_c", round(rep["harrell_c"], 4))
     for j, horizon in enumerate(grid):
         print(horizon, brier(t_test, e_test, [curve[j] for curve in curves],
                              horizon, censor))
     print(tree.splits()[:1])
+```
+
+<!-- output -->
+```text
+Test rows 2374: deaths 636, censored 1738
+Horizon 365: test at risk 2288, censoring survival 0.9920
+Horizon 1095: test at risk 2179, censoring survival 0.9813
+Horizon 1825: test at risk 2064, censoring survival 0.9713
+Creatinine missing: 943 training rows, 407 test rows
+depth 0 first survival curve [0.964214236229244, 0.9186622130736849, 0.8760250322642885] harrell_c 0.5
+365.0 0.029162166996877254
+1095.0 0.06471126332180974
+1825.0 0.10007346001380353
+[]
+depth 2 first survival curve [0.7161803713527852, 0.44129424875964646, 0.29187356453050306] harrell_c 0.6298
+365.0 0.027422331820290472
+1095.0 0.05658412808997147
+1825.0 0.08055176917287096
+[{'col': 'kappa', 'threshold': 1.82, 'missing_left': True, 'gain': 342113400.42157936}]
 ```
 
 The depth-zero tree estimates one Kaplan–Meier curve for everyone. The deeper tree assigns a separate curve to each leaf. Inspect early and late horizons separately because each has a different set of known outcomes.
@@ -116,13 +147,13 @@ The depth-zero tree estimates one Kaplan–Meier curve for everyone. The deeper 
 
 | Horizon, days | Test at risk | Censoring survival, training estimate | Tree IPCW Brier | Global baseline |
 |---:|---:|---:|---:|---:|
-| 365 | 2,270 | 0.9930 | 0.0329 | 0.0343 |
-| 1,095 | 2,144 | 0.9834 | 0.0671 | 0.0731 |
-| 1,825 | 2,043 | 0.9737 | 0.0884 | 0.1026 |
+| 365 | 2,288 | 0.9920 | 0.0274 | 0.0292 |
+| 1,095 | 2,179 | 0.9813 | 0.0566 | 0.0647 |
+| 1,825 | 2,064 | 0.9713 | 0.0806 | 0.1001 |
 
 ![FLCHAIN held-out Brier scores and example leaf survival curves](../assets/guides/real-survival.svg)
 
-The right panel shows two held-out feature rows routed through the training tree. They were selected by their predicted five-year survival, without using their outcomes. Their five-year predictions are 0.321 and 0.948. These are leaf estimates. The left panel measures error across all 2,374 test rows, which include 644 recorded deaths and 1,730 censored observations over the available follow-up.
+The right panel shows two held-out feature rows routed through the training tree. They were selected by their predicted five-year survival, without using their outcomes. These are leaf estimates. The left panel measures error across all 2,374 test rows, which include 636 recorded deaths and 1,738 censored observations over the available follow-up.
 
 The example uses a seeded random split and estimates the marginal censoring distribution from training data only. A marginal censoring model assumes censoring is independent of the outcome in the relevant population. This observational cohort and one split do not establish clinical usefulness. Check conditional censoring, calibration, discrimination and uncertainty with the intended deployment population before interpreting the comparison.
 
@@ -158,10 +189,10 @@ When subjects can experience mutually exclusive event causes (e.g. disease relap
 - **Split Criterion**: Gray's subdistribution log-rank test (`gain="gray", target_cause=j`) maintaining subjects who experienced competing events in the risk set.
 - **Leaf Estimators**: Aalen-Johansen multi-state estimator guaranteeing the probability simplex identity: $\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) = 1.0$.
 - **Unified Prediction API**: `tree.predict(X, kind="cif", times=times, cause=1)` and `tree.predict(X, kind="risk")`.
-- **Validation**: `Metrics().competing_risks(...)` computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier score matrices.
+- **Validation**: `MetricsReport("competing_risks", ...)` computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier scores.
 
 ```python
-from mltreelib import ModelTree, Metrics
+from mltreelib import MetricsReport, ModelTree
 
 # Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)
 tree = ModelTree(max_depth=3, min_rows=25, gain="gray", target_cause=1)
@@ -171,19 +202,43 @@ tree.fit(X_train, (durations_train, events_train))
 times = [2.0, 5.0, 10.0, 20.0]
 cif_cause1 = tree.predict(X_test, kind="cif", times=times, cause=1)
 cif_cause2 = tree.predict(X_test, kind="cif", times=times, cause=2)
-surv = tree.predict(X_test, kind="survival", times=times)
 
 # Compute full IPCW competing risks performance report
-metrics = Metrics()
-report = metrics.competing_risks(
+rep = MetricsReport(
+    "competing_risks",
     durations=durations_test,
     events=events_test,
     cif_curves={1: cif_cause1, 2: cif_cause2},
     times=times,
 )
-print("Cause 1 Harrell C:", report["cause_c_indices"][1])
-print("Cause 1 Uno IPCW C:", report["cause_uno_c_indices"][1])
-print("Cause 1 IBS:", report["cause_ibs"][1])
+print(rep)
+```
+
+## Subject IDs and grouped observations
+
+When a clinical dataset carries a subject identifier or clinic group (`id_col` or `group_col`), pass it to `fit` so the tree never splits on an identifier (`train_ids=False`, `train_groups=False` by default). You can still pass the full table to `leaf_samples(x, id_col=...)` to list which subjects fall into each leaf, or set `train_ids=True` / `train_groups=True` only when you intend the model to split on them.
+
+<!-- run -->
+```python
+from mltreelib import ModelTree
+
+rows = [
+    ["p1", 62.0, 1.2], ["p2", 55.0, 0.8], ["p3", 71.0, 2.1], ["p4", 49.0, 0.7],
+    ["p5", 66.0, 1.6], ["p6", 58.0, 1.0], ["p7", 74.0, 2.4], ["p8", 52.0, 0.9],
+]
+durations = [120.0, 310.0, 80.0, 400.0, 150.0, 290.0, 60.0, 350.0]
+events = [1, 0, 1, 0, 1, 0, 1, 0]
+
+tree = ModelTree(gain="logrank", max_depth=2, min_rows=3)
+tree.fit(rows, (durations, events), id_col="patient_id", col_names=["patient_id", "age", "biomarker"])
+print("Split columns:", [s["col"] for s in tree.splits()])
+print("Leaf samples:", tree.leaf_samples(rows, id_col="patient_id", col_names=["patient_id", "age", "biomarker"]))
+```
+
+<!-- output -->
+```text
+Split columns: ['age']
+Leaf samples: {0: ['p2', 'p4', 'p6', 'p8'], 1: ['p1', 'p3', 'p5', 'p7']}
 ```
 
 ## Next steps and references

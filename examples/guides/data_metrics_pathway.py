@@ -13,7 +13,7 @@ import subprocess
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mltreelib import Metrics, ModelTree, plots
+from mltreelib import MetricsReport, ModelTree, plots
 
 OUT = Path("docs/assets/guides")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,6 @@ for _ in range(4000):
 
 names, types = ["region", "volume"], ["categorical", "numeric"]
 x_train, x_val, x_test = rows[:2000], rows[2000:3000], rows[3000:]
-metrics = Metrics()
 
 # Missingness counts are shown before fitting; no value is filled or encoded.
 missing = [sum(row[j] is None for row in x_train) for j in range(len(names))]
@@ -45,8 +44,8 @@ reg.fit(x_train, reg_y[:2000], dtypes=types, col_names=names)
 reg_pred = reg.predict(x_test)
 reg_base = [sum(reg_y[:2000]) / 2000] * len(x_test)
 print("regression test MAE model/baseline:",
-      round(metrics.regression(reg_y[3000:], reg_pred)["mae"], 3),
-      round(metrics.regression(reg_y[3000:], reg_base)["mae"], 3))
+      round(MetricsReport("regression", y_true=reg_y[3000:], y_pred=reg_pred)["mae"], 3),
+      round(MetricsReport("regression", y_true=reg_y[3000:], y_pred=reg_base)["mae"], 3))
 fig, ax = plt.subplots(figsize=(5.6, 4))
 plots.plot_residuals(reg_y[3000:], reg_pred, ax=ax)
 ax.set_title("Regression: test residuals")
@@ -62,14 +61,14 @@ def decision_cost(y, scores, threshold):
 threshold = min((.2, .4, .6, .8), key=lambda t: decision_cost(class_y[2000:3000], val_scores, t))
 scores = clf.predict_proba(x_test)
 hard = [int(p >= threshold) for p in scores]
-report = metrics.classification([int(v) for v in class_y[3000:]], hard)
+report = MetricsReport("classification", y_true=[int(v) for v in class_y[3000:]], y_pred=hard, proba=scores)
 print("classification validation threshold:", threshold)
-print("classification test confusion:", report["confusion"])
-print("classification test average precision:", round(metrics.pr_curve(class_y[3000:], scores)["average_precision"], 3))
+print("classification test confusion:", report.tables["confusion"])
+print("classification test average precision:", round(report["average_precision"], 3))
 for filename, title, render in [
     ("data-pr.svg", "Classification: test precision–recall", lambda ax: plots.plot_pr(class_y[3000:], scores, ax=ax)),
     ("data-calibration.svg", "Classification: test calibration", lambda ax: plots.plot_calibration(class_y[3000:], scores, n_bins=5, ax=ax)),
-    ("data-confusion.svg", "Classification: test decisions", lambda ax: plots.plot_confusion_matrix(report["confusion"], class_names=["No event", "Event"], ax=ax)),
+    ("data-confusion.svg", "Classification: test decisions", lambda ax: plots.plot_confusion_matrix([[r["pred 0"], r["pred 1"]] for r in report.tables["confusion"]], class_names=["No event", "Event"], ax=ax)),
     ("data-importance.svg", "Regression: split importance", lambda ax: plots.plot_importance(reg.feature_importance(), ax=ax)),
 ]:
     fig, ax = plt.subplots(figsize=(5.6, 4))

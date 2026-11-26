@@ -231,11 +231,11 @@ pub fn test_categorical_instability(
     k: usize,
     min_leaf: usize,
 ) -> Option<(f64, Vec<f64>, f64)> {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     // Group rows by category level
-    let mut groups: HashMap<u64, Vec<usize>> = HashMap::new();
-    let mut level_map: HashMap<u64, f64> = HashMap::new();
+    let mut groups: BTreeMap<u64, Vec<usize>> = BTreeMap::new();
+    let mut level_map: BTreeMap<u64, f64> = BTreeMap::new();
 
     for (idx, &r) in rows.iter().enumerate() {
         if let Some(v) = col[r] {
@@ -342,10 +342,7 @@ impl<'a> Grower<'a> {
         }
 
         // 4. Invert V matrix
-        let v_inv = match invert_symmetric_psd(&v_mat, k) {
-            Some(inv) => inv,
-            None => return None,
-        };
+        let v_inv = invert_symmetric_psd(&v_mat, k)?;
 
         // 5. Candidate partitioning variables
         let cand_cols: Vec<usize> = self

@@ -19,8 +19,8 @@
 //!   (issue #7). Groups wider than ~dim/3 rows drop the factors instead —
 //!   a re-factor is cheaper than the fold — and any solve without a live
 //!   factor is exactly the historical solve.
-//! Everything is row-weighted; missing values are scored in both default
-//! directions (LightGBM's `default_left` shape) and the gain picks.
+//! - Everything is row-weighted; missing values are scored in both default
+//!   directions (LightGBM's `default_left` shape) and the gain picks.
 //!
 //! The column scan is rayon-parallel above a work threshold (Level-1
 //! parallelism) with a **deterministic** tie-break: first-found wins
@@ -365,8 +365,8 @@ impl Default for ModelTreeParams {
             // Scale-aware leaves (min_rows floor + minprob share), fine
             // grid, cost-complexity pruning -- see examples/default_bake.py
             // for the evidence tables.
-            max_depth: 5,
-            min_rows: 50,
+            max_depth: 6,
+            min_rows: 15,
             // Noise floor as much as a tuning knob: fitted-leaf gains below
             // this are numerical, not structural.
             min_gain: 1e-9,
@@ -522,8 +522,13 @@ pub struct NodeProfile {
     pub rows: usize,
     pub cols: usize,
     pub candidates: usize,
+    // Wall-clock timings are diagnostics only: kept in memory, never written
+    // to a saved model, so serialised trees are byte-identical across runs.
+    #[serde(skip_serializing, default)]
     pub group_ns: u64,
+    #[serde(skip_serializing, default)]
     pub scan_ns: u64,
+    #[serde(skip_serializing, default)]
     pub leaf_ns: u64,
     /// Chow gate result on the node's chosen split (`split_test=Chow`).
     pub gate: Option<GateNote>,
@@ -678,13 +683,13 @@ impl ModelTree {
         if params.leaf_monotone.is_empty() && !params.monotone.is_empty() {
             params.leaf_monotone = params.monotone.clone();
         }
-        if params.tree_monotone.iter().any(|&m| m < -1 || m > 1) {
+        if params.tree_monotone.iter().any(|&m| !(-1..=1).contains(&m)) {
             return Err("tree_monotone entries must be -1, 0 or 1".to_string());
         }
         if !params.tree_monotone.is_empty() && params.tree_monotone.len() != d {
             return Err("tree_monotone must have one entry per column".to_string());
         }
-        if params.leaf_monotone.iter().any(|&m| m < -1 || m > 1) {
+        if params.leaf_monotone.iter().any(|&m| !(-1..=1).contains(&m)) {
             return Err("leaf_monotone entries must be -1, 0 or 1".to_string());
         }
         if !params.leaf_monotone.is_empty() && params.leaf_monotone.len() != d {
@@ -1259,8 +1264,8 @@ impl ModelTree {
             if !matches!(control.leaf, LeafKind::Linear | LeafKind::Mean) {
                 return Err("beta family supports linear or mean leaves".into());
             }
-        } else if control.family != LeafFamily::Gaussian {
-            if !matches!(
+        } else if control.family != LeafFamily::Gaussian
+            && !matches!(
                 control.leaf,
                 LeafKind::Mean
                     | LeafKind::Linear
@@ -1272,7 +1277,6 @@ impl ModelTree {
             ) {
                 return Err("non-gaussian families support mean, linear, mars, prob, odds, or log_odds leaves".into());
             }
-        }
 
         // Validate that all split columns exist in data_col_names
         let mut col_map = vec![usize::MAX; self.col_names.len()];

@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pyarrow.parquet as pq
 from mltreelib import ModelTree, Metrics
+from mltreelib.data import survival_xy, train_test_split
 
 
 def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
@@ -35,10 +36,14 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     df = table.to_pydict()
     n_total = len(df["churn"])
 
+    from mltreelib.data import Dataset
+
     feature_cols = ["credit_score", "age", "balance", "products_number", "estimated_salary"]
-    X = np.array([[float(df[c][i]) for c in feature_cols] for i in range(n_total)])
-    durations = np.array([float(df["tenure"][i]) for i in range(n_total)])  # 0 to 10 years
-    events = np.array([1.0 if str(df["churn"][i]).lower() in ("1", "yes", "true") else 0.0 for i in range(n_total)])
+    df["churn"] = [1.0 if str(v).lower() in ("1", "yes", "true") else 0.0 for v in df["churn"]]
+    ds = Dataset(df, time="tenure", event="churn", features=feature_cols)  # durations: 0 to 10 years
+    X = np.array(ds.x, dtype=float)
+    durations = np.array(ds.time, dtype=float)
+    events = np.array(ds.event, dtype=float)
 
     n_events = int(sum(events))
     churn_pct = n_events / n_total * 100.0
@@ -46,10 +51,7 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     print(f"Observed Churn Events: {n_events:,} ({churn_pct:.1f}%), Right-Censored: {n_total - n_events:,}\n")
 
     # 2. Stage 1 Profile Tree on Seed 0 (Representative Model Inspection)
-    np.random.seed(0)
-    perm0 = np.random.permutation(n_total)
-    split_idx = int(n_total * 0.7)
-    tr_idx0, te_idx0 = perm0[:split_idx], perm0[split_idx:]
+    tr_idx0, te_idx0 = train_test_split(n_total, test_size=0.3, seed=0)  # seeded 70/30 split
 
     X_train0, X_test0 = X[tr_idx0], X[te_idx0]
     t_train0, t_test0 = durations[tr_idx0], durations[te_idx0]
@@ -73,10 +75,10 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     distinct_leaves0 = sorted(list(set(train_leaf_ids0)))
 
     cohort_names = {
-        0: "Cohort 0: Core Retained (Age <= 43, Prod <= 2)",
-        1: "Cohort 1: Young High-Product Churners (Age <= 43, Prod > 2)",
-        2: "Cohort 2: Mature Mainstream (Age > 43, Prod <= 2)",
-        3: "Cohort 3: Senior Flight Risk (Age > 43, Prod > 2)",
+        0: "Cohort 0: Core Retained (Age <= 42, Prod <= 2)",
+        1: "Cohort 1: Young High-Product Churners (Age <= 42, Prod > 2)",
+        2: "Cohort 2: Mature Mainstream (Age > 42, Prod <= 2)",
+        3: "Cohort 3: Senior Flight Risk (Age > 42, Prod > 2)",
     }
 
     colors = {
@@ -118,9 +120,7 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     two_stage_beats_single = 0
 
     for seed in range(n_seeds):
-        np.random.seed(seed)
-        perm = np.random.permutation(n_total)
-        tr_idx, te_idx = perm[:split_idx], perm[split_idx:]
+        tr_idx, te_idx = train_test_split(n_total, test_size=0.3, seed=seed)
 
         X_tr, X_te = X[tr_idx].tolist(), X[te_idx].tolist()
         t_tr, t_te = durations[tr_idx].tolist(), durations[te_idx].tolist()
@@ -197,10 +197,10 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
         h = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2, h + 2.0, f"{h:.1f}%", ha="center", va="bottom", fontsize=9.5, fontweight="bold")
 
-    ax1.text(0, 15, "Low Risk\nAge <= 43\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(1, 80, "High Risk\nAge <= 43\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(2, 45, "Moderate\nAge > 43\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
-    ax1.text(3, 101, "Severe\nAge > 43\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(0, 15, "Low Risk\nAge <= 42\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(1, 80, "High Risk\nAge <= 42\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(2, 45, "Moderate\nAge > 42\nProd <= 2", ha="center", fontsize=8, color="white", fontweight="bold")
+    ax1.text(3, 101, "Severe\nAge > 42\nProd > 2", ha="center", fontsize=8, color="white", fontweight="bold")
 
     for cid in cohort_ids:
         curve = cohort_curves0[cid]

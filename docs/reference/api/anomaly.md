@@ -7,7 +7,7 @@ Unified anomaly detection: AnomalyModel (tree-based and PCA/NMF reconstruction e
 ## AnomalyModel
 
 ```python
-class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
+class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = 10, min_rows: 'int' = 20, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
 ```
 
 Unified Tree and Component-Based Anomaly Detector.
@@ -26,9 +26,9 @@ Parameters
 ----------
 kind : str, default="eif"
     Anomaly tree engine to use: ``"eif"``, ``"det"``, ``"hst"``, ``"rct"``, ``"active"``, or ``"context"``.
-max_depth : int, optional
+max_depth : int, default=10
     Maximum tree depth.
-min_rows : int, default=10
+min_rows : int, default=20
     Minimum leaf samples.
 contamination : float, default=0.05
     Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
@@ -221,174 +221,6 @@ class AnomalyResult(scores: 'list[float]', predictions: 'list[int]', threshold: 
 ```
 
 Fitted anomaly detection output.
-
-## AnomalyModel
-
-```python
-class AnomalyModel(kind: 'str' = 'eif', max_depth: 'int | None' = None, min_rows: 'int' = 10, contamination: 'float' = 0.05, seed: 'int' = 42, *, extension_level: 'int | None' = None, subsample_size: 'int | None' = None, min_samples_split: 'int | None' = None, alpha: 'float' = 0.0, min_density_gain: 'float' = 0.0, window_size: 'int' = 250, initial_mass: 'float' = 0.0, sample_size: 'int' = 256, eta: 'float' = 0.1, prior_weight: 'float' = 1.0, alphabet_size: 'int' = 256, smoothing_discount: 'float' = 0.5, **params: 'Any')
-```
-
-Backward-compatible alias for AnomalyModel.
-
-### AnomalyModel.conditional_prob
-
-```python
-conditional_prob(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
-```
-
-Estimate a symbol's probability from the context after the last gap.
-
-### AnomalyModel.config
-
-```python
-config(self) -> 'dict[str, Any]'
-```
-
-Return effective configuration dictionary.
-
-### AnomalyModel.feedback
-
-```python
-feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
-```
-
-Alias for update_feedback.
-
-### AnomalyModel.fit
-
-```python
-fit(self, x: 'Sequence[Sequence[Any]]', col_names: 'Sequence[str] | None' = None, dtypes: 'Sequence[str] | None' = None) -> 'AnomalyModel'
-```
-
-Fit the anomaly model on training data.
-
-Accepts native Python lists. None and NaN cells stay missing. In context
-sequences, each missing symbol breaks the transition history.
-
-### AnomalyModel.from_bytes
-
-```python
-from_bytes(data: bytes) -> ~_SnapshotT
-```
-
-Restore a fitted model from UTF-8 JSON bytes.
-
-### AnomalyModel.from_json
-
-```python
-from_json(data: str) -> ~_SnapshotT
-```
-
-Restore a fitted model from a versioned JSON string.
-
-### AnomalyModel.from_snapshot
-
-```python
-from_snapshot(data: str) -> ~_SnapshotT
-```
-
-Restore a fitted model from a JSON snapshot string.
-
-### AnomalyModel.load
-
-```python
-load(path: str | pathlib.Path) -> ~_SnapshotT
-```
-
-Restore a fitted model from a JSON file.
-
-### AnomalyModel.predict
-
-```python
-predict(self, x: 'Sequence[Sequence[Any]]', *, kind: 'str' = 'binary') -> 'list[int] | list[float]'
-```
-
-Predict binary labels, anomaly scores, or EIF path lengths.
-
-Context trees expose sequence predictions via ``surprise_score`` and
-``conditional_prob``.
-
-### AnomalyModel.predict_density
-
-```python
-predict_density(self, x: 'Sequence[Sequence[Any]]') -> 'list[float]'
-```
-
-Compute estimated probability density (only for density trees).
-
-### AnomalyModel.save
-
-```python
-save(self, path: str | pathlib.Path) -> None
-```
-
-Write the JSON snapshot, replacing the file after a complete write.
-
-### AnomalyModel.score_samples
-
-```python
-score_samples(self, x: 'Sequence[Sequence[Any]]') -> 'list[float]'
-```
-
-Compute continuous anomaly scores for data points.
-
-Higher scores indicate greater degree of anomalousness.
-
-### AnomalyModel.snapshot
-
-```python
-snapshot(self) -> str
-```
-
-Return the fitted model as a JSON snapshot string.
-
-### AnomalyModel.surprise_score
-
-```python
-surprise_score(self, context: 'Sequence[int | float | None]', symbol: 'float | None') -> 'float | None'
-```
-
-Compute surprise in bits after the last gap. A missing symbol has no score.
-
-### AnomalyModel.to_bytes
-
-```python
-to_bytes(self) -> bytes
-```
-
-Return the fitted model as UTF-8 JSON bytes.
-
-### AnomalyModel.to_json
-
-```python
-to_json(self) -> str
-```
-
-Return the fitted model as a versioned JSON string.
-
-### AnomalyModel.update_feedback
-
-```python
-update_feedback(self, point: 'Sequence[float | None]', is_anomaly: 'bool', eta: 'float' = 0.5) -> 'AnomalyModel'
-```
-
-Update model weights based on expert feedback (for Active anomaly tree).
-
-### AnomalyModel.report
-
-```python
-@report
-```
-
-Return structured ModelReport.
-
-### AnomalyModel.threshold
-
-```python
-@threshold
-```
-
-Contamination threshold score separating normal points from anomalies.
 
 ## GritBot
 

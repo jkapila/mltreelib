@@ -92,8 +92,10 @@ def main():
     tree = ModelTree(max_depth=3, leaf="linear", l2=0.1)
     tree.fit(xtr, ytr, dtypes=dtypes)
 
+    from mltreelib import MetricsReport
+
     preds = tree.predict(xte)
-    metrics = Metrics().regression(yte, preds)
+    metrics = MetricsReport("regression", y_true=yte, y_pred=preds)
 
     print(f"  test RMSE : {metrics['rmse']:.3f}")
     print(f"  test MAE  : {metrics['mae']:.3f}")

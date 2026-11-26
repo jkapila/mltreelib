@@ -1,11 +1,8 @@
-import pytest
 import math
-from mltreelib.solvers import (
-    prune_ensemble,
-    select_sparse_rules,
-    solve_knapsack_pruning_cvx,
-    solve_sparse_rules_cvx,
-)
+
+import pytest
+from cvx_reference import solve_knapsack_pruning_cvx, solve_sparse_rules_cvx
+from mltreelib.solvers import prune_ensemble, select_sparse_rules
 
 
 def test_prune_ensemble_stepwise():
@@ -73,29 +70,15 @@ def test_select_sparse_rules_lasso():
         assert imp > 0.0
 
 
-def test_cvxpy_solvers_or_importerror():
-    try:
-        import cvxpy  # noqa: F401
-
-        has_cvxpy = True
-    except ImportError:
-        has_cvxpy = False
-
+def test_cvxpy_reference_solvers_run():
+    pytest.importorskip("cvxpy")
     rule_matrix = [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [0.0, 0.0]]
     y = [2.0, -1.0, 1.0, 0.0]
+    w0, w = solve_sparse_rules_cvx(rule_matrix, y, alpha=1.0, lambda_reg=0.01)
+    assert isinstance(w0, float)
+    assert len(w) == 2
 
-    if has_cvxpy:
-        w0, w = solve_sparse_rules_cvx(rule_matrix, y, alpha=1.0, lambda_reg=0.01)
-        assert isinstance(w0, float)
-        assert len(w) == 2
-
-        preds = [[2.0, 1.0], [-1.0, 0.0], [1.0, 2.0], [0.0, -1.0]]
-        chosen, weights = solve_knapsack_pruning_cvx(preds, y, max_trees=2)
-        assert len(chosen) <= 2
-        assert len(weights) == len(chosen)
-    else:
-        with pytest.raises(ImportError, match="cvxpy is required"):
-            solve_sparse_rules_cvx(rule_matrix, y)
-
-        with pytest.raises(ImportError, match="cvxpy is required"):
-            solve_knapsack_pruning_cvx([[1.0]], [1.0])
+    preds = [[2.0, 1.0], [-1.0, 0.0], [1.0, 2.0], [0.0, -1.0]]
+    chosen, weights = solve_knapsack_pruning_cvx(preds, y, max_trees=2)
+    assert len(chosen) <= 2
+    assert len(weights) == len(chosen)

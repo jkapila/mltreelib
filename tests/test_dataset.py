@@ -407,7 +407,7 @@ def test_encoding_demo_runs():
 
     if not list_datasets():
         pytest.skip("datasets/ suite not present (see datasets/MANIFEST.md)")
-    script = Path(__file__).resolve().parents[1] / "examples" / "encoding_demo.py"
+    script = Path(__file__).resolve().parents[1] / "examples" / "guides" / "encoding_demo.py"
     proc = subprocess.run(
         [sys.executable, str(script), "churn"],
         check=False,
@@ -468,7 +468,7 @@ def test_demo_script_runs():
     import sys
     from pathlib import Path
 
-    script = Path(__file__).resolve().parents[1] / "examples" / "data_layer_demo.py"
+    script = Path(__file__).resolve().parents[1] / "examples" / "guides" / "data_layer_demo.py"
     if not script.exists():
         pytest.skip("demo script not present")
     proc = subprocess.run(

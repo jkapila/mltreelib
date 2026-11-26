@@ -19,7 +19,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mltreelib import ModelTree, Metrics, competing_risks_report
+from mltreelib import MetricsReport, ModelTree, competing_risks_report
+from mltreelib.data import Dataset
 
 
 def generate_competing_risks_benchmark(n_samples=600, seed=42):
@@ -35,8 +36,6 @@ def generate_competing_risks_benchmark(n_samples=600, seed=42):
     x0 = rng.normal(0.0, 1.0, size=n_samples)
     x1 = rng.uniform(4.0, 8.0, size=n_samples)
     x2 = rng.binomial(1, 0.5, size=n_samples).astype(float)
-
-    X = [[float(x0[i]), float(x1[i]), float(x2[i])] for i in range(n_samples)]
 
     # Latent times to cause 1, cause 2, and right-censoring
     rate_cause1 = np.exp(0.8 * x0 - 0.5 * x2 - 2.0)
@@ -60,7 +59,13 @@ def generate_competing_risks_benchmark(n_samples=600, seed=42):
         else:
             events.append(0.0)  # Censored
 
-    return X, durations, events
+    return {
+        "biomarker": x0.tolist(),
+        "age": x1.tolist(),
+        "treatment": x2.tolist(),
+        "duration": durations,
+        "event": events,
+    }
 
 
 def run_competing_risks_showcase():
@@ -69,7 +74,8 @@ def run_competing_risks_showcase():
     print("=" * 80)
 
     # 1. Generate synthetic clinical cohort
-    X, durations, events = generate_competing_risks_benchmark(n_samples=600, seed=42)
+    data = generate_competing_risks_benchmark(n_samples=600, seed=42)
+    events = data["event"]
     n_total = len(events)
     n_cause1 = sum(1 for e in events if e == 1.0)
     n_cause2 = sum(1 for e in events if e == 2.0)
@@ -80,11 +86,14 @@ def run_competing_risks_showcase():
     print(f"  - Cause 2 (Competing Toxicity/Death): {n_cause2:,} ({n_cause2/n_total*100:.1f}%)")
     print(f"  - Censored Event-Free:               {n_censored:,} ({n_censored/n_total*100:.1f}%)")
 
-    # Train / Test split (75/25)
-    split_idx = 450
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    t_train, t_test = durations[:split_idx], durations[split_idx:]
-    e_train, e_test = events[:split_idx], events[split_idx:]
+    from mltreelib.data import Dataset
+
+    # Train / Test split (75/25, no shuffling: first 450 patients train, last 150 test)
+    ds = Dataset(data, time="duration", event="event", features=["biomarker", "age", "treatment"])
+    train, test = ds.split(test_size=0.25, time=True)
+    X_train, X_test = train.x, test.x
+    t_train, t_test = train.time, test.time
+    e_train, e_test = train.event, test.event
 
     # 2. Fit ModelTree with Gray's Test for Cause 1
     print("\n[1/3] Fitting ModelTree with Gray's Subdistribution Test (gain='gray', cause=1)...")
@@ -123,27 +132,15 @@ def run_competing_risks_showcase():
 
     # 4. Multi-Cause Proper Scoring & Calibration Report
     print("\n[3/3] Computing Multi-Cause IPCW Performance Report...")
-    metrics = Metrics()
-    report = metrics.competing_risks(
+    rep = MetricsReport(
+        "competing_risks",
         durations=t_test,
         events=e_test,
         cif_curves={1: cif1_pred, 2: cif2_pred},
         risk_scores={1: risk_pred, 2: [-r for r in risk_pred]},
         times=eval_horizons,
     )
-
-    print("=" * 55)
-    print("COMPETING RISKS DISCRIMINATION & CALIBRATION REPORT")
-    print("=" * 55)
-    for cause in report["causes"]:
-        print(f"\n--- Cause {cause} ---")
-        print(f"  Observed Test Events:      {report['cause_counts'][cause - 1]}")
-        print(f"  Harrell's C-index:         {report['cause_c_indices'][cause]:.4f}")
-        print(f"  Uno's IPCW C-index:        {report['cause_uno_c_indices'][cause]:.4f}")
-        print(f"  Integrated Brier Score:    {report['cause_ibs'][cause]:.4f}")
-        print("  Brier Scores by Horizon:")
-        for t_str, bs_val in report["brier_at_horizons"][cause].items():
-            print(f"    t = {float(t_str):5.1f}: BS = {bs_val:.4f}")
+    print(rep)
 
     # 5. Generate Multi-State Incidence Visualization
     os.makedirs("docs/assets", exist_ok=True)

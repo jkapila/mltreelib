@@ -1,6 +1,6 @@
 """HPO by data shape — one parameter at a time, raw data, real TabArena.
 
-Run:  uv run --with optuna --with pandas --with pyarrow python examples/guides/hpo_shapes.py
+Run:  uv run --with optuna python examples/guides/hpo_shapes.py
 
 Three real datasets, each a different shape challenge:
   Food_Delivery_Time  45,451 x 10    large categories (Delivery_person_ID, 1,320 levels)
@@ -17,12 +17,12 @@ strings, NaN — the three data handlers, no preprocessing.
 
 import logging
 import multiprocessing as mp
-import random
 import time
 
 import optuna
 import pandas as pd
 from mltreelib import ModelTree
+from mltreelib.data import Dataset
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -90,20 +90,9 @@ def load(name, ycol):
         "categorical" if str(df[c].dtype) in ("object", "category") else "numeric"
         for c in xcols
     ]
-    x = df[xcols].values.tolist()  # raw cells as-is
-    y = df[ycol].astype(float).tolist()
-    rng = random.Random(42)
-    idx = list(range(len(y)))
-    rng.shuffle(idx)
-    cut = int(0.8 * len(idx))
-    tr, te = idx[:cut], idx[cut:]
-    return (
-        [x[i] for i in tr],
-        [y[i] for i in tr],
-        [x[i] for i in te],
-        [y[i] for i in te],
-        dtypes,
-    )
+    ds = Dataset(df.to_dict("list"), target=ycol, features=xcols)
+    tr, te = ds.split(test_size=0.2, seed=42)  # seeded 80/20 shuffle
+    return tr.x, tr.y, te.x, te.y, dtypes
 
 
 def run_study(label, xtr, ytr, xte, yte, dtypes, param):

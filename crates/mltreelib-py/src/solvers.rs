@@ -359,6 +359,7 @@ pub struct PyAskTell(Arc<Mutex<AskTell>>);
 #[pymethods]
 impl PyAskTell {
     #[new]
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (method, bounds, *, population_size=None, seed=None, max_iterations=None, max_evaluations=None, tol=None, ipop=None, max_restarts=None, de_f=None, de_cr=None, pso_w=None, pso_c1=None, pso_c2=None, moead_t=None, nsga3_partitions=None, island_count=None, migration_interval=None, migration_rate=None))]
     fn new(
         method: &str,
@@ -481,6 +482,7 @@ impl PyAskTell {
 
 /// Minimizes a vector callable objective returning a Pareto front.
 #[pyfunction]
+#[allow(clippy::too_many_arguments)]
 #[pyo3(signature = (objective, bounds, *, method="nsga2", population_size=None, max_iterations=None, max_evaluations=None, seed=None))]
 fn minimize_many<'py>(
     py: Python<'py>,
@@ -525,7 +527,7 @@ fn minimize_many<'py>(
             scores.push(vec_score);
         }
         let scores_py = PyList::new(py, scores.iter().map(|s| PyList::new(py, s).unwrap()))?;
-        opt_obj.tell(&scores_py.as_any())?;
+        opt_obj.tell(scores_py.as_any())?;
     }
     opt_obj.pareto_front()
 }

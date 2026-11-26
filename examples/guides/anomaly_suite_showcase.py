@@ -20,6 +20,7 @@ from mltreelib import (
     HalfSpaceTree,
     RandomCutTree,
 )
+from mltreelib.data import xy
 
 
 def main():
@@ -51,9 +52,12 @@ def main():
     all_cols = num_cols + cat_cols
     dtypes = ["float"] * len(num_cols) + ["cat"] * len(cat_cols)
 
+    from mltreelib.data import Dataset
+
     # Convert dataframe to rows with proper types
-    data_mixed = df[all_cols].values.tolist()
-    data_num = df[num_cols].values.tolist()
+    cols_dict = df.to_dict("list")
+    data_mixed = Dataset(cols_dict, features=all_cols).x
+    data_num = Dataset(cols_dict, features=num_cols).x
 
     print("=" * 80)
     print("mltreelib Base Anomaly Tree Suite Showcase (credit-g dataset)")

@@ -35,6 +35,7 @@ import os
 from pathlib import Path
 import time
 import pandas as pd
+from mltreelib.data import Dataset
 import numpy as np
 
 # Headless matplotlib configuration
@@ -62,7 +63,11 @@ def showcase_softmax():
     classes = ["low_risk", "medium_risk", "high_risk"]
     y = [risk_map[r] for r in df["RiskLevel"]]
     cols = ["SystolicBP", "BS", "Age"]
-    X = df[cols].astype(float).values.tolist()
+    X = Dataset(
+        df.astype({c: float for c in cols}).to_dict("list"),
+        target="RiskLevel",
+        features=cols,
+    ).x
 
     # Fit a 1-split Softmax tree
     tree = ModelTree(max_depth=1, leaf_family="softmax", min_rows=20)

@@ -31,6 +31,7 @@ pub enum KnnVariant {
 }
 
 impl KnnVariant {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().replace(['-', '_'], "").as_str() {
             "uniform" => Ok(Self::Uniform),
@@ -58,8 +59,10 @@ impl KnnVariant {
 
 /// Distance metric used to calculate pairwise proximity between samples.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Default)]
 pub enum DistanceMetric {
     /// Standard L2 norm: sqrt(sum (x_j - z_j)^2).
+    #[default]
     Euclidean,
     /// L1 taxicab norm: sum |x_j - z_j|.
     Manhattan,
@@ -81,11 +84,6 @@ pub enum DistanceMetric {
     Mahalanobis,
 }
 
-impl Default for DistanceMetric {
-    fn default() -> Self {
-        Self::Euclidean
-    }
-}
 
 impl DistanceMetric {
     pub fn from_str(s: &str, p: Option<f64>) -> Result<Self, String> {

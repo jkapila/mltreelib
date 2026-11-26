@@ -236,11 +236,10 @@ pub fn eval_fitness<D: DesignMatrix>(
                     beta[j] = 0.0;
                 }
             }
-            -1 => {
-                if beta[j] > 0.0 {
+            -1
+                if beta[j] > 0.0 => {
                     beta[j] = 0.0;
                 }
-            }
             _ => {}
         }
     }

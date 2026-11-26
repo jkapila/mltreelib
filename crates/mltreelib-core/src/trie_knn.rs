@@ -297,9 +297,7 @@ impl TrieKnn {
         } else {
             // Uniform fallback
             let uniform = 1.0 / (self.classes.len() as f64);
-            for v in &mut votes {
-                *v = uniform;
-            }
+            votes.fill(uniform);
         }
 
         votes

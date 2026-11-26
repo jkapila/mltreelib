@@ -95,34 +95,25 @@ We evaluate on 42,693 customer records from the Kevin Hillstrom email marketing 
 
 <!-- run -->
 ```python
-import numpy as np
 import pandas as pd
-from mltreelib import Metrics, ModelTree, dataset_path
+from mltreelib import MetricsReport, ModelTree, dataset_path
+from mltreelib.data import Dataset
 
 # Load Hillstrom dataset (downloaded on first use) and filter for Women's E-Mail vs Control
 df = pd.read_csv(dataset_path("hillstrom_email"))
 df = df[df["segment"].isin(["Womens E-Mail", "No E-Mail"])].reset_index(drop=True)
+df["treat"] = (df["segment"] == "Womens E-Mail").astype(int)
 
 features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
-types = ["numeric"] * 5 + ["categorical"] * 2
+ds = Dataset(
+    {k: df[k].tolist() for k in [*features, "treat", "visit"]},
+    outcome="visit",
+    treatment="treat",
+    features=features,
+)
 
-X_all = [[None if pd.isna(v) else v for v in row] for row in df[features].itertuples(index=False, name=None)]
-y_all = df["visit"].astype(float).tolist()
-w_all = [float(s == "Womens E-Mail") for s in df["segment"]]
-
-# 60% train, 20% validation, 20% test split (Seed 42)
-rng = np.random.default_rng(42)
-perm = rng.permutation(len(df))
-n_train, n_val = int(0.60 * len(df)), int(0.20 * len(df))
-tr_idx, te_idx = perm[:n_train], perm[n_train + n_val:]
-
-x_train = [X_all[i] for i in tr_idx]
-y_train = [y_all[i] for i in tr_idx]
-w_train = [w_all[i] for i in tr_idx]
-
-x_test = [X_all[i] for i in te_idx]
-y_test = [y_all[i] for i in te_idx]
-w_test = [w_all[i] for i in te_idx]
+# Seeded 60% train, 20% validation, 20% test split (seed 42)
+train, _, test = ds.split(val_size=0.2, test_size=0.2, seed=42)
 
 # Fit honest causal tree with max_depth=2
 tree = ModelTree(
@@ -134,7 +125,7 @@ tree = ModelTree(
     honesty=True,
     seed=42,
 )
-tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
+tree.fit(train)
 ```
 
 ---
@@ -143,39 +134,45 @@ tree.fit(x_train, (y_train, w_train), col_names=features, dtypes=types)
 
 On a held-out test split of 8,539 customers (60% train, 20% validation, 20% test; Seed 42), the honest causal tree reveals strong treatment effect heterogeneity:
 
+<!-- run -->
+```python
+print(f"Root split: {tree.root_split()['col']} <= {tree.root_split()['threshold']:.2f}; leaves: {tree.n_leaves()}")
 ```
-Discovered Causal Splits (3 split nodes, 4 leaves):
-  - Root Split: womens <= 0.00 (gain = 11.7582)
-  - Left Child: zip_code <= 0.00 (gain = 1.4747)
-  - Right Child: history <= 338.47 (gain = 2.1134)
+
+<!-- output -->
+```text
+Root split: womens <= 0.00; leaves: 4
 ```
 
 ![Fitted Honest Causal Tree Diagram](../assets/causal_uplift_tree.svg)
 
 ### Structural Subgroup Findings:
-1. **Prior Women's Shoppers with High Spend (Leaf 3)**: Customers with prior women's merchandise purchases (`womens > 0`) and historical spend over $338.47 achieve the highest uplift: **+8.81% incremental visits** (nearly double the population average).
-2. **Non-Women's Shoppers (Leaf 0)**: Customers with no prior women's merchandise purchases exhibit lower incremental response (+1.9%), representing low-return ad spend.
+1. **Highest predicted uplift**: the honest tree assigns **+7.69% incremental visits** to 3,440 test customers and **+6.40%** to 1,156 more (see the block below).
+2. **Lowest predicted uplift**: **+1.48%** for 3,745 test customers, and **-0.54%** for 198 customers, for whom the tree predicts the email reduces visits.
 
 <!-- run -->
 ```python
-metrics = Metrics()
-res = metrics.uplift(y_test, w_test, tree.predict(x_test, kind="uplift"))
-print(f"Honest Tree Qini: {res['qini_coef']:.2f} | AUUC: {res['auuc']:.2f}")
+from collections import Counter
+
+preds = tree.predict(test, kind="uplift")
+rep = MetricsReport("uplift", y_true=test.y, treatment=test.treatment, tau_pred=preds)
+print(f"Honest Tree Qini: {rep['qini_coef']:.2f} | AUUC: {rep['auuc']:.2f} | Top quintile uplift: {rep['top_quintile_uplift']:.2%}")
+for value, n in sorted(Counter(round(v, 4) for v in preds).items()):
+    print(f"Predicted uplift {value:+.2%} for {n} test customers")
 ```
 
 <!-- output -->
 ```text
-Honest Tree Qini: 41.63 | AUUC: 269.97
+Honest Tree Qini: 44.48 | AUUC: 283.12 | Top quintile uplift: 8.58%
+Predicted uplift -0.54% for 198 test customers
+Predicted uplift +1.48% for 3745 test customers
+Predicted uplift +6.40% for 1156 test customers
+Predicted uplift +7.69% for 3440 test customers
 ```
-
-Single-seed evaluation on test customers:
-- **Honest Causal Tree**: Qini = **41.63** | AUUC = **269.97** | Top Quintile Uplift = **8.81%**
-- **Adaptive Causal Tree**: Qini = **32.83** | AUUC = **253.23** | Top Quintile Uplift = **6.12%**
-- **Two-Model T-Learner**: Qini = **32.06** | AUUC = **251.96** | Top Quintile Uplift = **9.87%**
 
 ![Qini Curve and Incremental Visit Rates by Model Decile](../assets/causal_uplift_qini_curve.png)
 
-Panel A plots the Qini curve (cumulative incremental site visits against targeted customer share). The honest causal tree achieves rapid early gains: targeting the top 30% of customers captures 51.9% of all potential incremental visits (193.8 cumulative visits). Panel B shows monotonic decay across predicted deciles, confirming clean segregation of high-responsiveness customers from unresponsive segments.
+Panel A plots the Qini curve (cumulative incremental site visits against targeted customer share). The honest causal tree gives an early gain: the printed Qini coefficient and AUUC above summarize that curve. Panel B shows predicted uplift by decile. The figure is produced by a separate script and was not regenerated by this page's block, so read its numbers against the block output above.
 
 ---
 

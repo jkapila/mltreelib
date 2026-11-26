@@ -40,10 +40,12 @@ Calibration compares predicted probabilities with observed event frequencies in 
 Use `IsotonicCalibrator` to fit a monotone mapping for binary event probabilities.
 Fit the mapping on validation or out-of-fold probabilities. Compare Brier scores on independent test rows. On this seeded sample the calibrated test Brier score is 0.1933, against 0.1946 for the raw probabilities: a small difference on 1,000 rows.
 
+This snippet simulates a 4,000-row binary dataset, fits a binomial-logit tree on 2,000 rows, fits an `IsotonicCalibrator` on 1,000 validation rows, and compares raw vs calibrated Brier scores on the 1,000 test rows using `MetricsReport`.
+
 <!-- run -->
 ```python
 import numpy as np
-from mltreelib import Metrics, ModelTree
+from mltreelib import MetricsReport, ModelTree
 from mltreelib.calibration import IsotonicCalibrator
 
 rng = np.random.default_rng(7)
@@ -62,14 +64,17 @@ model.fit(X_train, y_train, dtypes=["numeric"] * 4)
 calibrator = IsotonicCalibrator.fit(y_val, model.predict_proba(X_val))
 raw = model.predict_proba(X_test)
 calibrated = calibrator.predict(raw)
-metrics = Metrics()
-print(metrics.brier_score(y_test, raw), metrics.brier_score(y_test, calibrated))
+raw_rep = MetricsReport("classification", y_true=y_test, proba=raw)
+cal_rep = MetricsReport("classification", y_true=y_test, proba=calibrated)
+print(raw_rep["brier"], cal_rep["brier"])
 ```
 
 <!-- output -->
 ```text
 0.19456565411850799 0.1932642638524234
 ```
+
+**What to read in the output:** the two printed numbers are the held-out Brier scores before and after isotonic calibration; lower is better.
 
 ![Held-out confusion matrix](../assets/guides/data-confusion.svg)
 

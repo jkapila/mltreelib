@@ -84,15 +84,14 @@ Traditional credit risk models discard incomplete cases or inject heuristic medi
 <!-- run -->
 ```python
 import pandas as pd
-from mltreelib import Metrics, ModelTree
+from mltreelib import ModelTree, dataset_path
+from mltreelib.data import Dataset
 
-from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("GiveMeSomeCredit"))
 target = "FinancialDistressNextTwoYears"
-features = [c for c in df.columns if c != target]
-
-y = (df[target] == "Yes").astype(int).tolist()
-X = df[features].values.tolist()
+cols = df.to_dict("list")
+cols[target] = [1 if v == "Yes" else 0 for v in cols[target]]
+ds = Dataset(cols, target=target)
 
 # Define domain monotonicity:
 # Utilization (+1), Age (-1), 30-59 DPD (+1), DebtRatio (+1), Income (-1),
@@ -108,7 +107,7 @@ tree = ModelTree(
     prune="none",
     monotone=monotone_vec,
 )
-tree.fit(X, y, col_names=features)
+tree.fit(ds)
 ```
 
 ---
@@ -207,8 +206,8 @@ def evaluate_cost(y_true, y_prob, threshold, c_fp=1.0, c_fn=5.0):
     return (c_fp * fp + c_fn * fn) / len(y_true)
 
 # Split 150k borrowers: 100k train, 25k validation, 25k test (Seed 42)
-X_val, y_val = X[100000:125000], y[100000:125000]
-X_te, y_te = X[125000:], y[125000:]
+X_val, y_val = ds.x[100000:125000], ds.y[100000:125000]
+X_te, y_te = ds.x[125000:], ds.y[125000:]
 p_val = tree.predict_proba(X_val)
 p_te = tree.predict_proba(X_te)
 

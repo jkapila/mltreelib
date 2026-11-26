@@ -29,4 +29,5 @@ jobs:
         run: |
           uv sync --group dev --python ${{ matrix.python-version }}
           uv run maturin develop
+          uv run pytest tests/ --collect-only -q
           uv run pytest tests/ -q

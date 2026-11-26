@@ -2,6 +2,12 @@
 //! generator) and, next, the tree learners. Pure Rust; the Python and R
 //! bindings stay thin shells around this crate.
 
+#![allow(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    clippy::needless_range_loop
+)]
+
 pub mod anomaly;
 pub mod builder;
 pub mod calibration;

@@ -13,6 +13,7 @@ from mltreelib._core import ExtendedIsolationTree as _EIF
 from mltreelib._core import HalfSpaceTree as _HST
 from mltreelib._core import RandomCutTree as _RCT
 from mltreelib._model_inputs import _numeric_cell, _numeric_rows
+from mltreelib._tables import to_rows
 from mltreelib._unsupervised_snapshot import _UnsupervisedSnapshot
 from mltreelib.components import ComponentModel
 from mltreelib.report import ModelReport, build_report
@@ -47,9 +48,9 @@ class AnomalyModel(_UnsupervisedSnapshot):
     ----------
     kind : str, default="eif"
         Anomaly tree engine to use: ``"eif"``, ``"det"``, ``"hst"``, ``"rct"``, ``"active"``, or ``"context"``.
-    max_depth : int, optional
+    max_depth : int, default=10
         Maximum tree depth.
-    min_rows : int, default=10
+    min_rows : int, default=20
         Minimum leaf samples.
     contamination : float, default=0.05
         Expected proportion of anomalies in the dataset (used to calibrate binary predictions).
@@ -82,8 +83,8 @@ class AnomalyModel(_UnsupervisedSnapshot):
     def __init__(
         self,
         kind: str = "eif",
-        max_depth: int | None = None,
-        min_rows: int = 10,
+        max_depth: int | None = 10,
+        min_rows: int = 20,
         contamination: float = 0.05,
         seed: int = 42,
         *,
@@ -181,12 +182,13 @@ class AnomalyModel(_UnsupervisedSnapshot):
         x: Sequence[Sequence[Any]],
         col_names: Sequence[str] | None = None,
         dtypes: Sequence[str] | None = None,
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Fit the anomaly model on training data.
 
         Accepts native Python lists. None and NaN cells stay missing. In context
         sequences, each missing symbol breaks the transition history.
         """
+        x = to_rows(x)[0]
         if len(x) == 0:
             raise ValueError("AnomalyTree requires at least one training row.")
         k = self.kind
@@ -202,7 +204,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
             dts = list(dtypes) if dtypes is not None else None
             self._inner.fit(x, col_names=cnames, dtypes=dts)
         elif k in ("context", "sequence"):
-            self._inner.fit([[None if value != value else value for value in row] for row in x])
+            self._inner.fit([[None if _is_nan(value) else value for value in row] for row in x])
         elif k in ("pca", "nmf"):
             self._component_model.fit(x)
         else:
@@ -270,6 +272,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         """
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
+        x = to_rows(x)[0]
 
         k = self.kind
         if k in ("eif", "isolation", "extended_isolation"):
@@ -318,6 +321,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
         """
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
+        x = to_rows(x)[0]
         if self.kind in ("context", "sequence"):
             raise ValueError(
                 "Use surprise_score(context, symbol) or conditional_prob(context, symbol) "
@@ -361,7 +365,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
             )
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
-        if symbol is None or symbol != symbol:
+        if symbol is None or _is_nan(symbol):
             return None
         return self._inner.surprise_score(_observed_suffix(context), symbol)
 
@@ -375,13 +379,13 @@ class AnomalyModel(_UnsupervisedSnapshot):
             )
         if not self._fitted:
             raise ValueError("AnomalyTree is not fitted yet.")
-        if symbol is None or symbol != symbol:
+        if symbol is None or _is_nan(symbol):
             return None
         return self._inner.conditional_prob(_observed_suffix(context), symbol)
 
     def update_feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Update model weights based on expert feedback (for Active anomaly tree)."""
         if not hasattr(self._inner, "update_feedback"):
             raise ValueError(
@@ -395,7 +399,7 @@ class AnomalyModel(_UnsupervisedSnapshot):
 
     def feedback(
         self, point: Sequence[float | None], is_anomaly: bool, eta: float = 0.5
-    ) -> AnomalyTree:
+    ) -> AnomalyModel:
         """Alias for update_feedback."""
         return self.update_feedback(point, is_anomaly, eta)
 
@@ -443,10 +447,14 @@ class AnomalyTree(AnomalyModel):
     _snapshot_format = "mltreelib.anomaly_tree"
 
 
+def _is_nan(value: Any) -> bool:
+    return isinstance(value, float) and math.isnan(value)
+
+
 def _observed_suffix(context: Sequence[int | float | None]) -> list[int | float]:
     observed = []
     for value in context:
-        if value is None or value != value:
+        if value is None or _is_nan(value):
             observed.clear()
         else:
             observed.append(value)

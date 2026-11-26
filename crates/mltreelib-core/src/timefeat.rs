@@ -24,7 +24,7 @@ pub fn season(month: u32, day: u32, southern: bool) -> u8 {
         3
     };
     if southern {
-        ((s + 2) % 4) as u8
+        (s + 2) % 4
     } else {
         s
     }

@@ -112,6 +112,7 @@ pub enum MarsGlmFamily {
 }
 
 impl MarsGlmFamily {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "gaussian" | "ols" | "regression" => Ok(Self::Gaussian),
@@ -131,6 +132,7 @@ pub enum MarsPruningMethod {
 }
 
 impl MarsPruningMethod {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "backward" | "gcv" => Ok(Self::Backward),
@@ -380,7 +382,7 @@ impl MarsRegressor {
             let mut candidate_pool: Vec<(BasisFunction, Option<BasisFunction>, f64)> = Vec::new();
 
             // Search over all parent bases B_m
-            for (_m, parent) in active_basis.iter().enumerate() {
+            for parent in active_basis.iter() {
                 if parent.factors.len() >= self.params.degree {
                     continue;
                 }

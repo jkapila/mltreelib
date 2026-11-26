@@ -13,7 +13,7 @@
 //! This completely eliminates selection bias toward variables with many
 //! split points or high category cardinality (Loh's cardinality trap).
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::gate::GateNote;
 use crate::model_tree::{Grower, NodeProfile, Split};
@@ -90,8 +90,8 @@ pub fn compute_ctree_test_categorical(
     }
 
     // Group rows by category level
-    let mut level_w: HashMap<u64, f64> = HashMap::new();
-    let mut level_sy: HashMap<u64, f64> = HashMap::new();
+    let mut level_w: BTreeMap<u64, f64> = BTreeMap::new();
+    let mut level_sy: BTreeMap<u64, f64> = BTreeMap::new();
 
     for &r in rows {
         if let Some(v) = col[r] {
@@ -312,7 +312,7 @@ impl<'a> Grower<'a> {
                 sp.gain = best_split_stat;
             }
             ColType::Categorical => {
-                let mut groups: HashMap<u64, (f64, f64, usize, f64)> = HashMap::new();
+                let mut groups: BTreeMap<u64, (f64, f64, usize, f64)> = BTreeMap::new();
                 for &r in rows {
                     if let Some(v) = self.cols[best_col][r] {
                         let key = v.to_bits();

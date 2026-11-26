@@ -1332,7 +1332,7 @@ impl Chol {
                     s -= l[k * dim + i] * l[k * dim + j];
                 }
                 if i == j {
-                    if !(s > 0.0) {
+                    if !(s.is_finite() && s > 0.0) {
                         return None;
                     }
                     l[j * dim + j] = s.sqrt();
@@ -1379,7 +1379,7 @@ impl Chol {
             let x = self.l[j * d + j];
             let y = self.v[j];
             let r2 = if add { x * x + y * y } else { x * x - y * y };
-            if !add && !(r2 > 1e-12 * x * x) {
+            if !(add || r2.is_finite() && r2 > 1e-12 * x * x) {
                 return false;
             }
             let r = r2.sqrt();
@@ -1486,7 +1486,7 @@ impl SideTrack {
     /// the same contributions row by row.
     pub fn move_row(&mut self, phi: &[f64], w: f64, dir: i32) {
         self.ops += 1;
-        if self.ops % 2048 == 0 {
+        if self.ops.is_multiple_of(2048) {
             self.chols[0] = None;
             self.chols[1] = None; // periodic refresh bounds drift
         }
@@ -1701,7 +1701,7 @@ pub fn compute_regression_summary(
 
     let y_mean = xty[0] / (n as f64);
     let tss = (yty - (n as f64) * y_mean * y_mean).max(1e-12);
-    let r_squared = (1.0 - rss / tss).max(0.0).min(1.0);
+    let r_squared = (1.0 - rss / tss).clamp(0.0, 1.0);
     let adj_r_squared =
         (1.0 - (1.0 - r_squared) * ((n - 1) as f64) / (df_residuals as f64)).max(0.0);
 

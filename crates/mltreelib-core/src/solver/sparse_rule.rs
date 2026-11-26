@@ -63,7 +63,7 @@ pub fn fit_sparse_rule_selection(
     for j in 0..m_total {
         let count = rule_matrix.iter().filter(|row| row[j] > 0.5).count();
         let s = count as f64 / n_f;
-        if s >= 0.005 && s <= 0.995 {
+        if (0.005..=0.995).contains(&s) {
             let sigma = (s * (1.0 - s)).sqrt().max(1e-6);
             valid_indices.push(j);
             supports.push(s);

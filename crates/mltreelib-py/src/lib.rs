@@ -1,11 +1,41 @@
 //! Thin PyO3 shell around `mltreelib-core`. Exposed to Python as
 //! `mltreelib._core`; the Python package in `python/mltreelib` re-exports it.
 
+#![allow(clippy::too_many_arguments, clippy::type_complexity)]
+
 
 use pyo3::exceptions::{PyAttributeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList, PyModule, PyModuleMethods, PyTuple};
 use pyo3::IntoPyObjectExt;
+
+/// A table argument: a list of rows (or NumPy array), or anything that
+/// `mltreelib._tables.to_rows` understands by duck typing (dict of columns,
+/// pandas or Polars-style data frame, Arrow table). No third-party package is
+/// imported; missing values are passed through for the model to route.
+struct Table<'py> {
+    rows: Vec<Vec<Option<Bound<'py, PyAny>>>>,
+    names: Option<Vec<String>>,
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for Table<'py> {
+    type Error = PyErr;
+
+    fn extract(obj: Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        if obj.is_instance_of::<PyList>() || obj.is_instance_of::<PyTuple>() {
+            if let Ok(rows) = obj.extract::<Vec<Vec<Option<Bound<'py, PyAny>>>>>() {
+                return Ok(Table { rows, names: None });
+            }
+        }
+        let py = obj.py();
+        let out = py
+            .import("mltreelib._tables")?
+            .getattr("to_rows")?
+            .call1((obj.to_owned(),))?;
+        let (rows, names): (Vec<Vec<Option<Bound<'py, PyAny>>>>, Option<Vec<String>>) = out.extract()?;
+        Ok(Table { rows, names })
+    }
+}
 
 mod calibration;
 mod component;
@@ -2940,7 +2970,7 @@ impl PyLeafControl {
         leaf_solver = None,
         leaf_cols = "all",
         l1 = 0.0,
-        l2 = 1e-3,
+        l2 = 0.5,
         leaf_digest = true,
         tau = 0.5,
         huber_delta = 1.345,
@@ -3556,6 +3586,150 @@ impl PyRuleSet {
 /// Model tree: greedy splits with Gaussian, binomial-logit or Poisson-log
 /// leaves, NA-aware (learned split directions + NA-indicator leaf terms).
 /// Task: regression, binary probability estimation, or count modeling.
+/// Hyperparameters as a dict (shared by `config()` and `core_defaults()`).
+fn params_dict<'py>(py: Python<'py>, p: &ModelTreeParams) -> PyResult<Py<PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("max_depth", p.max_depth)?;
+    d.set_item("min_rows", p.min_rows)?;
+    d.set_item("minsplit", p.minsplit)?;
+    d.set_item("minbucket", p.minbucket)?;
+    d.set_item("minprob", p.minprob)?;
+    d.set_item("max_leaf_nodes", p.max_leaf_nodes)?;
+    d.set_item("min_gain", p.min_gain)?;
+    d.set_item("purity_gate", p.purity_gate)?;
+    d.set_item(
+        "purity_gate_metric",
+        match p.purity_gate_metric {
+            PurityMetric::Sd => "sd",
+            PurityMetric::Cv => "cv",
+        },
+    )?;
+    d.set_item("tail_quantile", p.tail_quantile)?;
+    d.set_item("split_precision", p.split_precision)?;
+    d.set_item("split_cols", p.split_cols.clone())?;
+    d.set_item("col_sample", p.col_sample)?;
+    d.set_item("seed", p.seed)?;
+    d.set_item(
+        "leaf",
+        match &p.leaf {
+            LeafKind::Linear => "linear",
+            LeafKind::Mean => "mean",
+            LeafKind::Median => "median",
+            LeafKind::Quantile(_) => "quantile",
+            LeafKind::Expectile(_) => "expectile",
+            LeafKind::Huber => "huber",
+            LeafKind::Mars => "mars",
+            LeafKind::Knn => "knn",
+            LeafKind::Prob => "prob",
+            LeafKind::Odds => "odds",
+            LeafKind::LogOdds => "log_odds",
+        },
+    )?;
+    d.set_item("tau", p.tau)?;
+    d.set_item("huber_delta", p.huber_delta)?;
+    d.set_item(
+        "leaf_family",
+        match p.leaf_family {
+            LeafFamily::Gaussian => "gaussian",
+            LeafFamily::Binomial => "binomial",
+            LeafFamily::Poisson => "poisson",
+            LeafFamily::Probit => "probit",
+            LeafFamily::Gamma => "gamma",
+            LeafFamily::Tweedie => "tweedie",
+            LeafFamily::Tobit => "tobit",
+            LeafFamily::Softmax => "softmax",
+            LeafFamily::Survival => "survival",
+            LeafFamily::Heteroscedastic => "heteroscedastic",
+            LeafFamily::Aft => "aft",
+            LeafFamily::Cure => "cure",
+            LeafFamily::Spline => "spline",
+            LeafFamily::Quantile => "quantile",
+            LeafFamily::Huber => "huber",
+            LeafFamily::Expectile => "expectile",
+            LeafFamily::NegativeBinomial => "negative_binomial",
+            LeafFamily::Beta => "beta",
+        },
+    )?;
+    d.set_item("l1", p.l1)?;
+    d.set_item("l2", p.l2)?;
+    d.set_item("leaf_solver", leaf_solver_name(p.leaf_solver))?;
+    d.set_item(
+        "leaf_cols",
+        match p.leaf_cols {
+            LeafCols::All => "all",
+            LeafCols::PathUsed => "path",
+        },
+    )?;
+    d.set_item("leaf_digest", p.leaf_digest)?;
+    d.set_item("tree_monotone", p.tree_monotone.clone())?;
+    d.set_item("leaf_monotone", p.leaf_monotone.clone())?;
+    d.set_item("monotone", p.monotone.clone())?;
+    d.set_item("col_weights", p.col_weights.clone())?;
+    d.set_item("interaction_groups", p.interaction_groups.clone())?;
+    d.set_item("alpha", p.alpha)?;
+    d.set_item("imbalance_penalty", p.imbalance_penalty)?;
+    d.set_item(
+        "prune",
+        match p.prune {
+            PruneCost::None => "none",
+            PruneCost::Bic => "bic",
+            PruneCost::Mdl => "mdl",
+            PruneCost::Cp => "cp",
+        },
+    )?;
+    d.set_item("cp_alpha", p.cp_alpha)?;
+    d.set_item("cp", p.cp)?;
+    d.set_item("honesty", p.honesty)?;
+    d.set_item("honesty_fraction", p.honesty_fraction)?;
+    d.set_item("maxsurrogate", p.maxsurrogate)?;
+    d.set_item(
+        "split_test",
+        match p.split_test {
+            SplitTest::None => "none",
+            SplitTest::Chow => "chow",
+            SplitTest::Mob => "mob",
+            SplitTest::Ctree => "ctree",
+        },
+    )?;
+    d.set_item("split_alpha", p.split_alpha)?;
+    d.set_item("bonferroni", p.bonferroni)?;
+    d.set_item("min_relevance", p.min_relevance)?;
+    d.set_item("verbose", p.verbose)?;
+    d.set_item(
+        "split_eval",
+        match p.split_eval {
+            SplitEval::Fast => "fast",
+            SplitEval::Histogram => "histogram",
+            SplitEval::Exhaustive => "exhaustive",
+        },
+    )?;
+    d.set_item("max_bins", p.max_bins)?;
+    d.set_item("min_bin_rows", p.min_bin_rows)?;
+    d.set_item("presort", p.presort)?;
+    d.set_item("events", p.events.clone())?;
+    d.set_item("n_classes", p.n_classes)?;
+    d.set_item("tweedie_p", p.tweedie_p)?;
+    d.set_item("tobit_threshold", p.tobit_threshold)?;
+    d.set_item("mars_degree", p.mars_degree)?;
+    d.set_item("mars_terms", p.mars_terms)?;
+    d.set_item("mars_penalty", p.mars_penalty)?;
+    d.set_item("knn_k", p.knn_k)?;
+    d.set_item("knn_k_validity", p.knn_k_validity)?;
+    d.set_item("knn_variant", p.knn_variant.as_str())?;
+    d.set_item("knn_metric", p.knn_metric.as_str())?;
+    d.set_item("knn_gamma", p.knn_gamma)?;
+    d.set_item("knn_p", p.knn_p)?;
+    d.set_item("shrinkage", p.shrinkage)?;
+    d.set_item("max_classes", p.max_classes)?;
+    d.set_item("expectile_tau", p.expectile_tau)?;
+    d.set_item("non_negative", p.non_negative)?;
+    d.set_item("non_negative_intercept", p.non_negative_intercept)?;
+    d.set_item("nb_alpha", p.nb_alpha)?;
+    d.set_item("beta_phi", p.beta_phi)?;
+    d.set_item("group_l2", p.group_l2)?;
+    Ok(d.into())
+}
+
 #[pyclass(name = "ModelTree", module = "mltreelib._core")]
 #[derive(Clone)]
 pub struct PyModelTree {
@@ -3566,6 +3740,8 @@ pub struct PyModelTree {
     /// columns whose values were already numeric level codes.
     vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
     interaction_group_names: Option<Vec<Vec<String>>>,
+    dropped_indices: Vec<usize>,
+    dropped_names: Vec<String>,
 }
 
 impl PyModelTree {
@@ -3586,6 +3762,8 @@ impl PyModelTree {
             inner: Some(tree),
             vocabs,
             interaction_group_names: None,
+            dropped_indices: Vec::new(),
+            dropped_names: Vec::new(),
         }
     }
 }
@@ -3657,7 +3835,7 @@ fn coerce_rows(
                             }
                             None => {
                                 return Err(PyValueError::new_err(format!(
-                                    "column {j}: string value in a numeric column"
+                                    "column {j}: string value in a numeric column (pass dtypes=[...] with 'categorical' for string columns)"
                                 )))
                             }
                         }
@@ -4348,6 +4526,8 @@ impl PyModelTree {
             inner: None,
             vocabs: Vec::new(),
             interaction_group_names: ig_names,
+            dropped_indices: Vec::new(),
+            dropped_names: Vec::new(),
         })
     }
 
@@ -4367,21 +4547,21 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
+    #[pyo3(signature = (x, y = None, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None, y_missing = "warn"))]
     fn fit(
         &mut self,
-        mut x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
-        y: Bound<'_, PyAny>,
+        x: Bound<'_, PyAny>,
+        y: Option<Bound<'_, PyAny>>,
         w: Option<Vec<f64>>,
         mut dtypes: Option<Vec<String>>,
         control: Option<Bound<'_, PyAny>>,
         id_col: Option<Bound<'_, PyAny>>,
         group_col: Option<Bound<'_, PyAny>>,
         mut col_names: Option<Vec<String>>,
-        event: Option<Vec<f64>>,
-        treatment: Option<Vec<f64>>,
+        mut event: Option<Vec<f64>>,
+        mut treatment: Option<Vec<f64>>,
         n_classes: Option<usize>,
-        sample_weight: Option<Vec<f64>>,
+        mut sample_weight: Option<Vec<f64>>,
         row_weights: Option<Vec<f64>>,
         col_weights: Option<Vec<f64>>,
         feature_weights: Option<Vec<f64>>,
@@ -4395,7 +4575,70 @@ impl PyModelTree {
         sporf_projections: Option<usize>,
         extratrees: Option<bool>,
         ebm_fast: Option<bool>,
+        y_missing: &str,
     ) -> PyResult<()> {
+        if !matches!(y_missing, "warn" | "error") {
+            return Err(PyValueError::new_err(format!(
+                "y_missing must be 'warn' or 'error', got {y_missing:?}"
+            )));
+        }
+        // A Dataset (any object with `fit_args()`) supplies x, y, names, dtypes and roles.
+        let x_obj = x;
+        let mut y = y;
+        let (mut x, table_names) = if x_obj.hasattr("fit_args")? {
+            let args = x_obj.call_method0("fit_args")?;
+            let get = |key: &str| -> PyResult<Option<Bound<'_, PyAny>>> {
+                match args.get_item(key) {
+                    Ok(v) if !v.is_none() => Ok(Some(v)),
+                    _ => Ok(None),
+                }
+            };
+            let numeric = |name: &str, v: Bound<'_, PyAny>| -> PyResult<Vec<f64>> {
+                v.extract::<Vec<f64>>().map_err(|_| {
+                    PyValueError::new_err(format!(
+                        "Dataset role '{name}' must be numeric (for example 0/1); recode it before building the Dataset, the library never recodes values"
+                    ))
+                })
+            };
+            if y.is_none() {
+                y = get("y")?;
+            }
+            if dtypes.is_none() {
+                if let Some(v) = get("dtypes")? {
+                    dtypes = Some(v.extract::<Vec<String>>()?);
+                }
+            }
+            if event.is_none() {
+                if let Some(v) = get("event")? {
+                    event = Some(numeric("event", v)?);
+                }
+            }
+            if treatment.is_none() {
+                if let Some(v) = get("treatment")? {
+                    treatment = Some(numeric("treatment", v)?);
+                }
+            }
+            if sample_weight.is_none() && w.is_none() {
+                if let Some(v) = get("sample_weight")? {
+                    sample_weight = Some(numeric("weights", v)?);
+                }
+            }
+            let rows = get("x")?
+                .ok_or_else(|| PyValueError::new_err("Dataset.fit_args() returned no 'x'"))?
+                .extract::<Vec<Vec<Option<Bound<'_, PyAny>>>>>()?;
+            let names = match get("col_names")? {
+                Some(v) => Some(v.extract::<Vec<String>>()?),
+                None => None,
+            };
+            (rows, names)
+        } else {
+            let t = x_obj.extract::<Table<'_>>()?;
+            (t.rows, t.names)
+        };
+        if col_names.is_none() {
+            col_names = table_names;
+        }
+        let y = y.ok_or_else(|| PyValueError::new_err("fit() needs y, unless x is a Dataset that has a target"))?;
         if let Some(fm) = fairness_metric {
             self.params.fairness_metric = match fm.to_lowercase().as_str() {
                 "equalized_odds" | "equalizedodds" | "eo" => mltreelib_core::model_tree::FairnessMetric::EqualizedOdds,
@@ -4434,43 +4677,78 @@ impl PyModelTree {
             }
         }
 
+        let n_raw_cols = x.first().map(|r| r.len()).unwrap_or(0);
         let mut drop_indices = std::collections::HashSet::new();
-        let resolve_col = |spec: &Bound<'_, PyAny>, names: Option<&[String]>| -> Option<usize> {
+        let resolve_col = |role: &str, spec: &Bound<'_, PyAny>, names: Option<&[String]>| -> PyResult<usize> {
             if let Ok(idx) = spec.extract::<usize>() {
-                Some(idx)
+                if idx < n_raw_cols {
+                    Ok(idx)
+                } else {
+                    Err(PyValueError::new_err(format!(
+                        "{role} index {idx} out of range for {n_raw_cols} columns"
+                    )))
+                }
             } else if let Ok(name) = spec.extract::<String>() {
-                names.and_then(|ns| ns.iter().position(|n| n == &name))
+                match names {
+                    Some(ns) => ns
+                        .iter()
+                        .position(|n| n == &name)
+                        .ok_or_else(|| {
+                            PyValueError::new_err(format!(
+                                "{role} '{name}' not found in columns: {ns:?}"
+                            ))
+                        }),
+                    None => Err(PyValueError::new_err(format!(
+                        "{role} '{name}' cannot be resolved without col_names"
+                    ))),
+                }
             } else {
-                None
+                Err(PyValueError::new_err(format!(
+                    "{role} must be a column name or integer index"
+                )))
             }
         };
 
+        if let Some(pc) = self.params.protected_col {
+            if pc >= n_raw_cols {
+                return Err(PyValueError::new_err(format!(
+                    "protected_col index {pc} out of range for {n_raw_cols} columns"
+                )));
+            }
+        }
         if self.params.protected_col.is_none() {
             if let Some(ref pa) = protected_attribute {
-                if let Some(idx) = resolve_col(pa, col_names.as_deref()) {
-                    self.params.protected_col = Some(idx);
-                }
+                let idx = resolve_col("protected_attribute", pa, col_names.as_deref())?;
+                self.params.protected_col = Some(idx);
             }
         }
 
-        if !self.params.train_ids {
-            if let Some(ref id_spec) = id_col {
-                if let Some(idx) = resolve_col(id_spec, col_names.as_deref()) {
-                    drop_indices.insert(idx);
-                }
+        if let Some(ref id_spec) = id_col {
+            let idx = resolve_col("id_col", id_spec, col_names.as_deref())?;
+            if !self.params.train_ids {
+                drop_indices.insert(idx);
             }
         }
-        if !self.params.train_groups {
-            if let Some(ref grp_spec) = group_col {
-                if let Some(idx) = resolve_col(grp_spec, col_names.as_deref()) {
-                    drop_indices.insert(idx);
-                }
+        if let Some(ref grp_spec) = group_col {
+            let idx = resolve_col("group_col", grp_spec, col_names.as_deref())?;
+            if !self.params.train_groups {
+                drop_indices.insert(idx);
             }
         }
 
+        self.dropped_indices.clear();
+        self.dropped_names.clear();
         if !drop_indices.is_empty() {
-            let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
-            let keep_indices: Vec<usize> = (0..n_cols).filter(|i| !drop_indices.contains(i)).collect();
+            let mut sorted_drops: Vec<usize> = drop_indices.iter().copied().collect();
+            sorted_drops.sort_unstable();
+            self.dropped_indices = sorted_drops.clone();
+            if let Some(ref names) = col_names {
+                self.dropped_names = sorted_drops
+                    .iter()
+                    .filter_map(|&i| names.get(i).cloned())
+                    .collect();
+            }
+            let keep_indices: Vec<usize> = (0..n_raw_cols).filter(|i| !drop_indices.contains(i)).collect();
             x = x.into_iter()
                 .map(|row| keep_indices.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
                 .collect();
@@ -4517,10 +4795,47 @@ impl PyModelTree {
             } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
                 (single, None)
             } else {
-                return Err(PyTypeError::new_err(
-                    "y must be a list of floats, a 2D list of vector targets, or a 2-tuple (values, aux)",
-                ));
+                let py = y.py();
+                let converted = py
+                    .import("mltreelib._tables")?
+                    .getattr("to_target_list")?
+                    .call1((y.clone(),));
+                if let Ok(list_obj) = converted {
+                    if let Ok(single) = list_obj.extract::<Vec<Option<f64>>>() {
+                        (single, None)
+                    } else {
+                        return Err(PyTypeError::new_err(
+                            "y must be numeric (floats/ints, or 2-tuple (values, aux)); string class labels are not auto-encoded — encode labels to integers before calling fit()",
+                        ));
+                    }
+                } else {
+                    return Err(PyTypeError::new_err(
+                        "y must be numeric (floats/ints, a 2D list of vector targets, or a 2-tuple (values, aux))",
+                    ));
+                }
             };
+        let n_missing_y = y_vec
+            .iter()
+            .filter(|v| v.is_none_or(|val| !val.is_finite()))
+            .count();
+        if n_missing_y > 0 {
+            if y_missing == "error" {
+                return Err(PyValueError::new_err(format!(
+                    "y contains {n_missing_y} missing values (y_missing='error')"
+                )));
+            }
+            let py = y.py();
+            let warnings = py.import("warnings")?;
+            let user_warning = py.import("builtins")?.getattr("UserWarning")?;
+            warnings.call_method1(
+                "warn",
+                (
+                    format!("y contains {n_missing_y} missing values; those rows are dropped from training."),
+                    user_warning,
+                    2usize,
+                ),
+            )?;
+        }
 
         if let Some(aux) = aux_vec {
             if matches!(self.params.gain, GainFn::Causal) || self.params.treatments.is_some() {
@@ -4639,7 +4954,7 @@ impl PyModelTree {
     ))]
     fn retrain<'py>(
         slf: &Bound<'py, PyModelTree>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         y: Bound<'_, PyAny>,
         control: Option<Bound<'py, PyAny>>,
         w: Option<Vec<f64>>,
@@ -4658,6 +4973,7 @@ impl PyModelTree {
         event: Option<Vec<f64>>,
         n_classes: Option<usize>,
     ) -> PyResult<Py<PyModelTree>> {
+        let (x, _table_names) = (x.rows, x.names);
         let is_external = match mode.unwrap_or("internal") {
             "internal" | "update" => false,
             "external" | "expose" | "new" => true,
@@ -4780,9 +5096,10 @@ impl PyModelTree {
     /// Returns: one quantile per row (NaN when a leaf's digest was dropped).
     fn quantile(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         tau: f64,
     ) -> PyResult<Vec<f64>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.quantile(&x, tau))
     }
@@ -4857,12 +5174,12 @@ impl PyModelTree {
     ///   kind="leaf_id": integer leaf ID per row.
     #[pyo3(signature = (
         x, kind = "response", times = None, neighbors = None, cause = None,
-        *, coverage = None, alpha = None, threshold = 0.5
+        *, coverage = None, alpha = None, threshold = 0.5, on_missing_columns = "warn"
     ))]
     fn predict<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         kind: Option<&str>,
         times: Option<Vec<f64>>,
         neighbors: Option<usize>,
@@ -4870,8 +5187,75 @@ impl PyModelTree {
         coverage: Option<f64>,
         alpha: Option<f64>,
         threshold: f64,
+        on_missing_columns: &str,
     ) -> PyResult<Py<PyAny>> {
-        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        if !matches!(on_missing_columns, "warn" | "error" | "allow") {
+            return Err(PyValueError::new_err(format!(
+                "on_missing_columns must be 'warn', 'error', or 'allow', got {on_missing_columns:?}"
+            )));
+        }
+        let expected_names = self.tree()?.col_names.clone();
+        let expected_cols = expected_names.len();
+        let (mut rows, table_names) = (x.rows, x.names);
+        if !rows.is_empty() && !self.dropped_indices.is_empty() {
+            let actual_cols = rows[0].len();
+            if actual_cols == expected_cols + self.dropped_indices.len() {
+                let drop_set: std::collections::HashSet<usize> = if let Some(ref tnames) = table_names {
+                    let named_drops: std::collections::HashSet<usize> = tnames
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, n)| self.dropped_names.contains(n))
+                        .map(|(i, _)| i)
+                        .collect();
+                    if named_drops.len() == self.dropped_indices.len() {
+                        named_drops
+                    } else {
+                        self.dropped_indices.iter().copied().collect()
+                    }
+                } else {
+                    self.dropped_indices.iter().copied().collect()
+                };
+                let keep: Vec<usize> = (0..actual_cols).filter(|i| !drop_set.contains(i)).collect();
+                rows = rows
+                    .into_iter()
+                    .map(|row| keep.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
+                    .collect();
+            }
+        }
+        if !rows.is_empty() && expected_cols > 0 {
+            let actual_cols = rows[0].len();
+            if actual_cols > expected_cols {
+                return Err(PyValueError::new_err(format!(
+                    "predict() got {actual_cols} columns, expected {expected_cols}"
+                )));
+            }
+            if actual_cols < expected_cols {
+                let missing_names: Vec<String> = if let Some(ref tnames) = table_names {
+                    expected_names
+                        .iter()
+                        .filter(|n| !tnames.contains(n))
+                        .cloned()
+                        .collect()
+                } else {
+                    expected_names[actual_cols..].to_vec()
+                };
+                let msg = format!(
+                    "predict() got {actual_cols} columns, expected {expected_cols} (missing: {missing_names:?}); missing columns are treated as NaN so predictions may be inaccurate."
+                );
+                if on_missing_columns == "error" {
+                    return Err(PyValueError::new_err(msg));
+                }
+                if on_missing_columns == "warn" {
+                    let warnings = py.import("warnings")?;
+                    let user_warning = py.import("builtins")?.getattr("UserWarning")?;
+                    warnings.call_method1("warn", (msg, user_warning, 2usize))?;
+                }
+                for row in &mut rows {
+                    row.resize(expected_cols, None);
+                }
+            }
+        }
+        let x = coerce_rows(rows, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         match kind.unwrap_or("response") {
             "response" => {
@@ -4930,12 +5314,10 @@ impl PyModelTree {
                                 let probs: Vec<f64> = log_odds.iter().map(|&lo| 1.0 / (1.0 + (-lo).exp())).collect();
                                 probs.into_py_any(py)
                             }
-                            _ => {
-                                return Err(PyValueError::new_err(format!(
-                                    "kind='proba' requires 'binomial', 'probit', or 'softmax' family, got {:?}",
-                                    t.params.leaf_family
-                                )));
-                            }
+                            _ => Err(PyValueError::new_err(format!(
+                                "kind='proba' requires 'binomial', 'probit', or 'softmax' family, got {:?}",
+                                t.params.leaf_family
+                            ))),
                         }
                     }
                 }
@@ -5098,8 +5480,9 @@ impl PyModelTree {
     fn predict_vector<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         let vecs = t.predict_vector(&x).ok_or_else(|| PyValueError::new_err("ModelTree has no vector predictions (was not fitted on vector targets)"))?;
@@ -5110,9 +5493,9 @@ impl PyModelTree {
     fn predict_proba<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Py<PyAny>> {
-        self.predict(py, x, Some("proba"), None, None, None, None, None, 0.5)
+        self.predict(py, x, Some("proba"), None, None, None, None, None, 0.5, "warn")
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -5127,9 +5510,10 @@ impl PyModelTree {
     #[pyo3(signature = (x, threshold = 0.5))]
     fn predict_label(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         threshold: f64,
     ) -> PyResult<Vec<usize>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.predict_label(&x, threshold).map_err(PyValueError::new_err)
     }
@@ -5139,9 +5523,10 @@ impl PyModelTree {
     fn predict_adjusted<'py>(
         &mut self,
         py: Python<'py>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         neighbors: usize,
     ) -> PyResult<Py<PyAny>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         let preds = t.predict_adjusted(&x, neighbors);
@@ -5193,9 +5578,10 @@ impl PyModelTree {
     #[pyo3(signature = (x, coverage = 0.90))]
     fn predict_interval(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         coverage: f64,
     ) -> PyResult<Vec<(f64, f64)>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.predict_interval(&x, coverage).map_err(PyValueError::new_err)
     }
@@ -5212,9 +5598,10 @@ impl PyModelTree {
     /// Raises: ValueError for Gaussian leaves or an invalid threshold.
     fn cdf(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         value: f64,
     ) -> PyResult<Vec<f64>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         self.tree()?.cdf(&x, value).map_err(PyValueError::new_err)
     }
@@ -5365,8 +5752,9 @@ impl PyModelTree {
     #[pyo3(signature = (x))]
     fn apply(
         &mut self,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
     ) -> PyResult<Vec<usize>> {
+        let (x, _table_names) = (x.rows, x.names);
         let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         Ok(self.tree()?.apply(&x))
     }
@@ -5385,24 +5773,29 @@ impl PyModelTree {
     fn leaf_samples(
         &mut self,
         py: Python<'_>,
-        x: Vec<Vec<Option<Bound<'_, PyAny>>>>,
+        x: Table<'_>,
         id_col: Option<Bound<'_, PyAny>>,
         col_names: Option<Vec<String>>,
     ) -> PyResult<Py<PyAny>> {
+        let (mut x, table_names) = (x.rows, x.names);
+        let mut effective_col_names = col_names.or(table_names);
         let t = self.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
         let n_rows = x.len();
+        let expected_cols = t.col_names.len();
 
+        let mut drop_id_idx: Option<usize> = None;
         let ids: Option<Vec<Py<PyAny>>> = match id_col {
             None => None,
             Some(id_obj) => {
                 if let Ok(name) = id_obj.extract::<String>() {
-                    let col_idx = match &col_names {
+                    let col_idx = match &effective_col_names {
                         Some(names) => names.iter().position(|c| c == &name),
                         None => t.col_names.iter().position(|c| c == &name),
                     };
                     let idx = col_idx.ok_or_else(|| {
                         PyValueError::new_err(format!("id_col '{name}' not found in columns"))
                     })?;
+                    drop_id_idx = Some(idx);
                     let mut extracted = Vec::with_capacity(n_rows);
                     for row in &x {
                         let id_val = row
@@ -5414,6 +5807,16 @@ impl PyModelTree {
                     }
                     Some(extracted)
                 } else if let Ok(idx) = id_obj.extract::<usize>() {
+                    if !x.is_empty()
+                        && x[0].len() == expected_cols
+                        && effective_col_names.is_none()
+                        && !self.dropped_indices.is_empty()
+                    {
+                        return Err(PyValueError::new_err(format!(
+                            "x has {expected_cols} feature columns without the id column; pass the full table or pass id_col as a list of IDs"
+                        )));
+                    }
+                    drop_id_idx = Some(idx);
                     let mut extracted = Vec::with_capacity(n_rows);
                     for row in &x {
                         let id_val = row
@@ -5441,10 +5844,28 @@ impl PyModelTree {
             }
         };
 
+        if !x.is_empty() && x[0].len() > expected_cols {
+            let mut drop_set: std::collections::HashSet<usize> = self.dropped_indices.iter().copied().collect();
+            if let Some(idx) = drop_id_idx {
+                drop_set.insert(idx);
+            }
+            if !drop_set.is_empty() {
+                let n_raw = x[0].len();
+                let keep: Vec<usize> = (0..n_raw).filter(|i| !drop_set.contains(i)).collect();
+                x = x
+                    .into_iter()
+                    .map(|row| keep.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
+                    .collect();
+                if let Some(names) = effective_col_names.take() {
+                    effective_col_names = Some(keep.iter().filter_map(|&i| names.get(i).cloned()).collect());
+                }
+            }
+        }
+
         let coerced_x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let dict = PyDict::new(py);
 
-        let sample_map = match col_names {
+        let sample_map = match effective_col_names {
             Some(names) => {
                 let mut col_map = vec![usize::MAX; t.col_names.len()];
                 for (j, col_name) in t.col_names.iter().enumerate() {
@@ -5760,146 +6181,13 @@ impl PyModelTree {
 
     /// Return all hyperparameter values as a dict.
     fn config(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
-        let d = PyDict::new(py);
-        d.set_item("max_depth", self.params.max_depth)?;
-        d.set_item("min_rows", self.params.min_rows)?;
-        d.set_item("minsplit", self.params.minsplit)?;
-        d.set_item("minbucket", self.params.minbucket)?;
-        d.set_item("minprob", self.params.minprob)?;
-        d.set_item("max_leaf_nodes", self.params.max_leaf_nodes)?;
-        d.set_item("min_gain", self.params.min_gain)?;
-        d.set_item("purity_gate", self.params.purity_gate)?;
-        d.set_item(
-            "purity_gate_metric",
-            match self.params.purity_gate_metric {
-                PurityMetric::Sd => "sd",
-                PurityMetric::Cv => "cv",
-            },
-        )?;
-        d.set_item("tail_quantile", self.params.tail_quantile)?;
-        d.set_item("split_precision", self.params.split_precision)?;
-        d.set_item("split_cols", self.params.split_cols.clone())?;
-        d.set_item("col_sample", self.params.col_sample)?;
-        d.set_item("seed", self.params.seed)?;
-        d.set_item(
-            "leaf",
-            match &self.params.leaf {
-                LeafKind::Linear => "linear",
-                LeafKind::Mean => "mean",
-                LeafKind::Median => "median",
-                LeafKind::Quantile(_) => "quantile",
-                LeafKind::Expectile(_) => "expectile",
-                LeafKind::Huber => "huber",
-                LeafKind::Mars => "mars",
-                LeafKind::Knn => "knn",
-                LeafKind::Prob => "prob",
-                LeafKind::Odds => "odds",
-                LeafKind::LogOdds => "log_odds",
-            },
-        )?;
-        d.set_item("tau", self.params.tau)?;
-        d.set_item("huber_delta", self.params.huber_delta)?;
-        d.set_item(
-            "leaf_family",
-            match self.params.leaf_family {
-                LeafFamily::Gaussian => "gaussian",
-                LeafFamily::Binomial => "binomial",
-                LeafFamily::Poisson => "poisson",
-                LeafFamily::Probit => "probit",
-                LeafFamily::Gamma => "gamma",
-                LeafFamily::Tweedie => "tweedie",
-                LeafFamily::Tobit => "tobit",
-                LeafFamily::Softmax => "softmax",
-                LeafFamily::Survival => "survival",
-                LeafFamily::Heteroscedastic => "heteroscedastic",
-                LeafFamily::Aft => "aft",
-                LeafFamily::Cure => "cure",
-                LeafFamily::Spline => "spline",
-                LeafFamily::Quantile => "quantile",
-                LeafFamily::Huber => "huber",
-                LeafFamily::Expectile => "expectile",
-                LeafFamily::NegativeBinomial => "negative_binomial",
-                LeafFamily::Beta => "beta",
-            },
-        )?;
-        d.set_item("l1", self.params.l1)?;
-        d.set_item("l2", self.params.l2)?;
-        d.set_item("leaf_solver", leaf_solver_name(self.params.leaf_solver))?;
-        d.set_item(
-            "leaf_cols",
-            match self.params.leaf_cols {
-                LeafCols::All => "all",
-                LeafCols::PathUsed => "path",
-            },
-        )?;
-        d.set_item("leaf_digest", self.params.leaf_digest)?;
-        d.set_item("tree_monotone", self.params.tree_monotone.clone())?;
-        d.set_item("leaf_monotone", self.params.leaf_monotone.clone())?;
-        d.set_item("monotone", self.params.monotone.clone())?;
-        d.set_item("col_weights", self.params.col_weights.clone())?;
-        d.set_item("interaction_groups", self.params.interaction_groups.clone())?;
-        d.set_item("alpha", self.params.alpha)?;
-        d.set_item("imbalance_penalty", self.params.imbalance_penalty)?;
-        d.set_item(
-            "prune",
-            match self.params.prune {
-                PruneCost::None => "none",
-                PruneCost::Bic => "bic",
-                PruneCost::Mdl => "mdl",
-                PruneCost::Cp => "cp",
-            },
-        )?;
-        d.set_item("cp_alpha", self.params.cp_alpha)?;
-        d.set_item("cp", self.params.cp)?;
-        d.set_item("honesty", self.params.honesty)?;
-        d.set_item("honesty_fraction", self.params.honesty_fraction)?;
-        d.set_item("maxsurrogate", self.params.maxsurrogate)?;
-        d.set_item(
-            "split_test",
-            match self.params.split_test {
-                SplitTest::None => "none",
-                SplitTest::Chow => "chow",
-                SplitTest::Mob => "mob",
-                SplitTest::Ctree => "ctree",
-            },
-        )?;
-        d.set_item("split_alpha", self.params.split_alpha)?;
-        d.set_item("bonferroni", self.params.bonferroni)?;
-        d.set_item("min_relevance", self.params.min_relevance)?;
-        d.set_item("verbose", self.params.verbose)?;
-        d.set_item(
-            "split_eval",
-            match self.params.split_eval {
-                SplitEval::Fast => "fast",
-                SplitEval::Histogram => "histogram",
-                SplitEval::Exhaustive => "exhaustive",
-            },
-        )?;
-        d.set_item("max_bins", self.params.max_bins)?;
-        d.set_item("min_bin_rows", self.params.min_bin_rows)?;
-        d.set_item("presort", self.params.presort)?;
-        d.set_item("events", self.params.events.clone())?;
-        d.set_item("n_classes", self.params.n_classes)?;
-        d.set_item("tweedie_p", self.params.tweedie_p)?;
-        d.set_item("tobit_threshold", self.params.tobit_threshold)?;
-        d.set_item("mars_degree", self.params.mars_degree)?;
-        d.set_item("mars_terms", self.params.mars_terms)?;
-        d.set_item("mars_penalty", self.params.mars_penalty)?;
-        d.set_item("knn_k", self.params.knn_k)?;
-        d.set_item("knn_k_validity", self.params.knn_k_validity)?;
-        d.set_item("knn_variant", self.params.knn_variant.as_str())?;
-        d.set_item("knn_metric", self.params.knn_metric.as_str())?;
-        d.set_item("knn_gamma", self.params.knn_gamma)?;
-        d.set_item("knn_p", self.params.knn_p)?;
-        d.set_item("shrinkage", self.params.shrinkage)?;
-        d.set_item("max_classes", self.params.max_classes)?;
-        d.set_item("expectile_tau", self.params.expectile_tau)?;
-        d.set_item("non_negative", self.params.non_negative)?;
-        d.set_item("non_negative_intercept", self.params.non_negative_intercept)?;
-        d.set_item("nb_alpha", self.params.nb_alpha)?;
-        d.set_item("beta_phi", self.params.beta_phi)?;
-        d.set_item("group_l2", self.params.group_l2)?;
-        Ok(d.into())
+        params_dict(py, &self.params)
+    }
+
+    /// Defaults of the Rust core parameter struct (for parity checks with the constructor).
+    #[staticmethod]
+    fn core_defaults(py: Python<'_>) -> PyResult<Py<PyDict>> {
+        params_dict(py, &ModelTreeParams::default())
     }
 
     fn __getattr__(&self, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {

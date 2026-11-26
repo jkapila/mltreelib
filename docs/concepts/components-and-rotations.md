@@ -131,13 +131,16 @@ We evaluate the full component analysis suite on the **Wine Quality** dataset (1
 
 ```python
 import pandas as pd
-from mltreelib import ComponentModel
+from mltreelib import ComponentModel, dataset_path
+from mltreelib.data import Dataset
 
-# Ingest Wine Quality benchmark: 1,000 rows, 11 numeric chemical features
-from mltreelib import dataset_path
 df = pd.read_parquet(dataset_path("wine_quality")).sample(n=1000, random_state=2026)
-features = [c for c in df.columns if c not in ("median_wine_quality", "wine_color")]
-X = df[features].to_numpy().tolist()
+ds = Dataset(
+    df.to_dict("list"),
+    target="median_wine_quality",
+    exclude=["wine_color"],
+)
+X = ds.x
 ```
 
 ### 1. PCA & R-Aligned Factor Rotations
@@ -209,7 +212,8 @@ nmf_sparse = ComponentModel(kind="nmf", n_components=3, solver="hals", l1_reg=0.
 Out-of-subspace anomalies project poorly onto low-rank basis components, producing large reconstruction residuals:
 $$\mathcal{L}_{\text{anom}}(x) = \|x - \hat{x}\|_2^2 = \|x - W h(x)\|_2^2$$
 
-<!-- API-GAP: subspace reconstruction error as an anomaly score is not exposed. AnomalyModel has no PCA kind (its kinds are eif, det, hst, rct, active, context) and ComponentModel has no inverse_transform. The block below is not runnable; the output under it is hand-written and not generated. -->
+> [!NOTE]
+> **API gap (not yet runnable):** subspace reconstruction error as an anomaly score is not yet exposed on `AnomalyModel` (its kinds are `eif`, `det`, `hst`, `rct`, `active`, `context`) and `ComponentModel` does not yet expose `inverse_transform`. The block below illustrates the intended formula only; output values are illustrative.
 ```python
 # Detect anomalies via subspace reconstruction error
 detector = AnomalyModel(method="pca", n_components=3)

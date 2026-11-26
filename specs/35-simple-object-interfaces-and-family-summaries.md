@@ -1,0 +1,167 @@
+# Spec 35: Simple Object Interfaces and Per-Family Summaries
+
+Status: partly landed (parts A and B shipped; C, D and the policy table open)
+
+Scope boundary: this spec owns the class-first surface for data (`Dataset`), evaluation (`MetricsReport`), model hand-off (`fit` and `predict` accepting a dataset), and the printed summaries every model family should produce. It does not change split criteria or leaf mathematics, except for the one gap named in part D. It builds on Spec 25 (model surface and reports) and Spec 34 (data helpers), and finishes items those specs promised.
+
+## Problem Statement
+
+A documentation audit and a read of the code found that the library works but asks users to remember too much, and that most families cannot show what they learned.
+
+1. **Too many functions to thread together.** Preparing data takes `xy`, `train_test_split`, `take`, `select_rows`, `describe` and more, each returning something that has to be passed to the next call and then unpacked into `fit`. The maintainer finds this as heavy as the scikit-learn style the package is meant to replace.
+2. **Metrics are a class used like a function.** `Metrics().regression(y, p)["rmse"]` appears 64 times in docs and examples and returns an unformatted dict. There is no one-shot, printable view of a model's performance for a task.
+3. **Summaries exist for one family.** Of 47 working leaf and family combinations, only a Gaussian linear leaf prints a coefficient table with standard errors and p-values. Binomial, probit, Poisson, gamma, Tweedie, Tobit, negative binomial and beta linear leaves print a stub ("Linear model: intercept=-1.5357, 3 coefficients (summary covariance not computed)"). Quantile and Huber leaves print "Mean leaf model" although the value is a quantile. MARS and k-NN leaves, softmax and survival leaves show no basis table, neighbour table or curve.
+4. **The summary is not demonstrated.** `ModelTree.summary()` appears in no guide or example. The rpart-style printout of a tree appears only in the quickstart.
+5. **Cluster and anomaly models report almost nothing.** `ClusterModel.report` holds only the number of clusters, `cluster_profiles` is never populated, `rules()` is empty for two engines, and neither facade has a `summary()`. Spec 22 promised clustering validity, stability and noise-rate reporting and Spec 23 promised a four-section report per leaf; neither exists.
+6. **Causal leaves ignore the leaf type.** With the causal gain, a linear leaf and a mean leaf give identical results, because the leaf estimate is always a difference of means. A comparison of leaf types for heterogeneous effects, which the uplift guide implies, is impossible.
+7. **Guides carry helper code the library should own.** The uplift guide defines a 15-line function to compute policy value with a confidence interval, and the depth and leaf settings in several examples are too small to show the method, which makes results look unconvincing.
+
+## Solution
+
+Classes that hold state and print themselves, with the existing functions kept underneath; one summary shape that every family fills in as far as its mathematics allows; and a model that accepts the dataset object directly.
+
+The user's view:
+
+- `ds = Dataset.load("diamonds", target="price")`, then `ds.describe()`, `ds.missing()`, `train, test = ds.split(test_size=0.25, seed=2026)`.
+- `model.fit(train)` and `model.predict(test)` with no unpacking.
+- `print(MetricsReport("regression", test.y, model.predict(test)))` for the full view.
+- `print(model.summary())` for a readable table of what each leaf learned, whatever the family.
+
+## User Stories
+
+1. As a data scientist, I want one object that holds my columns and their roles, so that I do not thread five function results into `fit`.
+2. As a data scientist, I want to mark target, time, event, treatment, outcome, groups and weights once, so that every later call knows them.
+3. As a data scientist, I want `describe`, `missing`, `checks`, `associations` and `iv` as methods of the dataset, so that profiling reads as one workflow.
+4. As a data scientist, I want `split` to return datasets, so that I can fit and score without index bookkeeping.
+5. As a data scientist, I want stratified, grouped and time-ordered splits by column name, so that I do not build label lists by hand.
+6. As a data scientist, I want `model.fit(train)` and `model.predict(test)` to accept the dataset directly, so that the roles and column types travel with the data.
+7. As a data scientist, I want a printed text overview of a dataset, so that I see rows, features, kinds and missing counts without calling anything.
+8. As a data scientist, I want missing values left untouched by every dataset method, so that the model sees the real pattern.
+9. As an evaluator, I want one call that takes the task name and the values and prints the full metric view, so that I do not pick among 29 methods.
+10. As an evaluator, I want regression reports to show errors, error deciles and optional per-group tables, so that I see where the model is weak.
+11. As an evaluator, I want classification reports to show the confusion matrix, per-class precision, recall and F1, discrimination and calibration, so that I judge more than accuracy.
+12. As an evaluator, I want time-series, survival and uplift reports in the same shape, so that every task reads alike.
+13. As an evaluator, I want an uplift report with a policy table (treat selected, treat all, treat none) with confidence intervals, so that I do not hand-code it.
+14. As an evaluator, I want the report as text, Markdown, dict and JSON, so that I can print it, paste it or store it.
+15. As a statistician, I want a coefficient table with standard errors, z or t values, p-values and confidence intervals for every parametric linear leaf (binomial, probit, Poisson, gamma, Tweedie, negative binomial, beta, Tobit), so that I can troubleshoot them like statsmodels output.
+16. As a statistician, I want the table to say why inference is unavailable when it is (regularised fit, bounded solver), instead of omitting it or inventing p-values.
+17. As a statistician, I want a quantile leaf to be labelled as a quantile, with its level and a bootstrap or asymptotic standard error labelled as such.
+18. As a statistician, I want a Huber leaf to show robust coefficients and the scale estimate.
+19. As an analyst, I want a MARS leaf to show its basis terms (term, hinge, knot, coefficient), so that I can read the shape.
+20. As an analyst, I want a k-NN leaf to show its neighbours for a row (rank, row id, distance, target, weight), so that I can see why a prediction was made.
+21. As a survival analyst, I want a survival leaf to show the survival curve table (time, survival, interval, at risk, events) and the median, so that I can read each leaf.
+22. As a reviewer, I want a model-level report with sections for objective, learner, controls, diagnostics and optional inference, so that I audit a tree like any other facade.
+23. As a reviewer, I want the report to state which controls and defaults were used, so that a result can be reproduced.
+24. As an analyst, I want cluster models to report a profile table (size, share, per-feature mean, spread and missing, prototype) and validity, stability, balance and noise rate, so that I can judge a segmentation.
+25. As an analyst, I want anomaly models to report a top-cases table (rank, row id, score, threshold, percentile, top features), so that I get a review queue.
+26. As an analyst, I want `summary()` on cluster and anomaly models that prints the same content as their report, so that every family answers the same question the same way.
+27. As an analyst, I want a leaf-model option for heterogeneous effects inside a causal leaf, so that I can compare mean and linear causal leaves.
+28. As a learner, I want every guide to say in plain words what each snippet does and what to look for, so that I do not need prior knowledge.
+29. As a learner, I want example settings (tree depth, leaf type) chosen so that the method's benefit shows without special tuning, with the setting stated.
+30. As a maintainer, I want one text renderer shared by all reports, so that tables look the same everywhere.
+31. As a data scientist, I want **every leaf family to have a summary table, without exception** (mean, median, linear and every parametric family, quantile, Huber, MARS, k-NN, survival, Tobit, softmax, heteroscedastic, and any family added later), so that no fitted leaf is a black box.
+32. As a maintainer, I want a conformance test that fits every accepted leaf and family combination and fails when its summary is a stub, so that a new leaf family cannot ship without a summary.
+
+## Implementation Decisions
+
+- **Class first, functions underneath.** `Dataset` and `MetricsReport` delegate to the existing helpers and metrics; they do not duplicate logic. A thin function alias is allowed, the class is the documented path.
+- **Dataset.** Immutable. Holds columns and roles (target, features, exclude, time and event, treatment and outcome, groups, weights, name). `Dataset.load(name, ...)` wraps dataset loading. Methods for profiling delegate to the profile, association and binning helpers. `split` and `kfold` return datasets; the stratify, group and time options accept column names, `True` (meaning the role's natural column: target, treatment for uplift, event for survival) or row order for time. A dataset exposes `fit_args()` and `predict_args()` so that existing code works unchanged, and the model's `fit` and `predict` additionally accept a dataset (follow-up change in the model input boundary; the target then need not be passed separately). The dataset never changes values, imputes, drops or recodes missing values, and never normalises event codes.
+- **MetricsReport.** Class with a task argument and task-specific named inputs. Composes the existing metric methods and adds only presentation. Presents scalars grouped under headings and tables for deciles, confusion matrix, per-class results, calibration bins, by-group results and, for uplift, a policy table with confidence intervals (selected group, everyone, no one) computed in the library. Output forms: text, Markdown, dict, JSON; scalar access by key. Shows missing counts; never imputes or drops silently.
+- **One summary shape per family.** Every fitted `ModelTree` gains `report()` returning the shared four-section report (objective, learner, controls, diagnostics, plus inference when valid), and `summary()` prints the per-leaf detail. Per-leaf content by family: parametric linear leaves show estimate, standard error, statistic, p-value and interval for coefficients, with family, link, dispersion, deviance and sample size; the covariance comes from the fitted solver (the iteratively reweighted path must return it), and when it cannot (a penalised or bounded fit) the table says so and shows estimates only. Quantile leaves state the level; Huber leaves show the robust scale; MARS shows basis terms; k-NN shows neighbours on request for a row; survival leaves show the curve table and median; causal leaves show the effect estimate with its interval. No p-values are shown unless the mathematics supports them (Spec 25 decisions 5 and 6).
+- **No leaf family without a summary (hard rule).** The summary of a leaf always shows what the leaf learned: its model terms (coefficients, basis terms, neighbours, curve points, quantile level) with uncertainty where valid, its support, and its fit quality. A conformance test enumerates every accepted combination of leaf and family and asserts that the summary is not a stub (no "summary covariance not computed" text, no "Mean leaf model" for a non-mean leaf). Adding a leaf family means adding its summary in the same change.
+- **Cluster and anomaly.** Both gain `summary()` and a populated `report()`: clustering reports the profile table plus validity, stability, size balance and noise rate (Spec 22 stories); anomaly reports the top-cases table with scores, thresholds and the leading features, and keeps the GritBot case summaries. `rules()` returns something meaningful for every cluster engine or states that the engine has no rules.
+- **Causal leaf.** Add a linear option for causal leaves that models the effect inside a leaf as a function of covariates (a treatment term and treatment interactions), with the honest-estimation rule unchanged. Until then the docs state that the causal leaf is a difference of means whatever the leaf setting is.
+- **Defaults per family, missing values in reports.** Each model family owns its defaults (`ModelTree` 6 / 15 / 0.5; `ClusterModel`, `RuleModel` and `AnomalyModel` `min_rows` 20; `AnomalyModel` `max_depth` 10); the docs say where a family differs. `MetricsReport` scores the complete rows and shows the missing counts, because it evaluates predictions after the fact and nothing goes to production from it; `on_missing="error"` is the strict mode.
+- **Uplift decision inputs.** `threshold` (default: the `cost`) and `cost` (default 0.0) are inputs of `MetricsReport("uplift", ...)`; `uplift_threshold(y_true, treatment, tau_pred, cost=...)` picks the threshold on validation data. Survival takes no threshold or cost today (open question: a horizon and a risk cut for a policy table).
+- **Teaching defaults.** Guides use depth settings that let the method show its benefit (a depth of 4 for the diamonds regression comparison, where linear leaves lower the error by about five percent without other tuning) and state why the setting was chosen.
+- **Plain-language rule.** Every guide snippet is introduced in plain words and followed by what to read in the output (a contributor rule).
+
+## Testing Decisions
+
+- A good test checks printed and returned behaviour a user sees, not wiring. Snapshot a small, seeded text report per task and per family. Numbers in a report equal the numbers the underlying metric or fit returns.
+- Highest seam: the public classes and `summary()`/`report()`. Cross-check the coefficient table against an independent computation on a seeded dataset (for example a logistic fit with known coefficients) at 1e-6, and check that inference is withheld, with a stated reason, for fits where it is not valid.
+- Missing-value tests on every new class: counts shown, nothing dropped, input unchanged.
+- Determinism: same seed gives the same split and the same report text.
+- Prior art: the profile, split and access tests, the Gaussian summary snapshot, and the report tests from Spec 25.
+
+## Progress and Open Work
+
+Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
+
+| Issue | What | State |
+|---|---|---|
+| 16 | Docs showed code that did not run; stale defaults and snippets | fixed (docs pass); figures and typed tables remain (Spec 33 backlog, section F) |
+| 17 | Pandas frame rejected by `fit` | fixed (tables by duck typing) |
+| 18 | Non-deterministic categorical gate statistics | fixed (ordered maps) |
+| 19 | `CatBoostEncoder` example prior | fixed (docs); parameter still to be documented and possibly renamed |
+| 20 | Defaults differed between constructor, Rust core and `LeafControl`; timings in saved models | fixed; parity test added |
+| 21 | `mltreelib.data` helpers | done (profile, split, association, binning with exact mode, scaling, accessors) |
+| 22 | `MetricsReport` | done (uplift policy table, `uplift_threshold`, and `uplift_by_decile` landed; regression and uplift guides reworked) |
+| 23 | `Dataset` class; `fit`/`predict` accept a dataset | done; clustering and anomaly facades do not accept a dataset yet |
+| 24 | Per-family summaries and `ModelTree.report()` | open (part C) |
+| 25 | `ClusterModel` and `AnomalyModel` report and summary | open (part C) |
+| 26 | Causal linear leaf; `leaf="linear"` equals `leaf="mean"` under the causal gain | open (part D) |
+| 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
+| 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | fixed (removed `ClusterTree`/`AnomalyTree` from `gen_api_doc.py` + `models`/`cluster`/`anomaly` return annotations; added `tests/test_api_docs.py` and regenerated `docs/reference/api/`) |
+| 29 | Sanity pass: umbrella-class defaults differed; `MetricsReport` had no strict missing-value mode | fixed in `1bb4ae7`: per-family defaults (see Decisions), `on_missing="drop" \| "error"`; `tests/test_sanity_basics.py` added |
+| 30 | polars `DataFrame` and pyarrow `Table` rejected as X | fixed (`Table::extract` routes non-list/tuple objects through `to_rows`) |
+| 31 | `predict` column count not checked against `fit`; `y` with None/NaN dropped silently | fixed (`on_missing_columns="warn"\|"error"\|"allow"` on `predict`; `y_missing="warn"\|"error"` on `fit`) |
+| 32 | `id_col`: unresolved name silently ignored; `predict` after `id_col` shifts columns; undocumented | fixed (`resolve_col` raises `ValueError`; `predict` & `leaf_samples` drop remembered `id_col`/`group_col`; documented in survival & uplift guides) |
+| 33 | Unhelpful errors: 1-D NumPy X, unequal dict columns, pyarrow `y` nulls, string class labels | fixed (clear `ValueError` for 1-D X & unequal dict cols; `to_target_list` for Arrow `y` nulls; explicit `TypeError` for unencoded string labels) |
+
+### Bug register: verification pass (2026-11-26, after the boundary fixes)
+
+Gates all green on the verifier run: clippy `-D warnings`, `cargo test` (371), ruff on the package, pytest (800 passed, 4 skipped), polars/pyarrow tests, CVXPY reference tests, snippet check, nav and benchmark checks, `zensical build`. Probes for #30, #31, #32a (id_col), #32b, #33, per-family defaults and `on_missing` passed.
+
+| Issue | Sev. | Repro | Expected |
+|---|---|---|---|
+| 34 | high | `MetricsReport("competing_risks", durations=d, events=ev, cif_curves={1: c1, 2: c2}, times=[2.0, 5.0])` with one None or NaN in `d` (80 rows): the process is killed (exit 137) or panics (`user-provided comparison function does not correctly implement a total order`). Clean input works. Same class as #27. | Count and drop incomplete rows (`on_missing="drop"`) or raise (`"error"`); never hang or panic. Test with a timeout. |
+| 35 | high | `ModelTree(max_depth=2).fit(X, y, group_col="zzz", col_names=["a","b","c"])`, `group_col=7`, or `group_col="g"` without names: no error. Finishes #32a for `group_col`; check `protected_attribute` and `protected_col` too. | `ValueError` naming the column and the known names. |
+| 36 | low | (a) `load_survival_dataset("flchain")` says not cached while `flchain_rdatasets.csv` is cached; cache hits are not re-verified against the sha256. (b) polars or Arrow string column without `dtypes=` fails with no hint. (c) `leaf_samples(x_without_id, id_col=0)` without `col_names` silently uses the first feature as ids. (d) `docs/concepts/components-and-rotations.md` ~218 uses `AnomalyModel(method="pca")`, which is not exposed, so the snippet fails. (e) `docs/examples.md` lines 21 and 26 use alias names. (f) one-shot `Metrics()` left in `docs/guides/metrics-plots.md:124` and `data.md:396-398`. (g) ruff on tests, scripts and examples: 393 errors, outside the pre-commit scope. | Fix each; (d) and (e) are doc fixes; (g) needs a decision (baseline or clean-up). |
+
+Status after `b330193` (verified by a second Haiku pass, 802 passed): #34 fixed (drop and count by default, `on_missing="error"` raises; no hang), #35 fixed for `id_col`, `group_col`, `protected_attribute`. Still open from this register, low severity, left for the next PR: (c) `leaf_samples(x_without_id, id_col=0)` without `col_names` silently uses a feature as ids; `protected_col` given a name raises `TypeError` (it takes an index; accept a name or raise `ValueError`); `components-and-rotations.md` ~219: the block is marked as an API gap, but `AnomalyModel(kind="pca")` is accepted (the `method=` keyword is swallowed by `**params`), so the gap note and the snippet are stale; one-shot `Metrics()` left in `metrics-plots.md:124`; ruff outside the package (393 errors); online loader check with an empty cache.
+
+Decision recorded: a `y` with nulls (pandas, pyarrow or list) warns and drops the rows (31b); it is not an error unless `y_missing="error"`.
+
+### Bug register: model input boundary (found 2026-11-26 by the sanity pass and a Haiku probe)
+
+Severity: **high** = silent wrong answer or a documented input type that does not work; **medium** = misleading result a user could miss; **low** = unhelpful error message. Repros assume `import random; from mltreelib import ModelTree`, 200 to 300 rows, 3 or 4 numeric columns.
+
+| Issue | Sev. | Repro | Expected (decided) |
+|---|---|---|---|
+| 30 | high | `ModelTree(max_depth=3).fit(pl.DataFrame({...}), y)` or `fit(pa.table({...}), y)` (numeric columns only) raises `ValueError: x, y and w length mismatch`. Cause: the Rust `Table` extractor tries the sequence path first and iterating a polars or Arrow object yields columns; the Python `to_rows` fallback is never reached. `tests/test_table_input.py` passes only because its fakes are not real polars or Arrow. | polars and pyarrow work as X for `fit` and `predict`, with names picked up. Tests run against the real libraries (`uv run --with polars --with pyarrow pytest ...`, skipped when absent). |
+| 31a | high | `m.fit(X4, y); m.predict([r[:3] for r in X4])` returns 200 predictions with no error (max difference from the correct answer 1.67). Extra columns (5 vs 4) are ignored silently. | Fewer columns than fit: **warn** that the unknown columns are treated as missing, so values may be wrong, and name them when names are known; a knob on `predict` (for example `on_missing_columns="warn" \| "error" \| "allow"`, default `"warn"`) controls it. More columns than fit: raise, naming the counts. |
+| 31b | high | `ModelTree(max_depth=3).fit(X, [None] + y[1:])` fits without a message; the row is dropped, the result equals fitting without it. | Rows with a missing `y` are **not trained on** (ideal). `fit` warns with the count and says they were dropped; a knob `y_missing="warn" \| "error"` (default `"warn"`) on `fit` makes it strict. Training on missing `y` is a feature request, not a default. |
+| 32a | high | `m.fit(X, y, id_col="id")` without `col_names`, or `id_col="nope"` with `col_names=[...]`: no error, and the id column stays in the model as a feature (leakage). `resolve_col` returns None and the drop is skipped. | An unresolved `id_col` or `group_col` raises `ValueError` naming the column and the known names. |
+| 32b | high | `m.fit(X, y, id_col=0, col_names=["id","a","b"]); m.predict(X)` (full width): RMSE 289.8 against 0.12 when predicting without the id column; the columns shift silently. | `predict` accepts the same layout as `fit` (it drops the id and group columns by name or index it remembers) or raises on a width mismatch (31a). Decide in the fix; test both layouts. |
+| 32c | medium | `id_col`, `group_col`, `train_ids`, `train_groups` appear only in the API reference and `tests/test_causal_tree.py`; no guide or example shows them. Survival and uplift need an id or group column for indexing and grouped splits. | Add a short section to the survival and uplift guides (with real output): why an id is not a feature, `Dataset` roles that set it, and the `leaf_samples(x, id_col=...)` use. |
+| 33a | low | `m.fit(np.array([1.0, 2.0, 3.0]), y)` raises `TypeError: 'float' object is not an instance of 'Sequence'`. | `ValueError: X must be 2-D (rows, columns); got a 1-D array. Use X.reshape(-1, 1) for one feature.` |
+| 33b | low | `fit({"a": [1, 2, 3], "b": [1, 2]}, y)` raises `IndexError: list index out of range`. | `ValueError` naming the columns and their lengths. |
+| 33c | low | pyarrow `y` with a null raises `TypeError: y must be a list of floats`; without nulls it is accepted. | Message says that `y` contains missing values, then follows 31b. |
+| 33d | low | Classification with string labels (`y=["a","b",...]`) raises `TypeError: y must be a list of floats`. Not yet confirmed as by design. | Decide: support string labels (keep the label map and return the labels from `predict`) or say to encode them. If by design, the message says so. |
+
+Order of work: 30, 31a, 31b, 32a, 32b (together, one boundary-validation change in the Python layer or `Table` extractor), then 32c, then 33. Each fix needs a regression test that fails before the fix; add the cases to `tests/test_sanity_basics.py`.
+| 34 | `competing_risks` killed or panics on a None/NaN duration | fixed (incomplete rows filtered before sorting/KM in `competing_risks_report`) |
+| 35 | `group_col` not validated (unknown name, bad index, no names) | fixed (unconditional `resolve_col` for `group_col`, `id_col`, `protected_attribute` + bounds check on `protected_col`) |
+| 36 | Small findings: flchain cache alias, string-dtype hint, `leaf_samples` id without names, two doc mismatches, one-shot `Metrics()` left, ruff scope | fixed ((a)–(f) resolved: `flchain` alias + cache SHA-256 check, `dtypes=` hint, `leaf_samples` guard, doc/snippet fixes; (g) ruff stays scoped to `python/mltreelib/`) |
+
+**Open work in order:**
+1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.
+2. Rework the regression guide (depth 4, where linear leaves lower the error by about five percent; print `summary()` and one `leaf_summary`) and the uplift guide (use `Dataset`, `MetricsReport`, the policy table; explain each snippet in plain words; state that a causal leaf is a difference of means whatever the leaf setting).
+3. Move the remaining docs pages and example scripts (about 40 files, 124 lines) from the helper functions to `Dataset` and `MetricsReport`.
+4. Fix `Metrics` missing-value handling (issue 27), then remove the `MetricsReport` refusals.
+5. Parts C and D (issues 24 to 26), ending with demonstrations in the guides.
+6. Let `ClusterModel`, `AnomalyModel` and the other facades accept a dataset.
+
+## Out of Scope
+
+- New split criteria or leaf families, apart from the causal linear option.
+- A graphical equation view of leaves (parked; feasible later through the graph export).
+- Automatic model selection from a report.
+- Changing the numbers a metric returns.
+
+## Further Notes
+
+- Origin: findings from the documentation audit and the helper pass, mostly in the uplift and regression guides.
+- Parts A (Dataset) and B (MetricsReport) are in progress under issues 22 and 23. Part C (family summaries, cluster and anomaly) and part D (causal linear leaf) need their own issues before work starts.
+- Existing doc and stub drift to fix on the way: the type stub for `leaf_stats` and a stub entry for a method that does not exist.
