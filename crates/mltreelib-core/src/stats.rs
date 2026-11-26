@@ -278,7 +278,7 @@ pub(crate) fn class_entropy_w(p: &[(f64, f64)]) -> f64 {
     let mut stack_counts = [0.0f64; 32];
     let mut is_small_int = true;
     for &(y, w) in p {
-        if y >= 0.0 && y < 32.0 && y.fract() == 0.0 {
+        if (0.0..32.0).contains(&y) && y.fract() == 0.0 {
             stack_counts[y as usize] += w;
         } else {
             is_small_int = false;
@@ -321,7 +321,7 @@ pub(crate) fn class_gini_w(p: &[(f64, f64)]) -> f64 {
     let mut stack_counts = [0.0f64; 32];
     let mut is_small_int = true;
     for &(y, w) in p {
-        if y >= 0.0 && y < 32.0 && y.fract() == 0.0 {
+        if (0.0..32.0).contains(&y) && y.fract() == 0.0 {
             stack_counts[y as usize] += w;
         } else {
             is_small_int = false;

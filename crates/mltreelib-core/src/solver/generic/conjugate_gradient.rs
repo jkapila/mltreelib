@@ -131,7 +131,7 @@ pub fn nonlinear_conjugate_gradient(
         // Restart rule.
         let period_restart = options
             .restart_period
-            .is_some_and(|period| iterations % period == 0);
+            .is_some_and(|period| iterations.is_multiple_of(period));
         let direction_lost = norm(&direction) <= 1e-12;
         if coefficient <= 0.0 || period_restart || direction_lost {
             direction = gradient.iter().map(|g| -g).collect();

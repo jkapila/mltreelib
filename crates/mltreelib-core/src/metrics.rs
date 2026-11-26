@@ -657,7 +657,7 @@ pub fn decile_table(
         return Err("decile_table needs at least one positive".to_string());
     }
     let nb = n_buckets.max(1);
-    let chunk = (idx.len() + nb - 1) / nb;
+    let chunk = idx.len().div_ceil(nb);
     let mut rows = Vec::new();
     let (mut cum_events, mut cum_n) = (0.0f64, 0usize);
     for b in 0..nb {
@@ -805,7 +805,7 @@ pub fn double_lift(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
     let nb = n_buckets.max(1);
-    let chunk = (idx.len() + nb - 1) / nb;
+    let chunk = idx.len().div_ceil(nb);
     let mut rows = Vec::new();
     for b in 0..nb {
         let start = b * chunk;

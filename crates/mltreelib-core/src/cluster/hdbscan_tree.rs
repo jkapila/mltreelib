@@ -356,7 +356,7 @@ impl HdbscanTree {
                     let is_leaf = self.condensed_nodes[i].children.is_empty();
                     let sz_ok = self
                         .max_cluster_size
-                        .map_or(true, |mx| self.condensed_nodes[i].size <= mx);
+                        .is_none_or(|mx| self.condensed_nodes[i].size <= mx);
                     if is_leaf && sz_ok {
                         self.condensed_nodes[i].selected = true;
                     }
@@ -381,7 +381,7 @@ impl HdbscanTree {
 
                     let sz_ok = self
                         .max_cluster_size
-                        .map_or(true, |mx| self.condensed_nodes[i].size <= mx);
+                        .is_none_or(|mx| self.condensed_nodes[i].size <= mx);
 
                     if sz_ok
                         && self.condensed_nodes[i].stability >= child_stab_sum

@@ -257,7 +257,7 @@ pub fn pessimistic_error_bound(errors: usize, n: usize, z: f64) -> f64 {
 
     let numerator = f + (z2 / (2.0 * n_f)) + z * ((f * (1.0 - f) / n_f) + (z2 / (4.0 * n_f * n_f))).sqrt();
     let denominator = 1.0 + (z2 / n_f);
-    (numerator / denominator).min(1.0).max(0.0)
+    (numerator / denominator).clamp(0.0, 1.0)
 }
 
 /// Convert confidence factor CF (e.g. 0.25) to standard normal z quantile.

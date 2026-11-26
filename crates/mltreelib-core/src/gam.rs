@@ -279,9 +279,7 @@ impl GamRegressor {
                 let knots = &feature_knots[j];
                 let b_vals = eval_bspline_basis(row[j], knots, k, deg);
                 let offset = j * k;
-                for b in 0..k {
-                    basis_eval[i][offset + b] = b_vals[b];
-                }
+                basis_eval[i][offset..(k + offset)].copy_from_slice(&b_vals[..k]);
             }
         }
 

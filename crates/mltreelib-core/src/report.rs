@@ -161,7 +161,7 @@ impl ModelReport {
         out.push_str(&format!("  Direction:         {}\n", self.objective.direction));
         if let Some(val) = self.objective.final_value {
             let u = self.objective.units.as_deref().unwrap_or("");
-            out.push_str(&format!("  Final Loss/Value:  {:.6} {}\n", val, u).trim_end());
+            out.push_str(format!("  Final Loss/Value:  {:.6} {}\n", val, u).trim_end());
             out.push('\n');
         }
         for (k, v) in &self.objective.components {

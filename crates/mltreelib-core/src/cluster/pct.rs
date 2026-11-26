@@ -125,7 +125,7 @@ impl PredictiveClusteringTree {
                     .collect();
                 if num_cols.is_empty() {
                     // Fallback to all columns if all were marked categorical
-                    x.iter().map(|r| r.clone()).collect()
+                    x.to_vec()
                 } else {
                     x.iter()
                         .map(|r| num_cols.iter().map(|&j| r[j]).collect())

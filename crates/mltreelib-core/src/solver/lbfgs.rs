@@ -204,7 +204,7 @@ pub(super) fn solve_lbfgs_report<D: DesignMatrix>(
             let s_dot_y: f64 = last_s.iter().zip(last_y).map(|(s, y)| s * y).sum();
             let y_dot_y: f64 = last_y.iter().map(|y| y * y).sum();
             if y_dot_y > 1e-12 {
-                (s_dot_y / y_dot_y).max(1e-6).min(1e6)
+                (s_dot_y / y_dot_y).clamp(1e-6, 1e6)
             } else {
                 1.0
             }

@@ -1,6 +1,8 @@
 //! Thin PyO3 shell around `mltreelib-core`. Exposed to Python as
 //! `mltreelib._core`; the Python package in `python/mltreelib` re-exports it.
 
+#![allow(clippy::too_many_arguments, clippy::type_complexity)]
+
 
 use pyo3::exceptions::{PyAttributeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
@@ -5160,12 +5162,10 @@ impl PyModelTree {
                                 let probs: Vec<f64> = log_odds.iter().map(|&lo| 1.0 / (1.0 + (-lo).exp())).collect();
                                 probs.into_py_any(py)
                             }
-                            _ => {
-                                return Err(PyValueError::new_err(format!(
-                                    "kind='proba' requires 'binomial', 'probit', or 'softmax' family, got {:?}",
-                                    t.params.leaf_family
-                                )));
-                            }
+                            _ => Err(PyValueError::new_err(format!(
+                                "kind='proba' requires 'binomial', 'probit', or 'softmax' family, got {:?}",
+                                t.params.leaf_family
+                            ))),
                         }
                     }
                 }

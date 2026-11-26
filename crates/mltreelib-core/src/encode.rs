@@ -155,7 +155,7 @@ pub struct TargetEncoder {
 
 impl TargetEncoder {
     pub fn new(smoothing: f64) -> Result<Self, String> {
-        if !(smoothing >= 0.0) {
+        if !(smoothing.is_finite() && smoothing >= 0.0) {
             return Err("smoothing must be >= 0".into());
         }
         Ok(Self {
@@ -222,7 +222,7 @@ pub struct CatBoostEncoder {
 
 impl CatBoostEncoder {
     pub fn new(prior: f64, permutations: usize, seed: u64) -> Result<Self, String> {
-        if !(prior > 0.0) {
+        if !(prior.is_finite() && prior > 0.0) {
             return Err("prior must be > 0".into());
         }
         if permutations == 0 {
@@ -474,7 +474,7 @@ pub struct WoEEncoder {
 
 impl WoEEncoder {
     pub fn new(prior: f64) -> Result<Self, String> {
-        if !(prior > 0.0) {
+        if !(prior.is_finite() && prior > 0.0) {
             return Err("prior must be > 0".into());
         }
         Ok(Self {
@@ -579,7 +579,7 @@ impl EmbeddingEncoder {
         if dim == 0 {
             return Err("dim must be >= 1".into());
         }
-        if !(lr > 0.0) {
+        if !(lr.is_finite() && lr > 0.0) {
             return Err("lr must be > 0".into());
         }
         if epochs == 0 {
@@ -836,7 +836,7 @@ pub struct MEstimatorEncoder {
 
 impl MEstimatorEncoder {
     pub fn new(m: f64) -> Result<Self, String> {
-        if !(m > 0.0) {
+        if !(m.is_finite() && m > 0.0) {
             return Err("m must be > 0".into());
         }
         Ok(Self {
@@ -1012,7 +1012,7 @@ impl QuantileEncoder {
         if !(0.0..=1.0).contains(&q) {
             return Err("q must be in [0, 1]".into());
         }
-        if !(smoothing >= 0.0) {
+        if !(smoothing.is_finite() && smoothing >= 0.0) {
             return Err("smoothing must be >= 0".into());
         }
         Ok(Self {

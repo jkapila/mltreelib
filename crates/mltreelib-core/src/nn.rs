@@ -49,7 +49,7 @@ impl EmbeddingNet {
         if out_dim == 0 {
             return Err("out_dim must be >= 1".into());
         }
-        if !(lr > 0.0) {
+        if !(lr.is_finite() && lr > 0.0) {
             return Err("lr must be > 0".into());
         }
         if epochs == 0 {

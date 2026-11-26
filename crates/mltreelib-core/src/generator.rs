@@ -137,7 +137,7 @@ fn validate(p: &GeneratorParams) -> Result<(), String> {
         ("interaction_strength", p.interaction_strength),
         ("noise", p.noise),
     ] {
-        if !(v >= 0.0) {
+        if !(v.is_finite() && v >= 0.0) {
             return Err(format!("{name} must be >= 0"));
         }
     }

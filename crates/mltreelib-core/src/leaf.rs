@@ -1051,7 +1051,7 @@ pub fn fit_leaf_model(
                 let mut models = Vec::with_capacity(n_classes);
                 for c in 0..n_classes {
                     let mut binary_y: Vec<f64> = Vec::with_capacity(y.len());
-                    for (_r, &val) in y.iter().enumerate() {
+                    for &val in y.iter() {
                         binary_y.push(if val as usize == c { 1.0 } else { 0.0 });
                     }
                     let mean_c = probs[c].clamp(1e-6, 1.0 - 1e-6);

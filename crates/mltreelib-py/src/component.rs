@@ -78,6 +78,7 @@ impl PyComponentModel {
         l1_reg = None,
         l2_reg = None
     ))]
+    #[allow(clippy::too_many_arguments)]
     fn fit(
         data: Vec<Vec<f64>>,
         kind: &str,
@@ -98,14 +99,14 @@ impl PyComponentModel {
         let core = match k.as_str() {
             "pca" => {
                 let rot_method = RotationMethod::parse(rotation.unwrap_or("none"), promax_m)
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 let m = PcaModel::fit(&data, n_components, standardize.unwrap_or(true), Some(rot_method))
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Pca(m)
             }
             "svd" | "truncated_svd" => {
                 let m = TruncatedSvdModel::fit(&data, n_components)
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Svd(m)
             }
             "whitening" => {
@@ -114,17 +115,17 @@ impl PyComponentModel {
                     _ => WhiteningKind::Zca,
                 };
                 let m = WhiteningModel::fit(&data, w_kind, eps)
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Whitening(m)
             }
             "ica" | "fastica" => {
                 let m = FastIcaModel::fit(&data, n_components, max_iter, tol, seed)
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Ica(m)
             }
             "nmf" => {
                 let nmf_solver = NmfSolver::parse(solver.unwrap_or("hals"))
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 let m = NmfModel::fit(
                     &data,
                     n_components,
@@ -135,12 +136,12 @@ impl PyComponentModel {
                     l1_reg,
                     l2_reg,
                 )
-                .map_err(|e| PyValueError::new_err(e))?;
+                .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Nmf(m)
             }
             "fa" | "factor_analysis" => {
                 let rot_method = RotationMethod::parse(rotation.unwrap_or("none"), promax_m)
-                    .map_err(|e| PyValueError::new_err(e))?;
+                    .map_err(PyValueError::new_err)?;
                 let m = FactorAnalysisModel::fit(
                     &data,
                     n_components,
@@ -149,7 +150,7 @@ impl PyComponentModel {
                     Some(rot_method),
                     solver.unwrap_or("paf"),
                 )
-                .map_err(|e| PyValueError::new_err(e))?;
+                .map_err(PyValueError::new_err)?;
                 ComponentModelCore::Fa(m)
             }
             other => {
@@ -163,21 +164,21 @@ impl PyComponentModel {
     }
 
     fn transform(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
-        self.inner.transform(&data).map_err(|e| PyValueError::new_err(e))
+        self.inner.transform(&data).map_err(PyValueError::new_err)
     }
 
     fn inverse_transform(&self, scores: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
-        self.inner.inverse_transform(&scores).map_err(|e| PyValueError::new_err(e))
+        self.inner.inverse_transform(&scores).map_err(PyValueError::new_err)
     }
 
     fn reconstruct(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
-        self.inner.reconstruct(&data).map_err(|e| PyValueError::new_err(e))
+        self.inner.reconstruct(&data).map_err(PyValueError::new_err)
     }
 
     fn score_samples(&self, data: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
         self.inner
             .reconstruction_errors(&data)
-            .map_err(|e| PyValueError::new_err(e))
+            .map_err(PyValueError::new_err)
     }
 
     #[getter]
@@ -243,10 +244,11 @@ impl PyComponentModel {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     fn schmid_leiman(&self) -> PyResult<Option<(Vec<Vec<f64>>, Vec<f64>)>> {
         match &self.inner {
             ComponentModelCore::Fa(m) => {
-                m.schmid_leiman().map(Some).map_err(|e| PyValueError::new_err(e))
+                m.schmid_leiman().map(Some).map_err(PyValueError::new_err)
             }
             _ => Ok(None),
         }

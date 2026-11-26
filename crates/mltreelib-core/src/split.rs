@@ -428,7 +428,7 @@ impl<'a> Grower<'a> {
             let k = ((cols.len() as f64) * frac).round().max(1.0) as usize;
             if k < cols.len() {
                 let mut rng = self.params.seed
-                    ^ (self.rng_counter as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                    ^ self.rng_counter.wrapping_mul(0x9E37_79B9_7F4A_7C15);
                 match &self.params.col_weights {
                     Some(cw) => {
                         let mut weighted_cols: Vec<(f64, usize)> = cols

@@ -104,8 +104,29 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
 | 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | fixed (removed `ClusterTree`/`AnomalyTree` from `gen_api_doc.py` + `models`/`cluster`/`anomaly` return annotations; added `tests/test_api_docs.py` and regenerated `docs/reference/api/`) |
 | 29 | Sanity pass: umbrella-class defaults differed; `MetricsReport` had no strict missing-value mode | fixed in `1bb4ae7`: per-family defaults (see Decisions), `on_missing="drop" \| "error"`; `tests/test_sanity_basics.py` added |
-| 30 | polars `DataFrame` and pyarrow `Table` rejected as X (Rust tries the sequence path first; the Python fallback is never reached; the existing test uses fakes) | open (bug, verified) |
-| 31 | `predict` accepts a different column count than `fit` (3 vs 4 columns returns wrong predictions silently; extra columns ignored); `y` with None or NaN drops rows silently in `fit` | open (bug, verified; policy for `y` needs a decision) |
+| 30 | polars `DataFrame` and pyarrow `Table` rejected as X | open, high (see register) |
+| 31 | `predict` column count not checked against `fit`; `y` with None/NaN dropped silently | open, high (see register) |
+| 32 | `id_col`: unresolved name silently ignored; `predict` after `id_col` shifts columns; undocumented | open, high (see register) |
+| 33 | Unhelpful errors: 1-D NumPy X, unequal dict columns, pyarrow `y` nulls, string class labels | open, low (see register) |
+
+### Bug register: model input boundary (found 2026-11-26 by the sanity pass and a Haiku probe)
+
+Severity: **high** = silent wrong answer or a documented input type that does not work; **medium** = misleading result a user could miss; **low** = unhelpful error message. Repros assume `import random; from mltreelib import ModelTree`, 200 to 300 rows, 3 or 4 numeric columns.
+
+| Issue | Sev. | Repro | Expected (decided) |
+|---|---|---|---|
+| 30 | high | `ModelTree(max_depth=3).fit(pl.DataFrame({...}), y)` or `fit(pa.table({...}), y)` (numeric columns only) raises `ValueError: x, y and w length mismatch`. Cause: the Rust `Table` extractor tries the sequence path first and iterating a polars or Arrow object yields columns; the Python `to_rows` fallback is never reached. `tests/test_table_input.py` passes only because its fakes are not real polars or Arrow. | polars and pyarrow work as X for `fit` and `predict`, with names picked up. Tests run against the real libraries (`uv run --with polars --with pyarrow pytest ...`, skipped when absent). |
+| 31a | high | `m.fit(X4, y); m.predict([r[:3] for r in X4])` returns 200 predictions with no error (max difference from the correct answer 1.67). Extra columns (5 vs 4) are ignored silently. | Fewer columns than fit: **warn** that the unknown columns are treated as missing, so values may be wrong, and name them when names are known; a knob on `predict` (for example `on_missing_columns="warn" \| "error" \| "allow"`, default `"warn"`) controls it. More columns than fit: raise, naming the counts. |
+| 31b | high | `ModelTree(max_depth=3).fit(X, [None] + y[1:])` fits without a message; the row is dropped, the result equals fitting without it. | Rows with a missing `y` are **not trained on** (ideal). `fit` warns with the count and says they were dropped; a knob `y_missing="warn" \| "error"` (default `"warn"`) on `fit` makes it strict. Training on missing `y` is a feature request, not a default. |
+| 32a | high | `m.fit(X, y, id_col="id")` without `col_names`, or `id_col="nope"` with `col_names=[...]`: no error, and the id column stays in the model as a feature (leakage). `resolve_col` returns None and the drop is skipped. | An unresolved `id_col` or `group_col` raises `ValueError` naming the column and the known names. |
+| 32b | high | `m.fit(X, y, id_col=0, col_names=["id","a","b"]); m.predict(X)` (full width): RMSE 289.8 against 0.12 when predicting without the id column; the columns shift silently. | `predict` accepts the same layout as `fit` (it drops the id and group columns by name or index it remembers) or raises on a width mismatch (31a). Decide in the fix; test both layouts. |
+| 32c | medium | `id_col`, `group_col`, `train_ids`, `train_groups` appear only in the API reference and `tests/test_causal_tree.py`; no guide or example shows them. Survival and uplift need an id or group column for indexing and grouped splits. | Add a short section to the survival and uplift guides (with real output): why an id is not a feature, `Dataset` roles that set it, and the `leaf_samples(x, id_col=...)` use. |
+| 33a | low | `m.fit(np.array([1.0, 2.0, 3.0]), y)` raises `TypeError: 'float' object is not an instance of 'Sequence'`. | `ValueError: X must be 2-D (rows, columns); got a 1-D array. Use X.reshape(-1, 1) for one feature.` |
+| 33b | low | `fit({"a": [1, 2, 3], "b": [1, 2]}, y)` raises `IndexError: list index out of range`. | `ValueError` naming the columns and their lengths. |
+| 33c | low | pyarrow `y` with a null raises `TypeError: y must be a list of floats`; without nulls it is accepted. | Message says that `y` contains missing values, then follows 31b. |
+| 33d | low | Classification with string labels (`y=["a","b",...]`) raises `TypeError: y must be a list of floats`. Not yet confirmed as by design. | Decide: support string labels (keep the label map and return the labels from `predict`) or say to encode them. If by design, the message says so. |
+
+Order of work: 30, 31a, 31b, 32a, 32b (together, one boundary-validation change in the Python layer or `Table` extractor), then 32c, then 33. Each fix needs a regression test that fails before the fix; add the cases to `tests/test_sanity_basics.py`.
 
 **Open work in order:**
 1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.

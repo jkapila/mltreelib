@@ -141,7 +141,7 @@ impl LeafFamily {
     /// the tree's public query reports that case as an error.
     pub fn cdf(self, mean: f64, value: f64) -> f64 {
         if value.is_nan() || mean.is_nan()
-            || ((self == Self::Binomial || self == Self::Probit || self == Self::Beta) && (mean < 0.0 || mean > 1.0))
+            || ((self == Self::Binomial || self == Self::Probit || self == Self::Beta) && !(0.0..=1.0).contains(&mean))
             || ((self == Self::Poisson || self == Self::Gamma || self == Self::Tweedie || self == Self::NegativeBinomial) && mean < 0.0)
         {
             return f64::NAN;

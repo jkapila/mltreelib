@@ -342,10 +342,7 @@ impl<'a> Grower<'a> {
         }
 
         // 4. Invert V matrix
-        let v_inv = match invert_symmetric_psd(&v_mat, k) {
-            Some(inv) => inv,
-            None => return None,
-        };
+        let v_inv = invert_symmetric_psd(&v_mat, k)?;
 
         // 5. Candidate partitioning variables
         let cand_cols: Vec<usize> = self

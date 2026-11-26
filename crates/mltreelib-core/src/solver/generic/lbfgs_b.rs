@@ -69,7 +69,7 @@ impl CurvatureMemory {
         let sy = dot(&self.s[last], &self.y[last]);
         let yy = dot(&self.y[last], &self.y[last]);
         let gamma = if yy > 1e-14 {
-            (sy / yy).max(1e-6).min(1e6)
+            (sy / yy).clamp(1e-6, 1e6)
         } else {
             1.0
         };
@@ -416,8 +416,8 @@ pub fn solve_lbfgs_b(
             for i in 0..dim {
                 if !(bounds.lower()[i].is_finite()
                     && x[i] <= bounds.lower()[i] + 1e-12
-                    && gradient[i] > 0.0)
-                    && !(bounds.upper()[i].is_finite()
+                    && gradient[i] > 0.0
+                    || bounds.upper()[i].is_finite()
                         && x[i] >= bounds.upper()[i] - 1e-12
                         && gradient[i] < 0.0)
                 {
