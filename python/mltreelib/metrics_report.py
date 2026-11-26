@@ -17,7 +17,7 @@ from typing import Any
 
 from mltreelib._core import Metrics as _Metrics
 
-__all__ = ["MetricsReport", "metrics_report"]
+__all__ = ["MetricsReport", "metrics_report", "uplift_threshold"]
 
 _TASKS = ("regression", "classification", "time_series", "survival", "uplift")
 
@@ -27,7 +27,7 @@ _ARGS: dict[str, tuple[str, ...]] = {
     "classification": ("y_true", "y_pred", "proba", "groups", "threshold"),
     "time_series": ("y_true", "y_pred", "y_train", "seasonal_period", "std_pred"),
     "survival": ("durations", "events", "risk", "surv_curves", "times"),
-    "uplift": ("y_true", "treatment", "tau_pred"),
+    "uplift": ("y_true", "treatment", "tau_pred", "threshold", "cost"),
 }
 _REQUIRED: dict[str, tuple[str, ...]] = {
     "regression": ("y_true", "y_pred"),
@@ -385,6 +385,12 @@ def _prep_survival(args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _finite_real(name: str, value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, numbers.Real) or not math.isfinite(float(value)):
+        raise ValueError(f"{name} must be a finite number, got {value!r}")
+    return float(value)
+
+
 def _prep_uplift(args: dict[str, Any]) -> dict[str, Any]:
     t = "uplift"
     yt = _arg(t, "y_true", args["y_true"])
@@ -395,17 +401,28 @@ def _prep_uplift(args: dict[str, Any]) -> dict[str, Any]:
     _only("treatment (1 = treated, 0 = control)", tr, (0, 1, 0.0, 1.0))
     tau = _arg(t, "tau_pred", args["tau_pred"])
     _length("tau_pred", tau, len(yt))
+    cost = 0.0 if args["cost"] is None else _finite_real("cost", args["cost"])
+    threshold = (
+        cost
+        if args["threshold"] is None
+        else _finite_real("threshold", args["threshold"])
+    )
     rows = [
         _input_row("y_true", yt),
         _input_row("treatment", tr),
         _input_row("tau_pred", tau),
     ]
+    scalars: dict[str, Any] = {"threshold": threshold}
+    if cost != 0.0:
+        scalars["cost"] = cost
     return {
         "y_true": yt,
         "treatment": tr,
         "tau_pred": tau,
+        "threshold": threshold,
+        "cost": cost,
         "input_rows": rows,
-        "input_scalars": {},
+        "input_scalars": scalars,
     }
 
 
@@ -429,7 +446,8 @@ class MetricsReport:
     - ``survival``: ``durations``, ``events`` (1 = event, 0 = censored), ``risk``
       (higher = shorter expected survival), optional ``surv_curves`` (one row
       of S(t) per subject) and ``times`` (the grid those rows refer to).
-    - ``uplift``: ``y_true`` (outcome), ``treatment`` (0/1), ``tau_pred``.
+    - ``uplift``: ``y_true`` (outcome), ``treatment`` (0/1), ``tau_pred``,
+      optional ``threshold`` (default ``cost``) and ``cost`` (default 0.0).
 
     Missing values (None or NaN) are never imputed or recoded. Regression and
     label-based classification drop incomplete pairs inside ``Metrics`` and show
@@ -819,7 +837,9 @@ class MetricsReport:
         )
 
     def _build_uplift(self, c: dict[str, Any]) -> None:
-        r = self._run("uplift", c["y_true"], c["treatment"], c["tau_pred"])
+        yt, tr, tau = c["y_true"], c["treatment"], c["tau_pred"]
+        threshold, cost = c["threshold"], c["cost"]
+        r = self._run("uplift", yt, tr, tau)
         self._add(
             "Overview",
             _scalars(r),
@@ -836,9 +856,34 @@ class MetricsReport:
                 ),
             ],
         )
-        self._notes.append(
-            "Metrics.uplift gives no per-decile uplift table; top_decile_uplift and "
-            "top_quintile_uplift are the decile-level figures it returns."
+        policy_rows = [
+            _policy_row("selected", yt, tr, [s > threshold for s in tau], cost),
+            _policy_row("treat_all", yt, tr, [True] * len(yt), cost),
+            _policy_row("treat_none", yt, tr, [False] * len(yt), cost),
+        ]
+        policy_scalars: dict[str, Any] = {"threshold": threshold}
+        if cost != 0.0:
+            policy_scalars["cost"] = cost
+        self._add(
+            "Policy",
+            policy_scalars,
+            [
+                (
+                    "policy",
+                    "Policy comparison (selected: tau_pred > threshold; 95% normal CI)",
+                    policy_rows,
+                )
+            ],
+        )
+        self._add(
+            "Uplift by decile",
+            tables=[
+                (
+                    "uplift_by_decile",
+                    "Uplift by predicted-effect decile (decile 1 = highest)",
+                    _uplift_deciles(yt, tr, tau),
+                )
+            ],
         )
 
 
@@ -921,6 +966,140 @@ def _md_table(
     ]
     out += ["| " + " | ".join(esc(cell) for cell in row) + " |" for row in body]
     return out
+
+
+def _policy_row(
+    name: str,
+    y_true: list[float],
+    treatment: list[float],
+    selected: list[bool],
+    cost: float,
+) -> dict[str, Any]:
+    a = [float(y) for y, w, s in zip(y_true, treatment, selected) if s and w > 0.5]
+    b = [float(y) for y, w, s in zip(y_true, treatment, selected) if s and w <= 0.5]
+    n_sel = len(a) + len(b)
+    if n_sel == 0:
+        return {
+            "policy": name,
+            "n_selected": 0,
+            "n_treated": 0,
+            "n_control": 0,
+            "value": 0.0,
+            "ci_low": None,
+            "ci_high": None,
+        }
+    if not a or not b:
+        return {
+            "policy": name,
+            "n_selected": n_sel,
+            "n_treated": len(a),
+            "n_control": len(b),
+            "value": None,
+            "ci_low": None,
+            "ci_high": None,
+        }
+    mean_a = sum(a) / len(a)
+    mean_b = sum(b) / len(b)
+    q = n_sel / len(y_true)
+    value = q * (mean_a - mean_b - cost)
+    ci_low: float | None = None
+    ci_high: float | None = None
+    if len(a) >= 2 and len(b) >= 2 and math.isfinite(value):
+        var_a = sum((z - mean_a) ** 2 for z in a) / (len(a) - 1)
+        var_b = sum((z - mean_b) ** 2 for z in b) / (len(b) - 1)
+        if math.isfinite(var_a) and math.isfinite(var_b):
+            se = q * math.sqrt(var_a / len(a) + var_b / len(b))
+            ci_low = value - 1.96 * se
+            ci_high = value + 1.96 * se
+    return {
+        "policy": name,
+        "n_selected": n_sel,
+        "n_treated": len(a),
+        "n_control": len(b),
+        "value": value,
+        "ci_low": ci_low,
+        "ci_high": ci_high,
+    }
+
+
+def _uplift_deciles(
+    y_true: list[float],
+    treatment: list[float],
+    tau_pred: list[float],
+) -> list[dict[str, Any]]:
+    n = len(y_true)
+    order = sorted(range(n), key=lambda i: (-float(tau_pred[i]), i))
+    k = min(10, n)
+    rows: list[dict[str, Any]] = []
+    for d in range(1, k + 1):
+        start = (d - 1) * n // k
+        end = d * n // k
+        idx = order[start:end]
+        t_vals = [float(y_true[i]) for i in idx if treatment[i] > 0.5]
+        c_vals = [float(y_true[i]) for i in idx if treatment[i] <= 0.5]
+        mean_t = sum(t_vals) / len(t_vals) if t_vals else None
+        mean_c = sum(c_vals) / len(c_vals) if c_vals else None
+        uplift = (
+            mean_t - mean_c if (mean_t is not None and mean_c is not None) else None
+        )
+        rows.append(
+            {
+                "decile": d,
+                "n": len(idx),
+                "n_treated": len(t_vals),
+                "n_control": len(c_vals),
+                "mean_tau_pred": sum(float(tau_pred[i]) for i in idx) / len(idx),
+                "mean_treated": mean_t,
+                "mean_control": mean_c,
+                "uplift": uplift,
+            }
+        )
+    return rows
+
+
+def uplift_threshold(
+    y_true: Any,
+    treatment: Any,
+    tau_pred: Any,
+    *,
+    cost: float = 0.0,
+    min_arm: int = 2,
+) -> float:
+    """Choose the ``tau_pred`` cutoff maximizing net incremental policy value.
+
+    Evaluates every candidate threshold on randomized validation data using
+    ``selected = [s > threshold for s in tau_pred]``. Candidates with fewer than
+    ``min_arm`` observations in either arm are skipped, while selecting no one
+    (``threshold = max(tau_pred)``) always yields value 0.0.
+    """
+    if isinstance(min_arm, bool) or not isinstance(min_arm, numbers.Integral) or min_arm < 1:
+        raise ValueError(f"min_arm must be a positive integer, got {min_arm!r}")
+    c = _finite_real("cost", cost)
+    yt = _arg("uplift", "y_true", y_true)
+    if not yt:
+        raise ValueError("uplift_threshold: y_true is empty")
+    tr = _arg("uplift", "treatment", treatment)
+    _length("treatment", tr, len(yt))
+    _only("treatment (1 = treated, 0 = control)", tr, (0, 1, 0.0, 1.0))
+    tau = _arg("uplift", "tau_pred", tau_pred)
+    _length("tau_pred", tau, len(yt))
+
+    scores = [float(s) for s in tau]
+    candidates = [min(scores) - 1.0, *sorted(set(scores))]
+    best_thr = candidates[-1]
+    best_val = 0.0
+    for thr in candidates:
+        row = _policy_row("cand", yt, tr, [s > thr for s in scores], c)
+        if row["n_selected"] == 0:
+            val = 0.0
+        elif row["n_treated"] < min_arm or row["n_control"] < min_arm or row["value"] is None:
+            continue
+        else:
+            val = float(row["value"])
+        if val > best_val:
+            best_val = val
+            best_thr = thr
+    return best_thr
 
 
 def metrics_report(

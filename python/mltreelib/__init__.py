@@ -70,7 +70,7 @@ from mltreelib._core import (
     winnow,
 )
 from mltreelib.components import ComponentModel, ComponentResult
-from mltreelib.metrics_report import MetricsReport
+from mltreelib.metrics_report import MetricsReport, uplift_threshold
 from mltreelib.models import (
     AnomalyModel,
     AnomalyResult,
@@ -186,6 +186,7 @@ __all__ = [
     "plots",
     "summarize",
     "trended_transform",
+    "uplift_threshold",
     "windowed_transform",
     "winnow",
 ]

@@ -94,7 +94,7 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 19 | `CatBoostEncoder` example prior | fixed (docs); parameter still to be documented and possibly renamed |
 | 20 | Defaults differed between constructor, Rust core and `LeafControl`; timings in saved models | fixed; parity test added |
 | 21 | `mltreelib.data` helpers | done (profile, split, association, binning with exact mode, scaling, accessors) |
-| 22 | `MetricsReport` | done; uplift policy table and uplift-by-decile still missing |
+| 22 | `MetricsReport` | done (uplift policy table, `uplift_threshold`, and `uplift_by_decile` landed; uplift guide migration queued) |
 | 23 | `Dataset` class; `fit`/`predict` accept a dataset | done; clustering and anomaly facades do not accept a dataset yet |
 | 24 | Per-family summaries and `ModelTree.report()` | open (part C) |
 | 25 | `ClusterModel` and `AnomalyModel` report and summary | open (part C) |

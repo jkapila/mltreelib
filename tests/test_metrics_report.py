@@ -7,7 +7,7 @@ import json
 import math
 
 import pytest
-from mltreelib import Metrics, MetricsReport
+from mltreelib import Metrics, MetricsReport, uplift_threshold
 from mltreelib.metrics_report import metrics_report
 
 NAN = math.nan
@@ -167,6 +167,92 @@ def test_uplift_overview_matches_metrics():
         "population_fraction": 0.125,
         "qini": direct["qini_curve"][1][1],
     }
+
+
+def test_uplift_policy_table_and_threshold_hand_checked():
+    # 12 rows: top 6 (tau >= 0.4) have +1.0 uplift; bottom 6 (tau <= 0.1) have -1.0 uplift.
+    y = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0]
+    w = [1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0]
+    tau = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.1, 0.0, -0.1, -0.2, -0.3, -0.4]
+    y_orig, w_orig, tau_orig = list(y), list(w), list(tau)
+
+    thr = uplift_threshold(y, w, tau)
+    assert y == y_orig and w == w_orig and tau == tau_orig
+    assert thr == 0.1
+
+    rep = MetricsReport("uplift", y_true=y, treatment=w, tau_pred=tau, threshold=thr)
+    policy = {row["policy"]: row for row in rep.tables["policy"]}
+    assert set(policy) == {"selected", "treat_all", "treat_none"}
+
+    sel = policy["selected"]
+    # Top 6 rows: 3 treated (all y=1 -> mean 1.0), 3 control (all y=0 -> mean 0.0), q = 6/12 = 0.5 -> value = 0.5
+    assert sel["n_selected"] == 6
+    assert sel["n_treated"] == 3
+    assert sel["n_control"] == 3
+    assert math.isclose(sel["value"], 0.5, rel_tol=1e-12)
+    assert sel["ci_low"] == sel["ci_high"] == 0.5
+
+    all_row = policy["treat_all"]
+    assert all_row["n_selected"] == 12
+    assert all_row["n_treated"] == 6
+    assert all_row["n_control"] == 6
+    assert math.isclose(all_row["value"], 0.0, abs_tol=1e-12)
+    assert all_row["ci_low"] < 0.0 < all_row["ci_high"]
+
+    none_row = policy["treat_none"]
+    assert none_row["n_selected"] == 0
+    assert none_row["value"] == 0.0
+    assert none_row["ci_low"] is None and none_row["ci_high"] is None
+
+
+def test_uplift_threshold_cost_and_min_arm():
+    y = [1.0, 1.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0]
+    w = [1, 1, 0, 0, 1, 1, 0, 0]
+    tau = [0.9, 0.8, 0.7, 0.6, 0.3, 0.2, 0.1, 0.0]
+    # With high cost (1.5 > max uplift 1.0), treat-none is optimal.
+    assert uplift_threshold(y, w, tau, cost=1.5) == max(tau)
+    # With cost=0.25 and threshold=0.3: selected=4 rows, q=0.5, diff=1.0, net=0.5*(1.0-0.25)=0.375
+    rep = MetricsReport(
+        "uplift", y_true=y, treatment=w, tau_pred=tau, threshold=0.3, cost=0.25
+    )
+    sel = next(r for r in rep.tables["policy"] if r["policy"] == "selected")
+    assert math.isclose(sel["value"], 0.375, rel_tol=1e-12)
+    assert rep["cost"] == 0.25
+
+    with pytest.raises(ValueError, match="min_arm must be a positive integer"):
+        uplift_threshold(y, w, tau, min_arm=0)
+    with pytest.raises(ValueError, match="cost must be a finite number"):
+        uplift_threshold(y, w, tau, cost=math.inf)
+
+
+def test_uplift_by_decile_table_has_ten_deciles_when_n_ge_10():
+    n = 20
+    y = [1.0 if (i < 10 and i % 2 == 0) or (i >= 10 and i % 2 == 1) else 0.0 for i in range(n)]
+    w = [1 if i % 2 == 0 else 0 for i in range(n)]
+    tau = [float(n - i) for i in range(n)]
+    rep = MetricsReport("uplift", y_true=y, treatment=w, tau_pred=tau)
+    deciles = rep.tables["uplift_by_decile"]
+    assert len(deciles) == 10
+    assert [d["decile"] for d in deciles] == list(range(1, 11))
+    assert sum(d["n"] for d in deciles) == n
+    assert deciles[0]["mean_tau_pred"] == 19.5
+    assert deciles[0]["uplift"] == 1.0
+    assert deciles[-1]["uplift"] == -1.0
+    assert "Uplift by decile" in rep.to_text()
+    assert "## Policy" in rep.to_markdown()
+    json.loads(rep.to_json())
+
+
+def test_uplift_policy_handles_inf_without_nan_ci():
+    rep = MetricsReport(
+        "uplift",
+        y_true=[math.inf, 0.0, 1.0, 0.0],
+        treatment=[1.0, 0.0, 1.0, 0.0],
+        tau_pred=[0.5, 0.1, 0.3, 0.2],
+    )
+    sel = next(r for r in rep.tables["policy"] if r["policy"] == "selected")
+    assert sel["ci_low"] is None and sel["ci_high"] is None
+    json.loads(rep.to_json())
 
 
 # -- rendering ---------------------------------------------------------------
