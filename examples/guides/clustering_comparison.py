@@ -174,8 +174,9 @@ def main():
         "installment_rate_percent",
         "age_years",
     ]
-    # xy needs a target name; clustering is unsupervised, so the target is only left out of the features.
-    data_num = xy(df, "good_or_bad_customer", features=numeric_cols)["x"]
+    from mltreelib.data import Dataset
+
+    data_num = Dataset(df.to_dict("list"), features=numeric_cols).x
 
     # Normalize numeric features for distance algorithms
     means = [np.mean(df[col]) for col in numeric_cols]

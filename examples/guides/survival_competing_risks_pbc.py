@@ -86,13 +86,14 @@ def run_competing_risks_showcase():
     print(f"  - Cause 2 (Competing Toxicity/Death): {n_cause2:,} ({n_cause2/n_total*100:.1f}%)")
     print(f"  - Censored Event-Free:               {n_censored:,} ({n_censored/n_total*100:.1f}%)")
 
+    from mltreelib.data import Dataset
+
     # Train / Test split (75/25, no shuffling: first 450 patients train, last 150 test)
-    d = survival_xy(data, "duration", "event", features=["biomarker", "age", "treatment"])
-    tr, te = train_test_split(n_total, test_size=0.25, time_order=list(range(n_total)))
-    train, test = select_rows(d, tr), select_rows(d, te)
-    X_train, X_test = train["x"], test["x"]
-    t_train, t_test = train["time"], test["time"]
-    e_train, e_test = train["event"], test["event"]
+    ds = Dataset(data, time="duration", event="event", features=["biomarker", "age", "treatment"])
+    train, test = ds.split(test_size=0.25, time=True)
+    X_train, X_test = train.x, test.x
+    t_train, t_test = train.time, test.time
+    e_train, e_test = train.event, test.event
 
     # 2. Fit ModelTree with Gray's Test for Cause 1
     print("\n[1/3] Fitting ModelTree with Gray's Subdistribution Test (gain='gray', cause=1)...")

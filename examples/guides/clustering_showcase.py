@@ -37,12 +37,14 @@ def showcase_trie_knn(df):
     # Target: good_or_bad_customer (1 = good, 0 = bad)
     y_raw = df["good_or_bad_customer"].tolist()
     y = [1.0 if str(v).lower() in ["1", "good", "true"] else 0.0 for v in y_raw]
-    dx = xy(df, "good_or_bad_customer", features=all_cols)
+    from mltreelib.data import Dataset
 
-    # Split train / test: first 800 rows train, last 200 test (no shuffling)
-    tr, te = train_test_split(len(df), test_size=0.2, time_order=list(range(len(df))))
-    x_train, y_train = select_rows(dx, tr)["x"], take(y, tr)
-    x_test, y_test = select_rows(dx, te)["x"], take(y, te)
+    cols_dict = df.to_dict("list")
+    cols_dict["_target"] = y
+    ds = Dataset(cols_dict, target="_target", features=all_cols)
+    train, test = ds.split(test_size=0.2, time=True)
+    x_train, y_train = train.x, train.y
+    x_test, y_test = test.x, test.y
 
     model = TrieKNN(task="classification", k=5, weights="distance")
     model.fit(x_train, y_train, col_names=all_cols, dtypes=dtypes)
@@ -55,7 +57,6 @@ def showcase_trie_knn(df):
 
     print("\nSample Test Predictions:")
     for i in range(5):
-        row = df.iloc[te[i]]
         actual = y_test[i]
         pred = preds[i]
         prob = probs[i]
@@ -63,10 +64,10 @@ def showcase_trie_knn(df):
             f"  Case {i + 1}: Actual={actual:.0f} | Pred={pred:.0f} | P(Good)={prob[1]:.2f}"
         )
         print(
-            f"    Context: {row['checking_status']}, {row['credit_history']}, {row['housing']}"
+            f"    Context: {test.columns['checking_status'][i]}, {test.columns['credit_history'][i]}, {test.columns['housing'][i]}"
         )
         print(
-            f"    Numeric: ${row['credit_amount']:.0f}, {row['duration_months']} mo, Age {row['age_years']}"
+            f"    Numeric: ${test.columns['credit_amount'][i]:.0f}, {test.columns['duration_months'][i]} mo, Age {test.columns['age_years'][i]}"
         )
 
     # Demonstrate Hierarchical Back-off on Unseen Category
@@ -100,8 +101,10 @@ def showcase_pct(df):
     desc_dtypes = ["cat", "cat", "cat", "float"]
     target_cols = ["duration_months", "credit_amount"]
 
-    # x via xy; the multi-target y is not a single target column, so it stays as is.
-    x = xy(df, target_cols[0], features=descriptive_cols)["x"]
+    from mltreelib.data import Dataset
+
+    # Descriptive X via Dataset; the multi-target y is not a single target column.
+    x = Dataset(df.to_dict("list"), features=descriptive_cols).x
     y = df[target_cols].values.tolist()
 
     pct = PredictiveClusteringTree(
@@ -133,7 +136,9 @@ def showcase_pct(df):
         "installment_rate_percent",
         "age_years",
     ]
-    x_num = xy(df, "good_or_bad_customer", features=numeric_cols)["x"]
+    from mltreelib.data import Dataset
+
+    x_num = Dataset(df.to_dict("list"), features=numeric_cols).x
     pct_unsup = PredictiveClusteringTree(
         max_depth=3, min_samples_split=30, min_samples_leaf=15
     )
@@ -149,8 +154,10 @@ def showcase_cltree(df):
     print("=" * 80)
 
     # Use continuous features to isolate dense clusters from background empty space
+    from mltreelib.data import Dataset
+
     cols = ["duration_months", "credit_amount", "age_years"]
-    data = xy(df, "good_or_bad_customer", features=cols)["x"]
+    data = Dataset(df.to_dict("list"), features=cols).x
 
     clt = CLTree(max_depth=5, min_samples_leaf=15, min_density=0.60)
     clt.fit(data, col_names=cols)
@@ -185,8 +192,10 @@ def showcase_hdbscan(df):
     print("=" * 80)
 
     # Use continuous features: duration, credit_amount, age
+    from mltreelib.data import Dataset
+
     cols = ["duration_months", "credit_amount", "age_years"]
-    data = xy(df, "good_or_bad_customer", features=cols)["x"]
+    data = Dataset(df.to_dict("list"), features=cols).x
 
     # Normalize data for distance-based reachability
     means = [sum(row[j] for row in data) / len(data) for j in range(len(cols))]
@@ -253,8 +262,10 @@ def showcase_urf(df):
     print("5. Unsupervised Random Forest (Breiman Proximity & Agglomeration)")
     print("=" * 80)
 
+    from mltreelib.data import Dataset
+
     cols = ["duration_months", "credit_amount", "age_years", "installment_rate_percent"]
-    data = xy(df, "good_or_bad_customer", features=cols)["x"]
+    data = Dataset(df.to_dict("list"), features=cols).x
 
     urf = UnsupervisedRandomForest(n_trees=50, max_depth=6, min_samples_leaf=5, seed=42)
     urf.fit(data, n_clusters=3)

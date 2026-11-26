@@ -61,14 +61,14 @@ def decision_cost(y, scores, threshold):
 threshold = min((.2, .4, .6, .8), key=lambda t: decision_cost(class_y[2000:3000], val_scores, t))
 scores = clf.predict_proba(x_test)
 hard = [int(p >= threshold) for p in scores]
-report = metrics.classification([int(v) for v in class_y[3000:]], hard)
+report = MetricsReport("classification", y_true=[int(v) for v in class_y[3000:]], y_pred=hard, proba=scores)
 print("classification validation threshold:", threshold)
-print("classification test confusion:", report["confusion"])
-print("classification test average precision:", round(metrics.pr_curve(class_y[3000:], scores)["average_precision"], 3))
+print("classification test confusion:", report.tables["confusion"])
+print("classification test average precision:", round(report["average_precision"], 3))
 for filename, title, render in [
     ("data-pr.svg", "Classification: test precision–recall", lambda ax: plots.plot_pr(class_y[3000:], scores, ax=ax)),
     ("data-calibration.svg", "Classification: test calibration", lambda ax: plots.plot_calibration(class_y[3000:], scores, n_bins=5, ax=ax)),
-    ("data-confusion.svg", "Classification: test decisions", lambda ax: plots.plot_confusion_matrix(report["confusion"], class_names=["No event", "Event"], ax=ax)),
+    ("data-confusion.svg", "Classification: test decisions", lambda ax: plots.plot_confusion_matrix([[r["pred 0"], r["pred 1"]] for r in report.tables["confusion"]], class_names=["No event", "Event"], ax=ax)),
     ("data-importance.svg", "Regression: split importance", lambda ax: plots.plot_importance(reg.feature_importance(), ax=ax)),
 ]:
     fig, ax = plt.subplots(figsize=(5.6, 4))

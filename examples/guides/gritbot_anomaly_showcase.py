@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 from mltreelib import GritBot
-from mltreelib.data import xy
+from mltreelib.data import Dataset
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
     ]
 
     cols = [c for c in num_cols if c in df.columns]
-    data = xy(df, "churn", features=cols)["x"]
+    data = Dataset(df.to_dict("list"), target="churn", features=cols).x
 
     print("=" * 70)
     print("GritBot Contextual Anomaly Engine (Quinlan 2010)")

@@ -36,11 +36,14 @@ def run_two_stage_survival(n_seeds=20, output_dir="docs/assets"):
     df = table.to_pydict()
     n_total = len(df["churn"])
 
+    from mltreelib.data import Dataset
+
     feature_cols = ["credit_score", "age", "balance", "products_number", "estimated_salary"]
-    sv = survival_xy(df, "tenure", "churn", features=feature_cols)  # durations: 0 to 10 years
-    X = np.array(sv["x"], dtype=float)
-    durations = np.array(sv["time"], dtype=float)
-    events = np.array([1.0 if str(v).lower() in ("1", "yes", "true") else 0.0 for v in sv["event"]])  # churn recode
+    df["churn"] = [1.0 if str(v).lower() in ("1", "yes", "true") else 0.0 for v in df["churn"]]
+    ds = Dataset(df, time="tenure", event="churn", features=feature_cols)  # durations: 0 to 10 years
+    X = np.array(ds.x, dtype=float)
+    durations = np.array(ds.time, dtype=float)
+    events = np.array(ds.event, dtype=float)
 
     n_events = int(sum(events))
     churn_pct = n_events / n_total * 100.0

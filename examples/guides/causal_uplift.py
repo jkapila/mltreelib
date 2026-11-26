@@ -43,11 +43,13 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     print("HONEST CAUSAL UPLIFT MODELING ON RANDOMIZED TRIAL DATA")
     print("=" * 80)
 
+    from mltreelib.data import Dataset
+
     df = load_hillstrom_data()
     features = ["recency", "history", "mens", "womens", "newbie", "zip_code", "channel"]
     types = ["numeric"] * 5 + ["categorical"] * 2
 
-    X_all = xy(df, "visit", features=features)["x"]  # missing cells stay missing (NaN)
+    X_all = Dataset(df.to_dict("list"), target="visit", features=features).x  # missing cells stay missing (NaN)
     y_all = df["visit"].astype(float).tolist()
     w_all = [float(s == "Womens E-Mail") for s in df["segment"]]
 
@@ -127,10 +129,11 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     p0_te0 = m0_0.predict_proba(xte0)
     tau_tlearner0 = [p1 - p0 for p1, p0 in zip(p1_te0, p0_te0)]
 
-    m = Metrics()
-    res_h0 = m.uplift(yte0, wte0, tau_honest0)
-    res_a0 = m.uplift(yte0, wte0, tau_adapt0)
-    res_t0 = m.uplift(yte0, wte0, tau_tlearner0)
+    from mltreelib import MetricsReport
+
+    res_h0 = MetricsReport("uplift", y_true=yte0, treatment=wte0, tau_pred=tau_honest0)
+    res_a0 = MetricsReport("uplift", y_true=yte0, treatment=wte0, tau_pred=tau_adapt0)
+    res_t0 = MetricsReport("uplift", y_true=yte0, treatment=wte0, tau_pred=tau_tlearner0)
 
     print("\nHeld-Out Single-Seed Performance (Seed 42):")
     print(f"  - Honest Causal Tree : Qini={res_h0['qini_coef']:.2f} | AUUC={res_h0['auuc']:.2f} | Top Quintile Uplift={res_h0['top_quintile_uplift']*100.0:.2f}%")
@@ -142,9 +145,9 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
 
     # Panel A: Qini Curve Comparison
     # Extract Qini curve coordinates: (fraction_targeted, cumulative_gains)
-    curve_h = res_h0["qini_curve"]
-    curve_a = res_a0["qini_curve"]
-    curve_t = res_t0["qini_curve"]
+    curve_h = [(r["population_fraction"], r["qini"]) for r in res_h0.tables["qini_curve"]]
+    curve_a = [(r["population_fraction"], r["qini"]) for r in res_a0.tables["qini_curve"]]
+    curve_t = [(r["population_fraction"], r["qini"]) for r in res_t0.tables["qini_curve"]]
 
     # Random baseline line: (0, 0) to (1.0, total_incremental_gains)
     total_gains = curve_h[-1][1]
@@ -219,7 +222,7 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         xte, yte, wte = take(X_all, te), take(y_all, te), take(w_all, te)
 
         # Baseline: Uniform Treat All (Random Ordering / Constant Effect)
-        res_all = m.uplift(yte, wte, [0.0] * len(yte))
+        res_all = MetricsReport("uplift", y_true=yte, treatment=wte, tau_pred=[0.0] * len(yte))
         metrics_treat_all["qini"].append(0.0)
         metrics_treat_all["auuc"].append(res_all["auuc"])
         metrics_treat_all["top_q"].append(res_all["top_quintile_uplift"] * 100.0)
@@ -229,7 +232,7 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         m_a = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250, prune="none", honesty=False, seed=2000+seed)
         m_a.fit(xtr, (ytr, wtr), col_names=features, dtypes=types)
         tau_a = m_a.predict(xte, kind="uplift")
-        res_a = m.uplift(yte, wte, tau_a)
+        res_a = MetricsReport("uplift", y_true=yte, treatment=wte, tau_pred=tau_a)
         metrics_adaptive["qini"].append(res_a["qini_coef"])
         metrics_adaptive["auuc"].append(res_a["auuc"])
         metrics_adaptive["top_q"].append(res_a["top_quintile_uplift"] * 100.0)
@@ -245,7 +248,7 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         p1 = m1.predict_proba(xte)
         p0 = m0.predict_proba(xte)
         tau_t = [p1_i - p0_i for p1_i, p0_i in zip(p1, p0)]
-        res_t = m.uplift(yte, wte, tau_t)
+        res_t = MetricsReport("uplift", y_true=yte, treatment=wte, tau_pred=tau_t)
         metrics_tlearner["qini"].append(res_t["qini_coef"])
         metrics_tlearner["auuc"].append(res_t["auuc"])
         metrics_tlearner["top_q"].append(res_t["top_quintile_uplift"] * 100.0)
@@ -255,7 +258,7 @@ def run_causal_uplift_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
         m_h = ModelTree(gain="causal", leaf="mean", max_depth=2, min_rows=250, prune="none", honesty=True, seed=2000+seed)
         m_h.fit(xtr, (ytr, wtr), col_names=features, dtypes=types)
         tau_h = m_h.predict(xte, kind="uplift")
-        res_h = m.uplift(yte, wte, tau_h)
+        res_h = MetricsReport("uplift", y_true=yte, treatment=wte, tau_pred=tau_h)
         metrics_honest["qini"].append(res_h["qini_coef"])
         metrics_honest["auuc"].append(res_h["auuc"])
         metrics_honest["top_q"].append(res_h["top_quintile_uplift"] * 100.0)

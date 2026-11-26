@@ -70,7 +70,7 @@ def anomaly():
     rng = Random(44)
     train = [[rng.gauss(0, 1), rng.gauss(0, 1)] for _ in range(2000)]
     review = [[rng.gauss(0, 1), rng.gauss(0, 1)] for _ in range(1000)] + [[5., 5.], [-5., 4.]]
-    model = AnomalyTree(kind="eif", max_depth=8, extension_level=1, seed=44)
+    model = AnomalyModel(kind="eif", max_depth=10, extension_level=1, seed=44)
     model.fit(train, col_names=["measure_a", "measure_b"])
     scores = model.score_samples(review)
     top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:5]

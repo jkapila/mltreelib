@@ -42,7 +42,8 @@ def load_credit_data(path: str = "datasets/GiveMeSomeCredit.parquet") -> pd.Data
 
 def evaluate_cost_and_metrics(y_true, y_prob, threshold, cost_fn=5.0, cost_fp=1.0):
     """Compute asymmetric misclassification loss, queue volume, and ranking metrics."""
-    m = Metrics()
+    from mltreelib import MetricsReport
+
     n = len(y_true)
     fn = sum(1 for y, p in zip(y_true, y_prob) if y == 1 and p < threshold)
     fp = sum(1 for y, p in zip(y_true, y_prob) if y == 0 and p >= threshold)
@@ -54,18 +55,16 @@ def evaluate_cost_and_metrics(y_true, y_prob, threshold, cost_fn=5.0, cost_fp=1.
     fnr = fn / max(1, (fn + tp)) * 100.0
     fpr = fp / max(1, (fp + tn)) * 100.0
 
-    brier = m.brier_score(y_true, y_prob)
-    roc_res = m.roc_curve(y_true, y_prob)
-    pr_res = m.pr_curve(y_true, y_prob)
+    rep = MetricsReport("classification", y_true=y_true, proba=y_prob)
 
     return {
         "cost": expected_cost,
         "queue_rate": queue_rate,
         "fnr": fnr,
         "fpr": fpr,
-        "brier": brier,
-        "auc": roc_res["auc"],
-        "ap": pr_res["average_precision"],
+        "brier": rep["brier"],
+        "auc": rep["auc"],
+        "ap": rep["average_precision"],
         "tp": tp,
         "fp": fp,
         "tn": tn,
@@ -86,9 +85,11 @@ def run_credit_study(n_seeds: int = 20, output_dir: str = "docs/assets"):
     target = "FinancialDistressNextTwoYears"
     features = [c for c in df.columns if c != target]
 
+    from mltreelib.data import Dataset
+
     y_all = (df[target] == "Yes").astype(int).to_numpy()
-    # numpy for SimpleImputer and fancy indexing; xy keeps NaN as missing
-    X_all = np.array(xy(df, target, features=features)["x"], dtype=float)
+    # numpy for SimpleImputer and fancy indexing; Dataset keeps NaN as missing
+    X_all = np.array(Dataset(df.to_dict("list"), target=target, features=features).x, dtype=float)
     n_total = len(df)
     n_pos = sum(y_all)
     prevalence = n_pos / n_total * 100.0

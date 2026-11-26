@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from mltreelib import ClusterTree, Metrics, ModelTree, plots
+from mltreelib import ClusterModel, MetricsReport, ModelTree, plots
 
 
 matplotlib.rcParams["svg.hashsalt"] = "mltreelib-real-tree-studies"
@@ -56,7 +56,7 @@ def wine():
         return ((frame[features] - center) / scale).to_numpy().tolist()
 
     def fit(frame):
-        tree = ClusterTree(kind="pct", max_depth=2, min_rows=150)
+        tree = ClusterModel(kind="pct", max_depth=2, min_rows=150)
         tree.fit(design(frame), col_names=features)
         return tree
 
@@ -100,7 +100,6 @@ def binary_study(dataset, openml_id, target, positive, name, features=None):
     model.fit(xtr, ytr, col_names=features, dtypes=["numeric"] * len(features))
     val_scores = model.predict_proba(xval)
     scores = model.predict_proba(xte)
-    metrics = Metrics()
 
     def cost(threshold):
         return sum(5 if y and p < threshold else 1 if not y and p >= threshold else 0
@@ -109,12 +108,13 @@ def binary_study(dataset, openml_id, target, positive, name, features=None):
     threshold = min([.02, .05, .10, .20, .40, 1.01], key=cost)
     decisions = [int(value >= threshold) for value in scores]
     prevalence = mean(ytr)
+    rep = MetricsReport("classification", y_true=yte, y_pred=decisions, proba=scores)
+    base_rep = MetricsReport("classification", y_true=yte, proba=[prevalence] * len(yte))
     print(name, "positives", sum(ytr), sum(yval), sum(yte), "threshold", threshold)
     print("missing", train[features].isna().sum().nlargest(4).to_dict())
-    print("test confusion", metrics.classification(yte, decisions)["confusion"])
-    print("AP, prevalence", metrics.pr_curve(yte, scores)["average_precision"], mean(yte))
-    print("Brier, baseline", metrics.brier_score(yte, scores),
-          metrics.brier_score(yte, [prevalence] * len(yte)))
+    print("test confusion", rep.tables["confusion"])
+    print("AP, prevalence", rep["average_precision"], mean(yte))
+    print("Brier, baseline", rep["brier"], base_rep["brier"])
     print("example split", model.splits()[:1], "leaf counts", [leaf["n"] for leaf in model.leaves()])
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     plots.plot_pr(yte, scores, ax=axes[0])
@@ -151,17 +151,16 @@ def continuous_study(dataset, openml_id, target, configurations, name, features=
               for c in features]
     results = {}
     structures = {}
-    metrics = Metrics()
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     for label, options in configurations.items():
         model = ModelTree(max_depth=2, min_rows=40, prune="none", **options)
         model.fit(xtr, ytr, col_names=features, dtypes=dtypes)
         predicted = model.predict(xte)
-        results[label] = metrics.regression(yte, predicted)["rmse"]
+        results[label] = MetricsReport("regression", y_true=yte, y_pred=predicted)["rmse"]
         structures[label] = model.splits()[:1], model.leaves()[0]
         axes[1].scatter(yte, np.asarray(predicted) - yte, s=10, alpha=.35, label=label,
                         rasterized=True)
-    base = metrics.regression(yte, [mean(ytr)] * len(yte))
+    base = MetricsReport("regression", y_true=yte, y_pred=[mean(ytr)] * len(yte))
     print(name, len(train), len(test), "RMSE", results, "mean baseline", base["rmse"])
     for label, (split, leaf) in structures.items():
         print(label, "example split", split, "first leaf support", leaf["n"],
