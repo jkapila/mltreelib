@@ -372,39 +372,57 @@ def test_classification_missing_label_counted():
     y_pred = [1, 0, 0, None]
     rep = MetricsReport("classification", y_true=y_true, y_pred=y_pred)
     assert rep["n_missing"] == 2 and rep["n"] == 2
-    assert any("classification_scores" in note for note in rep._notes)
+    assert rep["balanced_accuracy"] == 1.0
     assert y_true[1] != y_true[1]  # the caller's NaN is still there
     assert y_pred[3] is None
 
 
-def test_survival_missing_duration_refused_naming_argument():
-    with pytest.raises(ValueError, match="durations has 1 missing value"):
-        MetricsReport(
-            "survival",
-            durations=[5.0, NAN, 3.0],
-            events=[1.0, 0.0, 1.0],
-            risk=[0.8, 0.3, 0.9],
-        )
+def test_proba_missing_accepted_and_counted():
+    rep = MetricsReport(
+        "classification",
+        y_true=[1, 0, 1, 0, 1],
+        y_pred=[1, 0, 1, 0, 0],
+        proba=[0.9, None, 0.8, 0.1, 0.4],
+    )
+    inputs = {r["argument"]: r for r in rep.tables["inputs"]}
+    assert inputs["proba"]["n_missing"] == 1
+    assert math.isfinite(rep["auc"])
+    assert math.isfinite(rep["average_precision"])
 
 
-def test_proba_missing_refused_naming_argument():
-    with pytest.raises(ValueError, match="proba has 1 missing value"):
-        MetricsReport(
-            "classification",
-            y_true=[1, 0, 1, 0],
-            y_pred=[1, 0, 1, 0],
-            proba=[0.9, None, 0.8, 0.1],
-        )
+def test_uplift_survival_and_time_series_missing_accepted_and_counted():
+    up = MetricsReport(
+        "uplift",
+        y_true=[1.0, 0.0, 1.0, 0.0, None],
+        treatment=[1.0, None, 0.0, 1.0, 0.0],
+        tau_pred=[0.5, 0.1, 0.3, 0.6, 0.2],
+    )
+    up_inputs = {r["argument"]: r for r in up.tables["inputs"]}
+    assert up_inputs["y_true"]["n_missing"] == 1
+    assert up_inputs["treatment"]["n_missing"] == 1
+    assert up["n_total"] == 3
+    assert math.isfinite(up["ate"])
 
+    sv = MetricsReport(
+        "survival",
+        durations=[5.0, NAN, 8.0, 3.0],
+        events=[1.0, 1.0, 0.0, 1.0],
+        risk=[0.8, 0.5, 0.2, 0.9],
+    )
+    sv_inputs = {r["argument"]: r for r in sv.tables["inputs"]}
+    assert sv_inputs["durations"]["n_missing"] == 1
+    assert sv["n_samples"] == 3
+    assert math.isfinite(sv["harrell_c"])
 
-def test_uplift_missing_treatment_refused():
-    with pytest.raises(ValueError, match="treatment has 1 missing value"):
-        MetricsReport(
-            "uplift",
-            y_true=[1.0, 0.0, 1.0, 0.0],
-            treatment=[1.0, None, 0.0, 1.0],
-            tau_pred=[0.5, 0.1, 0.3, 0.6],
-        )
+    ts = MetricsReport(
+        "time_series",
+        y_true=[1.0, NAN, 3.0, 4.0],
+        y_pred=[1.0, 2.0, 2.0, 4.0],
+    )
+    ts_inputs = {r["argument"]: r for r in ts.tables["inputs"]}
+    assert ts_inputs["y_true"]["n_missing"] == 1
+    assert ts["n_periods"] == 3
+    assert math.isfinite(ts["mae"])
 
 
 def test_all_pairs_missing_raises_naming_both_arguments():

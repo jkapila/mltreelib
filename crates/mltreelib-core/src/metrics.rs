@@ -38,6 +38,27 @@ pub struct RegressionReport {
     pub deciles: Vec<DecileStat>,
 }
 
+fn filter_observed_pairs(a: &[f64], b: &[f64]) -> Result<(Vec<f64>, Vec<f64>), String> {
+    if a.len() != b.len() {
+        return Err("input arrays must have the same length".to_string());
+    }
+    if a.is_empty() {
+        return Err("empty input".to_string());
+    }
+    let mut oa = Vec::with_capacity(a.len());
+    let mut ob = Vec::with_capacity(b.len());
+    for (&x, &y) in a.iter().zip(b.iter()) {
+        if !x.is_nan() && !y.is_nan() {
+            oa.push(x);
+            ob.push(y);
+        }
+    }
+    if oa.is_empty() {
+        return Err("no observed pairs to score".to_string());
+    }
+    Ok((oa, ob))
+}
+
 fn variance(xs: &[f64]) -> f64 {
     if xs.len() < 2 {
         return 0.0;
@@ -435,14 +456,14 @@ pub fn calibration_bins(
     scores: &[f64],
     n_bins: usize,
 ) -> Result<Vec<CalibBin>, String> {
-    if y_true.len() != scores.len() || y_true.is_empty() {
-        return Err("y_true and scores must have the same non-zero length".to_string());
-    }
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
     let nb = n_bins.max(1);
-    let mut acc = vec![(0.0f64, 0.0f64, 0usize); nb];
-    for (&t, &s) in y_true.iter().zip(scores.iter()) {
+    let mut acc = vec![(0.0f64, 0.0f64, usize::MIN); nb];
+    for (&t, &s) in yt.iter().zip(sc.iter()) {
         let c = if s.is_finite() {
             s.clamp(0.0, 1.0)
+        } else if s.is_sign_positive() {
+            1.0
         } else {
             0.0
         };
@@ -468,9 +489,10 @@ pub fn calibration_bins(
 /// ROC points (fpr, tpr) from a threshold sweep on scores descending, plus
 /// AUC (trapezoid over the empirical curve). Positive class = y > 0.5.
 pub fn roc_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64), String> {
-    let idx = rank_desc(y_true, scores)?;
-    let n_pos = y_true.iter().filter(|&&t| t > 0.5).count() as f64;
-    let n_neg = y_true.len() as f64 - n_pos;
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
+    let idx = rank_desc(&yt, &sc)?;
+    let n_pos = yt.iter().filter(|&&t| t > 0.5).count() as f64;
+    let n_neg = yt.len() as f64 - n_pos;
     if n_pos == 0.0 || n_neg == 0.0 {
         return Err("roc_curve needs both classes present".to_string());
     }
@@ -478,9 +500,9 @@ pub fn roc_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64
     let mut pts = vec![(0.0, 0.0)];
     let mut i = 0;
     while i < idx.len() {
-        let s = scores[idx[i]];
-        while i < idx.len() && scores[idx[i]] == s {
-            if y_true[idx[i]] > 0.5 {
+        let s = sc[idx[i]];
+        while i < idx.len() && sc[idx[i]] == s {
+            if yt[idx[i]] > 0.5 {
                 tp += 1.0;
             } else {
                 fp += 1.0;
@@ -499,8 +521,9 @@ pub fn roc_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64
 /// Precision-recall points (recall, precision) + average precision (step-wise,
 /// sklearn convention). Positive class = y > 0.5.
 pub fn pr_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64), String> {
-    let idx = rank_desc(y_true, scores)?;
-    let n_pos = y_true.iter().filter(|&&t| t > 0.5).count() as f64;
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
+    let idx = rank_desc(&yt, &sc)?;
+    let n_pos = yt.iter().filter(|&&t| t > 0.5).count() as f64;
     if n_pos == 0.0 {
         return Err("pr_curve needs at least one positive".to_string());
     }
@@ -510,9 +533,9 @@ pub fn pr_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64)
     let mut prev_recall = 0.0;
     let mut i = 0;
     while i < idx.len() {
-        let s = scores[idx[i]];
-        while i < idx.len() && scores[idx[i]] == s {
-            if y_true[idx[i]] > 0.5 {
+        let s = sc[idx[i]];
+        while i < idx.len() && sc[idx[i]] == s {
+            if yt[idx[i]] > 0.5 {
                 tp += 1.0;
             } else {
                 fp += 1.0;
@@ -531,8 +554,9 @@ pub fn pr_curve(y_true: &[f64], scores: &[f64]) -> Result<(Vec<(f64, f64)>, f64)
 /// Cumulative gains points (population fraction, capture rate) on the same
 /// score-descending sweep. Lift at a point = capture / fraction.
 pub fn gain_curve(y_true: &[f64], scores: &[f64]) -> Result<Vec<(f64, f64)>, String> {
-    let idx = rank_desc(y_true, scores)?;
-    let n_pos = y_true.iter().filter(|&&t| t > 0.5).count() as f64;
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
+    let idx = rank_desc(&yt, &sc)?;
+    let n_pos = yt.iter().filter(|&&t| t > 0.5).count() as f64;
     if n_pos == 0.0 {
         return Err("gain_curve needs at least one positive".to_string());
     }
@@ -540,9 +564,9 @@ pub fn gain_curve(y_true: &[f64], scores: &[f64]) -> Result<Vec<(f64, f64)>, Str
     let mut pts = vec![(0.0, 0.0)];
     let mut i = 0;
     while i < idx.len() {
-        let s = scores[idx[i]];
-        while i < idx.len() && scores[idx[i]] == s {
-            if y_true[idx[i]] > 0.5 {
+        let s = sc[idx[i]];
+        while i < idx.len() && sc[idx[i]] == s {
+            if yt[idx[i]] > 0.5 {
                 tp += 1.0;
             }
             i += 1;
@@ -566,9 +590,10 @@ pub struct KsReport {
 /// Kolmogorov-Smirnov separation of the score distributions (kds/PerfScoreCard).
 /// Positive class = y > 0.5.
 pub fn ks_statistic(y_true: &[f64], scores: &[f64]) -> Result<KsReport, String> {
-    let idx = rank_desc(y_true, scores)?;
-    let n_pos = y_true.iter().filter(|&&t| t > 0.5).count() as f64;
-    let n_neg = y_true.len() as f64 - n_pos;
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
+    let idx = rank_desc(&yt, &sc)?;
+    let n_pos = yt.iter().filter(|&&t| t > 0.5).count() as f64;
+    let n_neg = yt.len() as f64 - n_pos;
     if n_pos == 0.0 || n_neg == 0.0 {
         return Err("ks_statistic needs both classes present".to_string());
     }
@@ -577,9 +602,9 @@ pub fn ks_statistic(y_true: &[f64], scores: &[f64]) -> Result<KsReport, String> 
     let mut best = (f64::NEG_INFINITY, 0.0f64, 0.0f64, 0.0f64); // d, score, tpr, fpr
     let mut i = 0;
     while i < idx.len() {
-        let s = scores[idx[i]];
-        while i < idx.len() && scores[idx[i]] == s {
-            if y_true[idx[i]] > 0.5 {
+        let s = sc[idx[i]];
+        while i < idx.len() && sc[idx[i]] == s {
+            if yt[idx[i]] > 0.5 {
                 tp += 1.0;
             } else {
                 fp += 1.0;
@@ -624,9 +649,10 @@ pub fn decile_table(
     scores: &[f64],
     n_buckets: usize,
 ) -> Result<Vec<DecileRow>, String> {
-    let idx = rank_desc(y_true, scores)?;
-    let n_pos = y_true.iter().filter(|&&t| t > 0.5).count() as f64;
-    let rate = n_pos / y_true.len() as f64;
+    let (yt, sc) = filter_observed_pairs(y_true, scores)?;
+    let idx = rank_desc(&yt, &sc)?;
+    let n_pos = yt.iter().filter(|&&t| t > 0.5).count() as f64;
+    let rate = n_pos / yt.len() as f64;
     if n_pos == 0.0 || rate == 0.0 {
         return Err("decile_table needs at least one positive".to_string());
     }
@@ -642,10 +668,10 @@ pub fn decile_table(
         let end = (start + chunk).min(idx.len());
         let events: f64 = idx[start..end]
             .iter()
-            .filter(|&&i| y_true[i] > 0.5)
+            .filter(|&&i| yt[i] > 0.5)
             .count() as f64;
         let avg_score: f64 =
-            idx[start..end].iter().map(|&i| scores[i]).sum::<f64>() / (end - start) as f64;
+            idx[start..end].iter().map(|&i| sc[i]).sum::<f64>() / (end - start) as f64;
         cum_events += events;
         cum_n += end - start;
         rows.push(DecileRow {
@@ -758,6 +784,20 @@ pub fn double_lift(
     if y_true.is_empty() {
         return Err("empty input".to_string());
     }
+    let mut yt_f = Vec::with_capacity(y_true.len());
+    let mut sa_f = Vec::with_capacity(y_true.len());
+    let mut sb_f = Vec::with_capacity(y_true.len());
+    for i in 0..y_true.len() {
+        if !y_true[i].is_nan() && !scores_a[i].is_nan() && !scores_b[i].is_nan() {
+            yt_f.push(y_true[i]);
+            sa_f.push(scores_a[i]);
+            sb_f.push(scores_b[i]);
+        }
+    }
+    if yt_f.is_empty() {
+        return Err("no observed rows to score".to_string());
+    }
+    let (y_true, scores_a, scores_b) = (&yt_f, &sa_f, &sb_f);
     let mut idx: Vec<usize> = (0..y_true.len()).collect();
     idx.sort_by(|&a, &b| {
         scores_a[b]
@@ -798,25 +838,23 @@ pub fn weighted_kappa(
     y_pred: &[f64],
     weights: &str,
 ) -> Result<f64, String> {
-    if y_true.len() != y_pred.len() || y_true.is_empty() {
-        return Err("y_true and y_pred must have the same non-zero length".to_string());
-    }
+    let (yt, yp) = filter_observed_pairs(y_true, y_pred)?;
     let power = match weights {
         "none" => 0,
         "linear" => 1,
         "quadratic" => 2,
         _ => return Err("weights must be \"none\", \"linear\", or \"quadratic\"".to_string()),
     };
-    let mut labels: Vec<f64> = y_true.iter().chain(y_pred.iter()).cloned().collect();
+    let mut labels: Vec<f64> = yt.iter().chain(yp.iter()).cloned().collect();
     labels.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     labels.dedup();
     let k = labels.len();
     let mut obs = vec![vec![0.0f64; k]; k];
     let pos = |v: f64| labels.iter().position(|l| *l == v).unwrap();
-    for (&t, &p) in y_true.iter().zip(y_pred.iter()) {
+    for (&t, &p) in yt.iter().zip(yp.iter()) {
         obs[pos(t)][pos(p)] += 1.0;
     }
-    let n = y_true.len() as f64;
+    let n = yt.len() as f64;
     let row: Vec<f64> = obs.iter().map(|r| r.iter().sum()).collect();
     let col: Vec<f64> = (0..k).map(|j| obs.iter().map(|r| r[j]).sum()).collect();
     let (mut wo, mut we) = (0.0f64, 0.0f64);
@@ -840,51 +878,45 @@ pub fn weighted_kappa(
 /// Log loss of probability predictions (sklearn convention; probabilities
 /// clip to (1e-15, 1 - 1e-15)). Positive class = y > 0.5.
 pub fn log_loss(y_true: &[f64], probs: &[f64]) -> Result<f64, String> {
-    if y_true.len() != probs.len() || y_true.is_empty() {
-        return Err("y_true and probs must have the same non-zero length".to_string());
-    }
+    let (yt, pr) = filter_observed_pairs(y_true, probs)?;
     let eps = 1e-15;
     let mut total = 0.0;
-    for (&t, &p) in y_true.iter().zip(probs.iter()) {
+    for (&t, &p) in yt.iter().zip(pr.iter()) {
         let p = p.clamp(eps, 1.0 - eps);
         let y = if t > 0.5 { 1.0 } else { 0.0 };
         total += -(y * p.ln() + (1.0 - y) * (1.0 - p).ln());
     }
-    Ok(total / y_true.len() as f64)
+    Ok(total / yt.len() as f64)
 }
 
 /// Brier score (mean squared error of probability predictions).
 /// Positive class = y > 0.5.
 pub fn brier_score(y_true: &[f64], probs: &[f64]) -> Result<f64, String> {
-    if y_true.len() != probs.len() || y_true.is_empty() {
-        return Err("y_true and probs must have the same non-zero length".to_string());
-    }
-    let sse: f64 = y_true
+    let (yt, pr) = filter_observed_pairs(y_true, probs)?;
+    let sse: f64 = yt
         .iter()
-        .zip(probs.iter())
+        .zip(pr.iter())
         .map(|(&t, &p)| {
             let y = if t > 0.5 { 1.0 } else { 0.0 };
             (y - p) * (y - p)
         })
         .sum();
-    Ok(sse / y_true.len() as f64)
+    Ok(sse / yt.len() as f64)
 }
 
 /// Hinge loss over signed decision margins (sklearn convention: labels map to
 /// -1/+1; loss = mean max(0, 1 - signed * margin)).
 pub fn hinge_loss(y_true: &[f64], decision: &[f64]) -> Result<f64, String> {
-    if y_true.len() != decision.len() || y_true.is_empty() {
-        return Err("y_true and decision must have the same non-zero length".to_string());
-    }
-    let total: f64 = y_true
+    let (yt, dec) = filter_observed_pairs(y_true, decision)?;
+    let total: f64 = yt
         .iter()
-        .zip(decision.iter())
+        .zip(dec.iter())
         .map(|(&t, &d)| {
             let signed = if t > 0.5 { 1.0 } else { -1.0 };
             (1.0 - signed * d).max(0.0)
         })
         .sum();
-    Ok(total / y_true.len() as f64)
+    Ok(total / yt.len() as f64)
 }
 
 /// Single-label classification scores (binary or multiclass): accuracy,
@@ -926,19 +958,17 @@ pub fn classification_scores(
     y_true: &[f64],
     y_pred: &[f64],
 ) -> Result<ClassificationScores, String> {
-    if y_true.len() != y_pred.len() || y_true.is_empty() {
-        return Err("y_true and y_pred must have the same non-zero length".to_string());
-    }
-    let mut labels: Vec<f64> = y_true.iter().chain(y_pred.iter()).cloned().collect();
+    let (yt, yp) = filter_observed_pairs(y_true, y_pred)?;
+    let mut labels: Vec<f64> = yt.iter().chain(yp.iter()).cloned().collect();
     labels.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     labels.dedup();
     let k = labels.len();
     let pos = |v: f64| labels.iter().position(|l| *l == v).unwrap();
     let mut c = vec![vec![0.0f64; k]; k];
-    for (&t, &p) in y_true.iter().zip(y_pred.iter()) {
+    for (&t, &p) in yt.iter().zip(yp.iter()) {
         c[pos(t)][pos(p)] += 1.0;
     }
-    let n = y_true.len() as f64;
+    let n = yt.len() as f64;
     let row: Vec<f64> = c.iter().map(|r| r.iter().sum()).collect();
     let col: Vec<f64> = (0..k).map(|j| c.iter().map(|r| r[j]).sum()).collect();
     let trace: f64 = (0..k).map(|i| c[i][i]).sum();
@@ -1005,7 +1035,7 @@ pub fn classification_scores(
     };
     let errs = n - trace;
     Ok(ClassificationScores {
-        n: y_true.len(),
+        n: yt.len(),
         n_classes: k,
         accuracy: trace / n,
         balanced_accuracy: bacc,
@@ -1302,10 +1332,24 @@ pub fn uplift_report(
     treatment: &[f64],
     tau_pred: &[f64],
 ) -> Result<UpliftReport, String> {
-    let n = y.len();
-    if n == 0 || treatment.len() != n || tau_pred.len() != n {
+    if y.is_empty() || treatment.len() != y.len() || tau_pred.len() != y.len() {
         return Err("y, treatment, and tau_pred must all have the same non-zero length".to_string());
     }
+    let mut y_f = Vec::with_capacity(y.len());
+    let mut t_f = Vec::with_capacity(y.len());
+    let mut tau_f = Vec::with_capacity(y.len());
+    for i in 0..y.len() {
+        if !y[i].is_nan() && !treatment[i].is_nan() && !tau_pred[i].is_nan() {
+            y_f.push(y[i]);
+            t_f.push(treatment[i]);
+            tau_f.push(tau_pred[i]);
+        }
+    }
+    if y_f.is_empty() {
+        return Err("no observed rows to score".to_string());
+    }
+    let (y, treatment, tau_pred) = (&y_f, &t_f, &tau_f);
+    let n = y.len();
 
     let mut n_treated = 0;
     let mut n_control = 0;
@@ -1480,10 +1524,40 @@ pub fn survival_report(
     surv_curves: Option<&[Vec<f64>]>,
     times: Option<&[f64]>,
 ) -> Result<SurvivalReport, String> {
-    let n = durations.len();
-    if n == 0 || events.len() != n || risk_scores.len() != n {
+    let n_in = durations.len();
+    if n_in == 0 || events.len() != n_in || risk_scores.len() != n_in {
         return Err("durations, events, and risk_scores must all have the same non-zero length".to_string());
     }
+    if let Some(ts) = times {
+        if ts.iter().any(|t| t.is_nan()) {
+            return Err("times must not contain NaN".to_string());
+        }
+    }
+    let mut dur_f = Vec::with_capacity(n_in);
+    let mut ev_f = Vec::with_capacity(n_in);
+    let mut risk_f = Vec::with_capacity(n_in);
+    let mut curves_f = surv_curves.map(|_| Vec::with_capacity(n_in));
+    for i in 0..n_in {
+        let curve_ok = surv_curves
+            .and_then(|cs| cs.get(i))
+            .is_none_or(|r| !r.iter().any(|v| v.is_nan()));
+        if !durations[i].is_nan() && !events[i].is_nan() && !risk_scores[i].is_nan() && curve_ok {
+            dur_f.push(durations[i]);
+            ev_f.push(events[i]);
+            risk_f.push(risk_scores[i]);
+            if let (Some(cs), Some(cf)) = (surv_curves, curves_f.as_mut()) {
+                if let Some(row) = cs.get(i) {
+                    cf.push(row.clone());
+                }
+            }
+        }
+    }
+    let n = dur_f.len();
+    if n == 0 {
+        return Err("no observed rows to score".to_string());
+    }
+    let (durations, events, risk_scores) = (&dur_f, &ev_f, &risk_f);
+    let surv_curves = curves_f.as_deref();
 
     let mut n_events = 0usize;
     for &e in events {
@@ -1897,10 +1971,30 @@ pub fn time_series_report(
     seasonal_period: Option<usize>,
     std_pred: Option<&[f64]>,
 ) -> Result<TimeSeriesReport, String> {
-    let n = y_true.len();
-    if n == 0 || y_pred.len() != n {
+    let n_in = y_true.len();
+    if n_in == 0 || y_pred.len() != n_in {
         return Err("y_true and y_pred must have the same non-zero length".to_string());
     }
+    let std_aligned = std_pred.filter(|s| s.len() == n_in);
+    let mut yt_f = Vec::with_capacity(n_in);
+    let mut yp_f = Vec::with_capacity(n_in);
+    let mut std_f = std_aligned.map(|_| Vec::with_capacity(n_in));
+    for i in 0..n_in {
+        let std_ok = std_aligned.is_none_or(|s| !s[i].is_nan());
+        if !y_true[i].is_nan() && !y_pred[i].is_nan() && std_ok {
+            yt_f.push(y_true[i]);
+            yp_f.push(y_pred[i]);
+            if let (Some(s), Some(sf)) = (std_aligned, std_f.as_mut()) {
+                sf.push(s[i]);
+            }
+        }
+    }
+    let n = yt_f.len();
+    if n == 0 {
+        return Err("no observed pairs to score".to_string());
+    }
+    let (y_true, y_pred) = (&yt_f, &yp_f);
+    let std_pred = std_f.as_deref();
 
     let mut sum_abs_err = 0.0;
     let mut sum_sq_err = 0.0;
@@ -1929,12 +2023,20 @@ pub fn time_series_report(
         let s = seasonal_period.unwrap_or(1).max(1);
         if tr.len() > s {
             let mut naive_sum = 0.0;
+            let mut naive_n = 0usize;
             for t in s..tr.len() {
-                naive_sum += (tr[t] - tr[t - s]).abs();
+                if !tr[t].is_nan() && !tr[t - s].is_nan() {
+                    naive_sum += (tr[t] - tr[t - s]).abs();
+                    naive_n += 1;
+                }
             }
-            let naive_mae = naive_sum / (tr.len() - s) as f64;
-            if naive_mae > 1e-12 {
-                Some(mae / naive_mae)
+            if naive_n > 0 {
+                let naive_mae = naive_sum / naive_n as f64;
+                if naive_mae > 1e-12 {
+                    Some(mae / naive_mae)
+                } else {
+                    None
+                }
             } else {
                 None
             }
@@ -2096,13 +2198,31 @@ pub fn integrated_calibration_index(
     predicted_survival: &[f64],
     horizon: f64,
 ) -> Result<IciReport, String> {
-    let n = durations.len();
-    if n == 0 || events.len() != n || predicted_survival.len() != n {
+    let n_in = durations.len();
+    if n_in == 0 || events.len() != n_in || predicted_survival.len() != n_in {
         return Err("durations, events, and predicted_survival must have the same non-zero length".into());
     }
+    if horizon.is_nan() {
+        return Err("horizon must not be NaN".into());
+    }
+    let mut dur_f = Vec::with_capacity(n_in);
+    let mut ev_f = Vec::with_capacity(n_in);
+    let mut ps_f = Vec::with_capacity(n_in);
+    for i in 0..n_in {
+        if !durations[i].is_nan() && !events[i].is_nan() && !predicted_survival[i].is_nan() {
+            dur_f.push(durations[i]);
+            ev_f.push(events[i]);
+            ps_f.push(predicted_survival[i]);
+        }
+    }
+    let n = dur_f.len();
+    if n == 0 {
+        return Err("no evaluable observations for ICI at specified horizon".into());
+    }
+    let (durations, events, predicted_survival) = (&dur_f, &ev_f, &ps_f);
 
     let mut cens_order: Vec<usize> = (0..n).collect();
-    cens_order.sort_by(|&a, &b| durations[a].partial_cmp(&durations[b]).unwrap());
+    cens_order.sort_by(|&a, &b| durations[a].partial_cmp(&durations[b]).unwrap_or(std::cmp::Ordering::Equal));
     let mut g_vals = vec![1.0; n];
     let mut at_risk = n;
     let mut g_cur = 1.0;
@@ -2129,7 +2249,7 @@ pub fn integrated_calibration_index(
         return Err("no evaluable observations for ICI at specified horizon".into());
     }
 
-    diffs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let ici = diffs.iter().sum::<f64>() / diffs.len() as f64;
     let e50 = diffs[diffs.len() / 2];
     let e90 = diffs[((diffs.len() as f64 * 0.9).round() as usize).min(diffs.len() - 1)];

@@ -3,8 +3,7 @@
 :class:`MetricsReport` runs the ``Metrics`` methods for one task and presents
 every scalar and table they return: an overview, aligned tables and notes. It
 computes no metric itself. Missing values (None or NaN) are counted and shown,
-never imputed. Where ``Metrics`` would drop, recode or hang on a missing value,
-the report refuses the input and names the argument instead.
+never imputed; incomplete rows are dropped inside ``Metrics`` when scoring.
 """
 
 from __future__ import annotations
@@ -70,7 +69,7 @@ def _arg(
     name: str,
     value: Any,
     *,
-    allow_missing: bool = False,
+    allow_missing: bool = True,
     integral: bool = False,
 ) -> list[Any]:
     """Copy a per-row argument; None becomes NaN (the missing marker Metrics reads)."""
@@ -87,8 +86,7 @@ def _arg(
     missing = sum(1 for v in out if _missing(v))
     if missing and not allow_missing:
         raise ValueError(
-            f"{task} report: {name} has {missing} missing value(s) (None/NaN). Metrics would "
-            "drop, recode or hang on them for this task, so the report refuses; remove those rows first."
+            f"{task} report: {name} has {missing} missing value(s) (None/NaN)."
         )
     return out
 
@@ -221,7 +219,7 @@ def _group_keys(value: Any, n: int) -> tuple[list[Any], int]:
 def _prep_classification(args: dict[str, Any]) -> dict[str, Any]:
     t = "classification"
     proba_given = args["proba"] is not None
-    yt = _arg(t, "y_true", args["y_true"], allow_missing=not proba_given, integral=True)
+    yt = _arg(t, "y_true", args["y_true"], integral=True)
     if not yt:
         raise ValueError("classification report: y_true is empty")
     n = len(yt)
@@ -231,13 +229,15 @@ def _prep_classification(args: dict[str, Any]) -> dict[str, Any]:
     multi = False
     yp: list[Any] | None = None
     if args["y_pred"] is not None:
-        yp = _arg(
-            t, "y_pred", args["y_pred"], allow_missing=not proba_given, integral=True
-        )
+        yp = _arg(t, "y_pred", args["y_pred"], integral=True)
         _length("y_pred", yp, n)
     if args["proba"] is not None:
         proba, multi = _proba(args["proba"], n)
-        rows.append({"argument": "proba", "n": n, "n_missing": 0})
+        if multi:
+            proba_missing = sum(1 for r in proba if any(_missing(v) for v in r))
+        else:
+            proba_missing = sum(1 for v in proba if _missing(v))
+        rows.append({"argument": "proba", "n": n, "n_missing": proba_missing})
     if args["threshold"] is not None and not proba_given:
         raise ValueError("classification report: threshold only applies with proba")
     if proba is not None and yp is None:
@@ -248,7 +248,10 @@ def _prep_classification(args: dict[str, Any]) -> dict[str, Any]:
         threshold = 0.5 if args["threshold"] is None else args["threshold"]
         if not isinstance(threshold, numbers.Real) or not 0.0 <= threshold <= 1.0:
             raise ValueError(f"threshold must be a number in [0, 1], got {threshold!r}")
-        yp = [1 if p >= threshold else 0 for p in proba]
+        yp = [
+            math.nan if _missing(p) else (1 if p >= threshold else 0)
+            for p in proba
+        ]
         input_scalars["threshold"] = threshold
     elif args["threshold"] is not None:
         raise ValueError(
@@ -286,7 +289,7 @@ def _proba(value: Any, n: int) -> tuple[list[Any], bool]:
         raise ValueError(f"proba has {len(rows)} rows but y_true has {n}")
     if all(not _is_seq(r) for r in rows):
         probs = _arg("classification", "proba", rows)
-        if any(not 0.0 <= p <= 1.0 for p in probs):
+        if any(not _missing(p) and not 0.0 <= p <= 1.0 for p in probs):
             raise ValueError("proba values must lie in [0, 1]")
         return probs, False
     if all(_is_seq(r) for r in rows):
@@ -296,7 +299,7 @@ def _proba(value: Any, n: int) -> tuple[list[Any], bool]:
         ]
         if len({len(r) for r in mat}) != 1:
             raise ValueError("every proba row must have the same number of classes")
-        if any(not 0.0 <= p <= 1.0 for r in mat for p in r):
+        if any(not _missing(p) and not 0.0 <= p <= 1.0 for r in mat for p in r):
             raise ValueError("proba values must lie in [0, 1]")
         return mat, True
     raise TypeError(
@@ -373,7 +376,8 @@ def _prep_survival(args: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(
                 f"every surv_curves row must have one value per entry of times ({len(tm)})"
             )
-        rows.append({"argument": "surv_curves", "n": n, "n_missing": 0})
+        sc_missing = sum(1 for r in sc if any(_missing(v) for v in r))
+        rows.append({"argument": "surv_curves", "n": n, "n_missing": sc_missing})
     return {
         "durations": dur,
         "events": ev,
@@ -449,11 +453,9 @@ class MetricsReport:
     - ``uplift``: ``y_true`` (outcome), ``treatment`` (0/1), ``tau_pred``,
       optional ``threshold`` (default ``cost``) and ``cost`` (default 0.0).
 
-    Missing values (None or NaN) are never imputed or recoded. Regression and
-    label-based classification drop incomplete pairs inside ``Metrics`` and show
-    the count (``n_missing``). Other arguments with missing values are refused
-    with an error naming the argument, because ``Metrics`` would hang or give
-    wrong numbers on them.
+    Missing values (None or NaN) are never imputed or recoded. Every task counts
+    missing entries in the ``inputs`` table and scores the complete rows inside
+    ``Metrics``.
 
     Attributes:
         task: The task name, lower-cased.
@@ -661,13 +663,8 @@ class MetricsReport:
                     "multiclass probabilities are scored one-vs-rest in the table below."
                 )
         self._add("Overview", overview)
-        if any(_missing(v) for v in yt + yp):
-            self._notes.append(
-                "classification_scores (balanced accuracy, MCC, micro and weighted averages, Jaccard) "
-                "is skipped: Metrics.classification_scores does not accept missing labels."
-            )
-        else:
-            score = self._run("classification_scores", yt, yp)
+        score = self._optional("classification_scores", yt, yp)
+        if score is not None:
             self._add(
                 "Scorecard",
                 {
@@ -777,7 +774,7 @@ class MetricsReport:
     ) -> None:
         rows = []
         for k, cls in enumerate(classes):
-            ind = [float(t == cls) for t in yt]
+            ind = [math.nan if _missing(t) else float(t == cls) for t in yt]
             scores = [row[k] for row in pr]
             roc = self._optional("roc_curve", ind, scores)
             pr_c = self._optional("pr_curve", ind, scores)
@@ -856,10 +853,18 @@ class MetricsReport:
                 ),
             ],
         )
+        obs_triples = [
+            (y, w, s)
+            for y, w, s in zip(yt, tr, tau)
+            if not (_missing(y) or _missing(w) or _missing(s))
+        ]
+        yt_obs = [y for y, _, _ in obs_triples]
+        tr_obs = [w for _, w, _ in obs_triples]
+        tau_obs = [s for _, _, s in obs_triples]
         policy_rows = [
-            _policy_row("selected", yt, tr, [s > threshold for s in tau], cost),
-            _policy_row("treat_all", yt, tr, [True] * len(yt), cost),
-            _policy_row("treat_none", yt, tr, [False] * len(yt), cost),
+            _policy_row("selected", yt_obs, tr_obs, [s > threshold for s in tau_obs], cost),
+            _policy_row("treat_all", yt_obs, tr_obs, [True] * len(yt_obs), cost),
+            _policy_row("treat_none", yt_obs, tr_obs, [False] * len(yt_obs), cost),
         ]
         policy_scalars: dict[str, Any] = {"threshold": threshold}
         if cost != 0.0:
@@ -975,8 +980,13 @@ def _policy_row(
     selected: list[bool],
     cost: float,
 ) -> dict[str, Any]:
-    a = [float(y) for y, w, s in zip(y_true, treatment, selected) if s and w > 0.5]
-    b = [float(y) for y, w, s in zip(y_true, treatment, selected) if s and w <= 0.5]
+    obs = [
+        (float(y), float(w), s)
+        for y, w, s in zip(y_true, treatment, selected)
+        if not (_missing(y) or _missing(w))
+    ]
+    a = [y for y, w, s in obs if s and w > 0.5]
+    b = [y for y, w, s in obs if s and w <= 0.5]
     n_sel = len(a) + len(b)
     if n_sel == 0:
         return {
@@ -1000,7 +1010,7 @@ def _policy_row(
         }
     mean_a = sum(a) / len(a)
     mean_b = sum(b) / len(b)
-    q = n_sel / len(y_true)
+    q = n_sel / len(obs)
     value = q * (mean_a - mean_b - cost)
     ci_low: float | None = None
     ci_high: float | None = None
@@ -1027,8 +1037,13 @@ def _uplift_deciles(
     treatment: list[float],
     tau_pred: list[float],
 ) -> list[dict[str, Any]]:
-    n = len(y_true)
-    order = sorted(range(n), key=lambda i: (-float(tau_pred[i]), i))
+    valid = [
+        i
+        for i in range(len(y_true))
+        if not (_missing(y_true[i]) or _missing(treatment[i]) or _missing(tau_pred[i]))
+    ]
+    n = len(valid)
+    order = sorted(valid, key=lambda i: (-float(tau_pred[i]), i))
     k = min(10, n)
     rows: list[dict[str, Any]] = []
     for d in range(1, k + 1):
@@ -1084,12 +1099,21 @@ def uplift_threshold(
     tau = _arg("uplift", "tau_pred", tau_pred)
     _length("tau_pred", tau, len(yt))
 
-    scores = [float(s) for s in tau]
+    yt_obs: list[float] = []
+    tr_obs: list[float] = []
+    scores: list[float] = []
+    for y, w, s in zip(yt, tr, tau):
+        if not (_missing(y) or _missing(w) or _missing(s)):
+            yt_obs.append(float(y))
+            tr_obs.append(float(w))
+            scores.append(float(s))
+    if not scores:
+        raise ValueError("uplift_threshold: no observed rows")
     candidates = [min(scores) - 1.0, *sorted(set(scores))]
     best_thr = candidates[-1]
     best_val = 0.0
     for thr in candidates:
-        row = _policy_row("cand", yt, tr, [s > thr for s in scores], c)
+        row = _policy_row("cand", yt_obs, tr_obs, [s > thr for s in scores], c)
         if row["n_selected"] == 0:
             val = 0.0
         elif row["n_treated"] < min_arm or row["n_control"] < min_arm or row["value"] is None:

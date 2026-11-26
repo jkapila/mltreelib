@@ -99,7 +99,7 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 24 | Per-family summaries and `ModelTree.report()` | open (part C) |
 | 25 | `ClusterModel` and `AnomalyModel` report and summary | open (part C) |
 | 26 | Causal linear leaf; `leaf="linear"` equals `leaf="mean"` under the causal gain | open (part D) |
-| 27 | `Metrics` hangs, panics or silently recodes NaN inputs | open bug; `MetricsReport` refuses missing values outside regression and label classification until fixed |
+| 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
 
 **Open work in order:**
 1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.
