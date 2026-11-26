@@ -17,6 +17,10 @@ This file records user-visible changes. [GitHub Releases](https://github.com/jka
 - Removed the `cvx` optional dependency from the package (`tests/cvx_reference.py` is test-only); moved `pygraphviz` to the `docs` group only.
 - Scale-free `cp` cost-complexity pruning (`prune="cp", cp=0.01`), deterministic categorical gate statistics, and byte-identical model serialization (no timings stored).
 
+### Python versions and CI
+
+- Python 3.10 is dropped (`requires-python >=3.11`); CI tests 3.11 to 3.15 (3.15 may fail without blocking). Tests that need the downloaded dataset suite now skip unless that exact dataset is present (they failed on CI checkouts that only have the bundled dataset).
+
 ### Defaults and metrics
 
 - Per-family defaults: `ClusterModel`, `RuleModel` and `AnomalyModel` use `min_rows=20` (was 5, 5, 10); `AnomalyModel` uses `max_depth=10` (was unset, with a per-kind fallback). `ModelTree` is unchanged (6, 15, 0.5).
