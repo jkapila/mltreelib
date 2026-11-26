@@ -109,6 +109,18 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 32 | `id_col`: unresolved name silently ignored; `predict` after `id_col` shifts columns; undocumented | fixed (`resolve_col` raises `ValueError`; `predict` & `leaf_samples` drop remembered `id_col`/`group_col`; documented in survival & uplift guides) |
 | 33 | Unhelpful errors: 1-D NumPy X, unequal dict columns, pyarrow `y` nulls, string class labels | fixed (clear `ValueError` for 1-D X & unequal dict cols; `to_target_list` for Arrow `y` nulls; explicit `TypeError` for unencoded string labels) |
 
+### Bug register: verification pass (2026-11-26, after the boundary fixes)
+
+Gates all green on the verifier run: clippy `-D warnings`, `cargo test` (371), ruff on the package, pytest (800 passed, 4 skipped), polars/pyarrow tests, CVXPY reference tests, snippet check, nav and benchmark checks, `zensical build`. Probes for #30, #31, #32a (id_col), #32b, #33, per-family defaults and `on_missing` passed.
+
+| Issue | Sev. | Repro | Expected |
+|---|---|---|---|
+| 34 | high | `MetricsReport("competing_risks", durations=d, events=ev, cif_curves={1: c1, 2: c2}, times=[2.0, 5.0])` with one None or NaN in `d` (80 rows): the process is killed (exit 137) or panics (`user-provided comparison function does not correctly implement a total order`). Clean input works. Same class as #27. | Count and drop incomplete rows (`on_missing="drop"`) or raise (`"error"`); never hang or panic. Test with a timeout. |
+| 35 | high | `ModelTree(max_depth=2).fit(X, y, group_col="zzz", col_names=["a","b","c"])`, `group_col=7`, or `group_col="g"` without names: no error. Finishes #32a for `group_col`; check `protected_attribute` and `protected_col` too. | `ValueError` naming the column and the known names. |
+| 36 | low | (a) `load_survival_dataset("flchain")` says not cached while `flchain_rdatasets.csv` is cached; cache hits are not re-verified against the sha256. (b) polars or Arrow string column without `dtypes=` fails with no hint. (c) `leaf_samples(x_without_id, id_col=0)` without `col_names` silently uses the first feature as ids. (d) `docs/concepts/components-and-rotations.md` ~218 uses `AnomalyModel(method="pca")`, which is not exposed, so the snippet fails. (e) `docs/examples.md` lines 21 and 26 use alias names. (f) one-shot `Metrics()` left in `docs/guides/metrics-plots.md:124` and `data.md:396-398`. (g) ruff on tests, scripts and examples: 393 errors, outside the pre-commit scope. | Fix each; (d) and (e) are doc fixes; (g) needs a decision (baseline or clean-up). |
+
+Decision recorded: a `y` with nulls (pandas, pyarrow or list) warns and drops the rows (31b); it is not an error unless `y_missing="error"`.
+
 ### Bug register: model input boundary (found 2026-11-26 by the sanity pass and a Haiku probe)
 
 Severity: **high** = silent wrong answer or a documented input type that does not work; **medium** = misleading result a user could miss; **low** = unhelpful error message. Repros assume `import random; from mltreelib import ModelTree`, 200 to 300 rows, 3 or 4 numeric columns.
@@ -127,6 +139,9 @@ Severity: **high** = silent wrong answer or a documented input type that does no
 | 33d | low | Classification with string labels (`y=["a","b",...]`) raises `TypeError: y must be a list of floats`. Not yet confirmed as by design. | Decide: support string labels (keep the label map and return the labels from `predict`) or say to encode them. If by design, the message says so. |
 
 Order of work: 30, 31a, 31b, 32a, 32b (together, one boundary-validation change in the Python layer or `Table` extractor), then 32c, then 33. Each fix needs a regression test that fails before the fix; add the cases to `tests/test_sanity_basics.py`.
+| 34 | `competing_risks` killed or panics on a None/NaN duration | open, high (see verification register) |
+| 35 | `group_col` not validated (unknown name, bad index, no names) | open, high |
+| 36 | Small findings: flchain cache alias, string-dtype hint, `leaf_samples` id without names, two doc mismatches, one-shot `Metrics()` left, ruff scope | open, low |
 
 **Open work in order:**
 1. Uplift policy table (selected group, everyone, no one, each with a confidence interval) and a library helper that chooses the threshold on validation data, inside `MetricsReport`; uplift-by-decile table.
