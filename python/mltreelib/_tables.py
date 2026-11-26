@@ -34,6 +34,19 @@ def _columns(x: Any) -> tuple[list[str], list[list[Any]]] | None:
     return None
 
 
+def to_target_list(y: Any) -> list[Any]:
+    """Convert a 1-D sequence, NumPy array, Polars Series, or Arrow Array to Python scalars."""
+    if callable(getattr(y, "to_pylist", None)):
+        return [_cell(v) for v in y.to_pylist()]
+    if callable(getattr(y, "to_list", None)):
+        return [_cell(v) for v in y.to_list()]
+    if callable(getattr(y, "tolist", None)):
+        vals = y.tolist()
+        if isinstance(vals, list):
+            return [_cell(v) for v in vals]
+    return [_cell(v) for v in y]
+
+
 def to_rows(x: Any) -> tuple[list[list[Any]], list[str] | None]:
     """Return ``(rows, column_names)``; names are ``None`` when the input has none."""
     predict_args = getattr(x, "predict_args", None)
@@ -41,12 +54,21 @@ def to_rows(x: Any) -> tuple[list[list[Any]], list[str] | None]:
         args = predict_args()
         return args["x"], args.get("col_names")
     if isinstance(x, (list, tuple)):  # already rows: no copy, no scan
+        if x and not isinstance(x[0], (list, tuple)):
+            raise ValueError("X must be 2-D (rows, columns); got a 1-D sequence.")
         return x, None  # type: ignore[return-value]
     cols = _columns(x)
     if cols is None and callable(getattr(x, "tolist", None)):  # NumPy array
+        if getattr(x, "ndim", None) == 1:
+            raise ValueError(
+                "X must be 2-D (rows, columns); got a 1-D array. Use X.reshape(-1, 1) for one feature."
+            )
         return x.tolist(), None
     if cols is not None:
         names, data = cols
+        lengths = {n: len(col) for n, col in zip(names, data)}
+        if len(set(lengths.values())) > 1:
+            raise ValueError(f"all columns must have the same length; got {lengths}")
         n = len(data[0]) if data else 0
         return [[_cell(c[i]) for c in data] for i in range(n)], names
     return [[_cell(v) for v in row] for row in x], None

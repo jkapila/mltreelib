@@ -139,3 +139,91 @@ def test_nan_in_metrics_is_dropped_and_reported(task, y_true, y_pred):
 def test_on_missing_error_raises(task, y_true, y_pred):
     with pytest.raises(ValueError, match="on_missing"):
         MetricsReport(task, y_true=y_true, y_pred=y_pred, on_missing="error")
+
+
+def test_polars_and_pyarrow_table_inputs():  # issue #30
+    pa = pytest.importorskip("pyarrow")
+    d = _data()
+    tbl = pa.table({"a": d["a"], "b": d["b"]})
+    m = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+    m.fit(tbl, d["regression"])
+    preds = m.predict(tbl)
+    assert len(preds) == N and _finite(preds)
+
+    pl = pytest.importorskip("polars")
+    df = pl.DataFrame({"a": d["a"], "b": d["b"]})
+    m_pl = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+    m_pl.fit(df, d["regression"])
+    assert m_pl.predict(df) == preds
+
+
+def test_predict_column_count_check():  # issue #31a
+    d = _data()
+    m = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+    m.fit({"a": d["a"], "b": d["b"]}, d["regression"])
+    with pytest.warns(UserWarning, match="missing"):
+        p_few = m.predict([[row[0]] for row in d["x"]])
+    assert len(p_few) == N
+    with pytest.raises(ValueError, match="missing"):
+        m.predict([[row[0]] for row in d["x"]], on_missing_columns="error")
+    with pytest.raises(ValueError, match="expected 2"):
+        m.predict([[row[0], row[1], 0.0] for row in d["x"]])
+
+
+def test_fit_missing_y_warns_or_errors():  # issue #31b
+    d = _data()
+    y_na = [None] + d["regression"][1:]
+    with pytest.warns(UserWarning, match="missing values"):
+        m = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+        m.fit(d["x"], y_na)
+    assert len(m.predict(d["x"])) == N
+    with pytest.raises(ValueError, match="missing values"):
+        ModelTree(leaf="mean", max_depth=3, min_rows=10).fit(d["x"], y_na, y_missing="error")
+
+
+def test_id_col_resolution_and_predict_layout():  # issue #32a, #32b
+    d = _data()
+    x_with_id = [[float(i), row[0], row[1]] for i, row in enumerate(d["x"])]
+    with pytest.raises(ValueError, match="id_col"):
+        ModelTree(max_depth=3, min_rows=10).fit(x_with_id, d["regression"], id_col="id")
+    with pytest.raises(ValueError, match="id_col"):
+        ModelTree(max_depth=3, min_rows=10).fit(
+            x_with_id, d["regression"], id_col="nope", col_names=["id", "a", "b"]
+        )
+    m = ModelTree(leaf="mean", max_depth=3, min_rows=10)
+    m.fit(x_with_id, d["regression"], id_col=0, col_names=["id", "a", "b"])
+    assert m.predict(x_with_id) == m.predict(d["x"])
+
+
+def test_input_boundary_error_messages():  # issue #33a-d
+    np = pytest.importorskip("numpy")
+    d = _data()
+    m = ModelTree(max_depth=3, min_rows=10)
+    with pytest.raises(ValueError, match="2-D"):
+        m.fit(np.array([1.0, 2.0, 3.0]), [1.0, 2.0, 3.0])
+    with pytest.raises(ValueError, match="same length"):
+        m.fit({"a": [1.0, 2.0, 3.0], "b": [1.0, 2.0]}, [1.0, 2.0, 3.0])
+    pa = pytest.importorskip("pyarrow")
+    y_pa = pa.array([None] + d["regression"][1:])
+    with pytest.warns(UserWarning, match="missing values"):
+        m.fit(d["x"], y_pa)
+    with pytest.raises(TypeError, match="encode labels"):
+        ModelTree(gain="gini", max_depth=3, min_rows=10).fit(d["x"], ["a", "b"] * (N // 2))
+
+
+def test_metrics_report_competing_risks():
+    dur = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    ev = [1, 0, 2, 1, 0, 2]
+    times = [2.0, 4.0]
+    cif1 = [[0.2, 0.4], [0.1, 0.2], [0.1, 0.3], [0.3, 0.5], [0.1, 0.2], [0.2, 0.3]]
+    cif2 = [[0.1, 0.2], [0.1, 0.2], [0.3, 0.5], [0.1, 0.2], [0.1, 0.2], [0.4, 0.6]]
+    rep = MetricsReport(
+        "competing_risks",
+        durations=dur,
+        events=ev,
+        cif_curves={1: cif1, 2: cif2},
+        times=times,
+    )
+    assert rep["causes"] == 2
+    assert rep["cause_1_ibs"] >= 0.0
+    assert "per_cause" in rep.tables

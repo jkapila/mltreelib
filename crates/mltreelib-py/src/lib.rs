@@ -22,8 +22,10 @@ impl<'a, 'py> FromPyObject<'a, 'py> for Table<'py> {
     type Error = PyErr;
 
     fn extract(obj: Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
-        if let Ok(rows) = obj.extract::<Vec<Vec<Option<Bound<'py, PyAny>>>>>() {
-            return Ok(Table { rows, names: None });
+        if obj.is_instance_of::<PyList>() || obj.is_instance_of::<PyTuple>() {
+            if let Ok(rows) = obj.extract::<Vec<Vec<Option<Bound<'py, PyAny>>>>>() {
+                return Ok(Table { rows, names: None });
+            }
         }
         let py = obj.py();
         let out = py
@@ -3738,6 +3740,8 @@ pub struct PyModelTree {
     /// columns whose values were already numeric level codes.
     vocabs: Vec<Option<std::collections::HashMap<String, f64>>>,
     interaction_group_names: Option<Vec<Vec<String>>>,
+    dropped_indices: Vec<usize>,
+    dropped_names: Vec<String>,
 }
 
 impl PyModelTree {
@@ -3758,6 +3762,8 @@ impl PyModelTree {
             inner: Some(tree),
             vocabs,
             interaction_group_names: None,
+            dropped_indices: Vec::new(),
+            dropped_names: Vec::new(),
         }
     }
 }
@@ -4520,6 +4526,8 @@ impl PyModelTree {
             inner: None,
             vocabs: Vec::new(),
             interaction_group_names: ig_names,
+            dropped_indices: Vec::new(),
+            dropped_names: Vec::new(),
         })
     }
 
@@ -4539,7 +4547,7 @@ impl PyModelTree {
     ///        partitions levels, no encoding).
     ///
     /// Returns: nothing; the fitted tree replaces the inner model.
-    #[pyo3(signature = (x, y = None, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None))]
+    #[pyo3(signature = (x, y = None, w = None, dtypes = None, control = None, id_col = None, group_col = None, col_names = None, event = None, treatment = None, n_classes = None, sample_weight = None, row_weights = None, col_weights = None, feature_weights = None, train_groups = None, train_ids = None, fairness_penalty = None, protected_col = None, protected_attribute = None, fairness_metric = None, sporf_d = None, sporf_projections = None, extratrees = None, ebm_fast = None, y_missing = "warn"))]
     fn fit(
         &mut self,
         x: Bound<'_, PyAny>,
@@ -4567,7 +4575,13 @@ impl PyModelTree {
         sporf_projections: Option<usize>,
         extratrees: Option<bool>,
         ebm_fast: Option<bool>,
+        y_missing: &str,
     ) -> PyResult<()> {
+        if !matches!(y_missing, "warn" | "error") {
+            return Err(PyValueError::new_err(format!(
+                "y_missing must be 'warn' or 'error', got {y_missing:?}"
+            )));
+        }
         // A Dataset (any object with `fit_args()`) supplies x, y, names, dtypes and roles.
         let x_obj = x;
         let mut y = y;
@@ -4663,43 +4677,71 @@ impl PyModelTree {
             }
         }
 
+        let n_raw_cols = x.first().map(|r| r.len()).unwrap_or(0);
         let mut drop_indices = std::collections::HashSet::new();
-        let resolve_col = |spec: &Bound<'_, PyAny>, names: Option<&[String]>| -> Option<usize> {
+        let resolve_col = |role: &str, spec: &Bound<'_, PyAny>, names: Option<&[String]>| -> PyResult<usize> {
             if let Ok(idx) = spec.extract::<usize>() {
-                Some(idx)
+                if idx < n_raw_cols {
+                    Ok(idx)
+                } else {
+                    Err(PyValueError::new_err(format!(
+                        "{role} index {idx} out of range for {n_raw_cols} columns"
+                    )))
+                }
             } else if let Ok(name) = spec.extract::<String>() {
-                names.and_then(|ns| ns.iter().position(|n| n == &name))
+                match names {
+                    Some(ns) => ns
+                        .iter()
+                        .position(|n| n == &name)
+                        .ok_or_else(|| {
+                            PyValueError::new_err(format!(
+                                "{role} '{name}' not found in columns: {ns:?}"
+                            ))
+                        }),
+                    None => Err(PyValueError::new_err(format!(
+                        "{role} '{name}' cannot be resolved without col_names"
+                    ))),
+                }
             } else {
-                None
+                Err(PyValueError::new_err(format!(
+                    "{role} must be a column name or integer index"
+                )))
             }
         };
 
         if self.params.protected_col.is_none() {
             if let Some(ref pa) = protected_attribute {
-                if let Some(idx) = resolve_col(pa, col_names.as_deref()) {
-                    self.params.protected_col = Some(idx);
-                }
+                let idx = resolve_col("protected_attribute", pa, col_names.as_deref())?;
+                self.params.protected_col = Some(idx);
             }
         }
 
         if !self.params.train_ids {
             if let Some(ref id_spec) = id_col {
-                if let Some(idx) = resolve_col(id_spec, col_names.as_deref()) {
-                    drop_indices.insert(idx);
-                }
+                let idx = resolve_col("id_col", id_spec, col_names.as_deref())?;
+                drop_indices.insert(idx);
             }
         }
         if !self.params.train_groups {
             if let Some(ref grp_spec) = group_col {
-                if let Some(idx) = resolve_col(grp_spec, col_names.as_deref()) {
-                    drop_indices.insert(idx);
-                }
+                let idx = resolve_col("group_col", grp_spec, col_names.as_deref())?;
+                drop_indices.insert(idx);
             }
         }
 
+        self.dropped_indices.clear();
+        self.dropped_names.clear();
         if !drop_indices.is_empty() {
-            let n_cols = x.first().map(|r| r.len()).unwrap_or(0);
-            let keep_indices: Vec<usize> = (0..n_cols).filter(|i| !drop_indices.contains(i)).collect();
+            let mut sorted_drops: Vec<usize> = drop_indices.iter().copied().collect();
+            sorted_drops.sort_unstable();
+            self.dropped_indices = sorted_drops.clone();
+            if let Some(ref names) = col_names {
+                self.dropped_names = sorted_drops
+                    .iter()
+                    .filter_map(|&i| names.get(i).cloned())
+                    .collect();
+            }
+            let keep_indices: Vec<usize> = (0..n_raw_cols).filter(|i| !drop_indices.contains(i)).collect();
             x = x.into_iter()
                 .map(|row| keep_indices.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
                 .collect();
@@ -4746,10 +4788,47 @@ impl PyModelTree {
             } else if let Ok(single) = y.extract::<Vec<Option<f64>>>() {
                 (single, None)
             } else {
-                return Err(PyTypeError::new_err(
-                    "y must be a list of floats, a 2D list of vector targets, or a 2-tuple (values, aux)",
-                ));
+                let py = y.py();
+                let converted = py
+                    .import("mltreelib._tables")?
+                    .getattr("to_target_list")?
+                    .call1((y.clone(),));
+                if let Ok(list_obj) = converted {
+                    if let Ok(single) = list_obj.extract::<Vec<Option<f64>>>() {
+                        (single, None)
+                    } else {
+                        return Err(PyTypeError::new_err(
+                            "y must be numeric (floats/ints, or 2-tuple (values, aux)); string class labels are not auto-encoded — encode labels to integers before calling fit()",
+                        ));
+                    }
+                } else {
+                    return Err(PyTypeError::new_err(
+                        "y must be numeric (floats/ints, a 2D list of vector targets, or a 2-tuple (values, aux))",
+                    ));
+                }
             };
+        let n_missing_y = y_vec
+            .iter()
+            .filter(|v| v.is_none_or(|val| !val.is_finite()))
+            .count();
+        if n_missing_y > 0 {
+            if y_missing == "error" {
+                return Err(PyValueError::new_err(format!(
+                    "y contains {n_missing_y} missing values (y_missing='error')"
+                )));
+            }
+            let py = y.py();
+            let warnings = py.import("warnings")?;
+            let user_warning = py.import("builtins")?.getattr("UserWarning")?;
+            warnings.call_method1(
+                "warn",
+                (
+                    format!("y contains {n_missing_y} missing values; those rows are dropped from training."),
+                    user_warning,
+                    2usize,
+                ),
+            )?;
+        }
 
         if let Some(aux) = aux_vec {
             if matches!(self.params.gain, GainFn::Causal) || self.params.treatments.is_some() {
@@ -5088,7 +5167,7 @@ impl PyModelTree {
     ///   kind="leaf_id": integer leaf ID per row.
     #[pyo3(signature = (
         x, kind = "response", times = None, neighbors = None, cause = None,
-        *, coverage = None, alpha = None, threshold = 0.5
+        *, coverage = None, alpha = None, threshold = 0.5, on_missing_columns = "warn"
     ))]
     fn predict<'py>(
         &mut self,
@@ -5101,9 +5180,75 @@ impl PyModelTree {
         coverage: Option<f64>,
         alpha: Option<f64>,
         threshold: f64,
+        on_missing_columns: &str,
     ) -> PyResult<Py<PyAny>> {
-        let (x, _table_names) = (x.rows, x.names);
-        let x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
+        if !matches!(on_missing_columns, "warn" | "error" | "allow") {
+            return Err(PyValueError::new_err(format!(
+                "on_missing_columns must be 'warn', 'error', or 'allow', got {on_missing_columns:?}"
+            )));
+        }
+        let expected_names = self.tree()?.col_names.clone();
+        let expected_cols = expected_names.len();
+        let (mut rows, table_names) = (x.rows, x.names);
+        if !rows.is_empty() && !self.dropped_indices.is_empty() {
+            let actual_cols = rows[0].len();
+            if actual_cols == expected_cols + self.dropped_indices.len() {
+                let drop_set: std::collections::HashSet<usize> = if let Some(ref tnames) = table_names {
+                    let named_drops: std::collections::HashSet<usize> = tnames
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, n)| self.dropped_names.contains(n))
+                        .map(|(i, _)| i)
+                        .collect();
+                    if named_drops.len() == self.dropped_indices.len() {
+                        named_drops
+                    } else {
+                        self.dropped_indices.iter().copied().collect()
+                    }
+                } else {
+                    self.dropped_indices.iter().copied().collect()
+                };
+                let keep: Vec<usize> = (0..actual_cols).filter(|i| !drop_set.contains(i)).collect();
+                rows = rows
+                    .into_iter()
+                    .map(|row| keep.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
+                    .collect();
+            }
+        }
+        if !rows.is_empty() && expected_cols > 0 {
+            let actual_cols = rows[0].len();
+            if actual_cols > expected_cols {
+                return Err(PyValueError::new_err(format!(
+                    "predict() got {actual_cols} columns, expected {expected_cols}"
+                )));
+            }
+            if actual_cols < expected_cols {
+                let missing_names: Vec<String> = if let Some(ref tnames) = table_names {
+                    expected_names
+                        .iter()
+                        .filter(|n| !tnames.contains(n))
+                        .cloned()
+                        .collect()
+                } else {
+                    expected_names[actual_cols..].to_vec()
+                };
+                let msg = format!(
+                    "predict() got {actual_cols} columns, expected {expected_cols} (missing: {missing_names:?}); missing columns are treated as NaN so predictions may be inaccurate."
+                );
+                if on_missing_columns == "error" {
+                    return Err(PyValueError::new_err(msg));
+                }
+                if on_missing_columns == "warn" {
+                    let warnings = py.import("warnings")?;
+                    let user_warning = py.import("builtins")?.getattr("UserWarning")?;
+                    warnings.call_method1("warn", (msg, user_warning, 2usize))?;
+                }
+                for row in &mut rows {
+                    row.resize(expected_cols, None);
+                }
+            }
+        }
+        let x = coerce_rows(rows, &self.params.dtypes, &mut self.vocabs, false)?;
         let t = self.tree()?;
         match kind.unwrap_or("response") {
             "response" => {
@@ -5343,8 +5488,7 @@ impl PyModelTree {
         py: Python<'py>,
         x: Table<'_>,
     ) -> PyResult<Py<PyAny>> {
-        let (x, _table_names) = (x.rows, x.names);
-        self.predict(py, Table { rows: x, names: None }, Some("proba"), None, None, None, None, None, 0.5)
+        self.predict(py, x, Some("proba"), None, None, None, None, None, 0.5, "warn")
     }
 
     /// Hard binary class labels (0 or 1), one label per input row.
@@ -5626,21 +5770,25 @@ impl PyModelTree {
         id_col: Option<Bound<'_, PyAny>>,
         col_names: Option<Vec<String>>,
     ) -> PyResult<Py<PyAny>> {
-        let (x, _table_names) = (x.rows, x.names);
+        let (mut x, table_names) = (x.rows, x.names);
+        let mut effective_col_names = col_names.or(table_names);
         let t = self.inner.as_ref().ok_or_else(|| PyValueError::new_err("ModelTree is not fitted"))?;
         let n_rows = x.len();
+        let expected_cols = t.col_names.len();
 
+        let mut drop_id_idx: Option<usize> = None;
         let ids: Option<Vec<Py<PyAny>>> = match id_col {
             None => None,
             Some(id_obj) => {
                 if let Ok(name) = id_obj.extract::<String>() {
-                    let col_idx = match &col_names {
+                    let col_idx = match &effective_col_names {
                         Some(names) => names.iter().position(|c| c == &name),
                         None => t.col_names.iter().position(|c| c == &name),
                     };
                     let idx = col_idx.ok_or_else(|| {
                         PyValueError::new_err(format!("id_col '{name}' not found in columns"))
                     })?;
+                    drop_id_idx = Some(idx);
                     let mut extracted = Vec::with_capacity(n_rows);
                     for row in &x {
                         let id_val = row
@@ -5652,6 +5800,7 @@ impl PyModelTree {
                     }
                     Some(extracted)
                 } else if let Ok(idx) = id_obj.extract::<usize>() {
+                    drop_id_idx = Some(idx);
                     let mut extracted = Vec::with_capacity(n_rows);
                     for row in &x {
                         let id_val = row
@@ -5679,10 +5828,28 @@ impl PyModelTree {
             }
         };
 
+        if !x.is_empty() && x[0].len() > expected_cols {
+            let mut drop_set: std::collections::HashSet<usize> = self.dropped_indices.iter().copied().collect();
+            if let Some(idx) = drop_id_idx {
+                drop_set.insert(idx);
+            }
+            if !drop_set.is_empty() {
+                let n_raw = x[0].len();
+                let keep: Vec<usize> = (0..n_raw).filter(|i| !drop_set.contains(i)).collect();
+                x = x
+                    .into_iter()
+                    .map(|row| keep.iter().map(|&i| row.get(i).cloned().unwrap_or(None)).collect())
+                    .collect();
+                if let Some(names) = effective_col_names.take() {
+                    effective_col_names = Some(keep.iter().filter_map(|&i| names.get(i).cloned()).collect());
+                }
+            }
+        }
+
         let coerced_x = coerce_rows(x, &self.params.dtypes, &mut self.vocabs, false)?;
         let dict = PyDict::new(py);
 
-        let sample_map = match col_names {
+        let sample_map = match effective_col_names {
             Some(names) => {
                 let mut col_map = vec![usize::MAX; t.col_names.len()];
                 for (j, col_name) in t.col_names.iter().enumerate() {

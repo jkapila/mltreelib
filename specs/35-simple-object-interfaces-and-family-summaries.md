@@ -104,10 +104,10 @@ Tracked on GitHub. Branch: `spec-33-34/api-consistency-and-data-suite`.
 | 27 | `Metrics` hangs, panics or silently recodes NaN inputs | fixed (all `Metrics` functions drop incomplete rows cleanly without hanging/panicking/recoding; `MetricsReport` refusals removed) |
 | 28 | `scripts/docs/gen_api_doc.py` renames `ClusterModel` to `ClusterTree` in the generated API pages | fixed (removed `ClusterTree`/`AnomalyTree` from `gen_api_doc.py` + `models`/`cluster`/`anomaly` return annotations; added `tests/test_api_docs.py` and regenerated `docs/reference/api/`) |
 | 29 | Sanity pass: umbrella-class defaults differed; `MetricsReport` had no strict missing-value mode | fixed in `1bb4ae7`: per-family defaults (see Decisions), `on_missing="drop" \| "error"`; `tests/test_sanity_basics.py` added |
-| 30 | polars `DataFrame` and pyarrow `Table` rejected as X | open, high (see register) |
-| 31 | `predict` column count not checked against `fit`; `y` with None/NaN dropped silently | open, high (see register) |
-| 32 | `id_col`: unresolved name silently ignored; `predict` after `id_col` shifts columns; undocumented | open, high (see register) |
-| 33 | Unhelpful errors: 1-D NumPy X, unequal dict columns, pyarrow `y` nulls, string class labels | open, low (see register) |
+| 30 | polars `DataFrame` and pyarrow `Table` rejected as X | fixed (`Table::extract` routes non-list/tuple objects through `to_rows`) |
+| 31 | `predict` column count not checked against `fit`; `y` with None/NaN dropped silently | fixed (`on_missing_columns="warn"\|"error"\|"allow"` on `predict`; `y_missing="warn"\|"error"` on `fit`) |
+| 32 | `id_col`: unresolved name silently ignored; `predict` after `id_col` shifts columns; undocumented | fixed (`resolve_col` raises `ValueError`; `predict` & `leaf_samples` drop remembered `id_col`/`group_col`; documented in survival & uplift guides) |
+| 33 | Unhelpful errors: 1-D NumPy X, unequal dict columns, pyarrow `y` nulls, string class labels | fixed (clear `ValueError` for 1-D X & unequal dict cols; `to_target_list` for Arrow `y` nulls; explicit `TypeError` for unencoded string labels) |
 
 ### Bug register: model input boundary (found 2026-11-26 by the sanity pass and a Haiku probe)
 
