@@ -375,6 +375,35 @@ tree.fit(X, (durations, events))
 Executable research script:
 - [`examples/guides/survival_causal_survival_honest.py`](https://github.com/jkapila/mltreelib/blob/main/examples/guides/survival_causal_survival_honest.py)
 
+---
+
+### 6. Customer IDs, Group Columns, and Leaf Membership
+
+Pass `id_col` or `group_col` to `fit` (or set `group=` on `Dataset` for grouped splits) so identifiers are excluded from splitting (`train_ids=False`, `train_groups=False` by default). After fitting, `tree.leaf_samples(x, id_col=...)` maps each terminal leaf back to the customer IDs assigned to it.
+
+<!-- run -->
+```python
+from mltreelib import ModelTree
+
+rows = [
+    ["c1", 25.0, 1.0], ["c2", 30.0, 0.0], ["c3", 45.0, 1.0], ["c4", 50.0, 0.0],
+    ["c5", 22.0, 1.0], ["c6", 28.0, 0.0], ["c7", 48.0, 1.0], ["c8", 55.0, 0.0],
+]
+y = [12.0, 10.0, 20.0, 11.0, 11.5, 9.5, 21.0, 10.5]
+arm = [1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0]
+
+tree = ModelTree(gain="causal", max_depth=2, min_rows=3)
+tree.fit(rows, (y, arm), id_col="customer_id", col_names=["customer_id", "age", "active"])
+print("Split columns:", [s["col"] for s in tree.splits()])
+print("Leaf samples:", tree.leaf_samples(rows, id_col="customer_id", col_names=["customer_id", "age", "active"]))
+```
+
+<!-- output -->
+```text
+Split columns: ['age']
+Leaf samples: {0: ['c1', 'c2', 'c5', 'c6'], 1: ['c3', 'c4', 'c7', 'c8']}
+```
+
 ## Next steps and references
 
 [Athey and Imbens (2016)](https://www.pnas.org/doi/10.1073/pnas.1510489113)

@@ -450,7 +450,8 @@ def test_task_name_is_case_insensitive():
 
 def test_unknown_task_lists_valid_tasks():
     with pytest.raises(
-        ValueError, match="regression, classification, time_series, survival, uplift"
+        ValueError,
+        match="regression, classification, time_series, survival, competing_risks, uplift",
     ):
         MetricsReport("ranking", y_true=[1.0], y_pred=[1.0])
 

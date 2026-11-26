@@ -189,10 +189,10 @@ When subjects can experience mutually exclusive event causes (e.g. disease relap
 - **Split Criterion**: Gray's subdistribution log-rank test (`gain="gray", target_cause=j`) maintaining subjects who experienced competing events in the risk set.
 - **Leaf Estimators**: Aalen-Johansen multi-state estimator guaranteeing the probability simplex identity: $\sum_{c=1}^J \hat{F}_c(t) + \hat{S}(t) = 1.0$.
 - **Unified Prediction API**: `tree.predict(X, kind="cif", times=times, cause=1)` and `tree.predict(X, kind="risk")`.
-- **Validation**: `Metrics().competing_risks(...)` computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier score matrices.
+- **Validation**: `MetricsReport("competing_risks", ...)` computing cause-specific Harrell's C, Uno's IPCW C-index, and time-dependent Brier scores.
 
 ```python
-from mltreelib import ModelTree, Metrics
+from mltreelib import MetricsReport, ModelTree
 
 # Events: 0 = censored, 1 = relapse (primary), 2 = toxicity (competing)
 tree = ModelTree(max_depth=3, min_rows=25, gain="gray", target_cause=1)
@@ -202,19 +202,43 @@ tree.fit(X_train, (durations_train, events_train))
 times = [2.0, 5.0, 10.0, 20.0]
 cif_cause1 = tree.predict(X_test, kind="cif", times=times, cause=1)
 cif_cause2 = tree.predict(X_test, kind="cif", times=times, cause=2)
-surv = tree.predict(X_test, kind="survival", times=times)
 
 # Compute full IPCW competing risks performance report
-metrics = Metrics()
-report = metrics.competing_risks(
+rep = MetricsReport(
+    "competing_risks",
     durations=durations_test,
     events=events_test,
     cif_curves={1: cif_cause1, 2: cif_cause2},
     times=times,
 )
-print("Cause 1 Harrell C:", report["cause_c_indices"][1])
-print("Cause 1 Uno IPCW C:", report["cause_uno_c_indices"][1])
-print("Cause 1 IBS:", report["cause_ibs"][1])
+print(rep)
+```
+
+## Subject IDs and grouped observations
+
+When a clinical dataset carries a subject identifier or clinic group (`id_col` or `group_col`), pass it to `fit` so the tree never splits on an identifier (`train_ids=False`, `train_groups=False` by default). You can still pass the full table to `leaf_samples(x, id_col=...)` to list which subjects fall into each leaf, or set `train_ids=True` / `train_groups=True` only when you intend the model to split on them.
+
+<!-- run -->
+```python
+from mltreelib import ModelTree
+
+rows = [
+    ["p1", 62.0, 1.2], ["p2", 55.0, 0.8], ["p3", 71.0, 2.1], ["p4", 49.0, 0.7],
+    ["p5", 66.0, 1.6], ["p6", 58.0, 1.0], ["p7", 74.0, 2.4], ["p8", 52.0, 0.9],
+]
+durations = [120.0, 310.0, 80.0, 400.0, 150.0, 290.0, 60.0, 350.0]
+events = [1, 0, 1, 0, 1, 0, 1, 0]
+
+tree = ModelTree(gain="logrank", max_depth=2, min_rows=3)
+tree.fit(rows, (durations, events), id_col="patient_id", col_names=["patient_id", "age", "biomarker"])
+print("Split columns:", [s["col"] for s in tree.splits()])
+print("Leaf samples:", tree.leaf_samples(rows, id_col="patient_id", col_names=["patient_id", "age", "biomarker"]))
+```
+
+<!-- output -->
+```text
+Split columns: ['age']
+Leaf samples: {0: ['p2', 'p4', 'p6', 'p8'], 1: ['p1', 'p3', 'p5', 'p7']}
 ```
 
 ## Next steps and references

@@ -18,7 +18,7 @@ from mltreelib._core import Metrics as _Metrics
 
 __all__ = ["MetricsReport", "metrics_report", "uplift_threshold"]
 
-_TASKS = ("regression", "classification", "time_series", "survival", "uplift")
+_TASKS = ("regression", "classification", "time_series", "survival", "competing_risks", "uplift")
 
 # Keyword arguments accepted per task.
 _ARGS: dict[str, tuple[str, ...]] = {
@@ -26,6 +26,7 @@ _ARGS: dict[str, tuple[str, ...]] = {
     "classification": ("y_true", "y_pred", "proba", "groups", "threshold"),
     "time_series": ("y_true", "y_pred", "y_train", "seasonal_period", "std_pred"),
     "survival": ("durations", "events", "risk", "surv_curves", "times"),
+    "competing_risks": ("durations", "events", "cif_curves", "risk_scores", "times"),
     "uplift": ("y_true", "treatment", "tau_pred", "threshold", "cost"),
 }
 _REQUIRED: dict[str, tuple[str, ...]] = {
@@ -33,6 +34,7 @@ _REQUIRED: dict[str, tuple[str, ...]] = {
     "classification": ("y_true",),
     "time_series": ("y_true", "y_pred"),
     "survival": ("durations", "events", "risk"),
+    "competing_risks": ("durations", "events", "cif_curves", "times"),
     "uplift": ("y_true", "treatment", "tau_pred"),
 }
 # Columns that print as whole numbers.
@@ -171,6 +173,8 @@ def _prepare(task: str, args: dict[str, Any]) -> dict[str, Any]:
         return _prep_time_series(args)
     if task == "survival":
         return _prep_survival(args)
+    if task == "competing_risks":
+        return _prep_competing_risks(args)
     return _prep_uplift(args)
 
 
@@ -206,6 +210,57 @@ def _prep_regression(args: dict[str, Any]) -> dict[str, Any]:
         "groups": groups,
         "input_rows": rows,
         "input_scalars": {},
+    }
+
+
+def _prep_competing_risks(args: dict[str, Any]) -> dict[str, Any]:
+    t = "competing_risks"
+    dur = _arg(t, "durations", args["durations"])
+    if not dur:
+        raise ValueError("competing_risks report: durations is empty")
+    n = len(dur)
+    ev = _arg(t, "events", args["events"], integral=True)
+    _length("events", ev, n, "durations")
+    tm = _arg(t, "times", args["times"])
+    if not tm:
+        raise ValueError("competing_risks report: times is empty")
+    raw_cifs = args["cif_curves"]
+    if not isinstance(raw_cifs, Mapping) or not raw_cifs:
+        raise TypeError("competing_risks report: cif_curves must be a non-empty {cause: curves} mapping")
+    cif_curves: dict[int, list[list[Any]]] = {}
+    for cause, curves in raw_cifs.items():
+        c_int = int(cause)
+        rows_c = _as_list(f"cif_curves[{cause}]", curves)
+        _length(f"cif_curves[{cause}]", rows_c, n, "durations")
+        parsed = [_arg(t, f"cif_curves[{cause}] row {i}", r) for i, r in enumerate(rows_c)]
+        if any(len(r) != len(tm) for r in parsed):
+            raise ValueError(
+                f"every cif_curves[{cause}] row must have one value per entry of times ({len(tm)})"
+            )
+        cif_curves[c_int] = parsed
+    risk_scores: dict[int, list[Any]] | None = None
+    if args["risk_scores"] is not None:
+        raw_risk = args["risk_scores"]
+        if not isinstance(raw_risk, Mapping):
+            raise TypeError("competing_risks report: risk_scores must be a {cause: scores} mapping")
+        risk_scores = {}
+        for cause, scores in raw_risk.items():
+            s_list = _arg(t, f"risk_scores[{cause}]", scores)
+            _length(f"risk_scores[{cause}]", s_list, n, "durations")
+            risk_scores[int(cause)] = s_list
+    rows = [
+        _input_row("durations", dur),
+        _input_row("events", ev),
+        _input_row("times", tm),
+    ]
+    return {
+        "durations": dur,
+        "events": ev,
+        "cif_curves": cif_curves,
+        "risk_scores": risk_scores,
+        "times": tm,
+        "input_rows": rows,
+        "input_scalars": {"causes": len(cif_curves)},
     }
 
 
@@ -386,6 +441,57 @@ def _prep_survival(args: dict[str, Any]) -> dict[str, Any]:
         "times": tm,
         "input_rows": rows,
         "input_scalars": {},
+    }
+
+
+def _prep_competing_risks(args: dict[str, Any]) -> dict[str, Any]:
+    t = "competing_risks"
+    dur = _arg(t, "durations", args["durations"])
+    if not dur:
+        raise ValueError("competing_risks report: durations is empty")
+    n = len(dur)
+    ev = _arg(t, "events", args["events"], integral=True)
+    _length("events", ev, n, "durations")
+    tm = _arg(t, "times", args["times"])
+    if not tm:
+        raise ValueError("competing_risks report: times is empty")
+    raw_cifs = args["cif_curves"]
+    if not isinstance(raw_cifs, Mapping) or not raw_cifs:
+        raise TypeError("competing_risks report: cif_curves must be a non-empty {cause: curves} mapping")
+    cif_curves: dict[int, list[list[Any]]] = {}
+    for cause, curves in raw_cifs.items():
+        c_int = int(cause)
+        rows_c = _as_list(f"cif_curves[{cause}]", curves)
+        _length(f"cif_curves[{cause}]", rows_c, n, "durations")
+        parsed = [_arg(t, f"cif_curves[{cause}] row {i}", r) for i, r in enumerate(rows_c)]
+        if any(len(r) != len(tm) for r in parsed):
+            raise ValueError(
+                f"every cif_curves[{cause}] row must have one value per entry of times ({len(tm)})"
+            )
+        cif_curves[c_int] = parsed
+    risk_scores: dict[int, list[Any]] | None = None
+    if args["risk_scores"] is not None:
+        raw_risk = args["risk_scores"]
+        if not isinstance(raw_risk, Mapping):
+            raise TypeError("competing_risks report: risk_scores must be a {cause: scores} mapping")
+        risk_scores = {}
+        for cause, scores in raw_risk.items():
+            s_list = _arg(t, f"risk_scores[{cause}]", scores)
+            _length(f"risk_scores[{cause}]", s_list, n, "durations")
+            risk_scores[int(cause)] = s_list
+    rows = [
+        _input_row("durations", dur),
+        _input_row("events", ev),
+        _input_row("times", tm),
+    ]
+    return {
+        "durations": dur,
+        "events": ev,
+        "cif_curves": cif_curves,
+        "risk_scores": risk_scores,
+        "times": tm,
+        "input_rows": rows,
+        "input_scalars": {"causes": len(cif_curves)},
     }
 
 
@@ -847,6 +953,53 @@ class MetricsReport:
             if "brier_at_horizons" in r
             else [],
         )
+
+    def _build_competing_risks(self, c: dict[str, Any]) -> None:
+        r = self._run(
+            "competing_risks",
+            c["durations"],
+            c["events"],
+            c["cif_curves"],
+            risk_scores=c["risk_scores"],
+            times=c["times"],
+        )
+        causes = r.get("causes", sorted(c["cif_curves"]))
+        counts = r.get("cause_counts", [])
+        c_idx = r.get("cause_c_indices", {})
+        uno_idx = r.get("cause_uno_c_indices", {})
+        ibs_map = r.get("cause_ibs", {})
+        brier_map = r.get("brier_at_horizons", {})
+        overview: dict[str, Any] = {"n": len(c["durations"]), "causes": len(causes)}
+        per_cause: list[dict[str, Any]] = []
+        brier_rows: list[dict[str, Any]] = []
+        for idx, cause in enumerate(causes):
+            ev_count = counts[idx] if idx < len(counts) else None
+            c_val = c_idx.get(cause)
+            uno_val = uno_idx.get(cause)
+            ibs_val = ibs_map.get(cause)
+            per_cause.append(
+                {
+                    "cause": cause,
+                    "events": ev_count,
+                    "c_index": c_val,
+                    "uno_c_index": uno_val,
+                    "ibs": ibs_val,
+                }
+            )
+            if c_val is not None:
+                overview[f"cause_{cause}_c_index"] = c_val
+            if uno_val is not None:
+                overview[f"cause_{cause}_uno_c"] = uno_val
+            if ibs_val is not None:
+                overview[f"cause_{cause}_ibs"] = ibs_val
+            for t_str, bs_val in sorted(brier_map.get(cause, {}).items(), key=lambda kv: float(kv[0])):
+                brier_rows.append({"cause": cause, "time": float(t_str), "brier": bs_val})
+        tables: list[tuple[str, str, list[dict[str, Any]]]] = [
+            ("per_cause", "Cause-specific discrimination & IBS", per_cause),
+        ]
+        if brier_rows:
+            tables.append(("brier_at_horizons", "Cause-specific Brier at horizons", brier_rows))
+        self._add("Overview", overview, tables)
 
     def _build_uplift(self, c: dict[str, Any]) -> None:
         yt, tr, tau = c["y_true"], c["treatment"], c["tau_pred"]

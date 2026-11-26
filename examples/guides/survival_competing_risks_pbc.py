@@ -19,8 +19,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mltreelib import ModelTree, Metrics, competing_risks_report
-from mltreelib.data import select_rows, survival_xy, train_test_split
+from mltreelib import MetricsReport, ModelTree, competing_risks_report
+from mltreelib.data import Dataset
 
 
 def generate_competing_risks_benchmark(n_samples=600, seed=42):
@@ -132,27 +132,15 @@ def run_competing_risks_showcase():
 
     # 4. Multi-Cause Proper Scoring & Calibration Report
     print("\n[3/3] Computing Multi-Cause IPCW Performance Report...")
-    metrics = Metrics()
-    report = metrics.competing_risks(
+    rep = MetricsReport(
+        "competing_risks",
         durations=t_test,
         events=e_test,
         cif_curves={1: cif1_pred, 2: cif2_pred},
         risk_scores={1: risk_pred, 2: [-r for r in risk_pred]},
         times=eval_horizons,
     )
-
-    print("=" * 55)
-    print("COMPETING RISKS DISCRIMINATION & CALIBRATION REPORT")
-    print("=" * 55)
-    for cause in report["causes"]:
-        print(f"\n--- Cause {cause} ---")
-        print(f"  Observed Test Events:      {report['cause_counts'][cause - 1]}")
-        print(f"  Harrell's C-index:         {report['cause_c_indices'][cause]:.4f}")
-        print(f"  Uno's IPCW C-index:        {report['cause_uno_c_indices'][cause]:.4f}")
-        print(f"  Integrated Brier Score:    {report['cause_ibs'][cause]:.4f}")
-        print("  Brier Scores by Horizon:")
-        for t_str, bs_val in report["brier_at_horizons"][cause].items():
-            print(f"    t = {float(t_str):5.1f}: BS = {bs_val:.4f}")
+    print(rep)
 
     # 5. Generate Multi-State Incidence Visualization
     os.makedirs("docs/assets", exist_ok=True)

@@ -330,7 +330,7 @@ Evaluate models with classical IPCW concordance and frontier calibration metrics
 <!-- run -->
 ```python
 from mltreelib import (
-    Metrics,
+    MetricsReport,
     d_calibration,
     integrated_calibration_index,
     one_calibration,
@@ -338,13 +338,13 @@ from mltreelib import (
 )
 
 # 1. Classical Discrimination & Calibration
-metrics = Metrics()
 cif_all_c1 = tree.predict(X_test, kind="cif", times=time_horizons, cause=1)
 cif_all_c2 = tree.predict(X_test, kind="cif", times=time_horizons, cause=2)
 risk_all_c1 = tree.predict(X_test, kind="risk", cause=1)
 risk_all_c2 = tree.predict(X_test, kind="risk", cause=2)
 
-report = metrics.competing_risks(
+cr_summary = MetricsReport(
+    "competing_risks",
     durations=dur_test,
     events=ev_test,
     cif_curves={1: cif_all_c1, 2: cif_all_c2},
@@ -352,10 +352,10 @@ report = metrics.competing_risks(
     times=time_horizons,
 )
 
-print(f"Cause 1 Harrell C:  {report['cause_c_indices'][1]:.4f}")
-print(f"Cause 1 Uno IPCW C: {report['cause_uno_c_indices'][1]:.4f}")
-print(f"Cause 1 IBS:        {report['cause_ibs'][1]:.4f}")
-print("Brier at horizons: ", {k: round(v, 4) for k, v in report['brier_at_horizons'][1].items()})
+print(f"Cause 1 Harrell C:  {cr_summary['cause_1_c_index']:.4f}")
+print(f"Cause 1 Uno IPCW C: {cr_summary['cause_1_uno_c']:.4f}")
+print(f"Cause 1 IBS:        {cr_summary['cause_1_ibs']:.4f}")
+print(cr_summary)
 
 # 2. D-Calibration (Haider et al. 2020)
 # Evaluates whether event occurrences are uniformly distributed across probability bins
@@ -387,7 +387,44 @@ print(f"Competing Risks: Cause 1 ICI = {cr_rep['cause_ici'][1]:.4f}, Cause 2 ICI
 Cause 1 Harrell C:  0.6647
 Cause 1 Uno IPCW C: 0.6666
 Cause 1 IBS:        0.2101
-Brier at horizons:  {'1': 0.1759, '2': 0.2097, '5': 0.2219}
+Metrics report: competing_risks
+===============================
+
+Inputs
+------
+  causes  2
+
+Rows per argument (n_missing = None/NaN):
+  argument     n  n_missing
+  durations  200          0
+  events     200          0
+  times        3          0
+
+Overview
+--------
+  n                   200
+  causes                2
+  cause_1_c_index  0.6647
+  cause_1_uno_c    0.6666
+  cause_1_ibs      0.2101
+  cause_2_c_index  0.4961
+  cause_2_uno_c    0.4837
+  cause_2_ibs      0.1808
+
+Cause-specific discrimination & IBS:
+  cause  events  c_index  uno_c_index     ibs
+      1      90   0.6647       0.6666  0.2101
+      2      58   0.4961       0.4837  0.1808
+
+Cause-specific Brier at horizons:
+  cause  time   brier
+      1     1  0.1759
+      1     2  0.2097
+      1     5  0.2219
+      2     1  0.1206
+      2     2  0.1696
+      2     5  0.2158
+
 D-Calibration: Chi2 = 380.026, p-value = 0.0000, Calibrated = False
 ICI: 0.5672, E50: 0.4702, E90: 1.0000, Emax: 1.0000
 1-Calibration: Intercept = 0.564, Slope = 0.255
