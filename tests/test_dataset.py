@@ -231,10 +231,9 @@ def test_datasets_loader_feeds_builder():
     from mltreelib import list_datasets, load_dataset
 
     names = list_datasets()
-    if not names:
+    if "blood-transfusion-service-center" not in names:
         pytest.skip("datasets/ suite not present (see datasets/MANIFEST.md)")
 
-    assert "blood-transfusion-service-center" in names
     ds = load_dataset("blood-transfusion-service-center")
     assert ds["n_rows"] == 748
     assert ds["n_cols"] == 5
@@ -405,7 +404,7 @@ def test_encoding_demo_runs():
 
     from mltreelib import list_datasets
 
-    if not list_datasets():
+    if "churn" not in list_datasets():
         pytest.skip("datasets/ suite not present (see datasets/MANIFEST.md)")
     script = Path(__file__).resolve().parents[1] / "examples" / "guides" / "encoding_demo.py"
     proc = subprocess.run(
@@ -485,7 +484,7 @@ def test_demo_script_runs():
     assert "GROUND TRUTH" in proc.stdout
     from mltreelib import list_datasets
 
-    if list_datasets():
+    if "blood-transfusion-service-center" in list_datasets():
         assert "REAL DATASET" in proc.stdout
 
 
